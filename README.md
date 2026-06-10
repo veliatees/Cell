@@ -65,6 +65,7 @@ project cares about:
 - [Milestone 001: two-ion formation](docs/milestones/001-two-ion-formation.md)
 - [Milestone 002: many-ion system](docs/milestones/002-many-ion-system.md)
 - [Milestone 003: real water (SPC/E)](docs/milestones/003-water-model.md)
+- [Milestone 004: solvation (ions in water)](docs/milestones/004-solvation.md)
 - [Source ledger](docs/sources.md)
 
 ## Project Rule

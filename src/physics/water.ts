@@ -71,6 +71,10 @@ export const SPCE_SITES: Site[] = [
 
 const SITE_MASSES = [mO, mH, mH];
 
+/** Exposed for the unified solvation engine (so water bodies reuse this spec). */
+export const SPCE_SITE_MASSES = SITE_MASSES;
+export const SPCE_TOTAL_MASS = TOTAL_MASS;
+
 // Principal moments of inertia about the COM (u·nm²); off-diagonals vanish by
 // the molecule's symmetry, so the inertia tensor is diagonal in this frame.
 const INERTIA: Vec3 = SPCE_SITES.reduce(
@@ -88,6 +92,9 @@ const INERTIA: Vec3 = SPCE_SITES.reduce(
 
 const EPSILON_OO_EV = SPCE_WATER.epsilonOxygenKjMol * KJ_PER_MOL_TO_EV;
 const SIGMA_OO_NM = SPCE_WATER.sigmaOxygenNm;
+
+/** Principal moments of inertia (u·nm²) of the SPC/E molecule about its COM. */
+export const SPCE_INERTIA: Vec3 = { ...INERTIA };
 
 /** SPC/E dipole moment magnitude in Debye (origin-independent: molecule is neutral). */
 export function spceDipoleDebye(): number {

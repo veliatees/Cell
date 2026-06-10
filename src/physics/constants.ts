@@ -62,6 +62,15 @@ export const SPCE_WATER = {
   dipoleDebye: 2.35 // model dipole moment, for validation
 } as const;
 
+// --- Joung–Cheatham (2008) monovalent ion Lennard-Jones parameters, SPC/E set ---
+// Source: Joung & Cheatham, J. Phys. Chem. B 112, 9020 (2008).
+// Published as Rmin/2 (Å) and ε (kcal/mol); converted here to σ (nm) and ε (eV)
+// via σ = (2·Rmin/2) / 2^(1/6) and 1 kcal/mol = 4.184 kJ/mol.
+export const JOUNG_CHEATHAM_SPCE = {
+  "sodium-ion": { sigmaNm: 0.215_955, epsilonKjMol: 1.475_45 }, // Rmin/2 1.212 Å, ε 0.352642 kcal/mol
+  "chloride-ion": { sigmaNm: 0.483_046, epsilonKjMol: 0.053_492 } // Rmin/2 2.711 Å, ε 0.012785 kcal/mol
+} as const;
+
 export const SOURCE_NOTES = {
   constants: "NIST CODATA 2018 fundamental constants",
   ke2: "k·e² = 1.440 eV·nm (OpenStax University Physics Vol. 3 §9.2)",
@@ -70,5 +79,7 @@ export const SOURCE_NOTES = {
   ionicRadii: "Shannon effective ionic radii, 6-coordinate (Shannon 1976, Acta Cryst. A32 751)",
   masses: "IUPAC 2021 standard atomic weights",
   spceWater:
-    "SPC/E rigid water model (Berendsen, Grigera & Straatsma 1987, J. Phys. Chem. 91, 6269)"
+    "SPC/E rigid water model (Berendsen, Grigera & Straatsma 1987, J. Phys. Chem. 91, 6269)",
+  ionWaterLj:
+    "Joung & Cheatham 2008 (J. Phys. Chem. B 112, 9020) ion LJ parameters, SPC/E set; Lorentz–Berthelot mixing"
 } as const;

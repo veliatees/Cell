@@ -29,6 +29,13 @@ import {
   type WaterScenePreset,
   type WaterSnapshot
 } from "./physics/water";
+import {
+  SOLVATION_SCENES,
+  solvationSystemFromPreset,
+  type SolvationScenePreset,
+  type SolvationSnapshot,
+  type SolvationSystem
+} from "./physics/solvation";
 import "./styles.css";
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -42,10 +49,13 @@ const sceneOptions =
   SCENE_PRESETS.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
   `</optgroup><optgroup label="Water">` +
   WATER_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
+  `</optgroup><optgroup label="Solvation">` +
+  SOLVATION_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
   `</optgroup>`;
 
-type Mode = "ions" | "water";
+type Mode = "ions" | "water" | "solvation";
 const isWaterId = (id: string) => WATER_SCENES.some((p) => p.id === id);
+const isSolvationId = (id: string) => SOLVATION_SCENES.some((p) => p.id === id);
 
 app.innerHTML = `
   <section class="sim-shell" aria-label="Ion formation simulator">
@@ -211,6 +221,7 @@ if (!viewport) {
 const viewportElement = viewport;
 const simulation = new IonSimulation();
 let water: WaterSystem | null = null;
+let solvation: SolvationSystem | null = null;
 let mode: Mode = "ions";
 let running = true;
 let showClouds = true;
@@ -270,6 +281,11 @@ type WaterVisual = {
 };
 
 const waterVisuals: WaterVisual[] = [];
+
+// Solvation mode reuses water visuals for the bath and simple spheres for ions.
+type SolvIonVisual = { shell: THREE.Mesh; cloud: THREE.Mesh };
+const solvIonVisuals: SolvIonVisual[] = [];
+
 const sharedBondGeometry = new THREE.CylinderGeometry(0.06, 0.06, 1, 16);
 const OXYGEN_COLOR = "#ff5d5d";
 const HYDROGEN_COLOR = "#e9eef8";
@@ -304,7 +320,10 @@ app.querySelector<HTMLButtonElement>("[data-action='play']")?.addEventListener("
 app.querySelector<HTMLButtonElement>("[data-action='step']")?.addEventListener("click", () => {
   running = false;
   updatePlayIcon();
-  if (mode === "water" && water) {
+  if (mode === "solvation" && solvation) {
+    solvation.step(18);
+    renderSolvationSnapshot(solvation.snapshot());
+  } else if (mode === "water" && water) {
     water.step(18);
     renderWaterSnapshot(water.snapshot());
   } else {
@@ -338,19 +357,35 @@ bindRange("time-step", (value) => {
   if (water) {
     water.timeStepFs = value;
   }
+  if (solvation) {
+    solvation.timeStepFs = value;
+  }
 });
 bindRange("damping", (value) => {
   simulation.settings.dampingPerFs = value;
   if (water) {
     water.dampingPerFs = value;
   }
+  if (solvation) {
+    solvation.dampingPerFs = value;
+  }
 });
 bindRange("temperature", (value) => (simulation.settings.temperatureK = value));
 
 function loadScene(id: string) {
-  if (isWaterId(id)) {
+  if (isSolvationId(id)) {
+    const preset = SOLVATION_SCENES.find((p) => p.id === id) as SolvationScenePreset;
+    mode = "solvation";
+    water = null;
+    solvation = solvationSystemFromPreset(preset);
+    const snapshot = solvation.snapshot();
+    baselineEnergyEv = snapshot.totalEnergyEv;
+    buildSolvationScene(snapshot, preset);
+    cameraDistance = 7.5;
+  } else if (isWaterId(id)) {
     const preset = WATER_SCENES.find((p) => p.id === id) as WaterScenePreset;
     mode = "water";
+    solvation = null;
     water = waterSystemFromPreset(preset);
     const snapshot = water.snapshot();
     baselineEnergyEv = snapshot.totalEnergyEv;
@@ -360,6 +395,7 @@ function loadScene(id: string) {
     const preset = SCENE_PRESETS.find((p) => p.id === id) ?? SCENE_PRESETS[0];
     mode = "ions";
     water = null;
+    solvation = null;
     simulation.setPreset(preset);
     const snapshot = simulation.snapshot();
     baselineEnergyEv = snapshot.totalEnergyEv;
@@ -378,6 +414,7 @@ app.querySelector<HTMLInputElement>("[data-control='clouds']")?.addEventListener
   showClouds = (event.currentTarget as HTMLInputElement).checked;
   ionVisuals.forEach((visual) => (visual.cloud.visible = showClouds));
   waterVisuals.forEach((visual) => (visual.cloud.visible = showClouds));
+  solvIonVisuals.forEach((visual) => (visual.cloud.visible = showClouds));
 });
 
 app.querySelector<HTMLInputElement>("[data-control='vectors']")?.addEventListener("change", (event) => {
@@ -431,7 +468,12 @@ function animate() {
   lastFrame = now;
   const iterations = Math.max(1, Math.round(delta / 3.2));
 
-  if (mode === "water" && water) {
+  if (mode === "solvation" && solvation) {
+    if (running) {
+      solvation.step(iterations * 2);
+    }
+    renderSolvationSnapshot(solvation.snapshot());
+  } else if (mode === "water" && water) {
     if (running) {
       water.step(iterations * 2); // water relaxes on a slower timescale; speed it up
     }
@@ -473,6 +515,13 @@ function clearWaterVisuals() {
     (line.material as THREE.Material).dispose();
   }
   hbondLines.length = 0;
+
+  for (const v of solvIonVisuals) {
+    root.remove(v.shell, v.cloud);
+    (v.shell.material as THREE.Material).dispose();
+    (v.cloud.material as THREE.Material).dispose();
+  }
+  solvIonVisuals.length = 0;
 }
 
 function hbondLine(index: number): THREE.Line {
@@ -614,59 +663,74 @@ function renderIonSnapshot(snapshot: SimulationSnapshot) {
   renderer.render(scene, camera);
 }
 
+function makeWaterVisual(): WaterVisual {
+  const group = new THREE.Group();
+  const oxygen = new THREE.Mesh(
+    sharedShellGeometry,
+    new THREE.MeshStandardMaterial({
+      color: OXYGEN_COLOR,
+      roughness: 0.4,
+      metalness: 0.05,
+      emissive: OXYGEN_COLOR,
+      emissiveIntensity: 0.14
+    })
+  );
+  oxygen.scale.setScalar(0.55);
+
+  const makeHydrogen = () => {
+    const h = new THREE.Mesh(
+      sharedShellGeometry,
+      new THREE.MeshStandardMaterial({ color: HYDROGEN_COLOR, roughness: 0.5, metalness: 0.04 })
+    );
+    h.scale.setScalar(0.32);
+    return h;
+  };
+  const hydrogens: [THREE.Mesh, THREE.Mesh] = [makeHydrogen(), makeHydrogen()];
+
+  const makeBond = () =>
+    new THREE.Mesh(
+      sharedBondGeometry,
+      new THREE.MeshStandardMaterial({ color: "#9fb3cc", roughness: 0.6, metalness: 0.05 })
+    );
+  const bonds: [THREE.Mesh, THREE.Mesh] = [makeBond(), makeBond()];
+
+  const cloud = new THREE.Mesh(
+    sharedCloudGeometry,
+    new THREE.MeshBasicMaterial({
+      color: OXYGEN_COLOR,
+      transparent: true,
+      opacity: 0.1,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    })
+  );
+  cloud.scale.setScalar(1.1);
+  cloud.visible = showClouds;
+
+  group.add(cloud, bonds[0], bonds[1], oxygen, hydrogens[0], hydrogens[1]);
+  root.add(group);
+  const visual: WaterVisual = { group, oxygen, hydrogens, bonds, cloud };
+  waterVisuals.push(visual);
+  return visual;
+}
+
+/** Position one water molecule's atoms and bonds from its site positions (nm). */
+function placeWaterVisual(visual: WaterVisual, sites: Vec3[]) {
+  const o = toVector(sites[0]).multiplyScalar(VISUAL_SCALE);
+  visual.oxygen.position.copy(o);
+  visual.cloud.position.copy(o);
+  for (let h = 0; h < 2; h += 1) {
+    const hp = toVector(sites[h + 1]).multiplyScalar(VISUAL_SCALE);
+    visual.hydrogens[h].position.copy(hp);
+    orientBond(visual.bonds[h], o, hp);
+  }
+}
+
 function buildWaterScene(snapshot: WaterSnapshot, preset: WaterScenePreset) {
   clearIonVisuals();
   clearWaterVisuals();
 
-  snapshot.molecules.forEach(() => {
-    const group = new THREE.Group();
-
-    const oxygen = new THREE.Mesh(
-      sharedShellGeometry,
-      new THREE.MeshStandardMaterial({
-        color: OXYGEN_COLOR,
-        roughness: 0.4,
-        metalness: 0.05,
-        emissive: OXYGEN_COLOR,
-        emissiveIntensity: 0.14
-      })
-    );
-    oxygen.scale.setScalar(0.55);
-
-    const makeHydrogen = () => {
-      const h = new THREE.Mesh(
-        sharedShellGeometry,
-        new THREE.MeshStandardMaterial({ color: HYDROGEN_COLOR, roughness: 0.5, metalness: 0.04 })
-      );
-      h.scale.setScalar(0.32);
-      return h;
-    };
-    const hydrogens: [THREE.Mesh, THREE.Mesh] = [makeHydrogen(), makeHydrogen()];
-
-    const makeBond = () =>
-      new THREE.Mesh(
-        sharedBondGeometry,
-        new THREE.MeshStandardMaterial({ color: "#9fb3cc", roughness: 0.6, metalness: 0.05 })
-      );
-    const bonds: [THREE.Mesh, THREE.Mesh] = [makeBond(), makeBond()];
-
-    const cloud = new THREE.Mesh(
-      sharedCloudGeometry,
-      new THREE.MeshBasicMaterial({
-        color: OXYGEN_COLOR,
-        transparent: true,
-        opacity: 0.1,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending
-      })
-    );
-    cloud.scale.setScalar(1.1);
-    cloud.visible = showClouds;
-
-    group.add(cloud, bonds[0], bonds[1], oxygen, hydrogens[0], hydrogens[1]);
-    root.add(group);
-    waterVisuals.push({ group, oxygen, hydrogens, bonds, cloud });
-  });
+  snapshot.molecules.forEach(() => makeWaterVisual());
 
   if (sceneNote) {
     sceneNote.textContent = preset.description;
@@ -680,17 +744,8 @@ function buildWaterScene(snapshot: WaterSnapshot, preset: WaterScenePreset) {
 function renderWaterSnapshot(snapshot: WaterSnapshot) {
   snapshot.sitePositionsNm.forEach((sites, index) => {
     const visual = waterVisuals[index];
-    if (!visual) {
-      return;
-    }
-    const o = toVector(sites[0]).multiplyScalar(VISUAL_SCALE);
-    visual.oxygen.position.copy(o);
-    visual.cloud.position.copy(o);
-
-    for (let h = 0; h < 2; h += 1) {
-      const hp = toVector(sites[h + 1]).multiplyScalar(VISUAL_SCALE);
-      visual.hydrogens[h].position.copy(hp);
-      orientBond(visual.bonds[h], o, hp);
+    if (visual) {
+      placeWaterVisual(visual, sites);
     }
   });
 
@@ -710,6 +765,84 @@ function renderWaterSnapshot(snapshot: WaterSnapshot) {
   setText(values.potential, `${snapshot.potentialEnergyEv.toFixed(4)} eV`);
   setText(values.kinetic, `${snapshot.kineticEnergyEv.toFixed(4)} eV`);
   setText(values.total, `${snapshot.totalEnergyEv.toFixed(4)} eV`);
+  renderDrift(snapshot.totalEnergyEv);
+  setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
+
+  renderer.render(scene, camera);
+}
+
+function buildSolvationScene(snapshot: SolvationSnapshot, preset: SolvationScenePreset) {
+  clearIonVisuals();
+  clearWaterVisuals();
+
+  snapshot.ions.forEach((ion) => {
+    const shell = new THREE.Mesh(
+      sharedShellGeometry,
+      new THREE.MeshStandardMaterial({
+        color: ion.color,
+        roughness: 0.34,
+        metalness: 0.08,
+        emissive: ion.color,
+        emissiveIntensity: 0.18
+      })
+    );
+    shell.scale.setScalar(ion.renderRadiusNm * VISUAL_SCALE);
+    const cloud = new THREE.Mesh(
+      sharedCloudGeometry,
+      new THREE.MeshBasicMaterial({
+        color: ion.color,
+        transparent: true,
+        opacity: 0.12,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    cloud.scale.setScalar(ion.renderRadiusNm * VISUAL_SCALE * 1.5);
+    cloud.visible = showClouds;
+    root.add(cloud, shell);
+    solvIonVisuals.push({ shell, cloud });
+  });
+
+  snapshot.waters.forEach(() => makeWaterVisual());
+
+  if (sceneNote) {
+    sceneNote.textContent = preset.description;
+  }
+  if (compositionEl && netChargeEl) {
+    const ionChips = snapshot.ions
+      .map((i) => `<span class="chip"><span class="chip__dot" style="background:${i.color}"></span>${i.label}</span>`)
+      .join("");
+    compositionEl.innerHTML = ionChips;
+    netChargeEl.innerHTML = `<span class="chip chip--muted">${snapshot.waters.length}× H₂O</span>`;
+  }
+}
+
+function renderSolvationSnapshot(snapshot: SolvationSnapshot) {
+  snapshot.ions.forEach((ion, index) => {
+    const visual = solvIonVisuals[index];
+    if (!visual) {
+      return;
+    }
+    const p = toVector(ion.positionNm).multiplyScalar(VISUAL_SCALE);
+    visual.shell.position.copy(p);
+    visual.cloud.position.copy(p);
+  });
+
+  const waterSites: Vec3[][] = [];
+  snapshot.waters.forEach((w, index) => {
+    const visual = waterVisuals[index];
+    if (visual) {
+      placeWaterVisual(visual, w.sitePositionsNm);
+    }
+    waterSites.push(w.sitePositionsNm);
+  });
+  renderHydrogenBonds(waterSites);
+
+  setText(values.distance, snapshot.minIonOxygenNm != null ? `${snapshot.minIonOxygenNm.toFixed(3)} nm` : "—");
+  setText(values.force, "—");
+  setText(values.potential, `${snapshot.potentialEnergyEv.toFixed(3)} eV`);
+  setText(values.kinetic, `${snapshot.kineticEnergyEv.toFixed(3)} eV`);
+  setText(values.total, `${snapshot.totalEnergyEv.toFixed(3)} eV`);
   renderDrift(snapshot.totalEnergyEv);
   setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
 
