@@ -27,10 +27,13 @@ bond, Na+/K+ repulsion, and a 6-ion NaCl cluster), per-ion force vectors,
 electron-probability visibility, total-energy and energy-drift readouts, and
 temperature/damping/solvent controls with scroll-to-zoom.
 
-The Na–Cl model is source-backed, not tuned: ion masses, ionic radii, the
+The models are source-backed, not tuned. For Na–Cl, ion masses, ionic radii, the
 Coulomb constant, and the short-range Pauli repulsion all come from published
 measurements, so the simulated bond relaxes to the experimental 0.236 nm bond
-length (verified by test). See [docs/sources.md](docs/sources.md).
+length. Water uses the SPC/E model (Berendsen et al. 1987) with a from-scratch
+rigid-body engine; it reproduces the 2.35 D dipole and forms a dimer at the
+correct O–O distance (~0.273 nm). All verified by tests. See
+[docs/sources.md](docs/sources.md).
 
 ## Verify
 
@@ -61,6 +64,7 @@ project cares about:
 - [Input/output registry](docs/research/biology/input-output-registry.md)
 - [Milestone 001: two-ion formation](docs/milestones/001-two-ion-formation.md)
 - [Milestone 002: many-ion system](docs/milestones/002-many-ion-system.md)
+- [Milestone 003: real water (SPC/E)](docs/milestones/003-water-model.md)
 - [Source ledger](docs/sources.md)
 
 ## Project Rule

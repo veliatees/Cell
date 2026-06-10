@@ -37,11 +37,38 @@ export const ATOMIC_MASS_AMU = {
   potassium: 39.098_3
 } as const;
 
+export const KJ_PER_MOL_TO_EV = 1 / 96.485_332; // 1 eV = 96.485 kJ/mol
+export const DEBYE_PER_E_NM = 48.032_1; // 1 e·nm = 48.032 D (1 e·Å = 4.803 D)
+
+/**
+ * Converts a force in eV/nm acting on a mass in u into an acceleration in nm/fs².
+ * a[nm/fs²] = F[eV/nm] · FORCE_EV_NM_TO_ACC / mass[u].
+ */
+export const FORCE_EV_NM_TO_ACC =
+  ((ELECTRON_VOLT_J / NM_TO_M) / ATOMIC_MASS_UNIT_KG) * 1e9 * (FS_TO_S * FS_TO_S);
+
+// --- SPC/E rigid water model ---
+// Source: Berendsen, Grigera & Straatsma (1987), "The Missing Term in Effective
+// Pair Potentials", J. Phys. Chem. 91, 6269.
+export const SPCE_WATER = {
+  chargeOxygenE: -0.847_6,
+  chargeHydrogenE: 0.423_8,
+  bondLengthOhNm: 0.1, // O–H distance
+  angleHohDeg: 109.47, // H–O–H angle
+  sigmaOxygenNm: 0.316_6, // Lennard-Jones σ (O–O only)
+  epsilonOxygenKjMol: 0.650_2, // Lennard-Jones ε (O–O only)
+  massOxygenAmu: 15.999,
+  massHydrogenAmu: 1.008,
+  dipoleDebye: 2.35 // model dipole moment, for validation
+} as const;
+
 export const SOURCE_NOTES = {
   constants: "NIST CODATA 2018 fundamental constants",
   ke2: "k·e² = 1.440 eV·nm (OpenStax University Physics Vol. 3 §9.2)",
   naclBond:
     "NaCl r0 = 0.236 nm, Pauli energy 0.32 eV at r0, D = 4.26 eV (OpenStax Univ. Physics Vol. 3 §9.2, Table 9.2.1)",
   ionicRadii: "Shannon effective ionic radii, 6-coordinate (Shannon 1976, Acta Cryst. A32 751)",
-  masses: "IUPAC 2021 standard atomic weights"
+  masses: "IUPAC 2021 standard atomic weights",
+  spceWater:
+    "SPC/E rigid water model (Berendsen, Grigera & Straatsma 1987, J. Phys. Chem. 91, 6269)"
 } as const;
