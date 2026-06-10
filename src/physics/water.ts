@@ -110,6 +110,67 @@ export type WaterConfig = {
   angVelBodyRadPerFs?: Vec3;
 };
 
+export type WaterScenePreset = {
+  id: string;
+  label: string;
+  description: string;
+  timeStepFs: number;
+  dampingPerFs: number;
+  molecules: WaterConfig[];
+};
+
+/** A quaternion for a rotation of `deg` degrees about the +y axis. */
+function spinY(deg: number): Quat {
+  const h = (deg * Math.PI) / 180 / 2;
+  return { w: Math.cos(h), x: 0, y: Math.sin(h), z: 0 };
+}
+
+function ringWaters(count: number, radiusNm: number): WaterConfig[] {
+  return Array.from({ length: count }, (_, index) => {
+    const angle = (index / count) * Math.PI * 2;
+    return {
+      comNm: { x: Math.cos(angle) * radiusNm, y: Math.sin(angle) * radiusNm * 0.6, z: 0 },
+      orientation: spinY(index * 73) // varied orientations
+    };
+  });
+}
+
+export const WATER_SCENES: WaterScenePreset[] = [
+  {
+    id: "water-single",
+    label: "Water molecule (SPC/E)",
+    description:
+      "One real SPC/E water molecule (0.1 nm O–H, 109.47° angle, 2.35 D dipole) spinning freely.",
+    timeStepFs: 0.5,
+    dampingPerFs: 0,
+    molecules: [{ comNm: { x: 0, y: 0, z: 0 }, angVelBodyRadPerFs: { x: 0.004, y: 0.006, z: 0.002 } }]
+  },
+  {
+    id: "water-dimer",
+    label: "Water dimer (hydrogen bond)",
+    description:
+      "Two molecules bind into a hydrogen bond at the real O–O distance (~0.27 nm, −30 kJ/mol).",
+    timeStepFs: 0.25,
+    dampingPerFs: 0.01,
+    molecules: [
+      { comNm: { x: -0.225, y: 0, z: 0 } },
+      { comNm: { x: 0.225, y: 0, z: 0 }, orientation: spinY(180) }
+    ]
+  },
+  {
+    id: "water-cluster",
+    label: "Water cluster (5)",
+    description: "Five molecules condense into a hydrogen-bonded cluster.",
+    timeStepFs: 0.25,
+    dampingPerFs: 0.012,
+    molecules: ringWaters(5, 0.42)
+  }
+];
+
+export function waterSystemFromPreset(preset: WaterScenePreset): WaterSystem {
+  return new WaterSystem(preset.molecules, preset.timeStepFs, preset.dampingPerFs);
+}
+
 export class WaterSystem {
   private molecules: WaterMolecule[];
   private elapsedFs = 0;

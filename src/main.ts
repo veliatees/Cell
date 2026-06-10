@@ -21,6 +21,14 @@ import {
   type SimulationSnapshot,
   type Vec3
 } from "./physics/ions";
+import { SPCE_WATER } from "./physics/constants";
+import {
+  WATER_SCENES,
+  waterSystemFromPreset,
+  type WaterSystem,
+  type WaterScenePreset,
+  type WaterSnapshot
+} from "./physics/water";
 import "./styles.css";
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -29,9 +37,15 @@ if (!app) {
   throw new Error("App root was not found.");
 }
 
-const sceneOptions = SCENE_PRESETS.map(
-  (preset) => `<option value="${preset.id}">${preset.label}</option>`
-).join("");
+const sceneOptions =
+  `<optgroup label="Ions">` +
+  SCENE_PRESETS.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
+  `</optgroup><optgroup label="Water">` +
+  WATER_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
+  `</optgroup>`;
+
+type Mode = "ions" | "water";
+const isWaterId = (id: string) => WATER_SCENES.some((p) => p.id === id);
 
 app.innerHTML = `
   <section class="sim-shell" aria-label="Ion formation simulator">
@@ -42,7 +56,7 @@ app.innerHTML = `
         <span class="brand__mark"></span>
         <div>
           <h1>Cell</h1>
-          <p>Milestone 001 · ion electrostatics</p>
+          <p>atoms · ions · molecules</p>
         </div>
       </div>
 
@@ -196,6 +210,8 @@ if (!viewport) {
 
 const viewportElement = viewport;
 const simulation = new IonSimulation();
+let water: WaterSystem | null = null;
+let mode: Mode = "ions";
 let running = true;
 let showClouds = true;
 let showVectors = true;
@@ -244,6 +260,20 @@ const ionVisuals: IonVisual[] = [];
 const sharedShellGeometry = new THREE.SphereGeometry(1, 48, 32);
 const sharedCloudGeometry = new THREE.SphereGeometry(1, 48, 24);
 
+// Per-water-molecule render objects (ball-and-stick: O + 2 H + 2 bonds + cloud).
+type WaterVisual = {
+  group: THREE.Group;
+  oxygen: THREE.Mesh;
+  hydrogens: [THREE.Mesh, THREE.Mesh];
+  bonds: [THREE.Mesh, THREE.Mesh];
+  cloud: THREE.Mesh;
+};
+
+const waterVisuals: WaterVisual[] = [];
+const sharedBondGeometry = new THREE.CylinderGeometry(0.06, 0.06, 1, 16);
+const OXYGEN_COLOR = "#ff5d5d";
+const HYDROGEN_COLOR = "#e9eef8";
+
 const values = {
   distance: app.querySelector<HTMLElement>("[data-value='distance']"),
   force: app.querySelector<HTMLElement>("[data-value='force']"),
@@ -258,7 +288,7 @@ const sceneNote = app.querySelector<HTMLElement>("[data-role='scene-note']");
 const compositionEl = app.querySelector<HTMLElement>("[data-role='composition']");
 const netChargeEl = app.querySelector<HTMLElement>("[data-role='net-charge']");
 
-buildScene(simulation.snapshot());
+buildIonScene(simulation.snapshot());
 
 app.querySelector<HTMLButtonElement>("[data-action='play']")?.addEventListener("click", () => {
   running = !running;
@@ -268,27 +298,24 @@ app.querySelector<HTMLButtonElement>("[data-action='play']")?.addEventListener("
 app.querySelector<HTMLButtonElement>("[data-action='step']")?.addEventListener("click", () => {
   running = false;
   updatePlayIcon();
-  simulation.step(18);
-  renderSnapshot(simulation.snapshot());
+  if (mode === "water" && water) {
+    water.step(18);
+    renderWaterSnapshot(water.snapshot());
+  } else {
+    simulation.step(18);
+    renderIonSnapshot(simulation.snapshot());
+  }
 });
 
 app.querySelector<HTMLButtonElement>("[data-action='reset']")?.addEventListener("click", () => {
-  simulation.reset();
-  baselineEnergyEv = simulation.snapshot().totalEnergyEv;
+  const select = app?.querySelector<HTMLSelectElement>("[data-control='scene']");
+  loadScene(select?.value ?? "na-cl");
   running = true;
   updatePlayIcon();
 });
 
 app.querySelector<HTMLSelectElement>("[data-control='scene']")?.addEventListener("change", (event) => {
-  const id = (event.currentTarget as HTMLSelectElement).value;
-  const preset = SCENE_PRESETS.find((entry) => entry.id === id);
-  if (!preset) {
-    return;
-  }
-  simulation.setPreset(preset);
-  const snapshot = simulation.snapshot();
-  baselineEnergyEv = snapshot.totalEnergyEv;
-  buildScene(snapshot);
+  loadScene((event.currentTarget as HTMLSelectElement).value);
   running = true;
   updatePlayIcon();
 });
@@ -300,9 +327,38 @@ app
     baselineEnergyEv = simulation.snapshot().totalEnergyEv;
   });
 
-bindRange("time-step", (value) => (simulation.settings.timeStepFs = value));
-bindRange("damping", (value) => (simulation.settings.dampingPerFs = value));
+bindRange("time-step", (value) => {
+  simulation.settings.timeStepFs = value;
+  if (water) {
+    water.timeStepFs = value;
+  }
+});
+bindRange("damping", (value) => {
+  simulation.settings.dampingPerFs = value;
+  if (water) {
+    water.dampingPerFs = value;
+  }
+});
 bindRange("temperature", (value) => (simulation.settings.temperatureK = value));
+
+function loadScene(id: string) {
+  if (isWaterId(id)) {
+    const preset = WATER_SCENES.find((p) => p.id === id) as WaterScenePreset;
+    mode = "water";
+    water = waterSystemFromPreset(preset);
+    const snapshot = water.snapshot();
+    baselineEnergyEv = snapshot.totalEnergyEv;
+    buildWaterScene(snapshot, preset);
+  } else {
+    const preset = SCENE_PRESETS.find((p) => p.id === id) ?? SCENE_PRESETS[0];
+    mode = "ions";
+    water = null;
+    simulation.setPreset(preset);
+    const snapshot = simulation.snapshot();
+    baselineEnergyEv = snapshot.totalEnergyEv;
+    buildIonScene(snapshot);
+  }
+}
 
 app.querySelector<HTMLInputElement>("[data-control='pauli']")?.addEventListener("change", (event) => {
   simulation.settings.pauliRepulsion = (event.currentTarget as HTMLInputElement).checked;
@@ -312,6 +368,7 @@ app.querySelector<HTMLInputElement>("[data-control='pauli']")?.addEventListener(
 app.querySelector<HTMLInputElement>("[data-control='clouds']")?.addEventListener("change", (event) => {
   showClouds = (event.currentTarget as HTMLInputElement).checked;
   ionVisuals.forEach((visual) => (visual.cloud.visible = showClouds));
+  waterVisuals.forEach((visual) => (visual.cloud.visible = showClouds));
 });
 
 app.querySelector<HTMLInputElement>("[data-control='vectors']")?.addEventListener("change", (event) => {
@@ -363,17 +420,23 @@ function animate() {
   const now = performance.now();
   const delta = Math.min(48, now - lastFrame);
   lastFrame = now;
+  const iterations = Math.max(1, Math.round(delta / 3.2));
 
-  if (running) {
-    const iterations = Math.max(1, Math.round(delta / 3.2));
-    simulation.step(iterations);
+  if (mode === "water" && water) {
+    if (running) {
+      water.step(iterations);
+    }
+    renderWaterSnapshot(water.snapshot());
+  } else {
+    if (running) {
+      simulation.step(iterations);
+    }
+    renderIonSnapshot(simulation.snapshot());
   }
-
-  renderSnapshot(simulation.snapshot());
   requestAnimationFrame(animate);
 }
 
-function buildScene(snapshot: SimulationSnapshot) {
+function clearIonVisuals() {
   for (const visual of ionVisuals) {
     root.remove(visual.shell, visual.cloud, visual.arrow);
     (visual.shell.material as THREE.Material).dispose();
@@ -382,6 +445,23 @@ function buildScene(snapshot: SimulationSnapshot) {
     visual.label.remove();
   }
   ionVisuals.length = 0;
+}
+
+function clearWaterVisuals() {
+  for (const visual of waterVisuals) {
+    root.remove(visual.group);
+    visual.group.traverse((obj) => {
+      if (obj instanceof THREE.Mesh) {
+        (obj.material as THREE.Material).dispose();
+      }
+    });
+  }
+  waterVisuals.length = 0;
+}
+
+function buildIonScene(snapshot: SimulationSnapshot) {
+  clearWaterVisuals();
+  clearIonVisuals();
 
   snapshot.ions.forEach((ion) => {
     const shell = new THREE.Mesh(
@@ -426,7 +506,7 @@ function buildScene(snapshot: SimulationSnapshot) {
   renderComposition(snapshot.ions);
 }
 
-function renderSnapshot(snapshot: SimulationSnapshot) {
+function renderIonSnapshot(snapshot: SimulationSnapshot) {
   snapshot.ions.forEach((ion, index) => {
     const visual = ionVisuals[index];
     if (!visual) {
@@ -463,6 +543,116 @@ function renderSnapshot(snapshot: SimulationSnapshot) {
   setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
 
   renderer.render(scene, camera);
+}
+
+function buildWaterScene(snapshot: WaterSnapshot, preset: WaterScenePreset) {
+  clearIonVisuals();
+  clearWaterVisuals();
+
+  snapshot.molecules.forEach(() => {
+    const group = new THREE.Group();
+
+    const oxygen = new THREE.Mesh(
+      sharedShellGeometry,
+      new THREE.MeshStandardMaterial({
+        color: OXYGEN_COLOR,
+        roughness: 0.4,
+        metalness: 0.05,
+        emissive: OXYGEN_COLOR,
+        emissiveIntensity: 0.14
+      })
+    );
+    oxygen.scale.setScalar(0.55);
+
+    const makeHydrogen = () => {
+      const h = new THREE.Mesh(
+        sharedShellGeometry,
+        new THREE.MeshStandardMaterial({ color: HYDROGEN_COLOR, roughness: 0.5, metalness: 0.04 })
+      );
+      h.scale.setScalar(0.32);
+      return h;
+    };
+    const hydrogens: [THREE.Mesh, THREE.Mesh] = [makeHydrogen(), makeHydrogen()];
+
+    const makeBond = () =>
+      new THREE.Mesh(
+        sharedBondGeometry,
+        new THREE.MeshStandardMaterial({ color: "#9fb3cc", roughness: 0.6, metalness: 0.05 })
+      );
+    const bonds: [THREE.Mesh, THREE.Mesh] = [makeBond(), makeBond()];
+
+    const cloud = new THREE.Mesh(
+      sharedCloudGeometry,
+      new THREE.MeshBasicMaterial({
+        color: OXYGEN_COLOR,
+        transparent: true,
+        opacity: 0.1,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    cloud.scale.setScalar(1.1);
+    cloud.visible = showClouds;
+
+    group.add(cloud, bonds[0], bonds[1], oxygen, hydrogens[0], hydrogens[1]);
+    root.add(group);
+    waterVisuals.push({ group, oxygen, hydrogens, bonds, cloud });
+  });
+
+  if (sceneNote) {
+    sceneNote.textContent = preset.description;
+  }
+  if (compositionEl && netChargeEl) {
+    compositionEl.innerHTML = `<span class="chip"><span class="chip__dot" style="background:${OXYGEN_COLOR}"></span>${snapshot.molecules.length}× H₂O (SPC/E)</span>`;
+    netChargeEl.innerHTML = `<span class="chip chip--muted">dipole ${SPCE_WATER.dipoleDebye} D</span>`;
+  }
+}
+
+function renderWaterSnapshot(snapshot: WaterSnapshot) {
+  snapshot.sitePositionsNm.forEach((sites, index) => {
+    const visual = waterVisuals[index];
+    if (!visual) {
+      return;
+    }
+    const o = toVector(sites[0]).multiplyScalar(VISUAL_SCALE);
+    visual.oxygen.position.copy(o);
+    visual.cloud.position.copy(o);
+
+    for (let h = 0; h < 2; h += 1) {
+      const hp = toVector(sites[h + 1]).multiplyScalar(VISUAL_SCALE);
+      visual.hydrogens[h].position.copy(hp);
+      orientBond(visual.bonds[h], o, hp);
+    }
+  });
+
+  const ooDistanceNm =
+    snapshot.sitePositionsNm.length >= 2
+      ? Math.hypot(
+          snapshot.sitePositionsNm[0][0].x - snapshot.sitePositionsNm[1][0].x,
+          snapshot.sitePositionsNm[0][0].y - snapshot.sitePositionsNm[1][0].y,
+          snapshot.sitePositionsNm[0][0].z - snapshot.sitePositionsNm[1][0].z
+        )
+      : null;
+
+  setText(values.distance, ooDistanceNm != null ? `${ooDistanceNm.toFixed(3)} nm` : "—");
+  setText(values.force, "—");
+  setText(values.potential, `${snapshot.potentialEnergyEv.toFixed(4)} eV`);
+  setText(values.kinetic, `${snapshot.kineticEnergyEv.toFixed(4)} eV`);
+  setText(values.total, `${snapshot.totalEnergyEv.toFixed(4)} eV`);
+  renderDrift(snapshot.totalEnergyEv);
+  setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
+
+  renderer.render(scene, camera);
+}
+
+/** Position and orient a unit-height cylinder so it spans from a to b. */
+function orientBond(bond: THREE.Mesh, a: THREE.Vector3, b: THREE.Vector3) {
+  const mid = a.clone().add(b).multiplyScalar(0.5);
+  const dir = b.clone().sub(a);
+  const len = dir.length();
+  bond.position.copy(mid);
+  bond.scale.set(1, Math.max(len, 1e-4), 1);
+  bond.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
 }
 
 function renderDrift(totalEv: number) {
