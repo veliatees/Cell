@@ -246,7 +246,7 @@ let diffusion: DiffusionSystem | null = null;
 let membrane: MembraneSystem | null = null;
 let mode: Mode = "ions";
 const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
-const MEMBRANE_SCALE = 2.2; // membrane positions are in σ (~1 nm); scale for display
+const MEMBRANE_SCALE = 1.6; // membrane positions are in σ (~1 nm); scale for display
 let running = true;
 let showClouds = true;
 let showVectors = true;
@@ -313,13 +313,18 @@ const solvIonVisuals: SolvIonVisual[] = [];
 // Diffusion mode draws many particles as a single efficient point cloud.
 let diffusionPoints: THREE.Points | null = null;
 
-// Membrane mode draws lipid head/tail beads (and solutes) as point clouds.
-let membraneHeadPoints: THREE.Points | null = null;
-let membraneTailPoints: THREE.Points | null = null;
-let membraneSolutePoints: THREE.Points | null = null;
+// Membrane mode draws lipid head/tail beads (and solutes) as solid spheres
+// via instancing (efficient for hundreds of beads, and reads as a real membrane).
+let membraneHeadMesh: THREE.InstancedMesh | null = null;
+let membraneTailMesh: THREE.InstancedMesh | null = null;
+let membraneSoluteMesh: THREE.InstancedMesh | null = null;
 const HEAD_COLOR = "#ffcf6b";
 const TAIL_COLOR = "#8fa8d6";
 const SOLUTE_COLOR = "#7ee0a8";
+const HEAD_RADIUS = 0.95;
+const TAIL_RADIUS = 0.6;
+const SOLUTE_RADIUS = 0.85;
+const dummyObj = new THREE.Object3D();
 
 const sharedBondGeometry = new THREE.CylinderGeometry(0.06, 0.06, 1, 16);
 const OXYGEN_COLOR = "#ff5d5d";
@@ -422,7 +427,7 @@ function loadScene(id: string) {
     diffusion = null;
     membrane = membraneSystemFromPreset(preset);
     buildMembraneScene(membrane.snapshot(), preset);
-    cameraDistance = 17;
+    cameraDistance = 15;
   } else if (isDiffusionId(id)) {
     const preset = DIFFUSION_SCENES.find((p) => p.id === id) as DiffusionScenePreset;
     mode = "diffusion";
@@ -605,16 +610,15 @@ function clearWaterVisuals() {
     diffusionPoints = null;
   }
 
-  for (const p of [membraneHeadPoints, membraneTailPoints, membraneSolutePoints]) {
-    if (p) {
-      root.remove(p);
-      p.geometry.dispose();
-      (p.material as THREE.Material).dispose();
+  for (const m of [membraneHeadMesh, membraneTailMesh, membraneSoluteMesh]) {
+    if (m) {
+      root.remove(m);
+      (m.material as THREE.Material).dispose();
     }
   }
-  membraneHeadPoints = null;
-  membraneTailPoints = null;
-  membraneSolutePoints = null;
+  membraneHeadMesh = null;
+  membraneTailMesh = null;
+  membraneSoluteMesh = null;
 }
 
 function hbondLine(index: number): THREE.Line {
@@ -1024,6 +1028,21 @@ function makePointCloud(count: number, color: string, size: number): THREE.Point
   return points;
 }
 
+function makeBeadMesh(count: number, color: string, radius: number): THREE.InstancedMesh {
+  const material = new THREE.MeshStandardMaterial({
+    color,
+    roughness: 0.45,
+    metalness: 0.05,
+    emissive: color,
+    emissiveIntensity: 0.12
+  });
+  const mesh = new THREE.InstancedMesh(sharedShellGeometry, material, count);
+  mesh.frustumCulled = false; // instances move; don't cull by stale bounds
+  mesh.userData.radius = radius;
+  root.add(mesh);
+  return mesh;
+}
+
 function buildMembraneScene(snapshot: MembraneSnapshot, preset: MembraneScenePreset) {
   clearIonVisuals();
   clearWaterVisuals();
@@ -1031,10 +1050,10 @@ function buildMembraneScene(snapshot: MembraneSnapshot, preset: MembraneScenePre
   const headCount = snapshot.beads.filter((b) => b.kind === "head").length;
   const tailCount = snapshot.beads.filter((b) => b.kind === "tail").length;
   const soluteCount = snapshot.beads.filter((b) => b.kind === "solute").length;
-  membraneHeadPoints = makePointCloud(headCount, HEAD_COLOR, 0.85);
-  membraneTailPoints = makePointCloud(tailCount, TAIL_COLOR, 0.5);
+  membraneHeadMesh = makeBeadMesh(headCount, HEAD_COLOR, HEAD_RADIUS);
+  membraneTailMesh = makeBeadMesh(tailCount, TAIL_COLOR, TAIL_RADIUS);
   if (soluteCount > 0) {
-    membraneSolutePoints = makePointCloud(soluteCount, SOLUTE_COLOR, 1.0);
+    membraneSoluteMesh = makeBeadMesh(soluteCount, SOLUTE_COLOR, SOLUTE_RADIUS);
   }
 
   if (sceneNote) {
@@ -1051,30 +1070,33 @@ function buildMembraneScene(snapshot: MembraneSnapshot, preset: MembraneScenePre
   }
 }
 
+function placeBead(mesh: THREE.InstancedMesh, index: number, pos: { x: number; y: number; z: number }) {
+  // model normal is z → screen up (y); model y → screen depth (z)
+  dummyObj.position.set(pos.x * MEMBRANE_SCALE, pos.z * MEMBRANE_SCALE, pos.y * MEMBRANE_SCALE);
+  const r = mesh.userData.radius as number;
+  dummyObj.scale.setScalar(r);
+  dummyObj.updateMatrix();
+  mesh.setMatrixAt(index, dummyObj.matrix);
+}
+
 function renderMembraneSnapshot(snapshot: MembraneSnapshot) {
-  if (membraneHeadPoints && membraneTailPoints) {
-    const head = (membraneHeadPoints.geometry.getAttribute("position") as THREE.BufferAttribute).array as Float32Array;
-    const tail = (membraneTailPoints.geometry.getAttribute("position") as THREE.BufferAttribute).array as Float32Array;
-    const sol = membraneSolutePoints
-      ? ((membraneSolutePoints.geometry.getAttribute("position") as THREE.BufferAttribute).array as Float32Array)
-      : null;
+  if (membraneHeadMesh && membraneTailMesh) {
     let hi = 0;
     let ti = 0;
     let si = 0;
     for (const b of snapshot.beads) {
-      const arr = b.kind === "head" ? head : b.kind === "tail" ? tail : sol;
-      if (!arr) {
-        continue;
+      if (b.kind === "head") {
+        placeBead(membraneHeadMesh, hi++, b.pos);
+      } else if (b.kind === "tail") {
+        placeBead(membraneTailMesh, ti++, b.pos);
+      } else if (membraneSoluteMesh) {
+        placeBead(membraneSoluteMesh, si++, b.pos);
       }
-      const idx = b.kind === "head" ? hi++ : b.kind === "tail" ? ti++ : si++;
-      arr[idx * 3] = b.pos.x * MEMBRANE_SCALE;
-      arr[idx * 3 + 1] = b.pos.z * MEMBRANE_SCALE; // model normal is z → screen up (y)
-      arr[idx * 3 + 2] = b.pos.y * MEMBRANE_SCALE;
     }
-    (membraneHeadPoints.geometry.getAttribute("position") as THREE.BufferAttribute).needsUpdate = true;
-    (membraneTailPoints.geometry.getAttribute("position") as THREE.BufferAttribute).needsUpdate = true;
-    if (membraneSolutePoints) {
-      (membraneSolutePoints.geometry.getAttribute("position") as THREE.BufferAttribute).needsUpdate = true;
+    membraneHeadMesh.instanceMatrix.needsUpdate = true;
+    membraneTailMesh.instanceMatrix.needsUpdate = true;
+    if (membraneSoluteMesh) {
+      membraneSoluteMesh.instanceMatrix.needsUpdate = true;
     }
   }
 
@@ -1177,7 +1199,8 @@ function resize() {
 
   root.scale.setScalar(isNarrow ? 0.58 : 1);
   root.position.set(0, isNarrow ? 1.45 : 0, 0);
-  camera.position.set(0, isNarrow ? cameraDistance * 0.36 : cameraDistance * 0.33, cameraDistance);
+  const heightFactor = mode === "membrane" ? 0.16 : isNarrow ? 0.36 : 0.33;
+  camera.position.set(0, cameraDistance * heightFactor, cameraDistance);
   camera.lookAt(0, 0, 0);
   camera.aspect = rect.width / Math.max(rect.height, 1);
   camera.updateProjectionMatrix();
