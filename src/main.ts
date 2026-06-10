@@ -43,6 +43,13 @@ import {
   type DiffusionSnapshot,
   type DiffusionSystem
 } from "./physics/diffusion";
+import {
+  MEMBRANE_SCENES,
+  membraneSystemFromPreset,
+  type MembraneScenePreset,
+  type MembraneSnapshot,
+  type MembraneSystem
+} from "./physics/membrane";
 import "./styles.css";
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -60,12 +67,15 @@ const sceneOptions =
   SOLVATION_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
   `</optgroup><optgroup label="Diffusion">` +
   DIFFUSION_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
+  `</optgroup><optgroup label="Membrane">` +
+  MEMBRANE_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
   `</optgroup>`;
 
-type Mode = "ions" | "water" | "solvation" | "diffusion";
+type Mode = "ions" | "water" | "solvation" | "diffusion" | "membrane";
 const isWaterId = (id: string) => WATER_SCENES.some((p) => p.id === id);
 const isSolvationId = (id: string) => SOLVATION_SCENES.some((p) => p.id === id);
 const isDiffusionId = (id: string) => DIFFUSION_SCENES.some((p) => p.id === id);
+const isMembraneId = (id: string) => MEMBRANE_SCENES.some((p) => p.id === id);
 
 app.innerHTML = `
   <section class="sim-shell" aria-label="Ion formation simulator">
@@ -233,8 +243,10 @@ const simulation = new IonSimulation();
 let water: WaterSystem | null = null;
 let solvation: SolvationSystem | null = null;
 let diffusion: DiffusionSystem | null = null;
+let membrane: MembraneSystem | null = null;
 let mode: Mode = "ions";
 const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
+const MEMBRANE_SCALE = 2.2; // membrane positions are in σ (~1 nm); scale for display
 let running = true;
 let showClouds = true;
 let showVectors = true;
@@ -301,6 +313,12 @@ const solvIonVisuals: SolvIonVisual[] = [];
 // Diffusion mode draws many particles as a single efficient point cloud.
 let diffusionPoints: THREE.Points | null = null;
 
+// Membrane mode draws lipid head/tail beads as two point clouds.
+let membraneHeadPoints: THREE.Points | null = null;
+let membraneTailPoints: THREE.Points | null = null;
+const HEAD_COLOR = "#ffcf6b";
+const TAIL_COLOR = "#8fa8d6";
+
 const sharedBondGeometry = new THREE.CylinderGeometry(0.06, 0.06, 1, 16);
 const OXYGEN_COLOR = "#ff5d5d";
 const HYDROGEN_COLOR = "#e9eef8";
@@ -335,7 +353,10 @@ app.querySelector<HTMLButtonElement>("[data-action='play']")?.addEventListener("
 app.querySelector<HTMLButtonElement>("[data-action='step']")?.addEventListener("click", () => {
   running = false;
   updatePlayIcon();
-  if (mode === "diffusion" && diffusion) {
+  if (mode === "membrane" && membrane) {
+    membrane.step(30);
+    renderMembraneSnapshot(membrane.snapshot());
+  } else if (mode === "diffusion" && diffusion) {
     diffusion.step(18);
     renderDiffusionSnapshot(diffusion.snapshot());
   } else if (mode === "solvation" && solvation) {
@@ -391,11 +412,21 @@ bindRange("damping", (value) => {
 bindRange("temperature", (value) => (simulation.settings.temperatureK = value));
 
 function loadScene(id: string) {
-  if (isDiffusionId(id)) {
+  if (isMembraneId(id)) {
+    const preset = MEMBRANE_SCENES.find((p) => p.id === id) as MembraneScenePreset;
+    mode = "membrane";
+    water = null;
+    solvation = null;
+    diffusion = null;
+    membrane = membraneSystemFromPreset(preset);
+    buildMembraneScene(membrane.snapshot(), preset);
+    cameraDistance = 17;
+  } else if (isDiffusionId(id)) {
     const preset = DIFFUSION_SCENES.find((p) => p.id === id) as DiffusionScenePreset;
     mode = "diffusion";
     water = null;
     solvation = null;
+    membrane = null;
     diffusion = diffusionSystemFromPreset(preset);
     buildDiffusionScene(diffusion.snapshot(), preset);
     cameraDistance = 11;
@@ -404,6 +435,7 @@ function loadScene(id: string) {
     mode = "solvation";
     water = null;
     diffusion = null;
+    membrane = null;
     solvation = solvationSystemFromPreset(preset);
     const snapshot = solvation.snapshot();
     baselineEnergyEv = snapshot.totalEnergyEv;
@@ -414,6 +446,7 @@ function loadScene(id: string) {
     mode = "water";
     solvation = null;
     diffusion = null;
+    membrane = null;
     water = waterSystemFromPreset(preset);
     const snapshot = water.snapshot();
     baselineEnergyEv = snapshot.totalEnergyEv;
@@ -425,6 +458,7 @@ function loadScene(id: string) {
     water = null;
     solvation = null;
     diffusion = null;
+    membrane = null;
     simulation.setPreset(preset);
     const snapshot = simulation.snapshot();
     baselineEnergyEv = snapshot.totalEnergyEv;
@@ -497,7 +531,12 @@ function animate() {
   lastFrame = now;
   const iterations = Math.max(1, Math.round(delta / 3.2));
 
-  if (mode === "diffusion" && diffusion) {
+  if (mode === "membrane" && membrane) {
+    if (running) {
+      membrane.step(iterations * 3);
+    }
+    renderMembraneSnapshot(membrane.snapshot());
+  } else if (mode === "diffusion" && diffusion) {
     if (running) {
       diffusion.step(iterations);
     }
@@ -563,6 +602,16 @@ function clearWaterVisuals() {
     (diffusionPoints.material as THREE.Material).dispose();
     diffusionPoints = null;
   }
+
+  for (const p of [membraneHeadPoints, membraneTailPoints]) {
+    if (p) {
+      root.remove(p);
+      p.geometry.dispose();
+      (p.material as THREE.Material).dispose();
+    }
+  }
+  membraneHeadPoints = null;
+  membraneTailPoints = null;
 }
 
 function hbondLine(index: number): THREE.Line {
@@ -952,6 +1001,74 @@ function renderDiffusionSnapshot(snapshot: DiffusionSnapshot) {
     values.drift.style.color = "";
   }
   setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
+
+  renderer.render(scene, camera);
+}
+
+function makePointCloud(count: number, color: string, size: number): THREE.Points {
+  const positions = new Float32Array(count * 3);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const material = new THREE.PointsMaterial({
+    color,
+    size,
+    transparent: true,
+    opacity: 0.95,
+    sizeAttenuation: true
+  });
+  const points = new THREE.Points(geometry, material);
+  root.add(points);
+  return points;
+}
+
+function buildMembraneScene(snapshot: MembraneSnapshot, preset: MembraneScenePreset) {
+  clearIonVisuals();
+  clearWaterVisuals();
+
+  const headCount = snapshot.beads.filter((b) => b.kind === "head").length;
+  const tailCount = snapshot.beads.length - headCount;
+  membraneHeadPoints = makePointCloud(headCount, HEAD_COLOR, 0.85);
+  membraneTailPoints = makePointCloud(tailCount, TAIL_COLOR, 0.5);
+
+  if (sceneNote) {
+    sceneNote.textContent = preset.description;
+  }
+  if (compositionEl && netChargeEl) {
+    compositionEl.innerHTML =
+      `<span class="chip"><span class="chip__dot" style="background:${HEAD_COLOR}"></span>${snapshot.lipids.length} lipids</span>`;
+    netChargeEl.innerHTML = `<span class="chip chip--muted">Cooke–Deserno (σ ≈ 1 nm)</span>`;
+  }
+}
+
+function renderMembraneSnapshot(snapshot: MembraneSnapshot) {
+  if (membraneHeadPoints && membraneTailPoints) {
+    const head = membraneHeadPoints.geometry.getAttribute("position") as THREE.BufferAttribute;
+    const tail = membraneTailPoints.geometry.getAttribute("position") as THREE.BufferAttribute;
+    const ha = head.array as Float32Array;
+    const ta = tail.array as Float32Array;
+    let hi = 0;
+    let ti = 0;
+    for (const b of snapshot.beads) {
+      const arr = b.kind === "head" ? ha : ta;
+      const idx = b.kind === "head" ? hi++ : ti++;
+      arr[idx * 3] = b.pos.x * MEMBRANE_SCALE;
+      arr[idx * 3 + 1] = b.pos.z * MEMBRANE_SCALE; // model normal is z → screen up (y)
+      arr[idx * 3 + 2] = b.pos.y * MEMBRANE_SCALE;
+    }
+    head.needsUpdate = true;
+    tail.needsUpdate = true;
+  }
+
+  setText(values.distance, `S = ${snapshot.orderS.toFixed(2)}`);
+  setText(values.force, "—");
+  setText(values.potential, `${snapshot.thicknessSigma.toFixed(2)} σ`);
+  setText(values.kinetic, "—");
+  setText(values.total, `${snapshot.potentialEnergy.toFixed(1)} ε`);
+  if (values.drift) {
+    values.drift.textContent = "—";
+    values.drift.style.color = "";
+  }
+  setText(values.elapsed, `${Math.round(snapshot.elapsedTau).toLocaleString()} τ`);
 
   renderer.render(scene, camera);
 }

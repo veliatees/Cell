@@ -67,6 +67,7 @@ project cares about:
 - [Milestone 003: real water (SPC/E)](docs/milestones/003-water-model.md)
 - [Milestone 004: solvation (ions in water)](docs/milestones/004-solvation.md)
 - [Milestone 005: diffusion & Brownian motion](docs/milestones/005-diffusion.md)
+- [Milestone 006: lipid membrane](docs/milestones/006-lipid-membrane.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)
 
