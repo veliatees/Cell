@@ -349,6 +349,7 @@ function loadScene(id: string) {
     const snapshot = water.snapshot();
     baselineEnergyEv = snapshot.totalEnergyEv;
     buildWaterScene(snapshot, preset);
+    cameraDistance = id === "water-single" ? 3.4 : 4.8;
   } else {
     const preset = SCENE_PRESETS.find((p) => p.id === id) ?? SCENE_PRESETS[0];
     mode = "ions";
@@ -357,7 +358,9 @@ function loadScene(id: string) {
     const snapshot = simulation.snapshot();
     baselineEnergyEv = snapshot.totalEnergyEv;
     buildIonScene(snapshot);
+    cameraDistance = 6.5;
   }
+  resize();
 }
 
 app.querySelector<HTMLInputElement>("[data-control='pauli']")?.addEventListener("change", (event) => {
@@ -424,7 +427,7 @@ function animate() {
 
   if (mode === "water" && water) {
     if (running) {
-      water.step(iterations);
+      water.step(iterations * 2); // water relaxes on a slower timescale; speed it up
     }
     renderWaterSnapshot(water.snapshot());
   } else {

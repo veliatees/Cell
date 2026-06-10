@@ -151,10 +151,10 @@ export const WATER_SCENES: WaterScenePreset[] = [
     description:
       "Two molecules bind into a hydrogen bond at the real O–O distance (~0.27 nm, −30 kJ/mol).",
     timeStepFs: 0.25,
-    dampingPerFs: 0.01,
+    dampingPerFs: 0.012,
     molecules: [
-      { comNm: { x: -0.225, y: 0, z: 0 } },
-      { comNm: { x: 0.225, y: 0, z: 0 }, orientation: spinY(180) }
+      { comNm: { x: -0.16, y: 0, z: 0 } },
+      { comNm: { x: 0.16, y: 0, z: 0 }, orientation: spinY(180) }
     ]
   },
   {
