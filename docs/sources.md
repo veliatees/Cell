@@ -1,0 +1,65 @@
+# Source Ledger
+
+The source ledger tracks references used by the project. Model decisions should
+link back here or to a more specific research file.
+
+## Physics And Chemistry
+
+- NIST physical constants: https://pml.nist.gov/cuu/Constants/
+  - Use for CODATA fundamental constants.
+- NIST Chemistry WebBook: https://webbook.nist.gov/
+  - Use for ionization energy, electron affinity, spectra, and thermochemical
+    data where available.
+- OpenStax University Physics, hydrogen atom:
+  https://openstax.org/books/university-physics-volume-3/pages/8-1-the-hydrogen-atom
+  - Use for wave function, probability density, quantum numbers, and hydrogen
+    atom fundamentals.
+- OpenStax Chemistry, quantum theory:
+  https://openstax.org/books/chemistry-2e/pages/6-3-development-of-quantum-theory
+  - Use for the quantum model, orbitals, and probability-density framing.
+- OpenStax University Physics Vol. 3, §9.2 "Types of Molecular Bonds"
+  (LibreTexts mirror):
+  https://phys.libretexts.org/Bookshelves/University_Physics/University_Physics_(OpenStax)/University_Physics_III_-_Optics_and_Modern_Physics_(OpenStax)/09:_Condensed_Matter_Physics/9.02:_Types_of_Molecular_Bonds
+  - PRIMARY SOURCE for the ion model. Provides: k·e² = 1.440 eV·nm;
+    NaCl equilibrium bond length r0 = 0.236 nm; Pauli (exclusion) repulsion
+    energy 0.32 eV at r0; homolytic dissociation energy 4.26 eV; and Table 9.2.1
+    of bond lengths/energies for other salts. The simulation's Born–Mayer
+    repulsion (B, ρ) is DERIVED from these measured values plus the equilibrium
+    force-balance condition — no fitted/invented parameters.
+- Shannon, R. D. (1976). "Revised effective ionic radii", Acta Cryst. A32, 751.
+  - Source for the 6-coordinate effective ionic radii used as the ion render
+    radii: Na+ 0.102 nm, Cl- 0.181 nm, K+ 0.138 nm.
+- IUPAC 2021 standard atomic weights.
+  - Source for ion masses (Na 22.9898 u, Cl 35.45 u, K 39.0983 u).
+
+## Cell Biology
+
+- NCBI Bookshelf, Molecular Biology of the Cell:
+  https://www.ncbi.nlm.nih.gov/books/NBK21054/
+  - Use as a broad conceptual cell biology reference.
+- NCBI Bookshelf, cell junctions:
+  https://www.ncbi.nlm.nih.gov/books/NBK26857/
+  - Use for tight junctions, epithelial barriers, and junction behavior.
+- NCBI Bookshelf, cell junction chapter index:
+  https://www.ncbi.nlm.nih.gov/books/NBK20684/
+  - Use for epithelial junction organization.
+- NCBI Bookshelf, transport of small molecules:
+  https://www.ncbi.nlm.nih.gov/books/NBK9847/
+  - Use for membrane transport, ion gradients, and ATP-driven pumps.
+- NCBI Bookshelf, active transport:
+  https://www.ncbi.nlm.nih.gov/books/NBK547718/
+  - Use for active transport concepts and pump/coupling definitions.
+- Cell Biology by the Numbers:
+  https://book.bionumbers.org/
+  - Use for sizes, concentrations, rates, energies, and quantitative estimates.
+
+## Platform
+
+- Unity system requirements:
+  https://docs.unity3d.com/Manual/system-requirements.html
+- Unreal macOS development requirements:
+  https://dev.epicgames.com/documentation/unreal-engine/macos-development-requirements-for-unreal-engine
+- Godot Metal backend notes:
+  https://godotengine.org/article/dev-snapshot-godot-4-4-dev-1/
+- Apple WebGPU overview:
+  https://developer.apple.com/videos/play/wwdc2025/236/

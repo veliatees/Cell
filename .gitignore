@@ -1,0 +1,4 @@
+node_modules/
+dist/
+artifacts/screenshots/
+.DS_Store

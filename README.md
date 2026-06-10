@@ -1,0 +1,76 @@
+# Cell
+
+Research-first interactive simulation of biological life from physical foundations:
+atom -> molecule -> membrane -> organelle -> cell -> tissue -> organ.
+
+The project is intentionally multiscale. A single first-principles simulation from
+quantum electrons to a full organ is not computationally realistic on consumer
+hardware, so the system should use layered models that exchange state through
+well-defined inputs and outputs.
+
+## First Target
+
+Build an interactive 3D environment that shows the real-time formation and
+interaction of two oppositely charged ions, with electron probability present in
+the model even when hidden visually.
+
+## Run The Prototype
+
+```bash
+npm install
+npm run dev
+```
+
+Then open the local URL printed by Vite. The prototype now spans milestones 001
+and 002: an N-ion electrostatic engine with selectable scenes (Na+/Cl- gas-phase
+bond, Na+/K+ repulsion, and a 6-ion NaCl cluster), per-ion force vectors,
+electron-probability visibility, total-energy and energy-drift readouts, and
+temperature/damping/solvent controls with scroll-to-zoom.
+
+The Na–Cl model is source-backed, not tuned: ion masses, ionic radii, the
+Coulomb constant, and the short-range Pauli repulsion all come from published
+measurements, so the simulated bond relaxes to the experimental 0.236 nm bond
+length (verified by test). See [docs/sources.md](docs/sources.md).
+
+## Verify
+
+```bash
+npm test
+npm run build
+```
+
+## First Cell Type
+
+Start with epithelial cells because they naturally expose the questions this
+project cares about:
+
+- inside vs outside
+- apical vs basolateral surfaces
+- transcellular and paracellular transport
+- tight junctions, adherens junctions, desmosomes, and basal lamina
+- nutrients, ions, water, signals, waste, force, and energy exchange
+
+## Documentation Map
+
+- [Project charter](docs/00-project-charter.md)
+- [Research index](docs/01-research-index.md)
+- [Multiscale architecture](docs/02-multiscale-architecture.md)
+- [Platform recommendation](docs/03-platform-recommendation.md)
+- [Atomic foundations](docs/research/physics/atomic-foundations.md)
+- [Epithelial cell starting scope](docs/research/biology/epithelial-cell.md)
+- [Input/output registry](docs/research/biology/input-output-registry.md)
+- [Milestone 001: two-ion formation](docs/milestones/001-two-ion-formation.md)
+- [Milestone 002: many-ion system](docs/milestones/002-many-ion-system.md)
+- [Source ledger](docs/sources.md)
+
+## Project Rule
+
+Every simulated object should eventually have:
+
+- a source-backed description
+- a scale and unit system
+- inputs and outputs
+- relations to existing objects
+- equations or rules of motion when known
+- visual representation and hidden state representation
+- confidence level and assumptions
