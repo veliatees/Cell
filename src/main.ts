@@ -274,6 +274,12 @@ const sharedBondGeometry = new THREE.CylinderGeometry(0.06, 0.06, 1, 16);
 const OXYGEN_COLOR = "#ff5d5d";
 const HYDROGEN_COLOR = "#e9eef8";
 
+// Hydrogen bonds are drawn as dashed lines (donor H ··· acceptor O), created on
+// demand and reused across frames.
+const hbondLines: THREE.Line[] = [];
+// O···H distance (nm) below which a hydrogen bond is drawn.
+const HBOND_MAX_NM = 0.24;
+
 const values = {
   distance: app.querySelector<HTMLElement>("[data-value='distance']"),
   force: app.querySelector<HTMLElement>("[data-value='force']"),
@@ -460,6 +466,66 @@ function clearWaterVisuals() {
     });
   }
   waterVisuals.length = 0;
+
+  for (const line of hbondLines) {
+    root.remove(line);
+    line.geometry.dispose();
+    (line.material as THREE.Material).dispose();
+  }
+  hbondLines.length = 0;
+}
+
+function hbondLine(index: number): THREE.Line {
+  if (hbondLines[index]) {
+    return hbondLines[index];
+  }
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
+    new THREE.LineDashedMaterial({
+      color: "#bcd4ff",
+      dashSize: 0.16,
+      gapSize: 0.12,
+      transparent: true,
+      opacity: 0.85
+    })
+  );
+  root.add(line);
+  hbondLines[index] = line;
+  return line;
+}
+
+/** Draw a dashed line for every donor-H ··· acceptor-O pair within range. */
+function renderHydrogenBonds(sitePositionsNm: Vec3[][]) {
+  let count = 0;
+  for (let donor = 0; donor < sitePositionsNm.length; donor += 1) {
+    for (let acceptor = 0; acceptor < sitePositionsNm.length; acceptor += 1) {
+      if (donor === acceptor) {
+        continue;
+      }
+      const oAcceptor = sitePositionsNm[acceptor][0];
+      for (let h = 1; h <= 2; h += 1) {
+        const hDonor = sitePositionsNm[donor][h];
+        const dNm = Math.hypot(
+          hDonor.x - oAcceptor.x,
+          hDonor.y - oAcceptor.y,
+          hDonor.z - oAcceptor.z
+        );
+        if (dNm <= HBOND_MAX_NM) {
+          const line = hbondLine(count);
+          line.geometry.setFromPoints([
+            toVector(hDonor).multiplyScalar(VISUAL_SCALE),
+            toVector(oAcceptor).multiplyScalar(VISUAL_SCALE)
+          ]);
+          line.computeLineDistances();
+          line.visible = true;
+          count += 1;
+        }
+      }
+    }
+  }
+  for (let i = count; i < hbondLines.length; i += 1) {
+    hbondLines[i].visible = false;
+  }
 }
 
 function buildIonScene(snapshot: SimulationSnapshot) {
@@ -627,6 +693,8 @@ function renderWaterSnapshot(snapshot: WaterSnapshot) {
       orientBond(visual.bonds[h], o, hp);
     }
   });
+
+  renderHydrogenBonds(snapshot.sitePositionsNm);
 
   const ooDistanceNm =
     snapshot.sitePositionsNm.length >= 2
