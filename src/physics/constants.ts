@@ -71,6 +71,20 @@ export const JOUNG_CHEATHAM_SPCE = {
   "chloride-ion": { sigmaNm: 0.483_046, epsilonKjMol: 0.053_492 } // Rmin/2 2.711 Å, ε 0.012785 kcal/mol
 } as const;
 
+// --- Transport / diffusion constants (25 °C) ---
+// Water dynamic viscosity and limiting aqueous ion self-diffusion coefficients.
+// Source: CRC Handbook of Chemistry and Physics (ion D° from limiting molar
+// ionic conductivities via the Nernst–Einstein relation).
+export const WATER_VISCOSITY_PA_S = 8.901e-4; // 0.8901 mPa·s at 25 °C
+export const WATER_SELF_DIFFUSION_M2_S = 2.30e-9;
+export const ION_DIFFUSION_M2_S = {
+  "sodium-ion": 1.334e-9,
+  "chloride-ion": 2.032e-9
+} as const;
+
+// 1 m²/s = 1e18 nm² / 1e15 fs = 1e3 nm²/fs.
+export const M2_S_TO_NM2_FS = 1e3;
+
 export const SOURCE_NOTES = {
   constants: "NIST CODATA 2018 fundamental constants",
   ke2: "k·e² = 1.440 eV·nm (OpenStax University Physics Vol. 3 §9.2)",
@@ -81,5 +95,7 @@ export const SOURCE_NOTES = {
   spceWater:
     "SPC/E rigid water model (Berendsen, Grigera & Straatsma 1987, J. Phys. Chem. 91, 6269)",
   ionWaterLj:
-    "Joung & Cheatham 2008 (J. Phys. Chem. B 112, 9020) ion LJ parameters, SPC/E set; Lorentz–Berthelot mixing"
+    "Joung & Cheatham 2008 (J. Phys. Chem. B 112, 9020) ion LJ parameters, SPC/E set; Lorentz–Berthelot mixing",
+  transport:
+    "Water viscosity 0.890 mPa·s (25 °C); aqueous ion D° Na+ 1.334e-9, Cl- 2.032e-9 m²/s (CRC Handbook)"
 } as const;

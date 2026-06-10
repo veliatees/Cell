@@ -36,6 +36,13 @@ import {
   type SolvationSnapshot,
   type SolvationSystem
 } from "./physics/solvation";
+import {
+  DIFFUSION_SCENES,
+  diffusionSystemFromPreset,
+  type DiffusionScenePreset,
+  type DiffusionSnapshot,
+  type DiffusionSystem
+} from "./physics/diffusion";
 import "./styles.css";
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -51,11 +58,14 @@ const sceneOptions =
   WATER_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
   `</optgroup><optgroup label="Solvation">` +
   SOLVATION_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
+  `</optgroup><optgroup label="Diffusion">` +
+  DIFFUSION_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
   `</optgroup>`;
 
-type Mode = "ions" | "water" | "solvation";
+type Mode = "ions" | "water" | "solvation" | "diffusion";
 const isWaterId = (id: string) => WATER_SCENES.some((p) => p.id === id);
 const isSolvationId = (id: string) => SOLVATION_SCENES.some((p) => p.id === id);
+const isDiffusionId = (id: string) => DIFFUSION_SCENES.some((p) => p.id === id);
 
 app.innerHTML = `
   <section class="sim-shell" aria-label="Ion formation simulator">
@@ -222,7 +232,9 @@ const viewportElement = viewport;
 const simulation = new IonSimulation();
 let water: WaterSystem | null = null;
 let solvation: SolvationSystem | null = null;
+let diffusion: DiffusionSystem | null = null;
 let mode: Mode = "ions";
+const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
 let running = true;
 let showClouds = true;
 let showVectors = true;
@@ -286,6 +298,9 @@ const waterVisuals: WaterVisual[] = [];
 type SolvIonVisual = { shell: THREE.Mesh; cloud: THREE.Mesh };
 const solvIonVisuals: SolvIonVisual[] = [];
 
+// Diffusion mode draws many particles as a single efficient point cloud.
+let diffusionPoints: THREE.Points | null = null;
+
 const sharedBondGeometry = new THREE.CylinderGeometry(0.06, 0.06, 1, 16);
 const OXYGEN_COLOR = "#ff5d5d";
 const HYDROGEN_COLOR = "#e9eef8";
@@ -320,7 +335,10 @@ app.querySelector<HTMLButtonElement>("[data-action='play']")?.addEventListener("
 app.querySelector<HTMLButtonElement>("[data-action='step']")?.addEventListener("click", () => {
   running = false;
   updatePlayIcon();
-  if (mode === "solvation" && solvation) {
+  if (mode === "diffusion" && diffusion) {
+    diffusion.step(18);
+    renderDiffusionSnapshot(diffusion.snapshot());
+  } else if (mode === "solvation" && solvation) {
     solvation.step(18);
     renderSolvationSnapshot(solvation.snapshot());
   } else if (mode === "water" && water) {
@@ -373,10 +391,19 @@ bindRange("damping", (value) => {
 bindRange("temperature", (value) => (simulation.settings.temperatureK = value));
 
 function loadScene(id: string) {
-  if (isSolvationId(id)) {
+  if (isDiffusionId(id)) {
+    const preset = DIFFUSION_SCENES.find((p) => p.id === id) as DiffusionScenePreset;
+    mode = "diffusion";
+    water = null;
+    solvation = null;
+    diffusion = diffusionSystemFromPreset(preset);
+    buildDiffusionScene(diffusion.snapshot(), preset);
+    cameraDistance = 11;
+  } else if (isSolvationId(id)) {
     const preset = SOLVATION_SCENES.find((p) => p.id === id) as SolvationScenePreset;
     mode = "solvation";
     water = null;
+    diffusion = null;
     solvation = solvationSystemFromPreset(preset);
     const snapshot = solvation.snapshot();
     baselineEnergyEv = snapshot.totalEnergyEv;
@@ -386,6 +413,7 @@ function loadScene(id: string) {
     const preset = WATER_SCENES.find((p) => p.id === id) as WaterScenePreset;
     mode = "water";
     solvation = null;
+    diffusion = null;
     water = waterSystemFromPreset(preset);
     const snapshot = water.snapshot();
     baselineEnergyEv = snapshot.totalEnergyEv;
@@ -396,6 +424,7 @@ function loadScene(id: string) {
     mode = "ions";
     water = null;
     solvation = null;
+    diffusion = null;
     simulation.setPreset(preset);
     const snapshot = simulation.snapshot();
     baselineEnergyEv = snapshot.totalEnergyEv;
@@ -468,7 +497,12 @@ function animate() {
   lastFrame = now;
   const iterations = Math.max(1, Math.round(delta / 3.2));
 
-  if (mode === "solvation" && solvation) {
+  if (mode === "diffusion" && diffusion) {
+    if (running) {
+      diffusion.step(iterations);
+    }
+    renderDiffusionSnapshot(diffusion.snapshot());
+  } else if (mode === "solvation" && solvation) {
     if (running) {
       solvation.step(iterations * 2);
     }
@@ -522,6 +556,13 @@ function clearWaterVisuals() {
     (v.cloud.material as THREE.Material).dispose();
   }
   solvIonVisuals.length = 0;
+
+  if (diffusionPoints) {
+    root.remove(diffusionPoints);
+    diffusionPoints.geometry.dispose();
+    (diffusionPoints.material as THREE.Material).dispose();
+    diffusionPoints = null;
+  }
 }
 
 function hbondLine(index: number): THREE.Line {
@@ -844,6 +885,72 @@ function renderSolvationSnapshot(snapshot: SolvationSnapshot) {
   setText(values.kinetic, `${snapshot.kineticEnergyEv.toFixed(3)} eV`);
   setText(values.total, `${snapshot.totalEnergyEv.toFixed(3)} eV`);
   renderDrift(snapshot.totalEnergyEv);
+  setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
+
+  renderer.render(scene, camera);
+}
+
+function buildDiffusionScene(snapshot: DiffusionSnapshot, preset: DiffusionScenePreset) {
+  clearIonVisuals();
+  clearWaterVisuals();
+
+  const n = snapshot.particles.length;
+  const positions = new Float32Array(n * 3);
+  const colors = new Float32Array(n * 3);
+  const tmp = new THREE.Color();
+  snapshot.particles.forEach((p, i) => {
+    positions[i * 3] = p.posNm.x * DIFFUSION_SCALE;
+    positions[i * 3 + 1] = p.posNm.y * DIFFUSION_SCALE;
+    positions[i * 3 + 2] = p.posNm.z * DIFFUSION_SCALE;
+    tmp.set(p.color);
+    colors[i * 3] = tmp.r;
+    colors[i * 3 + 1] = tmp.g;
+    colors[i * 3 + 2] = tmp.b;
+  });
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  const material = new THREE.PointsMaterial({
+    size: 0.32,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.9,
+    sizeAttenuation: true
+  });
+  diffusionPoints = new THREE.Points(geometry, material);
+  root.add(diffusionPoints);
+
+  if (sceneNote) {
+    sceneNote.textContent = preset.description;
+  }
+  if (compositionEl && netChargeEl) {
+    compositionEl.innerHTML = `<span class="chip">${n} particles</span>`;
+    netChargeEl.innerHTML = `<span class="chip chip--muted">⟨r²⟩ = 6·D·t</span>`;
+  }
+}
+
+function renderDiffusionSnapshot(snapshot: DiffusionSnapshot) {
+  if (diffusionPoints) {
+    const attr = diffusionPoints.geometry.getAttribute("position") as THREE.BufferAttribute;
+    const arr = attr.array as Float32Array;
+    snapshot.particles.forEach((p, i) => {
+      arr[i * 3] = p.posNm.x * DIFFUSION_SCALE;
+      arr[i * 3 + 1] = p.posNm.y * DIFFUSION_SCALE;
+      arr[i * 3 + 2] = p.posNm.z * DIFFUSION_SCALE;
+    });
+    attr.needsUpdate = true;
+  }
+
+  setText(values.distance, `${snapshot.rmsNm.toFixed(3)} nm`);
+  setText(values.force, "—");
+  setText(values.potential, "—");
+  setText(values.kinetic, "—");
+  setText(values.total, `${snapshot.msdNm2.toFixed(3)} nm²`);
+  if (values.drift) {
+    values.drift.textContent = "—";
+    values.drift.style.color = "";
+  }
   setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
 
   renderer.render(scene, camera);
