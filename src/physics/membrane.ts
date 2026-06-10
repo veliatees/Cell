@@ -233,7 +233,34 @@ export class MembraneSystem {
         z: c * b.vel.z + noiseScale * this.gaussian()
       };
     }
+    this.wrapPeriodic();
     this.elapsedTau += dt;
+  }
+
+  /**
+   * Fold coordinates back into the periodic x,y box so they stay bounded (raw
+   * unwrapped coordinates grow without limit as particles diffuse). Whole lipids
+   * are shifted together — keyed on the head bead — so intramolecular bonds are
+   * never split across the boundary; solutes wrap individually. z is untouched.
+   */
+  private wrapPeriodic() {
+    for (const [h] of this.lipids) {
+      const head = this.beads[h];
+      const sx = this.lx * Math.round(head.pos.x / this.lx);
+      const sy = this.ly * Math.round(head.pos.y / this.ly);
+      if (sx !== 0 || sy !== 0) {
+        for (let k = 0; k < 3; k += 1) {
+          this.beads[h + k].pos.x -= sx;
+          this.beads[h + k].pos.y -= sy;
+        }
+      }
+    }
+    for (const b of this.beads) {
+      if (b.kind === "solute") {
+        b.pos.x -= this.lx * Math.round(b.pos.x / this.lx);
+        b.pos.y -= this.ly * Math.round(b.pos.y / this.ly);
+      }
+    }
   }
 
   private computeForces(): Vec3[] {
