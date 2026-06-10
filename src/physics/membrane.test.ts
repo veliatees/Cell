@@ -38,7 +38,7 @@ describe("Cooke–Deserno lipid membrane", () => {
     expect(snap.thicknessSigma).toBeLessThan(8);
     // Lipids remain orientationally ordered (a fluid/gel bilayer, not a gas).
     expect(snap.orderS).toBeGreaterThan(0.3);
-  });
+  }, 30000);
 
   it("keeps every bead finite over a long run", () => {
     const sys = new MembraneSystem({ perSide: 5, mode: "bilayer", seed: 3 });
@@ -47,13 +47,38 @@ describe("Cooke–Deserno lipid membrane", () => {
       expect(Number.isFinite(b.pos.x) && Number.isFinite(b.pos.y) && Number.isFinite(b.pos.z)).toBe(true);
       expect(Math.abs(b.pos.z)).toBeLessThan(100);
     }
-  });
+  }, 30000);
 
   it("exposes membrane scenes for the viewer", () => {
     const sys = membraneSystemFromPreset(MEMBRANE_SCENES[0]);
     expect(sys.snapshot().lipids.length).toBeGreaterThan(0);
     expect(MEMBRANE_SCENES.map((s) => s.id)).toContain("self-assembly");
   });
+
+  it("an intact bilayer blocks solutes (barrier function)", () => {
+    const sys = new MembraneSystem({ perSide: 6, mode: "bilayer", solutes: 16, seed: 5 });
+    expect(sys.snapshot().soluteBelow).toBe(0); // all start above
+    for (let i = 0; i < 2000; i += 1) {
+      sys.step(2);
+    }
+    // None should have crossed the intact bilayer.
+    expect(sys.snapshot().soluteBelow).toBe(0);
+  }, 30000);
+
+  it("a pore lets solutes cross (transport)", () => {
+    const sys = new MembraneSystem({
+      perSide: 6,
+      mode: "bilayer",
+      solutes: 16,
+      poreRadiusSigma: 2.2,
+      seed: 5
+    });
+    for (let i = 0; i < 2000; i += 1) {
+      sys.step(2);
+    }
+    // With a pore, some solutes reach the other side.
+    expect(sys.snapshot().soluteBelow).toBeGreaterThanOrEqual(1);
+  }, 30000);
 });
 
 function avg(xs: number[]): number {

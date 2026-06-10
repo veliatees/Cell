@@ -23,7 +23,7 @@
 // ---------------------------------------------------------------------------
 
 export type Vec3 = { x: number; y: number; z: number };
-export type BeadKind = "head" | "tail";
+export type BeadKind = "head" | "tail" | "solute";
 
 export type Bead = { kind: BeadKind; lipid: number; pos: Vec3; vel: Vec3 };
 
@@ -36,6 +36,9 @@ export type MembraneSnapshot = {
   orderS: number;
   /** Bilayer thickness estimate (σ): head–head peak separation across leaflets. */
   thicknessSigma: number;
+  /** Solute counts above (z>0) and below (z<0) the bilayer midplane. */
+  soluteAbove: number;
+  soluteBelow: number;
   elapsedTau: number;
 };
 
@@ -65,7 +68,13 @@ export type MembraneConfig = {
   mode?: "bilayer" | "gas";
   boxSigma?: number; // box size for the gas mode
   seed?: number;
+  /** Number of solute particles placed above the membrane (transport scenes). */
+  solutes?: number;
+  /** Cut a circular pore of this radius (σ) through the bilayer centre. */
+  poreRadiusSigma?: number;
 };
+
+const B_SOLUTE = 1.0 * SIGMA; // solute WCA diameter (with lipids and each other)
 
 export class MembraneSystem {
   private beads: Bead[];
@@ -100,7 +109,10 @@ export class MembraneSystem {
       const spacing = config.spacingSigma ?? 1.25;
       this.lx = perSide * spacing;
       this.ly = perSide * spacing;
-      this.buildBilayer(perSide, spacing);
+      this.buildBilayer(perSide, spacing, config.poreRadiusSigma ?? 0);
+    }
+    if (config.solutes) {
+      this.buildSolutes(config.solutes);
     }
     this.thermalizeVelocities();
   }
@@ -127,6 +139,8 @@ export class MembraneSystem {
       potentialEnergy: this.potentialEnergy(),
       orderS: this.orderParameter(),
       thicknessSigma: this.thickness(),
+      soluteAbove: this.beads.filter((b) => b.kind === "solute" && b.pos.z > 0).length,
+      soluteBelow: this.beads.filter((b) => b.kind === "solute" && b.pos.z < 0).length,
       elapsedTau: this.elapsedTau
     };
   }
@@ -143,18 +157,34 @@ export class MembraneSystem {
     this.lipids.push([base, base + 1, base + 2]);
   }
 
-  private buildBilayer(perSide: number, spacing: number) {
+  private buildBilayer(perSide: number, spacing: number, poreRadius: number) {
     const offset = ((perSide - 1) * spacing) / 2;
     const headZ = 2.6; // outer head height; tails reach toward the midplane (z≈0)
     for (let i = 0; i < perSide; i += 1) {
       for (let j = 0; j < perSide; j += 1) {
         const x = i * spacing - offset;
         const y = j * spacing - offset;
+        if (poreRadius > 0 && Math.hypot(x, y) < poreRadius) {
+          continue; // leave a hole through the bilayer
+        }
         // upper leaflet: head up (+z), tails pointing down toward midplane
         this.addLipid({ x, y, z: headZ }, { x: 0, y: 0, z: -1 });
         // lower leaflet: head down (−z), tails pointing up toward midplane
         this.addLipid({ x, y, z: -headZ }, { x: 0, y: 0, z: 1 });
       }
+    }
+  }
+
+  private buildSolutes(count: number) {
+    // Spread solutes on a grid well above the bilayer; they diffuse down onto it.
+    const cols = Math.ceil(Math.sqrt(count));
+    for (let n = 0; n < count; n += 1) {
+      const i = n % cols;
+      const j = Math.floor(n / cols);
+      const x = (i / Math.max(cols - 1, 1) - 0.5) * this.lx * 0.8;
+      const y = (j / Math.max(cols - 1, 1) - 0.5) * this.ly * 0.8;
+      const z = 4.5 + (n % 3) * 0.8; // start above the membrane (z > 0)
+      this.beads.push({ kind: "solute", lipid: -1 - n, pos: { x, y, z }, vel: zero() });
     }
   }
 
@@ -218,8 +248,9 @@ export class MembraneSystem {
         }
         const d = this.minImage(vsub(this.beads[i].pos, this.beads[j].pos));
         const r = Math.max(vlen(d), 1e-6);
+        const involvesSolute = this.beads[i].kind === "solute" || this.beads[j].kind === "solute";
         const bothTail = this.beads[i].kind === "tail" && this.beads[j].kind === "tail";
-        const b = bothTail ? B_TAIL : B_HEAD;
+        const b = involvesSolute ? B_SOLUTE : bothTail ? B_TAIL : B_HEAD;
 
         let fOverR = wcaForceOverR(r, b);
         if (bothTail) {
@@ -274,8 +305,9 @@ export class MembraneSystem {
           continue;
         }
         const r = Math.max(vlen(this.minImage(vsub(this.beads[i].pos, this.beads[j].pos))), 1e-6);
+        const involvesSolute = this.beads[i].kind === "solute" || this.beads[j].kind === "solute";
         const bothTail = this.beads[i].kind === "tail" && this.beads[j].kind === "tail";
-        e += wcaEnergy(r, bothTail ? B_TAIL : B_HEAD);
+        e += wcaEnergy(r, involvesSolute ? B_SOLUTE : bothTail ? B_TAIL : B_HEAD);
         if (bothTail) {
           e += this.attractionEnergy(r);
         }
@@ -395,6 +427,20 @@ export const MEMBRANE_SCENES: MembraneScenePreset[] = [
     description:
       "Lipids released as a random gas spontaneously cluster, tails-together, into a bilayer — no solvent needed.",
     config: { perSide: 7, mode: "gas", boxSigma: 13 }
+  },
+  {
+    id: "membrane-barrier",
+    label: "Barrier (intact bilayer)",
+    description:
+      "Solute particles (green) sit above an intact bilayer and cannot get through — the membrane's barrier function. Watch the above/below counts stay put.",
+    config: { perSide: 8, mode: "bilayer", solutes: 24 }
+  },
+  {
+    id: "membrane-pore",
+    label: "Transport through a pore",
+    description:
+      "The same solutes, but the bilayer has a central pore — now they diffuse across to the other side. Transport through a channel.",
+    config: { perSide: 8, mode: "bilayer", solutes: 24, poreRadiusSigma: 2.2 }
   }
 ];
 
