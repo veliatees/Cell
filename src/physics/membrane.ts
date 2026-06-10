@@ -68,8 +68,10 @@ export type MembraneConfig = {
   mode?: "bilayer" | "gas";
   boxSigma?: number; // box size for the gas mode
   seed?: number;
-  /** Number of solute particles placed above the membrane (transport scenes). */
+  /** Number of solute particles placed above (outside) the membrane. */
   solutes?: number;
+  /** Number of solute particles placed below (inside) the membrane. */
+  solutesInside?: number;
   /** Cut a circular pore of this radius (σ) through the bilayer centre. */
   poreRadiusSigma?: number;
 };
@@ -112,7 +114,10 @@ export class MembraneSystem {
       this.buildBilayer(perSide, spacing, config.poreRadiusSigma ?? 0);
     }
     if (config.solutes) {
-      this.buildSolutes(config.solutes);
+      this.buildSolutes(config.solutes, 4.5); // outside (above)
+    }
+    if (config.solutesInside) {
+      this.buildSolutes(config.solutesInside, -4.5); // inside (below)
     }
     this.thermalizeVelocities();
   }
@@ -175,16 +180,18 @@ export class MembraneSystem {
     }
   }
 
-  private buildSolutes(count: number) {
-    // Spread solutes on a grid well above the bilayer; they diffuse down onto it.
+  private buildSolutes(count: number, baseZ: number) {
+    // Spread solutes on a grid on one side of the bilayer (baseZ sign = side).
     const cols = Math.ceil(Math.sqrt(count));
+    const sign = Math.sign(baseZ) || 1;
+    const tag = this.beads.length; // unique negative lipid ids for every solute
     for (let n = 0; n < count; n += 1) {
       const i = n % cols;
       const j = Math.floor(n / cols);
       const x = (i / Math.max(cols - 1, 1) - 0.5) * this.lx * 0.8;
       const y = (j / Math.max(cols - 1, 1) - 0.5) * this.ly * 0.8;
-      const z = 4.5 + (n % 3) * 0.8; // start above the membrane (z > 0)
-      this.beads.push({ kind: "solute", lipid: -1 - n, pos: { x, y, z }, vel: zero() });
+      const z = baseZ + sign * (n % 3) * 0.8;
+      this.beads.push({ kind: "solute", lipid: -1 - tag - n, pos: { x, y, z }, vel: zero() });
     }
   }
 
@@ -441,6 +448,13 @@ export type MembraneScenePreset = {
 };
 
 export const MEMBRANE_SCENES: MembraneScenePreset[] = [
+  {
+    id: "cell-reality",
+    label: "Cell — one reality",
+    description:
+      "A single living slice of a cell: a lipid membrane separates an inside from an outside, with particles populating both compartments. One world, one clock — coarse-grained at the cell scale, but every rule is grounded in the atomic/chemical physics from the earlier milestones.",
+    config: { perSide: 9, mode: "bilayer", solutes: 22, solutesInside: 14 }
+  },
   {
     id: "bilayer-patch",
     label: "Lipid bilayer patch",

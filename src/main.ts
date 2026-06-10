@@ -58,18 +58,22 @@ if (!app) {
   throw new Error("App root was not found.");
 }
 
+const opt = (p: { id: string; label: string }) => `<option value="${p.id}">${p.label}</option>`;
+// The unified cell reality comes first; the rest are the building blocks /
+// "zoom-ins" that show the rules underneath it.
 const sceneOptions =
-  `<optgroup label="Ions">` +
-  SCENE_PRESETS.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
-  `</optgroup><optgroup label="Water">` +
-  WATER_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
-  `</optgroup><optgroup label="Solvation">` +
-  SOLVATION_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
-  `</optgroup><optgroup label="Diffusion">` +
-  DIFFUSION_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
-  `</optgroup><optgroup label="Membrane">` +
-  MEMBRANE_SCENES.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("") +
+  `<optgroup label="The cell">` +
+  MEMBRANE_SCENES.map(opt).join("") +
+  `</optgroup><optgroup label="Building blocks · ions">` +
+  SCENE_PRESETS.map(opt).join("") +
+  `</optgroup><optgroup label="Building blocks · water">` +
+  WATER_SCENES.map(opt).join("") +
+  `</optgroup><optgroup label="Building blocks · solvation">` +
+  SOLVATION_SCENES.map(opt).join("") +
+  `</optgroup><optgroup label="Building blocks · diffusion">` +
+  DIFFUSION_SCENES.map(opt).join("") +
   `</optgroup>`;
+const DEFAULT_SCENE_ID = "cell-reality";
 
 type Mode = "ions" | "water" | "solvation" | "diffusion" | "membrane";
 const isWaterId = (id: string) => WATER_SCENES.some((p) => p.id === id);
@@ -350,7 +354,11 @@ const sceneNote = app.querySelector<HTMLElement>("[data-role='scene-note']");
 const compositionEl = app.querySelector<HTMLElement>("[data-role='composition']");
 const netChargeEl = app.querySelector<HTMLElement>("[data-role='net-charge']");
 
-buildIonScene(simulation.snapshot());
+const sceneSelectEl = app.querySelector<HTMLSelectElement>("[data-control='scene']");
+if (sceneSelectEl) {
+  sceneSelectEl.value = DEFAULT_SCENE_ID;
+}
+loadScene(DEFAULT_SCENE_ID);
 
 app.querySelector<HTMLButtonElement>("[data-action='play']")?.addEventListener("click", () => {
   running = !running;
