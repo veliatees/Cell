@@ -55,21 +55,19 @@ describe("Cooke–Deserno lipid membrane", () => {
     expect(MEMBRANE_SCENES.map((s) => s.id)).toContain("self-assembly");
   });
 
-  it("opens the one-reality scene as a light, validated inside/outside membrane world", () => {
+  it("opens the one-reality scene as a closed vesicle of a performant size", () => {
     const preset = MEMBRANE_SCENES.find((s) => s.id === "cell-reality");
     if (!preset) {
       throw new Error("missing cell-reality scene");
     }
+    expect(preset.config.mode).toBe("vesicle");
     const sys = membraneSystemFromPreset(preset);
     const snap = sys.snapshot();
 
-    expect(snap.beads.length).toBeLessThan(320);
     expect(snap.lipids.length).toBeGreaterThan(0);
-    expect(snap.soluteAbove).toBeGreaterThan(0);
-    expect(snap.soluteBelow).toBeGreaterThan(0);
-    expect(snap.thicknessSigma).toBeGreaterThan(4);
-    expect(snap.thicknessSigma).toBeLessThan(7);
-    expect(snap.orderS).toBeGreaterThan(0.9);
+    // Small enough to run at one step/frame without lag.
+    expect(snap.beads.length).toBeLessThan(1000);
+    expect(snap.beads.some((b) => b.kind === "solute")).toBe(true);
     expect(Number.isFinite(snap.potentialEnergy)).toBe(true);
   });
 
@@ -95,6 +93,25 @@ describe("Cooke–Deserno lipid membrane", () => {
       expect(Number.isFinite(b.pos.x) && Number.isFinite(b.pos.y) && Number.isFinite(b.pos.z)).toBe(true);
     }
   });
+
+  it("forms a stable closed vesicle (a recognizable cell) that traps its contents", () => {
+    const sys = new MembraneSystem({ mode: "vesicle", vesicleRadiusSigma: 6, solutesInside: 24 });
+    for (let i = 0; i < 600; i += 1) {
+      sys.step(1);
+    }
+    const snap = sys.snapshot();
+    const lipidBeads = snap.beads.filter((b) => b.kind !== "solute");
+    const radii = lipidBeads.map((b) => Math.hypot(b.pos.x, b.pos.y, b.pos.z));
+    // Finite and roughly spherical: all lipid beads sit in a shell, none flew off.
+    expect(radii.every(Number.isFinite)).toBe(true);
+    const meanR = radii.reduce((s, r) => s + r, 0) / radii.length;
+    expect(meanR).toBeGreaterThan(3);
+    expect(Math.max(...radii)).toBeLessThan(meanR + 6); // no escaped lipids
+    // Most solutes stay enclosed inside the bag.
+    const solutes = snap.beads.filter((b) => b.kind === "solute");
+    const inside = solutes.filter((b) => Math.hypot(b.pos.x, b.pos.y, b.pos.z) < meanR).length;
+    expect(inside).toBeGreaterThan(solutes.length * 0.6);
+  }, 30000);
 
   it("an intact bilayer blocks solutes (barrier function)", () => {
     const sys = new MembraneSystem({ perSide: 6, mode: "bilayer", solutes: 16, seed: 5 });

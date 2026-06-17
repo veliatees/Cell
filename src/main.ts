@@ -248,6 +248,7 @@ let water: WaterSystem | null = null;
 let solvation: SolvationSystem | null = null;
 let diffusion: DiffusionSystem | null = null;
 let membrane: MembraneSystem | null = null;
+let membraneIsVesicle = false;
 let mode: Mode = "ions";
 const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
 const MEMBRANE_SCALE = 1.6; // membrane positions are in σ (~1 nm); scale for display
@@ -436,7 +437,8 @@ function loadScene(id: string) {
     diffusion = null;
     membrane = membraneSystemFromPreset(preset);
     buildMembraneScene(membrane.snapshot(), preset);
-    cameraDistance = preset.id === "cell-reality" ? 18 : 15;
+    membraneIsVesicle = preset.config.mode === "vesicle";
+    cameraDistance = membraneIsVesicle ? 32 : 15;
   } else if (isDiffusionId(id)) {
     const preset = DIFFUSION_SCENES.find((p) => p.id === id) as DiffusionScenePreset;
     mode = "diffusion";
@@ -1208,7 +1210,7 @@ function resize() {
 
   root.scale.setScalar(isNarrow ? 0.58 : 1);
   root.position.set(0, isNarrow ? 1.45 : 0, 0);
-  const heightFactor = mode === "membrane" ? 0.16 : isNarrow ? 0.36 : 0.33;
+  const heightFactor = mode === "membrane" ? (membraneIsVesicle ? 0.32 : 0.16) : isNarrow ? 0.36 : 0.33;
   camera.position.set(0, cameraDistance * heightFactor, cameraDistance);
   camera.lookAt(0, 0, 0);
   camera.aspect = rect.width / Math.max(rect.height, 1);

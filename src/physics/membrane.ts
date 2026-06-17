@@ -95,6 +95,8 @@ export class MembraneSystem {
   private ly: number;
   /** Flat sheets use x,y periodicity; a vesicle is a free 3D object. */
   private periodic = true;
+  private stepCount = 0;
+  private warmupSteps = 400;
 
   constructor(config: MembraneConfig = {}) {
     this.wc = config.wc ?? 1.6;
@@ -282,13 +284,25 @@ export class MembraneSystem {
 
   private integrateOnce() {
     const dt = this.dt;
+    // Soft start: for the first steps, cap forces so any initial bead overlaps
+    // (unavoidable when tiling lipids on a sphere) relax gently instead of
+    // exploding through the steep WCA wall. Standard MD warm-up; it does not
+    // affect the equilibrium physics that follows.
+    const warming = this.stepCount < this.warmupSteps;
     const forces = this.computeForces();
+    if (warming) {
+      capForces(forces, 80);
+    }
     // B (half kick) + A (drift)
     this.beads.forEach((b, i) => {
       b.vel = vadd(b.vel, vscale(forces[i], 0.5 * dt));
       b.pos = vadd(b.pos, vscale(b.vel, dt));
     });
     const forces2 = this.computeForces();
+    if (warming) {
+      capForces(forces2, 80);
+    }
+    this.stepCount += 1;
     // B (half kick)
     this.beads.forEach((b, i) => {
       b.vel = vadd(b.vel, vscale(forces2[i], 0.5 * dt));
@@ -622,10 +636,10 @@ export type MembraneScenePreset = {
 export const MEMBRANE_SCENES: MembraneScenePreset[] = [
   {
     id: "cell-reality",
-    label: "Cell — one reality",
+    label: "Cell — one reality (vesicle)",
     description:
-      "A single living slice of a cell: a lipid membrane separates an inside from an outside, with particles populating both compartments. One world, one clock — coarse-grained at the cell scale, but every rule is grounded in the atomic/chemical physics from the earlier milestones.",
-    config: { perSide: 6, mode: "bilayer", solutes: 12, solutesInside: 8 }
+      "A whole closed cell: a spherical lipid membrane (vesicle) enclosing an interior, with particles trapped inside. One world, one clock — coarse-grained at the cell scale, but every rule is grounded in the atomic/chemical physics from the earlier milestones.",
+    config: { mode: "vesicle", vesicleRadiusSigma: 6, solutesInside: 30 }
   },
   {
     id: "cell-flat",
@@ -669,6 +683,18 @@ export function membraneSystemFromPreset(preset: MembraneScenePreset): MembraneS
 }
 
 // --- vector helpers ---
+
+function capForces(forces: Vec3[], maxMag: number) {
+  const max2 = maxMag * maxMag;
+  for (let i = 0; i < forces.length; i += 1) {
+    const f = forces[i];
+    const m2 = f.x * f.x + f.y * f.y + f.z * f.z;
+    if (m2 > max2) {
+      const s = maxMag / Math.sqrt(m2);
+      forces[i] = { x: f.x * s, y: f.y * s, z: f.z * s };
+    }
+  }
+}
 
 function zero(): Vec3 {
   return { x: 0, y: 0, z: 0 };
