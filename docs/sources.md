@@ -31,6 +31,10 @@ link back here or to a more specific research file.
     radii: Na+ 0.102 nm, Cl- 0.181 nm, K+ 0.138 nm.
 - IUPAC 2021 standard atomic weights.
   - Source for ion masses (Na 22.9898 u, Cl 35.45 u, K 39.0983 u).
+- Smoluchowski, M. von (1917), Z. Phys. Chem. 92, 129 — diffusion-limited
+  reaction rate.
+  - Source for the reaction–diffusion rate constant k = 4π(D_A+D_B)R used to
+    ground the A + B → C chemistry milestone.
 - Berendsen, H. J. C., Grigera, J. R., & Straatsma, T. P. (1987). "The Missing
   Term in Effective Pair Potentials", J. Phys. Chem. 91, 6269.
   - Source for the SPC/E rigid water model: partial charges, O-H geometry,

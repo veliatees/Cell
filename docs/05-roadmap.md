@@ -48,6 +48,9 @@ first, then continue from "Next up".
   interior and traps its contents; a pore lets it exchange material with the
   outside. Made practical by a neighbor (cell) list (O(N) forces) and a warm-up
   force cap for stable spherical assembly. This is a faithful **minimal cell**.
+- **M009 — Chemistry (reaction–diffusion).** A + B → C: reactants diffuse and
+  react on contact, grounded in the Smoluchowski diffusion-limited rate
+  k = 4π(D_A+D_B)R. Validated for atom conservation and k ∝ R, D. (`reactions.ts`)
 
 3D viewer (`main.ts`) starts in **Cell — one reality (vesicle)**: a closed
 spherical cell at the cell scale, one clock, one physics step per animation frame
@@ -61,20 +64,21 @@ The simulator now reaches a faithful **minimal cell** (a closed, exchanging
 membrane bag). Everything below is genuine open work, not a weekend task — listed
 so the path stays honest.
 
-### M009 — Chemistry in the cell
-- Give solutes species identity and charge; add reaction rules (A + B → C) and a
-  pump (active transport with an ATP cost). The substrate on which signaling — and
-  eventually disease processes like cancer — could be modeled, grounded the same
-  way (rates/affinities from data, never invented).
+### M010 — Chemistry coupled to the cell
+- The standalone reaction–diffusion (M009) now needs to run *inside the vesicle*:
+  reactions among enclosed species, plus a pump (active transport with an ATP
+  cost). The substrate on which signaling — and eventually disease processes like
+  cancer — could be modeled, grounded the same way (rates/affinities from data,
+  never invented).
 
-### M010 — Continuum handoff + fluid mechanics
+### M011 — Continuum handoff + fluid mechanics
 - Replace explicit bulk solvent with continuum concentration **fields**
   (reaction–diffusion) and, where flow matters, **low-Reynolds-number (Stokes)
   flow** — cite Purcell, "Life at Low Reynolds Number". Couple the explicit
   (particle) region to the field region through well-defined flux exchange — the
   core multiscale contract.
 
-### M011 — Growth, division, and beyond
+### M012 — Growth, division, and beyond
 - Vesicle growth, fission; then many cells → tissue (cell agents + ECM +
   continuum fields), then organ. Each is a research programme in itself.
 
@@ -103,6 +107,6 @@ so the path stays honest.
 ## How to resume next session
 
 1. Read this file and the latest milestone doc.
-2. `npm install && npm test` to confirm the suite is green (currently 41 tests).
-3. Pick the next milestone (M009 — chemistry in the cell), research the sourced
-   parameters first, then build + validate + commit.
+2. `npm install && npm test` to confirm the suite is green (currently 46 tests).
+3. Pick the next milestone (M010 — chemistry coupled to the cell), research the
+   sourced parameters first, then build + validate + commit.

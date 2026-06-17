@@ -73,6 +73,7 @@ project cares about:
 - [Milestone 006: lipid membrane](docs/milestones/006-lipid-membrane.md)
 - [Milestone 007: membrane transport](docs/milestones/007-membrane-transport.md)
 - [Milestone 008: the closed cell (vesicle)](docs/milestones/008-closed-cell.md)
+- [Milestone 009: chemistry (reaction–diffusion)](docs/milestones/009-chemistry.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)
