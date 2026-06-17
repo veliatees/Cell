@@ -44,30 +44,39 @@ first, then continue from "Next up".
 - **M007 — Membrane transport.** Generic solutes demonstrate barrier function:
   intact bilayer blocks crossing; a central pore permits crossing. This is
   qualitative transport, not a parameterized protein channel yet.
+- **M008 — The closed cell (vesicle).** A spherical bilayer that encloses an
+  interior and traps its contents; a pore lets it exchange material with the
+  outside. Made practical by a neighbor (cell) list (O(N) forces) and a warm-up
+  force cap for stable spherical assembly. This is a faithful **minimal cell**.
 
-3D viewer (`main.ts`) starts in **Cell — one reality**: one coarse-grained
-membrane world with inside/outside solutes. The ion, water, solvation,
-diffusion, membrane, barrier, and pore scenes remain selectable as source-backed
-zoom-ins. The membrane view uses a light default scene and one physics step per
-animation frame so startup stays visible instead of freezing.
+3D viewer (`main.ts`) starts in **Cell — one reality (vesicle)**: a closed
+spherical cell at the cell scale, one clock, one physics step per animation frame
+(smooth via the neighbor list). The ion, water, solvation, diffusion, membrane,
+barrier, pore, and flat-slice scenes remain selectable as source-backed zoom-ins.
+Readout labels adapt per scene.
 
-## Next up (in order)
+## The honest frontier (what "finished" does NOT include)
 
-### M008 — Continuum handoff + fluid mechanics
-Where fluid mechanics correctly enters.
-- Replace explicit bulk water with a continuum: concentration fields for
-  solutes (reaction–diffusion) and, where flow matters, **low-Reynolds-number
-  (Stokes) flow** — cite Purcell, "Life at Low Reynolds Number". Inertia is
-  negligible at cell scale; viscosity dominates.
-- Couple the molecular region (explicit) to the field region (continuum) through
-  well-defined exchange of flux/concentration — the core multiscale contract.
+The simulator now reaches a faithful **minimal cell** (a closed, exchanging
+membrane bag). Everything below is genuine open work, not a weekend task — listed
+so the path stays honest.
 
-### M009 — Minimal cell
-- A membrane-bounded compartment with internal concentration fields, a few
-  transport proteins, and simple metabolism/signaling ODEs. The first object the
-  project can legitimately call a "cell".
+### M009 — Chemistry in the cell
+- Give solutes species identity and charge; add reaction rules (A + B → C) and a
+  pump (active transport with an ATP cost). The substrate on which signaling — and
+  eventually disease processes like cancer — could be modeled, grounded the same
+  way (rates/affinities from data, never invented).
 
-Later: many cells → tissue (cell agents + ECM + continuum fields), then organ.
+### M010 — Continuum handoff + fluid mechanics
+- Replace explicit bulk solvent with continuum concentration **fields**
+  (reaction–diffusion) and, where flow matters, **low-Reynolds-number (Stokes)
+  flow** — cite Purcell, "Life at Low Reynolds Number". Couple the explicit
+  (particle) region to the field region through well-defined flux exchange — the
+  core multiscale contract.
+
+### M011 — Growth, division, and beyond
+- Vesicle growth, fission; then many cells → tissue (cell agents + ECM +
+  continuum fields), then organ. Each is a research programme in itself.
 
 ## Engineering backlog (do as needed, not blocking)
 
@@ -94,6 +103,6 @@ Later: many cells → tissue (cell agents + ECM + continuum fields), then organ.
 ## How to resume next session
 
 1. Read this file and the latest milestone doc.
-2. `npm install && npm test` to confirm the suite is green (currently 39 tests).
-3. Pick the next milestone (M008 — continuum handoff), research the sourced
+2. `npm install && npm test` to confirm the suite is green (currently 41 tests).
+3. Pick the next milestone (M009 — chemistry in the cell), research the sourced
    parameters first, then build + validate + commit.

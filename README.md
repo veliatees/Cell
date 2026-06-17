@@ -8,11 +8,12 @@ quantum electrons to a full organ is not computationally realistic on consumer
 hardware, so the system should use layered models that exchange state through
 well-defined inputs and outputs.
 
-## First Target
+## What It Is Now
 
-Build an interactive 3D environment that shows the real-time formation and
-interaction of two oppositely charged ions, with electron probability present in
-the model even when hidden visually.
+A source-grounded path from a single atom to a closed, exchanging **cell** —
+atom → ion → bond → water → solvation → diffusion → membrane → transport →
+closed vesicle cell. Every layer is validated against measured or first-principles
+data, and the app opens directly on the cell.
 
 ## Run The Prototype
 
@@ -21,11 +22,13 @@ npm install
 npm run dev
 ```
 
-Then open the local URL printed by Vite. The prototype now spans milestones
-001-007 and starts in **Cell — one reality**: a coarse-grained membrane slice
-with inside/outside solutes, running on one clock. The earlier ion, water,
-solvation, diffusion, membrane, barrier, and pore scenes remain available as
-source-backed zoom-ins on the rules underneath that reality.
+Then open the local URL printed by Vite. The app starts in **Cell — one reality
+(vesicle)**: a closed spherical lipid membrane enclosing particles, running on one
+clock at the cell scale. The earlier ion, water, solvation, diffusion, membrane,
+barrier, pore, and flat-slice scenes remain available as source-backed "zoom-ins"
+on the rules underneath that one reality. The cell scale is coarse-grained but
+**grounded** — its parameters trace down to the atomic/chemical physics (see
+[docs/06-one-reality.md](docs/06-one-reality.md)).
 
 The models are source-backed, not tuned. For Na–Cl, ion masses, ionic radii, the
 Coulomb constant, and the short-range Pauli repulsion all come from published
@@ -69,6 +72,7 @@ project cares about:
 - [Milestone 005: diffusion & Brownian motion](docs/milestones/005-diffusion.md)
 - [Milestone 006: lipid membrane](docs/milestones/006-lipid-membrane.md)
 - [Milestone 007: membrane transport](docs/milestones/007-membrane-transport.md)
+- [Milestone 008: the closed cell (vesicle)](docs/milestones/008-closed-cell.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)
