@@ -64,9 +64,10 @@ export type MembraneConfig = {
   kT?: number; // temperature (ε)
   dt?: number; // timestep (τ)
   gamma?: number; // Langevin friction (1/τ)
-  /** Start as a pre-assembled bilayer (default) or a random gas to self-assemble. */
-  mode?: "bilayer" | "gas";
+  /** Pre-assembled flat bilayer, a random gas, or a closed spherical vesicle. */
+  mode?: "bilayer" | "gas" | "vesicle";
   boxSigma?: number; // box size for the gas mode
+  vesicleRadiusSigma?: number; // mid-membrane radius for vesicle mode
   seed?: number;
   /** Number of solute particles placed above (outside) the membrane. */
   solutes?: number;
@@ -83,6 +84,7 @@ export class MembraneSystem {
   private lipids: [number, number, number][];
   private elapsedTau = 0;
   private seed: number;
+  private geometry: "flat" | "vesicle" = "flat";
 
   wc: number;
   kT: number;
@@ -91,6 +93,8 @@ export class MembraneSystem {
   /** Lateral periodic box (σ) in x and y; z (the membrane normal) is free. */
   private lx: number;
   private ly: number;
+  /** Flat sheets use x,y periodicity; a vesicle is a free 3D object. */
+  private periodic = true;
 
   constructor(config: MembraneConfig = {}) {
     this.wc = config.wc ?? 1.6;
@@ -101,7 +105,16 @@ export class MembraneSystem {
 
     this.beads = [];
     this.lipids = [];
-    if (config.mode === "gas") {
+    if (config.mode === "vesicle") {
+      this.geometry = "vesicle";
+      this.periodic = false; // a vesicle is a free 3D object, not a periodic sheet
+      this.lx = this.ly = 1e6; // unused
+      const radius = config.vesicleRadiusSigma ?? 4;
+      this.buildVesicle(radius);
+      if (config.solutesInside) {
+        this.buildSolutesSphere(config.solutesInside, Math.max(radius - 3.2, 0.8)); // inside the bag
+      }
+    } else if (config.mode === "gas") {
       const box = config.boxSigma ?? 14;
       this.lx = box;
       this.ly = box;
@@ -112,18 +125,21 @@ export class MembraneSystem {
       this.lx = perSide * spacing;
       this.ly = perSide * spacing;
       this.buildBilayer(perSide, spacing, config.poreRadiusSigma ?? 0);
-    }
-    if (config.solutes) {
-      this.buildSolutes(config.solutes, 4.5); // outside (above)
-    }
-    if (config.solutesInside) {
-      this.buildSolutes(config.solutesInside, -4.5); // inside (below)
+      if (config.solutes) {
+        this.buildSolutes(config.solutes, 4.5); // outside (above)
+      }
+      if (config.solutesInside) {
+        this.buildSolutes(config.solutesInside, -4.5); // inside (below)
+      }
     }
     this.thermalizeVelocities();
   }
 
   /** Minimum-image displacement in the periodic x,y plane (z untouched). */
   private minImage(d: Vec3): Vec3 {
+    if (!this.periodic) {
+      return d;
+    }
     return {
       x: d.x - this.lx * Math.round(d.x / this.lx),
       y: d.y - this.ly * Math.round(d.y / this.ly),
@@ -177,6 +193,53 @@ export class MembraneSystem {
         // lower leaflet: head down (−z), tails pointing up toward midplane
         this.addLipid({ x, y, z: -headZ }, { x: 0, y: 0, z: 1 });
       }
+    }
+  }
+
+  /** Lipids tiled on a sphere: two leaflets, heads out/in, tails meeting at radius R. */
+  private buildVesicle(radius: number) {
+    // Match the flat bilayer's relaxed geometry: heads are ~2.6σ from the
+    // midplane and second-tail beads sit at ±0.6σ, avoiding an artificial
+    // overlap of both leaflets at one spherical surface.
+    const headOffset = 2.6;
+    const areaPerLipid = 4.5;
+    const headOuter = radius + headOffset; // outer leaflet heads
+    const headInner = Math.max(radius - headOffset, 1.2); // inner leaflet heads
+    const nOuter = Math.max(12, Math.round((4 * Math.PI * headOuter * headOuter) / areaPerLipid));
+    const nInner = Math.max(6, Math.round((4 * Math.PI * headInner * headInner) / areaPerLipid));
+    this.placeLeaflet(nOuter, headOuter, -1); // outer: axis points inward
+    this.placeLeaflet(nInner, headInner, +1); // inner: axis points outward
+  }
+
+  private placeLeaflet(n: number, headRadius: number, sign: number) {
+    for (let i = 0; i < n; i += 1) {
+      const u = fibonacciPoint(i, n);
+      const headPos = { x: u.x * headRadius, y: u.y * headRadius, z: u.z * headRadius };
+      const axis = { x: u.x * sign, y: u.y * sign, z: u.z * sign }; // unit radial
+      this.addLipid(headPos, axis);
+    }
+  }
+
+  private buildSolutesSphere(count: number, maxR: number) {
+    for (let n = 0; n < count; n += 1) {
+      let pos = zero();
+      for (let attempt = 0; attempt < 400; attempt += 1) {
+        const u = randomUnit(() => this.nextRandom());
+        const r = maxR * Math.cbrt(this.nextRandom()) * 0.92;
+        pos = { x: u.x * r, y: u.y * r, z: u.z * r };
+        const clear = this.beads.every(
+          (b) => b.kind !== "solute" || vlen(vsub(pos, b.pos)) > B_SOLUTE * 1.08
+        );
+        if (clear) {
+          break;
+        }
+      }
+      this.beads.push({
+        kind: "solute",
+        lipid: -1 - this.beads.length - n,
+        pos,
+        vel: zero()
+      });
     }
   }
 
@@ -251,6 +314,9 @@ export class MembraneSystem {
    * never split across the boundary; solutes wrap individually. z is untouched.
    */
   private wrapPeriodic() {
+    if (!this.periodic) {
+      return;
+    }
     for (const [h] of this.lipids) {
       const head = this.beads[h];
       const sx = this.lx * Math.round(head.pos.x / this.lx);
@@ -273,30 +339,10 @@ export class MembraneSystem {
   private computeForces(): Vec3[] {
     const forces: Vec3[] = this.beads.map(() => zero());
 
-    // Non-bonded: all pairs in DIFFERENT lipids (the 3 intramolecular pairs are
-    // handled by FENE/bend springs and excluded here).
-    for (let i = 0; i < this.beads.length; i += 1) {
-      for (let j = i + 1; j < this.beads.length; j += 1) {
-        if (this.beads[i].lipid === this.beads[j].lipid) {
-          continue;
-        }
-        const d = this.minImage(vsub(this.beads[i].pos, this.beads[j].pos));
-        const r = Math.max(vlen(d), 1e-6);
-        const involvesSolute = this.beads[i].kind === "solute" || this.beads[j].kind === "solute";
-        const bothTail = this.beads[i].kind === "tail" && this.beads[j].kind === "tail";
-        const b = involvesSolute ? B_SOLUTE : bothTail ? B_TAIL : B_HEAD;
-
-        let fOverR = wcaForceOverR(r, b);
-        if (bothTail) {
-          fOverR += this.attractionForceOverR(r);
-        }
-        if (fOverR !== 0) {
-          const f = vscale(d, fOverR);
-          forces[i] = vadd(forces[i], f);
-          forces[j] = vsub(forces[j], f);
-        }
-      }
-    }
+    // Non-bonded interactions, accelerated with a cell (neighbor) list so the
+    // cost is O(N) instead of O(N²). The 3 intramolecular pairs per lipid are
+    // excluded (handled by the FENE/bend springs below).
+    this.forEachNonbondedPair((i, j) => this.pairForce(i, j, forces));
 
     // Bonded springs per lipid.
     for (const [h, t1, t2] of this.lipids) {
@@ -305,6 +351,101 @@ export class MembraneSystem {
       this.applyPairForce(forces, h, t2, bendForceOverR);
     }
     return forces;
+  }
+
+  /** WCA (+ tail attraction) force for one non-bonded pair, added into `forces`. */
+  private pairForce(i: number, j: number, forces: Vec3[]) {
+    if (this.beads[i].lipid === this.beads[j].lipid) {
+      return;
+    }
+    const d = this.minImage(vsub(this.beads[i].pos, this.beads[j].pos));
+    const r = Math.max(vlen(d), 1e-6);
+    const involvesSolute = this.beads[i].kind === "solute" || this.beads[j].kind === "solute";
+    const bothTail = this.beads[i].kind === "tail" && this.beads[j].kind === "tail";
+    const b = involvesSolute ? B_SOLUTE : bothTail ? B_TAIL : B_HEAD;
+
+    let fOverR = wcaForceOverR(r, b);
+    if (bothTail) {
+      fOverR += this.attractionForceOverR(r);
+    }
+    if (fOverR !== 0) {
+      const f = vscale(d, fOverR);
+      forces[i] = vadd(forces[i], f);
+      forces[j] = vsub(forces[j], f);
+    }
+  }
+
+  private forEachNonbondedPair(visit: (i: number, j: number) => void) {
+    const n = this.beads.length;
+    const rc = RC_ATTR + this.wc + 0.3; // interaction cutoff + small skin
+
+    // For a small periodic box (fewer than 3 cells per side) the wrapped cell
+    // list would double-count, so fall back to the direct O(N²) loop there.
+    let ncx = 0;
+    let ncy = 0;
+    if (this.periodic) {
+      ncx = Math.floor(this.lx / rc);
+      ncy = Math.floor(this.ly / rc);
+      if (ncx < 3 || ncy < 3) {
+        for (let i = 0; i < n; i += 1) {
+          for (let j = i + 1; j < n; j += 1) {
+            visit(i, j);
+          }
+        }
+        return;
+      }
+    }
+    const csx = this.periodic ? this.lx / ncx : rc;
+    const csy = this.periodic ? this.ly / ncy : rc;
+
+    const cells = new Map<string, number[]>();
+    const coords: Array<[number, number, number]> = new Array(n);
+    for (let i = 0; i < n; i += 1) {
+      const p = this.beads[i].pos;
+      let cx: number;
+      let cy: number;
+      if (this.periodic) {
+        cx = (((Math.floor((p.x + this.lx / 2) / csx) % ncx) + ncx) % ncx) | 0;
+        cy = (((Math.floor((p.y + this.ly / 2) / csy) % ncy) + ncy) % ncy) | 0;
+      } else {
+        cx = Math.floor(p.x / csx);
+        cy = Math.floor(p.y / csy);
+      }
+      const cz = Math.floor(p.z / rc);
+      coords[i] = [cx, cy, cz];
+      const k = `${cx},${cy},${cz}`;
+      const arr = cells.get(k);
+      if (arr) {
+        arr.push(i);
+      } else {
+        cells.set(k, [i]);
+      }
+    }
+
+    for (let i = 0; i < n; i += 1) {
+      const [cx, cy, cz] = coords[i];
+      for (let dx = -1; dx <= 1; dx += 1) {
+        for (let dy = -1; dy <= 1; dy += 1) {
+          for (let dz = -1; dz <= 1; dz += 1) {
+            let nx = cx + dx;
+            let ny = cy + dy;
+            if (this.periodic) {
+              nx = ((nx % ncx) + ncx) % ncx;
+              ny = ((ny % ncy) + ncy) % ncy;
+            }
+            const arr = cells.get(`${nx},${ny},${cz + dz}`);
+            if (!arr) {
+              continue;
+            }
+            for (const j of arr) {
+              if (j > i) {
+                visit(i, j);
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   private applyPairForce(forces: Vec3[], i: number, j: number, forceOverR: (r: number) => number) {
@@ -333,20 +474,18 @@ export class MembraneSystem {
 
   private potentialEnergy(): number {
     let e = 0;
-    for (let i = 0; i < this.beads.length; i += 1) {
-      for (let j = i + 1; j < this.beads.length; j += 1) {
-        if (this.beads[i].lipid === this.beads[j].lipid) {
-          continue;
-        }
-        const r = Math.max(vlen(this.minImage(vsub(this.beads[i].pos, this.beads[j].pos))), 1e-6);
-        const involvesSolute = this.beads[i].kind === "solute" || this.beads[j].kind === "solute";
-        const bothTail = this.beads[i].kind === "tail" && this.beads[j].kind === "tail";
-        e += wcaEnergy(r, involvesSolute ? B_SOLUTE : bothTail ? B_TAIL : B_HEAD);
-        if (bothTail) {
-          e += this.attractionEnergy(r);
-        }
+    this.forEachNonbondedPair((i, j) => {
+      if (this.beads[i].lipid === this.beads[j].lipid) {
+        return;
       }
-    }
+      const r = Math.max(vlen(this.minImage(vsub(this.beads[i].pos, this.beads[j].pos))), 1e-6);
+      const involvesSolute = this.beads[i].kind === "solute" || this.beads[j].kind === "solute";
+      const bothTail = this.beads[i].kind === "tail" && this.beads[j].kind === "tail";
+      e += wcaEnergy(r, involvesSolute ? B_SOLUTE : bothTail ? B_TAIL : B_HEAD);
+      if (bothTail) {
+        e += this.attractionEnergy(r);
+      }
+    });
     for (const [h, t1, t2] of this.lipids) {
       e += feneEnergy(beadDist(this.beads, h, t1));
       e += feneEnergy(beadDist(this.beads, t1, t2));
@@ -367,25 +506,58 @@ export class MembraneSystem {
   }
 
   private orderParameter(): number {
-    // S = ½⟨3 (a·n)² − 1⟩ with n = z axis; a = lipid head→tail2 axis.
+    // S = ½⟨3 (a·n)² − 1⟩; flat membranes use z, vesicles use the local radial normal.
     let sum = 0;
+    const center = this.geometry === "vesicle" ? this.vesicleCenter() : zero();
     for (const [h, , t2] of this.lipids) {
       const a = vsub(this.beads[t2].pos, this.beads[h].pos);
       const len = vlen(a) || 1;
-      const cz = a.z / len;
-      sum += 0.5 * (3 * cz * cz - 1);
+      let cos = a.z / len;
+      if (this.geometry === "vesicle") {
+        const n = vsub(this.beads[h].pos, center);
+        const nLen = vlen(n) || 1;
+        cos = (a.x * n.x + a.y * n.y + a.z * n.z) / (len * nLen);
+      }
+      sum += 0.5 * (3 * cos * cos - 1);
     }
     return sum / Math.max(this.lipids.length, 1);
   }
 
   private thickness(): number {
     const headZ = this.beads.filter((b) => b.kind === "head").map((b) => b.pos.z);
+    if (this.geometry === "vesicle") {
+      const center = this.vesicleCenter();
+      const radii = this.beads.filter((b) => b.kind === "head").map((b) => vlen(vsub(b.pos, center)));
+      if (radii.length < 2) {
+        return 0;
+      }
+      let inner = Math.min(...radii);
+      let outer = Math.max(...radii);
+      for (let i = 0; i < 8; i += 1) {
+        const innerSet = radii.filter((r) => Math.abs(r - inner) <= Math.abs(r - outer));
+        const outerSet = radii.filter((r) => Math.abs(r - outer) < Math.abs(r - inner));
+        inner = mean(innerSet);
+        outer = mean(outerSet);
+      }
+      return outer - inner;
+    }
     const upper = headZ.filter((z) => z > 0);
     const lower = headZ.filter((z) => z < 0);
     if (!upper.length || !lower.length) {
       return 0;
     }
     return mean(upper) - mean(lower);
+  }
+
+  private vesicleCenter(): Vec3 {
+    const heads = this.beads.filter((b) => b.kind === "head");
+    if (!heads.length) {
+      return zero();
+    }
+    return vscale(
+      heads.reduce((sum, bead) => vadd(sum, bead.pos), zero()),
+      1 / heads.length
+    );
   }
 
   // --- seeded RNG ---
@@ -453,7 +625,14 @@ export const MEMBRANE_SCENES: MembraneScenePreset[] = [
     label: "Cell — one reality",
     description:
       "A single living slice of a cell: a lipid membrane separates an inside from an outside, with particles populating both compartments. One world, one clock — coarse-grained at the cell scale, but every rule is grounded in the atomic/chemical physics from the earlier milestones.",
-    config: { perSide: 9, mode: "bilayer", solutes: 22, solutesInside: 14 }
+    config: { perSide: 6, mode: "bilayer", solutes: 12, solutesInside: 8 }
+  },
+  {
+    id: "cell-flat",
+    label: "Membrane boundary (flat slice)",
+    description:
+      "A flat membrane separating an inside from an outside, with particles in both compartments — a cut-through slice of a cell boundary.",
+    config: { perSide: 8, mode: "bilayer", solutes: 18, solutesInside: 10 }
   },
   {
     id: "bilayer-patch",
@@ -517,4 +696,12 @@ function randomUnit(next: () => number): Vec3 {
   const t = 2 * Math.PI * next();
   const r = Math.sqrt(Math.max(0, 1 - z * z));
   return { x: r * Math.cos(t), y: r * Math.sin(t), z };
+}
+
+/** i-th of n evenly distributed points on the unit sphere (Fibonacci spiral). */
+function fibonacciPoint(i: number, n: number): Vec3 {
+  const y = 1 - (2 * (i + 0.5)) / n;
+  const radial = Math.sqrt(Math.max(0, 1 - y * y));
+  const phi = Math.PI * (3 - Math.sqrt(5)) * i;
+  return { x: Math.cos(phi) * radial, y, z: Math.sin(phi) * radial };
 }

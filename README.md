@@ -21,19 +21,19 @@ npm install
 npm run dev
 ```
 
-Then open the local URL printed by Vite. The prototype now spans milestones 001
-and 002: an N-ion electrostatic engine with selectable scenes (Na+/Cl- gas-phase
-bond, Na+/K+ repulsion, and a 6-ion NaCl cluster), per-ion force vectors,
-electron-probability visibility, total-energy and energy-drift readouts, and
-temperature/damping/solvent controls with scroll-to-zoom.
+Then open the local URL printed by Vite. The prototype now spans milestones
+001-007 and starts in **Cell — one reality**: a coarse-grained membrane slice
+with inside/outside solutes, running on one clock. The earlier ion, water,
+solvation, diffusion, membrane, barrier, and pore scenes remain available as
+source-backed zoom-ins on the rules underneath that reality.
 
 The models are source-backed, not tuned. For Na–Cl, ion masses, ionic radii, the
 Coulomb constant, and the short-range Pauli repulsion all come from published
 measurements, so the simulated bond relaxes to the experimental 0.236 nm bond
 length. Water uses the SPC/E model (Berendsen et al. 1987) with a from-scratch
 rigid-body engine; it reproduces the 2.35 D dipole and forms a dimer at the
-correct O–O distance (~0.273 nm). All verified by tests. See
-[docs/sources.md](docs/sources.md).
+correct O–O distance (~0.273 nm). Diffusion, solvation, and membrane transport
+are also covered by tests. See [docs/sources.md](docs/sources.md).
 
 ## Verify
 

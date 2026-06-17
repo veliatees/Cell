@@ -31,6 +31,21 @@ link back here or to a more specific research file.
     radii: Na+ 0.102 nm, Cl- 0.181 nm, K+ 0.138 nm.
 - IUPAC 2021 standard atomic weights.
   - Source for ion masses (Na 22.9898 u, Cl 35.45 u, K 39.0983 u).
+- Berendsen, H. J. C., Grigera, J. R., & Straatsma, T. P. (1987). "The Missing
+  Term in Effective Pair Potentials", J. Phys. Chem. 91, 6269.
+  - Source for the SPC/E rigid water model: partial charges, O-H geometry,
+    oxygen Lennard-Jones parameters, and model dipole.
+- Joung, I. S., & Cheatham, T. E. (2008). "Determination of Alkali and Halide
+  Monovalent Ion Parameters for Use in Explicitly Solvated Biomolecular
+  Simulations", J. Phys. Chem. B 112, 9020.
+  - Source for Na+ and Cl- Lennard-Jones parameters compatible with SPC/E water.
+- CRC Handbook of Chemistry and Physics.
+  - Source for water viscosity and limiting aqueous self-diffusion coefficients
+    used in the Brownian diffusion scenes.
+- Cooke, I. R., Kremer, K., & Deserno, M. (2005). "Efficient tunable generic
+  model for fluid bilayer membranes", Phys. Rev. E 72, 011506.
+  - Source for the 3-bead solvent-free lipid membrane model, including WCA,
+    FENE, bending, tail-attraction, and Langevin reduced-unit parameters.
 
 ## Cell Biology
 

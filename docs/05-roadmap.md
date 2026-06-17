@@ -34,34 +34,24 @@ first, then continue from "Next up".
 - **M004 — Solvation.** Unified ion+water engine, Coulomb + Lennard-Jones
   (Lorentz–Berthelot), Joung–Cheatham ion parameters. Na+ hydration shell forms
   at Na–O ≈ 0.235 nm. (`solvation.ts`)
+- **M005 — Diffusion & Brownian motion.** Overdamped Brownian dynamics with
+  sourced water/ion diffusion constants, MSD validation, and point-cloud scenes.
+  (`diffusion.ts`)
+- **M006 — Lipid membrane patch.** Cooke–Deserno solvent-free lipid model with
+  FENE bonds, bending, WCA repulsion, tail attraction, Langevin thermostat, and
+  periodic boundaries. Bilayer cohesion and finite long runs are tested.
+  (`membrane.ts`)
+- **M007 — Membrane transport.** Generic solutes demonstrate barrier function:
+  intact bilayer blocks crossing; a central pore permits crossing. This is
+  qualitative transport, not a parameterized protein channel yet.
 
-3D viewer (`main.ts`) shows all of the above as selectable scenes (Ions / Water /
-Solvation groups), with energy/drift readouts, dashed hydrogen bonds, and
-scroll-to-zoom.
+3D viewer (`main.ts`) starts in **Cell — one reality**: one coarse-grained
+membrane world with inside/outside solutes. The ion, water, solvation,
+diffusion, membrane, barrier, and pore scenes remain selectable as source-backed
+zoom-ins. The membrane view uses a light default scene and one physics step per
+animation frame so startup stays visible instead of freezing.
 
 ## Next up (in order)
-
-### M005 — Diffusion & Brownian motion
-The simplest, physically-correct step toward larger scales and transport.
-- Add Brownian/Langevin dynamics for a particle in implicit solvent (random
-  thermal force + viscous drag). Source the water viscosity (≈0.89 mPa·s at
-  25 °C) and use the Einstein relation `D = kT / (6πηr)` (Stokes–Einstein).
-- Validate: measured mean-squared-displacement gives back the input diffusion
-  coefficient; D for Na+/Cl- matches literature (~1.3 / 2.0 ×10⁻⁹ m²/s).
-- This is also the gateway concept for the particle→field handoff.
-
-### M006 — Lipid membrane patch
-The first mesoscale structure and the project's first "inside vs outside".
-- Use a sourced coarse-grained lipid model (e.g. a simple 3–4 bead amphiphile;
-  consider Martini parameters or Cooke–Deserno implicit-solvent lipids).
-- Validate: lipids self-assemble into a bilayer; measured area-per-lipid and
-  bilayer thickness land in the experimental range (~0.6 nm²/lipid, ~4 nm thick).
-
-### M007 — Membrane transport
-First biological *function*.
-- Add a pore/channel through the bilayer; show selective ion permeation and a
-  concentration gradient across the membrane.
-- Introduce a pump (active transport) as a rule-based event with an ATP cost.
 
 ### M008 — Continuum handoff + fluid mechanics
 Where fluid mechanics correctly enters.
@@ -81,9 +71,9 @@ Later: many cells → tissue (cell agents + ECM + continuum fields), then organ.
 
 ## Engineering backlog (do as needed, not blocking)
 
-- **Performance & scale**: spatial partitioning (cell lists / neighbor lists)
-  before particle counts grow; consider WebGPU compute (see
-  `docs/03-platform-recommendation.md`).
+- **Performance & scale**: membrane non-bonded force/energy now uses a spatial
+  neighbor list; extend that pattern to future particle/field coupling and
+  consider WebGPU compute (see `docs/03-platform-recommendation.md`).
 - **Periodic boundaries + long-range electrostatics** (Ewald/PME) before
   claiming "bulk" water or real coordination numbers.
 - **Unify the three engines** (`ions`, `water`, `solvation`) into one
@@ -104,6 +94,6 @@ Later: many cells → tissue (cell agents + ECM + continuum fields), then organ.
 ## How to resume next session
 
 1. Read this file and the latest milestone doc.
-2. `npm install && npm test` to confirm the suite is green (currently 24 tests).
-3. Pick the next milestone (M005 — diffusion), research the sourced parameters
-   first, then build + validate + commit.
+2. `npm install && npm test` to confirm the suite is green (currently 39 tests).
+3. Pick the next milestone (M008 — continuum handoff), research the sourced
+   parameters first, then build + validate + commit.

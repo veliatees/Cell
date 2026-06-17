@@ -55,6 +55,47 @@ describe("Cooke–Deserno lipid membrane", () => {
     expect(MEMBRANE_SCENES.map((s) => s.id)).toContain("self-assembly");
   });
 
+  it("opens the one-reality scene as a light, validated inside/outside membrane world", () => {
+    const preset = MEMBRANE_SCENES.find((s) => s.id === "cell-reality");
+    if (!preset) {
+      throw new Error("missing cell-reality scene");
+    }
+    const sys = membraneSystemFromPreset(preset);
+    const snap = sys.snapshot();
+
+    expect(snap.beads.length).toBeLessThan(320);
+    expect(snap.lipids.length).toBeGreaterThan(0);
+    expect(snap.soluteAbove).toBeGreaterThan(0);
+    expect(snap.soluteBelow).toBeGreaterThan(0);
+    expect(snap.thicknessSigma).toBeGreaterThan(4);
+    expect(snap.thicknessSigma).toBeLessThan(7);
+    expect(snap.orderS).toBeGreaterThan(0.9);
+    expect(Number.isFinite(snap.potentialEnergy)).toBe(true);
+  });
+
+  it("can initialize a finite closed-vesicle prototype without leaflet overlap", () => {
+    const sys = new MembraneSystem({
+      mode: "vesicle",
+      vesicleRadiusSigma: 5.5,
+      solutesInside: 8,
+      seed: 13
+    });
+    const start = sys.snapshot();
+
+    expect(start.beads.length).toBeLessThan(700);
+    expect(start.thicknessSigma).toBeGreaterThan(4);
+    expect(start.thicknessSigma).toBeLessThan(7);
+    expect(start.orderS).toBeGreaterThan(0.9);
+    expect(Number.isFinite(start.potentialEnergy)).toBe(true);
+
+    sys.step(1);
+    const after = sys.snapshot();
+    expect(Number.isFinite(after.potentialEnergy)).toBe(true);
+    for (const b of after.beads) {
+      expect(Number.isFinite(b.pos.x) && Number.isFinite(b.pos.y) && Number.isFinite(b.pos.z)).toBe(true);
+    }
+  });
+
   it("an intact bilayer blocks solutes (barrier function)", () => {
     const sys = new MembraneSystem({ perSide: 6, mode: "bilayer", solutes: 16, seed: 5 });
     expect(sys.snapshot().soluteBelow).toBe(0); // all start above

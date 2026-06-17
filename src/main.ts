@@ -298,6 +298,7 @@ type IonVisual = {
 const ionVisuals: IonVisual[] = [];
 const sharedShellGeometry = new THREE.SphereGeometry(1, 48, 32);
 const sharedCloudGeometry = new THREE.SphereGeometry(1, 48, 24);
+const sharedBeadGeometry = new THREE.SphereGeometry(1, 24, 16);
 
 // Per-water-molecule render objects (ball-and-stick: O + 2 H + 2 bonds + cloud).
 type WaterVisual = {
@@ -369,7 +370,7 @@ app.querySelector<HTMLButtonElement>("[data-action='step']")?.addEventListener("
   running = false;
   updatePlayIcon();
   if (mode === "membrane" && membrane) {
-    membrane.step(30);
+    membrane.step(5);
     renderMembraneSnapshot(membrane.snapshot());
   } else if (mode === "diffusion" && diffusion) {
     diffusion.step(18);
@@ -435,7 +436,7 @@ function loadScene(id: string) {
     diffusion = null;
     membrane = membraneSystemFromPreset(preset);
     buildMembraneScene(membrane.snapshot(), preset);
-    cameraDistance = 15;
+    cameraDistance = preset.id === "cell-reality" ? 18 : 15;
   } else if (isDiffusionId(id)) {
     const preset = DIFFUSION_SCENES.find((p) => p.id === id) as DiffusionScenePreset;
     mode = "diffusion";
@@ -548,7 +549,7 @@ function animate() {
 
   if (mode === "membrane" && membrane) {
     if (running) {
-      membrane.step(iterations * 3);
+      membrane.step(1);
     }
     renderMembraneSnapshot(membrane.snapshot());
   } else if (mode === "diffusion" && diffusion) {
@@ -1044,7 +1045,7 @@ function makeBeadMesh(count: number, color: string, radius: number): THREE.Insta
     emissive: color,
     emissiveIntensity: 0.12
   });
-  const mesh = new THREE.InstancedMesh(sharedShellGeometry, material, count);
+  const mesh = new THREE.InstancedMesh(sharedBeadGeometry, material, count);
   mesh.frustumCulled = false; // instances move; don't cull by stale bounds
   mesh.userData.radius = radius;
   root.add(mesh);
