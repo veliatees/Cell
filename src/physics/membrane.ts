@@ -68,6 +68,8 @@ export type MembraneConfig = {
   mode?: "bilayer" | "gas" | "vesicle";
   boxSigma?: number; // box size for the gas mode
   vesicleRadiusSigma?: number; // mid-membrane radius for vesicle mode
+  vesiclePoreAngleDeg?: number; // remove a polar cap of this half-angle to open a pore
+  solutesOutside?: number; // solute particles placed outside a vesicle
   seed?: number;
   /** Number of solute particles placed above (outside) the membrane. */
   solutes?: number;
@@ -112,9 +114,12 @@ export class MembraneSystem {
       this.periodic = false; // a vesicle is a free 3D object, not a periodic sheet
       this.lx = this.ly = 1e6; // unused
       const radius = config.vesicleRadiusSigma ?? 4;
-      this.buildVesicle(radius);
+      this.buildVesicle(radius, config.vesiclePoreAngleDeg ?? 0);
       if (config.solutesInside) {
         this.buildSolutesSphere(config.solutesInside, Math.max(radius - 3.2, 0.8)); // inside the bag
+      }
+      if (config.solutesOutside) {
+        this.buildSolutesShell(config.solutesOutside, radius + 3.5, radius + 6); // outside
       }
     } else if (config.mode === "gas") {
       const box = config.boxSigma ?? 14;
@@ -199,7 +204,7 @@ export class MembraneSystem {
   }
 
   /** Lipids tiled on a sphere: two leaflets, heads out/in, tails meeting at radius R. */
-  private buildVesicle(radius: number) {
+  private buildVesicle(radius: number, poreAngleDeg: number) {
     // Match the flat bilayer's relaxed geometry: heads are ~2.6σ from the
     // midplane and second-tail beads sit at ±0.6σ, avoiding an artificial
     // overlap of both leaflets at one spherical surface.
@@ -209,13 +214,18 @@ export class MembraneSystem {
     const headInner = Math.max(radius - headOffset, 1.2); // inner leaflet heads
     const nOuter = Math.max(12, Math.round((4 * Math.PI * headOuter * headOuter) / areaPerLipid));
     const nInner = Math.max(6, Math.round((4 * Math.PI * headInner * headInner) / areaPerLipid));
-    this.placeLeaflet(nOuter, headOuter, -1); // outer: axis points inward
-    this.placeLeaflet(nInner, headInner, +1); // inner: axis points outward
+    // A pore is a polar cap (around +z) left empty of lipids.
+    const poreCos = poreAngleDeg > 0 ? Math.cos((poreAngleDeg * Math.PI) / 180) : 2;
+    this.placeLeaflet(nOuter, headOuter, -1, poreCos); // outer: axis points inward
+    this.placeLeaflet(nInner, headInner, +1, poreCos); // inner: axis points outward
   }
 
-  private placeLeaflet(n: number, headRadius: number, sign: number) {
+  private placeLeaflet(n: number, headRadius: number, sign: number, poreCos: number) {
     for (let i = 0; i < n; i += 1) {
       const u = fibonacciPoint(i, n);
+      if (u.z > poreCos) {
+        continue; // inside the polar pore cap — leave a hole
+      }
       const headPos = { x: u.x * headRadius, y: u.y * headRadius, z: u.z * headRadius };
       const axis = { x: u.x * sign, y: u.y * sign, z: u.z * sign }; // unit radial
       this.addLipid(headPos, axis);
@@ -240,6 +250,19 @@ export class MembraneSystem {
         kind: "solute",
         lipid: -1 - this.beads.length - n,
         pos,
+        vel: zero()
+      });
+    }
+  }
+
+  private buildSolutesShell(count: number, rMin: number, rMax: number) {
+    for (let n = 0; n < count; n += 1) {
+      const u = randomUnit(() => this.nextRandom());
+      const r = rMin + (rMax - rMin) * this.nextRandom();
+      this.beads.push({
+        kind: "solute",
+        lipid: -1 - this.beads.length - n,
+        pos: { x: u.x * r, y: u.y * r, z: u.z * r },
         vel: zero()
       });
     }
@@ -640,6 +663,13 @@ export const MEMBRANE_SCENES: MembraneScenePreset[] = [
     description:
       "A whole closed cell: a spherical lipid membrane (vesicle) enclosing an interior, with particles trapped inside. One world, one clock — coarse-grained at the cell scale, but every rule is grounded in the atomic/chemical physics from the earlier milestones.",
     config: { mode: "vesicle", vesicleRadiusSigma: 6, solutesInside: 30 }
+  },
+  {
+    id: "cell-pore",
+    label: "Cell with a pore (exchange)",
+    description:
+      "A vesicle with an open pore: particles trapped inside can leave and particles outside can enter — the cell exchanging material with its environment through a hole in the membrane.",
+    config: { mode: "vesicle", vesicleRadiusSigma: 6, vesiclePoreAngleDeg: 38, solutesInside: 22, solutesOutside: 14 }
   },
   {
     id: "cell-flat",

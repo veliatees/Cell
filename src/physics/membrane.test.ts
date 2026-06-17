@@ -113,6 +113,31 @@ describe("Cooke–Deserno lipid membrane", () => {
     expect(inside).toBeGreaterThan(solutes.length * 0.6);
   }, 30000);
 
+  it("a vesicle pore lets the cell exchange contents with its environment", () => {
+    const rad = (b: { pos: { x: number; y: number; z: number } }) =>
+      Math.hypot(b.pos.x, b.pos.y, b.pos.z);
+    const sys = new MembraneSystem({
+      mode: "vesicle",
+      vesicleRadiusSigma: 6,
+      vesiclePoreAngleDeg: 38,
+      solutesInside: 22,
+      solutesOutside: 14
+    });
+    const enclosed = (s: ReturnType<MembraneSystem["snapshot"]>) => {
+      const shell = s.beads.filter((b) => b.kind !== "solute").map(rad);
+      const meanR = shell.reduce((a, b) => a + b, 0) / shell.length;
+      return s.beads.filter((b) => b.kind === "solute" && rad(b) < meanR).length;
+    };
+    const start = enclosed(sys.snapshot());
+    for (let i = 0; i < 1000; i += 1) {
+      sys.step(1);
+    }
+    const snap = sys.snapshot();
+    expect(snap.beads.every((b) => Number.isFinite(b.pos.x))).toBe(true);
+    // The interior count changes as material moves through the pore.
+    expect(enclosed(snap)).toBeLessThan(start);
+  }, 30000);
+
   it("an intact bilayer blocks solutes (barrier function)", () => {
     const sys = new MembraneSystem({ perSide: 6, mode: "bilayer", solutes: 16, seed: 5 });
     expect(sys.snapshot().soluteBelow).toBe(0); // all start above
