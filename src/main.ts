@@ -114,27 +114,27 @@ app.innerHTML = `
       </div>
       <div class="metric-grid">
         <div class="metric">
-          <span>Distance (1↔2)</span>
+          <span data-label="distance">Distance (1↔2)</span>
           <strong data-value="distance">-</strong>
         </div>
         <div class="metric">
-          <span>Force on ion 1</span>
+          <span data-label="force">Force on ion 1</span>
           <strong data-value="force">-</strong>
         </div>
         <div class="metric">
-          <span>Potential</span>
+          <span data-label="potential">Potential</span>
           <strong data-value="potential">-</strong>
         </div>
         <div class="metric">
-          <span>Kinetic</span>
+          <span data-label="kinetic">Kinetic</span>
           <strong data-value="kinetic">-</strong>
         </div>
         <div class="metric">
-          <span>Total energy</span>
+          <span data-label="total">Total energy</span>
           <strong data-value="total">-</strong>
         </div>
         <div class="metric">
-          <span>Energy drift</span>
+          <span data-label="drift">Energy drift</span>
           <strong data-value="drift">-</strong>
         </div>
       </div>
@@ -352,6 +352,69 @@ const values = {
   elapsed: app.querySelector<HTMLElement>("[data-value='elapsed']")
 };
 
+const labelEls = {
+  distance: app.querySelector<HTMLElement>("[data-label='distance']"),
+  force: app.querySelector<HTMLElement>("[data-label='force']"),
+  potential: app.querySelector<HTMLElement>("[data-label='potential']"),
+  kinetic: app.querySelector<HTMLElement>("[data-label='kinetic']"),
+  total: app.querySelector<HTMLElement>("[data-label='total']"),
+  drift: app.querySelector<HTMLElement>("[data-label='drift']")
+};
+
+type MetricLabels = Partial<Record<keyof typeof labelEls, string>>;
+const METRIC_LABELS: Record<Mode, MetricLabels> = {
+  ions: {
+    distance: "Distance (1↔2)",
+    force: "Force on ion 1",
+    potential: "Potential",
+    kinetic: "Kinetic",
+    total: "Total energy",
+    drift: "Energy drift"
+  },
+  water: {
+    distance: "O–O distance",
+    force: "Force",
+    potential: "Potential",
+    kinetic: "Kinetic",
+    total: "Total energy",
+    drift: "Energy drift"
+  },
+  solvation: {
+    distance: "Ion–O distance",
+    force: "Force",
+    potential: "Potential",
+    kinetic: "Kinetic",
+    total: "Total energy",
+    drift: "Energy drift"
+  },
+  diffusion: {
+    distance: "RMS displacement",
+    force: "—",
+    potential: "—",
+    kinetic: "—",
+    total: "Mean sq. disp. ⟨r²⟩",
+    drift: "—"
+  },
+  membrane: {
+    distance: "Outside / inside",
+    force: "—",
+    potential: "Bilayer thickness",
+    kinetic: "Order S",
+    total: "Potential energy",
+    drift: "—"
+  }
+};
+
+function setMetricLabels(m: Mode) {
+  const labels = METRIC_LABELS[m];
+  for (const key of Object.keys(labelEls) as (keyof typeof labelEls)[]) {
+    const el = labelEls[key];
+    if (el && labels[key]) {
+      el.textContent = labels[key] as string;
+    }
+  }
+}
+
 const sceneNote = app.querySelector<HTMLElement>("[data-role='scene-note']");
 const compositionEl = app.querySelector<HTMLElement>("[data-role='composition']");
 const netChargeEl = app.querySelector<HTMLElement>("[data-role='net-charge']");
@@ -482,6 +545,11 @@ function loadScene(id: string) {
     baselineEnergyEv = snapshot.totalEnergyEv;
     buildIonScene(snapshot);
     cameraDistance = 6.5;
+  }
+  setMetricLabels(mode);
+  if (mode === "membrane" && membraneIsVesicle) {
+    if (labelEls.distance) labelEls.distance.textContent = "Solutes enclosed";
+    if (labelEls.potential) labelEls.potential.textContent = "—";
   }
   resize();
 }
@@ -1111,11 +1179,19 @@ function renderMembraneSnapshot(snapshot: MembraneSnapshot) {
     }
   }
 
-  const hasSolutes = snapshot.soluteAbove + snapshot.soluteBelow > 0;
-  setText(values.distance, hasSolutes ? `${snapshot.soluteAbove} / ${snapshot.soluteBelow}` : `S = ${snapshot.orderS.toFixed(2)}`);
+  const solutes = snapshot.beads.filter((b) => b.kind === "solute");
+  if (membraneIsVesicle) {
+    // Inside/outside by radius from the vesicle centre (mean shell radius).
+    const shell = snapshot.beads.filter((b) => b.kind !== "solute").map((b) => Math.hypot(b.pos.x, b.pos.y, b.pos.z));
+    const meanR = shell.reduce((s, r) => s + r, 0) / Math.max(shell.length, 1);
+    const enclosed = solutes.filter((b) => Math.hypot(b.pos.x, b.pos.y, b.pos.z) < meanR).length;
+    setText(values.distance, `${enclosed} / ${solutes.length}`);
+  } else {
+    setText(values.distance, solutes.length ? `${snapshot.soluteAbove} / ${snapshot.soluteBelow}` : "—");
+  }
   setText(values.force, "—");
-  setText(values.potential, `${snapshot.thicknessSigma.toFixed(2)} σ`);
-  setText(values.kinetic, hasSolutes ? `S = ${snapshot.orderS.toFixed(2)}` : "—");
+  setText(values.potential, membraneIsVesicle ? "—" : `${snapshot.thicknessSigma.toFixed(2)} σ`);
+  setText(values.kinetic, `S = ${snapshot.orderS.toFixed(2)}`);
   setText(values.total, `${snapshot.potentialEnergy.toFixed(1)} ε`);
   if (values.drift) {
     values.drift.textContent = "—";
