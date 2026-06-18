@@ -77,6 +77,7 @@ project cares about:
 - [Milestone 009: chemistry (reaction–diffusion)](docs/milestones/009-chemistry.md)
 - [Milestone 010: the eukaryotic cell (organelles)](docs/milestones/010-eukaryotic-cell.md)
 - [Milestone 011: the living cell (metabolism)](docs/milestones/011-living-cell.md)
+- [Milestone 012: the organelle network (parallel loops)](docs/milestones/012-organelle-network.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)

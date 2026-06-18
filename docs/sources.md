@@ -41,7 +41,13 @@ link back here or to a more specific research file.
     network contiguous with the nuclear envelope and contacts mitochondria/Golgi.
 - Michaelis, L. & Menten, M. L. (1913) — Michaelis–Menten enzyme kinetics, the
   standard rate law used for the living cell's metabolic fluxes (uptake,
-  respiration, synthesis).
+  respiration, synthesis) across all organelle modules.
+- Allosteric feedback inhibition of glycolysis: phosphofructokinase (PFK) is
+  inhibited by high ATP / activated by ADP-AMP — the standard textbook control
+  point of glycolysis (Alberts et al., Molecular Biology of the Cell, already
+  listed; Berg, Tymoczko & Stryer, Biochemistry, glycolysis regulation). Basis
+  for the organelle-network model's ATP-demand down-regulation of glucose uptake
+  and glycolysis, which gives the network a self-regulating steady state.
 - Chemical Langevin equation (Gillespie, D. T., J. Chem. Phys. 113, 297, 2000) —
   basis for the cell's molecular noise term √(flux·dt/Ω)·ξ.
 - Smoluchowski, M. von (1917), Z. Phys. Chem. 92, 129 — diffusion-limited
