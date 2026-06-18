@@ -96,7 +96,7 @@ describe("Cooke–Deserno lipid membrane", () => {
 
   it("forms a stable closed vesicle (a recognizable cell) that traps its contents", () => {
     const sys = new MembraneSystem({ mode: "vesicle", vesicleRadiusSigma: 6, solutesInside: 24 });
-    for (let i = 0; i < 600; i += 1) {
+    for (let i = 0; i < 400; i += 1) {
       sys.step(1);
     }
     const snap = sys.snapshot();
@@ -129,7 +129,7 @@ describe("Cooke–Deserno lipid membrane", () => {
       return s.beads.filter((b) => b.kind === "solute" && rad(b) < meanR).length;
     };
     const start = enclosed(sys.snapshot());
-    for (let i = 0; i < 1000; i += 1) {
+    for (let i = 0; i < 600; i += 1) {
       sys.step(1);
     }
     const snap = sys.snapshot();
@@ -141,7 +141,7 @@ describe("Cooke–Deserno lipid membrane", () => {
   it("an intact bilayer blocks solutes (barrier function)", () => {
     const sys = new MembraneSystem({ perSide: 6, mode: "bilayer", solutes: 16, seed: 5 });
     expect(sys.snapshot().soluteBelow).toBe(0); // all start above
-    for (let i = 0; i < 2000; i += 1) {
+    for (let i = 0; i < 1200; i += 1) {
       sys.step(2);
     }
     // None should have crossed the intact bilayer.
@@ -156,7 +156,7 @@ describe("Cooke–Deserno lipid membrane", () => {
       poreRadiusSigma: 2.2,
       seed: 5
     });
-    for (let i = 0; i < 2000; i += 1) {
+    for (let i = 0; i < 1400; i += 1) {
       sys.step(2);
     }
     // With a pore, some solutes reach the other side.

@@ -343,10 +343,32 @@ let membraneSoluteMesh: THREE.InstancedMesh | null = null;
 const HEAD_COLOR = "#ffcf6b";
 const TAIL_COLOR = "#8fa8d6";
 const SOLUTE_COLOR = "#7ee0a8";
-const HEAD_RADIUS = 0.95;
-const TAIL_RADIUS = 0.6;
-const SOLUTE_RADIUS = 0.85;
+const HEAD_RADIUS = 1.85; // big enough that sparse heads merge into a continuous shell
+const TAIL_RADIUS = 1.15;
+const SOLUTE_RADIUS = 1.1;
 const dummyObj = new THREE.Object3D();
+
+// A soft circular sprite so point-cloud particles render as round dots, not squares.
+const DISC_TEXTURE: THREE.Texture = (() => {
+  const s = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = s;
+  canvas.height = s;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    g.addColorStop(0, "rgba(255,255,255,1)");
+    g.addColorStop(0.7, "rgba(255,255,255,1)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(s / 2, s / 2, s / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+})();
 
 const sharedBondGeometry = new THREE.CylinderGeometry(0.06, 0.06, 1, 16);
 const OXYGEN_COLOR = "#ff5d5d";
@@ -539,7 +561,7 @@ function loadScene(id: string) {
     membrane = membraneSystemFromPreset(preset);
     buildMembraneScene(membrane.snapshot(), preset);
     membraneIsVesicle = preset.config.mode === "vesicle";
-    cameraDistance = membraneIsVesicle ? 32 : 15;
+    cameraDistance = membraneIsVesicle ? 30 : 15;
   } else if (isDiffusionId(id)) {
     const preset = DIFFUSION_SCENES.find((p) => p.id === id) as DiffusionScenePreset;
     mode = "diffusion";
@@ -1101,10 +1123,12 @@ function buildDiffusionScene(snapshot: DiffusionSnapshot, preset: DiffusionScene
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   const material = new THREE.PointsMaterial({
-    size: 0.32,
+    size: 0.6,
     vertexColors: true,
+    map: DISC_TEXTURE,
+    alphaTest: 0.4,
     transparent: true,
-    opacity: 0.9,
+    opacity: 0.95,
     sizeAttenuation: true
   });
   diffusionPoints = new THREE.Points(geometry, material);
@@ -1152,6 +1176,8 @@ function makePointCloud(count: number, color: string, size: number): THREE.Point
   const material = new THREE.PointsMaterial({
     color,
     size,
+    map: DISC_TEXTURE,
+    alphaTest: 0.4,
     transparent: true,
     opacity: 0.95,
     sizeAttenuation: true
@@ -1267,8 +1293,10 @@ function buildReactionScene(snapshot: ReactionSnapshot, preset: ReactionScenePre
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   const material = new THREE.PointsMaterial({
-    size: 0.55,
+    size: 0.7,
     vertexColors: true,
+    map: DISC_TEXTURE,
+    alphaTest: 0.4,
     transparent: true,
     opacity: 0.95,
     sizeAttenuation: true
