@@ -39,6 +39,11 @@ link back here or to a more specific research file.
     organelle); mitochondria ~0.5–1 µm × 1–5 µm (hundreds–thousands per cell);
     Golgi 4–10 cisternae; lysosomes ~0.1–0.5 µm; ribosomes ~25 nm; ER forms a
     network contiguous with the nuclear envelope and contacts mitochondria/Golgi.
+- Michaelis, L. & Menten, M. L. (1913) — Michaelis–Menten enzyme kinetics, the
+  standard rate law used for the living cell's metabolic fluxes (uptake,
+  respiration, synthesis).
+- Chemical Langevin equation (Gillespie, D. T., J. Chem. Phys. 113, 297, 2000) —
+  basis for the cell's molecular noise term √(flux·dt/Ω)·ξ.
 - Smoluchowski, M. von (1917), Z. Phys. Chem. 92, 129 — diffusion-limited
   reaction rate.
   - Source for the reaction–diffusion rate constant k = 4π(D_A+D_B)R used to
