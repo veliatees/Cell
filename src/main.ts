@@ -670,7 +670,7 @@ viewportElement.addEventListener(
   "wheel",
   (event) => {
     event.preventDefault();
-    cameraDistance = clamp(cameraDistance + event.deltaY * 0.006, 2.4, 16);
+    cameraDistance = clamp(cameraDistance + event.deltaY * 0.02, 2.4, 140);
     resize();
   },
   { passive: false }
@@ -1445,6 +1445,11 @@ function resize() {
   camera.lookAt(0, 0, 0);
   camera.aspect = rect.width / Math.max(rect.height, 1);
   camera.updateProjectionMatrix();
+  // Scale fog with the camera so far scenes (e.g. the vesicle) aren't hidden.
+  if (scene.fog instanceof THREE.Fog) {
+    scene.fog.near = cameraDistance * 0.35;
+    scene.fog.far = cameraDistance * 3.2;
+  }
   renderer.setSize(rect.width, rect.height);
 }
 
