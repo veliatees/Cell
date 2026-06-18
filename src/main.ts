@@ -57,6 +57,7 @@ import {
   type ReactionSnapshot,
   type ReactionSystem
 } from "./physics/reactions";
+import { LivingCell } from "./physics/cell";
 import "./styles.css";
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -192,7 +193,7 @@ app.innerHTML = `
       </label>
 
       <label class="control-row">
-        <span>Temp (K)</span>
+        <span data-label="temp">Temp (K)</span>
         <input data-control="temperature" type="range" min="0" max="600" step="10" value="310" />
       </label>
 
@@ -264,6 +265,9 @@ let membrane: MembraneSystem | null = null;
 let membraneIsVesicle = false;
 let reaction: ReactionSystem | null = null;
 let organelleGroup: THREE.Group | null = null; // schematic whole-cell anatomy
+let livingCell: LivingCell | null = null; // the metabolic model behind the organelle scene
+const organelleMitos: THREE.Mesh[] = []; // mitochondria meshes (glow with ATP production)
+let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by cell status)
 let mode: Mode = "ions";
 const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
 const CELL_R = 14; // whole-cell schematic radius (world units)
@@ -455,12 +459,12 @@ const METRIC_LABELS: Record<Mode, MetricLabels> = {
     drift: "—"
   },
   organelles: {
-    distance: "Cell diameter",
-    force: "—",
-    potential: "—",
-    kinetic: "—",
-    total: "—",
-    drift: "—"
+    distance: "Glucose (in)",
+    force: "ATP",
+    potential: "Protein",
+    kinetic: "Energy charge",
+    total: "Status",
+    drift: "Nutrient supply"
   }
 };
 
@@ -473,6 +477,9 @@ function setMetricLabels(m: Mode) {
     }
   }
 }
+
+const tempLabelEl = app.querySelector<HTMLElement>("[data-label='temp']");
+const tempSliderEl = app.querySelector<HTMLInputElement>("[data-control='temperature']");
 
 const sceneNote = app.querySelector<HTMLElement>("[data-role='scene-note']");
 const compositionEl = app.querySelector<HTMLElement>("[data-role='composition']");
@@ -554,7 +561,12 @@ bindRange("damping", (value) => {
     solvation.dampingPerFs = value;
   }
 });
-bindRange("temperature", (value) => (simulation.settings.temperatureK = value));
+bindRange("temperature", (value) => {
+  simulation.settings.temperatureK = value;
+  if (livingCell) {
+    livingCell.nutrient = value / 600; // in organelles mode this slider = nutrient supply
+  }
+});
 
 function loadScene(id: string) {
   if (id === EUKARYOTE_SCENE_ID) {
@@ -567,11 +579,9 @@ function loadScene(id: string) {
     buildOrganelleScene();
     cameraDistance = 42;
     setMetricLabels(mode);
-    if (labelEls.distance) labelEls.distance.textContent = "Cell diameter";
-    setText(values.distance, "~20 µm");
-    for (const k of ["force", "potential", "kinetic", "total", "drift", "elapsed"] as const) {
-      setText(values[k], "—");
-    }
+    // Repurpose the Temp slider as the cell's nutrient (food) supply.
+    if (tempLabelEl) tempLabelEl.textContent = "Nutrient";
+    if (tempSliderEl) tempSliderEl.value = String(0.8 * 600);
     resize();
     return;
   }
@@ -651,6 +661,7 @@ function loadScene(id: string) {
     cameraDistance = 6.5;
   }
   setMetricLabels(mode);
+  if (tempLabelEl) tempLabelEl.textContent = "Temp (K)"; // restore (organelles relabels it)
   if (mode === "membrane" && membraneIsVesicle) {
     if (labelEls.distance) labelEls.distance.textContent = "Solutes enclosed";
     if (labelEls.potential) labelEls.potential.textContent = "—";
@@ -863,6 +874,9 @@ function clearWaterVisuals() {
     });
     organelleGroup = null;
   }
+  organelleMitos.length = 0;
+  organelleMembrane = null;
+  livingCell = null;
 
   for (const m of [membraneHeadMesh, membraneTailMesh, membraneSoluteMesh]) {
     if (m) {
@@ -1454,6 +1468,10 @@ function buildOrganelleScene() {
   clearIonVisuals();
   clearWaterVisuals();
 
+  organelleMitos.length = 0;
+  organelleMembrane = null;
+  livingCell = new LivingCell(undefined, 0.8, true); // the metabolism that makes it alive (with noise)
+
   const group = new THREE.Group();
   let seed = 20260618;
   const rnd = () => ((seed = (1_664_525 * seed + 1_013_904_223) >>> 0) / 4_294_967_296);
@@ -1533,7 +1551,7 @@ function buildOrganelleScene() {
   };
 
   // --- Plasma membrane (organic, translucent so we can see inside) ---
-  mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.1, emissive: 0.05, label: "Plasma membrane — the cell's boundary; controls what enters and leaves" });
+  organelleMembrane = mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.1, emissive: 0.05, label: "Plasma membrane — the cell's boundary; controls what enters and leaves" });
   mesh(organicSphere(CELL_R * 0.97, 0.06), "#9ec6ff", new THREE.Vector3(), { opacity: 0.06, emissive: 0.04 });
 
   // --- Nucleus + envelope + nucleolus + nuclear pores ---
@@ -1598,7 +1616,8 @@ function buildOrganelleScene() {
     sub.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3);
     group.add(sub);
     const z = new THREE.Vector3();
-    mesh(new THREE.CapsuleGeometry(0.78, len, 8, 18), "#ff8a5c", z, { opacity: 0.82, emissive: 0.14, rough: 0.5, label: "Mitochondrion — the cell's power plant; makes ATP", parent: sub });
+    const mitoOuter = mesh(new THREE.CapsuleGeometry(0.78, len, 8, 18), "#ff8a5c", z, { opacity: 0.82, emissive: 0.14, rough: 0.5, label: "Mitochondrion — the cell's power plant; makes ATP", parent: sub });
+    organelleMitos.push(mitoOuter);
     mesh(new THREE.CapsuleGeometry(0.5, len * 0.92, 6, 14), "#c14026", z, { emissive: 0.1, label: "Mitochondrion — the cell's power plant; makes ATP", parent: sub });
     // cristae: folded inner-membrane discs along the long (y) axis
     const cn = Math.max(3, Math.round(len * 2));
@@ -1694,6 +1713,37 @@ function renderOrganelleScene() {
   if (organelleGroup && !hovering) {
     organelleGroup.rotation.y += 0.0016; // slow turn to reveal the 3D interior (pause on hover)
   }
+
+  if (livingCell && running) {
+    livingCell.step(0.04, 2); // advance the metabolism
+  }
+  if (livingCell) {
+    const s = livingCell.snapshot();
+    // Mitochondria glow with how hard they are making ATP right now.
+    const glow = 0.08 + 1.4 * Math.min(1, s.respirationRate);
+    for (const m of organelleMitos) {
+      (m.material as THREE.MeshStandardMaterial).emissiveIntensity = glow;
+    }
+    // The whole cell takes on its health: blue (healthy) → amber → red (dying).
+    if (organelleMembrane) {
+      const col = s.status === "dying" ? "#ff5a5a" : s.status === "stressed" ? "#ffc05a" : "#7fb6ff";
+      const mat = organelleMembrane.material as THREE.MeshStandardMaterial;
+      mat.color.set(col);
+      mat.emissive.set(col);
+    }
+    setText(values.distance, s.glucoseIn.toFixed(2));
+    setText(values.force, s.atp.toFixed(2));
+    setText(values.potential, s.protein.toFixed(1));
+    setText(values.kinetic, s.energyCharge.toFixed(2));
+    setText(values.total, s.status);
+    if (values.total) {
+      values.total.style.color = s.status === "dying" ? "#ff8a8a" : s.status === "stressed" ? "#ffcf6b" : "#7ee0a8";
+    }
+    setText(values.drift, s.nutrient.toFixed(2));
+    if (values.drift) values.drift.style.color = "";
+    setText(values.elapsed, `${Math.round(s.elapsedS)} s`);
+  }
+
   updateHoverTooltip();
   renderer.render(scene, camera);
 }
