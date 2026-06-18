@@ -700,6 +700,50 @@ viewportElement.addEventListener("pointerup", () => {
   dragState = null;
 });
 
+// --- Hover tooltip for organelles (raycasting) ---
+const hoverTooltip = document.createElement("div");
+hoverTooltip.className = "hover-tip";
+hoverTooltip.style.display = "none";
+viewportElement.append(hoverTooltip);
+const hoverRaycaster = new THREE.Raycaster();
+const hoverNDC = new THREE.Vector2();
+let hoverClientX = 0;
+let hoverClientY = 0;
+let hovering = false;
+
+viewportElement.addEventListener("pointermove", (event) => {
+  const rect = viewportElement.getBoundingClientRect();
+  hoverNDC.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  hoverNDC.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  hoverClientX = event.clientX - rect.left;
+  hoverClientY = event.clientY - rect.top;
+  hovering = true;
+});
+viewportElement.addEventListener("pointerleave", () => {
+  hovering = false;
+  hoverTooltip.style.display = "none";
+});
+
+function updateHoverTooltip() {
+  if (!hovering || mode !== "organelles" || !organelleGroup || dragState) {
+    hoverTooltip.style.display = "none";
+    return;
+  }
+  hoverRaycaster.setFromCamera(hoverNDC, camera);
+  const hits = hoverRaycaster.intersectObjects(organelleGroup.children, true);
+  const hit = hits.find((h) => h.object.userData && h.object.userData.label);
+  if (hit) {
+    hoverTooltip.textContent = hit.object.userData.label as string;
+    hoverTooltip.style.display = "block";
+    hoverTooltip.style.left = `${hoverClientX + 16}px`;
+    hoverTooltip.style.top = `${hoverClientY + 14}px`;
+    viewportElement.style.cursor = "pointer";
+  } else {
+    hoverTooltip.style.display = "none";
+    viewportElement.style.cursor = "grab";
+  }
+}
+
 viewportElement.addEventListener(
   "wheel",
   (event) => {
@@ -1422,7 +1466,7 @@ function buildOrganelleScene() {
     geo: THREE.BufferGeometry,
     color: string,
     pos: THREE.Vector3,
-    opts: { opacity?: number; emissive?: number; rot?: [number, number, number]; rough?: number } = {}
+    opts: { opacity?: number; emissive?: number; rot?: [number, number, number]; rough?: number; label?: string; parent?: THREE.Object3D } = {}
   ) => {
     const mat = new THREE.MeshStandardMaterial({
       color,
@@ -1438,7 +1482,8 @@ function buildOrganelleScene() {
     const m = new THREE.Mesh(geo, mat);
     m.position.copy(pos);
     if (opts.rot) m.rotation.set(opts.rot[0], opts.rot[1], opts.rot[2]);
-    group.add(m);
+    if (opts.label) m.userData.label = opts.label; // for hover tooltips
+    (opts.parent ?? group).add(m);
     return m;
   };
 
@@ -1488,15 +1533,15 @@ function buildOrganelleScene() {
   };
 
   // --- Plasma membrane (organic, translucent so we can see inside) ---
-  mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.1, emissive: 0.05 });
+  mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.1, emissive: 0.05, label: "Plasma membrane — the cell's boundary; controls what enters and leaves" });
   mesh(organicSphere(CELL_R * 0.97, 0.06), "#9ec6ff", new THREE.Vector3(), { opacity: 0.06, emissive: 0.04 });
 
   // --- Nucleus + envelope + nucleolus + nuclear pores ---
   const nuc = new THREE.Vector3(-3.4, 1.4, -1.2);
   occupied.push({ c: nuc, r: 5.1 }); // reserve the nucleus volume (incl. ER shell)
-  mesh(organicSphere(4.6, 0.04), "#b07ed8", nuc, { opacity: 0.34, emissive: 0.08 });
-  mesh(organicSphere(4.75, 0.04), "#caa3e6", nuc, { opacity: 0.12, emissive: 0.05 }); // envelope
-  mesh(organicSphere(1.7, 0.12), "#6f3fa0", nuc.clone().add(new THREE.Vector3(0.7, -0.5, 0.4)), { emissive: 0.16 });
+  mesh(organicSphere(4.6, 0.04), "#b07ed8", nuc, { opacity: 0.34, emissive: 0.08, label: "Nucleus — stores the DNA and controls gene expression" });
+  mesh(organicSphere(4.75, 0.04), "#caa3e6", nuc, { opacity: 0.12, emissive: 0.05, label: "Nuclear envelope — double membrane studded with pores" });
+  mesh(organicSphere(1.7, 0.12), "#6f3fa0", nuc.clone().add(new THREE.Vector3(0.7, -0.5, 0.4)), { emissive: 0.16, label: "Nucleolus — builds ribosomes" });
   // nuclear pores — dots on the envelope
   const poreN = 60;
   const porePos = new Float32Array(poreN * 3);
@@ -1524,45 +1569,80 @@ function buildOrganelleScene() {
       pts.push(d.clone().multiplyScalar(5.0 + rnd() * 1.6).add(nuc));
     }
     const curve = new THREE.CatmullRomCurve3(pts);
-    mesh(new THREE.TubeGeometry(curve, 40, 0.16, 6), "#e8b24a", new THREE.Vector3(), { opacity: 0.85, emissive: 0.1 });
+    mesh(new THREE.TubeGeometry(curve, 40, 0.16, 6), "#e8b24a", new THREE.Vector3(), { opacity: 0.85, emissive: 0.1, label: "Endoplasmic reticulum — synthesises proteins & lipids; continuous with the nucleus" });
   }
 
-  // --- Golgi apparatus: a stack of curved cisternae + budding vesicles ---
-  const golgi = place(2.6, 5.5, 9) ?? new THREE.Vector3(6, -2, 2);
+  // --- Golgi apparatus: a coherent stack of full, flattened cisternae + vesicles ---
+  const golgi = place(2.8, 5.5, 9) ?? new THREE.Vector3(6, -2, 2);
+  const golgiAxis: [number, number, number] = [Math.PI / 2 + 0.3, 0.4, 0];
   for (let i = 0; i < 6; i += 1) {
     const disc = mesh(
-      new THREE.TorusGeometry(1.7 - i * 0.12, 0.5, 8, 28, Math.PI * 1.5),
+      new THREE.CylinderGeometry(2.0 - i * 0.22, 2.0 - i * 0.22, 0.34, 36),
       "#3fc7a6",
-      golgi.clone().add(new THREE.Vector3(0, (i - 2.5) * 0.55, 0)),
-      { emissive: 0.12, rot: [Math.PI / 2 + 0.25, 0.3, 0] }
+      golgi.clone().add(new THREE.Vector3(i * 0.12, (i - 2.5) * 0.5, 0)),
+      { emissive: 0.12, rot: golgiAxis, rough: 0.45, label: "Golgi apparatus — modifies, sorts & ships proteins" }
     );
-    disc.scale.set(1, 1, 0.35);
+    disc.scale.set(1, 1, 1.18); // make cisternae elliptical (flattened sacs)
   }
-  for (let i = 0; i < 5; i += 1) {
-    mesh(new THREE.SphereGeometry(0.32, 14, 10), "#7fe0c6", golgi.clone().add(randDir().multiplyScalar(2.6)), { emissive: 0.18 });
+  for (let i = 0; i < 6; i += 1) {
+    mesh(new THREE.SphereGeometry(0.34, 14, 10), "#7fe0c6", golgi.clone().add(randDir().multiplyScalar(2.7)), { emissive: 0.18, label: "Transport vesicle — carries cargo between compartments" });
   }
 
-  // --- Mitochondria: bean-shaped capsules with an inner matrix, no overlaps ---
+  // --- Mitochondria: bean-shaped, with an inner matrix and folded cristae ---
   for (let i = 0; i < 10; i += 1) {
     const len = 1.6 + rnd() * 1.8;
-    const p = place(len * 0.55 + 0.7, 5, CELL_R - 2);
+    const p = place(len * 0.55 + 0.9, 5, CELL_R - 2);
     if (!p) break;
-    const rot: [number, number, number] = [rnd() * 3, rnd() * 3, rnd() * 3];
-    mesh(new THREE.CapsuleGeometry(0.7, len, 6, 16), "#ff7a4d", p, { emissive: 0.16, rot, rough: 0.55 });
-    mesh(new THREE.CapsuleGeometry(0.42, len * 0.9, 4, 12), "#b5391f", p, { emissive: 0.1, rot }); // matrix/cristae hint
+    const sub = new THREE.Group();
+    sub.position.copy(p);
+    sub.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3);
+    group.add(sub);
+    const z = new THREE.Vector3();
+    mesh(new THREE.CapsuleGeometry(0.78, len, 8, 18), "#ff8a5c", z, { opacity: 0.82, emissive: 0.14, rough: 0.5, label: "Mitochondrion — the cell's power plant; makes ATP", parent: sub });
+    mesh(new THREE.CapsuleGeometry(0.5, len * 0.92, 6, 14), "#c14026", z, { emissive: 0.1, label: "Mitochondrion — the cell's power plant; makes ATP", parent: sub });
+    // cristae: folded inner-membrane discs along the long (y) axis
+    const cn = Math.max(3, Math.round(len * 2));
+    for (let c = 0; c < cn; c += 1) {
+      const y = -len / 2 + ((c + 0.5) / cn) * len;
+      const crista = mesh(new THREE.TorusGeometry(0.52, 0.08, 6, 16), "#ffd0a0", new THREE.Vector3(0, y, 0), { emissive: 0.1, rot: [Math.PI / 2, 0, 0], parent: sub });
+      crista.scale.set(1, 0.55, 1);
+    }
   }
 
   // --- Lysosomes & peroxisomes (no overlaps) ---
   for (let i = 0; i < 8; i += 1) {
-    const p = place(0.75, 5, CELL_R - 1.5);
+    const p = place(0.78, 5, CELL_R - 1.5);
     if (!p) continue;
-    mesh(organicSphere(0.72, 0.15), i % 2 ? "#ff6fae" : "#9ad06b", p, { emissive: 0.16 });
+    mesh(organicSphere(0.74, 0.15), i % 2 ? "#ff6fae" : "#9ad06b", p, {
+      emissive: 0.16,
+      label: i % 2 ? "Lysosome — digests waste and worn-out parts" : "Peroxisome — breaks down fatty acids & detoxifies"
+    });
+  }
+
+  // --- Plasma-membrane transport proteins: channels & pumps spanning the membrane ---
+  for (let i = 0; i < 14; i += 1) {
+    const dir = randDir();
+    const p = dir.clone().multiplyScalar(CELL_R * 0.985);
+    p.y *= 0.96;
+    const isPump = i % 3 === 0;
+    const barrel = mesh(
+      new THREE.CylinderGeometry(isPump ? 0.55 : 0.42, isPump ? 0.55 : 0.42, 1.5, 14),
+      isPump ? "#ffd24a" : "#5ad1ff",
+      p,
+      {
+        emissive: 0.2,
+        label: isPump
+          ? "Ion pump — active transport; uses ATP to move ions against their gradient"
+          : "Channel / transporter — lets specific ions or molecules cross the membrane"
+      }
+    );
+    barrel.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
   }
 
   // --- Centrosome (MTOC) + radiating microtubules ---
   const centro = nuc.clone().add(new THREE.Vector3(5.2, 2.2, 0.5));
-  mesh(new THREE.CylinderGeometry(0.22, 0.22, 1.2, 12), "#cfd6e0", centro, { emissive: 0.1 });
-  mesh(new THREE.CylinderGeometry(0.22, 0.22, 1.2, 12), "#cfd6e0", centro, { emissive: 0.1, rot: [Math.PI / 2, 0, 0] });
+  mesh(new THREE.CylinderGeometry(0.22, 0.22, 1.2, 12), "#cfd6e0", centro, { emissive: 0.1, label: "Centrosome — organises the microtubule cytoskeleton" });
+  mesh(new THREE.CylinderGeometry(0.22, 0.22, 1.2, 12), "#cfd6e0", centro, { emissive: 0.1, rot: [Math.PI / 2, 0, 0], label: "Centrosome — organises the microtubule cytoskeleton" });
   const mtPts: number[] = [];
   for (let i = 0; i < 16; i += 1) {
     const end = randDir().multiplyScalar(CELL_R * (0.78 + rnd() * 0.12));
@@ -1611,9 +1691,10 @@ function buildOrganelleScene() {
 }
 
 function renderOrganelleScene() {
-  if (organelleGroup) {
-    organelleGroup.rotation.y += 0.0016; // slow turn to reveal the 3D interior
+  if (organelleGroup && !hovering) {
+    organelleGroup.rotation.y += 0.0016; // slow turn to reveal the 3D interior (pause on hover)
   }
+  updateHoverTooltip();
   renderer.render(scene, camera);
 }
 
