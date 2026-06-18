@@ -561,7 +561,13 @@ function loadScene(id: string) {
     membrane = membraneSystemFromPreset(preset);
     buildMembraneScene(membrane.snapshot(), preset);
     membraneIsVesicle = preset.config.mode === "vesicle";
-    cameraDistance = membraneIsVesicle ? 30 : 15;
+    if (membraneIsVesicle) {
+      // Frame the whole sphere: outer-head world radius × a margin so it fits.
+      const outerWorldR = ((preset.config.vesicleRadiusSigma ?? 5) + 2.6) * MEMBRANE_SCALE + HEAD_RADIUS;
+      cameraDistance = outerWorldR * 3.3;
+    } else {
+      cameraDistance = 15;
+    }
   } else if (isDiffusionId(id)) {
     const preset = DIFFUSION_SCENES.find((p) => p.id === id) as DiffusionScenePreset;
     mode = "diffusion";
