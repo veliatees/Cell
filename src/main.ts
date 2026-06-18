@@ -1413,97 +1413,174 @@ function buildOrganelleScene() {
   const group = new THREE.Group();
   let seed = 20260618;
   const rnd = () => ((seed = (1_664_525 * seed + 1_013_904_223) >>> 0) / 4_294_967_296);
+  const randDir = () => {
+    const v = new THREE.Vector3(rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1);
+    return v.lengthSq() < 1e-4 ? new THREE.Vector3(1, 0, 0) : v.normalize();
+  };
 
-  const add = (
+  const mesh = (
     geo: THREE.BufferGeometry,
     color: string,
-    pos: [number, number, number],
-    opts: { opacity?: number; emissive?: number; scale?: [number, number, number]; rot?: [number, number, number] } = {}
+    pos: THREE.Vector3,
+    opts: { opacity?: number; emissive?: number; rot?: [number, number, number]; rough?: number } = {}
   ) => {
     const mat = new THREE.MeshStandardMaterial({
       color,
-      roughness: 0.45,
-      metalness: 0.04,
+      roughness: opts.rough ?? 0.5,
+      metalness: 0.03,
       emissive: color,
       emissiveIntensity: opts.emissive ?? 0.12,
       transparent: (opts.opacity ?? 1) < 1,
       opacity: opts.opacity ?? 1,
-      depthWrite: (opts.opacity ?? 1) >= 0.6
+      depthWrite: (opts.opacity ?? 1) >= 0.6,
+      side: (opts.opacity ?? 1) < 1 ? THREE.DoubleSide : THREE.FrontSide
     });
     const m = new THREE.Mesh(geo, mat);
-    m.position.set(pos[0], pos[1], pos[2]);
-    if (opts.scale) m.scale.set(opts.scale[0], opts.scale[1], opts.scale[2]);
+    m.position.copy(pos);
     if (opts.rot) m.rotation.set(opts.rot[0], opts.rot[1], opts.rot[2]);
     group.add(m);
     return m;
   };
 
-  // Plasma membrane — translucent so the interior is visible.
-  add(new THREE.SphereGeometry(CELL_R, 64, 48), "#7fb6ff", [0, 0, 0], { opacity: 0.1, emissive: 0.05 });
-  add(new THREE.SphereGeometry(CELL_R * 0.985, 48, 32), "#9ec6ff", [0, 0, 0], { opacity: 0.06, emissive: 0.04 });
+  // An "organic" (lumpy, non-perfect) sphere — real cells aren't smooth balls.
+  const organicSphere = (r: number, amp: number) => {
+    const g = new THREE.SphereGeometry(r, 96, 64);
+    const p = g.attributes.position as THREE.BufferAttribute;
+    const v = new THREE.Vector3();
+    for (let i = 0; i < p.count; i += 1) {
+      v.fromBufferAttribute(p, i);
+      const n = v.clone().normalize();
+      const d =
+        Math.sin(3.0 * n.x + 1) * Math.cos(2.0 * n.y) +
+        Math.sin(2.5 * n.z + 2) * Math.cos(1.6 * n.x) +
+        Math.sin(1.8 * n.y + 0.5);
+      v.setLength(r * (1 + (amp * d) / 3));
+      p.setXYZ(i, v.x, v.y, v.z);
+    }
+    p.needsUpdate = true;
+    g.computeVertexNormals();
+    return g;
+  };
 
-  // Nucleus (largest organelle) + nucleolus, with a faint envelope.
-  const nucPos: [number, number, number] = [-3.2, 1.6, -1.2];
-  add(new THREE.SphereGeometry(4.6, 48, 36), "#b07ed8", nucPos, { opacity: 0.32, emissive: 0.08 });
-  add(new THREE.SphereGeometry(1.7, 32, 24), "#6f3fa0", [nucPos[0] + 0.7, nucPos[1] - 0.5, nucPos[2] + 0.4], { emissive: 0.16 });
+  // Collision-free placement: organelles are membrane-bound and exclude volume —
+  // they do not interpenetrate. Track occupied spheres and reject overlaps.
+  const occupied: { c: THREE.Vector3; r: number }[] = [];
+  const place = (orgR: number, minR: number, maxR: number): THREE.Vector3 | null => {
+    for (let t = 0; t < 240; t += 1) {
+      const dir = randDir();
+      const dist = minR + rnd() * (maxR - minR);
+      const p = dir.multiplyScalar(dist);
+      p.y *= 0.92; // cells are a touch flattened
+      if (p.length() + orgR > CELL_R * 0.9) continue;
+      let ok = true;
+      for (const o of occupied) {
+        if (p.distanceTo(o.c) < o.r + orgR + 0.25) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) {
+        occupied.push({ c: p, r: orgR });
+        return p;
+      }
+    }
+    return null;
+  };
 
-  // Rough ER — a network of folded sheets wrapped around the nucleus.
-  for (let i = 0; i < 6; i += 1) {
-    const a = (i / 6) * Math.PI * 2;
-    add(new THREE.TorusGeometry(5.6 + i * 0.12, 0.22, 10, 36), "#e8b24a", nucPos, {
-      opacity: 0.7,
-      emissive: 0.1,
-      rot: [a * 0.7 + 0.4, a, a * 0.3]
-    });
+  // --- Plasma membrane (organic, translucent so we can see inside) ---
+  mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.1, emissive: 0.05 });
+  mesh(organicSphere(CELL_R * 0.97, 0.06), "#9ec6ff", new THREE.Vector3(), { opacity: 0.06, emissive: 0.04 });
+
+  // --- Nucleus + envelope + nucleolus + nuclear pores ---
+  const nuc = new THREE.Vector3(-3.4, 1.4, -1.2);
+  occupied.push({ c: nuc, r: 5.1 }); // reserve the nucleus volume (incl. ER shell)
+  mesh(organicSphere(4.6, 0.04), "#b07ed8", nuc, { opacity: 0.34, emissive: 0.08 });
+  mesh(organicSphere(4.75, 0.04), "#caa3e6", nuc, { opacity: 0.12, emissive: 0.05 }); // envelope
+  mesh(organicSphere(1.7, 0.12), "#6f3fa0", nuc.clone().add(new THREE.Vector3(0.7, -0.5, 0.4)), { emissive: 0.16 });
+  // nuclear pores — dots on the envelope
+  const poreN = 60;
+  const porePos = new Float32Array(poreN * 3);
+  for (let i = 0; i < poreN; i += 1) {
+    const q = randDir().multiplyScalar(4.7).add(nuc);
+    porePos[i * 3] = q.x;
+    porePos[i * 3 + 1] = q.y;
+    porePos[i * 3 + 2] = q.z;
   }
+  const poreGeo = new THREE.BufferGeometry();
+  poreGeo.setAttribute("position", new THREE.BufferAttribute(porePos, 3));
+  group.add(
+    new THREE.Points(
+      poreGeo,
+      new THREE.PointsMaterial({ color: "#7c4fb0", size: 0.45, map: DISC_TEXTURE, alphaTest: 0.4, transparent: true })
+    )
+  );
 
-  // Golgi apparatus — a stack of flattened, slightly offset cisternae.
-  const golgi: [number, number, number] = [5.5, -2.5, 2];
-  for (let i = 0; i < 5; i += 1) {
-    add(new THREE.CylinderGeometry(2.0 - i * 0.18, 2.0 - i * 0.18, 0.22, 28), "#3fc7a6", [golgi[0] + i * 0.18, golgi[1] + i * 0.62, golgi[2]], {
-      emissive: 0.12,
-      rot: [0.5, 0.3, 0.15]
-    });
-  }
-
-  // Mitochondria — bean-shaped (elongated ellipsoids) scattered in the cytoplasm.
-  const mitoSphere = new THREE.SphereGeometry(1, 20, 16);
-  for (let i = 0; i < 9; i += 1) {
-    const dir = new THREE.Vector3(rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1).normalize();
-    const r = 6 + rnd() * 5.5;
-    const p: [number, number, number] = [dir.x * r, dir.y * r * 0.8, dir.z * r];
-    add(mitoSphere, "#ff7a4d", p, {
-      emissive: 0.18,
-      scale: [2.4, 1.0, 1.0],
-      rot: [rnd() * 3, rnd() * 3, rnd() * 3]
-    });
-  }
-
-  // Lysosomes & peroxisomes — small spheres.
-  const small = new THREE.SphereGeometry(1, 18, 14);
+  // --- Rough ER: tubular network hugging the nuclear envelope ---
   for (let i = 0; i < 7; i += 1) {
-    const dir = new THREE.Vector3(rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1).normalize();
-    const r = 5 + rnd() * 6;
-    add(small, i % 2 ? "#ff6fae" : "#9ad06b", [dir.x * r, dir.y * r * 0.8, dir.z * r], {
-      emissive: 0.16,
-      scale: [0.7, 0.7, 0.7]
-    });
+    const pts: THREE.Vector3[] = [];
+    let d = randDir();
+    for (let k = 0; k < 6; k += 1) {
+      d = d.clone().add(randDir().multiplyScalar(0.6)).normalize();
+      pts.push(d.clone().multiplyScalar(5.0 + rnd() * 1.6).add(nuc));
+    }
+    const curve = new THREE.CatmullRomCurve3(pts);
+    mesh(new THREE.TubeGeometry(curve, 40, 0.16, 6), "#e8b24a", new THREE.Vector3(), { opacity: 0.85, emissive: 0.1 });
   }
 
-  // Centrosome — a pair of short perpendicular cylinders near the nucleus.
-  add(new THREE.CylinderGeometry(0.25, 0.25, 1.3, 12), "#cfd6e0", [1.5, 4.5, 1.5], { emissive: 0.1, rot: [0, 0, 0] });
-  add(new THREE.CylinderGeometry(0.25, 0.25, 1.3, 12), "#cfd6e0", [1.9, 4.5, 1.5], { emissive: 0.1, rot: [Math.PI / 2, 0, 0] });
+  // --- Golgi apparatus: a stack of curved cisternae + budding vesicles ---
+  const golgi = place(2.6, 5.5, 9) ?? new THREE.Vector3(6, -2, 2);
+  for (let i = 0; i < 6; i += 1) {
+    const disc = mesh(
+      new THREE.TorusGeometry(1.7 - i * 0.12, 0.5, 8, 28, Math.PI * 1.5),
+      "#3fc7a6",
+      golgi.clone().add(new THREE.Vector3(0, (i - 2.5) * 0.55, 0)),
+      { emissive: 0.12, rot: [Math.PI / 2 + 0.25, 0.3, 0] }
+    );
+    disc.scale.set(1, 1, 0.35);
+  }
+  for (let i = 0; i < 5; i += 1) {
+    mesh(new THREE.SphereGeometry(0.32, 14, 10), "#7fe0c6", golgi.clone().add(randDir().multiplyScalar(2.6)), { emissive: 0.18 });
+  }
 
-  // Ribosomes — a haze of tiny dots in the cytoplasm (free + on the rough ER).
-  const ribN = 600;
+  // --- Mitochondria: bean-shaped capsules with an inner matrix, no overlaps ---
+  for (let i = 0; i < 10; i += 1) {
+    const len = 1.6 + rnd() * 1.8;
+    const p = place(len * 0.55 + 0.7, 5, CELL_R - 2);
+    if (!p) break;
+    const rot: [number, number, number] = [rnd() * 3, rnd() * 3, rnd() * 3];
+    mesh(new THREE.CapsuleGeometry(0.7, len, 6, 16), "#ff7a4d", p, { emissive: 0.16, rot, rough: 0.55 });
+    mesh(new THREE.CapsuleGeometry(0.42, len * 0.9, 4, 12), "#b5391f", p, { emissive: 0.1, rot }); // matrix/cristae hint
+  }
+
+  // --- Lysosomes & peroxisomes (no overlaps) ---
+  for (let i = 0; i < 8; i += 1) {
+    const p = place(0.75, 5, CELL_R - 1.5);
+    if (!p) continue;
+    mesh(organicSphere(0.72, 0.15), i % 2 ? "#ff6fae" : "#9ad06b", p, { emissive: 0.16 });
+  }
+
+  // --- Centrosome (MTOC) + radiating microtubules ---
+  const centro = nuc.clone().add(new THREE.Vector3(5.2, 2.2, 0.5));
+  mesh(new THREE.CylinderGeometry(0.22, 0.22, 1.2, 12), "#cfd6e0", centro, { emissive: 0.1 });
+  mesh(new THREE.CylinderGeometry(0.22, 0.22, 1.2, 12), "#cfd6e0", centro, { emissive: 0.1, rot: [Math.PI / 2, 0, 0] });
+  const mtPts: number[] = [];
+  for (let i = 0; i < 16; i += 1) {
+    const end = randDir().multiplyScalar(CELL_R * (0.78 + rnd() * 0.12));
+    mtPts.push(centro.x, centro.y, centro.z, end.x, end.y, end.z);
+  }
+  const mtGeo = new THREE.BufferGeometry();
+  mtGeo.setAttribute("position", new THREE.Float32BufferAttribute(mtPts, 3));
+  group.add(new THREE.LineSegments(mtGeo, new THREE.LineBasicMaterial({ color: "#7fd6c8", transparent: true, opacity: 0.22 })));
+
+  // --- Ribosomes: a haze of tiny dots (free + on the rough ER), outside the nucleus ---
+  const ribN = 650;
   const ribPos = new Float32Array(ribN * 3);
   let placed = 0;
   while (placed < ribN) {
     const v = new THREE.Vector3(rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1);
     if (v.length() > 1) continue;
-    const p = v.multiplyScalar(CELL_R * 0.92);
-    // keep them out of the nucleus
-    if (p.distanceTo(new THREE.Vector3(...nucPos)) < 4.8) continue;
+    const p = v.multiplyScalar(CELL_R * 0.9);
+    if (p.distanceTo(nuc) < 5.0) continue;
     ribPos[placed * 3] = p.x;
     ribPos[placed * 3 + 1] = p.y;
     ribPos[placed * 3 + 2] = p.z;
@@ -1511,29 +1588,25 @@ function buildOrganelleScene() {
   }
   const ribGeo = new THREE.BufferGeometry();
   ribGeo.setAttribute("position", new THREE.BufferAttribute(ribPos, 3));
-  const ribMat = new THREE.PointsMaterial({
-    color: "#e9eef8",
-    size: 0.28,
-    map: DISC_TEXTURE,
-    alphaTest: 0.4,
-    transparent: true,
-    opacity: 0.8,
-    sizeAttenuation: true
-  });
-  group.add(new THREE.Points(ribGeo, ribMat));
+  group.add(
+    new THREE.Points(
+      ribGeo,
+      new THREE.PointsMaterial({ color: "#e9eef8", size: 0.26, map: DISC_TEXTURE, alphaTest: 0.4, transparent: true, opacity: 0.8, sizeAttenuation: true })
+    )
+  );
 
   root.add(group);
   organelleGroup = group;
 
   if (sceneNote) {
     sceneNote.textContent =
-      "A whole eukaryotic (animal) cell at the cell scale — the plasma membrane is translucent so you can see inside. A structural model with sourced relative sizes; the molecular physics of the earlier scenes lives one zoom-in below.";
+      "A whole eukaryotic (animal) cell at the cell scale. The plasma membrane is organic (not a perfect ball) and translucent; organelles are placed without overlapping (they exclude volume, as in life). Structural model with sourced relative sizes — the molecular physics lives one zoom-in below.";
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;
     compositionEl.innerHTML =
       chip("#b07ed8", "nucleus") + chip("#ff7a4d", "mitochondria") + chip("#e8b24a", "ER") + chip("#3fc7a6", "Golgi");
-    netChargeEl.innerHTML = chip("#ff6fae", "lysosome") + chip("#e9eef8", "ribosomes");
+    netChargeEl.innerHTML = chip("#ff6fae", "lysosome") + chip("#7fd6c8", "cytoskeleton") + chip("#e9eef8", "ribosomes");
   }
 }
 
