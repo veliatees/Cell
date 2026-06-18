@@ -22,12 +22,13 @@ npm install
 npm run dev
 ```
 
-Then open the local URL printed by Vite. The app starts in **Cell — one reality
-(vesicle)**: a closed spherical lipid membrane enclosing particles, running on one
-clock at the cell scale. The earlier ion, water, solvation, diffusion, membrane,
-barrier, pore, and flat-slice scenes remain available as source-backed "zoom-ins"
-on the rules underneath that one reality. The cell scale is coarse-grained but
-**grounded** — its parameters trace down to the atomic/chemical physics (see
+Then open the local URL printed by Vite. The app starts on the **eukaryotic cell
+— organelles**: a whole animal cell with a translucent membrane and organelles
+inside (nucleus, mitochondria, ER, Golgi, lysosomes, ribosomes) at the cell scale.
+Below it, "zoom-in" scenes show the rules underneath: the molecular-scale lipid
+vesicle, and the ion, water, solvation, diffusion, membrane, and chemistry
+building blocks. Every scale is coarse-grained but **grounded** — its parameters
+and sizes trace down to measured atomic/chemical/biological data (see
 [docs/06-one-reality.md](docs/06-one-reality.md)).
 
 The models are source-backed, not tuned. For Na–Cl, ion masses, ionic radii, the
@@ -74,6 +75,7 @@ project cares about:
 - [Milestone 007: membrane transport](docs/milestones/007-membrane-transport.md)
 - [Milestone 008: the closed cell (vesicle)](docs/milestones/008-closed-cell.md)
 - [Milestone 009: chemistry (reaction–diffusion)](docs/milestones/009-chemistry.md)
+- [Milestone 010: the eukaryotic cell (organelles)](docs/milestones/010-eukaryotic-cell.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)
