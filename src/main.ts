@@ -66,10 +66,13 @@ if (!app) {
 }
 
 const opt = (p: { id: string; label: string }) => `<option value="${p.id}">${p.label}</option>`;
+const EUKARYOTE_SCENE_ID = "eukaryotic-cell";
 // The unified cell reality comes first; the rest are the building blocks /
 // "zoom-ins" that show the rules underneath it.
 const sceneOptions =
-  `<optgroup label="The cell">` +
+  `<optgroup label="Eukaryotic cell (organelles)">` +
+  `<option value="${EUKARYOTE_SCENE_ID}">Eukaryotic cell — organelles</option>` +
+  `</optgroup><optgroup label="The cell (molecular scale)">` +
   MEMBRANE_SCENES.map(opt).join("") +
   `</optgroup><optgroup label="Building blocks · ions">` +
   SCENE_PRESETS.map(opt).join("") +
@@ -82,9 +85,9 @@ const sceneOptions =
   `</optgroup><optgroup label="Building blocks · chemistry">` +
   REACTION_SCENES.map(opt).join("") +
   `</optgroup>`;
-const DEFAULT_SCENE_ID = "cell-reality";
+const DEFAULT_SCENE_ID = EUKARYOTE_SCENE_ID;
 
-type Mode = "ions" | "water" | "solvation" | "diffusion" | "membrane" | "reaction";
+type Mode = "ions" | "water" | "solvation" | "diffusion" | "membrane" | "reaction" | "organelles";
 const isWaterId = (id: string) => WATER_SCENES.some((p) => p.id === id);
 const isSolvationId = (id: string) => SOLVATION_SCENES.some((p) => p.id === id);
 const isDiffusionId = (id: string) => DIFFUSION_SCENES.some((p) => p.id === id);
@@ -260,8 +263,10 @@ let diffusion: DiffusionSystem | null = null;
 let membrane: MembraneSystem | null = null;
 let membraneIsVesicle = false;
 let reaction: ReactionSystem | null = null;
+let organelleGroup: THREE.Group | null = null; // schematic whole-cell anatomy
 let mode: Mode = "ions";
 const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
+const CELL_R = 14; // whole-cell schematic radius (world units)
 const MEMBRANE_SCALE = 1.6; // membrane positions are in σ (~1 nm); scale for display
 let running = true;
 let showClouds = true;
@@ -448,6 +453,14 @@ const METRIC_LABELS: Record<Mode, MetricLabels> = {
     kinetic: "Reactions",
     total: "—",
     drift: "—"
+  },
+  organelles: {
+    distance: "Cell diameter",
+    force: "—",
+    potential: "—",
+    kinetic: "—",
+    total: "—",
+    drift: "—"
   }
 };
 
@@ -479,6 +492,9 @@ app.querySelector<HTMLButtonElement>("[data-action='play']")?.addEventListener("
 app.querySelector<HTMLButtonElement>("[data-action='step']")?.addEventListener("click", () => {
   running = false;
   updatePlayIcon();
+  if (mode === "organelles") {
+    return;
+  }
   if (mode === "reaction" && reaction) {
     reaction.step(5);
     renderReactionSnapshot(reaction.snapshot());
@@ -541,6 +557,24 @@ bindRange("damping", (value) => {
 bindRange("temperature", (value) => (simulation.settings.temperatureK = value));
 
 function loadScene(id: string) {
+  if (id === EUKARYOTE_SCENE_ID) {
+    mode = "organelles";
+    water = null;
+    solvation = null;
+    diffusion = null;
+    membrane = null;
+    reaction = null;
+    buildOrganelleScene();
+    cameraDistance = 42;
+    setMetricLabels(mode);
+    if (labelEls.distance) labelEls.distance.textContent = "Cell diameter";
+    setText(values.distance, "~20 µm");
+    for (const k of ["force", "potential", "kinetic", "total", "drift", "elapsed"] as const) {
+      setText(values[k], "—");
+    }
+    resize();
+    return;
+  }
   if (isReactionId(id)) {
     const preset = REACTION_SCENES.find((p) => p.id === id) as ReactionScenePreset;
     mode = "reaction";
@@ -687,7 +721,9 @@ function animate() {
   lastFrame = now;
   const iterations = Math.max(1, Math.round(delta / 3.2));
 
-  if (mode === "reaction" && reaction) {
+  if (mode === "organelles") {
+    renderOrganelleScene();
+  } else if (mode === "reaction" && reaction) {
     if (running) {
       reaction.step(1);
     }
@@ -769,6 +805,19 @@ function clearWaterVisuals() {
     reactionPoints.geometry.dispose();
     (reactionPoints.material as THREE.Material).dispose();
     reactionPoints = null;
+  }
+
+  if (organelleGroup) {
+    root.remove(organelleGroup);
+    organelleGroup.traverse((o) => {
+      if (o instanceof THREE.Mesh || o instanceof THREE.Points) {
+        o.geometry.dispose();
+        const m = o.material as THREE.Material | THREE.Material[];
+        if (Array.isArray(m)) m.forEach((x) => x.dispose());
+        else m.dispose();
+      }
+    });
+    organelleGroup = null;
   }
 
   for (const m of [membraneHeadMesh, membraneTailMesh, membraneSoluteMesh]) {
@@ -1353,6 +1402,145 @@ function renderReactionSnapshot(snapshot: ReactionSnapshot) {
     values.drift.style.color = "";
   }
   setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
+  renderer.render(scene, camera);
+}
+
+// ---- Eukaryotic cell (whole-cell schematic, sourced sizes) ----
+function buildOrganelleScene() {
+  clearIonVisuals();
+  clearWaterVisuals();
+
+  const group = new THREE.Group();
+  let seed = 20260618;
+  const rnd = () => ((seed = (1_664_525 * seed + 1_013_904_223) >>> 0) / 4_294_967_296);
+
+  const add = (
+    geo: THREE.BufferGeometry,
+    color: string,
+    pos: [number, number, number],
+    opts: { opacity?: number; emissive?: number; scale?: [number, number, number]; rot?: [number, number, number] } = {}
+  ) => {
+    const mat = new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.45,
+      metalness: 0.04,
+      emissive: color,
+      emissiveIntensity: opts.emissive ?? 0.12,
+      transparent: (opts.opacity ?? 1) < 1,
+      opacity: opts.opacity ?? 1,
+      depthWrite: (opts.opacity ?? 1) >= 0.6
+    });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(pos[0], pos[1], pos[2]);
+    if (opts.scale) m.scale.set(opts.scale[0], opts.scale[1], opts.scale[2]);
+    if (opts.rot) m.rotation.set(opts.rot[0], opts.rot[1], opts.rot[2]);
+    group.add(m);
+    return m;
+  };
+
+  // Plasma membrane — translucent so the interior is visible.
+  add(new THREE.SphereGeometry(CELL_R, 64, 48), "#7fb6ff", [0, 0, 0], { opacity: 0.1, emissive: 0.05 });
+  add(new THREE.SphereGeometry(CELL_R * 0.985, 48, 32), "#9ec6ff", [0, 0, 0], { opacity: 0.06, emissive: 0.04 });
+
+  // Nucleus (largest organelle) + nucleolus, with a faint envelope.
+  const nucPos: [number, number, number] = [-3.2, 1.6, -1.2];
+  add(new THREE.SphereGeometry(4.6, 48, 36), "#b07ed8", nucPos, { opacity: 0.32, emissive: 0.08 });
+  add(new THREE.SphereGeometry(1.7, 32, 24), "#6f3fa0", [nucPos[0] + 0.7, nucPos[1] - 0.5, nucPos[2] + 0.4], { emissive: 0.16 });
+
+  // Rough ER — a network of folded sheets wrapped around the nucleus.
+  for (let i = 0; i < 6; i += 1) {
+    const a = (i / 6) * Math.PI * 2;
+    add(new THREE.TorusGeometry(5.6 + i * 0.12, 0.22, 10, 36), "#e8b24a", nucPos, {
+      opacity: 0.7,
+      emissive: 0.1,
+      rot: [a * 0.7 + 0.4, a, a * 0.3]
+    });
+  }
+
+  // Golgi apparatus — a stack of flattened, slightly offset cisternae.
+  const golgi: [number, number, number] = [5.5, -2.5, 2];
+  for (let i = 0; i < 5; i += 1) {
+    add(new THREE.CylinderGeometry(2.0 - i * 0.18, 2.0 - i * 0.18, 0.22, 28), "#3fc7a6", [golgi[0] + i * 0.18, golgi[1] + i * 0.62, golgi[2]], {
+      emissive: 0.12,
+      rot: [0.5, 0.3, 0.15]
+    });
+  }
+
+  // Mitochondria — bean-shaped (elongated ellipsoids) scattered in the cytoplasm.
+  const mitoSphere = new THREE.SphereGeometry(1, 20, 16);
+  for (let i = 0; i < 9; i += 1) {
+    const dir = new THREE.Vector3(rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1).normalize();
+    const r = 6 + rnd() * 5.5;
+    const p: [number, number, number] = [dir.x * r, dir.y * r * 0.8, dir.z * r];
+    add(mitoSphere, "#ff7a4d", p, {
+      emissive: 0.18,
+      scale: [2.4, 1.0, 1.0],
+      rot: [rnd() * 3, rnd() * 3, rnd() * 3]
+    });
+  }
+
+  // Lysosomes & peroxisomes — small spheres.
+  const small = new THREE.SphereGeometry(1, 18, 14);
+  for (let i = 0; i < 7; i += 1) {
+    const dir = new THREE.Vector3(rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1).normalize();
+    const r = 5 + rnd() * 6;
+    add(small, i % 2 ? "#ff6fae" : "#9ad06b", [dir.x * r, dir.y * r * 0.8, dir.z * r], {
+      emissive: 0.16,
+      scale: [0.7, 0.7, 0.7]
+    });
+  }
+
+  // Centrosome — a pair of short perpendicular cylinders near the nucleus.
+  add(new THREE.CylinderGeometry(0.25, 0.25, 1.3, 12), "#cfd6e0", [1.5, 4.5, 1.5], { emissive: 0.1, rot: [0, 0, 0] });
+  add(new THREE.CylinderGeometry(0.25, 0.25, 1.3, 12), "#cfd6e0", [1.9, 4.5, 1.5], { emissive: 0.1, rot: [Math.PI / 2, 0, 0] });
+
+  // Ribosomes — a haze of tiny dots in the cytoplasm (free + on the rough ER).
+  const ribN = 600;
+  const ribPos = new Float32Array(ribN * 3);
+  let placed = 0;
+  while (placed < ribN) {
+    const v = new THREE.Vector3(rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1);
+    if (v.length() > 1) continue;
+    const p = v.multiplyScalar(CELL_R * 0.92);
+    // keep them out of the nucleus
+    if (p.distanceTo(new THREE.Vector3(...nucPos)) < 4.8) continue;
+    ribPos[placed * 3] = p.x;
+    ribPos[placed * 3 + 1] = p.y;
+    ribPos[placed * 3 + 2] = p.z;
+    placed += 1;
+  }
+  const ribGeo = new THREE.BufferGeometry();
+  ribGeo.setAttribute("position", new THREE.BufferAttribute(ribPos, 3));
+  const ribMat = new THREE.PointsMaterial({
+    color: "#e9eef8",
+    size: 0.28,
+    map: DISC_TEXTURE,
+    alphaTest: 0.4,
+    transparent: true,
+    opacity: 0.8,
+    sizeAttenuation: true
+  });
+  group.add(new THREE.Points(ribGeo, ribMat));
+
+  root.add(group);
+  organelleGroup = group;
+
+  if (sceneNote) {
+    sceneNote.textContent =
+      "A whole eukaryotic (animal) cell at the cell scale — the plasma membrane is translucent so you can see inside. A structural model with sourced relative sizes; the molecular physics of the earlier scenes lives one zoom-in below.";
+  }
+  if (compositionEl && netChargeEl) {
+    const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;
+    compositionEl.innerHTML =
+      chip("#b07ed8", "nucleus") + chip("#ff7a4d", "mitochondria") + chip("#e8b24a", "ER") + chip("#3fc7a6", "Golgi");
+    netChargeEl.innerHTML = chip("#ff6fae", "lysosome") + chip("#e9eef8", "ribosomes");
+  }
+}
+
+function renderOrganelleScene() {
+  if (organelleGroup) {
+    organelleGroup.rotation.y += 0.0016; // slow turn to reveal the 3D interior
+  }
   renderer.render(scene, camera);
 }
 

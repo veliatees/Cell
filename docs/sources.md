@@ -31,6 +31,14 @@ link back here or to a more specific research file.
     radii: Na+ 0.102 nm, Cl- 0.181 nm, K+ 0.138 nm.
 - IUPAC 2021 standard atomic weights.
   - Source for ion masses (Na 22.9898 u, Cl 35.45 u, K 39.0983 u).
+- Eukaryotic cell organelles — sizes, functions, organization:
+  - NIGMS, "Take a Tour of Your Cells' Organelles": https://nigms.nih.gov/biobeat/2021/03/take-a-tour-of-your-cells-organelles
+  - Biology LibreTexts, "Cell Organelles": https://bio.libretexts.org/Courses/Cosumnes_River_College/Introductory_Anatomy_and_Physiology_(Aptekar)/02:_Cells_and_Tissues/2.06:_Cell_Organelles
+  - Alberts et al., Molecular Biology of the Cell (NCBI Bookshelf, already listed).
+  - Key figures used: typical animal cell ~10–30 µm; nucleus ~6 µm (largest
+    organelle); mitochondria ~0.5–1 µm × 1–5 µm (hundreds–thousands per cell);
+    Golgi 4–10 cisternae; lysosomes ~0.1–0.5 µm; ribosomes ~25 nm; ER forms a
+    network contiguous with the nuclear envelope and contacts mitochondria/Golgi.
 - Smoluchowski, M. von (1917), Z. Phys. Chem. 92, 129 — diffusion-limited
   reaction rate.
   - Source for the reaction–diffusion rate constant k = 4π(D_A+D_B)R used to
