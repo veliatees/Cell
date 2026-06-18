@@ -50,6 +50,25 @@ link back here or to a more specific research file.
   and glycolysis, which gives the network a self-regulating steady state.
 - Chemical Langevin equation (Gillespie, D. T., J. Chem. Phys. 113, 297, 2000) —
   basis for the cell's molecular noise term √(flux·dt/Ω)·ξ.
+- Hubley, M. J., Locke, B. R., & Moerland, T. S. (1996). "The effects of
+  temperature, pH, and magnesium on the diffusion coefficient of ATP in
+  solutions of physiological ionic strength", Biochim. Biophys. Acta 1291, 115.
+  - Source for the cytoplasmic ATP diffusion coefficient (~150 µm²/s) used to
+    compute the per-organelle ATP transport delay τ = x²/(6·D): ATP is not used
+    the instant it is made; distant organelles receive it later.
+- Organelle internal-cycle "lifestyles" (illustrative periods, real phenomena):
+  - Transcriptional bursting: Raj & van Oudenaarden (2008), Cell 135, 216;
+    Chubb et al. (2006), Curr. Biol. 16, 1018.
+  - Translational bursting: Yu, Xiao, Ren, Lao & Xie (2006), Science 311, 1600.
+  - Quantal / vesicular Golgi trafficking and pulsatile lysosomal degradation —
+    Alberts et al., Molecular Biology of the Cell (already listed).
+  - Basis for giving each organelle its own independent cycle (continuous
+    powerhouses vs. bursty batch workers). Periods are assumptions; the
+    independent-rhythm and bursting structure is real.
+- Stress-driven organelle failure (illustrative hazard rates): the modelled
+  fault probability rising with low ATP and accumulated waste/ROS reflects the
+  real link between energy stress, oxidative damage and organelle dysfunction
+  (Alberts et al., already listed). Hazard magnitudes are explicit assumptions.
 - Smoluchowski, M. von (1917), Z. Phys. Chem. 92, 129 — diffusion-limited
   reaction rate.
   - Source for the reaction–diffusion rate constant k = 4π(D_A+D_B)R used to

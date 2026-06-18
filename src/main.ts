@@ -57,7 +57,7 @@ import {
   type ReactionSnapshot,
   type ReactionSystem
 } from "./physics/reactions";
-import { LivingCell, type OrganelleActivity } from "./physics/cell";
+import { LivingCell, type OrganelleActivity, type OrganelleId, type CellSnapshot } from "./physics/cell";
 import "./styles.css";
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -272,7 +272,6 @@ let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by c
 type GlowGroup = { kind: keyof OrganelleActivity; mats: THREE.MeshStandardMaterial[]; base: number; gain: number };
 let organelleGlow: GlowGroup[] = [];
 let ribosomeMat: THREE.PointsMaterial | null = null; // ribosomes brighten with translation
-let organelleClock = 0; // drives each organelle's own pulsing rhythm
 let mode: Mode = "ions";
 const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
 const CELL_R = 14; // whole-cell schematic radius (world units)
@@ -721,6 +720,79 @@ const hoverTooltip = document.createElement("div");
 hoverTooltip.className = "hover-tip";
 hoverTooltip.style.display = "none";
 viewportElement.append(hoverTooltip);
+
+// --- Live activity report (organelle scene): what each organelle is doing now,
+//     what is moving where, plus an event log written as things actually happen.
+const reportPanel = document.createElement("div");
+reportPanel.className = "report-panel";
+reportPanel.style.display = "none";
+reportPanel.innerHTML =
+  '<div class="report-panel__head">Cell activity — live</div>' +
+  '<div class="report-status"></div>' +
+  '<div class="report-rows"></div>' +
+  '<div class="report-log__title">Event log (as it happens)</div>' +
+  '<div class="report-log"></div>';
+viewportElement.append(reportPanel);
+let lastEventId = 0;
+
+const ORG_INFO: Record<OrganelleId, { name: string; action: string; ref: number }> = {
+  membrane: { name: "Membrane", action: "glucose, amino acids → in", ref: 0.78 },
+  glycolysis: { name: "Glycolysis", action: "glucose → pyruvate + ATP", ref: 0.5 },
+  mitochondria: { name: "Mitochondria", action: "pyruvate → ATP (+ waste)", ref: 0.95 },
+  nucleus: { name: "Nucleus", action: "DNA → mRNA", ref: 0.36 },
+  ribosome: { name: "Ribosomes / ER", action: "mRNA + amino acids → protein", ref: 0.62 },
+  golgi: { name: "Golgi", action: "protein → packaged & secreted", ref: 0.48 },
+  lysosome: { name: "Lysosome", action: "waste → recycled amino acids", ref: 0.5 }
+};
+
+function updateReportPanel(s: CellSnapshot) {
+  reportPanel.style.display = "block";
+  const statusEl = reportPanel.querySelector(".report-status");
+  if (statusEl) {
+    const col = s.status === "dying" ? "#ff8a8a" : s.status === "stressed" ? "#ffcf6b" : "#7ee0a8";
+    statusEl.innerHTML =
+      `<span style="color:${col};font-weight:600">${s.status.toUpperCase()}</span> · ` +
+      `charge ${s.energyCharge.toFixed(2)} · ATP ${s.atp.toFixed(2)} · glucose ${s.pools.glucose.toFixed(2)} · ` +
+      `protein ${s.pools.protein.toFixed(1)} · waste ${s.pools.waste.toFixed(2)} · t ${Math.round(s.elapsedS)}s`;
+  }
+  const rowsEl = reportPanel.querySelector(".report-rows");
+  if (rowsEl) {
+    rowsEl.innerHTML = s.organelles
+      .map((o) => {
+        const info = ORG_INFO[o.id];
+        const load = Math.max(0, Math.min(1, o.activity / info.ref));
+        const bursting = o.activity > info.ref * 1.3;
+        const tag = o.faulted ? "FAULT" : bursting ? "burst" : o.activity > info.ref * 0.15 ? "active" : "idle";
+        const tagCol = o.faulted ? "#ff7a7a" : bursting ? "#8fe3ff" : o.activity > info.ref * 0.15 ? "#9be0a8" : "#7a8194";
+        const barW = Math.round(load * 100);
+        const effPct = Math.round(o.efficiency * 100);
+        return (
+          `<div class="report-row${o.faulted ? " is-fault" : ""}">` +
+          `<div class="report-row__top"><span class="report-row__name">${info.name}</span>` +
+          `<span class="report-row__tag" style="color:${tagCol}">${tag}</span></div>` +
+          `<div class="report-row__act">${info.action}</div>` +
+          `<div class="report-row__bar"><span style="width:${barW}%"></span></div>` +
+          `<div class="report-row__meta">eff ${effPct}% · ATP here ${Math.round(o.atpAvailability * 100)}% · ` +
+          `delivery ~${o.transportMs < 1000 ? `${Math.round(o.transportMs)} ms` : `${(o.transportMs / 1000).toFixed(1)} s`}</div>` +
+          `</div>`
+        );
+      })
+      .join("");
+  }
+  const logEl = reportPanel.querySelector(".report-log");
+  if (logEl) {
+    const fresh = s.events.filter((e) => e.id > lastEventId);
+    for (const e of fresh) {
+      const div = document.createElement("div");
+      div.className = `report-log__item sev-${e.severity}`;
+      div.textContent = `[${Math.round(e.t)}s] ${e.text}`;
+      logEl.prepend(div);
+      lastEventId = e.id;
+    }
+    while (logEl.childElementCount > 40) logEl.lastElementChild?.remove();
+  }
+}
+
 const hoverRaycaster = new THREE.Raycaster();
 const hoverNDC = new THREE.Vector2();
 let hoverClientX = 0;
@@ -884,6 +956,7 @@ function clearWaterVisuals() {
   organelleGlow = [];
   ribosomeMat = null;
   livingCell = null;
+  reportPanel.style.display = "none";
 
   for (const m of [membraneHeadMesh, membraneTailMesh, membraneSoluteMesh]) {
     if (m) {
@@ -1479,11 +1552,22 @@ function buildOrganelleScene() {
   organelleMembrane = null;
   organelleGlow = [];
   ribosomeMat = null;
+  lastEventId = 0;
+  const logReset = reportPanel.querySelector(".report-log");
+  if (logReset) logReset.innerHTML = "";
   livingCell = new LivingCell(undefined, 0.8, true); // the metabolism that makes it alive (with noise)
   // Collect meshes per organelle kind so each can pulse with its own activity.
   const glowBuckets: Record<string, THREE.MeshStandardMaterial[]> = {};
   const tagGlow = (kind: keyof OrganelleActivity, m: THREE.Mesh) => {
     (glowBuckets[kind] ??= []).push(m.material as THREE.MeshStandardMaterial);
+  };
+  // Track each kind's centroid so we can give the model real ATP transport
+  // distances (mitochondria = source; far organelles get ATP later).
+  const posAcc: Partial<Record<keyof OrganelleActivity, { s: THREE.Vector3; n: number }>> = {};
+  const addPos = (kind: keyof OrganelleActivity, v: THREE.Vector3) => {
+    const a = (posAcc[kind] ??= { s: new THREE.Vector3(), n: 0 });
+    a.s.add(v);
+    a.n += 1;
   };
 
   const group = new THREE.Group();
@@ -1574,6 +1658,7 @@ function buildOrganelleScene() {
   mesh(organicSphere(4.6, 0.04), "#b07ed8", nuc, { opacity: 0.34, emissive: 0.08, label: "Nucleus — stores the DNA and controls gene expression" });
   mesh(organicSphere(4.75, 0.04), "#caa3e6", nuc, { opacity: 0.12, emissive: 0.05, label: "Nuclear envelope — double membrane studded with pores" });
   tagGlow("nucleus", mesh(organicSphere(1.7, 0.12), "#6f3fa0", nuc.clone().add(new THREE.Vector3(0.7, -0.5, 0.4)), { emissive: 0.16, label: "Nucleolus — builds ribosomes; transcribes DNA → mRNA" }));
+  addPos("nucleus", nuc);
   // nuclear pores — dots on the envelope
   const poreN = 60;
   const porePos = new Float32Array(poreN * 3);
@@ -1602,6 +1687,7 @@ function buildOrganelleScene() {
     }
     const curve = new THREE.CatmullRomCurve3(pts);
     tagGlow("ribosome", mesh(new THREE.TubeGeometry(curve, 40, 0.16, 6), "#e8b24a", new THREE.Vector3(), { opacity: 0.85, emissive: 0.1, label: "Endoplasmic reticulum — synthesises proteins & lipids; continuous with the nucleus" }));
+    addPos("ribosome", pts[3]);
   }
 
   // --- Golgi apparatus: a coherent stack of full, flattened cisternae + vesicles ---
@@ -1616,6 +1702,7 @@ function buildOrganelleScene() {
     );
     disc.scale.set(1, 1, 1.18); // make cisternae elliptical (flattened sacs)
     tagGlow("golgi", disc);
+    addPos("golgi", golgi);
   }
   for (let i = 0; i < 6; i += 1) {
     tagGlow("golgi", mesh(new THREE.SphereGeometry(0.34, 14, 10), "#7fe0c6", golgi.clone().add(randDir().multiplyScalar(2.7)), { emissive: 0.18, label: "Transport vesicle — carries cargo between compartments" }));
@@ -1633,6 +1720,7 @@ function buildOrganelleScene() {
     const z = new THREE.Vector3();
     const mitoOuter = mesh(new THREE.CapsuleGeometry(0.78, len, 8, 18), "#ff8a5c", z, { opacity: 0.82, emissive: 0.14, rough: 0.5, label: "Mitochondrion — the cell's power plant; makes ATP", parent: sub });
     organelleMitos.push(mitoOuter);
+    addPos("mitochondria", p);
     mesh(new THREE.CapsuleGeometry(0.5, len * 0.92, 6, 14), "#c14026", z, { emissive: 0.1, label: "Mitochondrion — the cell's power plant; makes ATP", parent: sub });
     // cristae: folded inner-membrane discs along the long (y) axis
     const cn = Math.max(3, Math.round(len * 2));
@@ -1651,6 +1739,7 @@ function buildOrganelleScene() {
       emissive: 0.16,
       label: i % 2 ? "Lysosome — digests waste and worn-out parts" : "Peroxisome — breaks down fatty acids & detoxifies"
     }));
+    addPos("lysosome", p);
   }
 
   // --- Plasma-membrane transport proteins: channels & pumps spanning the membrane ---
@@ -1672,6 +1761,7 @@ function buildOrganelleScene() {
     );
     barrel.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     tagGlow("membrane", barrel);
+    addPos("membrane", p);
   }
 
   // --- Centrosome (MTOC) + radiating microtubules ---
@@ -1724,6 +1814,21 @@ function buildOrganelleScene() {
     gain: 1 / ref[kind]
   }));
 
+  // Give the model real ATP transport distances: mitochondria are the source,
+  // each organelle's distance to the nearest-on-average mito sets its delay τ.
+  const centroid = (k: keyof OrganelleActivity) => {
+    const a = posAcc[k];
+    return a && a.n > 0 ? a.s.clone().multiplyScalar(1 / a.n) : new THREE.Vector3();
+  };
+  const mitoC = centroid("mitochondria");
+  const CELL_RADIUS_UM = 10; // typical animal-cell radius (docs: 10–30 µm diameter)
+  const micronsPerUnit = CELL_RADIUS_UM / CELL_R;
+  const distances: Partial<Record<keyof OrganelleActivity, number>> = { mitochondria: 1.5, glycolysis: 0.5 };
+  for (const k of ["membrane", "nucleus", "ribosome", "golgi", "lysosome"] as (keyof OrganelleActivity)[]) {
+    distances[k] = centroid(k).distanceTo(mitoC);
+  }
+  livingCell.setGeometry(distances, micronsPerUnit);
+
   root.add(group);
   organelleGroup = group;
 
@@ -1749,34 +1854,25 @@ function renderOrganelleScene() {
   }
   if (livingCell) {
     const s = livingCell.snapshot();
-    organelleClock += 0.05;
-    // Each organelle pulses with ITS OWN activity and ITS OWN rhythm — every
-    // compartment runs an independent loop, producing and consuming in parallel.
-    const PHASE: Record<keyof OrganelleActivity, [number, number]> = {
-      mitochondria: [1.7, 0.0],
-      glycolysis: [2.3, 1.1],
-      nucleus: [0.9, 2.0],
-      ribosome: [2.0, 3.3],
-      golgi: [1.3, 0.7],
-      lysosome: [1.1, 4.2],
-      membrane: [2.6, 1.8]
-    };
-    const glowOf = (kind: keyof OrganelleActivity, base: number, gain: number) => {
-      const a = Math.min(1, s.activity[kind] * gain);
-      const [spd, ph] = PHASE[kind];
-      return base + 1.3 * a * (0.65 + 0.35 * Math.sin(organelleClock * spd + ph));
-    };
+    // Each organelle glows with ITS OWN activity — driven by its own internal
+    // cycle in the model (steady powerhouses, bursty shippers/digesters). A
+    // faulted organelle dims, so you can see where the cell is failing.
+    const eff: Record<string, number> = {};
+    for (const o of s.organelles) eff[o.id] = o.efficiency;
+    const glowOf = (kind: keyof OrganelleActivity, gain: number) =>
+      (0.06 + 1.4 * Math.min(1, s.activity[kind] * gain)) * (0.25 + 0.75 * (eff[kind] ?? 1));
     // Mitochondria glow with how hard they are making ATP right now.
-    const mitoGlow = glowOf("mitochondria", 0.1, 1 / 0.95);
+    const mitoGlow = glowOf("mitochondria", 1 / 0.95);
     for (const m of organelleMitos) {
       (m.material as THREE.MeshStandardMaterial).emissiveIntensity = mitoGlow;
     }
     for (const g of organelleGlow) {
-      const e = glowOf(g.kind, g.base, g.gain);
+      const e = glowOf(g.kind, g.gain);
       for (const mat of g.mats) mat.emissiveIntensity = e;
     }
     // Ribosomes brighten as translation runs (protein being built).
-    if (ribosomeMat) ribosomeMat.opacity = 0.45 + 0.5 * Math.min(1, s.activity.ribosome / 0.62);
+    if (ribosomeMat) ribosomeMat.opacity = 0.4 + 0.55 * Math.min(1, s.activity.ribosome / 0.62);
+    updateReportPanel(s);
     // The whole cell takes on its health: blue (healthy) → amber → red (dying).
     if (organelleMembrane) {
       const col = s.status === "dying" ? "#ff5a5a" : s.status === "stressed" ? "#ffc05a" : "#7fb6ff";
