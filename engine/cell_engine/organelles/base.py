@@ -95,10 +95,12 @@ class BasicOrganelleModule(OrganelleModule):
     def _input_availability(self, state: CellState) -> float:
         values: list[float] = []
         for input_id in self.definition.inputs:
+            if input_id == "ATP":
+                values.append(clamp(state.organelles[self.id].local_atp, 0.0, 1.0))
+                continue
             pool = state.pools.get(input_id)
             if pool is not None:
                 values.append(clamp(pool.value, 0.0, 1.0))
         if not values:
             return 0.78
         return clamp(0.25 + 0.75 * min(values), 0.0, 1.0)
-

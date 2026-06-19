@@ -7,6 +7,7 @@ from cell_engine.core.random import EngineRng
 from cell_engine.core.state import CellEvent, CellState
 from cell_engine.cargo.routing import route_cargo_packets
 from cell_engine.organelles.registry import build_organelle_modules
+from cell_engine.processes.metabolism import step_hepatocyte_metabolism
 from cell_engine.stochastic.hazard import clamp
 
 
@@ -21,7 +22,14 @@ def step_cell(
         raise ValueError("dt_s must be positive")
 
     rng = rng or EngineRng(definition.stochastic_policy.seed)
-    stressed_state = replace(state, stress=_derive_stress(state))
+    metabolism_result = step_hepatocyte_metabolism(state, dt_s)
+    metabolized_state = replace(
+        state,
+        pools=metabolism_result.pools,
+        organelles=metabolism_result.organelles,
+        metabolic_fluxes=metabolism_result.fluxes,
+    )
+    stressed_state = replace(metabolized_state, stress=_derive_stress(metabolized_state))
     modules = build_organelle_modules(definition)
 
     next_organelles = dict(stressed_state.organelles)

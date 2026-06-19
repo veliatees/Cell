@@ -932,6 +932,8 @@ Acceptance:
 
 ### M018 - Hepatocyte metabolism v1
 
+Status: implemented in [Milestone 018](milestones/018-hepatocyte-metabolism-v1.md).
+
 Scope:
 
 - ATP/ADP/AMP.

@@ -165,6 +165,10 @@ def validate_state(definition: CellDefinition, state: CellState) -> None:
             raise ValidationError(f"Organelle {organelle_id} age_h must be non-negative")
         if organelle_state.risk_per_hour < 0:
             raise ValidationError(f"Organelle {organelle_id} risk_per_hour must be non-negative")
+        if not 0 <= organelle_state.local_atp <= 1:
+            raise ValidationError(f"Organelle {organelle_id} local_atp must be in 0..1")
+        if organelle_state.transport_delay_s < 0:
+            raise ValidationError(f"Organelle {organelle_id} transport_delay_s must be non-negative")
         if any(not _finite(coord) for coord in organelle_state.location_um):
             raise ValidationError(f"Organelle {organelle_id} location must be finite")
 
@@ -199,6 +203,14 @@ def validate_state(definition: CellDefinition, state: CellState) -> None:
             raise ValidationError(f"Cargo {packet.id} energy_cost_atp must be non-negative")
         if packet.state != "in_transit" and packet.state not in TERMINAL_CARGO_STATES:
             raise ValidationError(f"Cargo {packet.id} has invalid state {packet.state}")
+
+    for flux in state.metabolic_fluxes:
+        if not flux.id:
+            raise ValidationError("Metabolic flux id cannot be empty")
+        if flux.value < 0 or not _finite(flux.value):
+            raise ValidationError(f"Metabolic flux {flux.id} must be finite and non-negative")
+        if not flux.unit:
+            raise ValidationError(f"Metabolic flux {flux.id} must declare a unit")
 
 
 def _assert_unique(label: str, ids: list[str]) -> None:

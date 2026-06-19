@@ -90,6 +90,7 @@ barrier/transport thinking:
 - [Milestone 015: Python engine skeleton](docs/milestones/015-python-engine-skeleton.md)
 - [Milestone 016: Organelle module interface](docs/milestones/016-organelle-module-interface.md)
 - [Milestone 017: Cargo routing engine](docs/milestones/017-cargo-routing-engine.md)
+- [Milestone 018: Hepatocyte metabolism v1](docs/milestones/018-hepatocyte-metabolism-v1.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)

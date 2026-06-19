@@ -26,6 +26,8 @@ class OrganelleState:
     capacity: float
     location_um: Vector3
     risk_per_hour: float
+    local_atp: float = 0.0
+    transport_delay_s: float = 0.0
     active_processes: tuple[str, ...] = ()
 
 
@@ -62,6 +64,19 @@ class CargoPacket:
 
 
 @dataclass(frozen=True)
+class MetabolicFlux:
+    id: str
+    process: str
+    source: str
+    target: str
+    value: float
+    unit: str
+    produced_by: str
+    consumed_by: str
+    notes: str = ""
+
+
+@dataclass(frozen=True)
 class CellState:
     definition_id: str
     elapsed_s: float
@@ -70,6 +85,7 @@ class CellState:
     organelles: dict[str, OrganelleState]
     stress: dict[str, float]
     cargo_packets: tuple[CargoPacket, ...] = field(default_factory=tuple)
+    metabolic_fluxes: tuple[MetabolicFlux, ...] = field(default_factory=tuple)
     events: tuple[CellEvent, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, object]:

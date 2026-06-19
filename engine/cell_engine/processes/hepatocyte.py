@@ -361,6 +361,8 @@ def initial_hepatocyte_state(definition: CellDefinition) -> CellState:
             capacity=1.0,
             location_um=_default_location_um(organelle.id),
             risk_per_hour=0.0,
+            local_atp=pools["ATP"].value,
+            transport_delay_s=0.0,
             active_processes=organelle.functions[:3],
         )
         for organelle in definition.organelles
