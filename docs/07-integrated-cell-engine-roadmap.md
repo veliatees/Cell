@@ -1014,6 +1014,8 @@ Acceptance:
 
 ### M023 - Validation harness
 
+Status: implemented in [Milestone 023](milestones/023-validation-harness.md).
+
 Scope:
 
 - Reference range registry.
