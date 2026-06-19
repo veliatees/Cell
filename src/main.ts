@@ -1317,7 +1317,15 @@ const hoverNDC = new THREE.Vector2();
 let hoverClientX = 0;
 let hoverClientY = 0;
 let hovering = false;
+let hoverCandidateKey = "";
+let hoverCandidateSince = 0;
+let hoverPointerMovedAt = 0;
 
+viewportElement.addEventListener("pointerenter", () => {
+  hoverPointerMovedAt = performance.now();
+  hoverCandidateKey = "";
+  hoverTooltip.style.display = "none";
+});
 viewportElement.addEventListener("pointermove", (event) => {
   const rect = viewportElement.getBoundingClientRect();
   hoverNDC.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -1325,6 +1333,8 @@ viewportElement.addEventListener("pointermove", (event) => {
   hoverClientX = event.clientX - rect.left;
   hoverClientY = event.clientY - rect.top;
   hovering = true;
+  hoverPointerMovedAt = performance.now();
+  hoverTooltip.style.display = "none";
 });
 viewportElement.addEventListener("pointerleave", () => {
   hovering = false;
@@ -1334,19 +1344,44 @@ viewportElement.addEventListener("pointerleave", () => {
 function updateHoverTooltip() {
   if (!hovering || mode !== "organelles" || !organelleGroup || dragState) {
     hoverTooltip.style.display = "none";
+    hoverCandidateKey = "";
     return;
   }
+  (hoverRaycaster.params.Points as { threshold: number }).threshold = cameraDistance <= 7 ? 0.035 : cameraDistance <= 13 ? 0.01 : 0.001;
   hoverRaycaster.setFromCamera(hoverNDC, camera);
   const hits = hoverRaycaster.intersectObjects(organelleGroup.children, true);
-  const hit = hits.find((h) => h.object.userData && h.object.userData.label);
+  const hoverDelay = (object: THREE.Object3D) => {
+    const kind = object.userData.hoverKind;
+    if (kind === "membrane-protein-lod") return cameraDistance <= 5.5 ? 700 : null;
+    if (kind === "membrane-protein-patch") return cameraDistance <= 8 ? 500 : null;
+    if (kind === "membrane-protein-detail") return cameraDistance <= 8.5 ? 350 : null;
+    return 180;
+  };
+  const hit = hits.find((h) => h.object.userData && h.object.userData.label && hoverDelay(h.object) !== null);
   if (hit) {
-    hoverTooltip.textContent = hit.object.userData.label as string;
+    const label = hit.object.userData.label as string;
+    const kind = hit.object.userData.hoverKind ?? "default";
+    const key = `${kind}:${label}`;
+    const now = performance.now();
+    if (key !== hoverCandidateKey) {
+      hoverCandidateKey = key;
+      hoverCandidateSince = now;
+    }
+    const delay = hoverDelay(hit.object) ?? 0;
+    const intentSince = Math.max(hoverCandidateSince, hoverPointerMovedAt);
+    if (now - intentSince < delay) {
+      hoverTooltip.style.display = "none";
+      viewportElement.style.cursor = kind === "default" ? "pointer" : "grab";
+      return;
+    }
+    hoverTooltip.textContent = label;
     hoverTooltip.style.display = "block";
     hoverTooltip.style.left = `${hoverClientX + 16}px`;
     hoverTooltip.style.top = `${hoverClientY + 14}px`;
     viewportElement.style.cursor = "pointer";
   } else {
     hoverTooltip.style.display = "none";
+    hoverCandidateKey = "";
     viewportElement.style.cursor = "grab";
   }
 }
@@ -2194,7 +2229,7 @@ function buildOrganelleScene() {
   const sinusoidPatch = mesh(new THREE.BoxGeometry(0.2, 10.5, 7.2), "#3a9bd9", sinusoidAnchor, {
     opacity: 0.18,
     emissive: 0.1,
-    label: "Sinusoidal blood face / space of Disse - nutrients, oxygen, ammonia, bilirubin and xenobiotics arrive here"
+    label: "Sinusoidal basolateral domain / space of Disse - hepatocyte blood-facing uptake surface, distinct from canalicular bile export"
   });
   sinusoidPatch.rotation.z = 0.05;
   const microvilliPts: number[] = [];
@@ -2208,7 +2243,7 @@ function buildOrganelleScene() {
   const microvilliGeo = new THREE.BufferGeometry();
   microvilliGeo.setAttribute("position", new THREE.Float32BufferAttribute(microvilliPts, 3));
   const microvilli = new THREE.LineSegments(microvilliGeo, new THREE.LineBasicMaterial({ color: "#9ad6ff", transparent: true, opacity: 0.38 }));
-  microvilli.userData.label = "Sinusoidal microvilli - basolateral exchange surface facing blood";
+  microvilli.userData.label = "Sinusoidal microvilli - basolateral exchange surface facing fenestrated sinusoidal blood, not an all-around nutrient bath";
   group.add(microvilli);
 
   const canalPts = [
@@ -2378,19 +2413,21 @@ function buildOrganelleScene() {
     const tangentA = dir.clone().cross(Math.abs(dir.y) < 0.92 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0)).normalize();
     const tangentB = dir.clone().cross(tangentA).normalize();
     membraneProteinAnchors.push({ object: rootProtein, dir: dir.clone(), tangentA, tangentB, phase: rnd() * Math.PI * 2, drift: 0.018 + rnd() * 0.014 });
-    mesh(new THREE.TorusGeometry(footprintNm * 0.62, 0.16, 8, 32), "#8fc6ff", new THREE.Vector3(), {
+    const annulus = mesh(new THREE.TorusGeometry(footprintNm * 0.62, 0.16, 8, 32), "#8fc6ff", new THREE.Vector3(), {
       parent: rootProtein,
       rot: [Math.PI / 2, 0, 0],
       opacity: 0.24,
       emissive: 0.06,
       label: "Local lipid annulus - membrane lipids packed around an embedded protein"
     });
-    mesh(new THREE.SphereGeometry(footprintNm * 0.5, 8, 6), color, new THREE.Vector3(0, 0, 0), {
+    annulus.userData.hoverKind = "membrane-protein-detail";
+    const footprint = mesh(new THREE.SphereGeometry(footprintNm * 0.5, 8, 6), color, new THREE.Vector3(0, 0, 0), {
       parent: rootProtein,
       opacity: 0.95,
       emissive: 0.5,
       label: `${family} true-size embedded footprint (~${footprintNm} nm across); zoom in near the membrane to inspect it`
     });
+    footprint.userData.hoverKind = "membrane-protein-detail";
     addPos("membrane", p);
     addTransportPort(portKey, p);
     return rootProtein;
@@ -2426,6 +2463,7 @@ function buildOrganelleScene() {
       pts.userData.label =
         `${spec.label}: estimated ${actualCopies.toLocaleString()} copies on a ~${hepatocytePlasmaMembraneAreaUm2.toLocaleString()} um² hepatocyte plasma membrane; ` +
         `LOD shows 1 dot per ~${membraneProteinRenderStride} proteins at true ${spec.footprintNm} nm footprint`;
+      pts.userData.hoverKind = "membrane-protein-lod";
       group.add(pts);
     }
   };
@@ -2464,6 +2502,7 @@ function buildOrganelleScene() {
         })
       );
       pts.userData.label = `${spec.label}: true-density zoom patch, 1 dot = 1 embedded protein, footprint ~${spec.footprintNm} nm`;
+      pts.userData.hoverKind = "membrane-protein-patch";
       group.add(pts);
     }
   };
@@ -2477,6 +2516,7 @@ function buildOrganelleScene() {
     opts: { rot?: [number, number, number]; opacity?: number; emissive?: number; rough?: number } = {}
   ) => {
     const m = mesh(geo, color, pos, { parent, label, rot: opts.rot, opacity: opts.opacity, emissive: opts.emissive ?? 0.18, rough: opts.rough ?? 0.38 });
+    m.userData.hoverKind = "membrane-protein-detail";
     tagGlow("membrane", m);
     return m;
   };
@@ -2859,7 +2899,7 @@ function buildOrganelleScene() {
 
   if (sceneNote) {
     sceneNote.textContent =
-      `A polarized hepatocyte-scale cell. The plasma membrane carries ~${(estimatedEmbeddedProteinCopies / 1_000_000).toFixed(1)}M true-size embedded protein footprints (whole-surface LOD plus a 1:1 true-density zoom patch); sinusoidal import, canalicular bile export, glycogen buffering, albumin secretion, urea handling and CYP/glutathione detox are modelled as organelle-level fluxes.`;
+      `A polarized hepatocyte-scale cell. The plasma membrane carries ~${(estimatedEmbeddedProteinCopies / 1_000_000).toFixed(1)}M true-size embedded protein footprints (whole-surface LOD plus a 1:1 true-density zoom patch); blood solutes enter through the sinusoidal/basolateral domain while bile exits through the canalicular/apical domain.`;
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;
