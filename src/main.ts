@@ -175,48 +175,50 @@ app.innerHTML = `
 
       <p class="scene-note" data-role="scene-note"></p>
 
-      <label class="control-row">
-        <span>Medium</span>
-        <select data-control="environment">
-          <option value="implicit-water">Implicit water</option>
-          <option value="vacuum">Vacuum</option>
-        </select>
-      </label>
+      <div class="micro-controls">
+        <label class="control-row">
+          <span>Medium</span>
+          <select data-control="environment">
+            <option value="implicit-water">Implicit water</option>
+            <option value="vacuum">Vacuum</option>
+          </select>
+        </label>
 
-      <label class="control-row">
-        <span>Time</span>
-        <input data-control="time-step" type="range" min="0.05" max="1.0" step="0.05" value="0.3" />
-      </label>
+        <label class="control-row">
+          <span>Time</span>
+          <input data-control="time-step" type="range" min="0.05" max="1.0" step="0.05" value="0.3" />
+        </label>
 
-      <label class="control-row">
-        <span>Damping</span>
-        <input data-control="damping" type="range" min="0" max="0.06" step="0.002" value="0.02" />
-      </label>
+        <label class="control-row">
+          <span>Damping</span>
+          <input data-control="damping" type="range" min="0" max="0.06" step="0.002" value="0.02" />
+        </label>
 
-      <label class="control-row">
-        <span data-label="temp">Temp (K)</span>
-        <input data-control="temperature" type="range" min="0" max="600" step="10" value="310" />
-      </label>
+        <label class="control-row">
+          <span data-label="temp">Temp (K)</span>
+          <input data-control="temperature" type="range" min="0" max="600" step="10" value="310" />
+        </label>
 
-      <label class="switch-row">
-        <span><i data-lucide="atom"></i> Pauli repulsion</span>
-        <input data-control="pauli" type="checkbox" checked />
-      </label>
+        <label class="switch-row">
+          <span><i data-lucide="atom"></i> Pauli repulsion</span>
+          <input data-control="pauli" type="checkbox" checked />
+        </label>
 
-      <label class="switch-row">
-        <span><i data-lucide="cloud"></i> Electron probability</span>
-        <input data-control="clouds" type="checkbox" checked />
-      </label>
+        <label class="switch-row">
+          <span><i data-lucide="cloud"></i> Electron probability</span>
+          <input data-control="clouds" type="checkbox" checked />
+        </label>
 
-      <label class="switch-row">
-        <span><i data-lucide="arrow-right"></i> Force vectors</span>
-        <input data-control="vectors" type="checkbox" checked />
-      </label>
+        <label class="switch-row">
+          <span><i data-lucide="arrow-right"></i> Force vectors</span>
+          <input data-control="vectors" type="checkbox" checked />
+        </label>
 
-      <label class="switch-row">
-        <span><i data-lucide="thermometer"></i> Thermal noise</span>
-        <input data-control="thermal-noise" type="checkbox" />
-      </label>
+        <label class="switch-row">
+          <span><i data-lucide="thermometer"></i> Thermal noise</span>
+          <input data-control="thermal-noise" type="checkbox" />
+        </label>
+      </div>
     </aside>
 
     <section class="bottom-readout" aria-label="Scene state">
@@ -313,6 +315,16 @@ let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by c
 type GlowGroup = { kind: keyof OrganelleActivity; mats: THREE.MeshStandardMaterial[]; base: number; gain: number };
 let organelleGlow: GlowGroup[] = [];
 let ribosomeMat: THREE.PointsMaterial | null = null; // ribosomes brighten with translation
+type FlowPacket = {
+  curve: THREE.CatmullRomCurve3;
+  particle: THREE.Mesh;
+  particleMat: THREE.MeshStandardMaterial;
+  offset: number;
+  lastCycle: number;
+  seed: number;
+  speedScale: number;
+  wander: number;
+};
 type FlowVisual = {
   id: string;
   from: THREE.Vector3;
@@ -320,11 +332,9 @@ type FlowVisual = {
   curve: THREE.CatmullRomCurve3;
   line: THREE.Line;
   lineMat: THREE.LineBasicMaterial;
-  particle: THREE.Mesh;
-  particleMat: THREE.MeshStandardMaterial;
-  offset: number;
-  lastCycle: number;
+  packets: FlowPacket[];
   routeIndex: number;
+  lineCycle: number;
   mode: CellFlow["mode"];
 };
 const flowVisuals: FlowVisual[] = [];
@@ -612,6 +622,13 @@ const METRIC_LABELS: Record<Mode, MetricLabels> = {
 };
 
 function setMetricLabels(m: Mode) {
+  app?.classList.toggle("is-organelle-mode", m === "organelles");
+  if (leftPanelTitleText) {
+    leftPanelTitleText.textContent = m === "organelles" ? "Cell State" : "System Readout";
+  }
+  if (rightPanelTitleText) {
+    rightPanelTitleText.textContent = m === "organelles" ? "Cell Activity" : "Environment";
+  }
   const labels = METRIC_LABELS[m];
   for (const key of Object.keys(labelEls) as (keyof typeof labelEls)[]) {
     const el = labelEls[key];
@@ -619,10 +636,18 @@ function setMetricLabels(m: Mode) {
       el.textContent = labels[key] as string;
     }
   }
+  if (formulaStackEl) {
+    formulaStackEl.innerHTML =
+      m === "organelles"
+        ? "<code>Sinusoidal/basolateral: blood uptake</code><code>Canalicular/apical: bile export</code><code>Cargo paths: stochastic packet families</code><code>Readout updates from live cell snapshot</code>"
+        : "<code>F = k q1 q2 / (ε r²)</code><code>U = k q1 q2 / (ε r)</code><code>U_ex = B·exp(-r/ρ)</code><code>KE = ½ m v²</code>";
+  }
 }
 
 const tempLabelEl = app.querySelector<HTMLElement>("[data-label='temp']");
 const formulaStackEl = app.querySelector<HTMLElement>(".formula-stack");
+const leftPanelTitleText = app.querySelector<HTMLElement>(".inspector--left .panel-title span");
+const rightPanelTitleText = app.querySelector<HTMLElement>(".inspector--right .panel-title span");
 
 const sceneNote = app.querySelector<HTMLElement>("[data-role='scene-note']");
 const compositionEl = app.querySelector<HTMLElement>("[data-role='composition']");
@@ -1063,22 +1088,45 @@ function buildFlowCurve(from: THREE.Vector3, to: THREE.Vector3, id: string, rout
   const wobbleB = flowHashUnit(`${id}:${routeIndex}:${cycle}:b`) - 0.5;
   const lift = 0.34 + flowHashUnit(`${id}:${routeIndex}:${cycle}:lift`) * 0.95;
   const spread = 0.28 + flowHashUnit(`${id}:${routeIndex}:${cycle}:spread`) * 0.9;
+  const twist = chordDir.clone().cross(side).normalize();
   const c1 = from
     .clone()
-    .lerp(to, 0.28)
+    .lerp(to, 0.18 + flowHashUnit(`${id}:${routeIndex}:${cycle}:t1`) * 0.12)
     .add(radial.clone().multiplyScalar(lift))
-    .add(side.clone().multiplyScalar(wobbleA * spread));
+    .add(side.clone().multiplyScalar(wobbleA * spread))
+    .add(twist.clone().multiplyScalar((flowHashUnit(`${id}:${routeIndex}:${cycle}:tw1`) - 0.5) * spread));
   const c2 = from
     .clone()
-    .lerp(to, 0.7)
-    .add(radial.clone().multiplyScalar(lift * (0.55 + flowHashUnit(`${id}:${routeIndex}:${cycle}:lift2`) * 0.55)))
-    .add(side.clone().multiplyScalar(wobbleB * spread));
-  return new THREE.CatmullRomCurve3([from.clone(), c1, c2, to.clone()]);
+    .lerp(to, 0.47 + flowHashUnit(`${id}:${routeIndex}:${cycle}:t2`) * 0.16)
+    .add(radial.clone().multiplyScalar(lift * (0.45 + flowHashUnit(`${id}:${routeIndex}:${cycle}:lift2`) * 0.7)))
+    .add(side.clone().multiplyScalar(wobbleB * spread))
+    .add(twist.clone().multiplyScalar((flowHashUnit(`${id}:${routeIndex}:${cycle}:tw2`) - 0.5) * spread * 1.4));
+  const c3 = from
+    .clone()
+    .lerp(to, 0.76 + flowHashUnit(`${id}:${routeIndex}:${cycle}:t3`) * 0.1)
+    .add(radial.clone().multiplyScalar(lift * (0.3 + flowHashUnit(`${id}:${routeIndex}:${cycle}:lift3`) * 0.55)))
+    .add(side.clone().multiplyScalar((flowHashUnit(`${id}:${routeIndex}:${cycle}:side3`) - 0.5) * spread))
+    .add(twist.clone().multiplyScalar((flowHashUnit(`${id}:${routeIndex}:${cycle}:tw3`) - 0.5) * spread));
+  return new THREE.CatmullRomCurve3([from.clone(), c1, c2, c3, to.clone()], false, "centripetal", 0.45);
 }
 
 function updateFlowLineGeometry(visual: FlowVisual) {
   visual.line.geometry.dispose();
   visual.line.geometry = new THREE.BufferGeometry().setFromPoints(visual.curve.getPoints(46));
+}
+
+function flowPacketCount(mode: CellFlow["mode"]) {
+  if (mode === "diffusion") return 5;
+  if (mode === "vesicle" || mode === "motor") return 3;
+  if (mode === "autophagy") return 2;
+  return 4;
+}
+
+function packetWander(mode: CellFlow["mode"]) {
+  if (mode === "diffusion") return 0.7;
+  if (mode === "carrier" || mode === "pore") return 0.16;
+  if (mode === "signal") return 0.35;
+  return 0.32;
 }
 
 function buildCellFlowVisuals(parent: THREE.Group) {
@@ -1091,22 +1139,37 @@ function buildCellFlowVisuals(parent: THREE.Group) {
     if (!from || !to) continue;
     const curve = buildFlowCurve(from, to, id, i, 0);
     const lineGeo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(46));
-    const lineMat = new THREE.LineBasicMaterial({ color: def.color, transparent: true, opacity: 0.05 });
+    const lineMat = new THREE.LineBasicMaterial({ color: def.color, transparent: true, opacity: 0.012 });
     const line = new THREE.Line(lineGeo, lineMat);
-    line.userData.label = `${def.from} -> ${def.to}`;
+    line.userData.label = `${def.from} -> ${def.to} route family (not a fixed track)`;
     parent.add(line);
 
-    const particleMat = new THREE.MeshStandardMaterial({
-      color: def.color,
-      emissive: def.color,
-      emissiveIntensity: 0.24,
-      roughness: 0.35,
-      transparent: true,
-      opacity: 0.9
-    });
-    const particle = new THREE.Mesh(new THREE.SphereGeometry(0.085, 14, 10), particleMat);
-    particle.userData.label = `${def.from} -> ${def.to}`;
-    parent.add(particle);
+    const packets: FlowPacket[] = [];
+    const count = flowPacketCount(def.mode);
+    for (let packetIndex = 0; packetIndex < count; packetIndex += 1) {
+      const seed = i * 97 + packetIndex * 37 + 11;
+      const particleMat = new THREE.MeshStandardMaterial({
+        color: def.color,
+        emissive: def.color,
+        emissiveIntensity: 0.24,
+        roughness: 0.35,
+        transparent: true,
+        opacity: 0.78
+      });
+      const particle = new THREE.Mesh(new THREE.SphereGeometry(0.055 + packetIndex * 0.006, 12, 8), particleMat);
+      particle.userData.label = `${def.from} -> ${def.to} cargo packet; route is resampled with cytoplasmic drift`;
+      parent.add(particle);
+      packets.push({
+        curve: buildFlowCurve(from, to, id, seed, packetIndex),
+        particle,
+        particleMat,
+        offset: (i * 0.173 + packetIndex * 0.237 + flowHashUnit(`${id}:${seed}:offset`) * 0.19) % 1,
+        lastCycle: -1,
+        seed,
+        speedScale: 0.72 + flowHashUnit(`${id}:${seed}:speed`) * 0.75,
+        wander: packetWander(def.mode) * (0.55 + flowHashUnit(`${id}:${seed}:wander`) * 0.9)
+      });
+    }
     flowVisuals.push({
       id,
       from: from.clone(),
@@ -1114,11 +1177,9 @@ function buildCellFlowVisuals(parent: THREE.Group) {
       curve,
       line,
       lineMat,
-      particle,
-      particleMat,
-      offset: (i * 0.173) % 1,
-      lastCycle: 0,
+      packets,
       routeIndex: i,
+      lineCycle: 0,
       mode: def.mode
     });
   }
@@ -1129,20 +1190,37 @@ function updateFlowVisuals(s: CellSnapshot) {
   for (const visual of flowVisuals) {
     const flow = byId.get(visual.id);
     const strength = flow ? flowIntensity(flow) : 0;
-    visual.lineMat.opacity = 0.025 + 0.32 * strength;
-    visual.particle.visible = strength > 0.025;
-    visual.particleMat.opacity = 0.3 + 0.65 * strength;
-    visual.particle.scale.setScalar(0.65 + 1.8 * strength);
+    visual.lineMat.opacity = 0.004 + 0.035 * strength;
     const speed = FLOW_MODE_SPEED[visual.mode] ?? 0.18;
-    const rawT = visual.offset + s.elapsedS * speed;
-    const cycle = Math.floor(rawT);
-    if (cycle !== visual.lastCycle) {
-      visual.lastCycle = cycle;
-      visual.curve = buildFlowCurve(visual.from, visual.to, visual.id, visual.routeIndex, cycle);
+    const guideCycle = Math.floor(s.elapsedS * (0.18 + speed * 1.1) + visual.routeIndex);
+    if (guideCycle !== visual.lineCycle) {
+      visual.lineCycle = guideCycle;
+      visual.curve = buildFlowCurve(visual.from, visual.to, visual.id, visual.routeIndex, guideCycle);
       updateFlowLineGeometry(visual);
     }
-    const t = rawT % 1;
-    visual.particle.position.copy(visual.curve.getPointAt(t));
+    for (const packet of visual.packets) {
+      packet.particle.visible = strength > 0.025;
+      packet.particleMat.opacity = 0.22 + 0.68 * strength;
+      packet.particle.scale.setScalar((0.55 + 1.35 * strength) * (0.82 + packet.wander * 0.18));
+      const rawT = packet.offset + s.elapsedS * speed * packet.speedScale;
+      const cycle = Math.floor(rawT);
+      if (cycle !== packet.lastCycle) {
+        packet.lastCycle = cycle;
+        packet.curve = buildFlowCurve(visual.from, visual.to, visual.id, packet.seed, cycle);
+      }
+      const t = rawT % 1;
+      const pos = packet.curve.getPointAt(t);
+      const tangent = packet.curve.getTangentAt(t).normalize();
+      const radial = pos.lengthSq() > 1e-4 ? pos.clone().normalize() : new THREE.Vector3(0, 1, 0);
+      let side = tangent.clone().cross(radial);
+      if (side.lengthSq() < 1e-5) side = tangent.clone().cross(new THREE.Vector3(0, 1, 0));
+      if (side.lengthSq() < 1e-5) side = new THREE.Vector3(1, 0, 0);
+      side.normalize();
+      const lift = radial.clone().cross(side).normalize();
+      const noiseA = Math.sin(s.elapsedS * (0.9 + packet.speedScale * 0.7) + packet.seed * 0.37 + t * 13.7);
+      const noiseB = Math.cos(s.elapsedS * (0.7 + packet.speedScale * 0.5) + packet.seed * 0.19 + t * 9.1);
+      packet.particle.position.copy(pos.add(side.multiplyScalar(noiseA * packet.wander)).add(lift.multiplyScalar(noiseB * packet.wander * 0.55)));
+    }
   }
 }
 
@@ -2225,13 +2303,42 @@ function buildOrganelleScene() {
   organelleMembrane = mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.1, emissive: 0.05, label: "Plasma membrane — the cell's boundary; controls what enters and leaves" });
   mesh(organicSphere(CELL_R * 0.97, 0.06), "#9ec6ff", new THREE.Vector3(), { opacity: 0.06, emissive: 0.04 });
 
-  // --- Hepatocyte polarity: sinusoidal blood side vs canalicular bile side ---
-  const sinusoidPatch = mesh(new THREE.BoxGeometry(0.2, 10.5, 7.2), "#3a9bd9", sinusoidAnchor, {
-    opacity: 0.18,
-    emissive: 0.1,
-    label: "Sinusoidal basolateral domain / space of Disse - hepatocyte blood-facing uptake surface, distinct from canalicular bile export"
+  // --- Hepatocyte polarity: sinusoidal blood vessel side vs canalicular bile side ---
+  const sinusoidCurve = new THREE.CatmullRomCurve3([
+    sinusoidAnchor.clone().add(new THREE.Vector3(0.05, -8.8, -1.1)),
+    sinusoidAnchor.clone().add(new THREE.Vector3(-0.08, -3.1, 0.25)),
+    sinusoidAnchor.clone().add(new THREE.Vector3(0.04, 3.2, -0.15)),
+    sinusoidAnchor.clone().add(new THREE.Vector3(-0.02, 8.9, 0.9))
+  ]);
+  const sinusoidWall = mesh(new THREE.TubeGeometry(sinusoidCurve, 80, 2.45, 24, false), "#3a9bd9", new THREE.Vector3(), {
+    opacity: 0.16,
+    emissive: 0.12,
+    rough: 0.42,
+    label: "Fenestrated liver sinusoid - blood flows along this vessel-facing side of the hepatocyte"
   });
-  sinusoidPatch.rotation.z = 0.05;
+  const sinusoidLumen = mesh(new THREE.TubeGeometry(sinusoidCurve, 80, 1.72, 18, false), "#7fb6ff", new THREE.Vector3(), {
+    opacity: 0.08,
+    emissive: 0.08,
+    label: "Sinusoidal blood lumen - nutrients, oxygen, hormones, ammonia, bilirubin and xenobiotics arrive from flowing blood"
+  });
+  const disseSpace = mesh(new THREE.BoxGeometry(0.18, 14.8, 6.8), "#8fd0ff", sinusoidAnchor.clone().add(new THREE.Vector3(2.0, 0, 0)), {
+    opacity: 0.08,
+    emissive: 0.06,
+    label: "Space of Disse - extracellular exchange gap between fenestrated sinusoid and hepatocyte microvilli"
+  });
+  disseSpace.rotation.z = 0.05;
+  for (let i = 0; i < 14; i += 1) {
+    const u = (i + 0.5) / 14;
+    const p = sinusoidCurve.getPointAt(u);
+    const rbc = mesh(new THREE.CylinderGeometry(0.56, 0.56, 0.13, 20), "#b84545", p.clone().add(new THREE.Vector3(-0.12 + (rnd() - 0.5) * 0.7, 0, (rnd() - 0.5) * 1.4)), {
+      opacity: 0.78,
+      emissive: 0.05,
+      rough: 0.58,
+      rot: [Math.PI / 2 + rnd() * 0.2, rnd() * 0.4, rnd() * Math.PI],
+      label: "Red blood cell in sinusoidal flow - context particle, not taken up by the hepatocyte"
+    });
+    trackMotion(rbc, rbc.position, 0.09, 0.35 + rnd() * 0.18, 0.006);
+  }
   const microvilliPts: number[] = [];
   for (let i = 0; i < 34; i += 1) {
     const y = -5.2 + rnd() * 8.9;
@@ -2899,7 +3006,7 @@ function buildOrganelleScene() {
 
   if (sceneNote) {
     sceneNote.textContent =
-      `A polarized hepatocyte-scale cell. The plasma membrane carries ~${(estimatedEmbeddedProteinCopies / 1_000_000).toFixed(1)}M true-size embedded protein footprints (whole-surface LOD plus a 1:1 true-density zoom patch); blood solutes enter through the sinusoidal/basolateral domain while bile exits through the canalicular/apical domain.`;
+      `A polarized hepatocyte-scale cell. The plasma membrane carries ~${(estimatedEmbeddedProteinCopies / 1_000_000).toFixed(1)}M true-size embedded protein footprints (whole-surface LOD plus a 1:1 true-density zoom patch); blood solutes enter through the sinusoidal/basolateral domain while bile exits through the canalicular/apical domain. Cargo packets resample noisy cytoplasmic routes instead of riding fixed tracks.`;
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;

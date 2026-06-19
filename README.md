@@ -10,10 +10,18 @@ well-defined inputs and outputs.
 
 ## What It Is Now
 
-A source-grounded path from a single atom to a closed, exchanging **cell** —
-atom → ion → bond → water → solvation → diffusion → membrane → transport →
-closed vesicle cell. Every layer is validated against measured or first-principles
-data, and the app opens directly on the cell.
+A source-grounded path from physical building blocks to a hepatocyte-first cell
+prototype: atom → ion → bond → water → solvation → diffusion → membrane →
+transport → organelle network → polarized hepatocyte scene.
+
+The app opens directly on a coarse-grained **hepatocyte-scale cell**. It now
+shows a sinusoidal/basolateral blood-facing vessel domain, a canalicular/apical
+bile-export domain, true-size plasma-membrane protein footprints with density
+LOD, stochastic intracellular cargo packets, organelle activity cycles, and a
+live Python-engine snapshot bridge.
+
+This is not yet a predictive digital twin. It is a layered model with explicit
+assumptions, validation hooks, and visible biological boundaries.
 
 ## Run The Prototype
 
@@ -22,14 +30,17 @@ npm install
 npm run dev
 ```
 
-Then open the local URL printed by Vite. The app starts on the **eukaryotic cell
-— organelles**: a whole animal cell with a translucent membrane and organelles
-inside (nucleus, mitochondria, ER, Golgi, lysosomes, ribosomes) at the cell scale.
-Below it, "zoom-in" scenes show the rules underneath: the molecular-scale lipid
-vesicle, and the ion, water, solvation, diffusion, membrane, and chemistry
-building blocks. Every scale is coarse-grained but **grounded** — its parameters
-and sizes trace down to measured atomic/chemical/biological data (see
-[docs/06-one-reality.md](docs/06-one-reality.md)).
+Then open the local URL printed by Vite. The app starts on the **hepatocyte
+organelle scene**: a whole cell with nucleus, mitochondria, ER, Golgi,
+lysosome/endosome, peroxisome, ribosomes, glycogen granules, plasma-membrane
+transport proteins, a sinusoidal blood-facing vessel, and a canalicular bile
+groove.
+
+Below it, zoom-in scenes still show the rules underneath: the molecular-scale
+lipid vesicle, ion, water, solvation, diffusion, membrane, and chemistry
+building blocks. Every scale is coarse-grained but **grounded**: parameters and
+sizes trace down to measured atomic/chemical/biological data where available
+(see [docs/06-one-reality.md](docs/06-one-reality.md)).
 
 The models are source-backed, not tuned. For Na–Cl, ion masses, ionic radii, the
 Coulomb constant, and the short-range Pauli repulsion all come from published
@@ -54,6 +65,26 @@ roadmap is now organized around hepatocyte metabolism, detox, secretion,
 sinusoidal/canalicular polarity, bile handling, urea-cycle coupling, and
 state-conditioned organelle failure. See
 [docs/07-integrated-cell-engine-roadmap.md](docs/07-integrated-cell-engine-roadmap.md).
+
+Current browser features include:
+
+- sinusoidal/basolateral import and canalicular/apical export context;
+- true-size embedded plasma-membrane protein footprints with a 1:1 zoom-density
+  patch and whole-surface LOD;
+- stochastic cargo packets instead of fixed intracellular tracks;
+- live hepatocyte activity, organelle health, fault risk, cargo fidelity and
+  event log panels;
+- explicit visual time-scale disclosure so the accelerated scene is not confused
+  with real-time microscopy.
+
+Major missing pieces remain:
+
+- calibrated hepatocyte pathway kinetics and copy-number tables;
+- real osmotic, electrophysiological and calcium dynamics;
+- mechanically realistic cytoplasm/cytoskeleton and organelle contact sites;
+- full receptor/endocytosis/secretory packet state visualization;
+- virus/bacteria entry, innate immune response and host-pathogen coupling;
+- validation against real microscopy, omics and perturbation data.
 
 The earlier epithelial notes still matter as background for polarity and
 barrier/transport thinking:

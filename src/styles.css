@@ -266,6 +266,15 @@ select {
   border-top: 0;
 }
 
+.is-organelle-mode .micro-controls {
+  display: none;
+}
+
+.is-organelle-mode .report-panel {
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
 .control-row span,
 .switch-row span {
   color: #a9bad0;
