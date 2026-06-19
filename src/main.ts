@@ -315,12 +315,16 @@ let organelleGlow: GlowGroup[] = [];
 let ribosomeMat: THREE.PointsMaterial | null = null; // ribosomes brighten with translation
 type FlowVisual = {
   id: string;
+  from: THREE.Vector3;
+  to: THREE.Vector3;
   curve: THREE.CatmullRomCurve3;
   line: THREE.Line;
   lineMat: THREE.LineBasicMaterial;
   particle: THREE.Mesh;
   particleMat: THREE.MeshStandardMaterial;
   offset: number;
+  lastCycle: number;
+  routeIndex: number;
   mode: CellFlow["mode"];
 };
 const flowVisuals: FlowVisual[] = [];
@@ -335,6 +339,16 @@ type MotionTarget = {
   axis: THREE.Vector3;
 };
 const organelleMotions: MotionTarget[] = [];
+type MembraneProteinAnchor = {
+  object: THREE.Object3D;
+  dir: THREE.Vector3;
+  tangentA: THREE.Vector3;
+  tangentB: THREE.Vector3;
+  phase: number;
+  drift: number;
+};
+const membraneProteinAnchors: MembraneProteinAnchor[] = [];
+type TransportPortAccumulator = Record<string, { s: THREE.Vector3; n: number }>;
 let mode: Mode = "ions";
 const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
 const CELL_R = 14; // whole-cell schematic radius (world units)
@@ -923,6 +937,7 @@ function engineVisualSignal(summary: EngineSnapshotSummary): EngineVisualSignal 
 }
 
 const FLOW_REF: Record<string, number> = {
+  "outside-water": 0.22,
   "outside-glucose": 0.8,
   "outside-amino": 0.32,
   "outside-fatty": 0.18,
@@ -974,20 +989,21 @@ function formatEta(seconds: number): string {
 }
 
 const FLOW_DEFS: Record<string, { from: string; to: string; color: string; mode: CellFlow["mode"] }> = {
-  "outside-glucose": { from: "outside", to: "membrane", color: "#7ee0a8", mode: "carrier" },
-  "outside-amino": { from: "outside", to: "membrane", color: "#b693ff", mode: "carrier" },
-  "outside-fatty": { from: "outside", to: "membrane", color: "#e7d37a", mode: "carrier" },
-  "sinusoid-bileacid": { from: "sinusoid", to: "membrane", color: "#d9e778", mode: "carrier" },
-  "sinusoid-ammonia": { from: "sinusoid", to: "mitochondria", color: "#9ad6ff", mode: "carrier" },
+  "outside-water": { from: "outside", to: "aquaporin", color: "#b8fff3", mode: "pore" },
+  "outside-glucose": { from: "outside", to: "carrier", color: "#7ee0a8", mode: "carrier" },
+  "outside-amino": { from: "outside", to: "carrier", color: "#b693ff", mode: "carrier" },
+  "outside-fatty": { from: "outside", to: "carrier", color: "#e7d37a", mode: "carrier" },
+  "sinusoid-bileacid": { from: "sinusoid", to: "carrier", color: "#d9e778", mode: "carrier" },
+  "sinusoid-ammonia": { from: "sinusoid", to: "carrier", color: "#9ad6ff", mode: "carrier" },
   "sinusoid-bilirubin-er": { from: "sinusoid", to: "er", color: "#d8b35c", mode: "carrier" },
   "sinusoid-xenobiotic-er": { from: "sinusoid", to: "er", color: "#ff9b8a", mode: "diffusion" },
-  "membrane-glycolysis": { from: "membrane", to: "glycolysis", color: "#7ee0a8", mode: "diffusion" },
+  "membrane-glycolysis": { from: "carrier", to: "glycolysis", color: "#7ee0a8", mode: "diffusion" },
   "glycolysis-glycogen": { from: "glycolysis", to: "glycogen", color: "#cfa94b", mode: "diffusion" },
   "glycogen-glycolysis": { from: "glycogen", to: "glycolysis", color: "#f2c45b", mode: "diffusion" },
   "glycolysis-mito": { from: "glycolysis", to: "mitochondria", color: "#ffb56b", mode: "diffusion" },
-  "fatty-peroxisome": { from: "membrane", to: "peroxisome", color: "#d7e868", mode: "diffusion" },
+  "fatty-peroxisome": { from: "carrier", to: "peroxisome", color: "#d7e868", mode: "diffusion" },
   "glycolysis-atp": { from: "glycolysis", to: "cytosol", color: "#f2c45b", mode: "diffusion" },
-  "mito-atp-membrane": { from: "mitochondria", to: "membrane", color: "#f2c45b", mode: "diffusion" },
+  "mito-atp-membrane": { from: "mitochondria", to: "pump", color: "#f2c45b", mode: "diffusion" },
   "mito-atp-nucleus": { from: "mitochondria", to: "nucleus", color: "#f2c45b", mode: "diffusion" },
   "mito-atp-ribosome": { from: "mitochondria", to: "ribosome", color: "#f2c45b", mode: "diffusion" },
   "mito-peroxisome-ros": { from: "mitochondria", to: "peroxisome", color: "#ff8a5c", mode: "diffusion" },
@@ -1011,7 +1027,7 @@ const FLOW_DEFS: Record<string, { from: string; to: string; color: string; mode:
   "waste-lysosome": { from: "cytosol", to: "lysosome", color: "#ff6fae", mode: "autophagy" },
   "lysosome-amino": { from: "lysosome", to: "ribosome", color: "#9ad06b", mode: "diffusion" },
   "cytoskeleton-golgi": { from: "cytoskeleton", to: "golgi", color: "#7fd6c8", mode: "motor" },
-  "receptor-nucleus": { from: "membrane", to: "nucleus", color: "#ff8ed8", mode: "signal" }
+  "receptor-nucleus": { from: "receptor", to: "nucleus", color: "#ff8ed8", mode: "signal" }
 };
 
 const FLOW_MODE_SPEED: Record<CellFlow["mode"], number> = {
@@ -1024,6 +1040,47 @@ const FLOW_MODE_SPEED: Record<CellFlow["mode"], number> = {
   autophagy: 0.1
 };
 
+function flowHashUnit(key: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i += 1) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 4_294_967_295;
+}
+
+function buildFlowCurve(from: THREE.Vector3, to: THREE.Vector3, id: string, routeIndex: number, cycle: number) {
+  const chord = to.clone().sub(from);
+  const chordDir = chord.lengthSq() > 1e-5 ? chord.clone().normalize() : new THREE.Vector3(1, 0, 0);
+  const mid = from.clone().add(to).multiplyScalar(0.5);
+  const radial = mid.lengthSq() > 1e-5 ? mid.clone().normalize() : new THREE.Vector3(0, 1, 0);
+  let side = chordDir.clone().cross(radial);
+  if (side.lengthSq() < 1e-5) side = chordDir.clone().cross(new THREE.Vector3(0, 1, 0));
+  if (side.lengthSq() < 1e-5) side = new THREE.Vector3(1, 0, 0);
+  side.normalize();
+
+  const wobbleA = flowHashUnit(`${id}:${routeIndex}:${cycle}:a`) - 0.5;
+  const wobbleB = flowHashUnit(`${id}:${routeIndex}:${cycle}:b`) - 0.5;
+  const lift = 0.34 + flowHashUnit(`${id}:${routeIndex}:${cycle}:lift`) * 0.95;
+  const spread = 0.28 + flowHashUnit(`${id}:${routeIndex}:${cycle}:spread`) * 0.9;
+  const c1 = from
+    .clone()
+    .lerp(to, 0.28)
+    .add(radial.clone().multiplyScalar(lift))
+    .add(side.clone().multiplyScalar(wobbleA * spread));
+  const c2 = from
+    .clone()
+    .lerp(to, 0.7)
+    .add(radial.clone().multiplyScalar(lift * (0.55 + flowHashUnit(`${id}:${routeIndex}:${cycle}:lift2`) * 0.55)))
+    .add(side.clone().multiplyScalar(wobbleB * spread));
+  return new THREE.CatmullRomCurve3([from.clone(), c1, c2, to.clone()]);
+}
+
+function updateFlowLineGeometry(visual: FlowVisual) {
+  visual.line.geometry.dispose();
+  visual.line.geometry = new THREE.BufferGeometry().setFromPoints(visual.curve.getPoints(46));
+}
+
 function buildCellFlowVisuals(parent: THREE.Group) {
   flowVisuals.length = 0;
   const index = Object.entries(FLOW_DEFS);
@@ -1032,10 +1089,7 @@ function buildCellFlowVisuals(parent: THREE.Group) {
     const from = organelleAnchors[def.from];
     const to = organelleAnchors[def.to];
     if (!from || !to) continue;
-    const midpoint = from.clone().add(to).multiplyScalar(0.5);
-    const radial = midpoint.lengthSq() > 1e-4 ? midpoint.clone().normalize().multiplyScalar(0.9) : new THREE.Vector3(0, 0.9, 0);
-    const vertical = new THREE.Vector3(0, 0.45 + (i % 4) * 0.18, 0);
-    const curve = new THREE.CatmullRomCurve3([from.clone(), midpoint.add(radial).add(vertical), to.clone()]);
+    const curve = buildFlowCurve(from, to, id, i, 0);
     const lineGeo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(46));
     const lineMat = new THREE.LineBasicMaterial({ color: def.color, transparent: true, opacity: 0.05 });
     const line = new THREE.Line(lineGeo, lineMat);
@@ -1053,7 +1107,20 @@ function buildCellFlowVisuals(parent: THREE.Group) {
     const particle = new THREE.Mesh(new THREE.SphereGeometry(0.085, 14, 10), particleMat);
     particle.userData.label = `${def.from} -> ${def.to}`;
     parent.add(particle);
-    flowVisuals.push({ id, curve, line, lineMat, particle, particleMat, offset: (i * 0.173) % 1, mode: def.mode });
+    flowVisuals.push({
+      id,
+      from: from.clone(),
+      to: to.clone(),
+      curve,
+      line,
+      lineMat,
+      particle,
+      particleMat,
+      offset: (i * 0.173) % 1,
+      lastCycle: 0,
+      routeIndex: i,
+      mode: def.mode
+    });
   }
 }
 
@@ -1067,8 +1134,27 @@ function updateFlowVisuals(s: CellSnapshot) {
     visual.particleMat.opacity = 0.3 + 0.65 * strength;
     visual.particle.scale.setScalar(0.65 + 1.8 * strength);
     const speed = FLOW_MODE_SPEED[visual.mode] ?? 0.18;
-    const t = (visual.offset + s.elapsedS * speed) % 1;
+    const rawT = visual.offset + s.elapsedS * speed;
+    const cycle = Math.floor(rawT);
+    if (cycle !== visual.lastCycle) {
+      visual.lastCycle = cycle;
+      visual.curve = buildFlowCurve(visual.from, visual.to, visual.id, visual.routeIndex, cycle);
+      updateFlowLineGeometry(visual);
+    }
+    const t = rawT % 1;
     visual.particle.position.copy(visual.curve.getPointAt(t));
+  }
+}
+
+function updateMembraneProteinAnchors(t: number) {
+  for (const p of membraneProteinAnchors) {
+    const tangentOffset = p.tangentA
+      .clone()
+      .multiplyScalar(Math.sin(t * 0.13 + p.phase) * p.drift)
+      .add(p.tangentB.clone().multiplyScalar(Math.cos(t * 0.11 + p.phase * 1.7) * p.drift));
+    const dir = p.dir.clone().add(tangentOffset).normalize();
+    p.object.position.copy(dir.clone().multiplyScalar(CELL_R * 0.985));
+    p.object.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
   }
 }
 
@@ -1392,6 +1478,7 @@ function clearWaterVisuals() {
   flowVisuals.length = 0;
   organelleAnchors = {};
   organelleMotions.length = 0;
+  membraneProteinAnchors.length = 0;
   livingCell = null;
   reportPanel.style.display = "none";
 
@@ -2006,6 +2093,12 @@ function buildOrganelleScene() {
     a.s.add(v);
     a.n += 1;
   };
+  const transportPortAcc: TransportPortAccumulator = {};
+  const addTransportPort = (kind: string, v: THREE.Vector3) => {
+    const a = (transportPortAcc[kind] ??= { s: new THREE.Vector3(), n: 0 });
+    a.s.add(v);
+    a.n += 1;
+  };
 
   const group = new THREE.Group();
   let seed = 20260618;
@@ -2245,10 +2338,14 @@ function buildOrganelleScene() {
   }
 
   // --- Plasma-membrane transport proteins ---
-  // These are still cell-scale glyphs, not atomistic PDB meshes. The forms follow
-  // real membrane-protein families: alpha-helix bundles, tetrameric pores,
-  // alternating-access carriers, ATP-driven pumps, and glycoprotein receptors.
-  const proteinRoot = () => {
+  // Cell-scale truth: real channels/transporters are only a few nanometres wide,
+  // so their true footprint is almost invisible on a 10 um cell. We show both:
+  // a true-scale membrane footprint and an anchored magnified inspection glyph.
+  const trueProteinFootprintWorld = nmToWorld(8);
+  const glyphBilayerThickness = 0.95;
+  const cytosolicY = -0.78;
+  const extracellularY = 0.78;
+  const proteinRoot = (family: string, footprintNm: number, color: string, portKey: string) => {
     const dir = randDir();
     dir.y *= 0.9;
     dir.normalize();
@@ -2257,21 +2354,24 @@ function buildOrganelleScene() {
     rootProtein.position.copy(p);
     rootProtein.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     group.add(rootProtein);
-    trackMotion(rootProtein, p, 0.035, 0.2 + rnd() * 0.1, 0.0025);
-    mesh(new THREE.TorusGeometry(0.72, 0.035, 8, 32), "#8fc6ff", new THREE.Vector3(), {
+    const tangentA = dir.clone().cross(Math.abs(dir.y) < 0.92 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0)).normalize();
+    const tangentB = dir.clone().cross(tangentA).normalize();
+    membraneProteinAnchors.push({ object: rootProtein, dir: dir.clone(), tangentA, tangentB, phase: rnd() * Math.PI * 2, drift: 0.018 + rnd() * 0.014 });
+    mesh(new THREE.TorusGeometry(0.62, 0.028, 8, 32), "#8fc6ff", new THREE.Vector3(), {
       parent: rootProtein,
       rot: [Math.PI / 2, 0, 0],
-      opacity: 0.28,
+      opacity: 0.24,
       emissive: 0.06,
       label: "Local lipid annulus - membrane lipids packed around an embedded protein"
     });
-    mesh(new THREE.SphereGeometry(nmToWorld(12), 8, 6), "#ffffff", new THREE.Vector3(0, -0.02, 0), {
+    mesh(new THREE.SphereGeometry(Math.max(trueProteinFootprintWorld, nmToWorld(footprintNm)), 8, 6), color, new THREE.Vector3(0, 0, 0), {
       parent: rootProtein,
       opacity: 0.95,
       emissive: 0.5,
-      label: "True-scale membrane-protein footprint (~20-30 nm wide); visible glyph is magnified so it can be inspected"
+      label: `${family} true-scale footprint (${footprintNm} nm order); magnified glyph is anchored to the same membrane spot`
     });
     addPos("membrane", p);
+    addTransportPort(portKey, p);
     return rootProtein;
   };
 
@@ -2296,46 +2396,56 @@ function buildOrganelleScene() {
     label: string,
     tilt = 0,
     angle = 0,
-    height = 2.05
+    height = glyphBilayerThickness
   ) =>
     proteinPart(parent, new THREE.CylinderGeometry(0.12, 0.12, height, 10), color, new THREE.Vector3(x, 0, z), label, {
       rot: [tilt * Math.sin(angle), 0, -tilt * Math.cos(angle)]
     });
 
   const addPoreCap = (parent: THREE.Object3D, radius: number, color: string, label: string) => {
-    proteinPart(parent, new THREE.TorusGeometry(radius, 0.045, 8, 28), color, new THREE.Vector3(0, 0.92, 0), label, {
+    proteinPart(parent, new THREE.TorusGeometry(radius, 0.035, 8, 28), color, new THREE.Vector3(0, extracellularY, 0), label, {
       rot: [Math.PI / 2, 0, 0],
       emissive: 0.2
     });
-    proteinPart(parent, new THREE.TorusGeometry(radius * 0.92, 0.035, 8, 28), color, new THREE.Vector3(0, -0.92, 0), label, {
+    proteinPart(parent, new THREE.TorusGeometry(radius * 0.92, 0.03, 8, 28), color, new THREE.Vector3(0, cytosolicY, 0), label, {
       rot: [Math.PI / 2, 0, 0],
       emissive: 0.12
     });
   };
 
+  const addCargoTrain = (parent: THREE.Object3D, points: THREE.Vector3[], color: string, label: string) => {
+    points.forEach((point, i) => {
+      proteinPart(parent, new THREE.SphereGeometry(0.07 + i * 0.004, 10, 8), color, point, label, {
+        emissive: 0.32,
+        opacity: 0.92
+      });
+    });
+  };
+
   const makeIonChannel = () => {
-    const rootProtein = proteinRoot();
-    const label = "Ion channel - tetrameric alpha-helix bundle with a central selective pore";
+    const rootProtein = proteinRoot("Ion channel", 8, "#5ad1ff", "ionChannel");
+    const label = "Ion channel - membrane-embedded alpha-helix bundle; extracellular pore opens through to cytosol";
     for (let i = 0; i < 4; i += 1) {
       const a = (i / 4) * Math.PI * 2 + 0.18;
-      addHelix(rootProtein, Math.cos(a) * 0.38, Math.sin(a) * 0.38, "#5ad1ff", label, 0.16, a);
-      addHelix(rootProtein, Math.cos(a + 0.34) * 0.58, Math.sin(a + 0.34) * 0.58, "#7ce7ff", label, -0.1, a);
+      addHelix(rootProtein, Math.cos(a) * 0.30, Math.sin(a) * 0.30, "#5ad1ff", label, 0.14, a);
+      addHelix(rootProtein, Math.cos(a + 0.34) * 0.47, Math.sin(a + 0.34) * 0.47, "#7ce7ff", label, -0.1, a);
     }
-    mesh(new THREE.CylinderGeometry(0.18, 0.18, 2.18, 16, 1, true), "#06151f", new THREE.Vector3(), {
+    mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.08, 16, 1, true), "#06151f", new THREE.Vector3(), {
       parent: rootProtein,
       opacity: 0.72,
       emissive: 0.02,
       label
     });
-    proteinPart(rootProtein, new THREE.CapsuleGeometry(0.18, 0.28, 6, 12), "#5ad1ff", new THREE.Vector3(0, -1.22, 0), "Cytosolic vestibule - ion channel opens directly into cytosol", {
+    proteinPart(rootProtein, new THREE.CapsuleGeometry(0.16, 0.22, 6, 12), "#5ad1ff", new THREE.Vector3(0, -0.98, 0), "Cytosolic vestibule - ion channel opens into cytosol, then ions diffuse to pumps/buffers", {
       emissive: 0.14
     });
-    addPoreCap(rootProtein, 0.48, "#9df0ff", label);
+    addCargoTrain(rootProtein, [new THREE.Vector3(0, 0.48, 0), new THREE.Vector3(0, 0.02, 0), new THREE.Vector3(0, -0.46, 0)], "#b9f4ff", "Ion flux beads - ions pass through the pore into cytosol");
+    addPoreCap(rootProtein, 0.40, "#9df0ff", label);
   };
 
   const makeAquaporin = () => {
-    const rootProtein = proteinRoot();
-    const label = "Aquaporin-like water channel - tetramer of narrow water pores";
+    const rootProtein = proteinRoot("Aquaporin tetramer", 7, "#37d8c2", "aquaporin");
+    const label = "Aquaporin-like water channel - tetramer; each monomer forms a narrow water pore through the bilayer";
     const offsets = [
       [-0.34, -0.34],
       [0.34, -0.34],
@@ -2345,77 +2455,82 @@ function buildOrganelleScene() {
     for (const [x, z] of offsets) {
       for (let i = 0; i < 5; i += 1) {
         const a = (i / 5) * Math.PI * 2;
-        addHelix(rootProtein, x + Math.cos(a) * 0.18, z + Math.sin(a) * 0.18, "#37d8c2", label, 0.08, a, 1.9);
+        addHelix(rootProtein, x + Math.cos(a) * 0.14, z + Math.sin(a) * 0.14, "#37d8c2", label, 0.08, a);
       }
-      mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.05, 10, 1, true), "#06251f", new THREE.Vector3(x, 0, z), {
+      mesh(new THREE.CylinderGeometry(0.065, 0.065, 1.06, 10, 1, true), "#06251f", new THREE.Vector3(x, 0, z), {
         parent: rootProtein,
         opacity: 0.78,
         emissive: 0.02,
         label
       });
+      addCargoTrain(rootProtein, [new THREE.Vector3(x, 0.38, z), new THREE.Vector3(x, 0.0, z), new THREE.Vector3(x, -0.38, z)], "#b8fff3", "Water molecules moving single-file through aquaporin into cytosol");
     }
-    addPoreCap(rootProtein, 0.72, "#6ef0dc", label);
+    addPoreCap(rootProtein, 0.58, "#6ef0dc", label);
   };
 
   const makePump = () => {
-    const rootProtein = proteinRoot();
+    const rootProtein = proteinRoot("ATP-driven pump", 10, "#ffd24a", "pump");
     const label = "ATP-driven pump - multipass transmembrane helices with cytosolic ATP-binding lobes";
     for (let i = 0; i < 6; i += 1) {
       const a = (i / 6) * Math.PI * 2;
-      addHelix(rootProtein, Math.cos(a) * 0.42, Math.sin(a) * 0.42, "#ffd24a", label, i % 2 ? 0.22 : -0.18, a, 2.05);
+      addHelix(rootProtein, Math.cos(a) * 0.36, Math.sin(a) * 0.36, "#ffd24a", label, i % 2 ? 0.18 : -0.16, a);
     }
-    proteinPart(rootProtein, new THREE.SphereGeometry(0.34, 18, 12), "#ffb22e", new THREE.Vector3(-0.34, -1.22, 0.12), label, {
+    proteinPart(rootProtein, new THREE.SphereGeometry(0.30, 18, 12), "#ffb22e", new THREE.Vector3(-0.28, -0.98, 0.12), "Cytosolic ATP-binding lobe - pump is powered from inside the cell", {
       emissive: 0.18
     });
-    proteinPart(rootProtein, new THREE.SphereGeometry(0.34, 18, 12), "#ffb22e", new THREE.Vector3(0.34, -1.22, -0.12), label, {
+    proteinPart(rootProtein, new THREE.SphereGeometry(0.30, 18, 12), "#ffb22e", new THREE.Vector3(0.28, -0.98, -0.12), "Cytosolic ATP-binding lobe - coupled to ATP/ADP state, not a free pipe", {
       emissive: 0.18
     });
-    proteinPart(rootProtein, new THREE.SphereGeometry(0.12, 12, 8), "#9ff2a4", new THREE.Vector3(0, -1.62, 0), "ATP/ADP site - energy coupling on the cytosolic side", {
+    proteinPart(rootProtein, new THREE.SphereGeometry(0.11, 12, 8), "#9ff2a4", new THREE.Vector3(0, -1.34, 0), "ATP/ADP site - energy coupling on the cytosolic side", {
       emissive: 0.28
     });
+    addCargoTrain(rootProtein, [new THREE.Vector3(0.0, 0.34, 0.12), new THREE.Vector3(0.0, -0.10, 0.06), new THREE.Vector3(0.0, -0.50, 0.0)], "#fff0a6", "Pump substrate path - conformational cycling, not an always-open tube");
   };
 
   const makeCarrier = () => {
-    const rootProtein = proteinRoot();
-    const label = "Carrier transporter - alternating-access cleft that changes which side is open";
+    const rootProtein = proteinRoot("Carrier transporter", 7, "#b693ff", "carrier");
+    const label = "Carrier transporter - 12-helix alternating-access bundle; nutrient binds outside, releases to cytosol";
     for (let side = -1; side <= 1; side += 2) {
-      for (let i = 0; i < 3; i += 1) {
-        const z = (i - 1) * 0.28;
-        addHelix(rootProtein, side * 0.32, z, "#b693ff", label, side * 0.28, Math.PI / 2, 2.1);
+      for (let i = 0; i < 6; i += 1) {
+        const z = (i - 2.5) * 0.15;
+        addHelix(rootProtein, side * (0.20 + (i % 2) * 0.09), z, "#b693ff", label, side * 0.22, Math.PI / 2);
       }
-      proteinPart(rootProtein, new THREE.CapsuleGeometry(0.22, 0.58, 6, 12), "#9a7cff", new THREE.Vector3(side * 0.48, 0.05, 0), label, {
+      proteinPart(rootProtein, new THREE.CapsuleGeometry(0.18, 0.46, 6, 12), "#9a7cff", new THREE.Vector3(side * 0.40, 0.05, 0), label, {
         rot: [0.25, 0, side * 0.35],
         emissive: 0.16
       });
     }
-    proteinPart(rootProtein, new THREE.SphereGeometry(0.13, 12, 8), "#7ee0a8", new THREE.Vector3(0, 0.16, 0), "Bound substrate in transporter cleft", {
+    proteinPart(rootProtein, new THREE.SphereGeometry(0.13, 12, 8), "#7ee0a8", new THREE.Vector3(0, 0.34, 0), "Extracellular nutrient bound in transporter cleft", {
       emissive: 0.28
     });
-    proteinPart(rootProtein, new THREE.CapsuleGeometry(0.18, 0.42, 6, 12), "#b693ff", new THREE.Vector3(0, -1.2, 0), "Cytosolic-facing gate - carrier releases cargo into cytosol, not into a specific organelle", {
+    proteinPart(rootProtein, new THREE.SphereGeometry(0.11, 12, 8), "#7ee0a8", new THREE.Vector3(0, -0.34, 0), "Released nutrient - enters cytosol first, then diffuses/metabolizes toward organelles", {
+      emissive: 0.26
+    });
+    proteinPart(rootProtein, new THREE.CapsuleGeometry(0.16, 0.36, 6, 12), "#b693ff", new THREE.Vector3(0, -0.88, 0), "Cytosolic-facing gate - carrier releases cargo into cytosol, not directly into an organelle", {
       emissive: 0.16
     });
   };
 
   const makeReceptor = () => {
-    const rootProtein = proteinRoot();
+    const rootProtein = proteinRoot("Glycoprotein receptor", 5, "#ff8ed8", "receptor");
     const label = "Glycoprotein receptor - single-pass membrane protein with extracellular sugar chains";
-    proteinPart(rootProtein, new THREE.CylinderGeometry(0.12, 0.12, 1.8, 10), "#ff8ed8", new THREE.Vector3(0, 0, 0), label, {
+    proteinPart(rootProtein, new THREE.CylinderGeometry(0.10, 0.10, glyphBilayerThickness, 10), "#ff8ed8", new THREE.Vector3(0, 0, 0), label, {
       emissive: 0.16
     });
-    proteinPart(rootProtein, new THREE.CapsuleGeometry(0.28, 0.7, 8, 16), "#ffb3e8", new THREE.Vector3(0, 1.35, 0), label, {
+    proteinPart(rootProtein, new THREE.CapsuleGeometry(0.26, 0.62, 8, 16), "#ffb3e8", new THREE.Vector3(0, 1.05, 0), "Extracellular receptor domain - recognizes ligand outside the cell", {
       emissive: 0.14
     });
-    proteinPart(rootProtein, new THREE.CylinderGeometry(0.045, 0.045, 0.72, 8), "#ff8ed8", new THREE.Vector3(0, -1.17, 0), "Cytosolic receptor tail - binds adaptor/signalling proteins after extracellular recognition", {
+    proteinPart(rootProtein, new THREE.CylinderGeometry(0.04, 0.04, 0.52, 8), "#ff8ed8", new THREE.Vector3(0, -0.84, 0), "Cytosolic receptor tail - binds adaptor/signalling proteins after extracellular recognition", {
       emissive: 0.14
     });
-    proteinPart(rootProtein, new THREE.SphereGeometry(0.16, 12, 8), "#f2c45b", new THREE.Vector3(0.18, -1.62, 0.08), "Adaptor protein - carries receptor state into cytosolic signalling networks", {
+    proteinPart(rootProtein, new THREE.SphereGeometry(0.14, 12, 8), "#f2c45b", new THREE.Vector3(0.16, -1.16, 0.08), "Adaptor protein - receptor connects to cytosolic signalling/cytoskeleton, not to a hollow pipe", {
       emissive: 0.24
     });
     for (let i = 0; i < 3; i += 1) {
       const a = (i / 3) * Math.PI * 2 + 0.4;
-      let prev = new THREE.Vector3(Math.cos(a) * 0.16, 1.72, Math.sin(a) * 0.16);
+      let prev = new THREE.Vector3(Math.cos(a) * 0.16, 1.36, Math.sin(a) * 0.16);
       for (let j = 0; j < 3; j += 1) {
-        const next = new THREE.Vector3(Math.cos(a) * (0.22 + j * 0.13), 1.95 + j * 0.18, Math.sin(a) * (0.22 + j * 0.13));
+        const next = new THREE.Vector3(Math.cos(a) * (0.22 + j * 0.13), 1.56 + j * 0.16, Math.sin(a) * (0.22 + j * 0.13));
         const sugar = proteinPart(rootProtein, new THREE.SphereGeometry(0.08, 10, 8), j % 2 ? "#7ee0a8" : "#f2c45b", next, label, {
           emissive: 0.16
         });
@@ -2597,6 +2712,10 @@ function buildOrganelleScene() {
     const a = posAcc[k];
     return a && a.n > 0 ? a.s.clone().multiplyScalar(1 / a.n) : new THREE.Vector3();
   };
+  const transportPort = (k: string, fallback: THREE.Vector3) => {
+    const a = transportPortAcc[k];
+    return a && a.n > 0 ? a.s.clone().multiplyScalar(1 / a.n) : fallback.clone();
+  };
   const mitoC = centroid("mitochondria");
   const micronsPerUnit = CELL_RADIUS_UM / CELL_R;
   const distances: Partial<Record<keyof OrganelleActivity, number>> = { mitochondria: 1.5, glycolysis: 0.5 };
@@ -2609,6 +2728,11 @@ function buildOrganelleScene() {
     outside: sinusoidAnchor.clone(),
     sinusoid: sinusoidAnchor.clone(),
     membrane: membraneHub,
+    aquaporin: transportPort("aquaporin", membraneHub),
+    carrier: transportPort("carrier", membraneHub),
+    ionChannel: transportPort("ionChannel", membraneHub),
+    pump: transportPort("pump", membraneHub),
+    receptor: transportPort("receptor", membraneHub),
     canaliculus: canaliculusAnchor.clone(),
     glycogen: glycogenAnchor.clone(),
     cytosol: new THREE.Vector3(0, -0.85, 0),
@@ -2652,6 +2776,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     const s = livingCell.snapshot();
     const engineSignal = externalEngineSummary ? engineVisualSignal(externalEngineSummary) : null;
     updateOrganelleMotion(s.elapsedS);
+    updateMembraneProteinAnchors(s.elapsedS);
     updateFlowVisuals(s);
     // Each organelle glows with ITS OWN activity — driven by its own internal
     // cycle in the model (steady powerhouses, bursty shippers/digesters). A

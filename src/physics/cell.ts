@@ -872,11 +872,23 @@ export class LivingCell {
   private computeFlows(f: ReturnType<LivingCell["fluxes"]>): CellFlow[] {
     const v = (x: number) => Math.max(0, x);
     const signal = v(0.12 * (f.importGlc + f.importAa) + 0.04 * this.org.membrane.eff);
+    const waterExchange = v(0.22 * this.org.membrane.eff * (0.45 + 0.55 * this.perfusion));
     const flows: CellFlow[] = [
+      {
+        id: "outside-water",
+        from: "outside",
+        to: "aquaporin",
+        cargo: "water",
+        value: waterExchange,
+        mode: "pore",
+        etaS: 0.05,
+        producedBy: "extracellular water",
+        usedBy: "aquaporins / cytosol osmotic equilibration"
+      },
       {
         id: "outside-glucose",
         from: "outside",
-        to: "membrane",
+        to: "carrier",
         cargo: "glucose",
         value: v(f.importGlc),
         mode: "carrier",
@@ -887,7 +899,7 @@ export class LivingCell {
       {
         id: "outside-amino",
         from: "outside",
-        to: "membrane",
+        to: "carrier",
         cargo: "amino acids",
         value: v(f.importAa),
         mode: "carrier",
@@ -898,7 +910,7 @@ export class LivingCell {
       {
         id: "outside-fatty",
         from: "outside",
-        to: "membrane",
+        to: "carrier",
         cargo: "fatty acids",
         value: v(f.importFa),
         mode: "carrier",
@@ -909,7 +921,7 @@ export class LivingCell {
       {
         id: "sinusoid-bileacid",
         from: "sinusoid",
-        to: "membrane",
+        to: "carrier",
         cargo: "returning bile acids",
         value: v(f.importBileAcids),
         mode: "carrier",
@@ -920,7 +932,7 @@ export class LivingCell {
       {
         id: "sinusoid-ammonia",
         from: "sinusoid",
-        to: "mitochondria",
+        to: "carrier",
         cargo: "ammonia",
         value: v(f.importAmmonia),
         mode: "carrier",
@@ -952,7 +964,7 @@ export class LivingCell {
       },
       {
         id: "membrane-glycolysis",
-        from: "membrane",
+        from: "carrier",
         to: "glycolysis",
         cargo: "glucose",
         value: v(f.importGlc),
@@ -996,7 +1008,7 @@ export class LivingCell {
       },
       {
         id: "fatty-peroxisome",
-        from: "membrane",
+        from: "carrier",
         to: "peroxisome",
         cargo: "fatty-acid substrate",
         value: v(f.importFa + 0.18 * this.p.lipids),
@@ -1019,7 +1031,7 @@ export class LivingCell {
       {
         id: "mito-atp-membrane",
         from: "mitochondria",
-        to: "membrane",
+        to: "pump",
         cargo: "ATP",
         value: v(0.18 * f.mito),
         mode: "diffusion",
@@ -1282,7 +1294,7 @@ export class LivingCell {
       },
       {
         id: "receptor-nucleus",
-        from: "membrane",
+        from: "receptor",
         to: "nucleus",
         cargo: "signal",
         value: signal,

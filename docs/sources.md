@@ -147,6 +147,24 @@ link back here or to a more specific research file.
 - Cell Biology by the Numbers:
   https://book.bionumbers.org/
   - Use for sizes, concentrations, rates, energies, and quantitative estimates.
+- NCBI Bookshelf, Molecular Biology of the Cell, "Principles of Membrane
+  Transport": https://www.ncbi.nlm.nih.gov/books/NBK26815/
+  - Use for channel vs carrier distinctions and the idea that transport proteins
+    provide selective pathways across lipid bilayers.
+- NCBI Bookshelf, Molecular Biology of the Cell, "Carrier Proteins and Active
+  Membrane Transport": https://www.ncbi.nlm.nih.gov/books/NBK26896/
+  - Use for alternating-access carriers and ATP/gradient-coupled active transport
+    framing.
+- Madeira et al., "Aquaporins: More Than Functional Monomers in a Tetrameric
+  Arrangement": https://pmc.ncbi.nlm.nih.gov/articles/PMC6262540/
+  - Use for aquaporin tetramer and monomer-pore visual framing.
+- Mueckler & Thorens, "The SLC2 (GLUT) Family of Membrane Transporters":
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC4104978/
+  - Use for GLUT-family 12-transmembrane-domain carrier visual framing.
+- NCBI Bookshelf, The Cell, "Functions of Cell Surface Receptors":
+  https://www.ncbi.nlm.nih.gov/books/NBK9866/
+  - Use for receptor coupling from extracellular ligand recognition to
+    intracellular signaling targets.
 
 ## Platform
 

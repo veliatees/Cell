@@ -1114,13 +1114,36 @@ Acceptance:
 - Organellerin urettiği/kullandigi seylerin ekrandaki hizinin gercek zamanli
   molekuler hiz sanilmamasi saglanir.
 
-### M029 - Stochastic visual route families
+### M029 - Membrane protein visual reality
+
+Status: implemented in [Milestone 029](milestones/029-membrane-protein-visual-reality.md).
+
+Scope:
+
+- Aquaporin, carrier, channel, pump ve receptor glyph'lerini zara sabitlemek.
+- Gercek nanometre ayak izi ile okunabilir buyutulmus gorsel modeli ayirmak.
+- Disaridan gelen glucose/amino acid/fatty acid/water/signal akisini ilgili
+  membran protein portuna baglamak.
+- Bos tupler yerine cytosolic tail, ATP-binding lobe, vestibule, binding cleft
+  ve adaptor protein gibi ic taraf baglantilarini gostermek.
+- Visible flow cizgilerini her dongude ayni spline'i tekrar etmeyecek sekilde
+  route-family varyantina gecirmek.
+
+Acceptance:
+
+- Membran proteinleri hucre zarindan kopmaz ve zar normaline hizali kalir.
+- Protein boyutu hem gercek olcek ayak izi hem de inspectable glyph olarak
+  gorunur.
+- Nutrient/water/signal girisi genel membrane noktasina degil ilgili protein
+  portuna baglanir.
+- Flow particle yolu cycle-to-cycle kucuk varyasyonlarla degisir.
+
+### M030 - Cargo packet visual state families
 
 Status: planned.
 
 Scope:
 
-- Sabit spline flow cizgileri yerine route family + random path varyantlari.
 - Cargo/vesicle bekleme, geri donme, misrouting, lost/degraded durumlarini
   gorselde ayri ayri gostermek.
 - Diffusion tipi metabolitleri tek ray yerine lokal bulut/gradient/particle

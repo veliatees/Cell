@@ -49,8 +49,9 @@ should not be interpreted as "everything in the cell happens that fast."
 - The UI note is a disclosure, not a calibrated kinetic model.
 - Python and TypeScript clocks are still bridged by snapshots, not live
   streaming.
-- M029 will address the next visual realism issue: generated products should not
-  always follow the same fixed visible path.
+- M029 addresses the next visual realism issue: membrane proteins should be
+  anchored to the bilayer, and extracellular cargo should enter through the
+  relevant protein ports rather than a generic membrane point.
 
 ## Verification
 

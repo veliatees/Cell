@@ -101,6 +101,7 @@ barrier/transport thinking:
 - [Milestone 026: Organelle functional cycles](docs/milestones/026-organelle-functional-cycles.md)
 - [Milestone 027: Engine-driven visual bridge](docs/milestones/027-engine-driven-visual-bridge.md)
 - [Milestone 028: Visual time-scale disclosure](docs/milestones/028-visual-time-scale.md)
+- [Milestone 029: Membrane protein visual reality](docs/milestones/029-membrane-protein-visual-reality.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)
