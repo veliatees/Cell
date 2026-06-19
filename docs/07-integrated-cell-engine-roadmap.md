@@ -1045,6 +1045,8 @@ Acceptance:
 
 ### M025 - ML calibration and policy environment
 
+Status: implemented in [Milestone 025](milestones/025-ml-calibration-policy-env.md).
+
 Scope:
 
 - Gymnasium-like environment.
