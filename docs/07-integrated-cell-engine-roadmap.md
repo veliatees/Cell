@@ -892,6 +892,8 @@ Acceptance:
 
 ### M016 - Organelle module interface
 
+Status: implemented in [Milestone 016](milestones/016-organelle-module-interface.md).
+
 Scope:
 
 - Her organel icin ortak interface:

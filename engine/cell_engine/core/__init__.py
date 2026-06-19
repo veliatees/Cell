@@ -7,7 +7,9 @@ from cell_engine.core.cell_definition import (
     StochasticPolicy,
     ValidationTarget,
 )
+from cell_engine.core.engine import run_cell, step_cell
 from cell_engine.core.provenance import ParameterProvenance, SourceReference
+from cell_engine.core.random import EngineRng
 from cell_engine.core.state import CellEvent, CellState, OrganelleState, PoolState
 
 __all__ = [
@@ -15,6 +17,7 @@ __all__ = [
     "CellEvent",
     "CellState",
     "CompartmentDefinition",
+    "EngineRng",
     "GeometryDefinition",
     "OrganelleDefinition",
     "OrganelleState",
@@ -23,6 +26,7 @@ __all__ = [
     "PoolState",
     "SourceReference",
     "StochasticPolicy",
+    "run_cell",
+    "step_cell",
     "ValidationTarget",
 ]
-

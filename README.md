@@ -88,6 +88,7 @@ barrier/transport thinking:
 - [Milestone 012: the organelle network (parallel loops)](docs/milestones/012-organelle-network.md)
 - [Milestone 013: the imperfect, spatial cell (own loops, transport, faults, live report)](docs/milestones/013-imperfect-spatial-cell.md)
 - [Milestone 015: Python engine skeleton](docs/milestones/015-python-engine-skeleton.md)
+- [Milestone 016: Organelle module interface](docs/milestones/016-organelle-module-interface.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)
