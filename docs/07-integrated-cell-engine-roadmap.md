@@ -1060,6 +1060,25 @@ Acceptance:
 - Unrealistic action penalty vardir.
 - Calibration ve RL ayridir.
 
+### M026 - Organelle functional cycles v1
+
+Status: implemented in [Milestone 026](milestones/026-organelle-functional-cycles.md).
+
+Scope:
+
+- Generic organelle stub'larini organel-specific fonksiyon dongulerine cevirmek.
+- Protein uretimi, ER kalite kontrolu, Golgi sorting, proteasome, autophagy,
+  mitochondria, peroxisome ve membrane transport izlerini state'e yazmak.
+- Yeni coarse pool'lari validation ve observation'a eklemek.
+
+Acceptance:
+
+- Her ana organel ayni `pass` davranisini kullanmaz.
+- Organel fonksiyonlari hucre pool'larini degistirir.
+- ATP/ADP/AMP korunumu organel dongulerinden sonra da korunur.
+- ER -> Golgi -> membrane/lysosome/proteasome hattinda olculebilir ara urunler
+  vardir.
+
 ## 15. Ilk uygulanacak teknik kararlar
 
 1. Python package eklenecek ama TS app korunacak.

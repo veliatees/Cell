@@ -18,6 +18,8 @@ TRACKED_POOLS = (
     "glucose",
     "glycogen",
     "amino_acids",
+    "oxygen",
+    "cytosolic_protein",
     "xenobiotic",
     "detoxified_xenobiotic",
     "NADPH",
@@ -26,7 +28,12 @@ TRACKED_POOLS = (
     "ROS",
     "bile_acids",
     "bilirubin_conjugates",
+    "folded_cargo",
     "misfolded_protein",
+    "ubiquitinated_cargo",
+    "endocytosed_cargo",
+    "autophagy_cargo",
+    "very_long_chain_fatty_acids",
     "secretory_protein_cargo",
 )
 

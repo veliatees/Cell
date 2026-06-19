@@ -44,9 +44,16 @@ REQUIRED_HEPATOCYTE_POOLS = {
     "bile_acids",
     "bilirubin_conjugates",
     "amino_acids",
+    "oxygen",
+    "cytosolic_protein",
     "ROS",
     "Ca2+",
+    "folded_cargo",
     "misfolded_protein",
+    "ubiquitinated_cargo",
+    "endocytosed_cargo",
+    "autophagy_cargo",
+    "very_long_chain_fatty_acids",
     "damaged_organelle_mass",
 }
 

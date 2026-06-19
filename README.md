@@ -98,6 +98,7 @@ barrier/transport thinking:
 - [Milestone 023: Validation harness](docs/milestones/023-validation-harness.md)
 - [Milestone 024: PhysiCell bridge](docs/milestones/024-physicell-bridge.md)
 - [Milestone 025: ML calibration and policy environment](docs/milestones/025-ml-calibration-policy-env.md)
+- [Milestone 026: Organelle functional cycles](docs/milestones/026-organelle-functional-cycles.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)

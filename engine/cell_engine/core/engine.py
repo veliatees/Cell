@@ -37,20 +37,25 @@ def step_cell(
     stressed_state = replace(membrane_state, stress=_derive_stress(membrane_state))
     modules = build_organelle_modules(definition)
 
+    working_state = stressed_state
     next_organelles = dict(stressed_state.organelles)
     emitted_events: list[CellEvent] = []
     for organelle in definition.organelles:
         organelle_id = organelle.id
-        result = modules[organelle_id].step(dt_s, stressed_state, rng)
+        module_state = replace(working_state, organelles=next_organelles)
+        result = modules[organelle_id].step(dt_s, module_state, rng)
         next_organelles[organelle_id] = result.next_state
+        if result.pools is not None:
+            working_state = replace(working_state, pools=result.pools)
         emitted_events.extend(result.events)
 
-    next_stress = _derive_stress(replace(stressed_state, organelles=next_organelles))
-    cargo_base_state = replace(stressed_state, organelles=next_organelles, stress=next_stress)
+    organelle_state = replace(working_state, organelles=next_organelles)
+    next_stress = _derive_stress(organelle_state)
+    cargo_base_state = replace(organelle_state, stress=next_stress)
     cargo_result = route_cargo_packets(cargo_base_state, dt_s=dt_s, rng=rng)
     emitted_events.extend(cargo_result.events)
     return replace(
-        stressed_state,
+        organelle_state,
         elapsed_s=stressed_state.elapsed_s + dt_s,
         status=_status_from_stress(next_stress),
         organelles=next_organelles,

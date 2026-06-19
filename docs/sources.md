@@ -106,6 +106,44 @@ link back here or to a more specific research file.
 - NCBI Bookshelf, active transport:
   https://www.ncbi.nlm.nih.gov/books/NBK547718/
   - Use for active transport concepts and pump/coupling definitions.
+- NCBI Bookshelf, Molecular Biology of the Cell, "From DNA to RNA":
+  https://www.ncbi.nlm.nih.gov/books/NBK26887/
+  - Use for transcription and nuclear RNA production.
+- NCBI Bookshelf, The Cell, "RNA Processing and Turnover":
+  https://www.ncbi.nlm.nih.gov/books/NBK9864/
+  - Use for eukaryotic mRNA processing, export and turnover.
+- NCBI Bookshelf, Molecular Biology of the Cell, "The Endoplasmic Reticulum":
+  https://www.ncbi.nlm.nih.gov/books/NBK26841/
+  - Use for SRP-directed ER targeting, rough ER entry, folding and ER handling.
+- NCBI Bookshelf, Molecular Biology of the Cell, "Transport from the ER through
+  the Golgi Apparatus": https://www.ncbi.nlm.nih.gov/books/NBK26941/
+  - Use for ER-to-Golgi traffic, Golgi organization, modification and sorting.
+- NCBI Bookshelf, Molecular Biology of the Cell, "Transport from the Trans
+  Golgi Network to the Cell Exterior": https://www.ncbi.nlm.nih.gov/books/NBK26892/
+  - Use for secretory vesicles, exocytosis and polarized plasma-membrane
+    delivery.
+- NCBI Bookshelf, Molecular Biology of the Cell, "Transport from the Trans
+  Golgi Network to Lysosomes": https://www.ncbi.nlm.nih.gov/books/NBK26844/
+  - Use for lysosomal enzyme cargo and Golgi-to-endosome/lysosome routing.
+- NCBI Bookshelf, Molecular Biology of the Cell, "The Mitochondrion":
+  https://www.ncbi.nlm.nih.gov/books/NBK26894/
+  - Use for mitochondrial sugar/fat oxidation and ATP production.
+- NCBI Bookshelf, The Cell, "Lysosomes":
+  https://www.ncbi.nlm.nih.gov/books/NBK9953/
+  - Use for lysosomal degradation and autophagy turnover.
+- NCBI Bookshelf, Molecular Biology of the Cell, "Peroxisomes":
+  https://www.ncbi.nlm.nih.gov/books/NBK26858/
+  - Use for peroxisomal oxidative reactions, catalase and lipid metabolism.
+- NCBI Bookshelf, The Cell, "Protein Degradation":
+  https://www.ncbi.nlm.nih.gov/books/NBK9957/
+  - Use for ubiquitin-proteasome degradation and protein recycling.
+- Hepatocyte polarity:
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC3697931/
+  - Use for hepatocyte polarity and canalicular/sinusoidal trafficking context.
+- Dawson, Lan & Rao, "Bile acid transporters":
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC2781307/
+  - Use for sinusoidal/canalicular bile acid transport and ATP-dependent export
+    framing.
 - Cell Biology by the Numbers:
   https://book.bionumbers.org/
   - Use for sizes, concentrations, rates, energies, and quantitative estimates.

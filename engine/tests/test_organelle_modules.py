@@ -65,7 +65,34 @@ class OrganelleModuleTests(unittest.TestCase):
         self.assertEqual(snapshot["metadata"]["mode"], "m016_step")
         self.assertGreater(snapshot["state"]["organelles"]["mitochondria"]["risk_per_hour"], 0.0)
 
+    def test_organelle_function_cycles_change_biological_pools(self) -> None:
+        next_state = step_cell(self.definition, self.state, 900.0, rng=EngineRng(123))
+        validate_state(self.definition, next_state)
+
+        self.assertGreater(next_state.pools["mRNA"].value, self.state.pools["mRNA"].value)
+        self.assertGreater(next_state.pools["cytosolic_protein"].value, self.state.pools["cytosolic_protein"].value)
+        self.assertGreater(next_state.pools["folded_cargo"].value, self.state.pools["folded_cargo"].value)
+        self.assertGreater(next_state.pools["albumin"].value, self.state.pools["albumin"].value)
+        self.assertGreater(next_state.pools["endocytosed_cargo"].value, self.state.pools["endocytosed_cargo"].value)
+        self.assertLess(next_state.pools["very_long_chain_fatty_acids"].value, self.state.pools["very_long_chain_fatty_acids"].value)
+
+    def test_organelle_active_processes_are_specific_to_each_module(self) -> None:
+        next_state = step_cell(self.definition, self.state, 900.0, rng=EngineRng(124))
+
+        self.assertIn("DNA_damage_response", next_state.organelles["nucleus"].active_processes)
+        self.assertIn("ribosome_quality_control", next_state.organelles["ribosome"].active_processes)
+        self.assertIn("ERAD", next_state.organelles["rough_er"].active_processes)
+        self.assertIn("glycosylation_maturation", next_state.organelles["golgi"].active_processes)
+        self.assertIn("OXPHOS", next_state.organelles["mitochondria"].active_processes)
+        self.assertIn("autophagy_completion", next_state.organelles["lysosome_endosome"].active_processes)
+        self.assertIn("H2O2_catalase_balance", next_state.organelles["peroxisome"].active_processes)
+        self.assertIn("ERAD_degradation", next_state.organelles["proteasome"].active_processes)
+
+    def test_adenylate_pool_stays_conserved_through_organelle_cycles(self) -> None:
+        next_state = step_cell(self.definition, self.state, 900.0, rng=EngineRng(125))
+        total = sum(next_state.pools[id].value for id in ("ATP", "ADP", "AMP"))
+        self.assertAlmostEqual(total, 1.0, places=8)
+
 
 if __name__ == "__main__":
     unittest.main()
-
