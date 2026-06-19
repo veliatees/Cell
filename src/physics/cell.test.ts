@@ -39,29 +39,29 @@ describe("LivingCell — organelle network", () => {
     expect(s.atp + s.adp).toBeCloseTo(1, 6);
   });
 
-  it("starves to death when the nutrient supply is cut", () => {
+  it("starves to death when external perfusion is cut", () => {
     const c = new LivingCell(undefined, 0.9);
     settle(c, 30);
-    c.nutrient = 0;
-    settle(c, 30);
+    c.perfusion = 0;
+    settle(c, 80);
     const s = c.snapshot();
     expect(s.atp).toBeLessThan(0.2);
     expect(s.status).toBe("dying");
   });
 
-  it("recovers when fed again", () => {
+  it("recovers when external perfusion returns", () => {
     const c = new LivingCell(undefined, 0.9);
     settle(c, 20);
-    c.nutrient = 0;
-    settle(c, 25);
-    c.nutrient = 0.9;
-    settle(c, 40);
+    c.perfusion = 0;
+    settle(c, 60);
+    c.perfusion = 0.9;
+    settle(c, 70);
     const s = c.snapshot();
     expect(s.atp).toBeGreaterThan(0.45);
     expect(s.status).toBe("healthy");
   });
 
-  it("higher nutrient sustains a higher energy charge", () => {
+  it("higher external perfusion sustains a higher energy charge", () => {
     const lo = new LivingCell(undefined, 0.25);
     const hi = new LivingCell(undefined, 1.0);
     settle(lo, 60);
@@ -78,14 +78,14 @@ describe("LivingCell — organelle network", () => {
     expect(r.ribosome.transportMs).toBeGreaterThan(0);
   });
 
-  it("is imperfect: under stress, organelles fault and the cell logs events", () => {
+  it("is imperfect: under stress, organelle risks rise and the cell logs events", () => {
     const c = new LivingCell(undefined, 0.9, true); // noise + faults on
     settle(c, 20);
-    c.nutrient = 0.05; // starve → stress → faults become likely
-    settle(c, 60);
+    c.perfusion = 0.02; // starve → stress → faults become likely
+    settle(c, 140);
     const s = c.snapshot();
-    const minEff = Math.min(...s.organelles.map((o) => o.efficiency));
-    expect(minEff).toBeLessThan(1); // at least one organelle degraded
+    const maxRisk = Math.max(...s.organelles.map((o) => o.riskPerHour));
+    expect(maxRisk).toBeGreaterThan(5);
     expect(s.events.some((e) => e.severity === "warn" || e.severity === "crit")).toBe(true);
   });
 
@@ -115,5 +115,24 @@ describe("LivingCell — organelle network", () => {
     // periods are distinct per organelle (different lifestyles)
     const periods = new Set(c.snapshot().organelles.map((o) => o.periodS));
     expect(periods.size).toBeGreaterThan(4);
+  });
+
+  it("exposes probabilistic lifecycle and turnover for the cell and organelles", () => {
+    const c = new LivingCell(undefined, 0.9);
+    settle(c, 20);
+    const healthy = c.snapshot();
+    expect(healthy.cellAgeH).toBeGreaterThan(0);
+    expect(healthy.senescenceRiskPerHour).toBeGreaterThanOrEqual(0);
+    expect(healthy.apoptosisRiskPerHour).toBeGreaterThanOrEqual(0);
+    expect(healthy.organelles.every((o) => o.turnoverHalfLifeH > 0 && o.turnoverRiskPerHour >= 0)).toBe(true);
+    expect(healthy.organelles.some((o) => o.id === "er")).toBe(true);
+    expect(healthy.organelles.some((o) => o.id === "peroxisome")).toBe(true);
+
+    c.perfusion = 0;
+    settle(c, 90);
+    const stressed = c.snapshot();
+    expect(Math.max(stressed.senescenceRiskPerHour, stressed.apoptosisRiskPerHour)).toBeGreaterThan(
+      Math.max(healthy.senescenceRiskPerHour, healthy.apoptosisRiskPerHour)
+    );
   });
 });

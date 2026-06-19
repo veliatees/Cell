@@ -28,14 +28,30 @@ select {
 
 .sim-shell {
   position: relative;
-  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(260px, 310px) minmax(0, 1fr) minmax(286px, 330px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "topbar topbar topbar"
+    "left viewport right"
+    "bottom bottom bottom";
+  gap: 12px;
+  height: 100vh;
+  min-height: 0;
+  padding: 18px;
   background: linear-gradient(180deg, #080b10 0%, #0a1017 52%, #07090d 100%);
   isolation: isolate;
+  overflow: hidden;
 }
 
 .viewport {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  grid-area: viewport;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(4, 7, 11, 0.42);
   cursor: grab;
   touch-action: none;
 }
@@ -51,10 +67,8 @@ select {
 }
 
 .topbar {
-  position: absolute;
-  top: 18px;
-  left: 18px;
-  right: 18px;
+  position: relative;
+  grid-area: topbar;
   z-index: 5;
   display: flex;
   align-items: center;
@@ -137,20 +151,22 @@ select {
 }
 
 .inspector {
-  position: absolute;
+  position: relative;
   z-index: 4;
-  top: 104px;
-  width: min(330px, calc(100vw - 36px));
+  min-width: 0;
+  min-height: 0;
+  width: auto;
   border-radius: 8px;
   padding: 16px;
+  overflow-y: auto;
 }
 
 .inspector--left {
-  left: 18px;
+  grid-area: left;
 }
 
 .inspector--right {
-  right: 18px;
+  grid-area: right;
 }
 
 .panel-title {
@@ -268,16 +284,15 @@ input[type="checkbox"] {
 }
 
 .bottom-readout {
-  position: absolute;
-  left: 50%;
-  bottom: 18px;
+  position: relative;
+  grid-area: bottom;
   z-index: 4;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 12px;
   align-items: center;
-  width: min(760px, calc(100vw - 36px));
-  transform: translateX(-50%);
+  width: auto;
+  min-width: 0;
   border-radius: 8px;
   padding: 10px;
 }
@@ -376,24 +391,23 @@ input[type="checkbox"] {
 
 /* --- Live activity report (organelle scene) --- */
 .report-panel {
-  position: absolute;
-  z-index: 7;
-  top: 14px;
-  right: 14px;
-  width: 290px;
-  max-height: calc(100% - 28px);
+  position: static;
+  width: 100%;
+  max-height: none;
   display: flex;
   flex-direction: column;
-  padding: 12px 13px;
-  border-radius: 12px;
+  margin-top: 12px;
+  padding: 12px 0 0;
+  border-radius: 0;
   color: #e8eef9;
   font-size: 12px;
   line-height: 1.4;
-  border: 1px solid rgba(120, 180, 255, 0.32);
-  background: rgba(9, 14, 24, 0.86);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(9px);
-  pointer-events: none;
+  border: 0;
+  border-top: 1px solid rgba(190, 211, 237, 0.1);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  pointer-events: auto;
   overflow: hidden;
 }
 
@@ -417,6 +431,7 @@ input[type="checkbox"] {
   flex-direction: column;
   gap: 7px;
   overflow-y: auto;
+  max-height: 220px;
 }
 
 .report-row {
@@ -476,6 +491,79 @@ input[type="checkbox"] {
   margin-top: 3px;
 }
 
+.report-flow__title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8b96ad;
+  margin: 10px 0 5px;
+}
+
+.report-flows {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow-y: auto;
+  max-height: 190px;
+  padding-right: 2px;
+}
+
+.flow-row {
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(126, 224, 198, 0.045);
+  border: 1px solid rgba(126, 224, 198, 0.1);
+}
+
+.flow-row__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.flow-row__cargo {
+  color: #edf5ff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.flow-row__value {
+  color: #f2c45b;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.flow-row__route {
+  margin-top: 1px;
+  color: #aebbd0;
+  font-size: 10.5px;
+}
+
+.flow-row__meta {
+  margin-top: 2px;
+  color: #7f8ca4;
+  font-size: 9.5px;
+  overflow-wrap: anywhere;
+}
+
+.flow-row__bar {
+  height: 3px;
+  margin-top: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.flow-row__bar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #7ee0a8, #f2c45b);
+  transition: width 0.12s linear;
+}
+
 .report-log__title {
   font-size: 10px;
   font-weight: 700;
@@ -515,13 +603,23 @@ input[type="checkbox"] {
   }
 
   .sim-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(420px, 62vh) auto auto auto;
+    grid-template-areas:
+      "topbar"
+      "viewport"
+      "bottom"
+      "left"
+      "right";
+    height: auto;
     min-height: 100svh;
+    padding: 10px;
+    gap: 10px;
+    overflow: visible;
   }
 
   .topbar {
-    top: 10px;
-    left: 10px;
-    right: 10px;
+    position: relative;
   }
 
   .brand {
@@ -535,23 +633,20 @@ input[type="checkbox"] {
   }
 
   .inspector {
-    top: auto;
-    width: calc(50vw - 16px);
+    width: auto;
     padding: 12px;
   }
 
   .inspector--left {
-    left: 10px;
-    bottom: 112px;
+    grid-area: left;
   }
 
   .inspector--right {
-    right: 10px;
-    bottom: 112px;
+    grid-area: right;
   }
 
   .metric-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .formula-stack {
@@ -559,8 +654,7 @@ input[type="checkbox"] {
   }
 
   .bottom-readout {
-    bottom: 10px;
-    width: calc(100vw - 20px);
+    width: auto;
   }
 }
 
@@ -579,21 +673,25 @@ input[type="checkbox"] {
   }
 
   .inspector {
-    width: calc(100vw - 20px);
+    width: auto;
   }
 
   .inspector--left {
-    display: none;
+    display: block;
   }
 
   .inspector--right {
-    left: 10px;
-    right: 10px;
-    bottom: 128px;
+    min-height: 0;
   }
 
   .bottom-readout {
     grid-template-columns: 1fr;
+  }
+
+  .control-row,
+  .switch-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .time-readout {

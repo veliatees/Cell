@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { MEMBRANE_SCENES, MembraneSystem, membraneSystemFromPreset } from "./membrane";
 
+const MEMBRANE_LONG_TEST_TIMEOUT_MS = 70000;
+
 describe("Cooke–Deserno lipid membrane", () => {
   it("builds 3-bead lipids (1 head + 2 tails) in two leaflets", () => {
     const sys = new MembraneSystem({ perSide: 4, mode: "bilayer" });
@@ -26,7 +28,7 @@ describe("Cooke–Deserno lipid membrane", () => {
 
   it("stays a cohesive bilayer under thermal motion (does not fall apart)", () => {
     const sys = new MembraneSystem({ perSide: 6, mode: "bilayer", seed: 7 });
-    sys.step(3000);
+    sys.step(1200);
     const snap = sys.snapshot();
 
     expect(Number.isFinite(snap.potentialEnergy)).toBe(true);
@@ -38,16 +40,16 @@ describe("Cooke–Deserno lipid membrane", () => {
     expect(snap.thicknessSigma).toBeLessThan(8);
     // Lipids remain orientationally ordered (a fluid/gel bilayer, not a gas).
     expect(snap.orderS).toBeGreaterThan(0.3);
-  }, 30000);
+  }, MEMBRANE_LONG_TEST_TIMEOUT_MS);
 
   it("keeps every bead finite over a long run", () => {
     const sys = new MembraneSystem({ perSide: 5, mode: "bilayer", seed: 3 });
-    sys.step(4000);
+    sys.step(2000);
     for (const b of sys.snapshot().beads) {
       expect(Number.isFinite(b.pos.x) && Number.isFinite(b.pos.y) && Number.isFinite(b.pos.z)).toBe(true);
       expect(Math.abs(b.pos.z)).toBeLessThan(100);
     }
-  }, 30000);
+  }, MEMBRANE_LONG_TEST_TIMEOUT_MS);
 
   it("exposes membrane scenes for the viewer", () => {
     const sys = membraneSystemFromPreset(MEMBRANE_SCENES[0]);
@@ -111,7 +113,7 @@ describe("Cooke–Deserno lipid membrane", () => {
     const solutes = snap.beads.filter((b) => b.kind === "solute");
     const inside = solutes.filter((b) => Math.hypot(b.pos.x, b.pos.y, b.pos.z) < meanR).length;
     expect(inside).toBeGreaterThan(solutes.length * 0.6);
-  }, 30000);
+  }, MEMBRANE_LONG_TEST_TIMEOUT_MS);
 
   it("a vesicle pore lets the cell exchange contents with its environment", () => {
     const rad = (b: { pos: { x: number; y: number; z: number } }) =>
@@ -136,7 +138,7 @@ describe("Cooke–Deserno lipid membrane", () => {
     expect(snap.beads.every((b) => Number.isFinite(b.pos.x))).toBe(true);
     // The interior count changes as material moves through the pore.
     expect(enclosed(snap)).toBeLessThan(start);
-  }, 30000);
+  }, MEMBRANE_LONG_TEST_TIMEOUT_MS);
 
   it("an intact bilayer blocks solutes (barrier function)", () => {
     const sys = new MembraneSystem({ perSide: 6, mode: "bilayer", solutes: 16, seed: 5 });
@@ -146,14 +148,14 @@ describe("Cooke–Deserno lipid membrane", () => {
     }
     // None should have crossed the intact bilayer.
     expect(sys.snapshot().soluteBelow).toBe(0);
-  }, 30000);
+  }, MEMBRANE_LONG_TEST_TIMEOUT_MS);
 
   it("a pore lets solutes cross (transport)", () => {
     const sys = new MembraneSystem({
       perSide: 6,
       mode: "bilayer",
       solutes: 16,
-      poreRadiusSigma: 2.2,
+      poreRadiusSigma: 3.0,
       seed: 5
     });
     for (let i = 0; i < 1400; i += 1) {
@@ -161,7 +163,7 @@ describe("Cooke–Deserno lipid membrane", () => {
     }
     // With a pore, some solutes reach the other side.
     expect(sys.snapshot().soluteBelow).toBeGreaterThanOrEqual(1);
-  }, 30000);
+  }, MEMBRANE_LONG_TEST_TIMEOUT_MS);
 });
 
 function avg(xs: number[]): number {

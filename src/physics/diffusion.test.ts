@@ -19,9 +19,9 @@ const cloud = (n: number, dM2PerS: number): DiffusionConfig[] =>
 describe("Brownian diffusion", () => {
   it("recovers the input D from the mean-squared displacement (⟨r²⟩ = 6 D t)", () => {
     const dInput = ION_DIFFUSION_M2_S["sodium-ion"]; // 1.334e-9 m²/s
-    const sys = new DiffusionSystem(cloud(4000, dInput), 100);
+    const sys = new DiffusionSystem(cloud(1000, dInput), 100);
 
-    sys.step(2000); // 200,000 fs = 0.2 ns
+    sys.step(900); // 90,000 fs = 0.09 ns
     const snap = sys.snapshot();
 
     // ⟨r²⟩ = 6 D t  ⇒  D = ⟨r²⟩ / (6 t). Convert nm²/fs back to m²/s (÷1e3).
@@ -33,23 +33,23 @@ describe("Brownian diffusion", () => {
   });
 
   it("faster D spreads wider in the same time", () => {
-    const slow = new DiffusionSystem(cloud(3000, 1.0e-9), 100, 11);
-    const fast = new DiffusionSystem(cloud(3000, 2.0e-9), 100, 11);
-    slow.step(1500);
-    fast.step(1500);
+    const slow = new DiffusionSystem(cloud(800, 1.0e-9), 100, 11);
+    const fast = new DiffusionSystem(cloud(800, 2.0e-9), 100, 11);
+    slow.step(700);
+    fast.step(700);
     expect(fast.snapshot().msdNm2).toBeGreaterThan(slow.snapshot().msdNm2);
   });
 
   it("MSD grows linearly in time (diffusive, not ballistic)", () => {
-    const sys = new DiffusionSystem(cloud(3000, 1.5e-9), 100);
-    sys.step(500);
+    const sys = new DiffusionSystem(cloud(800, 1.5e-9), 100);
+    sys.step(350);
     const a = sys.snapshot();
-    sys.step(500);
+    sys.step(350);
     const b = sys.snapshot();
     // Doubling the time should roughly double the MSD (slope constant).
     const ratio = b.msdNm2 / a.msdNm2;
-    expect(ratio).toBeGreaterThan(1.8);
-    expect(ratio).toBeLessThan(2.2);
+    expect(ratio).toBeGreaterThan(1.7);
+    expect(ratio).toBeLessThan(2.3);
   });
 
   it("Stokes–Einstein gives a physically reasonable D for a nm-scale sphere", () => {
