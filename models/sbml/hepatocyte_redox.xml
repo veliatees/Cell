@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml xmlns="http://www.sbml.org/sbml/level3/version2/core" level="3" version="2">
+  <model id="hepatocyte_redox_v1" substanceUnits="relative_pool" timeUnits="second">
+    <listOfCompartments>
+      <compartment id="cytosol" constant="true" size="1"/>
+    </listOfCompartments>
+    <listOfSpecies>
+      <species id="xenobiotic" compartment="cytosol" initialConcentration="0.04" substanceUnits="relative_pool" boundaryCondition="false" constant="false"/>
+      <species id="NADPH" compartment="cytosol" initialConcentration="0.72" substanceUnits="relative_pool" boundaryCondition="false" constant="false"/>
+      <species id="GSH" compartment="cytosol" initialConcentration="0.82" substanceUnits="relative_pool" boundaryCondition="false" constant="false"/>
+      <species id="GSSG" compartment="cytosol" initialConcentration="0.08" substanceUnits="relative_pool" boundaryCondition="false" constant="false"/>
+      <species id="ROS" compartment="cytosol" initialConcentration="0.02" substanceUnits="relative_pool" boundaryCondition="false" constant="false"/>
+      <species id="detoxified_xenobiotic" compartment="cytosol" initialConcentration="0.00" substanceUnits="relative_pool" boundaryCondition="false" constant="false"/>
+    </listOfSpecies>
+    <listOfReactions>
+      <reaction id="cyp_like_detox" reversible="false">
+        <listOfReactants>
+          <speciesReference species="xenobiotic" stoichiometry="1"/>
+          <speciesReference species="NADPH" stoichiometry="1"/>
+          <speciesReference species="GSH" stoichiometry="0.5"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="detoxified_xenobiotic" stoichiometry="1"/>
+          <speciesReference species="ROS" stoichiometry="0.25"/>
+        </listOfProducts>
+        <kineticLaw>
+          <listOfLocalParameters>
+            <localParameter id="k" value="0.00018" units="per_second"/>
+          </listOfLocalParameters>
+        </kineticLaw>
+      </reaction>
+      <reaction id="glutathione_ros_buffer" reversible="false">
+        <listOfReactants>
+          <speciesReference species="ROS" stoichiometry="1"/>
+          <speciesReference species="GSH" stoichiometry="1"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="GSSG" stoichiometry="1"/>
+        </listOfProducts>
+        <kineticLaw>
+          <listOfLocalParameters>
+            <localParameter id="k" value="0.00010" units="per_second"/>
+          </listOfLocalParameters>
+        </kineticLaw>
+      </reaction>
+    </listOfReactions>
+  </model>
+</sbml>

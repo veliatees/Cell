@@ -10,7 +10,7 @@ from cell_engine.core.cell_definition import (
 from cell_engine.core.engine import run_cell, step_cell
 from cell_engine.core.provenance import ParameterProvenance, SourceReference
 from cell_engine.core.random import EngineRng
-from cell_engine.core.state import CargoPacket, CellEvent, CellState, MetabolicFlux, OrganelleState, PoolState
+from cell_engine.core.state import CargoPacket, CellEvent, CellState, MetabolicFlux, OrganelleState, PathwayResult, PoolState
 
 __all__ = [
     "CellDefinition",
@@ -24,6 +24,7 @@ __all__ = [
     "OrganelleDefinition",
     "OrganelleState",
     "ParameterProvenance",
+    "PathwayResult",
     "PoolDefinition",
     "PoolState",
     "SourceReference",

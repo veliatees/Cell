@@ -212,6 +212,18 @@ def validate_state(definition: CellDefinition, state: CellState) -> None:
         if not flux.unit:
             raise ValidationError(f"Metabolic flux {flux.id} must declare a unit")
 
+    for result in state.pathway_results:
+        if not result.id or not result.model_id:
+            raise ValidationError("Pathway result id and model_id cannot be empty")
+        if not result.engine:
+            raise ValidationError(f"Pathway result {result.id} must declare engine")
+        if not result.unit:
+            raise ValidationError(f"Pathway result {result.id} must declare unit")
+        if not result.provenance:
+            raise ValidationError(f"Pathway result {result.id} must declare provenance")
+        if any((not _finite(value) or value < 0) for value in result.species.values()):
+            raise ValidationError(f"Pathway result {result.id} species values must be finite and non-negative")
+
 
 def _assert_unique(label: str, ids: list[str]) -> None:
     seen: set[str] = set()

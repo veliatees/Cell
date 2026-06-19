@@ -952,6 +952,8 @@ Acceptance:
 
 ### M019 - SBML/libRoadRunner bridge
 
+Status: implemented in [Milestone 019](milestones/019-sbml-roadrunner-bridge.md).
+
 Scope:
 
 - SBML model load/run wrapper.

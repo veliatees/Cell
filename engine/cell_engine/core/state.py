@@ -77,6 +77,17 @@ class MetabolicFlux:
 
 
 @dataclass(frozen=True)
+class PathwayResult:
+    id: str
+    model_id: str
+    engine: str
+    species: dict[str, float]
+    unit: str
+    provenance: str
+    notes: str = ""
+
+
+@dataclass(frozen=True)
 class CellState:
     definition_id: str
     elapsed_s: float
@@ -86,6 +97,7 @@ class CellState:
     stress: dict[str, float]
     cargo_packets: tuple[CargoPacket, ...] = field(default_factory=tuple)
     metabolic_fluxes: tuple[MetabolicFlux, ...] = field(default_factory=tuple)
+    pathway_results: tuple[PathwayResult, ...] = field(default_factory=tuple)
     events: tuple[CellEvent, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, object]:
