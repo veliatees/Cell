@@ -875,6 +875,8 @@ Acceptance:
 
 ### M015 - Python engine skeleton
 
+Status: implemented in [Milestone 015](milestones/015-python-engine-skeleton.md).
+
 Scope:
 
 - `engine/pyproject.toml`.

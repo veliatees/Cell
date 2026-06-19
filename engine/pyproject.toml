@@ -1,0 +1,11 @@
+[project]
+name = "cell-engine"
+version = "0.1.0"
+description = "Authoritative scientific engine boundary for the Cell project."
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+

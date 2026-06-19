@@ -1,4 +1,7 @@
 node_modules/
 dist/
+artifacts/
 artifacts/screenshots/
+__pycache__/
+*.py[cod]
 .DS_Store
