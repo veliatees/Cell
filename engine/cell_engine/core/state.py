@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from cell_engine.core.serialization import to_plain
 
 Vector3 = tuple[float, float, float]
+TERMINAL_CARGO_STATES = frozenset({"delivered", "retained", "degraded", "misrouted", "lost", "recycled"})
 
 
 @dataclass(frozen=True)
@@ -37,6 +38,30 @@ class CellEvent:
 
 
 @dataclass(frozen=True)
+class CargoPacket:
+    id: str
+    species: str
+    origin_compartment: str
+    target_compartment: str
+    current_location: str
+    route_plan: tuple[str, ...]
+    route_index: int
+    quality_score: float
+    folding_state: str
+    glycosylation_state: str
+    age_s: float
+    energy_cost_atp: float
+    motor_dependency: bool
+    membrane_side_target: str | None
+    state: str
+    fate_reason: str = ""
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.state in TERMINAL_CARGO_STATES
+
+
+@dataclass(frozen=True)
 class CellState:
     definition_id: str
     elapsed_s: float
@@ -44,8 +69,8 @@ class CellState:
     pools: dict[str, PoolState]
     organelles: dict[str, OrganelleState]
     stress: dict[str, float]
+    cargo_packets: tuple[CargoPacket, ...] = field(default_factory=tuple)
     events: tuple[CellEvent, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, object]:
         return to_plain(self)
-

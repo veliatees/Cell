@@ -5,6 +5,7 @@ from dataclasses import replace
 from cell_engine.core.cell_definition import CellDefinition
 from cell_engine.core.random import EngineRng
 from cell_engine.core.state import CellEvent, CellState
+from cell_engine.cargo.routing import route_cargo_packets
 from cell_engine.organelles.registry import build_organelle_modules
 from cell_engine.stochastic.hazard import clamp
 
@@ -32,12 +33,16 @@ def step_cell(
         emitted_events.extend(result.events)
 
     next_stress = _derive_stress(replace(stressed_state, organelles=next_organelles))
+    cargo_base_state = replace(stressed_state, organelles=next_organelles, stress=next_stress)
+    cargo_result = route_cargo_packets(cargo_base_state, dt_s=dt_s, rng=rng)
+    emitted_events.extend(cargo_result.events)
     return replace(
         stressed_state,
         elapsed_s=stressed_state.elapsed_s + dt_s,
         status=_status_from_stress(next_stress),
         organelles=next_organelles,
         stress=next_stress,
+        cargo_packets=cargo_result.packets,
         events=stressed_state.events + tuple(emitted_events),
     )
 

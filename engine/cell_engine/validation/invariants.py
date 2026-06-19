@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 from cell_engine.core.cell_definition import CellDefinition
-from cell_engine.core.state import CellState
+from cell_engine.core.state import CellState, TERMINAL_CARGO_STATES
 
 
 class ValidationError(ValueError):
@@ -172,6 +172,34 @@ def validate_state(definition: CellDefinition, state: CellState) -> None:
         if not 0 <= value <= 1:
             raise ValidationError(f"Stress axis {stress_id} must be in 0..1")
 
+    known_locations = definition.compartment_ids | definition.organelle_ids | {
+        "er_quality_control",
+        "proteasome",
+        "lysosome_endosome",
+        "plasma_membrane",
+    }
+    for packet in state.cargo_packets:
+        if packet.origin_compartment not in known_locations:
+            raise ValidationError(f"Cargo {packet.id} has unknown origin {packet.origin_compartment}")
+        if packet.target_compartment not in known_locations:
+            raise ValidationError(f"Cargo {packet.id} has unknown target {packet.target_compartment}")
+        if packet.current_location not in known_locations:
+            raise ValidationError(f"Cargo {packet.id} has unknown current_location {packet.current_location}")
+        if not packet.route_plan:
+            raise ValidationError(f"Cargo {packet.id} route_plan cannot be empty")
+        if packet.current_location not in set(packet.route_plan) | known_locations:
+            raise ValidationError(f"Cargo {packet.id} location must be route-compatible")
+        if not 0 <= packet.route_index < len(packet.route_plan):
+            raise ValidationError(f"Cargo {packet.id} has invalid route_index")
+        if not 0 <= packet.quality_score <= 1:
+            raise ValidationError(f"Cargo {packet.id} quality_score must be in 0..1")
+        if packet.age_s < 0:
+            raise ValidationError(f"Cargo {packet.id} age_s must be non-negative")
+        if packet.energy_cost_atp < 0:
+            raise ValidationError(f"Cargo {packet.id} energy_cost_atp must be non-negative")
+        if packet.state != "in_transit" and packet.state not in TERMINAL_CARGO_STATES:
+            raise ValidationError(f"Cargo {packet.id} has invalid state {packet.state}")
+
 
 def _assert_unique(label: str, ids: list[str]) -> None:
     seen: set[str] = set()
@@ -186,4 +214,3 @@ def _assert_unique(label: str, ids: list[str]) -> None:
 
 def _finite(value: float) -> bool:
     return math.isfinite(value)
-

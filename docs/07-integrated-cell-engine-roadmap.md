@@ -914,6 +914,8 @@ Acceptance:
 
 ### M017 - Cargo packet and routing engine
 
+Status: implemented in [Milestone 017](milestones/017-cargo-routing-engine.md).
+
 Scope:
 
 - `CargoPacket`.

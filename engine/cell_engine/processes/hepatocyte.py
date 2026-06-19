@@ -10,7 +10,7 @@ from cell_engine.core.cell_definition import (
     ValidationTarget,
 )
 from cell_engine.core.provenance import ParameterProvenance, SourceReference
-from cell_engine.core.state import CellEvent, CellState, OrganelleState, PoolState
+from cell_engine.core.state import CargoPacket, CellEvent, CellState, OrganelleState, PoolState
 
 DATE_VERIFIED = "2026-06-19"
 
@@ -387,6 +387,7 @@ def initial_hepatocyte_state(definition: CellDefinition) -> CellState:
         pools=pools,
         organelles=organelles,
         stress=stress,
+        cargo_packets=_initial_cargo_packets(),
         events=(
             CellEvent(
                 id="m015_initialized",
@@ -394,6 +395,79 @@ def initial_hepatocyte_state(definition: CellDefinition) -> CellState:
                 severity="info",
                 text="Initialized authoritative hepatocyte definition/state snapshot boundary.",
             ),
+        ),
+    )
+
+
+def _initial_cargo_packets() -> tuple[CargoPacket, ...]:
+    return (
+        CargoPacket(
+            id="cargo_albumin_001",
+            species="albumin",
+            origin_compartment="rough_er",
+            target_compartment="sinusoidal_face",
+            current_location="rough_er",
+            route_plan=("rough_er", "er_quality_control", "golgi", "sinusoidal_face"),
+            route_index=0,
+            quality_score=0.94,
+            folding_state="nascent",
+            glycosylation_state="early",
+            age_s=0.0,
+            energy_cost_atp=0.035,
+            motor_dependency=True,
+            membrane_side_target="sinusoidal",
+            state="in_transit",
+        ),
+        CargoPacket(
+            id="cargo_canalicular_transporter_001",
+            species="canalicular_bile_transporter",
+            origin_compartment="rough_er",
+            target_compartment="canalicular_face",
+            current_location="rough_er",
+            route_plan=("rough_er", "er_quality_control", "golgi", "canalicular_face"),
+            route_index=0,
+            quality_score=0.90,
+            folding_state="nascent",
+            glycosylation_state="early",
+            age_s=0.0,
+            energy_cost_atp=0.045,
+            motor_dependency=True,
+            membrane_side_target="canalicular",
+            state="in_transit",
+        ),
+        CargoPacket(
+            id="cargo_lysosomal_hydrolase_001",
+            species="lysosomal_hydrolase",
+            origin_compartment="rough_er",
+            target_compartment="lysosome_endosome",
+            current_location="rough_er",
+            route_plan=("rough_er", "er_quality_control", "golgi", "lysosome_endosome"),
+            route_index=0,
+            quality_score=0.88,
+            folding_state="nascent",
+            glycosylation_state="mannose_phosphate_candidate",
+            age_s=0.0,
+            energy_cost_atp=0.040,
+            motor_dependency=True,
+            membrane_side_target=None,
+            state="in_transit",
+        ),
+        CargoPacket(
+            id="cargo_er_misfolded_001",
+            species="misfolded_secretory_protein",
+            origin_compartment="rough_er",
+            target_compartment="proteasome",
+            current_location="er_quality_control",
+            route_plan=("er_quality_control", "proteasome"),
+            route_index=0,
+            quality_score=0.24,
+            folding_state="misfolded",
+            glycosylation_state="failed_qc",
+            age_s=20.0,
+            energy_cost_atp=0.025,
+            motor_dependency=False,
+            membrane_side_target=None,
+            state="in_transit",
         ),
     )
 
@@ -495,4 +569,3 @@ def _initial_age_h(organelle_id: str) -> float:
         "cytosol_metabolism": 0.0,
     }
     return ages.get(organelle_id, 0.0)
-
