@@ -1121,7 +1121,8 @@ Status: implemented in [Milestone 029](milestones/029-membrane-protein-visual-re
 Scope:
 
 - Aquaporin, carrier, channel, pump ve receptor glyph'lerini zara sabitlemek.
-- Gercek nanometre ayak izi ile okunabilir buyutulmus gorsel modeli ayirmak.
+- Proteinleri buyutulmus glyph yerine gercek nanometre boyutuna cekmek; uzak
+  gorunumde LOD density shell, yakin patch'te 1 nokta = 1 protein kullanmak.
 - Disaridan gelen glucose/amino acid/fatty acid/water/signal akisini ilgili
   membran protein portuna baglamak.
 - Bos tupler yerine cytosolic tail, ATP-binding lobe, vestibule, binding cleft
@@ -1132,8 +1133,8 @@ Scope:
 Acceptance:
 
 - Membran proteinleri hucre zarindan kopmaz ve zar normaline hizali kalir.
-- Protein boyutu hem gercek olcek ayak izi hem de inspectable glyph olarak
-  gorunur.
+- Protein boyutu gercek nm footprint olarak kalir; ancak yakin zoom/patch ile
+  gorulebilir.
 - Nutrient/water/signal girisi genel membrane noktasina degil ilgili protein
   portuna baglanir.
 - Flow particle yolu cycle-to-cycle kucuk varyasyonlarla degisir.

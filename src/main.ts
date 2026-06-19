@@ -2338,41 +2338,134 @@ function buildOrganelleScene() {
   }
 
   // --- Plasma-membrane transport proteins ---
-  // Cell-scale truth: real channels/transporters are only a few nanometres wide,
-  // so their true footprint is almost invisible on a 10 um cell. We show both:
-  // a true-scale membrane footprint and an anchored magnified inspection glyph.
-  const trueProteinFootprintWorld = nmToWorld(8);
-  const glyphBilayerThickness = 0.95;
-  const cytosolicY = -0.78;
-  const extracellularY = 0.78;
-  const proteinRoot = (family: string, footprintNm: number, color: string, portKey: string) => {
-    const dir = randDir();
+  // Real hepatocyte-scale truth: embedded proteins are nanometres wide. They are
+  // no longer drawn as magnified tubes; child coordinates in these roots are nm.
+  const bilayerThicknessNm = 4;
+  const cytosolicY = -bilayerThicknessNm * 0.62;
+  const extracellularY = bilayerThicknessNm * 0.62;
+  const hepatocytePlasmaMembraneAreaUm2 = 2000; // BNID 105911 implies internal membrane area is ~50x plasma membrane area.
+  const proteinAreaOccupancy = 0.23; // conservative lower-bound area occupancy from measured RBC membrane protein area.
+  const averageEmbeddedFootprintNm = 7;
+  const averageEmbeddedFootprintAreaNm2 = Math.PI * (averageEmbeddedFootprintNm / 2) ** 2;
+  const estimatedEmbeddedProteinCopies = Math.round((hepatocytePlasmaMembraneAreaUm2 * 1_000_000 * proteinAreaOccupancy) / averageEmbeddedFootprintAreaNm2);
+  const membraneProteinRenderBudget = 120_000;
+  const membraneProteinRenderStride = Math.max(1, Math.ceil(estimatedEmbeddedProteinCopies / membraneProteinRenderBudget));
+  const surfaceWorldPerUm = CELL_R / CELL_RADIUS_UM;
+  const frontPatchDir = new THREE.Vector3(0.18, -0.05, 0.98).normalize();
+  const frontPatchTangentA = frontPatchDir.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
+  const frontPatchTangentB = frontPatchDir.clone().cross(frontPatchTangentA).normalize();
+  const patchRadiusUm = 0.2;
+  const patchRadiusWorld = patchRadiusUm * surfaceWorldPerUm;
+  const familySpecs = [
+    { id: "receptor", label: "receptors / adhesion glycoproteins", footprintNm: 6, fraction: 0.38, color: "#ff8ed8" },
+    { id: "carrier", label: "solute carrier transporters", footprintNm: 7, fraction: 0.27, color: "#b693ff" },
+    { id: "other", label: "other integral membrane proteins", footprintNm: 6, fraction: 0.17, color: "#b8c4d8" },
+    { id: "pump", label: "ATP-driven pumps", footprintNm: 10, fraction: 0.08, color: "#ffd24a" },
+    { id: "ionChannel", label: "ion channels", footprintNm: 8, fraction: 0.07, color: "#5ad1ff" },
+    { id: "aquaporin", label: "aquaporin / aquaglyceroporin pores", footprintNm: 7, fraction: 0.03, color: "#37d8c2" }
+  ];
+
+  const proteinRoot = (family: string, footprintNm: number, color: string, portKey: string, forcedDir?: THREE.Vector3) => {
+    const dir = forcedDir?.clone() ?? randDir();
     dir.y *= 0.9;
     dir.normalize();
     const p = dir.clone().multiplyScalar(CELL_R * 0.985);
     const rootProtein = new THREE.Group();
     rootProtein.position.copy(p);
+    rootProtein.scale.setScalar(nmToWorld(1));
     rootProtein.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     group.add(rootProtein);
     const tangentA = dir.clone().cross(Math.abs(dir.y) < 0.92 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0)).normalize();
     const tangentB = dir.clone().cross(tangentA).normalize();
     membraneProteinAnchors.push({ object: rootProtein, dir: dir.clone(), tangentA, tangentB, phase: rnd() * Math.PI * 2, drift: 0.018 + rnd() * 0.014 });
-    mesh(new THREE.TorusGeometry(0.62, 0.028, 8, 32), "#8fc6ff", new THREE.Vector3(), {
+    mesh(new THREE.TorusGeometry(footprintNm * 0.62, 0.16, 8, 32), "#8fc6ff", new THREE.Vector3(), {
       parent: rootProtein,
       rot: [Math.PI / 2, 0, 0],
       opacity: 0.24,
       emissive: 0.06,
       label: "Local lipid annulus - membrane lipids packed around an embedded protein"
     });
-    mesh(new THREE.SphereGeometry(Math.max(trueProteinFootprintWorld, nmToWorld(footprintNm)), 8, 6), color, new THREE.Vector3(0, 0, 0), {
+    mesh(new THREE.SphereGeometry(footprintNm * 0.5, 8, 6), color, new THREE.Vector3(0, 0, 0), {
       parent: rootProtein,
       opacity: 0.95,
       emissive: 0.5,
-      label: `${family} true-scale footprint (${footprintNm} nm order); magnified glyph is anchored to the same membrane spot`
+      label: `${family} true-size embedded footprint (~${footprintNm} nm across); zoom in near the membrane to inspect it`
     });
     addPos("membrane", p);
     addTransportPort(portKey, p);
     return rootProtein;
+  };
+
+  const addMembraneProteomeShell = () => {
+    for (const spec of familySpecs) {
+      const actualCopies = Math.round(estimatedEmbeddedProteinCopies * spec.fraction);
+      const renderedCopies = Math.max(1, Math.round(actualCopies / membraneProteinRenderStride));
+      const positions = new Float32Array(renderedCopies * 3);
+      for (let i = 0; i < renderedCopies; i += 1) {
+        const d = randDir();
+        const p = d.multiplyScalar(CELL_R * 1.002);
+        positions[i * 3] = p.x;
+        positions[i * 3 + 1] = p.y;
+        positions[i * 3 + 2] = p.z;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      const pts = new THREE.Points(
+        geo,
+        new THREE.PointsMaterial({
+          color: spec.color,
+          size: nmToWorld(spec.footprintNm),
+          sizeAttenuation: true,
+          map: DISC_TEXTURE,
+          alphaTest: 0.25,
+          transparent: true,
+          opacity: 0.86,
+          depthWrite: false
+        })
+      );
+      pts.userData.label =
+        `${spec.label}: estimated ${actualCopies.toLocaleString()} copies on a ~${hepatocytePlasmaMembraneAreaUm2.toLocaleString()} um² hepatocyte plasma membrane; ` +
+        `LOD shows 1 dot per ~${membraneProteinRenderStride} proteins at true ${spec.footprintNm} nm footprint`;
+      group.add(pts);
+    }
+  };
+
+  const addTrueDensityMembranePatch = () => {
+    const patchAreaUm2 = Math.PI * patchRadiusUm * patchRadiusUm;
+    const patchProteinCopies = Math.round((patchAreaUm2 * 1_000_000 * proteinAreaOccupancy) / averageEmbeddedFootprintAreaNm2);
+    for (const spec of familySpecs) {
+      const count = Math.max(1, Math.round(patchProteinCopies * spec.fraction));
+      const positions = new Float32Array(count * 3);
+      for (let i = 0; i < count; i += 1) {
+        const r = Math.sqrt(rnd()) * patchRadiusWorld;
+        const a = rnd() * Math.PI * 2;
+        const offset = frontPatchTangentA
+          .clone()
+          .multiplyScalar(Math.cos(a) * r)
+          .add(frontPatchTangentB.clone().multiplyScalar(Math.sin(a) * r));
+        const p = frontPatchDir.clone().multiplyScalar(CELL_R).add(offset).normalize().multiplyScalar(CELL_R * 1.006);
+        positions[i * 3] = p.x;
+        positions[i * 3 + 1] = p.y;
+        positions[i * 3 + 2] = p.z;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      const pts = new THREE.Points(
+        geo,
+        new THREE.PointsMaterial({
+          color: spec.color,
+          size: nmToWorld(spec.footprintNm),
+          sizeAttenuation: true,
+          map: DISC_TEXTURE,
+          alphaTest: 0.2,
+          transparent: true,
+          opacity: 0.95,
+          depthWrite: false
+        })
+      );
+      pts.userData.label = `${spec.label}: true-density zoom patch, 1 dot = 1 embedded protein, footprint ~${spec.footprintNm} nm`;
+      group.add(pts);
+    }
   };
 
   const proteinPart = (
@@ -2396,18 +2489,18 @@ function buildOrganelleScene() {
     label: string,
     tilt = 0,
     angle = 0,
-    height = glyphBilayerThickness
+    height = bilayerThicknessNm
   ) =>
-    proteinPart(parent, new THREE.CylinderGeometry(0.12, 0.12, height, 10), color, new THREE.Vector3(x, 0, z), label, {
+    proteinPart(parent, new THREE.CylinderGeometry(0.36, 0.36, height, 10), color, new THREE.Vector3(x, 0, z), label, {
       rot: [tilt * Math.sin(angle), 0, -tilt * Math.cos(angle)]
     });
 
   const addPoreCap = (parent: THREE.Object3D, radius: number, color: string, label: string) => {
-    proteinPart(parent, new THREE.TorusGeometry(radius, 0.035, 8, 28), color, new THREE.Vector3(0, extracellularY, 0), label, {
+    proteinPart(parent, new THREE.TorusGeometry(radius, 0.16, 8, 28), color, new THREE.Vector3(0, extracellularY, 0), label, {
       rot: [Math.PI / 2, 0, 0],
       emissive: 0.2
     });
-    proteinPart(parent, new THREE.TorusGeometry(radius * 0.92, 0.03, 8, 28), color, new THREE.Vector3(0, cytosolicY, 0), label, {
+    proteinPart(parent, new THREE.TorusGeometry(radius * 0.92, 0.14, 8, 28), color, new THREE.Vector3(0, cytosolicY, 0), label, {
       rot: [Math.PI / 2, 0, 0],
       emissive: 0.12
     });
@@ -2415,126 +2508,126 @@ function buildOrganelleScene() {
 
   const addCargoTrain = (parent: THREE.Object3D, points: THREE.Vector3[], color: string, label: string) => {
     points.forEach((point, i) => {
-      proteinPart(parent, new THREE.SphereGeometry(0.07 + i * 0.004, 10, 8), color, point, label, {
+      proteinPart(parent, new THREE.SphereGeometry(0.18 + i * 0.015, 10, 8), color, point, label, {
         emissive: 0.32,
         opacity: 0.92
       });
     });
   };
 
-  const makeIonChannel = () => {
-    const rootProtein = proteinRoot("Ion channel", 8, "#5ad1ff", "ionChannel");
+  const makeIonChannel = (forcedDir?: THREE.Vector3) => {
+    const rootProtein = proteinRoot("Ion channel", 8, "#5ad1ff", "ionChannel", forcedDir);
     const label = "Ion channel - membrane-embedded alpha-helix bundle; extracellular pore opens through to cytosol";
     for (let i = 0; i < 4; i += 1) {
       const a = (i / 4) * Math.PI * 2 + 0.18;
-      addHelix(rootProtein, Math.cos(a) * 0.30, Math.sin(a) * 0.30, "#5ad1ff", label, 0.14, a);
-      addHelix(rootProtein, Math.cos(a + 0.34) * 0.47, Math.sin(a + 0.34) * 0.47, "#7ce7ff", label, -0.1, a);
+      addHelix(rootProtein, Math.cos(a) * 1.45, Math.sin(a) * 1.45, "#5ad1ff", label, 0.14, a);
+      addHelix(rootProtein, Math.cos(a + 0.34) * 2.35, Math.sin(a + 0.34) * 2.35, "#7ce7ff", label, -0.1, a);
     }
-    mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.08, 16, 1, true), "#06151f", new THREE.Vector3(), {
+    mesh(new THREE.CylinderGeometry(0.42, 0.42, bilayerThicknessNm * 1.08, 16, 1, true), "#06151f", new THREE.Vector3(), {
       parent: rootProtein,
-      opacity: 0.72,
+      opacity: 0.68,
       emissive: 0.02,
       label
     });
-    proteinPart(rootProtein, new THREE.CapsuleGeometry(0.16, 0.22, 6, 12), "#5ad1ff", new THREE.Vector3(0, -0.98, 0), "Cytosolic vestibule - ion channel opens into cytosol, then ions diffuse to pumps/buffers", {
+    proteinPart(rootProtein, new THREE.CapsuleGeometry(0.5, 0.8, 6, 12), "#5ad1ff", new THREE.Vector3(0, -3.2, 0), "Cytosolic vestibule - ion channel opens into cytosol, then ions diffuse to pumps/buffers", {
       emissive: 0.14
     });
-    addCargoTrain(rootProtein, [new THREE.Vector3(0, 0.48, 0), new THREE.Vector3(0, 0.02, 0), new THREE.Vector3(0, -0.46, 0)], "#b9f4ff", "Ion flux beads - ions pass through the pore into cytosol");
-    addPoreCap(rootProtein, 0.40, "#9df0ff", label);
+    addCargoTrain(rootProtein, [new THREE.Vector3(0, 1.55, 0), new THREE.Vector3(0, 0.0, 0), new THREE.Vector3(0, -1.55, 0)], "#b9f4ff", "Ion flux beads - ions pass through the pore into cytosol");
+    addPoreCap(rootProtein, 2.35, "#9df0ff", label);
   };
 
-  const makeAquaporin = () => {
-    const rootProtein = proteinRoot("Aquaporin tetramer", 7, "#37d8c2", "aquaporin");
+  const makeAquaporin = (forcedDir?: THREE.Vector3) => {
+    const rootProtein = proteinRoot("Aquaporin tetramer", 7, "#37d8c2", "aquaporin", forcedDir);
     const label = "Aquaporin-like water channel - tetramer; each monomer forms a narrow water pore through the bilayer";
     const offsets = [
-      [-0.34, -0.34],
-      [0.34, -0.34],
-      [-0.34, 0.34],
-      [0.34, 0.34]
+      [-1.08, -1.08],
+      [1.08, -1.08],
+      [-1.08, 1.08],
+      [1.08, 1.08]
     ];
     for (const [x, z] of offsets) {
       for (let i = 0; i < 5; i += 1) {
         const a = (i / 5) * Math.PI * 2;
-        addHelix(rootProtein, x + Math.cos(a) * 0.14, z + Math.sin(a) * 0.14, "#37d8c2", label, 0.08, a);
+        addHelix(rootProtein, x + Math.cos(a) * 0.45, z + Math.sin(a) * 0.45, "#37d8c2", label, 0.08, a);
       }
-      mesh(new THREE.CylinderGeometry(0.065, 0.065, 1.06, 10, 1, true), "#06251f", new THREE.Vector3(x, 0, z), {
+      mesh(new THREE.CylinderGeometry(0.18, 0.18, bilayerThicknessNm * 1.08, 10, 1, true), "#06251f", new THREE.Vector3(x, 0, z), {
         parent: rootProtein,
         opacity: 0.78,
         emissive: 0.02,
         label
       });
-      addCargoTrain(rootProtein, [new THREE.Vector3(x, 0.38, z), new THREE.Vector3(x, 0.0, z), new THREE.Vector3(x, -0.38, z)], "#b8fff3", "Water molecules moving single-file through aquaporin into cytosol");
+      addCargoTrain(rootProtein, [new THREE.Vector3(x, 1.45, z), new THREE.Vector3(x, 0.0, z), new THREE.Vector3(x, -1.45, z)], "#b8fff3", "Water molecules moving single-file through aquaporin into cytosol");
     }
-    addPoreCap(rootProtein, 0.58, "#6ef0dc", label);
+    addPoreCap(rootProtein, 3.1, "#6ef0dc", label);
   };
 
-  const makePump = () => {
-    const rootProtein = proteinRoot("ATP-driven pump", 10, "#ffd24a", "pump");
+  const makePump = (forcedDir?: THREE.Vector3) => {
+    const rootProtein = proteinRoot("ATP-driven pump", 10, "#ffd24a", "pump", forcedDir);
     const label = "ATP-driven pump - multipass transmembrane helices with cytosolic ATP-binding lobes";
     for (let i = 0; i < 6; i += 1) {
       const a = (i / 6) * Math.PI * 2;
-      addHelix(rootProtein, Math.cos(a) * 0.36, Math.sin(a) * 0.36, "#ffd24a", label, i % 2 ? 0.18 : -0.16, a);
+      addHelix(rootProtein, Math.cos(a) * 1.65, Math.sin(a) * 1.65, "#ffd24a", label, i % 2 ? 0.18 : -0.16, a);
     }
-    proteinPart(rootProtein, new THREE.SphereGeometry(0.30, 18, 12), "#ffb22e", new THREE.Vector3(-0.28, -0.98, 0.12), "Cytosolic ATP-binding lobe - pump is powered from inside the cell", {
+    proteinPart(rootProtein, new THREE.SphereGeometry(1.2, 18, 12), "#ffb22e", new THREE.Vector3(-1.1, -3.5, 0.45), "Cytosolic ATP-binding lobe - pump is powered from inside the cell", {
       emissive: 0.18
     });
-    proteinPart(rootProtein, new THREE.SphereGeometry(0.30, 18, 12), "#ffb22e", new THREE.Vector3(0.28, -0.98, -0.12), "Cytosolic ATP-binding lobe - coupled to ATP/ADP state, not a free pipe", {
+    proteinPart(rootProtein, new THREE.SphereGeometry(1.2, 18, 12), "#ffb22e", new THREE.Vector3(1.1, -3.5, -0.45), "Cytosolic ATP-binding lobe - coupled to ATP/ADP state, not a free pipe", {
       emissive: 0.18
     });
-    proteinPart(rootProtein, new THREE.SphereGeometry(0.11, 12, 8), "#9ff2a4", new THREE.Vector3(0, -1.34, 0), "ATP/ADP site - energy coupling on the cytosolic side", {
+    proteinPart(rootProtein, new THREE.SphereGeometry(0.38, 12, 8), "#9ff2a4", new THREE.Vector3(0, -5.25, 0), "ATP/ADP site - energy coupling on the cytosolic side", {
       emissive: 0.28
     });
-    addCargoTrain(rootProtein, [new THREE.Vector3(0.0, 0.34, 0.12), new THREE.Vector3(0.0, -0.10, 0.06), new THREE.Vector3(0.0, -0.50, 0.0)], "#fff0a6", "Pump substrate path - conformational cycling, not an always-open tube");
+    addCargoTrain(rootProtein, [new THREE.Vector3(0.0, 1.4, 0.45), new THREE.Vector3(0.0, -0.35, 0.2), new THREE.Vector3(0.0, -1.8, 0.0)], "#fff0a6", "Pump substrate path - conformational cycling, not an always-open tube");
   };
 
-  const makeCarrier = () => {
-    const rootProtein = proteinRoot("Carrier transporter", 7, "#b693ff", "carrier");
+  const makeCarrier = (forcedDir?: THREE.Vector3) => {
+    const rootProtein = proteinRoot("Carrier transporter", 7, "#b693ff", "carrier", forcedDir);
     const label = "Carrier transporter - 12-helix alternating-access bundle; nutrient binds outside, releases to cytosol";
     for (let side = -1; side <= 1; side += 2) {
       for (let i = 0; i < 6; i += 1) {
-        const z = (i - 2.5) * 0.15;
-        addHelix(rootProtein, side * (0.20 + (i % 2) * 0.09), z, "#b693ff", label, side * 0.22, Math.PI / 2);
+        const z = (i - 2.5) * 0.55;
+        addHelix(rootProtein, side * (1.0 + (i % 2) * 0.38), z, "#b693ff", label, side * 0.22, Math.PI / 2);
       }
-      proteinPart(rootProtein, new THREE.CapsuleGeometry(0.18, 0.46, 6, 12), "#9a7cff", new THREE.Vector3(side * 0.40, 0.05, 0), label, {
+      proteinPart(rootProtein, new THREE.CapsuleGeometry(0.72, 1.8, 6, 12), "#9a7cff", new THREE.Vector3(side * 1.75, 0.12, 0), label, {
         rot: [0.25, 0, side * 0.35],
         emissive: 0.16
       });
     }
-    proteinPart(rootProtein, new THREE.SphereGeometry(0.13, 12, 8), "#7ee0a8", new THREE.Vector3(0, 0.34, 0), "Extracellular nutrient bound in transporter cleft", {
+    proteinPart(rootProtein, new THREE.SphereGeometry(0.42, 12, 8), "#7ee0a8", new THREE.Vector3(0, 1.55, 0), "Extracellular nutrient bound in transporter cleft", {
       emissive: 0.28
     });
-    proteinPart(rootProtein, new THREE.SphereGeometry(0.11, 12, 8), "#7ee0a8", new THREE.Vector3(0, -0.34, 0), "Released nutrient - enters cytosol first, then diffuses/metabolizes toward organelles", {
+    proteinPart(rootProtein, new THREE.SphereGeometry(0.36, 12, 8), "#7ee0a8", new THREE.Vector3(0, -1.55, 0), "Released nutrient - enters cytosol first, then diffuses/metabolizes toward organelles", {
       emissive: 0.26
     });
-    proteinPart(rootProtein, new THREE.CapsuleGeometry(0.16, 0.36, 6, 12), "#b693ff", new THREE.Vector3(0, -0.88, 0), "Cytosolic-facing gate - carrier releases cargo into cytosol, not directly into an organelle", {
+    proteinPart(rootProtein, new THREE.CapsuleGeometry(0.5, 1.3, 6, 12), "#b693ff", new THREE.Vector3(0, -3.0, 0), "Cytosolic-facing gate - carrier releases cargo into cytosol, not directly into an organelle", {
       emissive: 0.16
     });
   };
 
-  const makeReceptor = () => {
-    const rootProtein = proteinRoot("Glycoprotein receptor", 5, "#ff8ed8", "receptor");
+  const makeReceptor = (forcedDir?: THREE.Vector3) => {
+    const rootProtein = proteinRoot("Glycoprotein receptor", 5, "#ff8ed8", "receptor", forcedDir);
     const label = "Glycoprotein receptor - single-pass membrane protein with extracellular sugar chains";
-    proteinPart(rootProtein, new THREE.CylinderGeometry(0.10, 0.10, glyphBilayerThickness, 10), "#ff8ed8", new THREE.Vector3(0, 0, 0), label, {
+    proteinPart(rootProtein, new THREE.CylinderGeometry(0.35, 0.35, bilayerThicknessNm, 10), "#ff8ed8", new THREE.Vector3(0, 0, 0), label, {
       emissive: 0.16
     });
-    proteinPart(rootProtein, new THREE.CapsuleGeometry(0.26, 0.62, 8, 16), "#ffb3e8", new THREE.Vector3(0, 1.05, 0), "Extracellular receptor domain - recognizes ligand outside the cell", {
+    proteinPart(rootProtein, new THREE.CapsuleGeometry(1.0, 4.0, 8, 16), "#ffb3e8", new THREE.Vector3(0, 4.1, 0), "Extracellular receptor domain - recognizes ligand outside the cell", {
       emissive: 0.14
     });
-    proteinPart(rootProtein, new THREE.CylinderGeometry(0.04, 0.04, 0.52, 8), "#ff8ed8", new THREE.Vector3(0, -0.84, 0), "Cytosolic receptor tail - binds adaptor/signalling proteins after extracellular recognition", {
+    proteinPart(rootProtein, new THREE.CylinderGeometry(0.16, 0.16, 2.1, 8), "#ff8ed8", new THREE.Vector3(0, -3.0, 0), "Cytosolic receptor tail - binds adaptor/signalling proteins after extracellular recognition", {
       emissive: 0.14
     });
-    proteinPart(rootProtein, new THREE.SphereGeometry(0.14, 12, 8), "#f2c45b", new THREE.Vector3(0.16, -1.16, 0.08), "Adaptor protein - receptor connects to cytosolic signalling/cytoskeleton, not to a hollow pipe", {
+    proteinPart(rootProtein, new THREE.SphereGeometry(0.62, 12, 8), "#f2c45b", new THREE.Vector3(0.65, -4.35, 0.34), "Adaptor protein - receptor connects to cytosolic signalling/cytoskeleton, not to a hollow pipe", {
       emissive: 0.24
     });
     for (let i = 0; i < 3; i += 1) {
       const a = (i / 3) * Math.PI * 2 + 0.4;
-      let prev = new THREE.Vector3(Math.cos(a) * 0.16, 1.36, Math.sin(a) * 0.16);
+      let prev = new THREE.Vector3(Math.cos(a) * 0.65, 6.1, Math.sin(a) * 0.65);
       for (let j = 0; j < 3; j += 1) {
-        const next = new THREE.Vector3(Math.cos(a) * (0.22 + j * 0.13), 1.56 + j * 0.16, Math.sin(a) * (0.22 + j * 0.13));
-        const sugar = proteinPart(rootProtein, new THREE.SphereGeometry(0.08, 10, 8), j % 2 ? "#7ee0a8" : "#f2c45b", next, label, {
+        const next = new THREE.Vector3(Math.cos(a) * (0.9 + j * 0.55), 6.6 + j * 0.75, Math.sin(a) * (0.9 + j * 0.55));
+        const sugar = proteinPart(rootProtein, new THREE.SphereGeometry(0.26, 10, 8), j % 2 ? "#7ee0a8" : "#f2c45b", next, label, {
           emissive: 0.16
         });
-        const linker = mesh(new THREE.CylinderGeometry(0.018, 0.018, prev.distanceTo(next), 6), "#d8e6ff", new THREE.Vector3(), {
+        const linker = mesh(new THREE.CylinderGeometry(0.08, 0.08, prev.distanceTo(next), 6), "#d8e6ff", new THREE.Vector3(), {
           parent: rootProtein,
           opacity: 0.65,
           emissive: 0.06,
@@ -2547,9 +2640,22 @@ function buildOrganelleScene() {
     }
   };
 
+  addMembraneProteomeShell();
+  addTrueDensityMembranePatch();
+
   const builders = [makeIonChannel, makeAquaporin, makePump, makeCarrier, makeReceptor];
-  for (let i = 0; i < 24; i += 1) {
-    builders[i % builders.length]();
+  const detailDir = (i: number) => {
+    const r = Math.sqrt(rnd()) * patchRadiusWorld * 0.72;
+    const a = rnd() * Math.PI * 2 + i;
+    return frontPatchDir
+      .clone()
+      .multiplyScalar(CELL_R)
+      .add(frontPatchTangentA.clone().multiplyScalar(Math.cos(a) * r))
+      .add(frontPatchTangentB.clone().multiplyScalar(Math.sin(a) * r))
+      .normalize();
+  };
+  for (let i = 0; i < 60; i += 1) {
+    builders[i % builders.length](i < 20 ? detailDir(i) : undefined);
   }
 
   // --- Centrosome (MTOC) + radiating microtubules ---
@@ -2753,7 +2859,7 @@ function buildOrganelleScene() {
 
   if (sceneNote) {
     sceneNote.textContent =
-      "A polarized hepatocyte-scale cell. Sinusoidal blood-facing import, canalicular bile export, glycogen buffering, albumin secretion, urea handling and CYP/glutathione detox are modelled as organelle-level fluxes; exact atomistic chemistry stays one zoom-in below.";
+      `A polarized hepatocyte-scale cell. The plasma membrane carries ~${(estimatedEmbeddedProteinCopies / 1_000_000).toFixed(1)}M true-size embedded protein footprints (whole-surface LOD plus a 1:1 true-density zoom patch); sinusoidal import, canalicular bile export, glycogen buffering, albumin secretion, urea handling and CYP/glutathione detox are modelled as organelle-level fluxes.`;
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;

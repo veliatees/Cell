@@ -147,6 +147,14 @@ link back here or to a more specific research file.
 - Cell Biology by the Numbers:
   https://book.bionumbers.org/
   - Use for sizes, concentrations, rates, energies, and quantitative estimates.
+- BioNumbers BNID 105911, internal membrane surface area of hepatocyte:
+  https://bionumbers.hms.harvard.edu/bionumber.aspx?id=105911&s=n&v=1
+  - Use for hepatocyte membrane-area scale; entry notes internal membrane area is
+    50x plasma membrane area.
+- Dupuy & Engelman, "Protein area occupancy at the center of the red blood cell
+  membrane": https://pmc.ncbi.nlm.nih.gov/articles/PMC2268548/
+  - Use as a conservative lower-bound membrane protein area occupancy estimate
+    for density-scale visualization.
 - NCBI Bookshelf, Molecular Biology of the Cell, "Principles of Membrane
   Transport": https://www.ncbi.nlm.nih.gov/books/NBK26815/
   - Use for channel vs carrier distinctions and the idea that transport proteins
