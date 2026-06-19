@@ -1030,6 +1030,8 @@ Acceptance:
 
 ### M024 - PhysiCell bridge
 
+Status: implemented in [Milestone 024](milestones/024-physicell-bridge.md).
+
 Scope:
 
 - Single-cell engine state'i multicell agent abstraction'a baglama.

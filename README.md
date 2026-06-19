@@ -96,6 +96,7 @@ barrier/transport thinking:
 - [Milestone 021: Brian2 membrane/Ca module](docs/milestones/021-brian2-membrane-calcium.md)
 - [Milestone 022: TS external snapshot mode](docs/milestones/022-ts-external-snapshot-mode.md)
 - [Milestone 023: Validation harness](docs/milestones/023-validation-harness.md)
+- [Milestone 024: PhysiCell bridge](docs/milestones/024-physicell-bridge.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)
