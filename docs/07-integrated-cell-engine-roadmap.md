@@ -983,6 +983,8 @@ Acceptance:
 
 ### M021 - Brian2 membrane/Ca module
 
+Status: implemented in [Milestone 021](milestones/021-brian2-membrane-calcium.md).
+
 Scope:
 
 - Membrane potential/Ca2+ pulse/channel state icin Brian2 alt modulu.

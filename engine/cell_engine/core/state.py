@@ -99,6 +99,18 @@ class SignalingResult:
 
 
 @dataclass(frozen=True)
+class MembraneElectrochemicalState:
+    engine: str
+    membrane_potential_mv: float
+    cytosolic_ca: float
+    er_ca: float
+    pump_activity: float
+    channel_open_probability: float
+    provenance: str
+    notes: str = ""
+
+
+@dataclass(frozen=True)
 class CellState:
     definition_id: str
     elapsed_s: float
@@ -110,6 +122,7 @@ class CellState:
     metabolic_fluxes: tuple[MetabolicFlux, ...] = field(default_factory=tuple)
     pathway_results: tuple[PathwayResult, ...] = field(default_factory=tuple)
     signaling_results: tuple[SignalingResult, ...] = field(default_factory=tuple)
+    membrane_state: MembraneElectrochemicalState | None = None
     events: tuple[CellEvent, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, object]:

@@ -7,6 +7,7 @@ from cell_engine.core.random import EngineRng
 from cell_engine.core.state import CellEvent, CellState
 from cell_engine.cargo.routing import route_cargo_packets
 from cell_engine.organelles.registry import build_organelle_modules
+from cell_engine.processes.membrane_ca import apply_membrane_calcium_module
 from cell_engine.processes.metabolism import step_hepatocyte_metabolism
 from cell_engine.processes.signaling import apply_rule_based_signaling
 from cell_engine.stochastic.hazard import clamp
@@ -32,7 +33,8 @@ def step_cell(
     )
     pre_signal_state = replace(metabolized_state, stress=_derive_stress(metabolized_state))
     signaled_state = apply_rule_based_signaling(pre_signal_state, dt_s=dt_s)
-    stressed_state = replace(signaled_state, stress=_derive_stress(signaled_state))
+    membrane_state = apply_membrane_calcium_module(signaled_state, dt_s=dt_s)
+    stressed_state = replace(membrane_state, stress=_derive_stress(membrane_state))
     modules = build_organelle_modules(definition)
 
     next_organelles = dict(stressed_state.organelles)

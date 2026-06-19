@@ -93,6 +93,7 @@ barrier/transport thinking:
 - [Milestone 018: Hepatocyte metabolism v1](docs/milestones/018-hepatocyte-metabolism-v1.md)
 - [Milestone 019: SBML/libRoadRunner bridge](docs/milestones/019-sbml-roadrunner-bridge.md)
 - [Milestone 020: Rule-based signaling](docs/milestones/020-rule-based-signaling.md)
+- [Milestone 021: Brian2 membrane/Ca module](docs/milestones/021-brian2-membrane-calcium.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)

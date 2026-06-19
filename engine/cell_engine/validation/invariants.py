@@ -236,6 +236,23 @@ def validate_state(definition: CellDefinition, state: CellState) -> None:
         if any((not _finite(value) or value < 0) for value in result.actions.values()):
             raise ValidationError(f"Signaling result {result.id} actions must be finite and non-negative")
 
+    if state.membrane_state is not None:
+        membrane = state.membrane_state
+        if not membrane.engine:
+            raise ValidationError("Membrane state must declare engine")
+        if not membrane.provenance:
+            raise ValidationError("Membrane state must declare provenance")
+        if not _finite(membrane.membrane_potential_mv):
+            raise ValidationError("Membrane potential must be finite")
+        if not 0 <= membrane.cytosolic_ca <= 1.5:
+            raise ValidationError("Membrane cytosolic_ca must be in 0..1.5")
+        if not 0 <= membrane.er_ca <= 1.5:
+            raise ValidationError("Membrane er_ca must be in 0..1.5")
+        if not 0 <= membrane.pump_activity <= 1:
+            raise ValidationError("Membrane pump_activity must be in 0..1")
+        if not 0 <= membrane.channel_open_probability <= 1:
+            raise ValidationError("Membrane channel_open_probability must be in 0..1")
+
 
 def _assert_unique(label: str, ids: list[str]) -> None:
     seen: set[str] = set()
