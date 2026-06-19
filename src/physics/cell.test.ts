@@ -32,6 +32,33 @@ describe("LivingCell — organelle network", () => {
     expect(s.pools.secreted).toBeGreaterThan(0.1);
   });
 
+  it("exposes hepatocyte-specific metabolism and polarity", () => {
+    const c = new LivingCell(undefined, 0.9);
+    settle(c, 50);
+    const s = c.snapshot();
+    expect(s.hepatocyte.cellType).toBe("hepatocyte");
+    expect(s.hepatocyte.zone).toBe("midlobular");
+    expect(s.hepatocyte.polarity).toBeGreaterThan(0.5);
+    expect(s.hepatocyte.sinusoidalImport).toBeGreaterThan(0);
+    expect(s.hepatocyte.canalicularExport).toBeGreaterThan(0);
+    expect(s.pools.glycogen).toBeGreaterThan(0);
+    expect(s.pools.urea).toBeGreaterThan(0);
+    expect(s.pools.albumin).toBeGreaterThan(0);
+    expect(s.pools.bileAcids).toBeGreaterThan(0);
+    expect(s.pools.glutathione).toBeGreaterThan(0);
+  });
+
+  it("shows named hepatocyte traffic routes", () => {
+    const c = new LivingCell(undefined, 0.9);
+    settle(c, 50);
+    const ids = new Set(c.snapshot().flows.map((f) => f.id));
+    expect(ids.has("glycogen-glycolysis") || ids.has("glycolysis-glycogen")).toBe(true);
+    expect(ids.has("mito-urea-sinusoid")).toBe(true);
+    expect(ids.has("er-bile-canaliculus")).toBe(true);
+    expect(ids.has("er-detox-canaliculus")).toBe(true);
+    expect(ids.has("golgi-albumin-sinusoid")).toBe(true);
+  });
+
   it("conserves the ATP + ADP pool exactly", () => {
     const c = new LivingCell(undefined, 0.7);
     settle(c, 30);

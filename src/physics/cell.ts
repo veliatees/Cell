@@ -35,13 +35,24 @@
 
 export type Pools = {
   glucose: number;
+  glycogen: number;
+  lactate: number;
   pyruvate: number;
   aminoAcids: number;
+  ammonia: number;
+  urea: number;
   atp: number; // ADP = ATP_TOTAL − atp (conserved)
   mrna: number;
   protein: number; // nascent / ER-bound protein cargo
   foldedProtein: number; // ER-quality-controlled cargo ready for Golgi
+  albumin: number;
   lipids: number;
+  cholesterol: number;
+  bileAcids: number;
+  bilirubin: number;
+  glutathione: number;
+  xenobiotic: number;
+  detoxified: number;
   ros: number;
   waste: number;
   secreted: number;
@@ -52,11 +63,19 @@ export type ExternalPools = {
   aminoAcids: number;
   oxygen: number;
   fattyAcids: number;
+  ammonia: number;
+  bilirubin: number;
+  bileAcids: number;
+  xenobiotic: number;
+  insulin: number;
+  glucagon: number;
 };
 
 export type StressAxes = {
   energy: number;
   oxidative: number;
+  detox: number;
+  cholestatic: number;
   proteotoxic: number;
   genotoxic: number;
   membrane: number;
@@ -118,12 +137,35 @@ export type CellFlow = {
   usedBy: string;
 };
 
+export type HepatocyteState = {
+  cellType: "hepatocyte";
+  zone: "periportal" | "midlobular" | "pericentral";
+  insulin: number;
+  glucagon: number;
+  ampk: number;
+  mtor: number;
+  cyp450: number;
+  ureaCycle: number;
+  bileExport: number;
+  polarity: number;
+  glycogenRatio: number;
+  glutathioneReserve: number;
+  cytosolicCa: number;
+  erCalcium: number;
+  cytosolicPh: number;
+  lysosomePh: number;
+  membranePotentialMv: number;
+  sinusoidalImport: number;
+  canalicularExport: number;
+};
+
 export type CellSnapshot = {
   pools: Pools;
   external: ExternalPools;
   adp: number;
   importFlux: number;
   stress: StressAxes;
+  hepatocyte: HepatocyteState;
   activity: OrganelleActivity;
   flows: CellFlow[];
   organelles: OrganelleReport[];
@@ -157,6 +199,8 @@ const ALL_IDS: OrganelleId[] = [
 const STRESS_IDS: (keyof StressAxes)[] = [
   "energy",
   "oxidative",
+  "detox",
+  "cholestatic",
   "proteotoxic",
   "genotoxic",
   "membrane",
@@ -215,6 +259,8 @@ const BURST_MEAN = (() => {
 const STRESS_LABELS: Record<keyof StressAxes, string> = {
   energy: "ATP shortage / delivery bottleneck",
   oxidative: "oxidative stress / ROS load",
+  detox: "xenobiotic / CYP detox burden",
+  cholestatic: "bile acid / bilirubin export pressure",
   proteotoxic: "misfolded-protein load",
   genotoxic: "DNA damage pressure",
   membrane: "membrane transport stress",
@@ -228,15 +274,15 @@ const FAULT_RULES: Record<
   OrganelleId,
   { baseHazardPerS: number; weights: Partial<Record<keyof StressAxes, number>> }
 > = {
-  membrane: { baseHazardPerS: 0.000001, weights: { membrane: 1.2, ionic: 0.9, energy: 0.5, oxidative: 0.35 } },
+  membrane: { baseHazardPerS: 0.000001, weights: { membrane: 1.2, ionic: 0.9, energy: 0.5, oxidative: 0.35, cholestatic: 0.55 } },
   glycolysis: { baseHazardPerS: 0.0000006, weights: { energy: 0.55, oxidative: 0.45, senescence: 0.25 } },
-  mitochondria: { baseHazardPerS: 0.0000012, weights: { oxidative: 1.3, energy: 0.6, senescence: 0.45 } },
-  nucleus: { baseHazardPerS: 0.0000006, weights: { genotoxic: 1.4, oxidative: 0.55, senescence: 0.7, energy: 0.25 } },
-  er: { baseHazardPerS: 0.0000009, weights: { proteotoxic: 1.2, trafficking: 0.75, energy: 0.45, ionic: 0.35 } },
+  mitochondria: { baseHazardPerS: 0.0000012, weights: { oxidative: 1.3, energy: 0.6, senescence: 0.45, detox: 0.35 } },
+  nucleus: { baseHazardPerS: 0.0000006, weights: { genotoxic: 1.4, oxidative: 0.55, senescence: 0.7, energy: 0.25, detox: 0.25 } },
+  er: { baseHazardPerS: 0.0000009, weights: { proteotoxic: 1.2, trafficking: 0.75, energy: 0.45, ionic: 0.35, detox: 1.05, cholestatic: 0.55 } },
   ribosome: { baseHazardPerS: 0.0000008, weights: { proteotoxic: 1.3, energy: 0.55, oxidative: 0.35 } },
-  golgi: { baseHazardPerS: 0.0000008, weights: { trafficking: 1.4, proteotoxic: 0.55, energy: 0.45 } },
-  lysosome: { baseHazardPerS: 0.0000008, weights: { autophagy: 1.4, oxidative: 0.55, energy: 0.35, senescence: 0.3 } },
-  peroxisome: { baseHazardPerS: 0.0000008, weights: { oxidative: 1.2, autophagy: 0.45, senescence: 0.35 } },
+  golgi: { baseHazardPerS: 0.0000008, weights: { trafficking: 1.4, proteotoxic: 0.55, energy: 0.45, cholestatic: 0.5 } },
+  lysosome: { baseHazardPerS: 0.0000008, weights: { autophagy: 1.4, oxidative: 0.55, energy: 0.35, senescence: 0.3, detox: 0.3 } },
+  peroxisome: { baseHazardPerS: 0.0000008, weights: { oxidative: 1.2, detox: 0.75, autophagy: 0.45, senescence: 0.35 } },
   cytoskeleton: { baseHazardPerS: 0.0000007, weights: { energy: 0.8, membrane: 0.55, trafficking: 0.75, ionic: 0.45 } }
 };
 
@@ -297,6 +343,8 @@ function blankStress(): StressAxes {
   return {
     energy: 0,
     oxidative: 0,
+    detox: 0,
+    cholestatic: 0,
     proteotoxic: 0,
     genotoxic: 0,
     membrane: 0,
@@ -324,6 +372,7 @@ export class LivingCell {
   private flows: CellFlow[] = [];
   private importFlux = 0;
   private stress: StressAxes = blankStress();
+  private hepatocyte: HepatocyteState = blankHepatocyte();
   private elapsed = 0;
   private lowAtp = 0;
   private prevStatus: CellSnapshot["status"] = "healthy";
@@ -376,6 +425,7 @@ export class LivingCell {
     this.external = this.freshExternal();
     this.importFlux = 0;
     this.stress = blankStress();
+    this.hepatocyte = blankHepatocyte();
     this.act = blankActivity();
     this.flows = [];
     for (const id of ALL_IDS) {
@@ -396,13 +446,24 @@ export class LivingCell {
   private freshPools(): Pools {
     return {
       glucose: 0.3,
+      glycogen: 0.62,
+      lactate: 0.08,
       pyruvate: 0.14,
       aminoAcids: 0.4,
+      ammonia: 0.05,
+      urea: 0.08,
       atp: 0.78,
       mrna: 0.1,
       protein: 0.08,
       foldedProtein: 0.16,
+      albumin: 0.18,
       lipids: 0.28,
+      cholesterol: 0.22,
+      bileAcids: 0.14,
+      bilirubin: 0.05,
+      glutathione: 0.82,
+      xenobiotic: 0.04,
+      detoxified: 0,
       ros: 0.015,
       waste: 0.025,
       secreted: 0
@@ -429,30 +490,74 @@ export class LivingCell {
       glucose: 0.85 * source,
       aminoAcids: 0.65 * source,
       oxygen: 0.92 * source,
-      fattyAcids: 0.36 * source
+      fattyAcids: 0.36 * source,
+      ammonia: 0.1 * source,
+      bilirubin: 0.08 * source,
+      bileAcids: 0.12 * source,
+      xenobiotic: 0.05 * source,
+      insulin: 0.62 * source,
+      glucagon: 0.38 + 0.32 * (1 - clamp(source, 0, 1))
     };
   }
 
   private stressSignals(): StressAxes {
     const energy = clamp((0.48 - this.p.atp) / 0.48 + this.lowAtp / 9, 0, 1);
-    const oxidative = clamp(0.55 * this.p.ros + 0.28 * this.p.waste + 0.45 * (1 - this.external.oxygen) + 0.25 * (1 - this.org.mitochondria.eff), 0, 1);
+    const glutathioneLoss = clamp((0.35 - this.p.glutathione) / 0.35, 0, 1);
+    const detox = clamp(
+      0.55 * this.p.xenobiotic +
+        0.42 * glutathioneLoss +
+        0.22 * this.p.detoxified +
+        0.22 * (1 - this.org.er.eff) +
+        0.18 * (1 - this.external.oxygen),
+      0,
+      1
+    );
+    const cholestatic = clamp(
+      0.5 * this.p.bileAcids +
+        0.55 * this.p.bilirubin +
+        0.35 * (1 - this.hepatocyte.polarity) +
+        0.25 * (1 - this.org.golgi.eff) +
+        0.2 * (1 - this.org.membrane.eff),
+      0,
+      1
+    );
+    const oxidative = clamp(
+      0.55 * this.p.ros +
+        0.28 * this.p.waste +
+        0.45 * (1 - this.external.oxygen) +
+        0.25 * (1 - this.org.mitochondria.eff) +
+        0.22 * glutathioneLoss +
+        0.16 * detox,
+      0,
+      1
+    );
     const proteotoxic = clamp(0.55 * this.p.protein + 0.45 * this.p.waste + 0.35 * (1 - this.org.ribosome.eff) + 0.3 * (1 - this.org.er.eff), 0, 1);
     const genotoxic = clamp(0.55 * oxidative + 0.35 * this.lowAtp / 9 + 0.25 * (1 - this.org.nucleus.eff), 0, 1);
-    const membrane = clamp(0.45 * (1 - this.org.membrane.eff) + 0.4 * (1 - this.external.glucose) + 0.35 * energy, 0, 1);
-    const trafficking = clamp(0.35 * this.p.foldedProtein + 0.45 * (1 - this.org.golgi.eff) + 0.35 * proteotoxic + 0.25 * (1 - this.org.cytoskeleton.eff), 0, 1);
+    const membrane = clamp(0.45 * (1 - this.org.membrane.eff) + 0.4 * (1 - this.external.glucose) + 0.35 * energy + 0.25 * cholestatic, 0, 1);
+    const trafficking = clamp(0.35 * this.p.foldedProtein + 0.45 * (1 - this.org.golgi.eff) + 0.35 * proteotoxic + 0.25 * (1 - this.org.cytoskeleton.eff) + 0.22 * cholestatic, 0, 1);
     const autophagy = clamp(0.75 * this.p.waste + 0.55 * (1 - this.org.lysosome.eff) + 0.3 * oxidative, 0, 1);
-    const ionic = clamp(0.55 * (1 - this.org.membrane.eff) + 0.35 * (1 - this.org.er.eff) + 0.6 * energy, 0, 1);
+    const caStress = clamp((this.hepatocyte.cytosolicCa - 0.12) / 0.88, 0, 1);
+    const acidStress = clamp((7.12 - this.hepatocyte.cytosolicPh) / 0.5, 0, 1);
+    const ionic = clamp(0.55 * (1 - this.org.membrane.eff) + 0.35 * (1 - this.org.er.eff) + 0.6 * energy + 0.25 * caStress + 0.25 * acidStress, 0, 1);
     const maxOrgAge = Math.max(...ALL_IDS.map((id) => this.org[id].ageS / (TURNOVER[id].halfLifeH * 3600)));
-    const senescence = clamp((this.senescent ? 0.6 : 0) + 0.18 * maxOrgAge + 0.55 * genotoxic + 0.35 * oxidative, 0, 1);
-    return { energy, oxidative, proteotoxic, genotoxic, membrane, trafficking, autophagy, ionic, senescence };
+    const senescence = clamp((this.senescent ? 0.6 : 0) + 0.18 * maxOrgAge + 0.55 * genotoxic + 0.35 * oxidative + 0.18 * detox + 0.12 * cholestatic, 0, 1);
+    return { energy, oxidative, detox, cholestatic, proteotoxic, genotoxic, membrane, trafficking, autophagy, ionic, senescence };
   }
 
   private updateExternal(dt: number, f: ReturnType<LivingCell["fluxes"]>) {
+    const source = clamp(this.perfusion, 0, 1.2);
+    const mealWave = 0.5 + 0.5 * Math.sin(this.elapsed / 38);
     const target = {
-      glucose: 0.85 * clamp(this.perfusion, 0, 1.2),
-      aminoAcids: 0.65 * clamp(this.perfusion, 0, 1.2),
-      oxygen: 0.92 * clamp(this.perfusion, 0, 1.2),
-      fattyAcids: 0.36 * clamp(this.perfusion, 0, 1.2)
+      glucose: 0.85 * source,
+      aminoAcids: 0.65 * source,
+      oxygen: 0.92 * source,
+      fattyAcids: 0.36 * source,
+      ammonia: 0.1 * source,
+      bilirubin: 0.08 * source,
+      bileAcids: 0.12 * source,
+      xenobiotic: 0.05 * source,
+      insulin: clamp((0.2 + 0.58 * mealWave) * source, 0, 1.2),
+      glucagon: clamp(0.22 + 0.52 * (1 - clamp(source, 0, 1)) + 0.24 * (1 - mealWave), 0, 1.2)
     };
     // Perfusion replenishes extracellular substrate; transport and respiration
     // consume it. This makes starvation a consequence of the outside world, not
@@ -461,19 +566,68 @@ export class LivingCell {
     this.external.aminoAcids += dt * (0.07 * (target.aminoAcids - this.external.aminoAcids) - 0.16 * f.importAa);
     this.external.oxygen += dt * (0.12 * (target.oxygen - this.external.oxygen) - 0.08 * f.mito);
     this.external.fattyAcids += dt * (0.055 * (target.fattyAcids - this.external.fattyAcids) - 0.1 * f.importFa);
+    this.external.ammonia += dt * (0.04 * (target.ammonia - this.external.ammonia) - 0.08 * f.importAmmonia);
+    this.external.bilirubin += dt * (0.035 * (target.bilirubin - this.external.bilirubin) - 0.06 * f.importBilirubin);
+    this.external.bileAcids += dt * (0.045 * (target.bileAcids - this.external.bileAcids) - 0.04 * f.importBileAcids);
+    this.external.xenobiotic += dt * (0.035 * (target.xenobiotic - this.external.xenobiotic) - 0.07 * f.importXenobiotic);
+    this.external.insulin += dt * 0.14 * (target.insulin - this.external.insulin);
+    this.external.glucagon += dt * 0.14 * (target.glucagon - this.external.glucagon);
 
     if (this.stochastic && this.perfusion > 0) {
       if (this.rand() < dt * 0.18 * this.perfusion) this.external.glucose += 0.015 + 0.025 * this.rand();
       if (this.rand() < dt * 0.12 * this.perfusion) this.external.aminoAcids += 0.01 + 0.02 * this.rand();
       if (this.rand() < dt * 0.2 * this.perfusion) this.external.oxygen += 0.012 + 0.018 * this.rand();
       if (this.rand() < dt * 0.07 * this.perfusion) this.external.fattyAcids += 0.008 + 0.015 * this.rand();
+      if (this.rand() < dt * 0.04 * this.perfusion) this.external.bileAcids += 0.004 + 0.012 * this.rand();
+      if (this.rand() < dt * 0.03 * this.perfusion) this.external.xenobiotic += 0.003 + 0.01 * this.rand();
     }
 
     this.external.glucose = clamp(this.external.glucose, 0, 1.2);
     this.external.aminoAcids = clamp(this.external.aminoAcids, 0, 1.2);
     this.external.oxygen = clamp(this.external.oxygen, 0, 1.2);
     this.external.fattyAcids = clamp(this.external.fattyAcids, 0, 1.2);
-    this.importFlux = f.importGlc + f.importAa + f.importFa;
+    this.external.ammonia = clamp(this.external.ammonia, 0, 1.2);
+    this.external.bilirubin = clamp(this.external.bilirubin, 0, 1.2);
+    this.external.bileAcids = clamp(this.external.bileAcids, 0, 1.2);
+    this.external.xenobiotic = clamp(this.external.xenobiotic, 0, 1.2);
+    this.external.insulin = clamp(this.external.insulin, 0, 1.2);
+    this.external.glucagon = clamp(this.external.glucagon, 0, 1.2);
+    this.importFlux = f.sinusoidalImport;
+  }
+
+  private computeHepatocyteState(f: ReturnType<LivingCell["fluxes"]> | null): HepatocyteState {
+    const hormoneTotal = this.external.insulin + this.external.glucagon + 1e-6;
+    const insulin = this.external.insulin / hormoneTotal;
+    const glucagon = this.external.glucagon / hormoneTotal;
+    const ampk = f?.ampk ?? clamp((0.64 - this.p.atp) / 0.64 + 0.45 * glucagon, 0, 1);
+    const mtor = f?.mtor ?? clamp(0.45 * insulin + 0.32 * this.p.aminoAcids + 0.25 * this.p.atp - 0.32 * ampk, 0, 1);
+    const polarity = f?.polarity ?? clamp(0.42 + 0.22 * this.org.cytoskeleton.eff + 0.16 * this.org.golgi.eff + 0.16 * this.org.membrane.eff - 0.4 * this.stress.cholestatic, 0.08, 1);
+    const cytosolicCa = clamp(0.06 + 0.25 * this.stress.ionic + 0.12 * (1 - this.org.er.eff) + 0.08 * (1 - polarity), 0, 1);
+    const erCalcium = clamp(0.78 - 0.45 * this.stress.ionic - 0.25 * (1 - this.org.er.eff), 0, 1);
+    const cytosolicPh = clamp(7.22 - 0.22 * this.stress.energy - 0.12 * this.p.lactate - 0.05 * this.stress.cholestatic, 6.65, 7.35);
+    const lysosomePh = clamp(5.0 + 0.7 * (1 - this.org.lysosome.eff) + 0.35 * this.stress.energy, 4.7, 6.6);
+    const membranePotentialMv = -72 + 22 * this.stress.ionic + 16 * this.stress.energy;
+    return {
+      cellType: "hepatocyte",
+      zone: this.hepatocyte.zone,
+      insulin,
+      glucagon,
+      ampk,
+      mtor,
+      cyp450: clamp((f?.cypDetox ?? 0) / 0.36, 0, 1),
+      ureaCycle: clamp((f?.ureaCycle ?? 0) / 0.45, 0, 1),
+      bileExport: clamp((f?.bileExport ?? 0) / 0.38, 0, 1),
+      polarity,
+      glycogenRatio: clamp(this.p.glycogen / (this.p.glycogen + 0.4), 0, 1),
+      glutathioneReserve: clamp(this.p.glutathione, 0, 1),
+      cytosolicCa,
+      erCalcium,
+      cytosolicPh,
+      lysosomePh,
+      membranePotentialMv,
+      sinusoidalImport: f?.sinusoidalImport ?? 0,
+      canalicularExport: f?.canalicularExport ?? 0
+    };
   }
 
   /** Each organelle's own loop: flux magnitudes this instant (effort × efficiency). */
@@ -487,7 +641,16 @@ export class LivingCell {
     // r(id) = this organelle's OWN internal cycle gain right now (its lifestyle).
     const r = (id: OrganelleId) => rhythmGain(CYCLE[id].shape, this.org[id].phase, CYCLE[id].amp);
 
-    const responseBrake = clamp(1 - 0.55 * Math.max(stress.energy, stress.proteotoxic), 0.25, 1);
+    const hormoneTotal = this.external.insulin + this.external.glucagon + 1e-6;
+    const fed = this.external.insulin / hormoneTotal;
+    const fasting = this.external.glucagon / hormoneTotal;
+    const periportal = this.hepatocyte.zone === "periportal" ? 1 : this.hepatocyte.zone === "midlobular" ? 0.65 : 0.35;
+    const pericentral = this.hepatocyte.zone === "pericentral" ? 1 : this.hepatocyte.zone === "midlobular" ? 0.65 : 0.35;
+    const ampk = clamp((0.64 - p.atp) / 0.64 + 0.45 * fasting + 0.2 * mm(Math.max(0, 0.38 - p.glycogen), 0.28), 0, 1);
+    const mtor = clamp(0.45 * fed + 0.32 * mm(p.aminoAcids, 0.25) + 0.25 * p.atp - 0.32 * ampk, 0, 1);
+    const polarity = clamp(0.42 + 0.22 * e("cytoskeleton") + 0.16 * e("golgi") + 0.16 * e("membrane") - 0.4 * stress.cholestatic, 0.08, 1);
+
+    const responseBrake = clamp(1 - 0.55 * Math.max(stress.energy, stress.proteotoxic) - 0.15 * stress.detox, 0.25, 1);
     const transcriptionBrake = clamp(1 - 0.35 * Math.max(stress.energy, stress.genotoxic), 0.35, 1);
     const senescenceBrake = this.senescent ? 0.55 : 1;
     const autophagyBoost = 1 + 1.8 * Math.max(stress.proteotoxic, stress.oxidative, stress.autophagy);
@@ -500,13 +663,29 @@ export class LivingCell {
     // Membrane transporters: extracellular glucose & amino acids enter through
     // transporters. There is no magic slider; outside pools are consumed and
     // replenished by perfusion/noisy arrivals.
-    const importGlc = 1.3 * mm(glcGradient, 0.22) * en("membrane") * demand * e("membrane") * r("membrane");
+    const importGlc = 1.22 * mm(glcGradient, 0.22) * en("membrane") * (0.45 + 0.45 * fed + 0.1 * demand) * e("membrane") * r("membrane");
     const importAa = 0.5 * mm(aaGradient, 0.18) * en("membrane") * e("membrane") * r("membrane");
     const importFa = 0.22 * mm(faGradient, 0.14) * e("membrane") * r("membrane");
+    const importAmmonia = 0.22 * mm(this.external.ammonia, 0.12) * en("membrane") * e("membrane") * r("membrane");
+    const importBilirubin = 0.18 * mm(this.external.bilirubin, 0.14) * en("membrane") * e("membrane") * r("membrane");
+    const importBileAcids = 0.28 * mm(this.external.bileAcids, 0.2) * en("membrane") * e("membrane") * r("membrane");
+    const importXenobiotic = 0.2 * mm(this.external.xenobiotic, 0.16) * en("membrane") * e("membrane") * r("membrane");
     // Cytosolic glycolysis: glucose → pyruvate (PFK feedback via demand term).
-    const glycolysis = 1.6 * mm(p.glucose, 0.4) * demand * e("glycolysis") * r("glycolysis");
+    const glycolysis = 1.25 * mm(p.glucose, 0.4) * (0.35 + 0.65 * demand) * (0.7 + 0.3 * fed + 0.2 * pericentral) * e("glycolysis") * r("glycolysis");
+    const glycogenSynth = 0.54 * fed * mm(p.glucose, 0.35) * en("glycolysis") * e("glycolysis") * r("glycolysis");
+    const glycogenBreakdown = 0.48 * fasting * mm(p.glycogen, 0.3) * (0.45 + 0.55 * ampk) * e("glycolysis") * r("glycolysis");
+    const gluconeogenesis =
+      0.36 *
+      fasting *
+      (0.55 + 0.45 * periportal) *
+      mm(p.lactate + 0.35 * p.aminoAcids, 0.38) *
+      en("mitochondria") *
+      e("mitochondria") *
+      e("er") *
+      r("mitochondria");
     // Mitochondria: pyruvate → lots of ATP (+ waste), gated by energy demand.
     const mito = 2.8 * mm(p.pyruvate, 0.3) * demand * oxygenGate * clamp(1 - 0.35 * stress.oxidative, 0.35, 1) * e("mitochondria") * r("mitochondria");
+    const ureaCycle = 0.55 * (0.5 + 0.5 * periportal) * mm(p.ammonia + 0.14 * p.aminoAcids, 0.22) * en("mitochondria") * e("mitochondria") * (0.65 + 0.35 * fasting) * r("mitochondria");
     // Peroxisomes oxidize fatty-acid substrates and detoxify peroxide via catalase.
     const peroxisome = 0.52 * mm(p.ros + 0.5 * p.lipids, 0.28) * e("peroxisome") * r("peroxisome");
     // Nucleus: transcription DNA → mRNA — in bursts.
@@ -516,31 +695,74 @@ export class LivingCell {
     // ER: fold/glycosylate nascent proteins and synthesize lipids, limited by unfolded-protein stress.
     const erFolding = 0.86 * responseBrake * mm(p.protein, 0.32) * en("er") * e("er") * r("er");
     const erLipid = 0.26 * mm(p.glucose + p.lipids + importFa, 0.6) * en("er") * e("er") * r("er");
+    const cypDetox =
+      0.46 *
+      (0.45 + 0.55 * pericentral) *
+      mm(p.xenobiotic, 0.18) *
+      oxygenGate *
+      en("er") *
+      e("er") *
+      r("er") *
+      clamp(0.35 + 0.65 * p.glutathione, 0.25, 1);
+    const phase2 = 0.48 * mm(p.xenobiotic + p.detoxified, 0.25) * mm(p.glutathione, 0.22) * e("er") * r("er");
+    const glutathioneRegen = 0.25 * mm(p.aminoAcids, 0.28) * en("er") * e("er") * (0.45 + 0.55 * p.atp);
+    const bilirubinConj = 0.34 * mm(p.bilirubin, 0.16) * en("er") * e("er") * r("er");
+    const bileSynthesis = 0.28 * mm(p.cholesterol + 0.25 * p.bileAcids, 0.36) * en("er") * e("er") * (0.5 + 0.5 * fed) * r("er");
     // Proteasomes are complexes rather than organelles; they are folded into ER/proteostasis.
     const proteasome = 0.28 * mm(p.protein + p.waste, 0.34) * en("er") * e("er") * responseBrake;
     // Golgi: package & secrete protein — ships vesicle batches.
     const golgi = 0.6 * mm(p.foldedProtein, 0.4) * cytoskeletalSupport * en("golgi") * e("golgi") * r("golgi");
+    const bileExport = 0.42 * mm(p.bileAcids + 0.8 * p.bilirubin, 0.35) * polarity * en("membrane") * e("membrane") * en("golgi") * e("golgi") * cytoskeletalSupport;
+    const albuminSynth = 0.24 * mtor * mm(p.aminoAcids, 0.28) * en("er") * e("er") * en("golgi") * e("golgi") * senescenceBrake;
     // Lysosome: degrade waste → recycle amino acids — digests in pulses.
     const lysosome = 0.5 * autophagyBoost * mm(p.waste, 0.3) * e("lysosome") * r("lysosome");
     const cytoskeleton = cytoskeletalSupport * (0.25 + 0.55 * (golgi + importGlc + importAa + lysosome));
+    const caHandling = 0.18 * mm(p.atp, 0.2) * en("er") * e("er") * r("er");
+    const naKPump = 0.22 * p.atp * en("membrane") * e("membrane") * r("membrane");
     // Basal maintenance: the constant cost of being alive.
-    const maintenance = 0.5 * p.atp + 0.08 * cytoskeleton + 0.08 * erFolding + 0.05 * peroxisome;
+    const maintenance = 0.36 * p.atp + 0.07 * cytoskeleton + 0.07 * erFolding + 0.05 * peroxisome + 0.08 * naKPump + 0.04 * caHandling;
+    const sinusoidalImport = importGlc + importAa + importFa + importAmmonia + importBilirubin + importBileAcids + importXenobiotic;
+    const canalicularExport = bileExport;
     return {
       adp,
+      fed,
+      fasting,
+      ampk,
+      mtor,
+      polarity,
       importGlc,
       importAa,
       importFa,
+      importAmmonia,
+      importBilirubin,
+      importBileAcids,
+      importXenobiotic,
       glycolysis,
+      glycogenSynth,
+      glycogenBreakdown,
+      gluconeogenesis,
       mito,
+      ureaCycle,
       peroxisome,
       transcription,
       translation,
       erFolding,
       erLipid,
+      cypDetox,
+      phase2,
+      glutathioneRegen,
+      bilirubinConj,
+      bileSynthesis,
       proteasome,
       golgi,
+      bileExport,
+      albuminSynth,
       lysosome,
       cytoskeleton,
+      caHandling,
+      naKPump,
+      sinusoidalImport,
+      canalicularExport,
       maintenance
     };
   }
@@ -583,6 +805,50 @@ export class LivingCell {
         usedBy: "membrane / ER lipid metabolism"
       },
       {
+        id: "sinusoid-bileacid",
+        from: "sinusoid",
+        to: "membrane",
+        cargo: "returning bile acids",
+        value: v(f.importBileAcids),
+        mode: "carrier",
+        etaS: 0.3,
+        producedBy: "portal/sinusoidal blood",
+        usedBy: "basolateral uptake transporters"
+      },
+      {
+        id: "sinusoid-ammonia",
+        from: "sinusoid",
+        to: "mitochondria",
+        cargo: "ammonia",
+        value: v(f.importAmmonia),
+        mode: "carrier",
+        etaS: 1.5,
+        producedBy: "portal/sinusoidal blood",
+        usedBy: "mitochondrial urea-cycle entry"
+      },
+      {
+        id: "sinusoid-bilirubin-er",
+        from: "sinusoid",
+        to: "er",
+        cargo: "bilirubin",
+        value: v(f.importBilirubin),
+        mode: "carrier",
+        etaS: 2,
+        producedBy: "albumin-bound bilirubin from blood",
+        usedBy: "ER conjugation machinery"
+      },
+      {
+        id: "sinusoid-xenobiotic-er",
+        from: "sinusoid",
+        to: "er",
+        cargo: "xenobiotic",
+        value: v(f.importXenobiotic),
+        mode: "diffusion",
+        etaS: 3,
+        producedBy: "blood exposure",
+        usedBy: "smooth ER / CYP detox"
+      },
+      {
         id: "membrane-glycolysis",
         from: "membrane",
         to: "glycolysis",
@@ -592,6 +858,28 @@ export class LivingCell {
         etaS: 0.5,
         producedBy: "membrane import",
         usedBy: "cytosolic glycolysis"
+      },
+      {
+        id: "glycolysis-glycogen",
+        from: "glycolysis",
+        to: "glycogen",
+        cargo: "stored glucose",
+        value: v(f.glycogenSynth),
+        mode: "diffusion",
+        etaS: 2,
+        producedBy: "fed insulin/glucokinase state",
+        usedBy: "glycogen granules"
+      },
+      {
+        id: "glycogen-glycolysis",
+        from: "glycogen",
+        to: "glycolysis",
+        cargo: "buffered glucose",
+        value: v(f.glycogenBreakdown),
+        mode: "diffusion",
+        etaS: 2,
+        producedBy: "glycogenolysis",
+        usedBy: "cytosolic glucose pool"
       },
       {
         id: "glycolysis-mito",
@@ -671,6 +959,17 @@ export class LivingCell {
         usedBy: "peroxisomal catalase detox"
       },
       {
+        id: "mito-urea-sinusoid",
+        from: "mitochondria",
+        to: "sinusoid",
+        cargo: "urea",
+        value: v(f.ureaCycle),
+        mode: "diffusion",
+        etaS: 4,
+        producedBy: "mitochondria + cytosolic urea cycle",
+        usedBy: "blood export"
+      },
+      {
         id: "nucleus-mrna",
         from: "nucleus",
         to: "ribosome",
@@ -704,6 +1003,50 @@ export class LivingCell {
         usedBy: "Golgi sorting"
       },
       {
+        id: "er-bile-canaliculus",
+        from: "er",
+        to: "canaliculus",
+        cargo: "bile acids / cholesterol",
+        value: v(f.bileExport),
+        mode: "carrier",
+        etaS: 1,
+        producedBy: "smooth ER bile-acid/cholesterol handling",
+        usedBy: "canalicular ABC exporters"
+      },
+      {
+        id: "er-bilirubin-canaliculus",
+        from: "er",
+        to: "canaliculus",
+        cargo: "conjugated bilirubin",
+        value: v(f.bilirubinConj + 0.35 * f.bileExport),
+        mode: "carrier",
+        etaS: 1,
+        producedBy: "ER conjugation",
+        usedBy: "canalicular MRP-like export"
+      },
+      {
+        id: "er-detox-canaliculus",
+        from: "er",
+        to: "canaliculus",
+        cargo: "phase I/II metabolites",
+        value: v(f.phase2 + 0.45 * f.cypDetox),
+        mode: "carrier",
+        etaS: 2,
+        producedBy: "CYP / conjugation detox",
+        usedBy: "bile-side excretion"
+      },
+      {
+        id: "glutathione-detox",
+        from: "cytosol",
+        to: "er",
+        cargo: "glutathione reserve",
+        value: v(f.phase2 + 0.25 * f.cypDetox),
+        mode: "diffusion",
+        etaS: 0.8,
+        producedBy: "amino-acid metabolism",
+        usedBy: "phase II detox / oxidative buffering"
+      },
+      {
         id: "er-membrane-lipid",
         from: "er",
         to: "membrane",
@@ -735,6 +1078,17 @@ export class LivingCell {
         etaS: 1800,
         producedBy: "Golgi",
         usedBy: "plasma membrane / secretion"
+      },
+      {
+        id: "golgi-albumin-sinusoid",
+        from: "golgi",
+        to: "sinusoid",
+        cargo: "albumin",
+        value: v(f.albuminSynth),
+        mode: "vesicle",
+        etaS: 900,
+        producedBy: "rough ER / Golgi secretion",
+        usedBy: "blood plasma"
       },
       {
         id: "golgi-lysosome",
@@ -824,32 +1178,55 @@ export class LivingCell {
       const dAtp =
         0.5 * f.glycolysis +
         0.16 * f.peroxisome +
-        2.2 * f.mito -
-        (0.4 * f.importGlc +
-          0.3 * f.importAa +
+        2.35 * f.mito -
+        (0.32 * f.importGlc +
+          0.24 * f.importAa +
           0.12 * f.importFa +
+          0.12 * f.importBileAcids +
+          0.06 * f.importBilirubin +
           1.0 * f.transcription +
           1.5 * f.translation +
           0.45 * f.erFolding +
           0.32 * f.erLipid +
+          0.45 * f.glycogenSynth +
+          0.6 * f.gluconeogenesis +
+          0.85 * f.ureaCycle +
+          0.55 * f.cypDetox +
+          0.4 * f.phase2 +
+          0.35 * f.albuminSynth +
+          0.2 * f.bileExport +
+          0.25 * f.naKPump +
+          0.2 * f.caHandling +
           0.8 * f.golgi +
           0.18 * f.cytoskeleton +
           f.maintenance);
 
+      const sat = (x: number, k: number) => x / (k + x);
       const d: Pools = {
-        glucose: f.importGlc - f.glycolysis,
-        pyruvate: 2 * f.glycolysis + 0.25 * f.peroxisome - f.mito,
-        aminoAcids: f.importAa + 0.8 * f.lysosome + 0.35 * f.proteasome - 1.0 * f.translation,
+        glucose: f.importGlc + f.glycogenBreakdown + f.gluconeogenesis - f.glycolysis - f.glycogenSynth - 0.04 * this.p.glucose,
+        glycogen: f.glycogenSynth - f.glycogenBreakdown - 0.006 * this.p.glycogen,
+        lactate: 0.18 * f.glycolysis - f.gluconeogenesis - 0.08 * this.p.lactate,
+        pyruvate: 1.65 * f.glycolysis + 0.25 * f.peroxisome + 0.12 * f.glycogenBreakdown - f.mito - 0.2 * f.gluconeogenesis,
+        aminoAcids: f.importAa + 0.8 * f.lysosome + 0.35 * f.proteasome - 1.0 * f.translation - 0.35 * f.albuminSynth - 0.12 * f.ureaCycle - 0.08 * f.glutathioneRegen,
+        ammonia: f.importAmmonia + 0.1 * f.translation + 0.12 * f.proteasome + 0.08 * f.lysosome + 0.05 * this.p.aminoAcids - f.ureaCycle - 0.1 * this.p.ammonia,
+        urea: f.ureaCycle - 0.28 * this.p.urea,
         atp: dAtp,
         mrna: f.transcription - 0.15 * this.p.mrna,
         protein: f.translation - f.erFolding - f.proteasome - 0.04 * this.p.protein,
-        foldedProtein: f.erFolding - f.golgi - 0.04 * this.p.foldedProtein,
-        lipids: f.importFa + f.erLipid - 0.18 * f.peroxisome - 0.16 * f.golgi - 0.05 * this.p.lipids,
-        ros: 0.18 * f.mito + 0.08 * f.peroxisome - 0.9 * f.peroxisome - 0.18 * this.p.ros,
+        foldedProtein: f.erFolding - f.golgi - 0.45 * f.albuminSynth - 0.04 * this.p.foldedProtein,
+        albumin: f.albuminSynth - 0.24 * this.p.albumin,
+        lipids: f.importFa + f.erLipid - 0.18 * f.peroxisome - 0.16 * f.golgi - 0.05 * this.p.lipids - 0.08 * f.bileSynthesis,
+        cholesterol: 0.12 * f.erLipid + 0.08 * f.importFa - f.bileSynthesis - 0.03 * this.p.cholesterol,
+        bileAcids: f.importBileAcids + f.bileSynthesis - f.bileExport - 0.04 * this.p.bileAcids,
+        bilirubin: f.importBilirubin + 0.035 + 0.04 * this.p.waste - f.bilirubinConj - 0.28 * f.bileExport - 0.06 * this.p.bilirubin,
+        glutathione: f.glutathioneRegen - 0.42 * f.cypDetox - 0.18 * f.phase2 - 0.12 * f.peroxisome - 0.03 * this.p.glutathione,
+        xenobiotic: f.importXenobiotic - f.cypDetox - 0.05 * this.p.xenobiotic,
+        detoxified: 0.45 * f.cypDetox + f.phase2 - 0.2 * this.p.detoxified - 0.18 * f.bileExport,
+        ros: 0.18 * f.mito + 0.12 * f.cypDetox + 0.08 * f.peroxisome - 0.85 * f.peroxisome - 0.28 * sat(this.p.glutathione, 0.25) * this.p.ros - 0.18 * this.p.ros,
         // waste made by respiration & protein turnover, cleared by the lysosome
         // and exported passively across the membrane (so it stays bounded).
-        waste: 0.18 * f.mito + 0.22 * (f.translation - f.erFolding > 0 ? f.translation - f.erFolding : 0) + 0.04 * this.p.protein - f.lysosome - 0.5 * this.p.waste,
-        secreted: f.golgi
+        waste: 0.18 * f.mito + 0.22 * (f.translation - f.erFolding > 0 ? f.translation - f.erFolding : 0) + 0.04 * this.p.protein + 0.08 * f.cypDetox + 0.02 * this.p.bilirubin - f.lysosome - 0.5 * this.p.waste,
+        secreted: f.golgi + 0.24 * this.p.albumin + 0.2 * this.p.urea + f.bileExport + 0.16 * this.p.detoxified
       };
 
       for (const k of Object.keys(d) as (keyof Pools)[]) this.p[k] += dt * d[k];
@@ -859,18 +1236,28 @@ export class LivingCell {
       if (this.stochastic) {
         const w = (flux: number) => Math.sqrt((Math.max(flux, 0) * dt) / this.omega) * this.gauss();
         this.p.glucose += w(f.importGlc) - w(f.glycolysis);
+        this.p.glycogen += w(f.glycogenSynth) - w(f.glycogenBreakdown);
+        this.p.lactate += 0.2 * w(f.glycolysis) - w(f.gluconeogenesis);
         this.p.pyruvate += 2 * w(f.glycolysis) - w(f.mito);
         this.p.aminoAcids += w(f.importAa) - w(f.translation);
+        this.p.ammonia += w(f.importAmmonia) - w(f.ureaCycle);
+        this.p.urea += w(f.ureaCycle);
         this.p.atp += 2.2 * w(f.mito) - w(f.maintenance) - 1.5 * w(f.translation);
         this.p.protein += w(f.translation) - w(f.erFolding);
         this.p.foldedProtein += w(f.erFolding) - w(f.golgi);
+        this.p.albumin += w(f.albuminSynth);
         this.p.lipids += w(f.importFa) + w(f.erLipid) - w(f.peroxisome);
+        this.p.bileAcids += w(f.bileSynthesis) - w(f.bileExport);
+        this.p.bilirubin += w(f.importBilirubin) - w(f.bilirubinConj);
+        this.p.glutathione += w(f.glutathioneRegen) - w(f.cypDetox);
+        this.p.xenobiotic += w(f.importXenobiotic) - w(f.cypDetox);
         this.p.ros += 0.2 * w(f.mito) - w(f.peroxisome);
         this.p.waste += 0.3 * w(f.mito) - w(f.lysosome) + 0.2 * w(f.proteasome);
       }
 
       this.clampPools();
       this.stress = this.stressSignals();
+      this.hepatocyte = this.computeHepatocyteState(f);
 
       // 2. Imperfection: stress-driven probabilistic faults + repair.
       this.updateHealth(dt, f);
@@ -878,13 +1265,13 @@ export class LivingCell {
 
       // record activity for visuals
       this.act = {
-        membrane: f.importGlc + f.importAa,
-        glycolysis: f.glycolysis,
-        mitochondria: f.mito,
+        membrane: f.sinusoidalImport + f.bileExport + f.naKPump,
+        glycolysis: f.glycolysis + f.glycogenSynth + f.glycogenBreakdown + f.gluconeogenesis,
+        mitochondria: f.mito + f.ureaCycle,
         nucleus: f.transcription,
-        er: f.erFolding + f.erLipid,
+        er: f.erFolding + f.erLipid + f.cypDetox + f.bilirubinConj + f.bileSynthesis,
         ribosome: f.translation,
-        golgi: f.golgi,
+        golgi: f.golgi + f.albuminSynth + f.bileExport,
         lysosome: f.lysosome,
         peroxisome: f.peroxisome,
         cytoskeleton: f.cytoskeleton
@@ -900,13 +1287,13 @@ export class LivingCell {
 
   private updateHealth(dt: number, f: ReturnType<LivingCell["fluxes"]>) {
     const activityOf: Record<OrganelleId, number> = {
-      membrane: f.importGlc + f.importAa,
-      glycolysis: f.glycolysis,
-      mitochondria: f.mito,
+      membrane: f.sinusoidalImport + f.bileExport + f.naKPump,
+      glycolysis: f.glycolysis + f.glycogenSynth + f.glycogenBreakdown + f.gluconeogenesis,
+      mitochondria: f.mito + f.ureaCycle,
       nucleus: f.transcription,
-      er: f.erFolding + f.erLipid,
+      er: f.erFolding + f.erLipid + f.cypDetox + f.bilirubinConj + f.bileSynthesis,
       ribosome: f.translation,
-      golgi: f.golgi,
+      golgi: f.golgi + f.albuminSynth + f.bileExport,
       lysosome: f.lysosome,
       peroxisome: f.peroxisome,
       cytoskeleton: f.cytoskeleton
@@ -969,9 +1356,9 @@ export class LivingCell {
       }
     }
 
-    const chronicDamage = clamp(0.45 * this.stress.genotoxic + 0.35 * this.stress.oxidative + 0.3 * this.stress.senescence, 0, 1);
+    const chronicDamage = clamp(0.45 * this.stress.genotoxic + 0.35 * this.stress.oxidative + 0.3 * this.stress.senescence + 0.18 * this.stress.detox + 0.12 * this.stress.cholestatic, 0, 1);
     const senescenceHazard = (this.senescent ? 0 : 0.00000008) + 0.00012 * chronicDamage ** 3;
-    const apoptosisHazard = (this.apoptosisCommitted ? 0.002 : 0) + 0.00018 * clamp(this.stress.energy + this.stress.genotoxic + this.stress.oxidative - 1.35, 0, 1) ** 2;
+    const apoptosisHazard = (this.apoptosisCommitted ? 0.002 : 0) + 0.00018 * clamp(this.stress.energy + this.stress.genotoxic + this.stress.oxidative + 0.35 * this.stress.cholestatic - 1.35, 0, 1) ** 2;
     this.senescenceRiskPerHour = 100 * (1 - Math.exp(-senescenceHazard * 3600));
     this.apoptosisRiskPerHour = 100 * (1 - Math.exp(-apoptosisHazard * 3600));
 
@@ -1092,6 +1479,7 @@ export class LivingCell {
       adp: Math.max(0, ATP_TOTAL - this.p.atp),
       importFlux: this.importFlux,
       stress: { ...this.stress },
+      hepatocyte: { ...this.hepatocyte },
       activity: { ...this.act },
       flows: this.flows.slice(),
       organelles,
@@ -1111,15 +1499,27 @@ export class LivingCell {
 
   private clampPools() {
     this.p.glucose = Math.max(0, this.p.glucose);
+    this.p.glycogen = Math.max(0, this.p.glycogen);
+    this.p.lactate = Math.max(0, this.p.lactate);
     this.p.pyruvate = Math.max(0, this.p.pyruvate);
     this.p.aminoAcids = Math.max(0, this.p.aminoAcids);
+    this.p.ammonia = Math.max(0, this.p.ammonia);
+    this.p.urea = Math.max(0, this.p.urea);
     this.p.atp = clamp(this.p.atp, 0, ATP_TOTAL);
     this.p.mrna = Math.max(0, this.p.mrna);
     this.p.protein = Math.max(0, this.p.protein);
     this.p.foldedProtein = Math.max(0, this.p.foldedProtein);
+    this.p.albumin = Math.max(0, this.p.albumin);
     this.p.lipids = Math.max(0, this.p.lipids);
+    this.p.cholesterol = Math.max(0, this.p.cholesterol);
+    this.p.bileAcids = Math.max(0, this.p.bileAcids);
+    this.p.bilirubin = Math.max(0, this.p.bilirubin);
+    this.p.glutathione = Math.max(0, this.p.glutathione);
+    this.p.xenobiotic = Math.max(0, this.p.xenobiotic);
+    this.p.detoxified = Math.max(0, this.p.detoxified);
     this.p.ros = Math.max(0, this.p.ros);
     this.p.waste = Math.max(0, this.p.waste);
+    this.p.secreted = Math.max(0, this.p.secreted);
   }
 
   private rand(): number {
@@ -1146,6 +1546,30 @@ const NAMES: Record<OrganelleId, string> = {
   peroxisome: "Peroxisome",
   cytoskeleton: "Cytoskeleton"
 };
+
+function blankHepatocyte(): HepatocyteState {
+  return {
+    cellType: "hepatocyte",
+    zone: "midlobular",
+    insulin: 0.62,
+    glucagon: 0.38,
+    ampk: 0,
+    mtor: 0.45,
+    cyp450: 0,
+    ureaCycle: 0,
+    bileExport: 0,
+    polarity: 0.86,
+    glycogenRatio: 0.55,
+    glutathioneReserve: 0.82,
+    cytosolicCa: 0.08,
+    erCalcium: 0.75,
+    cytosolicPh: 7.2,
+    lysosomePh: 5.0,
+    membranePotentialMv: -70,
+    sinusoidalImport: 0,
+    canalicularExport: 0
+  };
+}
 
 function blankActivity(): OrganelleActivity {
   return {

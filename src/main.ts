@@ -71,8 +71,8 @@ const EUKARYOTE_SCENE_ID = "eukaryotic-cell";
 // The unified cell reality comes first; the rest are the building blocks /
 // "zoom-ins" that show the rules underneath it.
 const sceneOptions =
-  `<optgroup label="Eukaryotic cell (organelles)">` +
-  `<option value="${EUKARYOTE_SCENE_ID}">Eukaryotic cell — organelles</option>` +
+  `<optgroup label="Hepatocyte (organelles)">` +
+  `<option value="${EUKARYOTE_SCENE_ID}">Hepatocyte — organelle network</option>` +
   `</optgroup><optgroup label="The cell (molecular scale)">` +
   MEMBRANE_SCENES.map(opt).join("") +
   `</optgroup><optgroup label="Building blocks · ions">` +
@@ -104,7 +104,7 @@ app.innerHTML = `
         <span class="brand__mark"></span>
         <div>
           <h1>Cell</h1>
-          <p>organelles · transport · metabolism</p>
+          <p>hepatocyte · polarity · metabolism</p>
         </div>
       </div>
 
@@ -264,7 +264,7 @@ const reportPanel = document.createElement("div");
 reportPanel.className = "report-panel";
 reportPanel.style.display = "none";
 reportPanel.innerHTML =
-  '<div class="report-panel__head">Cell activity - live</div>' +
+  '<div class="report-panel__head">Hepatocyte activity - live</div>' +
   '<div class="report-status"></div>' +
   '<div class="report-rows"></div>' +
   '<div class="report-flow__title">Organelle traffic</div>' +
@@ -503,12 +503,12 @@ const METRIC_LABELS: Record<Mode, MetricLabels> = {
     drift: "—"
   },
   organelles: {
-    distance: "Glucose (in)",
+    distance: "Glycogen",
     force: "ATP",
-    potential: "Protein",
+    potential: "Albumin",
     kinetic: "Energy charge",
     total: "Status",
-    drift: "Import flux"
+    drift: "Sinusoid flux"
   }
 };
 
@@ -773,13 +773,13 @@ hoverTooltip.style.display = "none";
 viewportElement.append(hoverTooltip);
 
 const ORG_INFO: Record<OrganelleId, { name: string; action: string; ref: number }> = {
-  membrane: { name: "Membrane", action: "glucose, amino acids → in", ref: 0.78 },
-  glycolysis: { name: "Glycolysis", action: "glucose → pyruvate + ATP", ref: 0.5 },
-  mitochondria: { name: "Mitochondria", action: "pyruvate → ATP (+ waste)", ref: 0.95 },
+  membrane: { name: "Polarized membrane", action: "sinusoid import + canalicular export", ref: 1.05 },
+  glycolysis: { name: "Glycogen / glycolysis", action: "glucose ↔ glycogen → pyruvate + ATP", ref: 0.75 },
+  mitochondria: { name: "Mitochondria", action: "oxidative ATP + urea-cycle entry", ref: 1.1 },
   nucleus: { name: "Nucleus", action: "DNA → mRNA", ref: 0.36 },
-  er: { name: "ER", action: "folding, glycosylation, lipids, Ca store", ref: 0.6 },
+  er: { name: "ER", action: "folding, lipids, CYP detox, bile chemistry", ref: 0.85 },
   ribosome: { name: "Ribosomes", action: "mRNA + amino acids → nascent protein", ref: 0.62 },
-  golgi: { name: "Golgi", action: "folded cargo → sorted & secreted", ref: 0.48 },
+  golgi: { name: "Golgi", action: "albumin/cargo sorting + canalicular traffic", ref: 0.65 },
   lysosome: { name: "Lysosome", action: "waste/endosomes → recycled amino acids", ref: 0.5 },
   peroxisome: { name: "Peroxisome", action: "fatty acids + H2O2 → detox / metabolites", ref: 0.35 },
   cytoskeleton: { name: "Cytoskeleton", action: "organelle positioning + vesicle motors", ref: 0.55 }
@@ -789,7 +789,13 @@ const FLOW_REF: Record<string, number> = {
   "outside-glucose": 0.8,
   "outside-amino": 0.32,
   "outside-fatty": 0.18,
+  "sinusoid-bileacid": 0.18,
+  "sinusoid-ammonia": 0.16,
+  "sinusoid-bilirubin-er": 0.12,
+  "sinusoid-xenobiotic-er": 0.12,
   "membrane-glycolysis": 0.8,
+  "glycolysis-glycogen": 0.3,
+  "glycogen-glycolysis": 0.28,
   "glycolysis-mito": 0.65,
   "fatty-peroxisome": 0.22,
   "glycolysis-atp": 0.35,
@@ -797,12 +803,18 @@ const FLOW_REF: Record<string, number> = {
   "mito-atp-nucleus": 0.22,
   "mito-atp-ribosome": 0.32,
   "mito-peroxisome-ros": 0.24,
+  "mito-urea-sinusoid": 0.25,
   "nucleus-mrna": 0.35,
   "ribosome-er": 0.55,
   "er-golgi": 0.5,
+  "er-bile-canaliculus": 0.25,
+  "er-bilirubin-canaliculus": 0.2,
+  "er-detox-canaliculus": 0.22,
+  "glutathione-detox": 0.25,
   "er-membrane-lipid": 0.25,
   "ribosome-golgi": 0.55,
   "golgi-membrane": 0.48,
+  "golgi-albumin-sinusoid": 0.18,
   "golgi-lysosome": 0.12,
   "membrane-lysosome-endosome": 0.18,
   "waste-lysosome": 0.45,
@@ -825,7 +837,13 @@ const FLOW_DEFS: Record<string, { from: string; to: string; color: string; mode:
   "outside-glucose": { from: "outside", to: "membrane", color: "#7ee0a8", mode: "carrier" },
   "outside-amino": { from: "outside", to: "membrane", color: "#b693ff", mode: "carrier" },
   "outside-fatty": { from: "outside", to: "membrane", color: "#e7d37a", mode: "carrier" },
+  "sinusoid-bileacid": { from: "sinusoid", to: "membrane", color: "#d9e778", mode: "carrier" },
+  "sinusoid-ammonia": { from: "sinusoid", to: "mitochondria", color: "#9ad6ff", mode: "carrier" },
+  "sinusoid-bilirubin-er": { from: "sinusoid", to: "er", color: "#d8b35c", mode: "carrier" },
+  "sinusoid-xenobiotic-er": { from: "sinusoid", to: "er", color: "#ff9b8a", mode: "diffusion" },
   "membrane-glycolysis": { from: "membrane", to: "glycolysis", color: "#7ee0a8", mode: "diffusion" },
+  "glycolysis-glycogen": { from: "glycolysis", to: "glycogen", color: "#cfa94b", mode: "diffusion" },
+  "glycogen-glycolysis": { from: "glycogen", to: "glycolysis", color: "#f2c45b", mode: "diffusion" },
   "glycolysis-mito": { from: "glycolysis", to: "mitochondria", color: "#ffb56b", mode: "diffusion" },
   "fatty-peroxisome": { from: "membrane", to: "peroxisome", color: "#d7e868", mode: "diffusion" },
   "glycolysis-atp": { from: "glycolysis", to: "cytosol", color: "#f2c45b", mode: "diffusion" },
@@ -833,12 +851,18 @@ const FLOW_DEFS: Record<string, { from: string; to: string; color: string; mode:
   "mito-atp-nucleus": { from: "mitochondria", to: "nucleus", color: "#f2c45b", mode: "diffusion" },
   "mito-atp-ribosome": { from: "mitochondria", to: "ribosome", color: "#f2c45b", mode: "diffusion" },
   "mito-peroxisome-ros": { from: "mitochondria", to: "peroxisome", color: "#ff8a5c", mode: "diffusion" },
+  "mito-urea-sinusoid": { from: "mitochondria", to: "sinusoid", color: "#9ad6ff", mode: "diffusion" },
   "nucleus-mrna": { from: "nucleus", to: "ribosome", color: "#caa3e6", mode: "pore" },
   "ribosome-er": { from: "ribosome", to: "er", color: "#e8b24a", mode: "diffusion" },
   "er-golgi": { from: "er", to: "golgi", color: "#e8b24a", mode: "vesicle" },
+  "er-bile-canaliculus": { from: "er", to: "canaliculus", color: "#d9e778", mode: "carrier" },
+  "er-bilirubin-canaliculus": { from: "er", to: "canaliculus", color: "#d8b35c", mode: "carrier" },
+  "er-detox-canaliculus": { from: "er", to: "canaliculus", color: "#ff9b8a", mode: "carrier" },
+  "glutathione-detox": { from: "cytosol", to: "er", color: "#7ee0a8", mode: "diffusion" },
   "er-membrane-lipid": { from: "er", to: "membrane", color: "#d9e778", mode: "vesicle" },
   "ribosome-golgi": { from: "ribosome", to: "golgi", color: "#e8b24a", mode: "vesicle" },
   "golgi-membrane": { from: "golgi", to: "membrane", color: "#7fe0c6", mode: "motor" },
+  "golgi-albumin-sinusoid": { from: "golgi", to: "sinusoid", color: "#e9eef8", mode: "vesicle" },
   "golgi-lysosome": { from: "golgi", to: "lysosome", color: "#7fe0c6", mode: "vesicle" },
   "membrane-lysosome-endosome": { from: "membrane", to: "lysosome", color: "#7fb6ff", mode: "vesicle" },
   "waste-lysosome": { from: "cytosol", to: "lysosome", color: "#ff6fae", mode: "autophagy" },
@@ -923,7 +947,9 @@ function updateReportPanel(s: CellSnapshot) {
     const survival = Number.isFinite(s.projectedMedianSurvivalH) ? ` · median fate ${s.projectedMedianSurvivalH.toFixed(1)}h` : "";
     statusEl.innerHTML =
       `<span style="color:${col};font-weight:600">${s.status.toUpperCase()}</span> · ` +
-      `charge ${s.energyCharge.toFixed(2)} · ATP ${s.atp.toFixed(2)} · glucose ${s.pools.glucose.toFixed(2)} · ` +
+      `${s.hepatocyte.zone} hepatocyte · polarity ${s.hepatocyte.polarity.toFixed(2)} · ` +
+      `glycogen ${s.pools.glycogen.toFixed(2)} · ATP ${s.atp.toFixed(2)} · albumin ${s.pools.albumin.toFixed(2)} · ` +
+      `bile ${s.hepatocyte.bileExport.toFixed(2)} · CYP ${s.hepatocyte.cyp450.toFixed(2)} · GSH ${s.hepatocyte.glutathioneReserve.toFixed(2)} · ` +
       `ROS ${s.pools.ros.toFixed(2)} · waste ${s.pools.waste.toFixed(2)} · ` +
       `sen ${s.senescenceRiskPerHour.toFixed(2)}%/h · apo ${s.apoptosisRiskPerHour.toFixed(2)}%/h${survival} · t ${Math.round(s.elapsedS)}s`;
   }
@@ -1778,6 +1804,10 @@ function buildOrganelleScene() {
     organelleMotions.push({ object, base: base.clone(), amp, speed, phase, spin, axis: randDir() });
   };
   const nmToWorld = (nm: number) => (nm / 1000) / (CELL_RADIUS_UM / CELL_R);
+  const sinusoidAnchor = new THREE.Vector3(-CELL_R * 1.12, -1.0, 0);
+  const membraneHub = new THREE.Vector3(-CELL_R * 0.78, -1.0, 0);
+  const canaliculusAnchor = new THREE.Vector3(CELL_R * 0.82, 2.15, 0.25);
+  const glycogenAnchor = new THREE.Vector3(2.6, -3.65, -1.25);
 
   const mesh = (
     geo: THREE.BufferGeometry,
@@ -1853,6 +1883,41 @@ function buildOrganelleScene() {
   organelleMembrane = mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.1, emissive: 0.05, label: "Plasma membrane — the cell's boundary; controls what enters and leaves" });
   mesh(organicSphere(CELL_R * 0.97, 0.06), "#9ec6ff", new THREE.Vector3(), { opacity: 0.06, emissive: 0.04 });
 
+  // --- Hepatocyte polarity: sinusoidal blood side vs canalicular bile side ---
+  const sinusoidPatch = mesh(new THREE.BoxGeometry(0.2, 10.5, 7.2), "#3a9bd9", sinusoidAnchor, {
+    opacity: 0.18,
+    emissive: 0.1,
+    label: "Sinusoidal blood face / space of Disse - nutrients, oxygen, ammonia, bilirubin and xenobiotics arrive here"
+  });
+  sinusoidPatch.rotation.z = 0.05;
+  const microvilliPts: number[] = [];
+  for (let i = 0; i < 34; i += 1) {
+    const y = -5.2 + rnd() * 8.9;
+    const z = -3.1 + rnd() * 6.2;
+    const a = new THREE.Vector3(-CELL_R * 0.98, y, z);
+    const b = new THREE.Vector3(-CELL_R * (0.78 + rnd() * 0.08), y + (rnd() - 0.5) * 0.22, z + (rnd() - 0.5) * 0.22);
+    microvilliPts.push(a.x, a.y, a.z, b.x, b.y, b.z);
+  }
+  const microvilliGeo = new THREE.BufferGeometry();
+  microvilliGeo.setAttribute("position", new THREE.Float32BufferAttribute(microvilliPts, 3));
+  const microvilli = new THREE.LineSegments(microvilliGeo, new THREE.LineBasicMaterial({ color: "#9ad6ff", transparent: true, opacity: 0.38 }));
+  microvilli.userData.label = "Sinusoidal microvilli - basolateral exchange surface facing blood";
+  group.add(microvilli);
+
+  const canalPts = [
+    canaliculusAnchor.clone().add(new THREE.Vector3(-1.8, -0.1, -2.0)),
+    canaliculusAnchor.clone().add(new THREE.Vector3(-0.7, 0.35, -0.7)),
+    canaliculusAnchor.clone().add(new THREE.Vector3(0.7, 0.15, 0.6)),
+    canaliculusAnchor.clone().add(new THREE.Vector3(1.7, -0.22, 2.1))
+  ];
+  const canalCurve = new THREE.CatmullRomCurve3(canalPts);
+  const canaliculus = mesh(new THREE.TubeGeometry(canalCurve, 48, 0.28, 12), "#d9e778", new THREE.Vector3(), {
+    opacity: 0.86,
+    emissive: 0.18,
+    label: "Bile canaliculus - apical bile groove; BSEP/MRP-like transporters export bile acids, bilirubin and conjugates"
+  });
+  trackMotion(canaliculus, canaliculus.position, 0.035, 0.16, 0.001);
+
   // --- Nucleus + envelope + nucleolus + nuclear pores ---
   const nuc = new THREE.Vector3(-3.4, 1.4, -1.2);
   occupied.push({ c: nuc, r: 5.1 }); // reserve the nucleus volume (incl. ER shell)
@@ -1884,7 +1949,7 @@ function buildOrganelleScene() {
   trackMotion(nuclearPores, nuclearPores.position, 0.035, 0.12, 0.001, nucleusPhase);
 
   // --- Rough ER: tubular network hugging the nuclear envelope ---
-  for (let i = 0; i < 7; i += 1) {
+  for (let i = 0; i < 11; i += 1) {
     const pts: THREE.Vector3[] = [];
     let d = randDir();
     for (let k = 0; k < 6; k += 1) {
@@ -1928,7 +1993,7 @@ function buildOrganelleScene() {
   }
 
   // --- Mitochondria: bean-shaped, with an inner matrix and folded cristae ---
-  for (let i = 0; i < 10; i += 1) {
+  for (let i = 0; i < 14; i += 1) {
     const len = 1.6 + rnd() * 1.8;
     const p = place(len * 0.55 + 0.9, 5, CELL_R - 2);
     if (!p) break;
@@ -1952,7 +2017,7 @@ function buildOrganelleScene() {
   }
 
   // --- Lysosomes & peroxisomes (no overlaps) ---
-  for (let i = 0; i < 8; i += 1) {
+  for (let i = 0; i < 12; i += 1) {
     const p = place(0.78, 5, CELL_R - 1.5);
     if (!p) continue;
     const isLysosome = i % 2 === 1;
@@ -2250,6 +2315,36 @@ function buildOrganelleScene() {
   cortexGeo.setAttribute("position", new THREE.Float32BufferAttribute(cortexPts, 3));
   group.add(new THREE.LineSegments(cortexGeo, new THREE.LineBasicMaterial({ color: "#9be0a8", transparent: true, opacity: 0.16 })));
 
+  // Hepatocytes buffer blood glucose with cytosolic glycogen granules rather
+  // than treating "nutrients" as a direct slider.
+  const glycogenGroup = new THREE.Group();
+  glycogenGroup.position.copy(glycogenAnchor);
+  glycogenGroup.userData.label = "Glycogen granules - hepatocyte glucose buffer; filled after feeding and mobilised during fasting";
+  group.add(glycogenGroup);
+  for (let i = 0; i < 90; i += 1) {
+    const p = randDir().multiplyScalar(rnd() ** 0.55 * 1.55);
+    const bead = mesh(new THREE.SphereGeometry(0.08 + rnd() * 0.08, 8, 6), "#cfa94b", p, {
+      parent: glycogenGroup,
+      emissive: 0.12,
+      rough: 0.62,
+      label: "Glycogen granule - branched glucose polymer used as a hepatocyte buffer"
+    });
+    tagGlow("glycolysis", bead);
+  }
+  trackMotion(glycogenGroup, glycogenAnchor, 0.13, 0.34, 0.004);
+
+  // Small neutral lipid droplets: normal hepatocytes traffic lipids constantly;
+  // this is not a fatty-liver state unless the model drives them to dominate.
+  for (let i = 0; i < 5; i += 1) {
+    const p = place(0.7, 5, CELL_R - 2) ?? glycogenAnchor.clone().add(randDir().multiplyScalar(2.2));
+    const droplet = mesh(organicSphere(0.54 + rnd() * 0.28, 0.08), "#e7d37a", p, {
+      opacity: 0.48,
+      emissive: 0.08,
+      label: "Lipid droplet - neutral lipid storage / exchange with ER, mitochondria and peroxisomes"
+    });
+    trackMotion(droplet, p, 0.12, 0.22 + rnd() * 0.12, 0.004);
+  }
+
   // Glycolysis is not a membrane-bound organelle; it is a cytosolic enzyme
   // network. Give it a visible hub so the metabolic traffic can connect to it.
   const glycolysisAnchor = new THREE.Vector3(-0.8, -3.2, 1.4);
@@ -2296,10 +2391,12 @@ function buildOrganelleScene() {
   }
   livingCell.setGeometry(distances, micronsPerUnit);
 
-  const membraneHub = new THREE.Vector3(CELL_R * 0.72, -1.2, 0);
   organelleAnchors = {
-    outside: new THREE.Vector3(CELL_R * 1.18, -1.2, 0),
+    outside: sinusoidAnchor.clone(),
+    sinusoid: sinusoidAnchor.clone(),
     membrane: membraneHub,
+    canaliculus: canaliculusAnchor.clone(),
+    glycogen: glycogenAnchor.clone(),
     cytosol: new THREE.Vector3(0, -0.85, 0),
     glycolysis: centroid("glycolysis"),
     mitochondria: mitoC,
@@ -2318,13 +2415,13 @@ function buildOrganelleScene() {
 
   if (sceneNote) {
     sceneNote.textContent =
-      "A whole eukaryotic (animal) cell at the cell scale. The plasma membrane is organic and translucent; transport proteins are drawn as real structure families (helix-bundle channels, aquaporins, pumps, carriers, receptors), while cytoplasm is crowded and organelles exclude volume. Molecular physics lives one zoom-in below.";
+      "A polarized hepatocyte-scale cell. Sinusoidal blood-facing import, canalicular bile export, glycogen buffering, albumin secretion, urea handling and CYP/glutathione detox are modelled as organelle-level fluxes; exact atomistic chemistry stays one zoom-in below.";
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;
     compositionEl.innerHTML =
-      chip("#b07ed8", "nucleus") + chip("#ff7a4d", "mitochondria") + chip("#e8b24a", "ER") + chip("#3fc7a6", "Golgi") + chip("#d7e868", "peroxisome");
-    netChargeEl.innerHTML = chip("#ff6fae", "lysosome") + chip("#7fd6c8", "cytoskeleton") + chip("#e9eef8", "ribosomes");
+      chip("#3a9bd9", "sinusoid") + chip("#d9e778", "bile canaliculus") + chip("#cfa94b", "glycogen") + chip("#ff7a4d", "mitochondria") + chip("#e8b24a", "ER");
+    netChargeEl.innerHTML = chip("#3fc7a6", "Golgi") + chip("#d7e868", "peroxisome") + chip("#ff6fae", "lysosome") + chip("#e9eef8", "ribosomes");
   }
 }
 
@@ -2366,9 +2463,9 @@ function renderOrganelleScene() {
       mat.color.set(col);
       mat.emissive.set(col);
     }
-    setText(values.distance, s.glucoseIn.toFixed(2));
+    setText(values.distance, s.pools.glycogen.toFixed(2));
     setText(values.force, s.atp.toFixed(2));
-    setText(values.potential, s.protein.toFixed(1));
+    setText(values.potential, s.pools.albumin.toFixed(2));
     setText(values.kinetic, s.energyCharge.toFixed(2));
     setText(values.total, s.status);
     if (values.total) {
