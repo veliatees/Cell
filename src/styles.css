@@ -450,6 +450,11 @@ input[type="checkbox"] {
   color: #a8b3c3;
 }
 
+.external-snapshot__org {
+  color: #e4eefc;
+  font-weight: 600;
+}
+
 .report-rows {
   display: flex;
   flex-direction: column;

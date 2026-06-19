@@ -863,6 +863,57 @@ const ORG_INFO: Record<OrganelleId, { name: string; action: string; ref: number 
   cytoskeleton: { name: "Cytoskeleton", action: "organelle positioning + vesicle motors", ref: 0.55 }
 };
 
+const ENGINE_ORGANELLE_VISUAL_MAP: Record<string, OrganelleId | null> = {
+  plasma_membrane: "membrane",
+  cytosol_metabolism: "glycolysis",
+  mitochondria: "mitochondria",
+  nucleus: "nucleus",
+  rough_er: "er",
+  smooth_er: "er",
+  ribosome: "ribosome",
+  golgi: "golgi",
+  lysosome_endosome: "lysosome",
+  peroxisome: "peroxisome",
+  cytoskeleton: "cytoskeleton",
+  proteasome: null
+};
+
+type EngineVisualSignal = {
+  activity: Partial<Record<OrganelleId, number>>;
+  health: Partial<Record<OrganelleId, number>>;
+  activeProcesses: Partial<Record<OrganelleId, string[]>>;
+  maxStress: number;
+};
+
+function engineVisualSignal(summary: EngineSnapshotSummary): EngineVisualSignal {
+  const buckets: Partial<Record<OrganelleId, { activity: number; health: number; n: number; processes: string[] }>> = {};
+  for (const organelle of summary.organelles) {
+    const visualId = ENGINE_ORGANELLE_VISUAL_MAP[organelle.id];
+    if (!visualId) continue;
+    const bucket = (buckets[visualId] ??= { activity: 0, health: 0, n: 0, processes: [] });
+    bucket.activity += organelle.activity;
+    bucket.health += organelle.health;
+    bucket.n += 1;
+    bucket.processes.push(...organelle.activeProcesses);
+  }
+
+  const activity: Partial<Record<OrganelleId, number>> = {};
+  const health: Partial<Record<OrganelleId, number>> = {};
+  const activeProcesses: Partial<Record<OrganelleId, string[]>> = {};
+  for (const [key, bucket] of Object.entries(buckets) as [OrganelleId, { activity: number; health: number; n: number; processes: string[] }][]) {
+    activity[key] = bucket.activity / Math.max(bucket.n, 1);
+    health[key] = bucket.health / Math.max(bucket.n, 1);
+    activeProcesses[key] = [...new Set(bucket.processes)].slice(0, 4);
+  }
+
+  return {
+    activity,
+    health,
+    activeProcesses,
+    maxStress: Math.max(0, ...Object.values(summary.stress))
+  };
+}
+
 const FLOW_REF: Record<string, number> = {
   "outside-glucose": 0.8,
   "outside-amino": 0.32,
@@ -1116,11 +1167,42 @@ function renderExternalEngineStatus(): string {
   const ca = s.cytosolicCa == null ? "Ca -" : `Ca ${s.cytosolicCa.toFixed(2)}`;
   const atp = s.atp == null ? "ATP -" : `ATP ${s.atp.toFixed(2)}`;
   const flux = s.topFluxes.length ? ` · flux ${s.topFluxes.join(", ")}` : "";
+  const organelles = s.organelles
+    .slice(0, 4)
+    .map((o) => `${labelEngineOrganelle(o.id)} ${o.activity.toFixed(2)}/${Math.round(o.health * 100)}%`)
+    .join(" · ");
+  const processes = s.organelles
+    .flatMap((o) => o.activeProcesses.slice(0, 2))
+    .filter((value, index, all) => all.indexOf(value) === index)
+    .slice(0, 6)
+    .join(", ");
+  const stress = Object.entries(s.stress)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3)
+    .map(([axis, value]) => `${axis} ${value.toFixed(2)}`)
+    .join(" · ");
   return (
     `<span class="external-snapshot__label">Python engine</span>` +
     `<span>${s.cellType} · ${s.status} · ${atp} · ${ca} · ${vm} · ${pump} · cargo ${cargo || "none"} · ` +
-    `SBML ${s.pathwayCount} · signaling ${s.signalingCount}${flux}</span>`
+    `SBML ${s.pathwayCount} · signaling ${s.signalingCount}${flux}</span>` +
+    `<span class="external-snapshot__org">${organelles || "no organelle state"}</span>` +
+    `<span class="external-snapshot__diag">${stress ? `stress ${stress}` : "stress -"}</span>` +
+    `<span class="external-snapshot__diag">${processes ? `active ${processes}` : "active processes -"}</span>`
   );
+}
+
+function labelEngineOrganelle(id: string): string {
+  const labels: Record<string, string> = {
+    plasma_membrane: "membrane",
+    cytosol_metabolism: "cytosol",
+    rough_er: "rough ER",
+    smooth_er: "smooth ER",
+    lysosome_endosome: "lysosome",
+    mitochondria: "mito",
+    peroxisome: "peroxi",
+    proteasome: "proteasome"
+  };
+  return labels[id] ?? id.replaceAll("_", " ");
 }
 
 const hoverRaycaster = new THREE.Raycaster();
@@ -2546,6 +2628,7 @@ function renderOrganelleScene() {
   }
   if (livingCell) {
     const s = livingCell.snapshot();
+    const engineSignal = externalEngineSummary ? engineVisualSignal(externalEngineSummary) : null;
     updateOrganelleMotion(s.elapsedS);
     updateFlowVisuals(s);
     // Each organelle glows with ITS OWN activity — driven by its own internal
@@ -2553,8 +2636,10 @@ function renderOrganelleScene() {
     // faulted organelle dims, so you can see where the cell is failing.
     const eff: Record<string, number> = {};
     for (const o of s.organelles) eff[o.id] = o.efficiency;
+    const activityOf = (kind: OrganelleId) => engineSignal?.activity[kind] ?? s.activity[kind];
+    const healthOf = (kind: OrganelleId) => engineSignal?.health[kind] ?? eff[kind] ?? 1;
     const glowOf = (kind: keyof OrganelleActivity, gain: number) =>
-      (0.06 + 1.4 * Math.min(1, s.activity[kind] * gain)) * (0.25 + 0.75 * (eff[kind] ?? 1));
+      (0.06 + 1.4 * Math.min(1, activityOf(kind) * gain)) * (0.25 + 0.75 * healthOf(kind));
     // Mitochondria glow with how hard they are making ATP right now.
     const mitoGlow = glowOf("mitochondria", 1 / 0.95);
     for (const m of organelleMitos) {
@@ -2565,26 +2650,44 @@ function renderOrganelleScene() {
       for (const mat of g.mats) mat.emissiveIntensity = e;
     }
     // Ribosomes brighten as translation runs (protein being built).
-    if (ribosomeMat) ribosomeMat.opacity = 0.4 + 0.55 * Math.min(1, s.activity.ribosome / 0.62);
+    if (ribosomeMat) ribosomeMat.opacity = 0.4 + 0.55 * Math.min(1, activityOf("ribosome") / 0.62);
     updateReportPanel(s);
     // The whole cell takes on its health: blue (healthy) → amber → red (dying).
     if (organelleMembrane) {
-      const col = s.status === "dying" ? "#ff5a5a" : s.status === "senescent" ? "#c99cff" : s.status === "stressed" ? "#ffc05a" : "#7fb6ff";
+      const visualStatus = externalEngineSummary?.status ?? s.status;
+      const stressTint = engineSignal?.maxStress ?? 0;
+      const col =
+        visualStatus === "dying"
+          ? "#ff5a5a"
+          : visualStatus === "senescent"
+            ? "#c99cff"
+            : visualStatus === "stressed" || stressTint > 0.55
+              ? "#ffc05a"
+              : "#7fb6ff";
       const mat = organelleMembrane.material as THREE.MeshStandardMaterial;
       mat.color.set(col);
       mat.emissive.set(col);
     }
-    setText(values.distance, s.pools.glycogen.toFixed(2));
-    setText(values.force, s.atp.toFixed(2));
-    setText(values.potential, s.pools.albumin.toFixed(2));
-    setText(values.kinetic, s.energyCharge.toFixed(2));
-    setText(values.total, s.status);
+    const display = externalEngineSummary;
+    const pool = (id: string, fallback: number) => display?.pools[id] ?? fallback;
+    const engineAtp = display?.pools.ATP ?? display?.atp ?? s.atp;
+    const engineAdp = display?.pools.ADP ?? 1 - engineAtp;
+    const energyCharge = display ? engineAtp + 0.5 * engineAdp : s.energyCharge;
+    const cargoTotal = display ? Object.values(display.cargo).reduce((sum, count) => sum + count, 0) : 0;
+    const cargoGood = display ? (display.cargo.delivered ?? 0) + (display.cargo.recycled ?? 0) : 0;
+    const cargoFidelity = display && cargoTotal > 0 ? cargoGood / cargoTotal : s.fidelity.deliveryQuality;
+    const displayStatus = display?.status ?? s.status;
+    setText(values.distance, pool("glycogen", s.pools.glycogen).toFixed(2));
+    setText(values.force, engineAtp.toFixed(2));
+    setText(values.potential, pool("albumin", s.pools.albumin).toFixed(2));
+    setText(values.kinetic, energyCharge.toFixed(2));
+    setText(values.total, displayStatus);
     if (values.total) {
-      values.total.style.color = s.status === "dying" ? "#ff8a8a" : s.status === "senescent" ? "#d9a6ff" : s.status === "stressed" ? "#ffcf6b" : "#7ee0a8";
+      values.total.style.color = displayStatus === "dying" ? "#ff8a8a" : displayStatus === "senescent" ? "#d9a6ff" : displayStatus === "stressed" ? "#ffcf6b" : "#7ee0a8";
     }
-    setText(values.drift, s.fidelity.deliveryQuality.toFixed(2));
+    setText(values.drift, cargoFidelity.toFixed(2));
     if (values.drift) values.drift.style.color = "";
-    setText(values.elapsed, `${Math.round(s.elapsedS)} s`);
+    setText(values.elapsed, `${Math.round(display?.elapsedS ?? s.elapsedS)} s`);
   }
 
   updateHoverTooltip();

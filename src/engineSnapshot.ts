@@ -7,6 +7,18 @@ export type EngineCargoPacket = {
   fate_reason?: string;
 };
 
+export type EngineOrganelleState = {
+  health: number;
+  activity: number;
+  age_h: number;
+  damage: number;
+  capacity: number;
+  risk_per_hour: number;
+  local_atp?: number;
+  transport_delay_s?: number;
+  active_processes?: string[];
+};
+
 export type EngineSnapshot = {
   schema_version: string;
   definition: {
@@ -17,6 +29,8 @@ export type EngineSnapshot = {
     elapsed_s: number;
     status: string;
     pools: Record<string, { value: number; unit: string; compartment_id: string }>;
+    organelles?: Record<string, EngineOrganelleState>;
+    stress?: Record<string, number>;
     cargo_packets?: EngineCargoPacket[];
     metabolic_fluxes?: { id: string; value: number; produced_by: string; consumed_by: string }[];
     pathway_results?: { model_id: string; engine: string; unit: string }[];
@@ -36,11 +50,26 @@ export type EngineSnapshot = {
   };
 };
 
+export type EngineOrganelleSummary = {
+  id: string;
+  activity: number;
+  health: number;
+  damage: number;
+  capacity: number;
+  riskPerHour: number;
+  localAtp: number | null;
+  transportDelayS: number | null;
+  activeProcesses: string[];
+};
+
 export type EngineSnapshotSummary = {
   source: string;
   cellType: string;
   status: string;
   elapsedS: number;
+  pools: Record<string, number>;
+  stress: Record<string, number>;
+  organelles: EngineOrganelleSummary[];
   atp: number | null;
   cytosolicCa: number | null;
   membranePotentialMv: number | null;
@@ -92,11 +121,28 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     cargo[packet.state] = (cargo[packet.state] ?? 0) + 1;
   }
   const poolValue = (id: string) => snapshot.state.pools[id]?.value ?? null;
+  const pools = Object.fromEntries(Object.entries(snapshot.state.pools).map(([id, pool]) => [id, pool.value]));
+  const organelles = Object.entries(snapshot.state.organelles ?? {})
+    .map(([id, organelle]) => ({
+      id,
+      activity: organelle.activity,
+      health: organelle.health,
+      damage: organelle.damage,
+      capacity: organelle.capacity,
+      riskPerHour: organelle.risk_per_hour,
+      localAtp: organelle.local_atp ?? null,
+      transportDelayS: organelle.transport_delay_s ?? null,
+      activeProcesses: organelle.active_processes ?? []
+    }))
+    .sort((a, b) => b.activity - a.activity);
   return {
     source,
     cellType: snapshot.definition.cell_type ?? "unknown",
     status: snapshot.state.status,
     elapsedS: snapshot.state.elapsed_s,
+    pools,
+    stress: snapshot.state.stress ?? {},
+    organelles,
     atp: poolValue("ATP"),
     cytosolicCa: snapshot.state.membrane_state?.cytosolic_ca ?? poolValue("Ca2+"),
     membranePotentialMv: snapshot.state.membrane_state?.membrane_potential_mv ?? null,

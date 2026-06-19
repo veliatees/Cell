@@ -16,7 +16,33 @@ const snapshot: EngineSnapshot = {
     status: "healthy",
     pools: {
       ATP: { value: 0.74, unit: "relative_pool_0_1", compartment_id: "cytosol" },
-      "Ca2+": { value: 0.12, unit: "relative_pool_0_1", compartment_id: "cytosol" }
+      "Ca2+": { value: 0.12, unit: "relative_pool_0_1", compartment_id: "cytosol" },
+      albumin: { value: 0.21, unit: "relative_pool_0_1", compartment_id: "golgi" }
+    },
+    stress: { energy: 0.1, oxidative: 0.2 },
+    organelles: {
+      mitochondria: {
+        health: 0.92,
+        activity: 0.42,
+        age_h: 30,
+        damage: 0.08,
+        capacity: 1.0,
+        risk_per_hour: 0.01,
+        local_atp: 0.72,
+        transport_delay_s: 0.25,
+        active_processes: ["TCA", "OXPHOS"]
+      },
+      rough_er: {
+        health: 0.84,
+        activity: 0.22,
+        age_h: 12,
+        damage: 0.16,
+        capacity: 1.1,
+        risk_per_hour: 0.02,
+        local_atp: 0.68,
+        transport_delay_s: 1.4,
+        active_processes: ["protein_folding", "ERAD"]
+      }
     },
     cargo_packets: [
       { id: "a", species: "albumin", state: "delivered", current_location: "sinusoidal_face", target_compartment: "sinusoidal_face" },
@@ -43,6 +69,10 @@ describe("engine snapshot client", () => {
     const summary = summarizeEngineSnapshot(snapshot, "/engine-snapshot.json");
     expect(summary.cellType).toBe("hepatocyte");
     expect(summary.atp).toBeCloseTo(0.74);
+    expect(summary.pools.albumin).toBeCloseTo(0.21);
+    expect(summary.stress.oxidative).toBeCloseTo(0.2);
+    expect(summary.organelles[0].id).toBe("mitochondria");
+    expect(summary.organelles[0].activeProcesses).toContain("OXPHOS");
     expect(summary.cargo.delivered).toBe(1);
     expect(summary.cargo.lost).toBe(1);
     expect(summary.pathwayCount).toBe(1);

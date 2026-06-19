@@ -1079,6 +1079,24 @@ Acceptance:
 - ER -> Golgi -> membrane/lysosome/proteasome hattinda olculebilir ara urunler
   vardir.
 
+### M027 - Engine-driven visual bridge
+
+Status: implemented in [Milestone 027](milestones/027-engine-driven-visual-bridge.md).
+
+Scope:
+
+- Python engine snapshot'tan pool, stress ve organelle state okumak.
+- TS/Three.js sahnesinde organel glow, membran rengi ve readout'lari engine
+  state ile surmek.
+- Varsayilan demo snapshot'i local Vite public dosyasi olarak sunmak.
+
+Acceptance:
+
+- Snapshot varsa gorsel readout Python engine degerlerini kullanir.
+- Snapshot yoksa TS visual model calismaya devam eder.
+- Gorsel katman TypeScript/Three.js olarak kalir; Python biyolojik engine
+  tarafinda kalir.
+
 ## 15. Ilk uygulanacak teknik kararlar
 
 1. Python package eklenecek ama TS app korunacak.
