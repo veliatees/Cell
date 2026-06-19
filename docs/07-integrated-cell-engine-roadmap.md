@@ -1097,6 +1097,42 @@ Acceptance:
 - Gorsel katman TypeScript/Three.js olarak kalir; Python biyolojik engine
   tarafinda kalir.
 
+### M028 - Visual time-scale disclosure
+
+Status: implemented in [Milestone 028](milestones/028-visual-time-scale.md).
+
+Scope:
+
+- Browser sahnesinin gercek zamanli mikroskop kaydi olmadigini UI'da aciklamak.
+- Hucre gorsel saatini FPS'ten bagimsiz hale getirmek.
+- Python snapshot zamani ile TS gorsel saatini ayirmak.
+
+Acceptance:
+
+- UI'da simule edilen hucre saniyesi / gercek saniye bilgisi gorunur.
+- Pool/flux degerlerinin normalize coarse state oldugu yazilir.
+- Organellerin urettiği/kullandigi seylerin ekrandaki hizinin gercek zamanli
+  molekuler hiz sanilmamasi saglanir.
+
+### M029 - Stochastic visual route families
+
+Status: planned.
+
+Scope:
+
+- Sabit spline flow cizgileri yerine route family + random path varyantlari.
+- Cargo/vesicle bekleme, geri donme, misrouting, lost/degraded durumlarini
+  gorselde ayri ayri gostermek.
+- Diffusion tipi metabolitleri tek ray yerine lokal bulut/gradient/particle
+  haze ile gostermek.
+
+Acceptance:
+
+- Ayni biyolojik route family korunur ama fiziksel yol frame-to-frame/packet-to-
+  packet ayni olmaz.
+- Python cargo packet state'i gorselde tek tek vesicle/packet olarak izlenebilir.
+- Kucuk metabolitler deterministic ray gibi gosterilmez.
+
 ## 15. Ilk uygulanacak teknik kararlar
 
 1. Python package eklenecek ama TS app korunacak.

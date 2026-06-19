@@ -268,6 +268,7 @@ reportPanel.innerHTML =
   '<div class="report-panel__head">Hepatocyte activity - live</div>' +
   '<div class="report-status"></div>' +
   '<div class="external-snapshot"></div>' +
+  '<div class="report-timescale"></div>' +
   '<div class="report-rows"></div>' +
   '<div class="report-flow__title">Organelle traffic</div>' +
   '<div class="report-flows"></div>' +
@@ -334,6 +335,8 @@ let mode: Mode = "ions";
 const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
 const CELL_R = 14; // whole-cell schematic radius (world units)
 const CELL_RADIUS_UM = 10; // representative animal-cell radius used for visual scale conversion
+const CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND = 5;
+const CELL_VISUAL_STEP_ITERATIONS = 2;
 const MEMBRANE_SCALE = 1.6; // membrane positions are in σ (~1 nm); scale for display
 let running = true;
 let showClouds = true;
@@ -1094,6 +1097,13 @@ function updateReportPanel(s: CellSnapshot) {
   if (externalEl) {
     externalEl.innerHTML = renderExternalEngineStatus();
   }
+  const timescaleEl = reportPanel.querySelector(".report-timescale");
+  if (timescaleEl) {
+    const engineTime = externalEngineSummary ? `Python snapshot t=${Math.round(externalEngineSummary.elapsedS)}s` : "Python snapshot unavailable";
+    timescaleEl.textContent =
+      `Time scale: visual clock ~${CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND} simulated cell-s / real-s; ` +
+      `${engineTime}; pools/fluxes are normalized coarse values, not molecule-by-molecule real time.`;
+  }
   const rowsEl = reportPanel.querySelector(".report-rows");
   if (rowsEl) {
     rowsEl.innerHTML = s.organelles
@@ -1267,7 +1277,7 @@ function animate() {
   const iterations = Math.max(1, Math.round(delta / 3.2));
 
   if (mode === "organelles") {
-    renderOrganelleScene();
+    renderOrganelleScene(delta / 1000);
   } else if (mode === "reaction" && reaction) {
     if (running) {
       reaction.step(1);
@@ -2618,13 +2628,14 @@ function buildOrganelleScene() {
   }
 }
 
-function renderOrganelleScene() {
+function renderOrganelleScene(realDeltaS = 1 / 60) {
   if (organelleGroup && !dragState) {
     organelleGroup.rotation.y += 0.0016; // slow turn to reveal the 3D interior
   }
 
   if (livingCell && running) {
-    livingCell.step(0.04, 2); // advance the metabolism
+    const simDt = clamp((realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND) / CELL_VISUAL_STEP_ITERATIONS, 0.005, 0.08);
+    livingCell.step(simDt, CELL_VISUAL_STEP_ITERATIONS); // accelerated, frame-rate independent visual clock
   }
   if (livingCell) {
     const s = livingCell.snapshot();
