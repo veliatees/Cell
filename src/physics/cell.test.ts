@@ -59,6 +59,31 @@ describe("LivingCell — organelle network", () => {
     expect(ids.has("golgi-albumin-sinusoid")).toBe(true);
   });
 
+  it("does not treat intracellular cargo routing as perfectly successful", () => {
+    const c = new LivingCell(undefined, 0.9);
+    settle(c, 50);
+    const s = c.snapshot();
+    expect(s.fidelity.deliveryQuality).toBeGreaterThan(0.65);
+    expect(s.fidelity.deliveryQuality).toBeLessThan(1);
+    expect(s.fidelity.lossFlux).toBeGreaterThan(0);
+    expect(s.pools.misfoldedProtein + s.pools.misroutedCargo).toBeGreaterThan(0);
+    const ids = new Set(s.flows.map((f) => f.id));
+    expect(ids.has("er-proteasome-loss")).toBe(true);
+    expect(ids.has("golgi-misroute-lysosome")).toBe(true);
+  });
+
+  it("low perfusion reduces cargo fidelity under intracellular stress", () => {
+    const c = new LivingCell(undefined, 0.9);
+    settle(c, 40);
+    const healthy = c.snapshot();
+    c.perfusion = 0.08;
+    settle(c, 100);
+    const stressed = c.snapshot();
+    expect(stressed.fidelity.deliveryQuality).toBeLessThan(healthy.fidelity.deliveryQuality);
+    expect(stressed.stress.energy).toBeGreaterThan(healthy.stress.energy);
+    expect(stressed.fidelity.lossFlux).toBeGreaterThan(0);
+  });
+
   it("conserves the ATP + ADP pool exactly", () => {
     const c = new LivingCell(undefined, 0.7);
     settle(c, 30);

@@ -329,7 +329,66 @@ scene.background = new THREE.Color("#080b10");
 scene.fog = new THREE.Fog("#080b10", 7, 20);
 
 const camera = new THREE.PerspectiveCamera(48, 1, 0.01, 100);
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+type RendererHandle = Pick<THREE.WebGLRenderer, "domElement" | "setPixelRatio" | "setSize" | "render"> & {
+  isFallback?: boolean;
+};
+
+function makeRenderer(): RendererHandle {
+  try {
+    return new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  } catch (err) {
+    console.error("WebGL renderer unavailable; using diagnostic fallback canvas.", err);
+    const canvas = document.createElement("canvas");
+    canvas.className = "webgl-fallback";
+    const ctx = canvas.getContext("2d");
+    let ratio = 1;
+    const draw = () => {
+      if (!ctx) return;
+      const w = canvas.width / ratio;
+      const h = canvas.height / ratio;
+      ctx.save();
+      ctx.scale(ratio, ratio);
+      ctx.clearRect(0, 0, w, h);
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, "#090d13");
+      g.addColorStop(1, "#151b25");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(126, 224, 198, 0.35)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(16, 16, Math.max(0, w - 32), Math.max(0, h - 32));
+      ctx.fillStyle = "#e8f1ff";
+      ctx.font = "600 16px Inter, system-ui, sans-serif";
+      ctx.fillText("WebGL context unavailable", 32, 54);
+      ctx.fillStyle = "#9fb0c7";
+      ctx.font = "12px Inter, system-ui, sans-serif";
+      ctx.fillText("The cell model is running, but this browser context cannot create a Three.js renderer.", 32, 82);
+      ctx.fillText("Use a normal browser tab with WebGL enabled, or headless Chrome with SwiftShader enabled.", 32, 104);
+      ctx.restore();
+    };
+    return {
+      domElement: canvas,
+      isFallback: true,
+      setPixelRatio(nextRatio: number) {
+        ratio = Math.max(1, nextRatio);
+      },
+      setSize(width: number, height: number) {
+        const w = Math.max(1, Math.floor(width));
+        const h = Math.max(1, Math.floor(height));
+        canvas.width = Math.floor(w * ratio);
+        canvas.height = Math.floor(h * ratio);
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
+        draw();
+      },
+      render() {
+        draw();
+      }
+    };
+  }
+}
+
+const renderer = makeRenderer();
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(viewportElement.clientWidth, viewportElement.clientHeight);
 viewportElement.append(renderer.domElement);
@@ -508,7 +567,7 @@ const METRIC_LABELS: Record<Mode, MetricLabels> = {
     potential: "Albumin",
     kinetic: "Energy charge",
     total: "Status",
-    drift: "Sinusoid flux"
+    drift: "Cargo fidelity"
   }
 };
 
@@ -807,13 +866,16 @@ const FLOW_REF: Record<string, number> = {
   "nucleus-mrna": 0.35,
   "ribosome-er": 0.55,
   "er-golgi": 0.5,
+  "er-proteasome-loss": 0.08,
   "er-bile-canaliculus": 0.25,
+  "canalicular-miss-lysosome": 0.06,
   "er-bilirubin-canaliculus": 0.2,
   "er-detox-canaliculus": 0.22,
   "glutathione-detox": 0.25,
   "er-membrane-lipid": 0.25,
   "ribosome-golgi": 0.55,
   "golgi-membrane": 0.48,
+  "golgi-misroute-lysosome": 0.08,
   "golgi-albumin-sinusoid": 0.18,
   "golgi-lysosome": 0.12,
   "membrane-lysosome-endosome": 0.18,
@@ -855,13 +917,16 @@ const FLOW_DEFS: Record<string, { from: string; to: string; color: string; mode:
   "nucleus-mrna": { from: "nucleus", to: "ribosome", color: "#caa3e6", mode: "pore" },
   "ribosome-er": { from: "ribosome", to: "er", color: "#e8b24a", mode: "diffusion" },
   "er-golgi": { from: "er", to: "golgi", color: "#e8b24a", mode: "vesicle" },
+  "er-proteasome-loss": { from: "er", to: "cytosol", color: "#ff6fae", mode: "diffusion" },
   "er-bile-canaliculus": { from: "er", to: "canaliculus", color: "#d9e778", mode: "carrier" },
+  "canalicular-miss-lysosome": { from: "canaliculus", to: "lysosome", color: "#ffcf6b", mode: "autophagy" },
   "er-bilirubin-canaliculus": { from: "er", to: "canaliculus", color: "#d8b35c", mode: "carrier" },
   "er-detox-canaliculus": { from: "er", to: "canaliculus", color: "#ff9b8a", mode: "carrier" },
   "glutathione-detox": { from: "cytosol", to: "er", color: "#7ee0a8", mode: "diffusion" },
   "er-membrane-lipid": { from: "er", to: "membrane", color: "#d9e778", mode: "vesicle" },
   "ribosome-golgi": { from: "ribosome", to: "golgi", color: "#e8b24a", mode: "vesicle" },
   "golgi-membrane": { from: "golgi", to: "membrane", color: "#7fe0c6", mode: "motor" },
+  "golgi-misroute-lysosome": { from: "golgi", to: "lysosome", color: "#ff6fae", mode: "vesicle" },
   "golgi-albumin-sinusoid": { from: "golgi", to: "sinusoid", color: "#e9eef8", mode: "vesicle" },
   "golgi-lysosome": { from: "golgi", to: "lysosome", color: "#7fe0c6", mode: "vesicle" },
   "membrane-lysosome-endosome": { from: "membrane", to: "lysosome", color: "#7fb6ff", mode: "vesicle" },
@@ -950,6 +1015,8 @@ function updateReportPanel(s: CellSnapshot) {
       `${s.hepatocyte.zone} hepatocyte · polarity ${s.hepatocyte.polarity.toFixed(2)} · ` +
       `glycogen ${s.pools.glycogen.toFixed(2)} · ATP ${s.atp.toFixed(2)} · albumin ${s.pools.albumin.toFixed(2)} · ` +
       `bile ${s.hepatocyte.bileExport.toFixed(2)} · CYP ${s.hepatocyte.cyp450.toFixed(2)} · GSH ${s.hepatocyte.glutathioneReserve.toFixed(2)} · ` +
+      `cargo fidelity ${s.fidelity.deliveryQuality.toFixed(2)} · loss ${s.fidelity.lossFlux.toFixed(2)} · ` +
+      `misfolded ${s.pools.misfoldedProtein.toFixed(2)} · misrouted ${s.pools.misroutedCargo.toFixed(2)} · ` +
       `ROS ${s.pools.ros.toFixed(2)} · waste ${s.pools.waste.toFixed(2)} · ` +
       `sen ${s.senescenceRiskPerHour.toFixed(2)}%/h · apo ${s.apoptosisRiskPerHour.toFixed(2)}%/h${survival} · t ${Math.round(s.elapsedS)}s`;
   }
@@ -2471,7 +2538,7 @@ function renderOrganelleScene() {
     if (values.total) {
       values.total.style.color = s.status === "dying" ? "#ff8a8a" : s.status === "senescent" ? "#d9a6ff" : s.status === "stressed" ? "#ffcf6b" : "#7ee0a8";
     }
-    setText(values.drift, s.importFlux.toFixed(2));
+    setText(values.drift, s.fidelity.deliveryQuality.toFixed(2));
     if (values.drift) values.drift.style.color = "";
     setText(values.elapsed, `${Math.round(s.elapsedS)} s`);
   }

@@ -46,10 +46,16 @@ npm test
 npm run build
 ```
 
-## First Cell Type
+## Current Target Cell Type
 
-Start with epithelial cells because they naturally expose the questions this
-project cares about:
+The current target is **hepatocyte-first**, not a generic animal cell. The engine
+roadmap is now organized around hepatocyte metabolism, detox, secretion,
+sinusoidal/canalicular polarity, bile handling, urea-cycle coupling, and
+state-conditioned organelle failure. See
+[docs/07-integrated-cell-engine-roadmap.md](docs/07-integrated-cell-engine-roadmap.md).
+
+The earlier epithelial notes still matter as background for polarity and
+barrier/transport thinking:
 
 - inside vs outside
 - apical vs basolateral surfaces
@@ -63,6 +69,7 @@ project cares about:
 - [Research index](docs/01-research-index.md)
 - [Multiscale architecture](docs/02-multiscale-architecture.md)
 - [Platform recommendation](docs/03-platform-recommendation.md)
+- [Integrated cell engine roadmap](docs/07-integrated-cell-engine-roadmap.md)
 - [Atomic foundations](docs/research/physics/atomic-foundations.md)
 - [Epithelial cell starting scope](docs/research/biology/epithelial-cell.md)
 - [Input/output registry](docs/research/biology/input-output-registry.md)

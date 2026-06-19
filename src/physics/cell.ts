@@ -44,6 +44,7 @@ export type Pools = {
   atp: number; // ADP = ATP_TOTAL − atp (conserved)
   mrna: number;
   protein: number; // nascent / ER-bound protein cargo
+  misfoldedProtein: number;
   foldedProtein: number; // ER-quality-controlled cargo ready for Golgi
   albumin: number;
   lipids: number;
@@ -53,6 +54,7 @@ export type Pools = {
   glutathione: number;
   xenobiotic: number;
   detoxified: number;
+  misroutedCargo: number;
   ros: number;
   waste: number;
   secreted: number;
@@ -159,6 +161,27 @@ export type HepatocyteState = {
   canalicularExport: number;
 };
 
+export type IntracellularFidelity = {
+  transcriptionAccuracy: number;
+  translationAccuracy: number;
+  foldingYield: number;
+  golgiSorting: number;
+  vesicleDelivery: number;
+  canalicularTargeting: number;
+  deliveryQuality: number;
+  lossFlux: number;
+  loss: {
+    mrnaErrors: number;
+    translationErrors: number;
+    foldingFailures: number;
+    erRetention: number;
+    golgiMisroute: number;
+    vesicleLost: number;
+    canalicularMiss: number;
+    autophagyMiss: number;
+  };
+};
+
 export type CellSnapshot = {
   pools: Pools;
   external: ExternalPools;
@@ -166,6 +189,7 @@ export type CellSnapshot = {
   importFlux: number;
   stress: StressAxes;
   hepatocyte: HepatocyteState;
+  fidelity: IntracellularFidelity;
   activity: OrganelleActivity;
   flows: CellFlow[];
   organelles: OrganelleReport[];
@@ -373,6 +397,7 @@ export class LivingCell {
   private importFlux = 0;
   private stress: StressAxes = blankStress();
   private hepatocyte: HepatocyteState = blankHepatocyte();
+  private fidelity: IntracellularFidelity = blankFidelity();
   private elapsed = 0;
   private lowAtp = 0;
   private prevStatus: CellSnapshot["status"] = "healthy";
@@ -426,6 +451,7 @@ export class LivingCell {
     this.importFlux = 0;
     this.stress = blankStress();
     this.hepatocyte = blankHepatocyte();
+    this.fidelity = blankFidelity();
     this.act = blankActivity();
     this.flows = [];
     for (const id of ALL_IDS) {
@@ -455,6 +481,7 @@ export class LivingCell {
       atp: 0.78,
       mrna: 0.1,
       protein: 0.08,
+      misfoldedProtein: 0.025,
       foldedProtein: 0.16,
       albumin: 0.18,
       lipids: 0.28,
@@ -464,6 +491,7 @@ export class LivingCell {
       glutathione: 0.82,
       xenobiotic: 0.04,
       detoxified: 0,
+      misroutedCargo: 0.02,
       ros: 0.015,
       waste: 0.025,
       secreted: 0
@@ -531,11 +559,11 @@ export class LivingCell {
       0,
       1
     );
-    const proteotoxic = clamp(0.55 * this.p.protein + 0.45 * this.p.waste + 0.35 * (1 - this.org.ribosome.eff) + 0.3 * (1 - this.org.er.eff), 0, 1);
+    const proteotoxic = clamp(0.45 * this.p.protein + 0.6 * this.p.misfoldedProtein + 0.35 * this.p.waste + 0.35 * (1 - this.org.ribosome.eff) + 0.3 * (1 - this.org.er.eff), 0, 1);
     const genotoxic = clamp(0.55 * oxidative + 0.35 * this.lowAtp / 9 + 0.25 * (1 - this.org.nucleus.eff), 0, 1);
     const membrane = clamp(0.45 * (1 - this.org.membrane.eff) + 0.4 * (1 - this.external.glucose) + 0.35 * energy + 0.25 * cholestatic, 0, 1);
-    const trafficking = clamp(0.35 * this.p.foldedProtein + 0.45 * (1 - this.org.golgi.eff) + 0.35 * proteotoxic + 0.25 * (1 - this.org.cytoskeleton.eff) + 0.22 * cholestatic, 0, 1);
-    const autophagy = clamp(0.75 * this.p.waste + 0.55 * (1 - this.org.lysosome.eff) + 0.3 * oxidative, 0, 1);
+    const trafficking = clamp(0.32 * this.p.foldedProtein + 0.42 * this.p.misroutedCargo + 0.45 * (1 - this.org.golgi.eff) + 0.35 * proteotoxic + 0.25 * (1 - this.org.cytoskeleton.eff) + 0.22 * cholestatic, 0, 1);
+    const autophagy = clamp(0.65 * this.p.waste + 0.35 * this.p.misroutedCargo + 0.55 * (1 - this.org.lysosome.eff) + 0.3 * oxidative, 0, 1);
     const caStress = clamp((this.hepatocyte.cytosolicCa - 0.12) / 0.88, 0, 1);
     const acidStress = clamp((7.12 - this.hepatocyte.cytosolicPh) / 0.5, 0, 1);
     const ionic = clamp(0.55 * (1 - this.org.membrane.eff) + 0.35 * (1 - this.org.er.eff) + 0.6 * energy + 0.25 * caStress + 0.25 * acidStress, 0, 1);
@@ -630,6 +658,49 @@ export class LivingCell {
     };
   }
 
+  private computeFidelity(f: ReturnType<LivingCell["fluxes"]> | null): IntracellularFidelity {
+    if (!f) return blankFidelity();
+    const ratio = (good: number, attempted: number) => clamp(good / Math.max(1e-6, attempted), 0, 1);
+    const lossFlux =
+      f.mrnaErrors +
+      f.translationErrors +
+      f.foldingFailures +
+      f.erRetention +
+      f.golgiMisroute +
+      f.vesicleLost +
+      f.canalicularMiss +
+      f.autophagyMiss;
+    const attempted =
+      f.transcription +
+      f.translation +
+      f.erFolding +
+      f.golgi +
+      f.albuminSynth +
+      f.bileExport +
+      f.lysosome +
+      1e-6;
+    return {
+      transcriptionAccuracy: ratio(f.transcriptionProduct, f.transcription),
+      translationAccuracy: ratio(f.translationProduct, f.translation),
+      foldingYield: ratio(f.erFoldingProduct, f.erFolding),
+      golgiSorting: ratio(Math.max(0, f.golgi - f.golgiMisroute), f.golgi),
+      vesicleDelivery: ratio(Math.max(0, f.golgi + f.albuminSynth - f.vesicleLost), f.golgi + f.albuminSynth),
+      canalicularTargeting: ratio(f.bileExportDelivered, f.bileExport),
+      deliveryQuality: clamp(1 - lossFlux / attempted, 0, 1),
+      lossFlux,
+      loss: {
+        mrnaErrors: f.mrnaErrors,
+        translationErrors: f.translationErrors,
+        foldingFailures: f.foldingFailures,
+        erRetention: f.erRetention,
+        golgiMisroute: f.golgiMisroute,
+        vesicleLost: f.vesicleLost,
+        canalicularMiss: f.canalicularMiss,
+        autophagyMiss: f.autophagyMiss
+      }
+    };
+  }
+
   /** Each organelle's own loop: flux magnitudes this instant (effort × efficiency). */
   private fluxes(p: Pools) {
     const stress = this.stressSignals();
@@ -640,6 +711,8 @@ export class LivingCell {
     const e = (id: OrganelleId) => this.org[id].eff; // how well it is working
     // r(id) = this organelle's OWN internal cycle gain right now (its lifestyle).
     const r = (id: OrganelleId) => rhythmGain(CYCLE[id].shape, this.org[id].phase, CYCLE[id].amp);
+    const jitter = (span = 0.18) => (this.stochastic ? clamp(1 + (this.rand() - 0.5) * span, 0.72, 1.28) : 1);
+    const lost = (flux: number, probability: number) => Math.max(0, flux) * clamp(probability, 0, 0.65);
 
     const hormoneTotal = this.external.insulin + this.external.glucagon + 1e-6;
     const fed = this.external.insulin / hormoneTotal;
@@ -709,7 +782,7 @@ export class LivingCell {
     const bilirubinConj = 0.34 * mm(p.bilirubin, 0.16) * en("er") * e("er") * r("er");
     const bileSynthesis = 0.28 * mm(p.cholesterol + 0.25 * p.bileAcids, 0.36) * en("er") * e("er") * (0.5 + 0.5 * fed) * r("er");
     // Proteasomes are complexes rather than organelles; they are folded into ER/proteostasis.
-    const proteasome = 0.28 * mm(p.protein + p.waste, 0.34) * en("er") * e("er") * responseBrake;
+    const proteasome = 0.28 * mm(p.protein + p.misfoldedProtein + p.waste, 0.34) * en("er") * e("er") * responseBrake;
     // Golgi: package & secrete protein — ships vesicle batches.
     const golgi = 0.6 * mm(p.foldedProtein, 0.4) * cytoskeletalSupport * en("golgi") * e("golgi") * r("golgi");
     const bileExport = 0.42 * mm(p.bileAcids + 0.8 * p.bilirubin, 0.35) * polarity * en("membrane") * e("membrane") * en("golgi") * e("golgi") * cytoskeletalSupport;
@@ -719,6 +792,22 @@ export class LivingCell {
     const cytoskeleton = cytoskeletalSupport * (0.25 + 0.55 * (golgi + importGlc + importAa + lysosome));
     const caHandling = 0.18 * mm(p.atp, 0.2) * en("er") * e("er") * r("er");
     const naKPump = 0.22 * p.atp * en("membrane") * e("membrane") * r("membrane");
+    const mrnaErrors = lost(transcription, (0.012 + 0.12 * stress.genotoxic + 0.08 * (1 - e("nucleus"))) * jitter(0.26));
+    const translationErrors = lost(
+      translation,
+      (0.02 + 0.12 * stress.proteotoxic + 0.08 * (1 - e("ribosome")) + 0.05 * (1 - mm(p.aminoAcids, 0.3))) * jitter(0.32)
+    );
+    const foldingFailures = lost(erFolding, (0.03 + 0.18 * stress.proteotoxic + 0.08 * stress.ionic + 0.12 * (1 - e("er"))) * jitter(0.34));
+    const erRetention = lost(erFolding, (0.018 + 0.12 * stress.trafficking + 0.08 * (1 - e("er"))) * jitter(0.3));
+    const golgiMisroute = lost(golgi, (0.025 + 0.16 * stress.trafficking + 0.12 * (1 - e("golgi")) + 0.08 * (1 - e("cytoskeleton"))) * jitter(0.34));
+    const vesicleLost = lost(golgi + albuminSynth + 0.35 * bileExport, (0.016 + 0.08 * stress.energy + 0.1 * (1 - e("cytoskeleton"))) * jitter(0.36));
+    const canalicularMiss = lost(bileExport, (0.02 + 0.18 * stress.cholestatic + 0.15 * (1 - polarity) + 0.08 * (1 - e("membrane"))) * jitter(0.36));
+    const autophagyMiss = lost(lysosome, (0.018 + 0.14 * stress.autophagy + 0.1 * (1 - e("lysosome"))) * jitter(0.34));
+    const transcriptionProduct = Math.max(0, transcription - mrnaErrors);
+    const translationProduct = Math.max(0, translation - translationErrors);
+    const erFoldingProduct = Math.max(0, erFolding - foldingFailures - erRetention);
+    const golgiDelivered = Math.max(0, golgi - golgiMisroute - 0.55 * vesicleLost);
+    const bileExportDelivered = Math.max(0, bileExport - canalicularMiss);
     // Basal maintenance: the constant cost of being alive.
     const maintenance = 0.36 * p.atp + 0.07 * cytoskeleton + 0.07 * erFolding + 0.05 * peroxisome + 0.08 * naKPump + 0.04 * caHandling;
     const sinusoidalImport = importGlc + importAa + importFa + importAmmonia + importBilirubin + importBileAcids + importXenobiotic;
@@ -761,6 +850,19 @@ export class LivingCell {
       cytoskeleton,
       caHandling,
       naKPump,
+      mrnaErrors,
+      translationErrors,
+      foldingFailures,
+      erRetention,
+      golgiMisroute,
+      vesicleLost,
+      canalicularMiss,
+      autophagyMiss,
+      transcriptionProduct,
+      translationProduct,
+      erFoldingProduct,
+      golgiDelivered,
+      bileExportDelivered,
       sinusoidalImport,
       canalicularExport,
       maintenance
@@ -996,22 +1098,44 @@ export class LivingCell {
         from: "er",
         to: "golgi",
         cargo: "folded protein",
-        value: v(f.erFolding),
+        value: v(f.erFoldingProduct),
         mode: "vesicle",
         etaS: 900,
         producedBy: "ER quality control",
         usedBy: "Golgi sorting"
       },
       {
+        id: "er-proteasome-loss",
+        from: "er",
+        to: "cytosol",
+        cargo: "misfolded protein / ERAD",
+        value: v(f.foldingFailures + f.erRetention),
+        mode: "diffusion",
+        etaS: 30,
+        producedBy: "failed ER folding / retained cargo",
+        usedBy: "proteasome and chaperone quality control"
+      },
+      {
         id: "er-bile-canaliculus",
         from: "er",
         to: "canaliculus",
         cargo: "bile acids / cholesterol",
-        value: v(f.bileExport),
+        value: v(f.bileExportDelivered),
         mode: "carrier",
         etaS: 1,
         producedBy: "smooth ER bile-acid/cholesterol handling",
         usedBy: "canalicular ABC exporters"
+      },
+      {
+        id: "canalicular-miss-lysosome",
+        from: "canaliculus",
+        to: "lysosome",
+        cargo: "missed bile-side cargo",
+        value: v(f.canalicularMiss),
+        mode: "autophagy",
+        etaS: 600,
+        producedBy: "failed canalicular targeting",
+        usedBy: "endosome / lysosome recovery"
       },
       {
         id: "er-bilirubin-canaliculus",
@@ -1073,11 +1197,22 @@ export class LivingCell {
         from: "golgi",
         to: "membrane",
         cargo: "secretory vesicle / membrane protein",
-        value: v(f.golgi),
+        value: v(f.golgiDelivered),
         mode: "motor",
         etaS: 1800,
         producedBy: "Golgi",
         usedBy: "plasma membrane / secretion"
+      },
+      {
+        id: "golgi-misroute-lysosome",
+        from: "golgi",
+        to: "lysosome",
+        cargo: "misrouted cargo",
+        value: v(f.golgiMisroute + f.vesicleLost),
+        mode: "vesicle",
+        etaS: 900,
+        producedBy: "Golgi sorting / motor delivery errors",
+        usedBy: "lysosome cleanup"
       },
       {
         id: "golgi-albumin-sinusoid",
@@ -1211,22 +1346,36 @@ export class LivingCell {
         ammonia: f.importAmmonia + 0.1 * f.translation + 0.12 * f.proteasome + 0.08 * f.lysosome + 0.05 * this.p.aminoAcids - f.ureaCycle - 0.1 * this.p.ammonia,
         urea: f.ureaCycle - 0.28 * this.p.urea,
         atp: dAtp,
-        mrna: f.transcription - 0.15 * this.p.mrna,
-        protein: f.translation - f.erFolding - f.proteasome - 0.04 * this.p.protein,
-        foldedProtein: f.erFolding - f.golgi - 0.45 * f.albuminSynth - 0.04 * this.p.foldedProtein,
-        albumin: f.albuminSynth - 0.24 * this.p.albumin,
+        mrna: f.transcriptionProduct - 0.15 * this.p.mrna,
+        protein: f.translationProduct - f.erFolding - f.proteasome - 0.04 * this.p.protein,
+        misfoldedProtein: f.translationErrors + f.foldingFailures + 0.35 * f.erRetention + 0.01 * this.p.protein - 0.18 * f.proteasome - 0.08 * f.lysosome - 0.025 * this.p.misfoldedProtein,
+        foldedProtein: f.erFoldingProduct - f.golgi - 0.45 * f.albuminSynth - 0.04 * this.p.foldedProtein,
+        albumin: f.albuminSynth - 0.35 * f.vesicleLost - 0.24 * this.p.albumin,
         lipids: f.importFa + f.erLipid - 0.18 * f.peroxisome - 0.16 * f.golgi - 0.05 * this.p.lipids - 0.08 * f.bileSynthesis,
         cholesterol: 0.12 * f.erLipid + 0.08 * f.importFa - f.bileSynthesis - 0.03 * this.p.cholesterol,
-        bileAcids: f.importBileAcids + f.bileSynthesis - f.bileExport - 0.04 * this.p.bileAcids,
-        bilirubin: f.importBilirubin + 0.035 + 0.04 * this.p.waste - f.bilirubinConj - 0.28 * f.bileExport - 0.06 * this.p.bilirubin,
+        bileAcids: f.importBileAcids + f.bileSynthesis - f.bileExportDelivered - 0.04 * this.p.bileAcids,
+        bilirubin: f.importBilirubin + 0.035 + 0.04 * this.p.waste - f.bilirubinConj - 0.28 * f.bileExportDelivered - 0.06 * this.p.bilirubin,
         glutathione: f.glutathioneRegen - 0.42 * f.cypDetox - 0.18 * f.phase2 - 0.12 * f.peroxisome - 0.03 * this.p.glutathione,
         xenobiotic: f.importXenobiotic - f.cypDetox - 0.05 * this.p.xenobiotic,
-        detoxified: 0.45 * f.cypDetox + f.phase2 - 0.2 * this.p.detoxified - 0.18 * f.bileExport,
+        detoxified: 0.45 * f.cypDetox + f.phase2 - 0.2 * this.p.detoxified - 0.18 * f.bileExportDelivered,
+        misroutedCargo: f.golgiMisroute + f.vesicleLost + f.canalicularMiss + f.autophagyMiss + 0.25 * f.erRetention - 0.16 * f.lysosome - 0.08 * this.p.misroutedCargo,
         ros: 0.18 * f.mito + 0.12 * f.cypDetox + 0.08 * f.peroxisome - 0.85 * f.peroxisome - 0.28 * sat(this.p.glutathione, 0.25) * this.p.ros - 0.18 * this.p.ros,
         // waste made by respiration & protein turnover, cleared by the lysosome
         // and exported passively across the membrane (so it stays bounded).
-        waste: 0.18 * f.mito + 0.22 * (f.translation - f.erFolding > 0 ? f.translation - f.erFolding : 0) + 0.04 * this.p.protein + 0.08 * f.cypDetox + 0.02 * this.p.bilirubin - f.lysosome - 0.5 * this.p.waste,
-        secreted: f.golgi + 0.24 * this.p.albumin + 0.2 * this.p.urea + f.bileExport + 0.16 * this.p.detoxified
+        waste:
+          0.18 * f.mito +
+          0.22 * (f.translation - f.erFolding > 0 ? f.translation - f.erFolding : 0) +
+          0.04 * this.p.protein +
+          0.5 * f.mrnaErrors +
+          0.45 * f.translationErrors +
+          0.38 * f.foldingFailures +
+          0.35 * f.vesicleLost +
+          0.2 * f.golgiMisroute +
+          0.08 * f.cypDetox +
+          0.02 * this.p.bilirubin -
+          f.lysosome -
+          0.5 * this.p.waste,
+        secreted: f.golgiDelivered + 0.24 * this.p.albumin + 0.2 * this.p.urea + f.bileExportDelivered + 0.16 * this.p.detoxified
       };
 
       for (const k of Object.keys(d) as (keyof Pools)[]) this.p[k] += dt * d[k];
@@ -1243,14 +1392,17 @@ export class LivingCell {
         this.p.ammonia += w(f.importAmmonia) - w(f.ureaCycle);
         this.p.urea += w(f.ureaCycle);
         this.p.atp += 2.2 * w(f.mito) - w(f.maintenance) - 1.5 * w(f.translation);
-        this.p.protein += w(f.translation) - w(f.erFolding);
-        this.p.foldedProtein += w(f.erFolding) - w(f.golgi);
+        this.p.mrna += w(f.transcriptionProduct) - w(f.mrnaErrors);
+        this.p.protein += w(f.translationProduct) - w(f.erFolding);
+        this.p.misfoldedProtein += w(f.translationErrors) + w(f.foldingFailures) - 0.5 * w(f.proteasome);
+        this.p.foldedProtein += w(f.erFoldingProduct) - w(f.golgi);
         this.p.albumin += w(f.albuminSynth);
         this.p.lipids += w(f.importFa) + w(f.erLipid) - w(f.peroxisome);
-        this.p.bileAcids += w(f.bileSynthesis) - w(f.bileExport);
+        this.p.bileAcids += w(f.bileSynthesis) - w(f.bileExportDelivered);
         this.p.bilirubin += w(f.importBilirubin) - w(f.bilirubinConj);
         this.p.glutathione += w(f.glutathioneRegen) - w(f.cypDetox);
         this.p.xenobiotic += w(f.importXenobiotic) - w(f.cypDetox);
+        this.p.misroutedCargo += w(f.golgiMisroute) + w(f.vesicleLost) + w(f.canalicularMiss) - 0.4 * w(f.lysosome);
         this.p.ros += 0.2 * w(f.mito) - w(f.peroxisome);
         this.p.waste += 0.3 * w(f.mito) - w(f.lysosome) + 0.2 * w(f.proteasome);
       }
@@ -1258,6 +1410,7 @@ export class LivingCell {
       this.clampPools();
       this.stress = this.stressSignals();
       this.hepatocyte = this.computeHepatocyteState(f);
+      this.fidelity = this.computeFidelity(f);
 
       // 2. Imperfection: stress-driven probabilistic faults + repair.
       this.updateHealth(dt, f);
@@ -1269,10 +1422,10 @@ export class LivingCell {
         glycolysis: f.glycolysis + f.glycogenSynth + f.glycogenBreakdown + f.gluconeogenesis,
         mitochondria: f.mito + f.ureaCycle,
         nucleus: f.transcription,
-        er: f.erFolding + f.erLipid + f.cypDetox + f.bilirubinConj + f.bileSynthesis,
-        ribosome: f.translation,
-        golgi: f.golgi + f.albuminSynth + f.bileExport,
-        lysosome: f.lysosome,
+        er: f.erFolding + f.erLipid + f.cypDetox + f.bilirubinConj + f.bileSynthesis + f.foldingFailures + f.erRetention,
+        ribosome: f.translation + f.translationErrors,
+        golgi: f.golgi + f.albuminSynth + f.bileExport + f.golgiMisroute + f.vesicleLost,
+        lysosome: f.lysosome + f.autophagyMiss,
         peroxisome: f.peroxisome,
         cytoskeleton: f.cytoskeleton
       };
@@ -1291,10 +1444,10 @@ export class LivingCell {
       glycolysis: f.glycolysis + f.glycogenSynth + f.glycogenBreakdown + f.gluconeogenesis,
       mitochondria: f.mito + f.ureaCycle,
       nucleus: f.transcription,
-      er: f.erFolding + f.erLipid + f.cypDetox + f.bilirubinConj + f.bileSynthesis,
-      ribosome: f.translation,
-      golgi: f.golgi + f.albuminSynth + f.bileExport,
-      lysosome: f.lysosome,
+      er: f.erFolding + f.erLipid + f.cypDetox + f.bilirubinConj + f.bileSynthesis + f.foldingFailures + f.erRetention,
+      ribosome: f.translation + f.translationErrors,
+      golgi: f.golgi + f.albuminSynth + f.bileExport + f.golgiMisroute + f.vesicleLost,
+      lysosome: f.lysosome + f.autophagyMiss,
       peroxisome: f.peroxisome,
       cytoskeleton: f.cytoskeleton
     };
@@ -1480,6 +1633,10 @@ export class LivingCell {
       importFlux: this.importFlux,
       stress: { ...this.stress },
       hepatocyte: { ...this.hepatocyte },
+      fidelity: {
+        ...this.fidelity,
+        loss: { ...this.fidelity.loss }
+      },
       activity: { ...this.act },
       flows: this.flows.slice(),
       organelles,
@@ -1508,6 +1665,7 @@ export class LivingCell {
     this.p.atp = clamp(this.p.atp, 0, ATP_TOTAL);
     this.p.mrna = Math.max(0, this.p.mrna);
     this.p.protein = Math.max(0, this.p.protein);
+    this.p.misfoldedProtein = Math.max(0, this.p.misfoldedProtein);
     this.p.foldedProtein = Math.max(0, this.p.foldedProtein);
     this.p.albumin = Math.max(0, this.p.albumin);
     this.p.lipids = Math.max(0, this.p.lipids);
@@ -1517,6 +1675,7 @@ export class LivingCell {
     this.p.glutathione = Math.max(0, this.p.glutathione);
     this.p.xenobiotic = Math.max(0, this.p.xenobiotic);
     this.p.detoxified = Math.max(0, this.p.detoxified);
+    this.p.misroutedCargo = Math.max(0, this.p.misroutedCargo);
     this.p.ros = Math.max(0, this.p.ros);
     this.p.waste = Math.max(0, this.p.waste);
     this.p.secreted = Math.max(0, this.p.secreted);
@@ -1568,6 +1727,29 @@ function blankHepatocyte(): HepatocyteState {
     membranePotentialMv: -70,
     sinusoidalImport: 0,
     canalicularExport: 0
+  };
+}
+
+function blankFidelity(): IntracellularFidelity {
+  return {
+    transcriptionAccuracy: 1,
+    translationAccuracy: 1,
+    foldingYield: 1,
+    golgiSorting: 1,
+    vesicleDelivery: 1,
+    canalicularTargeting: 1,
+    deliveryQuality: 1,
+    lossFlux: 0,
+    loss: {
+      mrnaErrors: 0,
+      translationErrors: 0,
+      foldingFailures: 0,
+      erRetention: 0,
+      golgiMisroute: 0,
+      vesicleLost: 0,
+      canalicularMiss: 0,
+      autophagyMiss: 0
+    }
   };
 }
 

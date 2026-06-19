@@ -120,3 +120,26 @@ link back here or to a more specific research file.
   https://godotengine.org/article/dev-snapshot-godot-4-4-dev-1/
 - Apple WebGPU overview:
   https://developer.apple.com/videos/play/wwdc2025/236/
+
+## Systems Biology Toolchain
+
+- Brian simulator:
+  https://briansimulator.org/
+  - Use for equation-based ion/channel/Ca2+ dynamics and generated-code
+    performance experiments. It is not the whole-cell core.
+- libRoadRunner:
+  https://github.com/sys-bio/roadrunner
+  - Use for SBML biochemical network simulation through a C/C++ core with
+    Python bindings.
+- PySB:
+  https://pysb.org/
+  - Use for rule-based biochemical pathway models, especially receptor
+    signaling, protein state changes, and pathway logic that would be too
+    verbose as manually enumerated reactions.
+- PhysiCell:
+  https://physicell.org/
+  - Use as the main candidate for future multicellular/tissue-scale simulation
+    and microenvironment coupling.
+- SBML:
+  https://sbml.org/
+  - Use as the standard model-exchange format for biochemical reaction networks.
