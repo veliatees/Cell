@@ -258,6 +258,10 @@ if (!viewport) {
 }
 
 const viewportElement = viewport;
+const timeScaleBadge = document.createElement("div");
+timeScaleBadge.className = "time-scale-badge";
+timeScaleBadge.style.display = "none";
+viewportElement.append(timeScaleBadge);
 const rightInspectorElement = app.querySelector<HTMLElement>(".inspector--right");
 // --- Live activity report (organelle scene): what each organelle is doing now,
 //     what is moving where, plus an event log written as things actually happen.
@@ -699,6 +703,7 @@ function updateModeControls() {
   }
   if (formulaStackEl) formulaStackEl.style.display = isCell ? "none" : "";
   if (!isCell && tempLabelEl) tempLabelEl.textContent = "Temp (K)";
+  timeScaleBadge.style.display = isCell ? "block" : "none";
 }
 
 function loadScene(id: string) {
@@ -1079,6 +1084,7 @@ function updateOrganelleMotion(t: number) {
 
 function updateReportPanel(s: CellSnapshot) {
   reportPanel.style.display = "flex";
+  timeScaleBadge.textContent = timeScaleDisclosureText();
   const statusEl = reportPanel.querySelector(".report-status");
   if (statusEl) {
     const col = s.status === "dying" ? "#ff8a8a" : s.status === "senescent" ? "#d9a6ff" : s.status === "stressed" ? "#ffcf6b" : "#7ee0a8";
@@ -1099,10 +1105,7 @@ function updateReportPanel(s: CellSnapshot) {
   }
   const timescaleEl = reportPanel.querySelector(".report-timescale");
   if (timescaleEl) {
-    const engineTime = externalEngineSummary ? `Python snapshot t=${Math.round(externalEngineSummary.elapsedS)}s` : "Python snapshot unavailable";
-    timescaleEl.textContent =
-      `Time scale: visual clock ~${CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND} simulated cell-s / real-s; ` +
-      `${engineTime}; pools/fluxes are normalized coarse values, not molecule-by-molecule real time.`;
+    timescaleEl.textContent = timeScaleDisclosureText();
   }
   const rowsEl = reportPanel.querySelector(".report-rows");
   if (rowsEl) {
@@ -1161,6 +1164,14 @@ function updateReportPanel(s: CellSnapshot) {
     }
     while (logEl.childElementCount > 40) logEl.lastElementChild?.remove();
   }
+}
+
+function timeScaleDisclosureText(): string {
+  const engineTime = externalEngineSummary ? `Python snapshot t=${Math.round(externalEngineSummary.elapsedS)}s` : "Python snapshot unavailable";
+  return (
+    `Time scale: visual ~${CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND} simulated cell-s / real-s; ` +
+    `${engineTime}; normalized coarse pools/fluxes.`
+  );
 }
 
 function renderExternalEngineStatus(): string {

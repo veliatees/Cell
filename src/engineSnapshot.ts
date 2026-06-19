@@ -98,7 +98,7 @@ export function engineSnapshotEndpointFromLocation(locationLike: Pick<Location, 
   return url.searchParams.get("engineSnapshot") || "/engine-snapshot.json";
 }
 
-export async function loadEngineSnapshot(url: string, fetcher: SnapshotFetcher = fetch): Promise<EngineSnapshotLoadResult> {
+export async function loadEngineSnapshot(url: string, fetcher: SnapshotFetcher = defaultSnapshotFetcher): Promise<EngineSnapshotLoadResult> {
   try {
     const response = await fetcher(url);
     if (!response.ok) {
@@ -113,6 +113,31 @@ export async function loadEngineSnapshot(url: string, fetcher: SnapshotFetcher =
     const message = err instanceof Error ? err.message : String(err);
     return { status: "missing", url, diagnostic: `Python engine snapshot unavailable (${message})` };
   }
+}
+
+async function defaultSnapshotFetcher(url: string): Promise<SnapshotResponse> {
+  if (typeof fetch === "function") {
+    return fetch(url);
+  }
+  if (typeof XMLHttpRequest !== "undefined") {
+    return new Promise((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.open("GET", url, true);
+      request.responseType = "json";
+      request.onload = () => {
+        const parsed = request.response ?? JSON.parse(request.responseText);
+        resolve({
+          ok: request.status >= 200 && request.status < 300,
+          status: request.status,
+          statusText: request.statusText,
+          json: async () => parsed
+        });
+      };
+      request.onerror = () => reject(new Error("XMLHttpRequest failed"));
+      request.send();
+    });
+  }
+  throw new Error("No HTTP JSON loader is available in this runtime.");
 }
 
 export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string): EngineSnapshotSummary {

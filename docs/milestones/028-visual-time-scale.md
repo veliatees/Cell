@@ -9,7 +9,8 @@ engine and visual model.
 ## What Was Added
 
 - The organelle scene now advances with a frame-rate independent visual clock.
-- The UI shows a time-scale note in the hepatocyte activity panel.
+- The UI shows a time-scale badge over the cell viewport and repeats the note
+  in the hepatocyte activity panel.
 - The note distinguishes:
   - accelerated TypeScript visual clock;
   - static Python engine snapshot time;
