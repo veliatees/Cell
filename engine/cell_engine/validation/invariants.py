@@ -224,6 +224,18 @@ def validate_state(definition: CellDefinition, state: CellState) -> None:
         if any((not _finite(value) or value < 0) for value in result.species.values()):
             raise ValidationError(f"Pathway result {result.id} species values must be finite and non-negative")
 
+    for result in state.signaling_results:
+        if not result.id or not result.model_id:
+            raise ValidationError("Signaling result id and model_id cannot be empty")
+        if not result.engine:
+            raise ValidationError(f"Signaling result {result.id} must declare engine")
+        if not result.provenance:
+            raise ValidationError(f"Signaling result {result.id} must declare provenance")
+        if any((not _finite(value) or value < 0) for value in result.markers.values()):
+            raise ValidationError(f"Signaling result {result.id} markers must be finite and non-negative")
+        if any((not _finite(value) or value < 0) for value in result.actions.values()):
+            raise ValidationError(f"Signaling result {result.id} actions must be finite and non-negative")
+
 
 def _assert_unique(label: str, ids: list[str]) -> None:
     seen: set[str] = set()

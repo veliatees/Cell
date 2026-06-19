@@ -968,6 +968,8 @@ Acceptance:
 
 ### M020 - PySB rule-based signaling
 
+Status: implemented in [Milestone 020](milestones/020-rule-based-signaling.md).
+
 Scope:
 
 - Receptor signaling veya apoptosis switch icin PySB model.
