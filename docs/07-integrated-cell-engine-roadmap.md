@@ -998,6 +998,8 @@ Acceptance:
 
 ### M022 - TS external snapshot mode
 
+Status: implemented in [Milestone 022](milestones/022-ts-external-snapshot-mode.md).
+
 Scope:
 
 - TS visualizer engine snapshot okur.

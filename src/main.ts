@@ -58,6 +58,7 @@ import {
   type ReactionSystem
 } from "./physics/reactions";
 import { LivingCell, type OrganelleActivity, type OrganelleId, type CellFlow, type CellSnapshot } from "./physics/cell";
+import { engineSnapshotEndpointFromLocation, loadEngineSnapshot, type EngineSnapshotSummary } from "./engineSnapshot";
 import "./styles.css";
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -266,6 +267,7 @@ reportPanel.style.display = "none";
 reportPanel.innerHTML =
   '<div class="report-panel__head">Hepatocyte activity - live</div>' +
   '<div class="report-status"></div>' +
+  '<div class="external-snapshot"></div>' +
   '<div class="report-rows"></div>' +
   '<div class="report-flow__title">Organelle traffic</div>' +
   '<div class="report-flows"></div>' +
@@ -273,6 +275,23 @@ reportPanel.innerHTML =
   '<div class="report-log"></div>';
 (rightInspectorElement ?? viewportElement).append(reportPanel);
 let lastEventId = 0;
+let externalEngineSummary: EngineSnapshotSummary | null = null;
+let externalEngineDiagnostic = "Python engine snapshot loading...";
+const externalEngineSnapshotUrl = engineSnapshotEndpointFromLocation(window.location);
+
+async function refreshExternalEngineSnapshot() {
+  const result = await loadEngineSnapshot(externalEngineSnapshotUrl);
+  if (result.status === "loaded") {
+    externalEngineSummary = result.summary;
+    externalEngineDiagnostic = "";
+  } else {
+    externalEngineSummary = null;
+    externalEngineDiagnostic = `${result.diagnostic}; TS visual model remains active.`;
+  }
+}
+
+void refreshExternalEngineSnapshot();
+window.setInterval(() => void refreshExternalEngineSnapshot(), 5000);
 
 const simulation = new IonSimulation();
 let water: WaterSystem | null = null;
@@ -1020,6 +1039,10 @@ function updateReportPanel(s: CellSnapshot) {
       `ROS ${s.pools.ros.toFixed(2)} · waste ${s.pools.waste.toFixed(2)} · ` +
       `sen ${s.senescenceRiskPerHour.toFixed(2)}%/h · apo ${s.apoptosisRiskPerHour.toFixed(2)}%/h${survival} · t ${Math.round(s.elapsedS)}s`;
   }
+  const externalEl = reportPanel.querySelector(".external-snapshot");
+  if (externalEl) {
+    externalEl.innerHTML = renderExternalEngineStatus();
+  }
   const rowsEl = reportPanel.querySelector(".report-rows");
   if (rowsEl) {
     rowsEl.innerHTML = s.organelles
@@ -1077,6 +1100,27 @@ function updateReportPanel(s: CellSnapshot) {
     }
     while (logEl.childElementCount > 40) logEl.lastElementChild?.remove();
   }
+}
+
+function renderExternalEngineStatus(): string {
+  if (!externalEngineSummary) {
+    return `<span class="external-snapshot__label">Python engine</span><span class="external-snapshot__diag">${externalEngineDiagnostic}</span>`;
+  }
+  const s = externalEngineSummary;
+  const cargo = Object.entries(s.cargo)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([state, count]) => `${state} ${count}`)
+    .join(" · ");
+  const vm = s.membranePotentialMv == null ? "Vm -" : `Vm ${s.membranePotentialMv.toFixed(1)}mV`;
+  const pump = s.pumpActivity == null ? "pump -" : `pump ${(s.pumpActivity * 100).toFixed(0)}%`;
+  const ca = s.cytosolicCa == null ? "Ca -" : `Ca ${s.cytosolicCa.toFixed(2)}`;
+  const atp = s.atp == null ? "ATP -" : `ATP ${s.atp.toFixed(2)}`;
+  const flux = s.topFluxes.length ? ` · flux ${s.topFluxes.join(", ")}` : "";
+  return (
+    `<span class="external-snapshot__label">Python engine</span>` +
+    `<span>${s.cellType} · ${s.status} · ${atp} · ${ca} · ${vm} · ${pump} · cargo ${cargo || "none"} · ` +
+    `SBML ${s.pathwayCount} · signaling ${s.signalingCount}${flux}</span>`
+  );
 }
 
 const hoverRaycaster = new THREE.Raycaster();

@@ -94,6 +94,7 @@ barrier/transport thinking:
 - [Milestone 019: SBML/libRoadRunner bridge](docs/milestones/019-sbml-roadrunner-bridge.md)
 - [Milestone 020: Rule-based signaling](docs/milestones/020-rule-based-signaling.md)
 - [Milestone 021: Brian2 membrane/Ca module](docs/milestones/021-brian2-membrane-calcium.md)
+- [Milestone 022: TS external snapshot mode](docs/milestones/022-ts-external-snapshot-mode.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)
