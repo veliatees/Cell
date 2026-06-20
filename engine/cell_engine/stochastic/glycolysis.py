@@ -38,6 +38,14 @@ GLYCOLYSIS_SOURCES: dict[str, SourceReference] = {
         date_verified=DATE_VERIFIED,
         notes="Pathway topology, cofactor stoichiometry, and near-equilibrium vs committed steps.",
     ),
+    "glycolysis_flux_control": SourceReference(
+        id="glycolysis_flux_control",
+        title="Near-equilibrium vs non-equilibrium glycolytic steps and flux control",
+        url="https://www.ncbi.nlm.nih.gov/books/NBK482303/",
+        source_type="textbook",
+        date_verified="2026-06-21",
+        notes="Seven glycolytic steps (PGI, aldolase, TPI, GAPDH, PGK, PGM, enolase) have dG'0 ~ -2.5..+2.5 kJ/mol -> near-equilibrium and freely reversible. Only hexokinase/glucokinase, PFK1 and pyruvate kinase are far from equilibrium and control flux. So the near-equilibrium step rates are fast vs flux and NON-flux-determining; their absolute magnitude is not identifiable from pathway flux.",
+    ),
 }
 
 # Enzyme concentration assumption shared by the committed-step Vmax terms.
@@ -79,11 +87,15 @@ def _pyruvate_kinase() -> Reaction:
     )
 
 
-# Near-equilibrium steps: modelled as fast forward mass-action. The rate
-# constants are LUMPED placeholders (confidence ~0.2) chosen so the pathway
-# carries flux; correctness is enforced by the stoichiometric conservation laws,
-# not by these values. Full reversible thermodynamics is a later refinement.
-_FAST = "lehninger_glycolysis"
+# The seven near-equilibrium steps (PGI, aldolase, TPI, GAPDH, PGK, PGM, enolase)
+# have dG'0 ~ 0 and are freely reversible; flux is set by the three far-from-
+# equilibrium steps (glucokinase, PFK1, pyruvate kinase). So these rate constants
+# are NOT measured values and are NOT meant to be: by the biochemistry, their
+# magnitude is fast-vs-flux and non-flux-determining (non-identifiable from
+# pathway flux). They encode "fast near-equilibrium relaxation", grounded in
+# glycolysis_flux_control; correctness is enforced by the conservation laws.
+_FAST = "glycolysis_flux_control"
+_NEQ = "near-equilibrium (dG'0~0); rate fast vs flux, non-flux-determining (not a measured value)"
 
 
 def build_glycolysis_network(volume_l: float) -> ReactionNetwork:
@@ -91,9 +103,11 @@ def build_glycolysis_network(volume_l: float) -> ReactionNetwork:
 
     Cofactor stoichiometry is exact: 2 ATP invested (GK, PFK1), 4 ATP produced
     (2x PGK, 2x PK), 2 NADH produced (2x GAPDH). Inorganic phosphate is omitted
-    in v1 (GAPDH written without Pi); committed steps GK/PFK1/PK use grounded
-    cooperative kinetics, the seven near-equilibrium steps use fast forward
-    mass-action placeholders.
+    in v1 (GAPDH written without Pi). The three flux-controlling steps
+    (GK/PFK1/PK) use literature-grounded kinetics; the seven near-equilibrium
+    steps are modelled as fast reversible-near-equilibrium relaxation whose rate
+    magnitude does not control flux (grounded in glycolysis_flux_control), not as
+    invented kinetic constants.
     """
     species = (
         "glucose", "glucose_6_phosphate", "fructose_6_phosphate",
@@ -105,23 +119,23 @@ def build_glycolysis_network(volume_l: float) -> ReactionNetwork:
     reactions: tuple[Reaction, ...] = (
         glucokinase_reaction(enzyme_concentration_M=_ENZYME_M),
         mass_action("phosphoglucose_isomerase", {"glucose_6_phosphate": 1},
-                    {"fructose_6_phosphate": 1}, 20.0, source_id=_FAST, notes="LUMPED fast near-equilibrium."),
+                    {"fructose_6_phosphate": 1}, 20.0, source_id=_FAST, notes=_NEQ),
         _phosphofructokinase(),
         mass_action("aldolase_B", {"fructose_1_6_bisphosphate": 1},
                     {"dihydroxyacetone_phosphate": 1, "glyceraldehyde_3_phosphate": 1},
-                    15.0, source_id=_FAST, notes="LUMPED: splits hexose into two trioses."),
+                    15.0, source_id=_FAST, notes="Near-equilibrium; splits hexose into two trioses. " + _NEQ),
         mass_action("triosephosphate_isomerase", {"dihydroxyacetone_phosphate": 1},
-                    {"glyceraldehyde_3_phosphate": 1}, 50.0, source_id=_FAST, notes="LUMPED fast near-equilibrium."),
+                    {"glyceraldehyde_3_phosphate": 1}, 50.0, source_id=_FAST, notes=_NEQ),
         mass_action("gapdh", {"glyceraldehyde_3_phosphate": 1, "NAD_plus": 1},
                     {"bisphosphoglycerate_1_3": 1, "NADH": 1}, 1.0e6, source_id=_FAST,
-                    notes="LUMPED bimolecular; Pi omitted in v1. Couples NAD+->NADH."),
+                    notes="Near-equilibrium; Pi omitted in v1. Couples NAD+->NADH. " + _NEQ),
         mass_action("phosphoglycerate_kinase", {"bisphosphoglycerate_1_3": 1, "ADP": 1},
                     {"phosphoglycerate_3": 1, "ATP": 1}, 1.0e6, source_id=_FAST,
-                    notes="LUMPED: first ATP-producing (substrate-level) step."),
+                    notes="Near-equilibrium; first ATP-producing (substrate-level) step. " + _NEQ),
         mass_action("phosphoglycerate_mutase", {"phosphoglycerate_3": 1},
-                    {"phosphoglycerate_2": 1}, 30.0, source_id=_FAST, notes="LUMPED fast near-equilibrium."),
+                    {"phosphoglycerate_2": 1}, 30.0, source_id=_FAST, notes=_NEQ),
         mass_action("enolase", {"phosphoglycerate_2": 1},
-                    {"phosphoenolpyruvate": 1}, 30.0, source_id=_FAST, notes="LUMPED; H2O omitted."),
+                    {"phosphoenolpyruvate": 1}, 30.0, source_id=_FAST, notes="Near-equilibrium; H2O omitted. " + _NEQ),
         _pyruvate_kinase(),
     )
     return ReactionNetwork(species=species, reactions=reactions, volume_l=volume_l)

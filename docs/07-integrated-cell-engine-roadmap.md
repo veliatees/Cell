@@ -1157,6 +1157,41 @@ Acceptance:
 - Python cargo packet state'i gorselde tek tek vesicle/packet olarak izlenebilir.
 - Kucuk metabolitler deterministic ray gibi gosterilmez.
 
+## 14.5 Gerceklesen ilerleme: cell-scale stochastic engine (M030–M043)
+
+> Numara notu: Yukaridaki "M030 - Cargo packet visual" planlanmis bir GORSEL
+> milestone'du. Gercek gelisim M030+ numaralarini bilimsel cekirdek icin
+> kullandi; o gorsel is "M029 membrane protein visual reality" + fenestrated
+> sinusoid calismasi icinde kismen karsilandi. Asagidaki M030–M043 fiilen
+> uygulanmis, test edilmis ve dokumante edilmis hali (bkz. `docs/milestones/`).
+
+Bu blok, roadmap'in vizyonunu (ozellikle Kural #6: hybrid stochastic engine)
+gercege ceviren tamamlanmis isi kaydeder. Tum motor suiti **128/128 test gecer**.
+
+- **M030 — Real-units foundation.** Kaynakli hepatocyte hacmi + konsantrasyon↔
+  molekul sayisi donusumu + tur kayit defteri.
+- **M031 — Stochastic reaction core.** Kesin Gillespie SSA + chemical Langevin
+  (CLE), analitik sonuclara (Poisson, binom, Hill) karsi dogrulandi.
+- **M032 — Real units bound into a running model.**
+- **M033 — Full glycolysis** with literature enzyme kinetics + korunum yasalari.
+- **M034 — Central dogma** (gene→mRNA→protein), translational bursting emergent.
+- **M035 — Expression-coupled metabolism** (compose_networks; ifade Vmax'i surer).
+- **M036 — Cell cycle / growth / division (binomial) / cancer.**
+- **M037 — Validation harness vs measured data** (5/5 hedef araликta).
+- **M038 — Coverage: urea cycle + glutathione redox** (+ GSH:GSSG hedefi).
+- **M039 — Unified whole cell** (glikoliz+ure+redoks+ifade tek aginda; hybrid).
+- **M040 — Spatial reaction–diffusion** (morfojen gradyani λ=√(D/k)).
+- **M041 — Calibration / ML layer** (placeholder→fitted, bisection fit).
+- **M042 — Host–pathogen: viral infection** (giris→replikasyon→assembly; sitopatik).
+- **M043 — Multicellular tissue** (paylasilan sinusoid; kolektif amonyak temizligi).
+
+### Hala iskelet veya baslanmamis (bir sonraki kampanya)
+- SBML/libRoadRunner (M019), PySB (M020), Brian2 (M021), PhysiCell (M024) koprü-
+  leri ic-yaklasim halinde; gercek dis-kutuphane entegrasyonu bekliyor.
+- Derinlik: kaynakli per-enzyme kinetik (HEPATOKIN1 seviyesi), 3-B stochastic
+  RDME, bolunmede hacim dinamigi, gercek checkpoint devreleri, innate immun
+  cevap, zonation, ve daha genis validasyon (omics/perturbation).
+
 ## 15. Ilk uygulanacak teknik kararlar
 
 1. Python package eklenecek ama TS app korunacak.

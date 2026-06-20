@@ -1,8 +1,18 @@
-# Roadmap — atoms → cell
+# Roadmap — atoms → cell  ⚠️ LEGACY / SUPERSEDED
 
-This is the living plan. It records what is done, what comes next, and the
-principles that keep the project honest. A fresh session should read this file
-first, then continue from "Next up".
+> **This roadmap is no longer active.** It describes the project's original
+> bottom-up "atom → molecule → membrane → cell" phase (M001–M009), which proved
+> computationally unrealistic on consumer hardware. The project pivoted to the
+> **cell scale**, where the real work now happens: a source-grounded, real-units,
+> hybrid-stochastic hepatocyte engine. The active plan is
+> [docs/07-integrated-cell-engine-roadmap.md](07-integrated-cell-engine-roadmap.md),
+> and progress through **M030–M043** (stochastic core, real pathways, central
+> dogma, whole-cell integration, validation, spatial diffusion, calibration,
+> host–pathogen, tissue) is recorded in the milestone docs and the README.
+> The molecular-scale milestones below remain valid as background/zoom-in scenes.
+
+This was the living plan for the molecular phase. It records what was done there,
+and the principles that still keep the project honest.
 
 ## Working principles (do not break these)
 

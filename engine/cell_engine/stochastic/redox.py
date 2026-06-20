@@ -19,7 +19,7 @@ REDOX_SOURCES: dict[str, SourceReference] = {
 }
 
 
-def build_redox_network(volume_l: float) -> ReactionNetwork:
+def build_redox_network(volume_l: float, *, reductase_rate: float = 2.0e4) -> ReactionNetwork:
     """Glutathione antioxidant cycle coupled to NADPH.
 
     - Glutathione peroxidase: 2 GSH + ROS -> GSSG (detoxifies ROS)
@@ -34,7 +34,7 @@ def build_redox_network(volume_l: float) -> ReactionNetwork:
     reactions: tuple[Reaction, ...] = (
         mass_action("glutathione_peroxidase", {"GSH": 2, "ROS": 1}, {"GSSG": 1}, 5.0e5,
                     source_id="glutathione_redox", notes="2 GSH neutralize ROS, forming GSSG."),
-        mass_action("glutathione_reductase", {"GSSG": 1, "NADPH": 1}, {"GSH": 2, "NADP_plus": 1}, 2.0e4,
+        mass_action("glutathione_reductase", {"GSSG": 1, "NADPH": 1}, {"GSH": 2, "NADP_plus": 1}, reductase_rate,
                     source_id="glutathione_redox", notes="LUMPED finite GR capacity: NADPH-powered GSSG -> 2 GSH recharge."),
         mass_action("nadph_regeneration", {"NADP_plus": 1}, {"NADPH": 1}, 5.0,
                     source_id="glutathione_redox", notes="LUMPED PPP/G6PD regenerating NADPH."),
