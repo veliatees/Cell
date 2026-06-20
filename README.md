@@ -1,27 +1,52 @@
 # Cell
 
-Research-first interactive simulation of biological life from physical foundations:
-atom -> molecule -> membrane -> organelle -> cell -> tissue -> organ.
+A research-first, source-grounded simulation of a **hepatocyte (liver cell)**,
+built the way the whole-cell modelling field builds them: a stochastic, real-units
+biochemical engine, validated against measured data, with an interactive 3-D scene
+on top.
 
-The project is intentionally multiscale. A single first-principles simulation from
-quantum electrons to a full organ is not computationally realistic on consumer
-hardware, so the system should use layered models that exchange state through
-well-defined inputs and outputs.
+The project began as a bottom-up "atom → molecule → membrane → cell" experiment.
+That proved computationally unrealistic on consumer hardware (as it is for every
+serious effort), so the work pivoted to the **cell scale** — exactly where E-Cell,
+Virtual Cell, the Karr/JCVI whole-cell models, and HEPATOKIN1 operate. The old
+molecular-scale pieces remain as background/zoom-in scenes, not the focus.
 
 ## What It Is Now
 
-A source-grounded path from physical building blocks to a hepatocyte-first cell
-prototype: atom → ion → bond → water → solvation → diffusion → membrane →
-transport → organelle network → polarized hepatocyte scene.
+A running, hepatocyte-scale **stochastic kinetic cell**, in real units, with a
+first layer of validation against measured biology.
 
-The app opens directly on a coarse-grained **hepatocyte-scale cell**. It now
-shows a sinusoidal/basolateral blood-facing vessel domain, a canalicular/apical
-bile-export domain, true-size plasma-membrane protein footprints with density
-LOD, stochastic intracellular cargo packets, organelle activity cycles, and a
-live Python-engine snapshot bridge.
+The Python engine (`engine/cell_engine`) now contains:
 
-This is not yet a predictive digital twin. It is a layered model with explicit
-assumptions, validation hooks, and visible biological boundaries.
+- **Real units** — concentrations and molecule counts tied to a grounded
+  hepatocyte volume (M030).
+- **A stochastic reaction core** — exact Gillespie SSA for low-copy species and
+  the chemical Langevin equation (SDE) for high-copy species, verified against
+  analytic results (M031).
+- **Real pathways** — full glycolysis with literature enzyme kinetics, the urea
+  cycle, and the glutathione/NADPH redox couple, each with exact conservation
+  laws (M033, M038).
+- **Central dogma** — stochastic gene → mRNA → protein expression that reproduces
+  translational bursting (M034).
+- **A unified whole cell** — all of the above composed into one network that grows,
+  expresses genes, runs its urea cycle, divides (partitioning real molecule
+  counts), and can be pushed into uncontrolled (cancer-like) proliferation
+  (M036, M039).
+- **Validation** — emergent outputs checked against measured hepatocyte values
+  (energy charge, ATP, ATP:ADP, glucokinase glucose sensing, GSH:GSSG); currently
+  **5/5 targets within the measured physiological range** (M037, M038).
+- **Spatial reaction–diffusion** — a first non-well-mixed layer reproducing the
+  analytic morphogen gradient `λ = √(D/k)` (M040).
+
+The browser scene (TypeScript + Three.js) renders a polarized hepatocyte with a
+**fenestrated sinusoidal endothelium** (sieve-plate pores, LSEC nuclei), a
+canalicular bile groove, true-size membrane protein footprints, and blood-side
+cargo crossing the endothelium through many fenestrae.
+
+This is **not** a predictive digital twin. It is an early-stage, source-grounded
+model: the architecture is now field-aligned and a few behaviours are validated,
+but coverage is still a small fraction of a real hepatocyte and most rate
+constants are still provisional. See the honest accounting under "Status" below.
 
 ## Run The Prototype
 
@@ -36,19 +61,13 @@ lysosome/endosome, peroxisome, ribosomes, glycogen granules, plasma-membrane
 transport proteins, a sinusoidal blood-facing vessel, and a canalicular bile
 groove.
 
-Below it, zoom-in scenes still show the rules underneath: the molecular-scale
-lipid vesicle, ion, water, solvation, diffusion, membrane, and chemistry
-building blocks. Every scale is coarse-grained but **grounded**: parameters and
-sizes trace down to measured atomic/chemical/biological data where available
-(see [docs/06-one-reality.md](docs/06-one-reality.md)).
-
-The models are source-backed, not tuned. For Na–Cl, ion masses, ionic radii, the
-Coulomb constant, and the short-range Pauli repulsion all come from published
-measurements, so the simulated bond relaxes to the experimental 0.236 nm bond
-length. Water uses the SPC/E model (Berendsen et al. 1987) with a from-scratch
-rigid-body engine; it reproduces the 2.35 D dipole and forms a dimer at the
-correct O–O distance (~0.273 nm). Diffusion, solvation, and membrane transport
-are also covered by tests. See [docs/sources.md](docs/sources.md).
+Below it, **legacy zoom-in scenes** from the original molecular-scale phase are
+kept as background: the lipid vesicle, ion, water (SPC/E), solvation, diffusion,
+membrane, and chemistry building blocks. These are no longer the project's focus —
+the science now lives in the cell-scale stochastic engine — but they remain
+source-grounded and are useful for intuition. See
+[docs/06-one-reality.md](docs/06-one-reality.md) and
+[docs/sources.md](docs/sources.md).
 
 ## Verify
 
@@ -57,6 +76,14 @@ npm test
 npm run build
 python -m unittest discover -s engine/tests -t engine
 ```
+
+To print the validation scorecard (model vs measured hepatocyte data):
+
+```bash
+PYTHONPATH=engine python -c "from cell_engine.stochastic.validation import run_validation, format_report; print(format_report(run_validation()))"
+```
+
+> The engine targets Python 3.11+ (it uses `datetime.UTC`).
 
 ## Current Target Cell Type
 
@@ -77,23 +104,30 @@ Current browser features include:
 - explicit visual time-scale disclosure so the accelerated scene is not confused
   with real-time microscopy.
 
-Major missing pieces remain:
+## Status — honest accounting
 
-- calibrated hepatocyte pathway kinetics and copy-number tables;
-- real osmotic, electrophysiological and calcium dynamics;
-- mechanically realistic cytoplasm/cytoskeleton and organelle contact sites;
-- full receptor/endocytosis/secretory packet state visualization;
-- virus/bacteria entry, innate immune response and host-pathogen coupling;
-- validation against real microscopy, omics and perturbation data.
+What is real now: the engine does the *right kind* of thing the field does
+(hybrid stochastic kinetics in real units), and a handful of behaviours are
+**validated** against measured hepatocyte data (5/5 targets in range). The full
+test suite covers the stochastic core, every pathway's conservation laws, gene
+expression statistics, the whole-cell run, and the spatial solver.
 
-The earlier epithelial notes still matter as background for polarity and
-barrier/transport thinking:
+What is still missing (the road ahead is depth, not a new approach):
 
-- inside vs outside
-- apical vs basolateral surfaces
-- transcellular and paracellular transport
-- tight junctions, adherens junctions, desmosomes, and basal lamina
-- nutrients, ions, water, signals, waste, force, and energy exchange
+- most rate constants are still provisional placeholders, not curated per-enzyme
+  literature kinetics (HEPATOKIN1-level coverage is hundreds of grounded reactions);
+- coverage is a small fraction of a hepatocyte — lipid metabolism, the pentose
+  phosphate pathway, signalling, and ion/calcium electrophysiology are not yet in;
+- the spatial layer is 1-D and deterministic (not 3-D stochastic RDME), and is not
+  yet wired into the whole-cell network;
+- volume dynamics at division, real cell-cycle checkpoint circuitry (CDK/cyclin/p53),
+  and organelle-resolved geometry are not modelled;
+- no host–pathogen (virus/bacteria) coupling or multicellular tissue yet;
+- validation is 5 checkpoints, not a broad comparison against omics/perturbation data.
+
+The earlier epithelial notes (inside vs outside; apical vs basolateral;
+transcellular/paracellular transport; tight/adherens junctions, desmosomes, basal
+lamina) remain useful background for polarity and barrier thinking.
 
 ## Documentation Map
 
@@ -133,6 +167,17 @@ barrier/transport thinking:
 - [Milestone 027: Engine-driven visual bridge](docs/milestones/027-engine-driven-visual-bridge.md)
 - [Milestone 028: Visual time-scale disclosure](docs/milestones/028-visual-time-scale.md)
 - [Milestone 029: Membrane protein visual reality](docs/milestones/029-membrane-protein-visual-reality.md)
+- [Milestone 030: Real-units / copy-number foundation](docs/milestones/030-real-units-foundation.md)
+- [Milestone 031: Stochastic reaction core (SSA + CLE)](docs/milestones/031-stochastic-reaction-core.md)
+- [Milestone 032: Binding real units into a running cell model](docs/milestones/032-real-units-engine-binding.md)
+- [Milestone 033: Full glycolysis with real per-enzyme kinetics](docs/milestones/033-glycolysis-real-kinetics.md)
+- [Milestone 034: Central dogma (gene → mRNA → protein)](docs/milestones/034-central-dogma.md)
+- [Milestone 035: Scaling scope by integration (expression-coupled metabolism)](docs/milestones/035-expression-coupled-scope.md)
+- [Milestone 036: Cell states, growth, division, and cancer](docs/milestones/036-cell-cycle-division-cancer.md)
+- [Milestone 037: Validation against measured hepatocyte data](docs/milestones/037-validation-against-measured-data.md)
+- [Milestone 038: Coverage — urea cycle + glutathione redox](docs/milestones/038-coverage-urea-redox.md)
+- [Milestone 039: Integration — the unified whole cell](docs/milestones/039-whole-cell-integration.md)
+- [Milestone 040: Spatial reaction–diffusion](docs/milestones/040-spatial-reaction-diffusion.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)

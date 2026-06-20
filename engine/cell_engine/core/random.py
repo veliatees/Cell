@@ -15,3 +15,11 @@ class EngineRng:
     def random(self) -> float:
         return self._random.random()
 
+    def expovariate(self, rate: float) -> float:
+        """Exponential waiting time with the given total rate (for Gillespie SSA)."""
+        return self._random.expovariate(rate)
+
+    def gauss(self, mu: float = 0.0, sigma: float = 1.0) -> float:
+        """Normal draw for the chemical Langevin (Euler-Maruyama) integrator."""
+        return self._random.gauss(mu, sigma)
+

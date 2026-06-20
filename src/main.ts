@@ -324,6 +324,8 @@ type FlowPacket = {
   seed: number;
   speedScale: number;
   wander: number;
+  from?: THREE.Vector3; // per-packet origin (e.g. a specific sinusoid fenestra)
+  to?: THREE.Vector3;   // per-packet destination
 };
 type FlowVisual = {
   id: string;
@@ -339,6 +341,9 @@ type FlowVisual = {
 };
 const flowVisuals: FlowVisual[] = [];
 let organelleAnchors: Record<string, THREE.Vector3> = {};
+// World positions (group space) of sinusoidal endothelial fenestrae. Blood-side
+// flows cross into the cell through these many pores instead of one anchor.
+let sinusoidFenestrae: THREE.Vector3[] = [];
 type MotionTarget = {
   object: THREE.Object3D;
   base: THREE.Vector3;
@@ -1132,11 +1137,22 @@ function packetWander(mode: CellFlow["mode"]) {
 function buildCellFlowVisuals(parent: THREE.Group) {
   flowVisuals.length = 0;
   const index = Object.entries(FLOW_DEFS);
+  // Blood-side endpoints ("sinusoid"/"outside") resolve to a specific fenestra,
+  // chosen deterministically per key, so import/export crosses the endothelium at
+  // many pores instead of a single anchor point.
+  const resolveEndpoint = (name: string, key: string, fallback: THREE.Vector3) => {
+    if ((name === "sinusoid" || name === "outside") && sinusoidFenestrae.length) {
+      return sinusoidFenestrae[Math.floor(flowHashUnit(key) * sinusoidFenestrae.length)];
+    }
+    return fallback;
+  };
   for (let i = 0; i < index.length; i += 1) {
     const [id, def] = index[i];
-    const from = organelleAnchors[def.from];
-    const to = organelleAnchors[def.to];
-    if (!from || !to) continue;
+    const fromBase = organelleAnchors[def.from];
+    const toBase = organelleAnchors[def.to];
+    if (!fromBase || !toBase) continue;
+    const from = resolveEndpoint(def.from, `${id}:from`, fromBase);
+    const to = resolveEndpoint(def.to, `${id}:to`, toBase);
     const curve = buildFlowCurve(from, to, id, i, 0);
     const lineGeo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(46));
     const lineMat = new THREE.LineBasicMaterial({ color: def.color, transparent: true, opacity: 0.012 });
@@ -1159,15 +1175,21 @@ function buildCellFlowVisuals(parent: THREE.Group) {
       const particle = new THREE.Mesh(new THREE.SphereGeometry(0.055 + packetIndex * 0.006, 12, 8), particleMat);
       particle.userData.label = `${def.from} -> ${def.to} cargo packet; route is resampled with cytoplasmic drift`;
       parent.add(particle);
+      // Spread each flow's packets across nearby fenestrae so they enter/exit
+      // through a cluster of pores, not one shared point.
+      const pFrom = resolveEndpoint(def.from, `${id}:from:${packetIndex}`, from);
+      const pTo = resolveEndpoint(def.to, `${id}:to:${packetIndex}`, to);
       packets.push({
-        curve: buildFlowCurve(from, to, id, seed, packetIndex),
+        curve: buildFlowCurve(pFrom, pTo, id, seed, packetIndex),
         particle,
         particleMat,
         offset: (i * 0.173 + packetIndex * 0.237 + flowHashUnit(`${id}:${seed}:offset`) * 0.19) % 1,
         lastCycle: -1,
         seed,
         speedScale: 0.72 + flowHashUnit(`${id}:${seed}:speed`) * 0.75,
-        wander: packetWander(def.mode) * (0.55 + flowHashUnit(`${id}:${seed}:wander`) * 0.9)
+        wander: packetWander(def.mode) * (0.55 + flowHashUnit(`${id}:${seed}:wander`) * 0.9),
+        from: pFrom.clone(),
+        to: pTo.clone()
       });
     }
     flowVisuals.push({
@@ -1206,7 +1228,7 @@ function updateFlowVisuals(s: CellSnapshot) {
       const cycle = Math.floor(rawT);
       if (cycle !== packet.lastCycle) {
         packet.lastCycle = cycle;
-        packet.curve = buildFlowCurve(visual.from, visual.to, visual.id, packet.seed, cycle);
+        packet.curve = buildFlowCurve(packet.from ?? visual.from, packet.to ?? visual.to, visual.id, packet.seed, cycle);
       }
       const t = rawT % 1;
       const pos = packet.curve.getPointAt(t);
@@ -2314,7 +2336,7 @@ function buildOrganelleScene() {
     opacity: 0.16,
     emissive: 0.12,
     rough: 0.42,
-    label: "Fenestrated liver sinusoid - blood flows along this vessel-facing side of the hepatocyte"
+    label: "Fenestrated liver sinusoid wall - thin LSEC endothelium perforated by sieve-plate fenestrae; blood flows along this vessel-facing side of the hepatocyte"
   });
   const sinusoidLumen = mesh(new THREE.TubeGeometry(sinusoidCurve, 80, 1.72, 18, false), "#7fb6ff", new THREE.Vector3(), {
     opacity: 0.08,
@@ -2352,6 +2374,47 @@ function buildOrganelleScene() {
   const microvilli = new THREE.LineSegments(microvilliGeo, new THREE.LineBasicMaterial({ color: "#9ad6ff", transparent: true, opacity: 0.38 }));
   microvilli.userData.label = "Sinusoidal microvilli - basolateral exchange surface facing fenestrated sinusoidal blood, not an all-around nutrient bath";
   group.add(microvilli);
+
+  // --- Fenestrae: the sieve-plate pores of the liver sinusoidal endothelium ---
+  // Real LSECs are perforated by ~100 nm fenestrae clustered into "sieve plates".
+  // Blood solutes cross into the space of Disse through these many pores, not a
+  // single opening. Each pore is also a distinct entry point for cargo packets.
+  sinusoidFenestrae = [];
+  const sievePlateCount = 6;
+  for (let plate = 0; plate < sievePlateCount; plate += 1) {
+    const u = (plate + 0.5) / sievePlateCount;
+    const center = sinusoidCurve.getPointAt(u);
+    const wallX = center.x + 2.05; // cell-facing (+x) face of the sinusoid wall
+    const poresPerPlate = 4 + Math.floor(rnd() * 3);
+    for (let k = 0; k < poresPerPlate; k += 1) {
+      const pos = new THREE.Vector3(
+        wallX + (rnd() - 0.5) * 0.22,
+        center.y + (rnd() - 0.5) * 1.6,
+        center.z + (rnd() - 0.5) * 2.5
+      );
+      const ring = mesh(new THREE.TorusGeometry(0.15 + rnd() * 0.08, 0.045, 8, 16), "#2f86bf", pos, {
+        opacity: 0.55,
+        emissive: 0.16,
+        rough: 0.5,
+        rot: [0, Math.PI / 2, (rnd() - 0.5) * 0.7],
+        label: "Fenestra — ~100 nm endothelial pore; blood solutes cross into the space of Disse here, clustered in sieve plates"
+      });
+      trackMotion(ring, ring.position, 0.04, 0.28 + rnd() * 0.22, 0.002);
+      sinusoidFenestrae.push(pos.clone());
+    }
+    // A thin liver sinusoidal endothelial cell (LSEC) body/nucleus between plates.
+    if (plate < sievePlateCount - 1) {
+      const nucC = sinusoidCurve.getPointAt((plate + 1) / sievePlateCount);
+      const lsecNuc = mesh(new THREE.SphereGeometry(0.4, 16, 12), "#357aa8",
+        new THREE.Vector3(nucC.x + 1.98, nucC.y, nucC.z + (rnd() - 0.5) * 1.6), {
+        opacity: 0.5,
+        emissive: 0.08,
+        rough: 0.55,
+        label: "Liver sinusoidal endothelial cell (LSEC) nucleus — the thin fenestrated lining between sieve plates"
+      });
+      lsecNuc.scale.set(0.5, 1.5, 1.2); // flattened, as the endothelium is very thin
+    }
+  }
 
   const canalPts = [
     canaliculusAnchor.clone().add(new THREE.Vector3(-1.8, -0.1, -2.0)),
