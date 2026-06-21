@@ -97,3 +97,41 @@ def decay_length_um(diffusion_coeff: float, degradation_rate: float) -> float:
     if degradation_rate <= 0:
         raise ValueError("degradation_rate must be positive")
     return (diffusion_coeff / degradation_rate) ** 0.5
+
+
+# Grounded cytoplasmic diffusion coefficients (um^2/s). Crowding makes these much
+# lower than in dilute water. Sources: ATP ~150 (commonly cited); small
+# metabolites ~100-300; proteins ~7-12 in mammalian cytoplasm; free Ca2+ heavily
+# buffered (~13-65). See "Protein Diffusion in Mammalian Cell Cytoplasm" (PLoS One
+# 2011) and cytosolic-diffusion literature.
+CYTOPLASMIC_DIFFUSION_UM2_PER_S: dict[str, float] = {
+    "ATP": 150.0,
+    "ADP": 150.0,
+    "glucose": 250.0,
+    "pyruvate": 250.0,
+    "protein": 10.0,
+    "Ca2+": 30.0,
+}
+
+
+def network_voxel_reaction(network, voxel_volume_l: float) -> ReactionFn:
+    """Turn a count-based ReactionNetwork into a per-voxel reaction callback.
+
+    This is what wires the real stochastic-engine reaction network into space:
+    each voxel holds molecule counts in a sub-volume, the network's own
+    propensities drive the local rate of change, and diffusion (below) moves
+    species between voxels at their grounded diffusion coefficients.
+    """
+    reactions = network.reactions
+
+    def reaction(_voxel_index: int, voxel_counts: dict[str, float]) -> dict[str, float]:
+        ddt: dict[str, float] = {}
+        for r in reactions:
+            a = r.propensity(voxel_counts, voxel_volume_l)  # molecules / s
+            if a == 0.0:
+                continue
+            for species, stoich in r.net_change().items():
+                ddt[species] = ddt.get(species, 0.0) + stoich * a
+        return ddt
+
+    return reaction

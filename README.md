@@ -13,40 +13,79 @@ molecular-scale pieces remain as background/zoom-in scenes, not the focus.
 
 ## What It Is Now
 
-A running, hepatocyte-scale **stochastic kinetic cell**, in real units, with a
-first layer of validation against measured biology.
+A running, hepatocyte-scale **stochastic kinetic cell**, in real units, that
+reaches from single molecules up to tissue — and is checked against measured
+biology rather than tuned to look right.
 
-The Python engine (`engine/cell_engine`) now contains:
+### The engine (`engine/cell_engine`)
 
 - **Real units** — concentrations and molecule counts tied to a grounded
-  hepatocyte volume (M030).
+  hepatocyte volume; every species and rate carries provenance.
 - **A stochastic reaction core** — exact Gillespie SSA for low-copy species and
-  the chemical Langevin equation (SDE) for high-copy species, verified against
-  analytic results (M031).
-- **Real pathways** — full glycolysis with literature enzyme kinetics, the urea
-  cycle, and the glutathione/NADPH redox couple, each with exact conservation
-  laws (M033, M038).
-- **Central dogma** — stochastic gene → mRNA → protein expression that reproduces
-  translational bursting (M034).
-- **A unified whole cell** — all of the above composed into one network that grows,
-  expresses genes, runs its urea cycle, divides (partitioning real molecule
-  counts), and can be pushed into uncontrolled (cancer-like) proliferation
-  (M036, M039).
-- **Validation** — emergent outputs checked against measured hepatocyte values
-  (energy charge, ATP, ATP:ADP, glucokinase glucose sensing, GSH:GSSG); currently
-  **5/5 targets within the measured physiological range** (M037, M038).
-- **Spatial reaction–diffusion** — a first non-well-mixed layer reproducing the
-  analytic morphogen gradient `λ = √(D/k)` (M040).
+  the chemical Langevin equation (an SDE) for high-copy species, the same hybrid
+  the field's whole-cell models use, verified against analytic results (Poisson
+  birth–death, binomial partitioning, Hill kinetics).
 
-The browser scene (TypeScript + Three.js) renders a polarized hepatocyte with a
-**fenestrated sinusoidal endothelium** (sieve-plate pores, LSEC nuclei), a
-canalicular bile groove, true-size membrane protein footprints, and blood-side
-cargo crossing the endothelium through many fenestrae.
+### The cell's processes (each tested, each grounded or honestly flagged)
 
-This is **not** a predictive digital twin. It is an early-stage, source-grounded
-model: the architecture is now field-aligned and a few behaviours are validated,
-but coverage is still a small fraction of a real hepatocyte and most rate
-constants are still provisional. See the honest accounting under "Status" below.
+- **Energy & carbon metabolism** — full glycolysis (literature enzyme kinetics on
+  the regulated steps; the seven near-equilibrium steps treated as grounded
+  thermodynamics, not invented numbers), the **pentose phosphate pathway**
+  (2 NADPH per glucose-6-phosphate), and **TCA + oxidative phosphorylation**
+  (P/O ratios 2.5 / 1.5, ~10 ATP per acetyl-CoA, respiratory control by ADP).
+- **Nitrogen & redox** — the **urea cycle** and the **glutathione/NADPH** couple,
+  with exact conservation laws.
+- **Gene expression** — stochastic gene → mRNA → protein with a **two-state
+  promoter**, reproducing transcriptional bursting (super-Poissonian mRNA).
+- **Hormonal signalling** — insulin / glucagon / AMPK switching glycogen storage
+  vs mobilisation (fed vs fasted).
+- **Membrane transport** — polarized vectorial flux through real transporters
+  (GLUT2, NTCP, OATP, Na⁺/K⁺-ATPase, BSEP, MRP2); a BSEP defect reproduces
+  cholestasis.
+- **Calcium signalling** — IP₃R-mediated cytosolic Ca²⁺ **oscillations** whose
+  frequency rises with agonist (Goldbeter 1990).
+- **Lipid metabolism** — de novo lipogenesis, β-oxidation and VLDL secretion;
+  steatosis emerges when synthesis outpaces export.
+- **Secretion** — constitutive albumin trafficking with measured ER→Golgi→blood
+  transit times (~30 min).
+- **DNA damage & repair** — stochastic double-strand-break repair with a p53
+  fate decision keyed to the DSB burden (~30 DSB/Gy).
+- **Life and death** — cell-cycle states, biomass growth, division (binomial
+  partitioning of real molecule counts), cancer-like loss of checkpoint control,
+  and a **death decision that distinguishes apoptosis from necrosis** via the ATP
+  switch (Leist/Eguchi 1997).
+- **A unified whole cell** — metabolism + expression + cycle composed into one
+  network that lives, grows, expresses, divides, or arrests when starved.
+- **Host–pathogen & tissue** — a viral infection that hijacks host resources, and
+  a multicellular tissue where coupled hepatocytes clear ammonia collectively and
+  suffer **dose-dependent drug injury** (paracetamol overdose → centrilobular-style
+  necrosis as cells die).
+- **Spatial reaction–diffusion** — the real reaction network run on a voxel grid
+  with grounded cytoplasmic diffusion coefficients; reproduces the analytic
+  morphogen gradient `λ = √(D/k)` and mitochondrial ATP microdomains.
+
+### Validation & calibration
+
+Emergent outputs are checked against measured hepatocyte values — energy charge,
+steady-state ATP, ATP:ADP, glucokinase glucose-sensing (S₀.₅ ≈ 8 mM), and the
+GSH:GSSG redox ratio — **all within the measured physiological range**. A
+calibration routine fits placeholder constants to measured targets and records
+them as *fitted* rather than guessed. The full engine suite is **170 tests, all
+passing**.
+
+### The browser scene (TypeScript + Three.js)
+
+A polarized hepatocyte with a **fenestrated sinusoidal endothelium** (sieve-plate
+pores, LSEC nuclei), a canalicular bile groove, true-size membrane-protein
+footprints, and blood-side cargo crossing the endothelium through many fenestrae.
+The scene only ever shows the engine's state — it never fakes biology.
+
+This is **not** a predictive digital twin, and it does not pretend to be. It is an
+early-stage, source-grounded model whose architecture is now field-aligned and
+whose individual behaviours are tested. Coverage is still a fraction of a real
+hepatocyte and some rate constants are still provisional — every such value is
+flagged as an assumption, never dressed up as measured. See the honest accounting
+under "Status".
 
 ## Run The Prototype
 
@@ -87,43 +126,55 @@ PYTHONPATH=engine python -c "from cell_engine.stochastic.validation import run_v
 
 ## Current Target Cell Type
 
-The current target is **hepatocyte-first**, not a generic animal cell. The engine
-roadmap is now organized around hepatocyte metabolism, detox, secretion,
-sinusoidal/canalicular polarity, bile handling, urea-cycle coupling, and
-state-conditioned organelle failure. See
-[docs/07-integrated-cell-engine-roadmap.md](docs/07-integrated-cell-engine-roadmap.md).
+The target is **hepatocyte-first**, not a generic animal cell — the choice that
+lets the model be specific and checkable. The work is organised around hepatocyte
+metabolism, detox, secretion, sinusoidal/canalicular polarity, bile handling, the
+urea cycle, redox defence, and state-conditioned life-and-death decisions. The
+near-term plan and its literature foundation live in the
+[depth roadmap](docs/08-depth-roadmap-and-literature.md); the architecture and
+language split are in the
+[integrated engine roadmap](docs/07-integrated-cell-engine-roadmap.md).
 
-Current browser features include:
-
-- sinusoidal/basolateral import and canalicular/apical export context;
-- true-size embedded plasma-membrane protein footprints with a 1:1 zoom-density
-  patch and whole-surface LOD;
-- stochastic cargo packets instead of fixed intracellular tracks;
-- live hepatocyte activity, organelle health, fault risk, cargo fidelity and
-  event log panels;
-- explicit visual time-scale disclosure so the accelerated scene is not confused
-  with real-time microscopy.
+Why a liver cell? It runs an unusually broad slice of human biochemistry — glucose
+storage and output, the urea cycle (almost unique to hepatocytes), CYP detox,
+bile export, lipid handling, plasma-protein secretion — so a faithful hepatocyte
+exercises most of what a "real cell" engine needs, and its pathologies (steatosis,
+cholestasis, paracetamol injury) give concrete, measurable targets to validate
+against.
 
 ## Status — honest accounting
 
+The single most important rule of this project: **nothing is faked.** Every
+constant is either measured (with a citation), a justified modelling assumption
+(named as such — e.g. "near-equilibrium step, rate non-flux-determining"), or an
+explicitly flagged placeholder. No number is ever dressed up as real biology.
+
 What is real now: the engine does the *right kind* of thing the field does
-(hybrid stochastic kinetics in real units), and a handful of behaviours are
-**validated** against measured hepatocyte data (5/5 targets in range). The full
-test suite covers the stochastic core, every pathway's conservation laws, gene
-expression statistics, the whole-cell run, and the spatial solver.
+(hybrid stochastic kinetics in real units); the metabolic core (glycolysis, PPP,
+TCA/OXPHOS, urea, redox) is grounded in literature stoichiometry and kinetics; a
+broad set of cell processes is implemented and tested; and a handful of emergent
+behaviours are **validated** against measured hepatocyte data (all current targets
+in range). The full suite is **170 tests, all passing**.
 
-What is still missing (the road ahead is depth, not a new approach):
+What is still depth-work (the road ahead is depth, not a new approach):
 
-- most rate constants are still provisional placeholders, not curated per-enzyme
-  literature kinetics (HEPATOKIN1-level coverage is hundreds of grounded reactions);
-- coverage is a small fraction of a hepatocyte — lipid metabolism, the pentose
-  phosphate pathway, signalling, and ion/calcium electrophysiology are not yet in;
-- the spatial layer is 1-D and deterministic (not 3-D stochastic RDME), and is not
-  yet wired into the whole-cell network;
-- volume dynamics at division, real cell-cycle checkpoint circuitry (CDK/cyclin/p53),
-  and organelle-resolved geometry are not modelled;
-- no host–pathogen (virus/bacteria) coupling or multicellular tissue yet;
-- validation is 5 checkpoints, not a broad comparison against omics/perturbation data.
+- some newer modules (membrane transport, hormonal signalling, lipid handling)
+  still carry **illustrative** rate constants — the mechanism is grounded, the
+  magnitudes are flagged, and they are being replaced with literature kinetics
+  module by module;
+- coverage is still a fraction of a hepatocyte (HEPATOKIN1-level coverage is
+  hundreds of grounded reactions; genome-scale models thousands);
+- validation is a handful of checkpoints, not a broad comparison against
+  metabolomics / fluxomics / perturbation data;
+- the spatial layer is 1-D and deterministic (the field standard is 3-D stochastic
+  RDME) and is not yet fused with the whole-cell network;
+- volume dynamics at division and real CDK/cyclin/p53 checkpoint circuitry are
+  not yet modelled.
+
+This is an open-ended research programme, not a checklist with an end. The
+direction and the next steps are tracked in the depth roadmap
+([docs/08-depth-roadmap-and-literature.md](docs/08-depth-roadmap-and-literature.md)),
+which also holds the literature foundation for everything above.
 
 The earlier epithelial notes (inside vs outside; apical vs basolateral;
 transcellular/paracellular transport; tight/adherens junctions, desmosomes, basal
@@ -136,6 +187,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Multiscale architecture](docs/02-multiscale-architecture.md)
 - [Platform recommendation](docs/03-platform-recommendation.md)
 - [Integrated cell engine roadmap](docs/07-integrated-cell-engine-roadmap.md)
+- [Depth roadmap & literature foundation](docs/08-depth-roadmap-and-literature.md)
 - [Atomic foundations](docs/research/physics/atomic-foundations.md)
 - [Epithelial cell starting scope](docs/research/biology/epithelial-cell.md)
 - [Input/output registry](docs/research/biology/input-output-registry.md)
