@@ -131,6 +131,17 @@ POLYPLOID_PROGRAM_UNKNOWN_NOTE = (
 CYTOKINESIS_FAILURE_UNCALIBRATED_NOTE = (
     "cytokinesis failure/binucleation support is qualitative; no cytokinesis failure probability is calibrated or changed"
 )
+REPORT_DIRECT_MITOGEN_QUALITATIVE = "direct_mitogen:qualitative"
+REPORT_PRIMING_QUALITATIVE = "tnf_il6_priming:qualitative"
+REPORT_WNT_SUPPORT_QUALITATIVE = "wnt_beta_catenin_support:qualitative"
+REPORT_WNT_REDUCED_DELAY = "wnt_beta_catenin_support:reduced_delay_not_absolute_gate"
+REPORT_TGFB_BRAKE_QUALITATIVE = "tgfb_smad_brake:qualitative"
+REPORT_ECM_BLOCK_QUALITATIVE = "ecm_integrin_block:qualitative"
+REPORT_HIPPO_BLOCK_QUALITATIVE = "hippo_contact_block:qualitative"
+REPORT_POLYPLOID_PROGRAM_UNKNOWN = "polyploid_program:unknown_not_asserted"
+REPORT_POLYPLOID_PROGRAM_QUALITATIVE = "e2f7_e2f8_polyploid_program:qualitative"
+REPORT_CYTOKINESIS_FAILURE_QUALITATIVE = "cytokinesis_failure_binucleation:qualitative"
+REPORT_CYTOKINESIS_FAILURE_UNCALIBRATED = "cytokinesis_failure_probability:uncalibrated_unchanged"
 
 
 @dataclass(frozen=True)
@@ -304,6 +315,7 @@ class HepatocyteRegenerationDecision:
     sources: tuple[str, ...] = field(default_factory=tuple)
     direct_mitogen_axes: tuple[DirectMitogenAxisDecision, ...] = field(default_factory=tuple)
     regulatory_axes: tuple[RegulatoryPathwayDecision, ...] = field(default_factory=tuple)
+    reporting_labels: tuple[str, ...] = field(default_factory=tuple)
 
 
 def _is_positive(signal: QualitativeSignal) -> bool:
@@ -324,6 +336,10 @@ def _is_permissive(signal: QualitativeSignal) -> bool:
 
 def _coalesce_signal(primary: QualitativeSignal, fallback: QualitativeSignal) -> QualitativeSignal:
     return fallback if primary == "unknown" else primary
+
+
+def _dedupe(items: list[str]) -> tuple[str, ...]:
+    return tuple(dict.fromkeys(items))
 
 
 def evaluate_direct_mitogen_axis(
@@ -478,6 +494,7 @@ def evaluate_hepatocyte_regeneration(inp: HepatocyteRegenerationInput) -> Hepato
     blocked: list[str] = []
     supported: list[str] = []
     uncalibrated: list[str] = []
+    reporting_labels: list[str] = []
     sources = {
         "signals_cells_liver_regeneration",
         "hepatectomy_timing",
@@ -495,8 +512,10 @@ def evaluate_hepatocyte_regeneration(inp: HepatocyteRegenerationInput) -> Hepato
         blocked.append("no injury/development/regeneration context or liver mass already restored")
     if inp.ecm_integrin_attachment in ("absent", "reduced"):
         blocked.append("ECM/integrin attachment insufficient for growth-factor signalling")
+        reporting_labels.append(REPORT_ECM_BLOCK_QUALITATIVE)
     if inp.hippo_contact_inhibition == "elevated":
         blocked.append("contact/organ-size inhibition active")
+        reporting_labels.append(REPORT_HIPPO_BLOCK_QUALITATIVE)
 
     hgf_axis = evaluate_direct_mitogen_axis(
         axis="HGF/MET",
@@ -522,6 +541,7 @@ def evaluate_hepatocyte_regeneration(inp: HepatocyteRegenerationInput) -> Hepato
     if direct_mitogen:
         active_axes = ", ".join(axis_decision.axis for axis_decision in direct_axes if axis_decision.active)
         supported.append(f"direct mitogenic axis active: {active_axes}")
+        reporting_labels.append(REPORT_DIRECT_MITOGEN_QUALITATIVE)
     else:
         blocked.append("no active direct mitogenic axis (HGF/MET or EGFR)")
         for axis_decision in direct_axes:
@@ -567,21 +587,26 @@ def evaluate_hepatocyte_regeneration(inp: HepatocyteRegenerationInput) -> Hepato
     if priming:
         active_priming = ", ".join(axis.pathway for axis in (tnf_axis, il6_axis) if axis.active)
         supported.append(f"cytokine priming/support active: {active_priming}")
+        reporting_labels.append(REPORT_PRIMING_QUALITATIVE)
     else:
         uncalibrated.append("TNF/IL-6 priming not active/asserted; current gate treats this as delay/impaired support, not an absolute mitogen blockade")
 
     if wnt_axis.active:
         supported.append("Wnt/beta-catenin support active")
+        reporting_labels.append(REPORT_WNT_SUPPORT_QUALITATIVE)
     elif inp.wnt_beta_catenin in ("reduced", "absent") or inp.beta_catenin_nuclear in ("reduced", "absent"):
         uncalibrated.append("Wnt/beta-catenin support reduced; regeneration may be delayed/suboptimal rather than absolutely blocked")
+        reporting_labels.append(REPORT_WNT_REDUCED_DELAY)
 
     if tgfb_axis.active:
         blocked.append("TGF-beta/SMAD anti-proliferative brake active")
+        reporting_labels.append(REPORT_TGFB_BRAKE_QUALITATIVE)
 
     entry = active_context and direct_mitogen and not blocked
     e2f7_e2f8_supported = _is_positive(inp.e2f7_e2f8_polyploid_program)
     if inp.e2f7_e2f8_polyploid_program == "unknown":
         uncalibrated.append(POLYPLOID_PROGRAM_UNKNOWN_NOTE)
+        reporting_labels.append(REPORT_POLYPLOID_PROGRAM_UNKNOWN)
 
     cytokinesis_failure_supported = tgfb_axis.active or inp.wnt_beta_catenin in ("reduced", "absent")
     polyploid_supported = cytokinesis_failure_supported or e2f7_e2f8_supported
@@ -589,10 +614,13 @@ def evaluate_hepatocyte_regeneration(inp: HepatocyteRegenerationInput) -> Hepato
         uncalibrated.append(CYTOKINESIS_FAILURE_UNCALIBRATED_NOTE)
         sources.add("tgfb_binucleation")
         sources.add("human_hepatocyte_binucleation")
+        reporting_labels.append(REPORT_CYTOKINESIS_FAILURE_UNCALIBRATED)
     if cytokinesis_failure_supported:
         supported.append("qualitative cytokinesis failure/binucleation mechanism support present")
+        reporting_labels.append(REPORT_CYTOKINESIS_FAILURE_QUALITATIVE)
     if e2f7_e2f8_supported:
         supported.append("E2F7/E2F8 polyploid program asserted qualitatively")
+        reporting_labels.append(REPORT_POLYPLOID_PROGRAM_QUALITATIVE)
 
     return HepatocyteRegenerationDecision(
         regeneration_context_active=active_context,
@@ -602,12 +630,13 @@ def evaluate_hepatocyte_regeneration(inp: HepatocyteRegenerationInput) -> Hepato
         anti_proliferative_brake_active=tgfb_axis.active,
         cytokinesis_failure_supported=cytokinesis_failure_supported,
         polyploid_binucleation_supported=polyploid_supported,
-        blocked_by=tuple(blocked),
-        supported_by=tuple(supported),
-        uncalibrated=tuple(dict.fromkeys(uncalibrated)),
+        blocked_by=_dedupe(blocked),
+        supported_by=_dedupe(supported),
+        uncalibrated=_dedupe(uncalibrated),
         sources=tuple(sorted(sources)),
         direct_mitogen_axes=direct_axes,
         regulatory_axes=regulatory_axes,
+        reporting_labels=_dedupe(reporting_labels),
     )
 
 

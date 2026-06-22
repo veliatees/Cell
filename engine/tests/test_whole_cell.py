@@ -21,6 +21,17 @@ from cell_engine.stochastic.hepatocyte_regeneration import (
     CYTOKINESIS_FAILURE_UNCALIBRATED_NOTE,
     HepatocyteRegenerationInput,
     POLYPLOID_PROGRAM_UNKNOWN_NOTE,
+    REPORT_CYTOKINESIS_FAILURE_QUALITATIVE,
+    REPORT_CYTOKINESIS_FAILURE_UNCALIBRATED,
+    REPORT_DIRECT_MITOGEN_QUALITATIVE,
+    REPORT_ECM_BLOCK_QUALITATIVE,
+    REPORT_HIPPO_BLOCK_QUALITATIVE,
+    REPORT_POLYPLOID_PROGRAM_QUALITATIVE,
+    REPORT_POLYPLOID_PROGRAM_UNKNOWN,
+    REPORT_PRIMING_QUALITATIVE,
+    REPORT_TGFB_BRAKE_QUALITATIVE,
+    REPORT_WNT_REDUCED_DELAY,
+    REPORT_WNT_SUPPORT_QUALITATIVE,
     apply_regeneration_decision,
     evaluate_hepatocyte_regeneration,
     regeneration_timing_profile,
@@ -189,6 +200,9 @@ class WholeCellRunTests(unittest.TestCase):
             )
         )
         self.assertTrue(regeneration.cell_cycle_entry_permitted)
+        self.assertIn(REPORT_DIRECT_MITOGEN_QUALITATIVE, regeneration.reporting_labels)
+        self.assertIn(REPORT_PRIMING_QUALITATIVE, regeneration.reporting_labels)
+        self.assertIn(REPORT_WNT_SUPPORT_QUALITATIVE, regeneration.reporting_labels)
         params = apply_regeneration_decision(WHOLE_CELL_CYCLE, regeneration)
         self.assertTrue(params.regeneration_signal_active)
 
@@ -263,6 +277,10 @@ class WholeCellRunTests(unittest.TestCase):
         self.assertIn("tgfb_binucleation", decision.sources)
         self.assertIn("human_hepatocyte_binucleation", decision.sources)
         self.assertIn(CYTOKINESIS_FAILURE_UNCALIBRATED_NOTE, decision.uncalibrated)
+        self.assertIn(REPORT_TGFB_BRAKE_QUALITATIVE, decision.reporting_labels)
+        self.assertIn(REPORT_CYTOKINESIS_FAILURE_QUALITATIVE, decision.reporting_labels)
+        self.assertIn(REPORT_CYTOKINESIS_FAILURE_UNCALIBRATED, decision.reporting_labels)
+        self.assertIn(REPORT_POLYPLOID_PROGRAM_QUALITATIVE, decision.reporting_labels)
         params = apply_regeneration_decision(WHOLE_CELL_CYCLE, decision)
         self.assertEqual(
             params.cytokinesis_failure_probability,
@@ -283,6 +301,8 @@ class WholeCellRunTests(unittest.TestCase):
         self.assertFalse(decision.cytokinesis_failure_supported)
         self.assertFalse(decision.polyploid_binucleation_supported)
         self.assertIn(POLYPLOID_PROGRAM_UNKNOWN_NOTE, decision.uncalibrated)
+        self.assertIn(REPORT_POLYPLOID_PROGRAM_UNKNOWN, decision.reporting_labels)
+        self.assertNotIn(REPORT_CYTOKINESIS_FAILURE_UNCALIBRATED, decision.reporting_labels)
         self.assertNotIn("human_hepatocyte_binucleation", decision.sources)
 
     def test_e2f_polyploid_support_remains_qualitative_not_probability_calibration(self):
@@ -301,6 +321,9 @@ class WholeCellRunTests(unittest.TestCase):
         self.assertTrue(decision.polyploid_binucleation_supported)
         self.assertIn("human_hepatocyte_binucleation", decision.sources)
         self.assertIn(CYTOKINESIS_FAILURE_UNCALIBRATED_NOTE, decision.uncalibrated)
+        self.assertIn(REPORT_POLYPLOID_PROGRAM_QUALITATIVE, decision.reporting_labels)
+        self.assertIn(REPORT_CYTOKINESIS_FAILURE_UNCALIBRATED, decision.reporting_labels)
+        self.assertNotIn(REPORT_CYTOKINESIS_FAILURE_QUALITATIVE, decision.reporting_labels)
         self.assertTrue(
             any("E2F7/E2F8" in item for item in decision.supported_by)
         )
@@ -338,6 +361,8 @@ class WholeCellRunTests(unittest.TestCase):
         self.assertTrue(decision.cell_cycle_entry_permitted)
         self.assertFalse(decision.support_signaling_supported)
         self.assertTrue(any("Wnt/beta-catenin support reduced" in reason for reason in decision.uncalibrated))
+        self.assertIn(REPORT_WNT_REDUCED_DELAY, decision.reporting_labels)
+        self.assertNotIn(REPORT_CYTOKINESIS_FAILURE_QUALITATIVE, decision.reporting_labels)
 
     def test_tgfb_smad_brake_blocks_even_with_direct_mitogen(self):
         decision = evaluate_hepatocyte_regeneration(
@@ -353,6 +378,24 @@ class WholeCellRunTests(unittest.TestCase):
         self.assertFalse(decision.cell_cycle_entry_permitted)
         self.assertTrue(decision.anti_proliferative_brake_active)
         self.assertIn("TGF-beta/SMAD anti-proliferative brake active", decision.blocked_by)
+        self.assertIn(REPORT_TGFB_BRAKE_QUALITATIVE, decision.reporting_labels)
+        self.assertIn(REPORT_CYTOKINESIS_FAILURE_QUALITATIVE, decision.reporting_labels)
+
+    def test_ecm_and_hippo_blocks_are_reported_as_qualitative_labels(self):
+        decision = evaluate_hepatocyte_regeneration(
+            HepatocyteRegenerationInput(
+                trigger="major_partial_hepatectomy",
+                liver_mass_restored=False,
+                hgf_ligand="elevated",
+                met_receptor="baseline",
+                ecm_integrin_attachment="reduced",
+                hippo_contact_inhibition="elevated",
+            )
+        )
+        self.assertFalse(decision.cell_cycle_entry_permitted)
+        self.assertIn(REPORT_ECM_BLOCK_QUALITATIVE, decision.reporting_labels)
+        self.assertIn(REPORT_HIPPO_BLOCK_QUALITATIVE, decision.reporting_labels)
+        self.assertNotIn(REPORT_DIRECT_MITOGEN_QUALITATIVE, decision.reporting_labels)
 
     def test_regeneration_timing_profiles_are_source_anchored(self):
         rat = regeneration_timing_profile(species="rat", trigger="major_partial_hepatectomy")
