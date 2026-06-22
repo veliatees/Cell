@@ -146,6 +146,25 @@ select {
   font-size: 10.5px;
 }
 
+/* On narrow viewports the badge otherwise covers the upper third of the cell.
+   Shrink it to a compact corner chip so the cell body stays visible. */
+@media (max-width: 720px) {
+  .split-state-badge {
+    width: min(190px, calc(60% - 12px));
+    right: 8px;
+    top: 8px;
+    padding: 7px 8px;
+    gap: 3px;
+    background: rgba(8, 13, 18, 0.62);
+  }
+  .split-state-badge__meta {
+    display: none;
+  }
+  .split-state-badge__head {
+    font-size: 11px;
+  }
+}
+
 .topbar {
   position: relative;
   grid-area: topbar;
