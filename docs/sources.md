@@ -330,3 +330,19 @@ link back here or to a more specific research file.
   - Total blood ketones <~0.3 mM fed/rested, ~0.3-0.5 mM overnight-fasted, several
     mM in prolonged fasting; beta-hydroxybutyrate normally dominant. Cross-checked
     with HMDB (HMDB0000357 beta-hydroxybutyrate, HMDB0000060 acetoacetate).
+
+## Gluconeogenesis (hepatic)
+
+- Hepatic glucose homeostasis kinetic model (glycolysis + gluconeogenesis):
+  König et al., PLoS Comput Biol 2012.
+  https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1002577
+  - Hormone-controlled kinetic model predicting net hepatic glucose output across
+    fed/fasted. Grounds the gluconeogenic pathway and glucose-output behavior in
+    `engine/cell_engine/stochastic/gluconeogenesis.py`.
+- Reciprocal regulation of gluconeogenesis vs glycolysis:
+  Pilkis SJ, Granner DK, Annu Rev Physiol 1992;54:885-909.
+  https://pubmed.ncbi.nlm.nih.gov/1562196/
+  - Insulin/glucagon reciprocally regulate the opposing enzyme pairs
+    (PFK1/FBPase1, PK/PEPCK). Grounds the hormone-gated bypass enzymes and the
+    `fasted_produces_glucose_fed_is_suppressed` test. Energetic cost (6 ATP per
+    glucose from 2 pyruvate) is enforced by reaction stoichiometry.
