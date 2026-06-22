@@ -4,8 +4,12 @@ from dataclasses import dataclass
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.random import EngineRng
-from cell_engine.quantitative.geometry import AVOGADRO
-from cell_engine.stochastic.cell_model import CellReactionModel
+from cell_engine.processes.hepatocyte import build_hepatocyte_definition
+from cell_engine.quantitative.geometry import (
+    build_hepatocyte_geometry,
+    molecules_from_concentration_mM,
+)
+from cell_engine.stochastic.cell_model import CYTOSOL, CellReactionModel
 from cell_engine.stochastic.reactions import ReactionNetwork, mass_action
 
 DATE_VERIFIED = "2026-06-21"
@@ -21,7 +25,14 @@ LIPID_SOURCES: dict[str, SourceReference] = {
     ),
 }
 
-LIPID_VOLUME_L = 1.0 / AVOGADRO
+# Real cytosolic volume of the canonical hepatocyte (same approach as
+# glycolysis.seed_glycolysis_model): build the geometry from the hepatocyte
+# definition and take the cytosol compartment volume (~1.77e-12 L). This puts
+# seeded counts and concentrations on the real molar / hepatocyte-volume scale.
+# NOTE: every reaction in this module is FIRST-ORDER mass_action, whose rate
+# constant is volume-independent ((N_A*V)^(order-1) = 1), so the per-second
+# constants in LipidParams are unchanged by this rescaling.
+LIPID_VOLUME_L = build_hepatocyte_geometry(build_hepatocyte_definition()).volume_of(CYTOSOL)
 
 
 @dataclass(frozen=True)
@@ -59,10 +70,20 @@ def build_lipid_network(params: LipidParams = LipidParams(), volume_l: float = L
     return ReactionNetwork(species=species, reactions=reactions, volume_l=volume_l)
 
 
-def run_lipid(t_end_s: float, rng: EngineRng, *, fa_load: float = 5000.0,
+def run_lipid(t_end_s: float, rng: EngineRng, *, fa_load_mM: float = 0.3,
+              acetyl_coa_mM: float = 0.1,
               params: LipidParams = LipidParams(), dt_s: float = 0.05) -> dict[str, float]:
+    """Run the hepatic lipid network seeded on the real molar scale.
+
+    ``fa_load_mM`` is the circulating free-fatty-acid pool (plasma FFA is
+    physiologically ~0.3-0.6 mM; default 0.3 mM) and ``acetyl_coa_mM`` is the
+    hepatic acetyl-CoA pool feeding DNL/ketogenesis (~0.05-0.1 mM; default
+    0.1 mM). Both are converted to molecule counts in the real cytosolic
+    volume via ``molecules_from_concentration_mM``.
+    """
     network = build_lipid_network(params)
+    volume_l = network.volume_l
     counts = {s: 0.0 for s in network.species}
-    counts["fatty_acids_blood"] = fa_load
-    counts["acetyl_CoA"] = 2000.0
+    counts["fatty_acids_blood"] = molecules_from_concentration_mM(fa_load_mM, volume_l)
+    counts["acetyl_CoA"] = molecules_from_concentration_mM(acetyl_coa_mM, volume_l)
     return CellReactionModel(network=network, counts=counts).advance(t_end_s, rng, mode="cle", dt_s=dt_s).counts
