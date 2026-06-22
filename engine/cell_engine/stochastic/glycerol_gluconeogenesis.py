@@ -32,8 +32,12 @@ from typing import Mapping
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.random import EngineRng
-from cell_engine.quantitative.geometry import AVOGADRO
-from cell_engine.stochastic.cell_model import CellReactionModel
+from cell_engine.processes.hepatocyte import build_hepatocyte_definition
+from cell_engine.quantitative.geometry import (
+    build_hepatocyte_geometry,
+    molecules_from_concentration_mM,
+)
+from cell_engine.stochastic.cell_model import CYTOSOL, CellReactionModel
 from cell_engine.stochastic.gluconeogenesis import gluconeogenic_drive
 from cell_engine.stochastic.reactions import Reaction, ReactionNetwork
 from cell_engine.stochastic.signaling import HormoneState
@@ -67,7 +71,9 @@ GLYCEROL_SOURCES: dict[str, SourceReference] = {
     ),
 }
 
-GLYCEROL_VOLUME_L = 1.0 / AVOGADRO
+# Real hepatocyte cytosolic volume (pseudo-first-order reactions are volume-
+# independent; seeds/outputs become real mM concentrations).
+GLYCEROL_VOLUME_L = build_hepatocyte_geometry(build_hepatocyte_definition()).volume_of(CYTOSOL)
 
 
 def _pseudo_first_order(
@@ -162,19 +168,22 @@ def run_glycerol_gluconeogenesis(
     t_end_s: float,
     rng: EngineRng,
     *,
-    glycerol: float = 6000.0,
-    atp: float = 20000.0,
-    nad_pool: float = 8000.0,
+    glycerol_mM: float = 6.0,
+    atp_mM: float = 20.0,
+    nad_pool_mM: float = 8.0,
     params: GlycerolGluconeogenesisParams = GlycerolGluconeogenesisParams(),
     dt_s: float = 0.05,
 ) -> dict[str, float]:
-    """Run glycerol -> glucose from a glycerol load at a given hormone state."""
+    """Run glycerol -> glucose from a glycerol load (mM) at a given hormone state.
+
+    ATP is seeded as a supplied budget (regeneration not modelled here)."""
     network = build_glycerol_gluconeogenesis_network(hormones, params)
+    v = network.volume_l
     counts = {s: 0.0 for s in network.species}
-    counts["glycerol"] = glycerol
-    counts["ATP"] = atp
-    counts["NAD_plus"] = nad_pool
-    counts["NADH"] = nad_pool * 0.25
+    counts["glycerol"] = molecules_from_concentration_mM(glycerol_mM, v)
+    counts["ATP"] = molecules_from_concentration_mM(atp_mM, v)
+    counts["NAD_plus"] = molecules_from_concentration_mM(nad_pool_mM, v)
+    counts["NADH"] = molecules_from_concentration_mM(nad_pool_mM * 0.25, v)
     return CellReactionModel(network=network, counts=counts).advance(
         t_end_s, rng, mode="cle", dt_s=dt_s
     ).counts
