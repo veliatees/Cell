@@ -62,8 +62,13 @@ pushed.
   coupling (item 8) — both attended.
 - [ ] **8. Calcium / electrophysiology depth.** _(ATTENDED — large: IP3R Markov clusters + membrane potential)_ Stochastic IP₃R Markov clusters;
   membrane potential from Na/K-ATPase + K⁺ channel. (IP3R stochastic models)
-- [ ] **9. Lipid depth.** DNL (ACC/FASN), VLDL biogenesis (ApoB100/MTP), steatosis
-  threshold; link to ketogenesis acetyl-CoA. (iHepatocytes2322)
+- [x] **9. Lipid depth (malonyl-CoA node).** `malonyl_coa_node.py`: ACC makes
+  malonyl-CoA (fed, committed DNL), FASN→palmitate, MCD clears it (fasted/AMPK);
+  malonyl-CoA inhibits CPT1, gating β-oxidation (McGarry & Foster). The
+  metabolite-level reason fed is anti-ketogenic. Dose-dependent CPT1 inhibition;
+  fed builds malonyl + does DNL, fasted clears it; adenine conserved.
+  > Remaining lipid depth (VLDL ApoB/MTP biogenesis, quantitative steatosis
+  > threshold) folds into the attended whole-cell integration.
 - [ ] **10. DNA-repair depth.** _(ATTENDED — large: quantitative p53/p21 fate network)_ Quantitative NHEJ/HR + p53/p21 fate network feeding
   apoptosis. (PLoS Comput Biol stochastic NHEJ+p53)
 - [ ] **11. Spatial fusion → RDME.** _(ATTENDED — very large: 3-D voxel RDME)_ Fuse 1-D spatial with the real reaction network
