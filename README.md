@@ -244,36 +244,6 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)
 
-## Agent Roster
-
-This project uses a multi-agent workflow. The main Claude Code thread acts as the
-**Organizer** (coordination, scope release, routing). Seven specialist subagents are
-defined in `.claude/agents/` and can be invoked by name or routed to automatically.
-Scope ownership is tracked in `artifacts/agent-scope-ownership.md`.
-
-| Agent | Owns | Edits code? |
-| --- | --- | --- |
-| **engine-biologist** | Biology mechanisms & parameters in `engine/cell_engine` (metabolism, signaling, organelles, cargo, regeneration) | Yes — engine biology |
-| **stochastic-numerics** | Numerical-method correctness: SSA/Gillespie (`stochastic/reactions.py`), spatial PDE (`spatial.py`), convergence & statistical tests | Yes — solver internals |
-| **snapshot-bridge** | The Python→JSON→TS contract: `io/snapshots.py`, `scripts/export_engine_snapshot.py`, `src/engineSnapshot.ts`, the snapshot schema | Yes — both bridge sides |
-| **viz-frontend** | Three.js / Vite rendering and visual realism: `src/main.ts`, `src/styles.css`, `index.html` | Yes — frontend |
-| **visual-reviewer** | Loads the running app in Chrome, screenshots it, and judges aesthetic quality + biological-visual fidelity against the engine snapshot | No — review-only (SHIP/REVISE/BLOCK) |
-| **validation-qa** | Runs pytest/vitest/build + the validation harness; enforces scope and evidence gates | No — verify-only (PASS/FAIL/BLOCK) |
-| **evidence-curator** | Provenance: `docs/sources.md`, research files, evidence classification and gate clearing | Docs only, not engine |
-
-Invoke one explicitly, e.g. *"use the engine-biologist to add a glutathione synthesis
-pathway"*, or let the Organizer route automatically. Boundaries enforced across all
-agents:
-
-- No biological parameter enters the engine without accepted, recorded evidence.
-- Gated evidence classes (NADP(H), G6PD/6PGD, GPx/glutathione reductase, direct PPP
-  flux) stay blocked until `evidence-curator` verifies and `validation-qa` clears them.
-- Generated artifacts (e.g. `public/engine-snapshot.json`) are not committed unless a
-  snapshot-generation task is explicitly released.
-- `validation-qa` audits but never edits — it hands failures back to the owning agent.
-- `visual-reviewer` is the only agent with eyes in the browser: a frontend change is
-  not done until it passes both `validation-qa` (tests/build) and `visual-reviewer`
-  (it looks good *and* the picture honestly matches the engine snapshot).
 
 ## Project Rule
 
