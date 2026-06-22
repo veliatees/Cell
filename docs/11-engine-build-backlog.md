@@ -47,20 +47,21 @@ pushed.
   `ReferenceRange`s + a `classify_concentration` checker. Gated classes excluded.
   Ready to score once pathways are wired into the validated whole-cell run (1b).
   (HMDB 5.0)
-- [ ] **5. Ground illustrative magnitudes.** Replace flagged `placeholder` rate
-  magnitudes module-by-module with BRENDA/SABIO-RK human/liver kinetics; drive the
-  placeholder count toward zero. (BRENDA, SABIO-RK)
+- [ ] **5. Ground illustrative magnitudes.** _(ATTENDED)_ Needs the molar-volume +
+  Michaelis-Menten re-architecture so BRENDA/SABIO-RK Km/kcat are meaningful; the
+  normalized-scale modules can't carry real Vmax. A foundational decision, not an
+  unattended cycle. (BRENDA, SABIO-RK)
 - [ ] **6. Signaling depth.** Gene-level hormonal control: glucagon→cAMP/PKA→PEPCK/
   G6Pase induction; insulin→SREBP-1c→lipogenic genes. (König 2012; AMPK/CRTC2)
 - [ ] **7. Transport kinetics.** Ground NTCP, OATP1B1/3, GLUT2, BSEP, MRP2,
   Na⁺/K⁺-ATPase with literature Km/Vmax; couple to membrane potential.
-- [ ] **8. Calcium / electrophysiology depth.** Stochastic IP₃R Markov clusters;
+- [ ] **8. Calcium / electrophysiology depth.** _(ATTENDED — large: IP3R Markov clusters + membrane potential)_ Stochastic IP₃R Markov clusters;
   membrane potential from Na/K-ATPase + K⁺ channel. (IP3R stochastic models)
 - [ ] **9. Lipid depth.** DNL (ACC/FASN), VLDL biogenesis (ApoB100/MTP), steatosis
   threshold; link to ketogenesis acetyl-CoA. (iHepatocytes2322)
-- [ ] **10. DNA-repair depth.** Quantitative NHEJ/HR + p53/p21 fate network feeding
+- [ ] **10. DNA-repair depth.** _(ATTENDED — large: quantitative p53/p21 fate network)_ Quantitative NHEJ/HR + p53/p21 fate network feeding
   apoptosis. (PLoS Comput Biol stochastic NHEJ+p53)
-- [ ] **11. Spatial fusion → RDME.** Fuse 1-D spatial with the real reaction network
+- [ ] **11. Spatial fusion → RDME.** _(ATTENDED — very large: 3-D voxel RDME)_ Fuse 1-D spatial with the real reaction network
   (per-species diffusion); then 3-D voxel RDME (low-copy SSA / high-copy CLE per
   voxel), sinusoidal↔canalicular gradients, mito ATP microdomains. (4D WCM, Lattice Microbes)
 
