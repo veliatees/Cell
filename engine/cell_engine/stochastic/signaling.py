@@ -4,8 +4,12 @@ from dataclasses import dataclass
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.random import EngineRng
-from cell_engine.quantitative.geometry import AVOGADRO
-from cell_engine.stochastic.cell_model import CellReactionModel
+from cell_engine.processes.hepatocyte import build_hepatocyte_definition
+from cell_engine.quantitative.geometry import (
+    build_hepatocyte_geometry,
+    molecules_from_concentration_mM,
+)
+from cell_engine.stochastic.cell_model import CYTOSOL, CellReactionModel
 from cell_engine.stochastic.reactions import ReactionNetwork, mass_action
 
 DATE_VERIFIED = "2026-06-21"
@@ -21,7 +25,16 @@ SIGNALING_SOURCES: dict[str, SourceReference] = {
     ),
 }
 
-TRANSPORT_VOLUME_L = 1.0 / AVOGADRO
+# Real cytosolic volume of the canonical hepatocyte (same approach as
+# glycolysis.seed_glycolysis_model and lipid.py): build the geometry from the
+# hepatocyte definition and take the cytosol compartment volume (~1.77e-12 L).
+# This puts seeded counts and concentrations on the real molar /
+# hepatocyte-volume scale.
+# NOTE: every reaction in build_glycogen_control_network is FIRST-ORDER
+# mass_action, whose rate constant is volume-independent ((N_A*V)^(order-1) = 1),
+# so the per-second rate constants and the hormone-activity logic are unchanged
+# by this rescaling -- only the volume constant and the seed magnitudes change.
+TRANSPORT_VOLUME_L = build_hepatocyte_geometry(build_hepatocyte_definition()).volume_of(CYTOSOL)
 
 
 def _clamp01(x: float) -> float:
@@ -66,8 +79,21 @@ def build_glycogen_control_network(hormones: HormoneState, volume_l: float = TRA
 
 
 def run_glycogen_control(hormones: HormoneState, t_end_s: float, rng: EngineRng,
-                         *, glycogen: float = 5000.0, glucose_cyto: float = 5000.0,
+                         *, glycogen_mM: float = 75.0, glucose_cyto_mM: float = 5.0,
                          dt_s: float = 0.05) -> dict[str, float]:
+    """Run the hepatic glycogen/glucose control network on the real molar scale.
+
+    ``glycogen_mM`` is the hepatic glycogen pool expressed in glucosyl units;
+    the liver stores a large glycogen reserve, ~50-100 mM glucosyl equivalents
+    (default 75 mM). ``glucose_cyto_mM`` is the free cytosolic glucose pool
+    (~5 mM; default 5 mM). Both are converted to molecule counts in the real
+    cytosolic volume via ``molecules_from_concentration_mM``.
+    """
     network = build_glycogen_control_network(hormones)
-    counts = {"glucose_cyto": glucose_cyto, "glycogen": glycogen, "glucose_blood": 0.0}
+    volume_l = network.volume_l
+    counts = {
+        "glucose_cyto": molecules_from_concentration_mM(glucose_cyto_mM, volume_l),
+        "glycogen": molecules_from_concentration_mM(glycogen_mM, volume_l),
+        "glucose_blood": 0.0,
+    }
     return CellReactionModel(network=network, counts=counts).advance(t_end_s, rng, mode="cle", dt_s=dt_s).counts
