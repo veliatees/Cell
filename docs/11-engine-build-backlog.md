@@ -51,8 +51,11 @@ pushed.
   Michaelis-Menten re-architecture so BRENDA/SABIO-RK Km/kcat are meaningful; the
   normalized-scale modules can't carry real Vmax. A foundational decision, not an
   unattended cycle. (BRENDA, SABIO-RK)
-- [ ] **6. Signaling depth.** Gene-level hormonal control: glucagon→cAMP/PKA→PEPCK/
-  G6Pase induction; insulin→SREBP-1c→lipogenic genes. (König 2012; AMPK/CRTC2)
+- [x] **6. Signaling depth.** `hormonal_gene_regulation.py`: gene-level reciprocal
+  control — glucagon→CREB/PGC-1 induces gluconeogenic enzyme (PEPCK/G6Pase),
+  insulin→SREBP-1c induces lipogenic enzyme (ACC/FASN) and suppresses gluconeogenic
+  (FOXO1). Smooth insulin dose-response; the mechanistic basis of the flux modules'
+  drive multiplier. (Herzig 2001; Horton 2002)
 - [ ] **7. Transport kinetics.** Ground NTCP, OATP1B1/3, GLUT2, BSEP, MRP2,
   Na⁺/K⁺-ATPase with literature Km/Vmax; couple to membrane potential.
 - [ ] **8. Calcium / electrophysiology depth.** _(ATTENDED — large: IP3R Markov clusters + membrane potential)_ Stochastic IP₃R Markov clusters;
