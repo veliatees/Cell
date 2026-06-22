@@ -179,17 +179,46 @@ def compose_networks(*networks: ReactionNetwork, volume_l: float | None = None) 
     coupling is by naming (e.g. a gene-expression network whose ``protein`` is an
     enzyme a metabolic network reads). This is how scope grows: compose validated
     pathways rather than hand-write one monolith.
+
+    Coupling-by-name is powerful but unforgiving: a duplicated reaction id means the
+    same flux is counted twice, and a misspelled cofactor silently splits one pool
+    into two. To keep the implicit coupling honest, composition raises on duplicate
+    reaction ids; callers can audit shared pools with :func:`shared_species`.
     """
     if not networks:
         raise ValueError("need at least one network to compose")
     species: list[str] = []
     seen: set[str] = set()
     reactions: list[Reaction] = []
+    reaction_ids: set[str] = set()
+    duplicate_ids: set[str] = set()
     for net in networks:
         for s in net.species:
             if s not in seen:
                 seen.add(s)
                 species.append(s)
-        reactions.extend(net.reactions)
+        for reaction in net.reactions:
+            if reaction.id in reaction_ids:
+                duplicate_ids.add(reaction.id)
+            reaction_ids.add(reaction.id)
+            reactions.append(reaction)
+    if duplicate_ids:
+        raise ValueError(
+            "compose_networks: duplicate reaction ids would double-count flux: "
+            + ", ".join(sorted(duplicate_ids))
+        )
     volume = volume_l if volume_l is not None else networks[0].volume_l
     return ReactionNetwork(species=tuple(species), reactions=tuple(reactions), volume_l=volume)
+
+
+def shared_species(*networks: ReactionNetwork) -> dict[str, int]:
+    """Species appearing in more than one network, with how many networks use each.
+
+    Use to audit shared cofactor pools (ATP, NAD, CoA, acetyl-CoA) before fusing
+    pathways — a cofactor that should be one pool must appear under one spelling.
+    """
+    counts: dict[str, int] = {}
+    for net in networks:
+        for s in set(net.species):
+            counts[s] = counts.get(s, 0) + 1
+    return {s: n for s, n in counts.items() if n > 1}
