@@ -1,25 +1,51 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Callable
+from typing import Callable, Literal
 
-# A reaction callback gets (voxel_index, {species: concentration}) and returns the
-# per-species rate of change (concentration / second) at that voxel.
+# A reaction callback gets (voxel_index, {species: field value}) and returns the
+# per-species rate of change in the same units per second at that voxel.
 ReactionFn = Callable[[int, dict[str, float]], dict[str, float]]
+SpatialQuantity = Literal["concentration_mM", "molecule_count"]
+
+_VALID_QUANTITIES: set[str] = {"concentration_mM", "molecule_count"}
 
 
 @dataclass(frozen=True)
 class SpatialField:
-    """A 1-D row of voxels holding per-species concentrations.
+    """A 1-D row of voxels holding per-species scalar fields.
 
-    This replaces the well-mixed assumption: concentration varies along space.
-    ``dx_um`` is the voxel width; ``conc[species]`` is a tuple of length ``n``
-    (one value per voxel, in mM).
+    This replaces the well-mixed assumption: a value varies along space.
+    ``quantity`` makes the unit contract explicit:
+
+    - ``"concentration_mM"``: values are concentrations and reaction rates are
+      mM/s.
+    - ``"molecule_count"``: values are molecule counts and reaction rates are
+      molecules/s.
+
+    The explicit diffusion update is linear, so it can advance either quantity
+    as long as a field and its reaction callback use the same quantity. ``dx_um``
+    is the voxel width; ``conc[species]`` is a tuple of length ``n``.
     """
 
     species: tuple[str, ...]
     dx_um: float
     conc: dict[str, tuple[float, ...]]
+    quantity: SpatialQuantity = "concentration_mM"
+
+    def __post_init__(self) -> None:
+        if self.quantity not in _VALID_QUANTITIES:
+            raise ValueError("quantity must be 'concentration_mM' or 'molecule_count'")
+        if not self.species:
+            raise ValueError("species must not be empty")
+        missing = tuple(s for s in self.species if s not in self.conc)
+        if missing:
+            raise ValueError(f"missing spatial profile for species: {missing!r}")
+        lengths = {len(self.conc[s]) for s in self.species}
+        if len(lengths) != 1:
+            raise ValueError("all species profiles must have the same voxel count")
+        if next(iter(lengths)) <= 0:
+            raise ValueError("spatial fields must contain at least one voxel")
 
     @property
     def n(self) -> int:
@@ -32,8 +58,20 @@ class SpatialField:
         return self.conc[species]
 
 
-def uniform_field(species: tuple[str, ...], n: int, dx_um: float, value: float = 0.0) -> SpatialField:
-    return SpatialField(species=species, dx_um=dx_um, conc={s: tuple(value for _ in range(n)) for s in species})
+def uniform_field(
+    species: tuple[str, ...],
+    n: int,
+    dx_um: float,
+    value: float = 0.0,
+    *,
+    quantity: SpatialQuantity = "concentration_mM",
+) -> SpatialField:
+    return SpatialField(
+        species=species,
+        dx_um=dx_um,
+        conc={s: tuple(value for _ in range(n)) for s in species},
+        quantity=quantity,
+    )
 
 
 def cfl_limit_dt(diffusion: dict[str, float], dx_um: float) -> float:
@@ -55,26 +93,31 @@ def react_diffuse(
     """Advance the field by explicit reaction-diffusion.
 
     Diffusion is the discretized Laplacian with reflecting (zero-flux) boundaries;
-    reaction (if given) is applied per voxel. Requires
-    ``dt_s <= cfl_limit_dt(diffusion, dx)`` for stability.
+    reaction (if given) is applied per voxel and must use the same quantity as
+    ``field``. Requires ``dt_s <= cfl_limit_dt(diffusion, dx)`` for stability.
     """
     if dt_s <= 0:
         raise ValueError("dt_s must be positive")
     if dt_s > cfl_limit_dt(diffusion, field.dx_um) + 1e-15:
         raise ValueError("dt_s exceeds the diffusion CFL stability limit")
+    reaction_quantity = _reaction_quantity(reaction)
+    if reaction_quantity is not None and reaction_quantity != field.quantity:
+        raise ValueError(
+            f"reaction expects {reaction_quantity} field values, got {field.quantity}"
+        )
 
     species = field.species
     n = field.n
     dx2 = field.dx_um * field.dx_um
-    conc = {s: list(field.conc[s]) for s in species}
+    values = {s: list(field.conc[s]) for s in species}
 
     for _ in range(steps):
-        new = {s: list(conc[s]) for s in species}
+        new = {s: list(values[s]) for s in species}
         for s in species:
             d = diffusion.get(s, 0.0)
             if d <= 0:
                 continue
-            c = conc[s]
+            c = values[s]
             coeff = d * dt_s / dx2
             for i in range(n):
                 left = c[i - 1] if i > 0 else c[i]        # reflecting boundary
@@ -82,14 +125,25 @@ def react_diffuse(
                 new[s][i] = c[i] + coeff * (left - 2.0 * c[i] + right)
         if reaction is not None:
             for i in range(n):
-                voxel = {s: conc[s][i] for s in species}
+                voxel = {s: values[s][i] for s in species}
                 ddt = reaction(i, voxel)
                 for s, rate in ddt.items():
                     value = new[s][i] + rate * dt_s
                     new[s][i] = value if value > 0.0 else 0.0
-        conc = new
+        values = new
 
-    return replace(field, conc={s: tuple(conc[s]) for s in species})
+    return replace(field, conc={s: tuple(values[s]) for s in species})
+
+
+def _reaction_quantity(reaction: ReactionFn | None) -> SpatialQuantity | None:
+    if reaction is None:
+        return None
+    quantity = getattr(reaction, "quantity", None)
+    if quantity is None:
+        return None
+    if quantity not in _VALID_QUANTITIES:
+        raise ValueError("reaction quantity must be 'concentration_mM' or 'molecule_count'")
+    return quantity
 
 
 def decay_length_um(diffusion_coeff: float, degradation_rate: float) -> float:
@@ -118,9 +172,12 @@ def network_voxel_reaction(network, voxel_volume_l: float) -> ReactionFn:
     """Turn a count-based ReactionNetwork into a per-voxel reaction callback.
 
     This is what wires the real stochastic-engine reaction network into space:
-    each voxel holds molecule counts in a sub-volume, the network's own
-    propensities drive the local rate of change, and diffusion (below) moves
-    species between voxels at their grounded diffusion coefficients.
+    each voxel field value must be a molecule count in a sub-volume, the
+    network's own propensities drive the local count-rate of change, and
+    diffusion moves species between voxels at their grounded diffusion
+    coefficients. Use with ``SpatialField(quantity="molecule_count")``; passing
+    the returned callback to a concentration field is rejected by
+    :func:`react_diffuse`.
     """
     reactions = network.reactions
 
@@ -134,4 +191,5 @@ def network_voxel_reaction(network, voxel_volume_l: float) -> ReactionFn:
                 ddt[species] = ddt.get(species, 0.0) + stoich * a
         return ddt
 
+    reaction.quantity = "molecule_count"  # type: ignore[attr-defined]
     return reaction

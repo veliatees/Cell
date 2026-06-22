@@ -4,8 +4,110 @@ import {
   engineSnapshotEndpointFromLocation,
   loadEngineSnapshot,
   summarizeEngineSnapshot,
+  type EngineCheckpointControl,
+  type EngineCytokinesisState,
+  type EngineDivisionCell,
+  type EngineDivisionOrganelleInventory,
   type EngineSnapshot
 } from "./engineSnapshot";
+
+const baseOrganelles: EngineDivisionOrganelleInventory = {
+  mitochondria: 2600,
+  mitochondrial_fragments: 7000,
+  lysosomes: 420,
+  peroxisomes: 700,
+  ribosomes: 20000000,
+  golgi_stacks: 1,
+  golgi_fragments: 40,
+  centrosomes: 2,
+  er_mass: 2,
+  membrane_area: 2
+};
+
+const baseCytokinesis: EngineCytokinesisState = {
+  stage: "abscission",
+  spindle_axis: [1, 0, 0],
+  division_plane_normal: [1, 0, 0],
+  cleavage_origin_um: [0, 0, 0],
+  ring_activity: 0,
+  furrow_depth: 1,
+  bridge_present: true,
+  midbody_present: true,
+  abscission_readiness: 1,
+  chromosome_alignment: 1,
+  nuclear_envelope_breakdown: 1,
+  nuclear_envelope_reform: 1,
+  membrane_supply: 1,
+  bridge_tension: 0.25,
+  mitochondrial_fragmentation: 1,
+  golgi_fragmentation: 1
+};
+
+const blockedCheckpoint: EngineCheckpointControl = {
+  g1_s_committed: false,
+  g2_m_committed: false,
+  metaphase_anaphase_permitted: false,
+  blocked_by: ["G1 minimum timing not met", "awaiting growth factor/mitogen"],
+  supported_by: [],
+  uncalibrated: ["molecular node states are qualitative/derived unless explicitly supplied"],
+  sources: ["cell_cycle_checkpoints", "restriction_point"],
+  nodes: [
+    {
+      node: "mitogen/regeneration signal",
+      signal: "baseline",
+      active: false,
+      derived: true,
+      source_id: "restriction_point"
+    }
+  ]
+};
+
+type DivisionCellOverrides = Omit<Partial<EngineDivisionCell>, "organelles" | "cytokinesis"> & {
+  organelles?: Partial<EngineDivisionOrganelleInventory>;
+  cytokinesis?: Partial<EngineCytokinesisState>;
+};
+
+const divisionCell = (overrides: DivisionCellOverrides = {}): EngineDivisionCell => ({
+  id: "cell-0",
+  parent_id: null,
+  t_s: 55.1,
+  phase: "M",
+  phase_time_s: 5,
+  generation: 0,
+  biomass: 3.7,
+  ready_to_divide: true,
+  nuclei: 1,
+  ploidy_sets: [2],
+  energy_charge: 0.82,
+  counts: { ATP: 1000, ADP: 250, gene: 2 },
+  ...overrides,
+  organelles: { ...baseOrganelles, ...overrides.organelles },
+  cytokinesis: { ...baseCytokinesis, ...overrides.cytokinesis }
+});
+
+const parentCell = divisionCell({ id: "event-0-parent-0" });
+const daughterA = divisionCell({
+  id: "event-0-cell-0",
+  parent_id: "event-0-parent-0",
+  generation: 1,
+  biomass: 1.85,
+  phase: "G1",
+  phase_time_s: 0,
+  ready_to_divide: false,
+  organelles: { mitochondria: 1300, mitochondrial_fragments: 3500, centrosomes: 1, er_mass: 1, membrane_area: 1 },
+  cytokinesis: { stage: "none", bridge_present: false, midbody_present: false, abscission_readiness: 0 }
+});
+const daughterB = divisionCell({
+  id: "event-0-cell-1",
+  parent_id: "event-0-parent-0",
+  generation: 1,
+  biomass: 1.85,
+  phase: "G1",
+  phase_time_s: 0,
+  ready_to_divide: false,
+  organelles: { mitochondria: 1300, mitochondrial_fragments: 3500, centrosomes: 1, er_mass: 1, membrane_area: 1 },
+  cytokinesis: { stage: "none", bridge_present: false, midbody_present: false, abscission_readiness: 0 }
+});
 
 const snapshot: EngineSnapshot = {
   schema_version: "cell-engine.snapshot.v1",
@@ -60,9 +162,86 @@ const snapshot: EngineSnapshot = {
       cytosolic_ca: 0.09,
       pump_activity: 0.8,
       channel_open_probability: 0.1
+    },
+    division: {
+      engine: "whole_cell_population",
+      cell_count: 2,
+      event_count: 1,
+      cytokinesis_failure_risk: 0.2,
+      timing_profile: {
+        id: "compressed_demo",
+        label: "compressed visualization/demo timing",
+        g1_min_duration_s: 0,
+        s_duration_s: 20,
+        g2_min_duration_s: 0,
+        m_duration_s: 5,
+        time_compressed: true,
+        biological_reference: false,
+        source_ids: ["cell_cycle_timing"],
+        notes: "Not biological time."
+      },
+      cells: [daughterA, daughterB],
+      events: [
+        {
+          id: "division-0",
+          parent_index: 0,
+          parent_id: "event-0-parent-0",
+          outcome: "abscission_success",
+          t_s: 55.1,
+          failure_risk: 0.2,
+          resulting_cell_count: 2,
+          daughter_count: 2,
+          parent: parentCell,
+          resulting_cells: [daughterA, daughterB]
+        }
+      ],
+      latest_event: null
+    },
+    regeneration_context: {
+      input: { trigger: "major_partial_hepatectomy", liver_mass_restored: false },
+      decision: {
+        regeneration_context_active: true,
+        cell_cycle_entry_permitted: true,
+        cytokinesis_failure_supported: false,
+        polyploid_binucleation_supported: false,
+        blocked_by: [],
+        supported_by: ["direct mitogenic axis active: HGF/MET"],
+        uncalibrated: [],
+        sources: ["hepatectomy_timing"],
+        direct_mitogen_axes: [
+          {
+            axis: "HGF/MET",
+            ligand: "elevated",
+            receptor: "baseline",
+            receptor_phosphorylation: "elevated",
+            downstream_mapk_pi3k: "unknown",
+            active: true,
+            blocked_by: [],
+            supported_by: ["HGF/MET ligand elevated"],
+            uncalibrated: ["HGF/MET ERK/AKT-family downstream signaling not explicitly measured"],
+            sources: ["met_egfr_direct_mitogens"]
+          }
+        ]
+      },
+      timing_profile: {
+        species: "mouse",
+        trigger: "major_partial_hepatectomy",
+        dna_synthesis_onset_h: null,
+        dna_synthesis_peak_h: [36, 48],
+        mass_restoration_days: [7, 10],
+        notes: "source anchored",
+        source_ids: ["hepatectomy_timing"]
+      },
+      timing_is_real_world_reference: true,
+      division_demo_is_time_compressed: true
     }
   }
 };
+
+const snapshotWithRawState = (overrides: Record<string, unknown>): EngineSnapshot => ({
+  ...snapshot,
+  state: { ...snapshot.state, ...overrides } as EngineSnapshot["state"]
+});
 
 describe("engine snapshot client", () => {
   it("summarizes engine state for UI readouts", () => {
@@ -78,6 +257,287 @@ describe("engine snapshot client", () => {
     expect(summary.pathwayCount).toBe(1);
     expect(summary.signalingCount).toBe(1);
     expect(summary.topFluxes[0]).toContain("detox");
+    expect(summary.division?.event_count).toBe(1);
+    expect(summary.division?.timing_profile?.time_compressed).toBe(true);
+    expect(summary.division?.events[0].outcome).toBe("abscission_success");
+    expect(summary.division?.events[0].resulting_cells).toHaveLength(2);
+    expect(summary.division?.events[0].daughter_count).toBe(2);
+    expect(summary.divisionDisplay.reason).toBe("abscission_success");
+    expect(summary.divisionDisplay.canDisplayDaughters).toBe(true);
+    expect(summary.divisionDisplay.displayableDaughterCount).toBe(2);
+    expect(summary.divisionDisplay.timeCompressed).toBe(true);
+    expect(summary.divisionDisplay.biologicalReference).toBe(false);
+    expect(summary.regenerationContext?.decision?.cell_cycle_entry_permitted).toBe(true);
+    expect(summary.regenerationContext?.decision?.direct_mitogen_axes?.[0].active).toBe(true);
+    expect(summary.regenerationContext?.timing_profile?.dna_synthesis_peak_h).toEqual([36, 48]);
+  });
+
+  it("preserves cytokinesis regression as one real binucleated engine cell", () => {
+    const regressed = divisionCell({
+      id: "event-1-cell-0",
+      parent_id: "event-1-parent-0",
+      phase: "G1",
+      phase_time_s: 0,
+      ready_to_divide: false,
+      nuclei: 2,
+      ploidy_sets: [2, 2],
+      organelles: { centrosomes: 2 },
+      cytokinesis: {
+        stage: "regressed",
+        bridge_present: false,
+        midbody_present: false,
+        abscission_readiness: 0,
+        failure_reason: "late cytokinetic regression; one binucleated/polyploid hepatocyte"
+      }
+    });
+    const event = {
+      id: "division-1",
+      parent_index: 0,
+      parent_id: "event-1-parent-0",
+      outcome: "cytokinesis_failure",
+      t_s: 76,
+      failure_risk: 1,
+      resulting_cell_count: 1,
+      daughter_count: 0,
+      parent: divisionCell({ id: "event-1-parent-0" }),
+      resulting_cells: [regressed]
+    };
+    const summary = summarizeEngineSnapshot(
+      snapshotWithRawState({
+        division: {
+          engine: "whole_cell_population",
+          cell_count: 1,
+          event_count: 1,
+          cytokinesis_failure_risk: 1,
+          timing_profile: snapshot.state.division?.timing_profile,
+          cells: [regressed],
+          events: [event],
+          latest_event: event
+        }
+      }),
+      "/regression.json"
+    );
+
+    expect(summary.division?.latest_event?.outcome).toBe("cytokinesis_failure");
+    expect(summary.division?.latest_event?.daughter_count).toBe(0);
+    expect(summary.division?.latest_event?.resulting_cells).toHaveLength(1);
+    expect(summary.division?.latest_event?.resulting_cells[0].nuclei).toBe(2);
+    expect(summary.division?.latest_event?.resulting_cells[0].cytokinesis.stage).toBe("regressed");
+    expect(summary.divisionDisplay.reason).toBe("cytokinesis_failure");
+    expect(summary.divisionDisplay.canDisplayDaughters).toBe(false);
+    expect(summary.divisionDisplay.displayableDaughterCount).toBe(0);
+    expect(summary.divisionDisplay.resultingCellCount).toBe(1);
+    expect(summary.divisionDisplay.isCytokinesisRegression).toBe(true);
+  });
+
+  it("keeps checkpoint arrest as no event plus blocked engine checkpoint state", () => {
+    const arrestedCell = divisionCell({
+      id: "cell-0",
+      t_s: 80,
+      phase: "G1",
+      phase_time_s: 80,
+      biomass: 1,
+      ready_to_divide: false,
+      checkpoint_control: blockedCheckpoint,
+      organelles: {
+        mitochondria: 1500,
+        mitochondrial_fragments: 1500,
+        lysosomes: 300,
+        peroxisomes: 500,
+        ribosomes: 10000000,
+        centrosomes: 1,
+        golgi_fragments: 1,
+        er_mass: 1,
+        membrane_area: 1
+      },
+      cytokinesis: {
+        stage: "none",
+        ring_activity: 0,
+        furrow_depth: 0,
+        bridge_present: false,
+        midbody_present: false,
+        abscission_readiness: 0,
+        chromosome_alignment: 0,
+        nuclear_envelope_breakdown: 0,
+        nuclear_envelope_reform: 0,
+        mitochondrial_fragmentation: 0,
+        golgi_fragmentation: 0
+      }
+    });
+    const summary = summarizeEngineSnapshot(
+      snapshotWithRawState({
+        division: {
+          engine: "whole_cell_population",
+          cell_count: 1,
+          event_count: 0,
+          cytokinesis_failure_risk: 0.2,
+          timing_profile: {
+            id: "rat_hepatocyte_phx_reference",
+            label: "rat hepatocyte post-PHx first-cycle timing",
+            g1_min_duration_s: 64800,
+            s_duration_s: 21600,
+            g2_min_duration_s: 36000,
+            m_duration_s: 3600,
+            time_compressed: false,
+            biological_reference: true,
+            source_ids: ["rat_hepatocyte_phx_timing", "cell_cycle_timing"],
+            notes: "Source-anchored timing; no demo-speed division."
+          },
+          cells: [arrestedCell],
+          events: [],
+          latest_event: null
+        }
+      }),
+      "/arrest.json"
+    );
+
+    expect(summary.division?.event_count).toBe(0);
+    expect(summary.division?.latest_event).toBeNull();
+    expect(summary.division?.cells[0].ready_to_divide).toBe(false);
+    expect(summary.division?.cells[0].checkpoint_control?.blocked_by).toContain("G1 minimum timing not met");
+    expect(summary.divisionDisplay.reason).toBe("no_engine_event");
+    expect(summary.divisionDisplay.eventId).toBeNull();
+    expect(summary.divisionDisplay.canDisplayDaughters).toBe(false);
+    expect(summary.divisionDisplay.displayableDaughterCount).toBe(0);
+    expect(summary.divisionDisplay.isCheckpointBlocked).toBe(true);
+    expect(summary.divisionDisplay.blockedBy).toContain("awaiting growth factor/mitogen");
+    expect(summary.division?.timing_profile?.time_compressed).toBe(false);
+    expect(summary.division?.timing_profile?.biological_reference).toBe(true);
+    expect(summary.divisionDisplay.timeCompressed).toBe(false);
+    expect(summary.divisionDisplay.biologicalReference).toBe(true);
+  });
+
+  it("summarizes the default one-cell no-event snapshot as no displayable engine daughters", () => {
+    const quiescentCell = divisionCell({
+      id: "cell-0",
+      t_s: 80,
+      phase: "G1",
+      phase_time_s: 80,
+      biomass: 1,
+      ready_to_divide: false,
+      checkpoint_control: blockedCheckpoint,
+      organelles: {
+        mitochondria: 1500,
+        mitochondrial_fragments: 1500,
+        lysosomes: 300,
+        peroxisomes: 500,
+        ribosomes: 10000000,
+        centrosomes: 1,
+        golgi_fragments: 1,
+        er_mass: 1,
+        membrane_area: 1
+      },
+      cytokinesis: {
+        stage: "none",
+        ring_activity: 0,
+        furrow_depth: 0,
+        bridge_present: false,
+        midbody_present: false,
+        abscission_readiness: 0,
+        chromosome_alignment: 0,
+        nuclear_envelope_breakdown: 0,
+        nuclear_envelope_reform: 0,
+        mitochondrial_fragmentation: 0,
+        golgi_fragmentation: 0
+      }
+    });
+    const summary = summarizeEngineSnapshot(
+      snapshotWithRawState({
+        division: {
+          engine: "whole_cell_population",
+          cell_count: 1,
+          event_count: 0,
+          cytokinesis_failure_risk: 0.2,
+          timing_profile: {
+            id: "rat_hepatocyte_phx_reference",
+            time_compressed: false,
+            biological_reference: true,
+            source_ids: ["rat_hepatocyte_phx_timing", "cell_cycle_timing"]
+          },
+          cells: [quiescentCell],
+          events: [],
+          latest_event: null
+        },
+        regeneration_context: {
+          input: { trigger: "none", liver_mass_restored: true },
+          decision: {
+            regeneration_context_active: false,
+            cell_cycle_entry_permitted: false,
+            blocked_by: ["no injury/development/regeneration context or liver mass already restored"]
+          },
+          timing_is_real_world_reference: true,
+          division_demo_is_time_compressed: false
+        }
+      }),
+      "/default-no-event.json"
+    );
+
+    expect(summary.division?.cell_count).toBe(1);
+    expect(summary.division?.event_count).toBe(0);
+    expect(summary.division?.latest_event).toBeNull();
+    expect(summary.divisionDisplay.reason).toBe("no_engine_event");
+    expect(summary.divisionDisplay.canDisplayDaughters).toBe(false);
+    expect(summary.divisionDisplay.displayableDaughterCount).toBe(0);
+    expect(summary.divisionDisplay.resultingCellCount).toBe(0);
+    expect(summary.divisionDisplay.timeCompressed).toBe(false);
+    expect(summary.divisionDisplay.biologicalReference).toBe(true);
+    expect(summary.regenerationContext?.decision?.regeneration_context_active).toBe(false);
+    expect(summary.regenerationContext?.decision?.cell_cycle_entry_permitted).toBe(false);
+    expect(summary.regenerationContext?.division_demo_is_time_compressed).toBe(false);
+  });
+
+  it("drops malformed division payloads instead of exposing invented outcomes", () => {
+    const validEvent = snapshot.state.division?.events[0];
+    if (!validEvent) throw new Error("missing division event fixture");
+
+    const unknownOutcome = {
+      ...validEvent,
+      outcome: "checkpoint_arrest",
+      resulting_cell_count: 0,
+      daughter_count: 0,
+      resulting_cells: []
+    };
+    const missingDaughters = {
+      ...validEvent,
+      resulting_cell_count: 0,
+      daughter_count: 0,
+      resulting_cells: []
+    };
+
+    expect(
+      summarizeEngineSnapshot(
+        snapshotWithRawState({
+          division: { ...snapshot.state.division, events: [unknownOutcome], latest_event: unknownOutcome }
+        }),
+        "/invalid-outcome.json"
+      ).division
+    ).toBeNull();
+    const missingDaughtersSummary = summarizeEngineSnapshot(
+      snapshotWithRawState({
+        division: { ...snapshot.state.division, events: [missingDaughters], latest_event: missingDaughters }
+      }),
+      "/missing-daughters.json"
+    );
+    expect(missingDaughtersSummary.division).toBeNull();
+    expect(missingDaughtersSummary.divisionDisplay.reason).toBe("division_unavailable");
+    expect(missingDaughtersSummary.divisionDisplay.canDisplayDaughters).toBe(false);
+  });
+
+  it("summarizes absent or invalid division and regeneration fields as unavailable", () => {
+    const missingDivisionSummary = summarizeEngineSnapshot(snapshotWithRawState({ division: undefined }), "/missing-division.json");
+    expect(missingDivisionSummary.division).toBeNull();
+    expect(missingDivisionSummary.divisionDisplay.available).toBe(false);
+    expect(missingDivisionSummary.divisionDisplay.reason).toBe("division_unavailable");
+    expect(missingDivisionSummary.divisionDisplay.canDisplayDaughters).toBe(false);
+    expect(
+      summarizeEngineSnapshot(snapshotWithRawState({ regeneration_context: "not an object" }), "/invalid-regeneration.json").regenerationContext
+    ).toBeNull();
+    expect(
+      summarizeEngineSnapshot(
+        snapshotWithRawState({ regeneration_context: { timing_profile: { dna_synthesis_peak_h: [36] } } }),
+        "/invalid-regeneration-timing.json"
+      ).regenerationContext
+    ).toBeNull();
   });
 
   it("loads a snapshot over HTTP", async () => {
