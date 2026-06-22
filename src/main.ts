@@ -4,6 +4,7 @@ import {
   Cloud,
   createElement,
   Gauge,
+  GitFork,
   type IconNode,
   Pause,
   Play,
@@ -13,6 +14,10 @@ import {
   Waves
 } from "lucide";
 import * as THREE from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import {
   IonSimulation,
   SCENE_PRESETS,
@@ -58,7 +63,13 @@ import {
   type ReactionSystem
 } from "./physics/reactions";
 import { LivingCell, type OrganelleActivity, type OrganelleId, type CellFlow, type CellSnapshot } from "./physics/cell";
-import { engineSnapshotEndpointFromLocation, loadEngineSnapshot, type EngineSnapshotSummary } from "./engineSnapshot";
+import {
+  engineSnapshotEndpointFromLocation,
+  loadEngineSnapshot,
+  type EngineDivisionCell,
+  type EngineDivisionEvent,
+  type EngineSnapshotSummary
+} from "./engineSnapshot";
 import "./styles.css";
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -66,6 +77,8 @@ const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) {
   throw new Error("App root was not found.");
 }
+
+document.title = "Cell Engine: Hepatocyte Visualizer";
 
 const opt = (p: { id: string; label: string }) => `<option value="${p.id}">${p.label}</option>`;
 const EUKARYOTE_SCENE_ID = "eukaryotic-cell";
@@ -104,8 +117,8 @@ app.innerHTML = `
       <div class="brand">
         <span class="brand__mark"></span>
         <div>
-          <h1>Cell</h1>
-          <p>hepatocyte · polarity · metabolism</p>
+          <h1>Cell Engine</h1>
+          <p>hepatocyte · Python snapshot view</p>
         </div>
       </div>
 
@@ -119,6 +132,10 @@ app.innerHTML = `
         <button class="icon-button" data-action="reset" title="Reset" aria-label="Reset">
           <i data-lucide="refresh-ccw"></i>
         </button>
+        <button class="icon-button" data-action="divide" title="Trigger regeneration → cell division (adult hepatocytes are quiescent by default)" aria-label="Trigger cell division">
+          <i data-lucide="git-fork"></i>
+        </button>
+        <span class="toolbar-status" data-role="division-gate">Python snapshot loading</span>
       </div>
     </header>
 
@@ -237,6 +254,7 @@ const icons = {
   Atom,
   Cloud,
   Gauge,
+  GitFork,
   Pause,
   Play,
   RefreshCcw,
@@ -264,6 +282,51 @@ const timeScaleBadge = document.createElement("div");
 timeScaleBadge.className = "time-scale-badge";
 timeScaleBadge.style.display = "none";
 viewportElement.append(timeScaleBadge);
+const splitStateBadge = document.createElement("div");
+splitStateBadge.className = "split-state-badge";
+splitStateBadge.style.display = "none";
+splitStateBadge.setAttribute("aria-label", "Split state");
+viewportElement.append(splitStateBadge);
+
+// After a real division the viewport splits into one card per daughter cell —
+// each showing that daughter's own state and (inheritance-derived) activity.
+const divisionPanelsEl = document.createElement("div");
+divisionPanelsEl.className = "division-panels";
+divisionPanelsEl.style.display = "none";
+viewportElement.append(divisionPanelsEl);
+function updateDivisionPanels(visible: boolean) {
+  // Prefer the live daughter cells (each runs its own metabolism); fall back to
+  // inventory-only if the resolved visual isn't built yet.
+  const live = resolvedDivisionVisual?.cells ?? null;
+  const cells = live ?? visualPopulation.map((state) => ({ state, mitoActivity: -1, energyCharge: -1, status: "" }));
+  if (!visible || cells.length < 2) {
+    divisionPanelsEl.style.display = "none";
+    return;
+  }
+  divisionPanelsEl.style.display = "grid";
+  const sourceLabel = latestVisualDivisionSource === "engine" ? "Engine daughter" : "Browser-local demo daughter";
+  const activityLabel = latestVisualDivisionSource === "engine" ? "live mitochondrial / ATP activity" : "schematic local activity";
+  const statusColor = (st: string) => (st === "dying" ? "#ff8a8a" : st === "stressed" ? "#ffcf6b" : st === "senescent" ? "#d9a6ff" : "#7ee0a8");
+  divisionPanelsEl.innerHTML = cells
+    .map((cell, i) => {
+      const c = cell.state;
+      const color = FUCCI[c.phase] ?? "#9fe6ff";
+      // Real per-cell activity if the daughter is living; else inheritance proxy.
+      const activity = cell.mitoActivity >= 0 ? cell.mitoActivity : Math.min(1, c.organelles.mitochondria / 6e8);
+      const ec = cell.energyCharge >= 0 ? ` · EC ${cell.energyCharge.toFixed(2)}` : "";
+      const st = cell.status ? ` · <b style="color:${statusColor(cell.status)}">${cell.status}</b>` : "";
+      return (
+        `<div class="dpanel">` +
+        `<div class="dpanel__head">${sourceLabel} ${i + 1} <b style="color:${color}">· ${c.phase}</b>${st}</div>` +
+        `<div class="dpanel__row">biomass ${c.biomass.toFixed(2)} · nuclei ${c.nuclei} · ploidy ${c.ploidySets.join("/")}n${ec}</div>` +
+        `<div class="dpanel__row">mito ${c.organelles.mitochondria.toLocaleString()} · lys ${c.organelles.lysosomes} · perox ${c.organelles.peroxisomes} · centrosomes ${c.organelles.centrosomes}</div>` +
+        `<div class="dpanel__actlabel">${activityLabel}</div>` +
+        `<div class="dpanel__bar"><span style="width:${(activity * 100).toFixed(0)}%"></span></div>` +
+        `</div>`
+      );
+    })
+    .join("");
+}
 const rightInspectorElement = app.querySelector<HTMLElement>(".inspector--right");
 // --- Live activity report (organelle scene): what each organelle is doing now,
 //     what is moving where, plus an event log written as things actually happen.
@@ -271,14 +334,16 @@ const reportPanel = document.createElement("div");
 reportPanel.className = "report-panel";
 reportPanel.style.display = "none";
 reportPanel.innerHTML =
-  '<div class="report-panel__head">Hepatocyte activity - live</div>' +
-  '<div class="report-status"></div>' +
+  '<div class="report-panel__head">Python engine snapshot - authority</div>' +
   '<div class="external-snapshot"></div>' +
+  '<div class="local-visual-panel__head">Browser-local schematic renderer</div>' +
+  '<div class="report-status"></div>' +
+  '<div class="report-cellcycle"></div>' +
   '<div class="report-timescale"></div>' +
   '<div class="report-rows"></div>' +
-  '<div class="report-flow__title">Organelle traffic</div>' +
+  '<div class="report-flow__title">Schematic route-family particles</div>' +
   '<div class="report-flows"></div>' +
-  '<div class="report-log__title">Event log (as it happens)</div>' +
+  '<div class="report-log__title">Local visual event log</div>' +
   '<div class="report-log"></div>';
 (rightInspectorElement ?? viewportElement).append(reportPanel);
 let lastEventId = 0;
@@ -295,6 +360,7 @@ async function refreshExternalEngineSnapshot() {
     externalEngineSummary = null;
     externalEngineDiagnostic = `${result.diagnostic}; TS visual model remains active.`;
   }
+  updateDivisionDemoGate();
 }
 
 void refreshExternalEngineSnapshot();
@@ -311,6 +377,93 @@ let organelleGroup: THREE.Group | null = null; // schematic whole-cell anatomy
 let livingCell: LivingCell | null = null; // the metabolic model behind the organelle scene
 const organelleMitos: THREE.Mesh[] = []; // mitochondria meshes (glow with ATP production)
 let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by cell status)
+type CellCyclePhase = "G1" | "S" | "G2" | "M";
+type DivisionStage = "none" | "dna_replication" | "centrosome_separation" | "chromosome_alignment" | "ring_assembly" | "furrow_ingression" | "intercellular_bridge" | "abscission_pending" | "regressed";
+type DivisionOutcome = "none" | "abscission_success" | "cytokinesis_failure";
+type DivisionMechanicsState = {
+  stage: DivisionStage;
+  progress: number;
+  spindleAxis: THREE.Vector3;
+  divisionPlaneNormal: THREE.Vector3;
+  chromosomeAlignment: number;
+  nuclearEnvelopeBreakdown: number;
+  nuclearEnvelopeReform: number;
+  ringActivity: number;
+  furrowDepth: number;
+  bridgeTension: number;
+  abscissionReadiness: number;
+  mitochondrialFragmentation: number;
+  golgiFragmentation: number;
+};
+type OrganelleInventoryVisual = {
+  mitochondria: number;
+  mitochondrialFragments: number;
+  lysosomes: number;
+  peroxisomes: number;
+  ribosomes: number;
+  centrosomes: number;
+  golgiFragments: number;
+  erMass: number;
+  membraneArea: number;
+};
+type VisualCellInstance = {
+  id: number;
+  parentId: number | null;
+  generation: number;
+  nuclei: number;
+  ploidySets: number[];
+  biomass: number;
+  phase: CellCyclePhase;
+  phaseTime: number;
+  abscissionPending: boolean;
+  abscissionAge: number;
+  divisionOutcome: DivisionOutcome;
+  divisionOutcomeAge: number;
+  organelles: OrganelleInventoryVisual;
+  mechanics: DivisionMechanicsState;
+};
+type VisualDivisionEvent = {
+  outcome: DivisionOutcome;
+  parentId: number;
+  childIds: number[];
+  failureRisk: number;
+  parentOrganelles: OrganelleInventoryVisual;
+  childOrganelles: OrganelleInventoryVisual[];
+};
+type DivisionOverlay = {
+  group: THREE.Group;
+  ring: THREE.Mesh;
+  bridge: THREE.Mesh;
+  midbody: THREE.Mesh;
+  centrosomes: THREE.Mesh[];
+  chromosomes: THREE.Mesh[];
+  daughterNuclei: THREE.Mesh[];
+  spindle: THREE.LineSegments;
+  spindleMat: THREE.LineBasicMaterial;
+  ringMat: THREE.MeshStandardMaterial;
+  bridgeMat: THREE.MeshStandardMaterial;
+  midbodyMat: THREE.MeshStandardMaterial;
+};
+let divisionOverlay: DivisionOverlay | null = null;
+type ResolvedCellVisual = {
+  state: VisualCellInstance;
+  group: THREE.Group;
+  start: THREE.Vector3;
+  target: THREE.Vector3;
+  membraneMat: THREE.MeshStandardMaterial;
+  cytoplasmMat: THREE.MeshStandardMaterial;
+  nucleusMats: THREE.MeshStandardMaterial[];
+  particleMats: THREE.MeshStandardMaterial[];
+  living: LivingCell;          // each daughter runs its own metabolic model
+  mitoActivity: number;        // latest mitochondrial ATP activity (0..1)
+  energyCharge: number;        // latest energy charge (0..1)
+  status: string;              // latest health status
+};
+type ResolvedDivisionVisual = {
+  group: THREE.Group;
+  cells: ResolvedCellVisual[];
+};
+let resolvedDivisionVisual: ResolvedDivisionVisual | null = null;
 // Each organelle pulses with its OWN activity (its own loop in the cell model).
 type GlowGroup = { kind: keyof OrganelleActivity; mats: THREE.MeshStandardMaterial[]; base: number; gain: number };
 let organelleGlow: GlowGroup[] = [];
@@ -448,15 +601,774 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(viewportElement.clientWidth, viewportElement.clientHeight);
 viewportElement.append(renderer.domElement);
 
+// --- Local visual overlay: schematic calcium-like pulse + energy readout. This
+// is not an engine time series unless a future snapshot stream supplies one.
+let lastEnergyCharge = 0.85;
+const overlayCanvas = document.createElement("canvas");
+overlayCanvas.width = 208;
+overlayCanvas.height = 64;
+Object.assign(overlayCanvas.style, {
+  position: "absolute",
+  right: "12px",
+  bottom: "12px",
+  width: "192px",
+  height: "59px",
+  pointerEvents: "none",
+  borderRadius: "9px",
+  background: "rgba(8,14,22,0.42)",
+  border: "1px solid rgba(95,208,255,0.18)",
+  zIndex: "6"
+});
+if (getComputedStyle(viewportElement).position === "static") viewportElement.style.position = "relative";
+viewportElement.append(overlayCanvas);
+const overlayCtx = overlayCanvas.getContext("2d");
+const caHistory: number[] = new Array(160).fill(0);
+function drawCalciumTrace() {
+  if (!overlayCtx) return;
+  caHistory.push(lastCalcium);
+  caHistory.shift();
+  const w = overlayCanvas.width;
+  const h = overlayCanvas.height;
+  overlayCtx.clearRect(0, 0, w, h);
+  overlayCtx.font = "9px ui-monospace, SFMono-Regular, monospace";
+  overlayCtx.fillStyle = "#9fe6ff";
+  overlayCtx.fillText("Ca vis", 10, 14);
+  overlayCtx.fillStyle = "#7ee0a8";
+  overlayCtx.textAlign = "right";
+  overlayCtx.fillText(`EC ${lastEnergyCharge.toFixed(2)}`, w - 10, 14);
+  overlayCtx.textAlign = "left";
+  const x0 = 10;
+  const x1 = w - 10;
+  const yBase = h - 9;
+  const yTop = 19;
+  overlayCtx.beginPath();
+  for (let i = 0; i < caHistory.length; i += 1) {
+    const x = x0 + ((x1 - x0) * i) / (caHistory.length - 1);
+    const y = yBase + (yTop - yBase) * caHistory[i];
+    if (i === 0) overlayCtx.moveTo(x, y);
+    else overlayCtx.lineTo(x, y);
+  }
+  overlayCtx.strokeStyle = "#5fd0ff";
+  overlayCtx.lineWidth = 2;
+  overlayCtx.shadowColor = "#5fd0ff";
+  overlayCtx.shadowBlur = 9;
+  overlayCtx.stroke();
+  overlayCtx.shadowBlur = 0;
+  const lx = x1;
+  const ly = yBase + (yTop - yBase) * lastCalcium;
+  overlayCtx.beginPath();
+  overlayCtx.arc(lx, ly, 2.5 + 3.5 * lastCalcium, 0, Math.PI * 2);
+  overlayCtx.fillStyle = "#cdf6ff";
+  overlayCtx.fill();
+}
+
+// --- Cell-cycle position readout (FUCCI-style). Grounded: how close a cell is to
+// dividing IS observable in real cells — FUCCI reporters colour G1 orange / S·G2·M
+// green, DNA content and cyclin levels report position too. This is a coarse model:
+// growth advances ONLY while the cell is energised, and the G1/G2 checkpoints hold
+// it when stressed (a DNA-damage/health proxy), so it tracks the cell's real state,
+// not a blind clock. ---
+const IDLE_DIVISION_MECHANICS = (): DivisionMechanicsState => ({
+  stage: "none",
+  progress: 0,
+  spindleAxis: new THREE.Vector3(1, 0, 0),
+  divisionPlaneNormal: new THREE.Vector3(1, 0, 0),
+  chromosomeAlignment: 0,
+  nuclearEnvelopeBreakdown: 0,
+  nuclearEnvelopeReform: 0,
+  ringActivity: 0,
+  furrowDepth: 0,
+  bridgeTension: 0.25,
+  abscissionReadiness: 0,
+  mitochondrialFragmentation: 0,
+  golgiFragmentation: 0
+});
+const baselineOrganelleInventory = (): OrganelleInventoryVisual => ({
+  mitochondria: 1500,
+  mitochondrialFragments: 1500,
+  lysosomes: 300,
+  peroxisomes: 500,
+  ribosomes: 10_000_000,
+  centrosomes: 1,
+  golgiFragments: 1,
+  erMass: 1.0,
+  membraneArea: 1.0
+});
+const cloneOrganelleInventory = (inv: OrganelleInventoryVisual): OrganelleInventoryVisual => ({ ...inv });
+const cellCycle: VisualCellInstance = {
+  id: 1,
+  parentId: null,
+  generation: 0,
+  nuclei: 1,
+  ploidySets: [2],
+  biomass: 1.0,
+  phase: "G1",
+  phaseTime: 0,
+  abscissionPending: false,
+  abscissionAge: 0,
+  divisionOutcome: "none",
+  divisionOutcomeAge: 0,
+  organelles: baselineOrganelleInventory(),
+  mechanics: IDLE_DIVISION_MECHANICS()
+};
+let visualPopulation: VisualCellInstance[] = [cellCycle];
+let visualDivisionEvents: VisualDivisionEvent[] = [];
+let nextVisualCellId = 2;
+let divisionRngSeed = 20260621;
+let engineDivisionAppliedEventId = "";
+let latestVisualDivisionSource: "engine" | "browser-local" | null = null;
+const divisionRandom = () => ((divisionRngSeed = (1_664_525 * divisionRngSeed + 1_013_904_223) >>> 0) / 4_294_967_296);
+function divisionGaussian() {
+  const u1 = Math.max(1e-9, divisionRandom());
+  const u2 = Math.max(1e-9, divisionRandom());
+  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(Math.PI * 2 * u2);
+}
+function splitIntegerCount(n: number, exactHalf = false): [number, number] {
+  const rounded = Math.max(0, Math.round(n));
+  if (exactHalf) {
+    const a = Math.floor(rounded / 2);
+    return [a, rounded - a];
+  }
+  if (rounded <= 2000) {
+    let a = 0;
+    for (let i = 0; i < rounded; i += 1) if (divisionRandom() < 0.5) a += 1;
+    return [a, rounded - a];
+  }
+  const a = clamp(Math.round(rounded * 0.5 + divisionGaussian() * Math.sqrt(rounded * 0.25)), 0, rounded);
+  return [a, rounded - a];
+}
+function partitionVisualOrganelles(parent: OrganelleInventoryVisual): [OrganelleInventoryVisual, OrganelleInventoryVisual] {
+  const [mitoA, mitoB] = splitIntegerCount(parent.mitochondria);
+  const [fragA, fragB] = splitIntegerCount(parent.mitochondrialFragments);
+  const [lysoA, lysoB] = splitIntegerCount(parent.lysosomes);
+  const [peroxA, peroxB] = splitIntegerCount(parent.peroxisomes);
+  const [riboA, riboB] = splitIntegerCount(parent.ribosomes);
+  const [golgiA, golgiB] = splitIntegerCount(Math.max(2, parent.golgiFragments));
+  const cenA = 1;
+  const cenB = Math.max(0, parent.centrosomes - 1);
+  return [
+    {
+      mitochondria: mitoA,
+      mitochondrialFragments: Math.max(mitoA, fragA),
+      lysosomes: lysoA,
+      peroxisomes: peroxA,
+      ribosomes: riboA,
+      centrosomes: cenA,
+      golgiFragments: golgiA > 0 ? 1 : 0,
+      erMass: parent.erMass / 2,
+      membraneArea: parent.membraneArea / 2
+    },
+    {
+      mitochondria: mitoB,
+      mitochondrialFragments: Math.max(mitoB, fragB),
+      lysosomes: lysoB,
+      peroxisomes: peroxB,
+      ribosomes: riboB,
+      centrosomes: cenB,
+      golgiFragments: golgiB > 0 ? 1 : 0,
+      erMass: parent.erMass / 2,
+      membraneArea: parent.membraneArea / 2
+    }
+  ];
+}
+function resetResolvedDivisionVisual() {
+  if (!resolvedDivisionVisual) return;
+  root.remove(resolvedDivisionVisual.group);
+  resolvedDivisionVisual.group.traverse((o) => {
+    if (o instanceof THREE.Mesh) {
+      o.geometry.dispose();
+      const mat = o.material;
+      if (Array.isArray(mat)) mat.forEach((m) => m.dispose());
+      else mat.dispose();
+    } else if (o instanceof THREE.Points) {
+      o.geometry.dispose();
+      o.material.dispose();
+    }
+  });
+  resolvedDivisionVisual = null;
+}
+function resetCellCycleVisualState() {
+  resetResolvedDivisionVisual();
+  nextVisualCellId = 2;
+  visualDivisionEvents = [];
+  divisionRngSeed = 20260621;
+  engineDivisionAppliedEventId = "";
+  latestVisualDivisionSource = null;
+  cellCycle.id = 1;
+  cellCycle.parentId = null;
+  cellCycle.generation = 0;
+  cellCycle.nuclei = 1;
+  cellCycle.ploidySets = [2];
+  cellCycle.biomass = 1.0;
+  cellCycle.phase = "G1";
+  cellCycle.phaseTime = 0;
+  cellCycle.abscissionPending = false;
+  cellCycle.abscissionAge = 0;
+  cellCycle.divisionOutcome = "none";
+  cellCycle.divisionOutcomeAge = 0;
+  cellCycle.organelles = baselineOrganelleInventory();
+  cellCycle.mechanics = IDLE_DIVISION_MECHANICS();
+  visualPopulation = [cellCycle];
+}
+const CC = {
+  g1s: 2.0,
+  g2m: 3.5,
+  sDur: 16,
+  mDur: 5,
+  abscissionDelayS: 2.0,
+  hepatocyteCytokinesisFailureBase: 0.2,
+  growthPerSimS: 0.012,
+  localDivisionFallbackEnabled: false,
+  regenerationSignalActive: false,
+  realSPhaseH: 7,
+  realG2H: 2.5,
+  realMH: 1
+};
+const FUCCI: Record<string, string> = { G1: "#ff9d3a", S: "#41d97a", G2: "#41d97a", M: "#41d97a" };
+const CC_BOUNDS: Record<string, [number, number]> = { G1: [0, 0.4], S: [0.4, 0.62], G2: [0.62, 0.85], M: [0.85, 1] };
+const cellCycleEl = reportPanel.querySelector(".report-cellcycle");
+function divisionMechanicsFor(phase: string, phaseTime: number, abscissionPending: boolean): DivisionMechanicsState {
+  const m = IDLE_DIVISION_MECHANICS();
+  if (phase === "S") {
+    // S phase: the genome is replicated. Show replicating chromatin in the nucleus.
+    m.stage = "dna_replication";
+    m.progress = Math.min(1, phaseTime / Math.max(1, CC.sDur));
+    return m;
+  }
+  if (phase === "G2") {
+    const p = Math.min(1, phaseTime / Math.max(1, CC.sDur * 0.25));
+    m.stage = "centrosome_separation";
+    m.progress = p;
+    m.chromosomeAlignment = 0;
+    m.nuclearEnvelopeBreakdown = 0;
+    m.mitochondrialFragmentation = 0.15 + 0.2 * p;
+    m.golgiFragmentation = 0.1 + 0.25 * p;
+    return m;
+  }
+  if (phase !== "M") return m;
+  const p = abscissionPending ? 1 : Math.min(1, phaseTime / CC.mDur);
+  m.progress = p;
+  m.chromosomeAlignment = Math.min(1, p / 0.35);
+  m.nuclearEnvelopeBreakdown = p < 0.1 ? p / 0.1 : 1;
+  m.nuclearEnvelopeReform = p < 0.72 ? 0 : Math.min(1, (p - 0.72) / 0.2);
+  m.mitochondrialFragmentation = Math.min(1, 0.35 + p * 0.85);
+  m.golgiFragmentation = Math.min(1, p / 0.35);
+  if (abscissionPending) {
+    m.stage = "abscission_pending";
+    m.ringActivity = 0;
+    m.furrowDepth = 1;
+    m.bridgeTension = 0.25;
+    m.abscissionReadiness = 1;
+    return m;
+  }
+  if (p < 0.25) {
+    m.stage = p < 0.14 ? "chromosome_alignment" : "ring_assembly";
+    m.ringActivity = Math.max(0, (p - 0.1) / 0.15);
+  } else if (p < 0.75) {
+    m.stage = "furrow_ingression";
+    m.ringActivity = 1;
+    m.furrowDepth = (p - 0.25) / 0.5;
+  } else {
+    m.stage = "intercellular_bridge";
+    m.ringActivity = Math.max(0, 1 - (p - 0.75) / 0.25);
+    m.furrowDepth = 1;
+    m.bridgeTension = 0.45 - 0.2 * ((p - 0.75) / 0.25);
+    m.abscissionReadiness = (p - 0.75) / 0.25;
+  }
+  return m;
+}
+function cloneVisualCell(c: VisualCellInstance): VisualCellInstance {
+  return {
+    ...c,
+    ploidySets: [...c.ploidySets],
+    organelles: cloneOrganelleInventory(c.organelles),
+    mechanics: { ...c.mechanics, spindleAxis: c.mechanics.spindleAxis.clone(), divisionPlaneNormal: c.mechanics.divisionPlaneNormal.clone() }
+  };
+}
+function applyVisualCellState(target: VisualCellInstance, source: VisualCellInstance) {
+  target.id = source.id;
+  target.parentId = source.parentId;
+  target.generation = source.generation;
+  target.nuclei = source.nuclei;
+  target.ploidySets = [...source.ploidySets];
+  target.biomass = source.biomass;
+  target.phase = source.phase;
+  target.phaseTime = source.phaseTime;
+  target.abscissionPending = source.abscissionPending;
+  target.abscissionAge = source.abscissionAge;
+  target.divisionOutcome = source.divisionOutcome;
+  target.divisionOutcomeAge = source.divisionOutcomeAge;
+  target.organelles = cloneOrganelleInventory(source.organelles);
+  target.mechanics = {
+    ...source.mechanics,
+    spindleAxis: source.mechanics.spindleAxis.clone(),
+    divisionPlaneNormal: source.mechanics.divisionPlaneNormal.clone()
+  };
+}
+function makeDaughterCell(parent: VisualCellInstance, organelles: OrganelleInventoryVisual): VisualCellInstance {
+  return {
+    id: nextVisualCellId++,
+    parentId: parent.id,
+    generation: parent.generation + 1,
+    nuclei: 1,
+    ploidySets: [2],
+    biomass: parent.biomass / 2,
+    phase: "G1",
+    phaseTime: 0,
+    abscissionPending: false,
+    abscissionAge: 0,
+    divisionOutcome: "none",
+    divisionOutcomeAge: 0,
+    organelles,
+    mechanics: IDLE_DIVISION_MECHANICS()
+  };
+}
+function visualCellFromEngineCell(cell: EngineDivisionCell, fallbackIndex: number): VisualCellInstance {
+  const phase = cell.phase === "S" || cell.phase === "G2" || cell.phase === "M" ? cell.phase : "G1";
+  return {
+    id: fallbackIndex + 1,
+    parentId: cell.parent_id ? 0 : null,
+    generation: cell.generation,
+    nuclei: cell.nuclei,
+    ploidySets: cell.ploidy_sets.length ? [...cell.ploidy_sets] : [2],
+    biomass: cell.biomass,
+    phase,
+    phaseTime: cell.phase_time_s,
+    abscissionPending: false,
+    abscissionAge: 0,
+    divisionOutcome: "none",
+    divisionOutcomeAge: 0,
+    organelles: {
+      mitochondria: cell.organelles.mitochondria,
+      mitochondrialFragments: cell.organelles.mitochondrial_fragments,
+      lysosomes: cell.organelles.lysosomes,
+      peroxisomes: cell.organelles.peroxisomes,
+      ribosomes: cell.organelles.ribosomes,
+      centrosomes: cell.organelles.centrosomes,
+      golgiFragments: cell.organelles.golgi_fragments,
+      erMass: cell.organelles.er_mass,
+      membraneArea: cell.organelles.membrane_area
+    },
+    mechanics: {
+      stage: "none",
+      progress: cell.cytokinesis.abscission_readiness,
+      spindleAxis: new THREE.Vector3(...cell.cytokinesis.spindle_axis),
+      divisionPlaneNormal: new THREE.Vector3(...cell.cytokinesis.division_plane_normal),
+      chromosomeAlignment: cell.cytokinesis.chromosome_alignment,
+      nuclearEnvelopeBreakdown: cell.cytokinesis.nuclear_envelope_breakdown,
+      nuclearEnvelopeReform: cell.cytokinesis.nuclear_envelope_reform,
+      ringActivity: cell.cytokinesis.ring_activity,
+      furrowDepth: cell.cytokinesis.furrow_depth,
+      bridgeTension: cell.cytokinesis.bridge_tension,
+      abscissionReadiness: cell.cytokinesis.abscission_readiness,
+      mitochondrialFragmentation: cell.cytokinesis.mitochondrial_fragmentation,
+      golgiFragmentation: cell.cytokinesis.golgi_fragmentation
+    }
+  };
+}
+function visualCytokinesisFailureRisk(energyCharge: number, healthy: boolean) {
+  let risk = CC.hepatocyteCytokinesisFailureBase;
+  if (!healthy) risk += 0.22;
+  risk += Math.max(0, 0.62 - energyCharge) * 0.35;
+  risk += Math.max(0, cellCycle.mechanics.bridgeTension - 0.35) * 0.35;
+  risk += Math.max(0, 0.85 - Math.min(1, cellCycle.organelles.membraneArea / Math.max(1, cellCycle.biomass))) * 0.12;
+  return clamp(risk, 0.02, 0.85);
+}
+function makeCellParticleCloud(state: VisualCellInstance, radius: number, family: "mitochondria" | "vesicles", parent: THREE.Group): THREE.MeshStandardMaterial[] {
+  const mats: THREE.MeshStandardMaterial[] = [];
+  const count = family === "mitochondria" ? 18 : 16;
+  const color = family === "mitochondria" ? "#ff8a5c" : "#d7e868";
+  const mat = new THREE.MeshStandardMaterial({
+    color,
+    emissive: color,
+    emissiveIntensity: family === "mitochondria" ? 0.22 : 0.14,
+    roughness: 0.48,
+    transparent: true,
+    opacity: 0.82
+  });
+  let seed = (state.id * 1_103_515_245 + (family === "mitochondria" ? 17 : 71)) >>> 0;
+  const rnd = () => ((seed = (1_664_525 * seed + 1_013_904_223) >>> 0) / 4_294_967_296);
+  for (let i = 0; i < count; i += 1) {
+    const dir = new THREE.Vector3(rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1);
+    if (dir.lengthSq() < 1e-4) dir.set(1, 0, 0);
+    dir.normalize().multiplyScalar(radius * (0.25 + rnd() * 0.56));
+    dir.y *= 0.86;
+    const meshMat = mat.clone();
+    mats.push(meshMat);
+    const mesh =
+      family === "mitochondria"
+        ? new THREE.Mesh(new THREE.CapsuleGeometry(radius * 0.035, radius * (0.12 + rnd() * 0.08), 5, 10), meshMat)
+        : new THREE.Mesh(new THREE.SphereGeometry(radius * (0.026 + rnd() * 0.02), 10, 8), meshMat);
+    mesh.position.copy(dir);
+    mesh.rotation.set(rnd() * Math.PI, rnd() * Math.PI, rnd() * Math.PI);
+    mesh.userData.label =
+      family === "mitochondria"
+        ? `Daughter cell ${state.id} inherited mitochondria (${state.organelles.mitochondria.toLocaleString()} tracked copies in state)`
+        : `Daughter cell ${state.id} inherited lysosome/peroxisome vesicle pools (${state.organelles.lysosomes}+${state.organelles.peroxisomes} tracked copies)`;
+    parent.add(mesh);
+  }
+  return mats;
+}
+function createResolvedDivisionVisual(cells: VisualCellInstance[], outcome: DivisionOutcome) {
+  resetResolvedDivisionVisual();
+  if (organelleGroup) organelleGroup.visible = false;
+  const group = new THREE.Group();
+  const engineBacked = latestVisualDivisionSource === "engine";
+  group.name =
+    outcome === "abscission_success"
+      ? engineBacked
+        ? "Engine-backed daughter cell population"
+        : "Browser-local daughter visual demo"
+      : engineBacked
+        ? "Engine-backed binucleated cytokinesis-regression cell"
+        : "Browser-local cytokinesis-regression visual demo";
+  const visuals: ResolvedCellVisual[] = [];
+  const isPair = cells.length === 2;
+  for (let i = 0; i < cells.length; i += 1) {
+    const state = cells[i];
+    const cellGroup = new THREE.Group();
+    const sign = i === 0 ? -1 : 1;
+    const radius = isPair ? CELL_R * 0.66 : CELL_R * 0.86;
+    const start = isPair ? new THREE.Vector3(sign * 1.2, 0, 0) : new THREE.Vector3();
+    const target = isPair ? new THREE.Vector3(sign * 5.2, i === 0 ? -0.2 : 0.2, 0) : new THREE.Vector3();
+    cellGroup.position.copy(start);
+    cellGroup.userData.label =
+      outcome === "abscission_success"
+        ? `${engineBacked ? "Engine-backed" : "Browser-local visual demo"} daughter cell state ${state.id}; parent ${state.parentId}; mitochondria ${state.organelles.mitochondria.toLocaleString()}, centrosomes ${state.organelles.centrosomes}`
+        : `${engineBacked ? "Engine-backed" : "Browser-local visual demo"} cytokinesis regression state ${state.id}; one hepatocyte with ${state.nuclei} nuclei and conserved organelles`;
+
+    const membraneMat = new THREE.MeshStandardMaterial({
+      color: outcome === "abscission_success" ? "#7fb6ff" : "#ffb95f",
+      emissive: outcome === "abscission_success" ? "#285a88" : "#8a4b18",
+      emissiveIntensity: 0.12,
+      transparent: true,
+      opacity: 0.22,
+      roughness: 0.44,
+      depthWrite: false
+    });
+    const cytoplasmMat = new THREE.MeshStandardMaterial({
+      color: "#a8c7e8",
+      emissive: "#3f668c",
+      emissiveIntensity: 0.04,
+      transparent: true,
+      opacity: 0.075,
+      roughness: 0.7,
+      depthWrite: false
+    });
+    const membrane = new THREE.Mesh(new THREE.SphereGeometry(radius, 64, 40), membraneMat);
+    membrane.scale.set(1, 0.88, 0.96);
+    membrane.userData.label =
+      outcome === "abscission_success"
+        ? `${engineBacked ? "Daughter plasma membrane from an engine division result" : "Browser-local daughter membrane demo; not Python engine state"}`
+        : "One plasma membrane after failed cytokinesis; no fake split";
+    cellGroup.add(membrane);
+    const cytoplasm = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.95, 48, 28), cytoplasmMat);
+    cytoplasm.scale.copy(membrane.scale);
+    cellGroup.add(cytoplasm);
+
+    const nucleusMats: THREE.MeshStandardMaterial[] = [];
+    for (let n = 0; n < state.nuclei; n += 1) {
+      const nucleusMat = new THREE.MeshStandardMaterial({
+        color: "#b07ed8",
+        emissive: "#6f3fa0",
+        emissiveIntensity: 0.16,
+        transparent: true,
+        opacity: 0.56,
+        roughness: 0.5
+      });
+      const nucleus = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.22, 32, 20), nucleusMat);
+      const offset = state.nuclei === 1 ? 0 : (n === 0 ? -1 : 1) * radius * 0.22;
+      nucleus.position.set(offset, n === 0 ? radius * 0.05 : -radius * 0.05, 0);
+      nucleus.scale.set(1.05, 0.88, 0.96);
+      nucleus.userData.label =
+        state.nuclei === 1
+          ? `${engineBacked ? "Inherited engine daughter nucleus" : "Browser-local inherited daughter nucleus demo"}`
+          : "Binucleated hepatocyte nucleus after cytokinesis regression";
+      nucleusMats.push(nucleusMat);
+      cellGroup.add(nucleus);
+    }
+
+    const centrosomeMat = new THREE.MeshStandardMaterial({ color: "#e9eef8", emissive: "#8fe3ff", emissiveIntensity: 0.18 });
+    for (let c = 0; c < state.organelles.centrosomes; c += 1) {
+      const centrosome = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.035, 12, 8), centrosomeMat.clone());
+      centrosome.position.set((c - (state.organelles.centrosomes - 1) / 2) * radius * 0.24, radius * 0.28, radius * 0.12);
+      centrosome.userData.label = `Centrosome inherited in state (${state.organelles.centrosomes} tracked centrosome${state.organelles.centrosomes === 1 ? "" : "s"})`;
+      cellGroup.add(centrosome);
+    }
+    const mitoMats = makeCellParticleCloud(state, radius, "mitochondria", cellGroup);
+    makeCellParticleCloud(state, radius, "vesicles", cellGroup);
+
+    // Each daughter is a real living cell: its own metabolic model runs, so its
+    // mitochondria glow and its panel report its own activity — not a static sphere.
+    const living = new LivingCell(undefined, 0.85, true);
+
+    group.add(cellGroup);
+    visuals.push({
+      state, group: cellGroup, start, target, membraneMat, cytoplasmMat, nucleusMats,
+      particleMats: mitoMats, living, mitoActivity: 0.3, energyCharge: 0.85, status: "healthy"
+    });
+  }
+  root.add(group);
+  resolvedDivisionVisual = { group, cells: visuals };
+}
+function updateResolvedDivisionVisual(simSeconds: number, elapsedS: number) {
+  if (!resolvedDivisionVisual) return;
+  const event = visualDivisionEvents[visualDivisionEvents.length - 1];
+  for (const visual of resolvedDivisionVisual.cells) {
+    visual.state.divisionOutcomeAge += simSeconds;
+    const p = Math.min(1, visual.state.divisionOutcomeAge / 5.5);
+    const eased = p * p * (3 - 2 * p);
+    visual.group.position.copy(visual.start).lerp(visual.target, eased);
+    visual.group.rotation.y = Math.sin(elapsedS * 0.08 + visual.state.id) * 0.05;
+    visual.group.rotation.z = Math.sin(elapsedS * 0.06 + visual.state.id * 0.7) * 0.025;
+    const pulse = 0.5 + 0.5 * Math.sin(elapsedS * 0.7 + visual.state.id);
+    visual.membraneMat.opacity = event?.outcome === "abscission_success" ? 0.2 + pulse * 0.035 : 0.24 + pulse * 0.025;
+    visual.cytoplasmMat.opacity = 0.06 + pulse * 0.02;
+    for (const mat of visual.nucleusMats) mat.emissiveIntensity = 0.12 + pulse * 0.08;
+
+    // Each daughter is alive: step its own metabolism and let its mitochondria
+    // glow with its real ATP activity, its membrane take on its own health.
+    visual.living.step(simSeconds * 0.5, 1);
+    const snap = visual.living.snapshot();
+    visual.mitoActivity = Math.min(1, snap.activity.mitochondria / 0.95);
+    visual.energyCharge = snap.energyCharge;
+    visual.status = snap.status;
+    const glow = 0.18 + 1.15 * visual.mitoActivity;
+    for (const mat of visual.particleMats) mat.emissiveIntensity = glow;
+    visual.membraneMat.emissiveIntensity = 0.08 + 0.22 * visual.energyCharge;
+  }
+}
+function resolveVisualDivision(energyCharge: number, healthy: boolean) {
+  if (localDivisionDemoBlockedByEngine()) {
+    setDivisionDemo(false, true);
+    return;
+  }
+  if (!cellCycle.abscissionPending || visualDivisionEvents.length > 0) return;
+  const parent = cloneVisualCell(cellCycle);
+  const parentOrganelles = cloneOrganelleInventory(parent.organelles);
+  const failureRisk = visualCytokinesisFailureRisk(energyCharge, healthy);
+  if (divisionRandom() < failureRisk) {
+    latestVisualDivisionSource = "browser-local";
+    cellCycle.phase = "G1";
+    cellCycle.phaseTime = 0;
+    cellCycle.abscissionPending = false;
+    cellCycle.abscissionAge = 0;
+    cellCycle.divisionOutcome = "cytokinesis_failure";
+    cellCycle.divisionOutcomeAge = 0;
+    cellCycle.nuclei = 2;
+    cellCycle.ploidySets = [2, 2];
+    cellCycle.organelles = {
+      ...cloneOrganelleInventory(parentOrganelles),
+      centrosomes: Math.max(2, parentOrganelles.centrosomes),
+      golgiFragments: 1
+    };
+    cellCycle.mechanics = { ...IDLE_DIVISION_MECHANICS(), stage: "regressed" };
+    visualPopulation = [cellCycle];
+    visualDivisionEvents.push({
+      outcome: "cytokinesis_failure",
+      parentId: parent.id,
+      childIds: [cellCycle.id],
+      failureRisk,
+      parentOrganelles,
+      childOrganelles: [cloneOrganelleInventory(cellCycle.organelles)]
+    });
+    createResolvedDivisionVisual(visualPopulation, "cytokinesis_failure");
+    return;
+  }
+
+  const [orgA, orgB] = partitionVisualOrganelles(parentOrganelles);
+  const daughterA = makeDaughterCell(parent, orgA);
+  const daughterB = makeDaughterCell(parent, orgB);
+  latestVisualDivisionSource = "browser-local";
+  applyVisualCellState(cellCycle, daughterA);
+  visualPopulation = [cellCycle, daughterB];
+  visualDivisionEvents.push({
+    outcome: "abscission_success",
+    parentId: parent.id,
+    childIds: [daughterA.id, daughterB.id],
+    failureRisk,
+    parentOrganelles,
+    childOrganelles: [cloneOrganelleInventory(orgA), cloneOrganelleInventory(orgB)]
+  });
+  createResolvedDivisionVisual(visualPopulation, "abscission_success");
+}
+function syncVisualDivisionFromEngine(summary: EngineSnapshotSummary | null) {
+  const division = summary?.division;
+  const display = summary?.divisionDisplay;
+  const event: EngineDivisionEvent | null | undefined = division?.latest_event ?? division?.events.at(-1);
+  if (!event || event.outcome === "none" || event.id === engineDivisionAppliedEventId) return;
+  if (event.outcome === "abscission_success" && !display?.canDisplayDaughters) return;
+  if (event.outcome === "cytokinesis_failure" && event.resulting_cells.length < 1) return;
+
+  const incoming = event.resulting_cells.map((cell, i) => visualCellFromEngineCell(cell, i));
+  for (const cell of incoming) {
+    cell.divisionOutcome = event.outcome;
+    cell.divisionOutcomeAge = 0;
+  }
+  applyVisualCellState(cellCycle, incoming[0]);
+  visualPopulation = [cellCycle, ...incoming.slice(1)];
+  const parent = visualCellFromEngineCell(event.parent, -1);
+  visualDivisionEvents = [{
+    outcome: event.outcome,
+    parentId: 0,
+    childIds: visualPopulation.map((cell) => cell.id),
+    failureRisk: event.failure_risk,
+    parentOrganelles: cloneOrganelleInventory(parent.organelles),
+    childOrganelles: visualPopulation.map((cell) => cloneOrganelleInventory(cell.organelles))
+  }];
+  engineDivisionAppliedEventId = event.id;
+  latestVisualDivisionSource = "engine";
+  createResolvedDivisionVisual(visualPopulation, event.outcome);
+}
+function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy: boolean) {
+  const c = cellCycle;
+  const alreadyResolved = visualDivisionEvents.length > 0;
+  const nutrientOk = energyCharge > 0;
+  const regenerationOk = CC.regenerationSignalActive;
+  const proliferationPermitted = CC.localDivisionFallbackEnabled && nutrientOk && regenerationOk && healthy;
+  if (!alreadyResolved) {
+    const previousBiomass = c.biomass;
+    if (c.abscissionPending) {
+      c.phaseTime = Math.min(c.phaseTime, CC.mDur);
+      c.abscissionAge += simSeconds;
+    } else if (proliferationPermitted) {
+      c.biomass += CC.growthPerSimS * simSeconds * Math.min(1, energyCharge);
+    }
+    if (c.biomass > previousBiomass && !c.abscissionPending) {
+      const factor = c.biomass / Math.max(previousBiomass, 0.001);
+      c.organelles.mitochondria = Math.max(c.organelles.mitochondria, Math.round(c.organelles.mitochondria * factor));
+      c.organelles.mitochondrialFragments = Math.max(c.organelles.mitochondria, c.organelles.mitochondrialFragments);
+      c.organelles.lysosomes = Math.max(c.organelles.lysosomes, Math.round(c.organelles.lysosomes * (1 + (factor - 1) * 0.65)));
+      c.organelles.peroxisomes = Math.max(c.organelles.peroxisomes, Math.round(c.organelles.peroxisomes * (1 + (factor - 1) * 0.65)));
+      c.organelles.ribosomes = Math.max(c.organelles.ribosomes, Math.round(c.organelles.ribosomes * factor));
+      c.organelles.erMass *= factor;
+      c.organelles.membraneArea *= factor;
+    }
+    if (!c.abscissionPending) {
+      if (proliferationPermitted) c.phaseTime += simSeconds;
+      else if (c.phase === "G1") c.phaseTime = 0;
+      if (c.phase === "G1") { if (c.biomass >= CC.g1s && proliferationPermitted) { c.phase = "S"; c.phaseTime = 0; } }
+      else if (c.phase === "S") { c.organelles.centrosomes = 2; if (c.phaseTime >= CC.sDur) { c.phase = "G2"; c.phaseTime = 0; } }
+      else if (c.phase === "G2") { if (c.biomass >= CC.g2m && proliferationPermitted) { c.phase = "M"; c.phaseTime = 0; } }
+      else if (c.phaseTime >= CC.mDur) {
+        c.abscissionPending = true;
+        c.abscissionAge = 0;
+        c.phaseTime = CC.mDur;
+      }
+    } else if (c.abscissionAge >= CC.abscissionDelayS) {
+      resolveVisualDivision(energyCharge, healthy);
+    }
+  }
+  c.mechanics = divisionMechanicsFor(c.phase, c.phaseTime, c.abscissionPending);
+  c.organelles.mitochondrialFragments = Math.max(
+    c.organelles.mitochondria,
+    Math.round(c.organelles.mitochondria * (1 + 2 * c.mechanics.mitochondrialFragmentation))
+  );
+  c.organelles.golgiFragments = c.phase === "M" ? Math.max(40, Math.round(80 * c.mechanics.golgiFragmentation)) : Math.max(1, c.organelles.golgiFragments);
+
+  let within: number;
+  if (c.phase === "G1") within = Math.min(1, c.biomass / CC.g1s);
+  else if (c.phase === "S") within = Math.min(1, c.phaseTime / CC.sDur);
+  else if (c.phase === "G2") within = Math.min(1, c.biomass / CC.g2m);
+  else within = Math.min(1, c.phaseTime / CC.mDur);
+  const [lo, hi] = CC_BOUNDS[c.phase];
+  const readiness = lo + (hi - lo) * within;
+  const color = FUCCI[c.phase];
+  const latestEvent = visualDivisionEvents[visualDivisionEvents.length - 1];
+  const eventIsEngineBacked = latestVisualDivisionSource === "engine";
+  const eventSourceText = latestEvent
+    ? eventIsEngineBacked
+      ? "engine-backed"
+      : "browser-local visual demo, not Python engine state"
+    : "";
+  let readinessPct = Math.round(readiness * 100);
+  if (!regenerationOk && c.phase === "G1" && !latestEvent) readinessPct = 0;
+  let note = `${readinessPct}% to division`;
+  if (!regenerationOk && !latestEvent) note = "quiescent G0/G1 — no regeneration signal";
+  else if (!nutrientOk && !latestEvent) note = "nutrient/energy low — no growth";
+  else if ((c.phase === "G1" && c.biomass >= CC.g1s || c.phase === "G2" && c.biomass >= CC.g2m) && !healthy) note = "checkpoint — DNA damage";
+  if (latestEvent?.outcome === "abscission_success") {
+    note = eventIsEngineBacked ? "engine abscission success — 2 daughter states" : "browser-local visual demo — not Python engine state";
+  } else if (latestEvent?.outcome === "cytokinesis_failure") {
+    note = eventIsEngineBacked ? "engine cytokinesis regression — one binucleated hepatocyte" : "browser-local cytokinesis demo — not Python engine state";
+  }
+  else if (c.abscissionPending) note = `abscission checkpoint · midbody ${Math.round(Math.min(1, c.abscissionAge / CC.abscissionDelayS) * 100)}%`;
+  else if (c.mechanics.stage !== "none") note = `${c.mechanics.stage.replaceAll("_", " ")} · spindle-defined furrow`;
+  const eventMeta = latestEvent
+    ? ` · population ${visualPopulation.length} · ${eventSourceText} · outcome ${latestEvent.outcome.replaceAll("_", " ")} · P(fail) ${(latestEvent.failureRisk * 100).toFixed(0)}%`
+    : ` · population ${visualPopulation.length}`;
+  const localBlock = localDivisionDemoBlockedByEngine() ? " · local division demo locked by Python snapshot" : "";
+
+  if (cellCycleEl) {
+    cellCycleEl.innerHTML =
+      `<div class="cc-head">split state · <b style="color:${color}">${c.phase}</b> · ${note}</div>` +
+      `<div class="cc-bar"><span style="width:${readinessPct}%;background:${color}"></span></div>` +
+      `<div class="cc-meta">browser-local overlay unless engine event is present · plane from spindle axis · mito ${c.organelles.mitochondria.toLocaleString()} / fragments ${c.organelles.mitochondrialFragments.toLocaleString()} · centrosomes ${c.organelles.centrosomes}${eventMeta}${localBlock}</div>`;
+  }
+  splitStateBadge.innerHTML =
+    `<div class="split-state-badge__label">Split State</div>` +
+    `<div class="split-state-badge__head"><b style="color:${color}">${c.phase}</b><span>${note}</span></div>` +
+    `<div class="split-state-badge__bar"><span style="width:${readinessPct}%;background:${color}"></span></div>` +
+    `<div class="split-state-badge__meta">cells ${visualPopulation.length} · nuclei ${visualPopulation.map((cell) => cell.nuclei).join("+")} · biomass ${c.biomass.toFixed(2)} · regeneration ${CC.regenerationSignalActive ? "on" : "off"} · EC ${energyCharge.toFixed(2)}${localBlock}</div>`;
+
+  // Split the readout into one panel per daughter once division has produced two.
+  updateDivisionPanels(latestEvent?.outcome === "abscission_success");
+}
+
+// Cinematic tone mapping: filmic response curve + slight exposure lift so the
+// emissive organelle glows read as light, not flat colour.
+const realRenderer = renderer instanceof THREE.WebGLRenderer ? renderer : null;
+if (realRenderer) {
+  realRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+  realRenderer.toneMappingExposure = 1.18;
+  realRenderer.outputColorSpace = THREE.SRGBColorSpace;
+}
+
 const root = new THREE.Group();
 scene.add(root);
 
-const ambient = new THREE.AmbientLight("#ffffff", 0.58);
-const key = new THREE.DirectionalLight("#b8d8ff", 3.2);
+// Richer, three-point-plus lighting for depth and a living, backlit feel.
+const ambient = new THREE.AmbientLight("#eaf2ff", 0.42);
+const key = new THREE.DirectionalLight("#cfe2ff", 3.1);
 key.position.set(3, 4, 5);
-const rim = new THREE.PointLight("#f2c45b", 16, 12);
+const fill = new THREE.DirectionalLight("#9fb6d8", 1.0);
+fill.position.set(-3, 1.5, 4);
+const rim = new THREE.PointLight("#f2c45b", 18, 14);
 rim.position.set(-4, -1.4, -1);
-scene.add(ambient, key, rim);
+const backCyan = new THREE.PointLight("#5fd0ff", 10, 16);
+backCyan.position.set(2.5, -2, -5);
+scene.add(ambient, key, fill, rim, backCyan);
+
+// --- Bloom post-processing (the cinematic glow). Wraps the shared scene/camera;
+// falls back gracefully to a plain render if the GL context can't support it. ---
+let composer: EffectComposer | null = null;
+let bloomPass: UnrealBloomPass | null = null;
+let lastCalcium = 0; // latest calcium-transient value (0..1), shared with the overlay
+if (realRenderer) {
+  try {
+    composer = new EffectComposer(realRenderer);
+    composer.addPass(new RenderPass(scene, camera));
+    bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(viewportElement.clientWidth, viewportElement.clientHeight),
+      0.62, // strength (modulated live by cell energy/calcium below)
+      0.5,  // radius
+      0.82  // threshold — only the bright emissive cores bloom
+    );
+    composer.addPass(bloomPass);
+    composer.addPass(new OutputPass());
+    composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    composer.setSize(viewportElement.clientWidth, viewportElement.clientHeight);
+  } catch {
+    composer = null;
+    bloomPass = null;
+  }
+}
+
+/** Render the active scene through the bloom composer when available. */
+function renderFrame() {
+  if (composer) composer.render();
+  else renderer.render(scene, camera);
+}
 
 const grid = new THREE.GridHelper(8, 32, "#243142", "#16202d");
 grid.position.y = -1.25;
@@ -644,7 +1556,7 @@ function setMetricLabels(m: Mode) {
   if (formulaStackEl) {
     formulaStackEl.innerHTML =
       m === "organelles"
-        ? "<code>Sinusoidal/basolateral: blood uptake</code><code>Canalicular/apical: bile export</code><code>Cargo paths: stochastic packet families</code><code>Readout updates from live cell snapshot</code>"
+        ? "<code>Python snapshot is authoritative when loaded</code><code>TS organelle pulses are schematic renderer state</code><code>Route particles are schematic families unless snapshot-bound</code><code>Unknown/offline state is shown, not invented</code>"
         : "<code>F = k q1 q2 / (ε r²)</code><code>U = k q1 q2 / (ε r)</code><code>U_ex = B·exp(-r/ρ)</code><code>KE = ½ m v²</code>";
   }
 }
@@ -702,6 +1614,105 @@ app.querySelector<HTMLButtonElement>("[data-action='reset']")?.addEventListener(
   updatePlayIcon();
 });
 
+// Regeneration / division demo. Adult hepatocytes are quiescent (G0/G1) by
+// default — so division is OFF until a regeneration (e.g. partial-hepatectomy-
+// like) signal is given. This toggle supplies that signal and quickens the
+// visual cell-cycle clock so a full mitosis → cytokinesis is watchable.
+let divisionDemoActive = false;
+const divideButton = app.querySelector<HTMLButtonElement>("[data-action='divide']");
+const divideGateEl = app.querySelector<HTMLElement>("[data-role='division-gate']");
+function latestEngineDivisionEvent(summary: EngineSnapshotSummary | null): EngineDivisionEvent | null {
+  return summary?.division?.latest_event ?? summary?.division?.events.at(-1) ?? null;
+}
+
+function engineSnapshotHasDivisionContext(summary: EngineSnapshotSummary | null): boolean {
+  if (!summary) return false;
+  const regen = summary.regenerationContext;
+  const display = summary.divisionDisplay;
+  return Boolean(
+    display?.canDisplayDaughters ||
+      display?.isCytokinesisRegression ||
+      display?.reason === "abscission_success" ||
+      display?.reason === "cytokinesis_failure" ||
+      display?.timeCompressed ||
+      summary.division?.timing_profile?.time_compressed ||
+      regen?.division_demo_is_time_compressed ||
+      regen?.decision?.regeneration_context_active ||
+      regen?.decision?.cell_cycle_entry_permitted
+  );
+}
+
+function localDivisionDemoBlockedByEngine(): boolean {
+  if (!externalEngineSummary) return false;
+  const division = externalEngineSummary.division;
+  const display = externalEngineSummary.divisionDisplay;
+  const noDisplayableEngineDivision =
+    !display.available ||
+    display.reason === "division_unavailable" ||
+    display.reason === "no_engine_event" ||
+    display.reason === "event_without_daughters";
+  const oneCellNoEvent = !division || (division.cell_count <= 1 && division.event_count === 0 && !latestEngineDivisionEvent(externalEngineSummary));
+  return noDisplayableEngineDivision && oneCellNoEvent && !engineSnapshotHasDivisionContext(externalEngineSummary);
+}
+
+function updateDivisionDemoGate() {
+  const blocked = localDivisionDemoBlockedByEngine();
+  if (blocked && divisionDemoActive) {
+    setDivisionDemo(false, true);
+  }
+  if (divideButton) {
+    divideButton.disabled = blocked;
+    divideButton.setAttribute("aria-disabled", String(blocked));
+    divideButton.classList.toggle("is-disabled", blocked);
+    if (blocked) {
+      divideButton.title = "Disabled: loaded Python snapshot has one cell, no division event, and regeneration off.";
+    } else if (divisionDemoActive) {
+      divideButton.title = externalEngineSummary
+        ? "Browser-local visual division demo ON — not a Python engine division event"
+        : "Browser-local visual division demo ON — Python engine snapshot unavailable";
+    } else {
+      divideButton.title = externalEngineSummary
+        ? "Browser-local visual division demo; use only when engine context permits it"
+        : "Browser-local visual division demo; Python engine snapshot unavailable";
+    }
+  }
+  if (divideGateEl) {
+    divideGateEl.textContent = blocked
+      ? "Python snapshot: 1 cell, regeneration off; local division demo locked"
+      : externalEngineSummary
+        ? "Python snapshot loaded; local demo is separate"
+        : "No Python snapshot; TS schematic fallback active";
+    divideGateEl.classList.toggle("is-locked", blocked);
+  }
+}
+
+function setDivisionDemo(on: boolean, forceOff = false) {
+  if (on && localDivisionDemoBlockedByEngine() && !forceOff) {
+    updateDivisionDemoGate();
+    return;
+  }
+  divisionDemoActive = on;
+  CC.regenerationSignalActive = on;
+  CC.localDivisionFallbackEnabled = on;
+  // Demo pace: each phase slow enough to actually watch — DNA replication in S
+  // and the chromosome dance in M are the whole point, so they must not flash by.
+  CC.growthPerSimS = on ? 0.1 : 0.012;
+  CC.sDur = on ? 7 : 16;   // S phase: DNA replication visible
+  CC.g2m = on ? 2.6 : 3.5;
+  CC.mDur = on ? 8 : 5;    // M phase: chromosome alignment + segregation visible
+  CC.abscissionDelayS = on ? 2.5 : 2.0;
+  divideButton?.classList.toggle("is-active", on);
+  if (divideButton) {
+    divideButton.title = on
+      ? "Browser-local visual division demo ON — not a Python engine division event"
+      : "Browser-local visual division demo is off";
+  }
+  updateDivisionDemoGate();
+}
+divideButton?.addEventListener("click", () => setDivisionDemo(!divisionDemoActive));
+if (new URLSearchParams(location.search).has("divide")) setDivisionDemo(true);
+updateDivisionDemoGate();
+
 app.querySelector<HTMLSelectElement>("[data-control='scene']")?.addEventListener("change", (event) => {
   loadScene((event.currentTarget as HTMLSelectElement).value);
   running = true;
@@ -748,6 +1759,8 @@ function updateModeControls() {
   if (formulaStackEl) formulaStackEl.style.display = isCell ? "none" : "";
   if (!isCell && tempLabelEl) tempLabelEl.textContent = "Temp (K)";
   timeScaleBadge.style.display = isCell ? "block" : "none";
+  splitStateBadge.style.display = isCell ? "grid" : "none";
+  if (!isCell) divisionPanelsEl.style.display = "none";
 }
 
 function loadScene(id: string) {
@@ -1157,7 +2170,7 @@ function buildCellFlowVisuals(parent: THREE.Group) {
     const lineGeo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(46));
     const lineMat = new THREE.LineBasicMaterial({ color: def.color, transparent: true, opacity: 0.012 });
     const line = new THREE.Line(lineGeo, lineMat);
-    line.userData.label = `${def.from} -> ${def.to} route family (not a fixed track)`;
+    line.userData.label = `${def.from} -> ${def.to} schematic route family (not a fixed track or one-to-one snapshot cargo path)`;
     parent.add(line);
 
     const packets: FlowPacket[] = [];
@@ -1173,7 +2186,7 @@ function buildCellFlowVisuals(parent: THREE.Group) {
         opacity: 0.78
       });
       const particle = new THREE.Mesh(new THREE.SphereGeometry(0.055 + packetIndex * 0.006, 12, 8), particleMat);
-      particle.userData.label = `${def.from} -> ${def.to} cargo packet; route is resampled with cytoplasmic drift`;
+      particle.userData.label = `${def.from} -> ${def.to} schematic route-family particle; not a one-to-one Python snapshot cargo packet`;
       parent.add(particle);
       // Spread each flow's packets across nearby fenestrae so they enter/exit
       // through a cluster of pores, not one shared point.
@@ -1259,12 +2272,190 @@ function updateMembraneProteinAnchors(t: number) {
 }
 
 function updateOrganelleMotion(t: number) {
+  const mechanics = cellCycle.mechanics;
+  const mitoticRedistribution =
+    mechanics.stage === "none" ? 0 : Math.min(1, 0.25 + mechanics.progress * 0.75);
   for (const m of organelleMotions) {
     const dx = Math.sin(t * m.speed + m.phase) * m.amp;
     const dy = Math.sin(t * m.speed * 0.73 + m.phase * 1.7) * m.amp * 0.38;
     const dz = Math.cos(t * m.speed * 0.91 + m.phase * 0.6) * m.amp * 0.62;
-    m.object.position.set(m.base.x + dx, m.base.y + dy, m.base.z + dz);
+    const poleBias = Math.sign(m.base.x || Math.sin(m.phase)) * mitoticRedistribution * 0.5;
+    m.object.position.set(m.base.x + dx + poleBias, m.base.y + dy * (1 - 0.25 * mitoticRedistribution), m.base.z + dz);
     m.object.rotateOnAxis(m.axis, m.spin);
+  }
+}
+
+function createDivisionOverlay(): DivisionOverlay {
+  const group = new THREE.Group();
+  group.name = "Model-backed mitotic apparatus";
+  group.visible = false;
+
+  const ringMat = new THREE.MeshStandardMaterial({
+    color: "#ffb95f",
+    emissive: "#ff8a3d",
+    emissiveIntensity: 0.22,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false
+  });
+  const bridgeMat = new THREE.MeshStandardMaterial({
+    color: "#9ad6ff",
+    emissive: "#5fd0ff",
+    emissiveIntensity: 0.2,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false
+  });
+  const midbodyMat = new THREE.MeshStandardMaterial({
+    color: "#f2c45b",
+    emissive: "#f2c45b",
+    emissiveIntensity: 0.36,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false
+  });
+  const chromMat = new THREE.MeshStandardMaterial({ color: "#e7c2ff", emissive: "#a85ff0", emissiveIntensity: 0.5, transparent: true, opacity: 0, roughness: 0.4 });
+  const centrosomeMat = new THREE.MeshStandardMaterial({ color: "#e9eef8", emissive: "#8fe3ff", emissiveIntensity: 0.18, transparent: true, opacity: 0 });
+  const nucleusMat = new THREE.MeshStandardMaterial({ color: "#b07ed8", emissive: "#6f3fa0", emissiveIntensity: 0.1, transparent: true, opacity: 0, depthWrite: false });
+
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(CELL_R * 0.92, 0.075, 10, 128), ringMat);
+  ring.rotation.y = Math.PI / 2;
+  ring.userData.label = "Contractile actomyosin ring - assembled at the spindle-defined equator, not at a random surface site";
+  group.add(ring);
+
+  const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 5.5, 16), bridgeMat);
+  bridge.rotation.z = Math.PI / 2;
+  bridge.userData.label = "Intercellular bridge - late cytokinesis tether containing central-spindle remnants";
+  group.add(bridge);
+
+  const midbody = new THREE.Mesh(new THREE.SphereGeometry(0.46, 18, 12), midbodyMat);
+  midbody.userData.label = "Midbody - protein-rich center of the intercellular bridge; abscission/regression decision point";
+  group.add(midbody);
+
+  const centrosomes: THREE.Mesh[] = [];
+  for (let i = 0; i < 2; i += 1) {
+    const c = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 10), centrosomeMat.clone());
+    c.userData.label = "Centrosome/spindle pole - duplicated once before mitosis; defines spindle axis";
+    group.add(c);
+    centrosomes.push(c);
+  }
+
+  const chromosomes: THREE.Mesh[] = [];
+  for (let i = 0; i < 14; i += 1) {
+    const chr = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 1.15, 6, 10), chromMat.clone());
+    chr.rotation.z = Math.PI / 2;
+    chr.userData.label = "Condensed chromosome/chromatid mass - aligns at metaphase then segregates toward spindle poles";
+    group.add(chr);
+    chromosomes.push(chr);
+  }
+
+  const daughterNuclei: THREE.Mesh[] = [];
+  for (let i = 0; i < 2; i += 1) {
+    const n = new THREE.Mesh(new THREE.SphereGeometry(2.15, 32, 20), nucleusMat.clone());
+    n.userData.label = "Reforming daughter nucleus - telophase nuclear-envelope reassembly";
+    group.add(n);
+    daughterNuclei.push(n);
+  }
+
+  const spindleMat = new THREE.LineBasicMaterial({ color: "#8fe3ff", transparent: true, opacity: 0 });
+  const spindle = new THREE.LineSegments(new THREE.BufferGeometry(), spindleMat);
+  spindle.userData.label = "Mitotic spindle - microtubules from centrosomes capture/segregate chromosomes and set the division plane";
+  group.add(spindle);
+
+  return { group, ring, bridge, midbody, centrosomes, chromosomes, daughterNuclei, spindle, spindleMat, ringMat, bridgeMat, midbodyMat };
+}
+
+function updateDivisionOverlay(mechanics: DivisionMechanicsState) {
+  if (!divisionOverlay) return;
+  const o = divisionOverlay;
+  const active = mechanics.stage !== "none";
+  o.group.visible = active;
+  if (!active) return;
+
+  // --- S phase: DNA replication inside the nucleus (no spindle/ring yet) ---
+  if (mechanics.stage === "dna_replication") {
+    const rep = mechanics.progress;
+    const nucC = new THREE.Vector3(-3.4, 1.4, -1.2); // nucleus centre in cell space
+    o.ringMat.opacity = 0; o.bridgeMat.opacity = 0; o.midbodyMat.opacity = 0; o.spindleMat.opacity = 0;
+    for (const c of o.centrosomes) (c.material as THREE.MeshStandardMaterial).opacity = 0;
+    for (const n of o.daughterNuclei) n.visible = false;
+    const replicated = Math.round(2 + rep * (o.chromosomes.length - 2)); // strands appear as DNA copies
+    for (let i = 0; i < o.chromosomes.length; i += 1) {
+      const chr = o.chromosomes[i];
+      const mat = chr.material as THREE.MeshStandardMaterial;
+      if (i < replicated) {
+        const a = (i / o.chromosomes.length) * Math.PI * 2;
+        const r = 1.1 + (i % 3) * 0.55;
+        chr.position.set(nucC.x + Math.cos(a) * r, nucC.y + Math.sin(a) * r * 0.8, nucC.z + Math.sin(a * 1.7) * 0.6);
+        chr.scale.setScalar(0.55);
+        chr.rotation.set(a, 0.3, Math.PI / 2 + a * 0.3);
+        mat.opacity = 0.45 + 0.35 * rep;
+      } else {
+        mat.opacity = 0;
+      }
+    }
+    return;
+  }
+
+  const p = mechanics.progress;
+  const poleDistance = 3.2 + 4.2 * Math.min(1, p);
+  const poleA = new THREE.Vector3(-poleDistance, 0, 0);
+  const poleB = new THREE.Vector3(poleDistance, 0, 0);
+  o.centrosomes[0].position.copy(poleA);
+  o.centrosomes[1].position.copy(poleB);
+  for (const c of o.centrosomes) {
+    (c.material as THREE.MeshStandardMaterial).opacity = 0.25 + 0.65 * Math.min(1, p + 0.2);
+  }
+
+  const spindlePts: number[] = [];
+  const chromSep = Math.max(0, (p - 0.42) / 0.30) * 3.9;
+  for (let i = 0; i < o.chromosomes.length; i += 1) {
+    const side = i % 2 === 0 ? -1 : 1;
+    const row = Math.floor(i / 2);
+    const angle = (row / 7) * Math.PI * 2;
+    const radius = 0.38 + (row % 3) * 0.24;
+    const target = new THREE.Vector3(
+      side * chromSep,
+      Math.cos(angle) * radius,
+      Math.sin(angle) * radius
+    );
+    const metaphaseOffset = (1 - Math.min(1, p / 0.35)) * (side * 0.18);
+    target.x += metaphaseOffset;
+    o.chromosomes[i].position.copy(target);
+    o.chromosomes[i].scale.setScalar(1);
+    o.chromosomes[i].rotation.set(0.4 + row * 0.12, 0.2, Math.PI / 2 + angle * 0.2);
+    (o.chromosomes[i].material as THREE.MeshStandardMaterial).opacity = Math.min(0.95, 0.18 + mechanics.chromosomeAlignment * 0.82);
+    spindlePts.push(poleA.x, poleA.y, poleA.z, target.x, target.y, target.z);
+    spindlePts.push(poleB.x, poleB.y, poleB.z, target.x, target.y, target.z);
+  }
+  for (let i = 0; i < 10; i += 1) {
+    const a = (i / 10) * Math.PI * 2;
+    const cortex = new THREE.Vector3(0, Math.cos(a) * CELL_R * 0.78, Math.sin(a) * CELL_R * 0.78);
+    spindlePts.push(poleA.x, poleA.y, poleA.z, cortex.x, cortex.y, cortex.z);
+    spindlePts.push(poleB.x, poleB.y, poleB.z, cortex.x, cortex.y, cortex.z);
+  }
+  o.spindle.geometry.dispose();
+  const spindleGeo = new THREE.BufferGeometry();
+  spindleGeo.setAttribute("position", new THREE.Float32BufferAttribute(spindlePts, 3));
+  o.spindle.geometry = spindleGeo;
+  o.spindleMat.opacity = 0.05 + 0.28 * Math.min(1, p + 0.25);
+
+  const ringOpacity = mechanics.ringActivity > 0 ? 0.12 + 0.7 * mechanics.ringActivity : 0;
+  o.ringMat.opacity = ringOpacity;
+  const ringScale = 1 - 0.58 * mechanics.furrowDepth;
+  o.ring.scale.set(1, Math.max(0.28, ringScale), Math.max(0.28, ringScale));
+
+  const bridgeActive = mechanics.stage === "intercellular_bridge" || mechanics.stage === "abscission_pending";
+  o.bridgeMat.opacity = bridgeActive ? 0.18 + 0.58 * (0.5 + mechanics.abscissionReadiness * 0.5) : 0;
+  o.midbodyMat.opacity = bridgeActive ? 0.25 + 0.65 * mechanics.abscissionReadiness : 0;
+  o.bridge.scale.set(1, 1, bridgeActive ? Math.max(0.38, 1 - mechanics.abscissionReadiness * 0.45) : 1);
+
+  const nucleiOpacity = Math.min(0.42, mechanics.nuclearEnvelopeReform * 0.42);
+  o.daughterNuclei[0].position.set(-3.5, 0.15, 0);
+  o.daughterNuclei[1].position.set(3.5, -0.15, 0);
+  for (const n of o.daughterNuclei) {
+    (n.material as THREE.MeshStandardMaterial).opacity = nucleiOpacity;
+    n.visible = nucleiOpacity > 0.01;
   }
 }
 
@@ -1276,7 +2467,7 @@ function updateReportPanel(s: CellSnapshot) {
     const col = s.status === "dying" ? "#ff8a8a" : s.status === "senescent" ? "#d9a6ff" : s.status === "stressed" ? "#ffcf6b" : "#7ee0a8";
     const survival = Number.isFinite(s.projectedMedianSurvivalH) ? ` · median fate ${s.projectedMedianSurvivalH.toFixed(1)}h` : "";
     statusEl.innerHTML =
-      `<span style="color:${col};font-weight:600">${s.status.toUpperCase()}</span> · ` +
+      `<span class="local-visual-pill">TS schematic</span> <span style="color:${col};font-weight:600">${s.status.toUpperCase()}</span> · ` +
       `${s.hepatocyte.zone} hepatocyte · polarity ${s.hepatocyte.polarity.toFixed(2)} · ` +
       `glycogen ${s.pools.glycogen.toFixed(2)} · ATP ${s.atp.toFixed(2)} · albumin ${s.pools.albumin.toFixed(2)} · ` +
       `bile ${s.hepatocyte.bileExport.toFixed(2)} · CYP ${s.hepatocyte.cyp450.toFixed(2)} · GSH ${s.hepatocyte.glutathioneReserve.toFixed(2)} · ` +
@@ -1304,16 +2495,14 @@ function updateReportPanel(s: CellSnapshot) {
         const tagCol = o.faulted ? "#ff7a7a" : bursting ? "#8fe3ff" : o.activity > info.ref * 0.15 ? "#9be0a8" : "#7a8194";
         const barW = Math.round(load * 100);
         const effPct = Math.round(o.efficiency * 100);
+        // Compact row: name + state tag + load bar + one short meta line. The
+        // full per-organelle detail is still on the hover tooltip.
         return (
-          `<div class="report-row${o.faulted ? " is-fault" : ""}">` +
+          `<div class="report-row${o.faulted ? " is-fault" : ""}" title="${info.action} · ${o.purpose}">` +
           `<div class="report-row__top"><span class="report-row__name">${info.name}</span>` +
           `<span class="report-row__tag" style="color:${tagCol}">${tag}</span></div>` +
-          `<div class="report-row__act">${info.action}</div>` +
           `<div class="report-row__bar"><span style="width:${barW}%"></span></div>` +
-          `<div class="report-row__meta">eff ${effPct}% · ATP here ${Math.round(o.atpAvailability * 100)}% · ` +
-          `fault ${o.riskPerHour.toFixed(1)}%/h · renewal ${o.turnoverRiskPerHour.toFixed(1)}%/h · age ${o.ageH.toFixed(1)}h/${o.turnoverHalfLifeH.toFixed(0)}h · ${o.faultCause} · ` +
-          `${o.purpose}; avoids ${o.avoids} · ` +
-          `delivery ~${o.transportMs < 1000 ? `${Math.round(o.transportMs)} ms` : `${(o.transportMs / 1000).toFixed(1)} s`}</div>` +
+          `<div class="report-row__meta">eff ${effPct}% · ATP ${Math.round(o.atpAvailability * 100)}%</div>` +
           `</div>`
         );
       })
@@ -1331,7 +2520,7 @@ function updateReportPanel(s: CellSnapshot) {
           `<div class="flow-row">` +
           `<div class="flow-row__top"><span class="flow-row__cargo">${flow.cargo}</span><span class="flow-row__value">${flow.value.toFixed(2)}</span></div>` +
           `<div class="flow-row__route">${flow.from} -&gt; ${flow.to}</div>` +
-          `<div class="flow-row__meta">${flow.mode} · ETA ${formatEta(flow.etaS)} · ${flow.producedBy} / ${flow.usedBy}</div>` +
+          `<div class="flow-row__meta">schematic route family · ${flow.mode} · local ETA ${formatEta(flow.etaS)} · ${flow.producedBy} / ${flow.usedBy}</div>` +
           `<div class="flow-row__bar"><span style="width:${pct}%"></span></div>` +
           `</div>`
         );
@@ -1353,16 +2542,13 @@ function updateReportPanel(s: CellSnapshot) {
 }
 
 function timeScaleDisclosureText(): string {
-  const engineTime = externalEngineSummary ? `Python snapshot t=${Math.round(externalEngineSummary.elapsedS)}s` : "Python snapshot unavailable";
-  return (
-    `Time scale: visual ~${CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND} simulated cell-s / real-s; ` +
-    `${engineTime}; normalized coarse pools/fluxes.`
-  );
+  const engineTime = externalEngineSummary ? `engine t=${Math.round(externalEngineSummary.elapsedS)}s` : "engine offline";
+  return `local visual clock ~${CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND}× · ${engineTime}`;
 }
 
 function renderExternalEngineStatus(): string {
   if (!externalEngineSummary) {
-    return `<span class="external-snapshot__label">Python engine</span><span class="external-snapshot__diag">${externalEngineDiagnostic}</span>`;
+    return `<span class="external-snapshot__label">Python engine snapshot - authoritative</span><span class="external-snapshot__diag">${externalEngineDiagnostic}</span>`;
   }
   const s = externalEngineSummary;
   const cargo = Object.entries(s.cargo)
@@ -1374,6 +2560,36 @@ function renderExternalEngineStatus(): string {
   const ca = s.cytosolicCa == null ? "Ca -" : `Ca ${s.cytosolicCa.toFixed(2)}`;
   const atp = s.atp == null ? "ATP -" : `ATP ${s.atp.toFixed(2)}`;
   const flux = s.topFluxes.length ? ` · flux ${s.topFluxes.join(", ")}` : "";
+  const divisionEvent = s.division?.latest_event ?? s.division?.events.at(-1);
+  const divisionDisplay = s.divisionDisplay;
+  const divisionTiming = s.division?.timing_profile
+    ? `${s.division.timing_profile.id ?? "timing"} ${s.division.timing_profile.time_compressed ? "compressed" : "real-time"}`
+    : "timing -";
+  const displayReason = divisionDisplay.available
+    ? `display ${divisionDisplay.reason.replaceAll("_", " ")}`
+    : "division display unavailable";
+  const displayGate = divisionDisplay.canDisplayDaughters
+    ? `daughters displayable ${divisionDisplay.displayableDaughterCount}`
+    : "no displayable daughter cells";
+  const divisionText = divisionEvent
+    ? `division ${divisionEvent.outcome.replaceAll("_", " ")} · cells ${s.division?.cell_count ?? "-"} · P(fail) ${(divisionEvent.failure_risk * 100).toFixed(0)}% · ${divisionTiming}`
+    : s.division
+      ? `division no event · cells ${s.division.cell_count} · ${divisionTiming}`
+      : "division -";
+  const regen = s.regenerationContext;
+  const timingPeak = regen?.timing_profile?.dna_synthesis_peak_h;
+  const timingText = timingPeak
+    ? `${regen?.timing_profile?.species ?? "unknown"} DNA synth peak ${timingPeak[0]}-${timingPeak[1]}h`
+    : "no active regeneration timing";
+  const directAxes = regen?.decision?.direct_mitogen_axes
+    ?.map((axis) => `${axis.axis ?? "axis"} ${axis.active ? "active" : "blocked"}`)
+    .join(" · ");
+  const regulatoryAxes = regen?.decision?.regulatory_axes
+    ?.map((axis) => `${axis.role ?? "path"}:${axis.pathway ?? "axis"} ${axis.active ? "on" : "off"}`)
+    .join(" · ");
+  const regenText = regen
+    ? `regen ${regen.input?.trigger ?? "unknown"} · entry ${regen.decision?.cell_cycle_entry_permitted ? "yes" : "no"} · ${directAxes || "direct axes -"} · ${regulatoryAxes || "reg axes -"} · ${timingText}`
+    : "regen context -";
   const organelles = s.organelles
     .slice(0, 4)
     .map((o) => `${labelEngineOrganelle(o.id)} ${o.activity.toFixed(2)}/${Math.round(o.health * 100)}%`)
@@ -1389,9 +2605,12 @@ function renderExternalEngineStatus(): string {
     .map(([axis, value]) => `${axis} ${value.toFixed(2)}`)
     .join(" · ");
   return (
-    `<span class="external-snapshot__label">Python engine</span>` +
+    `<span class="external-snapshot__label">Python engine snapshot - authoritative</span>` +
     `<span>${s.cellType} · ${s.status} · ${atp} · ${ca} · ${vm} · ${pump} · cargo ${cargo || "none"} · ` +
     `SBML ${s.pathwayCount} · signaling ${s.signalingCount}${flux}</span>` +
+    `<span class="external-snapshot__diag">${divisionText}</span>` +
+    `<span class="external-snapshot__diag">${displayReason} · ${displayGate}</span>` +
+    `<span class="external-snapshot__diag">${regenText}</span>` +
     `<span class="external-snapshot__org">${organelles || "no organelle state"}</span>` +
     `<span class="external-snapshot__diag">${stress ? `stress ${stress}` : "stress -"}</span>` +
     `<span class="external-snapshot__diag">${processes ? `active ${processes}` : "active processes -"}</span>`
@@ -1442,14 +2661,15 @@ viewportElement.addEventListener("pointerleave", () => {
 });
 
 function updateHoverTooltip() {
-  if (!hovering || mode !== "organelles" || !organelleGroup || dragState) {
+  const hoverRoot = resolvedDivisionVisual?.group ?? organelleGroup;
+  if (!hovering || mode !== "organelles" || !hoverRoot || dragState) {
     hoverTooltip.style.display = "none";
     hoverCandidateKey = "";
     return;
   }
   (hoverRaycaster.params.Points as { threshold: number }).threshold = cameraDistance <= 7 ? 0.035 : cameraDistance <= 13 ? 0.01 : 0.001;
   hoverRaycaster.setFromCamera(hoverNDC, camera);
-  const hits = hoverRaycaster.intersectObjects(organelleGroup.children, true);
+  const hits = hoverRaycaster.intersectObjects(hoverRoot.children, true);
   const hoverDelay = (object: THREE.Object3D) => {
     const kind = object.userData.hoverKind;
     if (kind === "membrane-protein-lod") return cameraDistance <= 5.5 ? 700 : null;
@@ -1594,6 +2814,8 @@ function clearWaterVisuals() {
     reactionPoints = null;
   }
 
+  resetResolvedDivisionVisual();
+
   if (organelleGroup) {
     root.remove(organelleGroup);
     organelleGroup.traverse((o) => {
@@ -1610,6 +2832,7 @@ function clearWaterVisuals() {
   organelleMembrane = null;
   organelleGlow = [];
   ribosomeMat = null;
+  divisionOverlay = null;
   flowVisuals.length = 0;
   organelleAnchors = {};
   organelleMotions.length = 0;
@@ -1764,7 +2987,7 @@ function renderIonSnapshot(snapshot: SimulationSnapshot) {
   renderDrift(snapshot.totalEnergyEv);
   setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
 
-  renderer.render(scene, camera);
+  renderFrame();
 }
 
 function makeWaterVisual(): WaterVisual {
@@ -1872,7 +3095,7 @@ function renderWaterSnapshot(snapshot: WaterSnapshot) {
   renderDrift(snapshot.totalEnergyEv);
   setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
 
-  renderer.render(scene, camera);
+  renderFrame();
 }
 
 function buildSolvationScene(snapshot: SolvationSnapshot, preset: SolvationScenePreset) {
@@ -1950,7 +3173,7 @@ function renderSolvationSnapshot(snapshot: SolvationSnapshot) {
   renderDrift(snapshot.totalEnergyEv);
   setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
 
-  renderer.render(scene, camera);
+  renderFrame();
 }
 
 function buildDiffusionScene(snapshot: DiffusionSnapshot, preset: DiffusionScenePreset) {
@@ -2018,7 +3241,7 @@ function renderDiffusionSnapshot(snapshot: DiffusionSnapshot) {
   }
   setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
 
-  renderer.render(scene, camera);
+  renderFrame();
 }
 
 function makePointCloud(count: number, color: string, size: number): THREE.Points {
@@ -2131,7 +3354,7 @@ function renderMembraneSnapshot(snapshot: MembraneSnapshot) {
   }
   setText(values.elapsed, `${Math.round(snapshot.elapsedTau).toLocaleString()} τ`);
 
-  renderer.render(scene, camera);
+  renderFrame();
 }
 
 function buildReactionScene(snapshot: ReactionSnapshot, preset: ReactionScenePreset) {
@@ -2199,7 +3422,7 @@ function renderReactionSnapshot(snapshot: ReactionSnapshot) {
     values.drift.style.color = "";
   }
   setText(values.elapsed, `${Math.round(snapshot.elapsedFs).toLocaleString()} fs`);
-  renderer.render(scene, camera);
+  renderFrame();
 }
 
 // ---- Eukaryotic cell (whole-cell schematic, sourced sizes) ----
@@ -2211,6 +3434,8 @@ function buildOrganelleScene() {
   organelleMembrane = null;
   organelleGlow = [];
   ribosomeMat = null;
+  divisionOverlay = null;
+  resetCellCycleVisualState();
   lastEventId = 0;
   const logReset = reportPanel.querySelector(".report-log");
   if (logReset) logReset.innerHTML = "";
@@ -2332,13 +3557,13 @@ function buildOrganelleScene() {
     sinusoidAnchor.clone().add(new THREE.Vector3(0.04, 3.2, -0.15)),
     sinusoidAnchor.clone().add(new THREE.Vector3(-0.02, 8.9, 0.9))
   ]);
-  const sinusoidWall = mesh(new THREE.TubeGeometry(sinusoidCurve, 80, 2.45, 24, false), "#3a9bd9", new THREE.Vector3(), {
+  const sinusoidWall = mesh(new THREE.TubeGeometry(sinusoidCurve, 96, 3.6, 28, false), "#3a9bd9", new THREE.Vector3(), {
     opacity: 0.16,
     emissive: 0.12,
     rough: 0.42,
     label: "Fenestrated liver sinusoid wall - thin LSEC endothelium perforated by sieve-plate fenestrae; blood flows along this vessel-facing side of the hepatocyte"
   });
-  const sinusoidLumen = mesh(new THREE.TubeGeometry(sinusoidCurve, 80, 1.72, 18, false), "#7fb6ff", new THREE.Vector3(), {
+  const sinusoidLumen = mesh(new THREE.TubeGeometry(sinusoidCurve, 96, 2.7, 22, false), "#7fb6ff", new THREE.Vector3(), {
     opacity: 0.08,
     emissive: 0.08,
     label: "Sinusoidal blood lumen - nutrients, oxygen, hormones, ammonia, bilirubin and xenobiotics arrive from flowing blood"
@@ -3063,13 +4288,15 @@ function buildOrganelleScene() {
     cytoskeleton: centroid("cytoskeleton")
   };
   buildCellFlowVisuals(group);
+  divisionOverlay = createDivisionOverlay();
+  group.add(divisionOverlay.group);
 
   root.add(group);
   organelleGroup = group;
 
   if (sceneNote) {
     sceneNote.textContent =
-      `A polarized hepatocyte-scale cell. The plasma membrane carries ~${(estimatedEmbeddedProteinCopies / 1_000_000).toFixed(1)}M true-size embedded protein footprints (whole-surface LOD plus a 1:1 true-density zoom patch); blood solutes enter through the sinusoidal/basolateral domain while bile exits through the canalicular/apical domain. Cargo packets resample noisy cytoplasmic routes instead of riding fixed tracks.`;
+      "A polarized hepatocyte-scale cell renderer. When the Python snapshot is loaded, its state is authoritative; local organelle pulses, Ca-vis trace, and route particles are schematic visual aids unless explicitly tied to snapshot fields. Blood-side and bile-side domains follow the loaded hepatocyte polarity.";
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;
@@ -3081,7 +4308,15 @@ function buildOrganelleScene() {
 
 function renderOrganelleScene(realDeltaS = 1 / 60) {
   if (organelleGroup && !dragState) {
-    organelleGroup.rotation.y += 0.0016; // slow turn to reveal the 3D interior
+    // Real hepatocytes don't spin. Instead of rotating, the cell drifts gently
+    // (cells migrate/jostle in tissue); orientation is yours to drag.
+    const tNow = performance.now() / 1000;
+    organelleGroup.position.x = Math.sin(tNow * 0.16) * 0.14;
+    organelleGroup.position.y = Math.sin(tNow * 0.11 + 1.0) * 0.10;
+    // Visible growth: the cell swells with its biomass as it heads toward mitosis,
+    // so triggering regeneration has immediate on-screen feedback.
+    const growthScale = 1 + Math.min(0.32, Math.max(0, cellCycle.biomass - 1) * 0.16);
+    organelleGroup.scale.setScalar(growthScale);
   }
 
   if (livingCell && running) {
@@ -3094,6 +4329,14 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     updateOrganelleMotion(s.elapsedS);
     updateMembraneProteinAnchors(s.elapsedS);
     updateFlowVisuals(s);
+    syncVisualDivisionFromEngine(externalEngineSummary);
+    updateCellCyclePanel(
+      realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND,
+      lastEnergyCharge,
+      s.status === "healthy"
+    );
+    updateDivisionOverlay(cellCycle.mechanics);
+    updateResolvedDivisionVisual(realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND, s.elapsedS);
     // Each organelle glows with ITS OWN activity — driven by its own internal
     // cycle in the model (steady powerhouses, bursty shippers/digesters). A
     // faulted organelle dims, so you can see where the cell is failing.
@@ -3112,6 +4355,19 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       const e = glowOf(g.kind, g.gain);
       for (const mat of g.mats) mat.emissiveIntensity = e;
     }
+    // --- Local cinematic dynamics ---
+    // Schematic pulses make the renderer legible; they are not a Python-engine
+    // calcium time series. The snapshot card above remains the authority.
+    const caFreq = 0.18 + 0.5 * Math.min(1, activityOf("mitochondria") / 0.9);
+    const caPulse = Math.pow(0.5 + 0.5 * Math.sin(s.elapsedS * caFreq * Math.PI * 2), 10);
+    lastCalcium = caPulse;
+    if (bloomPass) {
+      const energy = Math.min(1, mitoGlow / 1.2);
+      bloomPass.strength = 0.45 + 0.65 * energy + 0.55 * caPulse;
+    }
+    rim.intensity = 14 + 18 * caPulse;
+    backCyan.intensity = 8 + 10 * caPulse;
+    drawCalciumTrace();
     // Ribosomes brighten as translation runs (protein being built).
     if (ribosomeMat) ribosomeMat.opacity = 0.4 + 0.55 * Math.min(1, activityOf("ribosome") / 0.62);
     updateReportPanel(s);
@@ -3144,6 +4400,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     setText(values.force, engineAtp.toFixed(2));
     setText(values.potential, pool("albumin", s.pools.albumin).toFixed(2));
     setText(values.kinetic, energyCharge.toFixed(2));
+    lastEnergyCharge = energyCharge;
     setText(values.total, displayStatus);
     if (values.total) {
       values.total.style.color = displayStatus === "dying" ? "#ff8a8a" : displayStatus === "senescent" ? "#d9a6ff" : displayStatus === "stressed" ? "#ffcf6b" : "#7ee0a8";
@@ -3154,7 +4411,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
   }
 
   updateHoverTooltip();
-  renderer.render(scene, camera);
+  renderFrame();
 }
 
 /** Position and orient a unit-height cylinder so it spans from a to b. */
@@ -3252,6 +4509,7 @@ function resize() {
     scene.fog.far = cameraDistance * 3.2;
   }
   renderer.setSize(rect.width, rect.height);
+  composer?.setSize(rect.width, rect.height);
 }
 
 function setText(element: HTMLElement | null, text: string) {

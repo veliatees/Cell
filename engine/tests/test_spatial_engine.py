@@ -17,14 +17,31 @@ class NetworkVoxelReactionTests(unittest.TestCase):
         # A first-order maintenance reaction ATP -> ADP gives ddt[ATP] = -k*ATP.
         net = ReactionNetwork(("ATP", "ADP"), (mass_action("maint", {"ATP": 1}, {"ADP": 1}, 0.1),), 1.0e-15)
         reaction = network_voxel_reaction(net, 1.0e-15)
+        self.assertEqual(getattr(reaction, "quantity"), "molecule_count")
         ddt = reaction(0, {"ATP": 1000.0, "ADP": 0.0})
         self.assertAlmostEqual(ddt["ATP"], -100.0)   # -k*ATP
         self.assertAlmostEqual(ddt["ADP"], +100.0)
 
+    def test_count_reaction_rejects_concentration_field(self):
+        # Network propensities consume molecule counts, not mM concentrations.
+        # The default uniform field is concentration_mM, so this is a contract
+        # error rather than a silent unit mix.
+        net = ReactionNetwork(("ATP", "ADP"), (mass_action("maint", {"ATP": 1}, {"ADP": 1}, 0.1),), 1.0e-15)
+        field = uniform_field(("ATP", "ADP"), n=2, dx_um=1.0, value=100.0)
+        with self.assertRaisesRegex(ValueError, "molecule_count"):
+            react_diffuse(
+                field,
+                diffusion={"ATP": 0.0, "ADP": 0.0},
+                dt_s=0.1,
+                steps=1,
+                reaction=network_voxel_reaction(net, 1.0e-15),
+            )
+
     def test_spatial_atp_microdomain_from_real_network(self):
         # The real engine network drives the spatial field: ATP is produced at the
-        # mitochondria voxel and consumed everywhere, diffusing at its grounded
-        # cytoplasmic coefficient -> a high-ATP microdomain around the source.
+        # mitochondria voxel and consumed everywhere. This field is explicitly in
+        # molecule counts so ReactionNetwork propensities receive their native
+        # count units; dx_um is a numerical-method grid spacing in this test.
         n = 40
         mito = 8
         volume = 1.0e-15
@@ -39,13 +56,16 @@ class NetworkVoxelReactionTests(unittest.TestCase):
                 ddt["ADP"] = ddt.get("ADP", 0.0) - prod
             return ddt
 
-        field = uniform_field(("ATP", "ADP"), n, dx_um=1.0, value=0.0)
+        reaction.quantity = "molecule_count"  # type: ignore[attr-defined]
+        field = uniform_field(("ATP", "ADP"), n, dx_um=1.0, value=0.0, quantity="molecule_count")
         field = field.__class__(field.species, field.dx_um,
                                 {"ATP": tuple(0.0 for _ in range(n)),
-                                 "ADP": tuple(100.0 for _ in range(n))})
+                                 "ADP": tuple(100.0 for _ in range(n))},
+                                quantity="molecule_count")
         d = CYTOPLASMIC_DIFFUSION_UM2_PER_S["ATP"]   # 150 um^2/s, grounded
         dt = 0.5 * cfl_limit_dt({"ATP": d, "ADP": d}, 1.0)
         out = react_diffuse(field, diffusion={"ATP": d, "ADP": d}, dt_s=dt, steps=20000, reaction=reaction)
+        self.assertEqual(out.quantity, "molecule_count")
         atp = out.profile("ATP")
         self.assertEqual(max(range(n), key=lambda i: atp[i]), mito)   # peak at the source
         self.assertGreater(atp[mito], atp[mito + 10])                  # falls with distance

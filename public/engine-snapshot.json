@@ -1363,7 +1363,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-06-19T20:35:56.698665+00:00",
+    "created_at_utc": "2026-06-21T12:51:44.570711+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -1371,7 +1371,7 @@
   "state": {
     "cargo_packets": [
       {
-        "age_s": 1200.0,
+        "age_s": 960.0,
         "current_location": "sinusoidal_face",
         "energy_cost_atp": 0.035,
         "fate_reason": "target reached",
@@ -1394,7 +1394,7 @@
         "target_compartment": "sinusoidal_face"
       },
       {
-        "age_s": 1200.0,
+        "age_s": 960.0,
         "current_location": "golgi",
         "energy_cost_atp": 0.045,
         "fate_reason": "success_probability=0.601, edge_stress=0.057, quality=0.900",
@@ -1417,7 +1417,7 @@
         "target_compartment": "canalicular_face"
       },
       {
-        "age_s": 1200.0,
+        "age_s": 960.0,
         "current_location": "er_quality_control",
         "energy_cost_atp": 0.04,
         "fate_reason": "success_probability=0.602, edge_stress=0.045, quality=0.880",
@@ -1440,7 +1440,7 @@
         "target_compartment": "lysosome_endosome"
       },
       {
-        "age_s": 1220.0,
+        "age_s": 980.0,
         "current_location": "cytosol",
         "energy_cost_atp": 0.025,
         "fate_reason": "success_probability=0.269, edge_stress=0.032, quality=0.240",
@@ -1462,7 +1462,254 @@
       }
     ],
     "definition_id": "human_hepatocyte_midlobular_v1",
-    "elapsed_s": 1200.0,
+    "division": {
+      "cell_count": 1,
+      "cells": [
+        {
+          "biomass": 1.0,
+          "checkpoint_control": {
+            "blocked_by": [
+              "G1/S size checkpoint not met",
+              "G1 minimum timing not met",
+              "awaiting growth factor/mitogen",
+              "Cyclin D-CDK4/6 not active",
+              "RB remains growth-suppressive / not hyperphosphorylated",
+              "E2F S-phase transcription not active",
+              "Cyclin E-CDK2 commitment not active",
+              "G2/M size checkpoint not met",
+              "DNA replication incomplete for current ploidy",
+              "Chk1 checkpoint blocks Cdc25/CDK1",
+              "Cdc25 not active",
+              "CDK1-Cyclin B not active",
+              "spindle assembly checkpoint active: kinetochore attachment incomplete",
+              "APC/C-Cdc20 not active",
+              "securin not degraded / separase not released"
+            ],
+            "g1_s_committed": false,
+            "g2_m_committed": false,
+            "metaphase_anaphase_permitted": false,
+            "nodes": [
+              {
+                "active": true,
+                "derived": true,
+                "node": "nutrient availability",
+                "signal": "present",
+                "source_id": "cell_cycle_checkpoints"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "mitogen/regeneration signal",
+                "signal": "baseline",
+                "source_id": "restriction_point"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "G1 minimum timing",
+                "signal": "waiting",
+                "source_id": "cell_cycle_timing"
+              },
+              {
+                "active": true,
+                "derived": true,
+                "node": "G2 minimum timing",
+                "signal": "elapsed",
+                "source_id": "cell_cycle_timing"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "p53",
+                "signal": "derived_baseline",
+                "source_id": "p53_p21_rb"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "p21/CDKN1A",
+                "signal": "derived_baseline",
+                "source_id": "p53_p21_rb"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "Cyclin D-CDK4/6",
+                "signal": "derived_baseline",
+                "source_id": "restriction_point"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "RB phosphorylation",
+                "signal": "derived_baseline",
+                "source_id": "restriction_point"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "E2F transcription",
+                "signal": "derived_baseline",
+                "source_id": "restriction_point"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "Cyclin E-CDK2",
+                "signal": "derived_baseline",
+                "source_id": "restriction_point"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "Cyclin A-CDK2",
+                "signal": "derived_baseline",
+                "source_id": "restriction_point"
+              },
+              {
+                "active": true,
+                "derived": true,
+                "node": "Chk1",
+                "signal": "derived_elevated",
+                "source_id": "cell_cycle_regulators"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "Cdc25",
+                "signal": "derived_baseline",
+                "source_id": "cell_cycle_regulators"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "CDK1-Cyclin B",
+                "signal": "derived_baseline",
+                "source_id": "cell_cycle_intracellular_control"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "spindle attachment checkpoint",
+                "signal": "derived_unattached",
+                "source_id": "cell_cycle_intracellular_control"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "APC/C-Cdc20",
+                "signal": "derived_baseline",
+                "source_id": "cell_cycle_intracellular_control"
+              },
+              {
+                "active": false,
+                "derived": true,
+                "node": "securin degradation / separase release",
+                "signal": "derived_baseline",
+                "source_id": "cell_cycle_intracellular_control"
+              }
+            ],
+            "sources": [
+              "cell_cycle_checkpoints",
+              "cell_cycle_intracellular_control",
+              "cell_cycle_regulators",
+              "p53_p21_rb",
+              "restriction_point"
+            ],
+            "supported_by": [],
+            "uncalibrated": [
+              "molecular node states are qualitative/derived unless explicitly supplied"
+            ]
+          },
+          "counts": {
+            "ADP": 761786081.6394038,
+            "AMP": 712574838.8406577,
+            "ATP": 3849211511.3599405,
+            "gene": 2.0,
+            "glucose": 31840399706.605312,
+            "glucose_blood": 31892526847.71472,
+            "mRNA": 30.0,
+            "protein": 1415.720800490117
+          },
+          "cytokinesis": {
+            "abscission_readiness": 0.0,
+            "bridge_present": false,
+            "bridge_tension": 0.25,
+            "chromosome_alignment": 0.0,
+            "cleavage_origin_um": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "division_plane_normal": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "failure_reason": "",
+            "furrow_depth": 0.0,
+            "golgi_fragmentation": 0.0,
+            "membrane_supply": 1.0,
+            "midbody_present": false,
+            "mitochondrial_fragmentation": 0.0,
+            "nuclear_envelope_breakdown": 0.0,
+            "nuclear_envelope_reform": 0.0,
+            "ring_activity": 0.0,
+            "spindle_axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "stage": "none"
+          },
+          "energy_charge": 0.794598853747084,
+          "generation": 0,
+          "id": "cell-0",
+          "nuclei": 1,
+          "organelles": {
+            "centrosomes": 1,
+            "er_mass": 1.0,
+            "golgi_fragments": 1,
+            "golgi_stacks": 1,
+            "lysosomes": 300,
+            "membrane_area": 1.0,
+            "mitochondria": 1500,
+            "mitochondrial_fragments": 1500,
+            "peroxisomes": 500,
+            "ribosomes": 10000000
+          },
+          "parent_id": null,
+          "phase": "G1",
+          "phase_time_s": 79.9999999999976,
+          "ploidy_sets": [
+            2.0
+          ],
+          "ready_to_divide": false,
+          "t_s": 79.9999999999976
+        }
+      ],
+      "cytokinesis_failure_risk": 0.2,
+      "engine": "whole_cell_population",
+      "event_count": 0,
+      "events": [],
+      "latest_event": null,
+      "timing_profile": {
+        "biological_reference": true,
+        "g1_min_duration_s": 64800.0,
+        "g2_min_duration_s": 36000.0,
+        "id": "rat_hepatocyte_phx_reference",
+        "label": "rat hepatocyte post-PHx first-cycle timing",
+        "m_duration_s": 3600.0,
+        "notes": "Rat PHx anchor: S phase begins around 18 h and DNA synthesis peaks 21-24 h. S/M durations use generic mammalian anchors until hepatocyte-specific phase durations are added.",
+        "s_duration_s": 21600.0,
+        "source_ids": [
+          "rat_hepatocyte_phx_timing",
+          "cell_cycle_timing"
+        ],
+        "time_compressed": false
+      }
+    },
+    "elapsed_s": 960.0,
     "events": [
       {
         "id": "m015_initialized",
@@ -1490,14 +1737,14 @@
       }
     ],
     "membrane_state": {
-      "channel_open_probability": 0.056855543147784474,
-      "cytosolic_ca": 0.026838495222649326,
+      "channel_open_probability": 0.05695517311822298,
+      "cytosolic_ca": 0.027818244303154487,
       "engine": "brian2_boundary_fallback",
-      "er_ca": 0.7080580180734122,
-      "membrane_potential_mv": -61.09593509962503,
+      "er_ca": 0.7369624455335534,
+      "membrane_potential_mv": -61.29172499410621,
       "notes": "membrane_ca_brian2_boundary_v1; deterministic ODE fallback used unless Brian2 backend is attached.",
       "provenance": "docs/07-integrated-cell-engine-roadmap.md#m021-brian2-membraneca-module",
-      "pump_activity": 0.7580163387983871
+      "pump_activity": 0.7624661091275048
     },
     "metabolic_fluxes": [
       {
@@ -1520,7 +1767,7 @@
         "source": "glucose",
         "target": "glycogen",
         "unit": "relative_pool_delta",
-        "value": 0.00024787346082293246
+        "value": 0.0002766065792934523
       },
       {
         "consumed_by": "mitochondria",
@@ -1531,7 +1778,7 @@
         "source": "glucose",
         "target": "pyruvate_ATP",
         "unit": "relative_pool_delta",
-        "value": 0.002239261601512739
+        "value": 0.0022149813248455437
       },
       {
         "consumed_by": "mitochondria",
@@ -1542,7 +1789,7 @@
         "source": "lactate",
         "target": "pyruvate",
         "unit": "relative_pool_delta",
-        "value": 0.0004172564532160643
+        "value": 0.0004250222975918853
       },
       {
         "consumed_by": "cellular_ATP_consumers",
@@ -1553,7 +1800,7 @@
         "source": "pyruvate_ADP",
         "target": "ATP_ROS",
         "unit": "relative_pool_delta",
-        "value": 0.0008246535159475584
+        "value": 0.0007965276330356277
       },
       {
         "consumed_by": "cellular_ATP_consumers",
@@ -1564,7 +1811,7 @@
         "source": "fatty_acids_ADP",
         "target": "ATP_acetyl_CoA",
         "unit": "relative_pool_delta",
-        "value": 0.0004930225599217486
+        "value": 0.0004902232776907536
       },
       {
         "consumed_by": "sinusoidal_export",
@@ -1575,7 +1822,7 @@
         "source": "ammonia_ATP",
         "target": "urea",
         "unit": "relative_pool_delta",
-        "value": 0.0004812409980809377
+        "value": 0.000494613892253119
       },
       {
         "consumed_by": "export_transporters",
@@ -1586,7 +1833,7 @@
         "source": "xenobiotic_NADPH_GSH_ATP",
         "target": "detoxified_xenobiotic_ROS",
         "unit": "relative_pool_delta",
-        "value": 0.00032043004478326745
+        "value": 0.00031261063043497414
       },
       {
         "consumed_by": "bile_canaliculus",
@@ -1597,7 +1844,7 @@
         "source": "bile_acids_bilirubin_ATP",
         "target": "bile_canaliculus",
         "unit": "relative_pool_delta",
-        "value": 0.0009165812248772021
+        "value": 0.0009315086604199103
       },
       {
         "consumed_by": "all_organelles",
@@ -1608,7 +1855,7 @@
         "source": "ATP",
         "target": "organelle_maintenance",
         "unit": "relative_pool_delta",
-        "value": 0.002043889000618469
+        "value": 0.0020439202319115874
       }
     ],
     "organelles": {
@@ -1619,19 +1866,19 @@
           "cell_polarity",
           "mechanical_integrity"
         ],
-        "activity": 0.21857453792178477,
-        "age_h": 1.3333333333333344,
-        "capacity": 1.0022668795787124,
+        "activity": 0.21868360908994963,
+        "age_h": 1.2666666666666675,
+        "capacity": 1.0018197899014316,
         "damage": 0.0,
         "health": 1.0,
         "id": "cytoskeleton",
-        "local_atp": 0.7580163387983871,
+        "local_atp": 0.7624661091275048,
         "location_um": [
           0.0,
           0.0,
           0.0
         ],
-        "risk_per_hour": 0.0022294823688366015,
+        "risk_per_hour": 0.002229363850318083,
         "transport_delay_s": 2.1210000000000004
       },
       "cytosol_metabolism": {
@@ -1641,19 +1888,19 @@
           "metabolite_diffusion",
           "local_availability"
         ],
-        "activity": 0.21269819254407699,
-        "age_h": 0.3333333333333333,
+        "activity": 0.21277275734349202,
+        "age_h": 0.26666666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "cytosol_metabolism",
-        "local_atp": 0.7580163387983871,
+        "local_atp": 0.7624661091275048,
         "location_um": [
           0.0,
           -1.0,
           0.0
         ],
-        "risk_per_hour": 0.001716060804902239,
+        "risk_per_hour": 0.0017159571011985352,
         "transport_delay_s": 1.8210000000000002
       },
       "golgi": {
@@ -1663,19 +1910,19 @@
           "vesicle_budding",
           "polarized_delivery"
         ],
-        "activity": 0.20072556942374048,
-        "age_h": 2.833333333333332,
+        "activity": 0.2007258825274603,
+        "age_h": 2.7666666666666657,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "golgi",
-        "local_atp": 0.7580163387984092,
+        "local_atp": 0.762466109127528,
         "location_um": [
           1.3,
           2.3,
           0.2
         ],
-        "risk_per_hour": 0.0033337194752130267,
+        "risk_per_hour": 0.0033335935492871008,
         "transport_delay_s": 4.738999999999999
       },
       "lysosome_endosome": {
@@ -1685,19 +1932,19 @@
           "organelle_turnover",
           "receptor_recycling"
         ],
-        "activity": 0.20216289215282815,
-        "age_h": 4.833333333333332,
+        "activity": 0.20208475823533661,
+        "age_h": 4.766666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "lysosome_endosome",
-        "local_atp": 0.7580163390900589,
+        "local_atp": 0.7624661094334099,
         "location_um": [
           3.7,
           1.2,
           -1.4
         ],
-        "risk_per_hour": 0.0030905365210966073,
+        "risk_per_hour": 0.003090403187763274,
         "transport_delay_s": 7.577999999999999
       },
       "mitochondria": {
@@ -1708,19 +1955,19 @@
           "ROS_balance",
           "mitophagy_commit"
         ],
-        "activity": 0.20252572110463934,
-        "age_h": 18.33333333333335,
+        "activity": 0.20248780468112007,
+        "age_h": 18.26666666666668,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "mitochondria",
-        "local_atp": 0.7580163387983871,
+        "local_atp": 0.7624661091275048,
         "location_um": [
           -4.0,
           -2.0,
           1.1
         ],
-        "risk_per_hour": 0.004576254515893806,
+        "risk_per_hour": 0.004576067705697541,
         "transport_delay_s": 0.25
       },
       "nucleus": {
@@ -1730,19 +1977,19 @@
           "mRNA_export",
           "DNA_damage_response"
         ],
-        "activity": 0.22192648394116798,
-        "age_h": 12.333333333333332,
+        "activity": 0.22205521123096422,
+        "age_h": 12.266666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "nucleus",
-        "local_atp": 0.7580163387983871,
+        "local_atp": 0.7624661091275048,
         "location_um": [
           0.0,
           0.0,
           0.0
         ],
-        "risk_per_hour": 0.0020306645321331845,
+        "risk_per_hour": 0.0020305756432442952,
         "transport_delay_s": 2.1210000000000004
       },
       "peroxisome": {
@@ -1752,19 +1999,19 @@
           "lipid_metabolism",
           "ROS_buffering"
         ],
-        "activity": 0.20620420428227307,
-        "age_h": 5.333333333333332,
+        "activity": 0.20617767578602453,
+        "age_h": 5.266666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "peroxisome",
-        "local_atp": 0.7580163387983871,
+        "local_atp": 0.7624661091275048,
         "location_um": [
           -1.5,
           -3.2,
           -1.2
         ],
-        "risk_per_hour": 0.0031661554617550876,
+        "risk_per_hour": 0.0031660443506439763,
         "transport_delay_s": 1.298
       },
       "plasma_membrane": {
@@ -1774,19 +2021,19 @@
           "endocytosis",
           "exocytosis"
         ],
-        "activity": 0.24883900164125838,
-        "age_h": 4.333333333333332,
+        "activity": 0.2491073948670462,
+        "age_h": 4.266666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "plasma_membrane",
-        "local_atp": 0.7580217134215067,
+        "local_atp": 0.7624717460203537,
         "location_um": [
           0.0,
           11.5,
           0.0
         ],
-        "risk_per_hour": 0.0030712975385787824,
+        "risk_per_hour": 0.0030710752275918156,
         "transport_delay_s": 19.946000000000005
       },
       "proteasome": {
@@ -1795,19 +2042,19 @@
           "ERAD_degradation",
           "regulatory_protein_turnover"
         ],
-        "activity": 0.2017005646555921,
-        "age_h": 3.833333333333332,
-        "capacity": 1.0350308651501454,
+        "activity": 0.2017224027523116,
+        "age_h": 3.7666666666666657,
+        "capacity": 1.0312143867403165,
         "damage": 0.0,
         "health": 1.0,
         "id": "proteasome",
-        "local_atp": 0.7580163387983871,
+        "local_atp": 0.7624661091275048,
         "location_um": [
           0.9,
           -0.8,
           2.4
         ],
-        "risk_per_hour": 0.002181156860177574,
+        "risk_per_hour": 0.0021810605638812783,
         "transport_delay_s": 2.714
       },
       "ribosome": {
@@ -1817,19 +2064,19 @@
           "ribosome_quality_control",
           "ER_targeting"
         ],
-        "activity": 0.20271694475180663,
-        "age_h": 2.333333333333332,
+        "activity": 0.20253231164854998,
+        "age_h": 2.2666666666666657,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "ribosome",
-        "local_atp": 0.7580163387983871,
+        "local_atp": 0.7624661091275048,
         "location_um": [
           -3.5,
           1.5,
           1.2
         ],
-        "risk_per_hour": 0.002530717876859879,
+        "risk_per_hour": 0.0025306067657487677,
         "transport_delay_s": 1.251
       },
       "rough_er": {
@@ -1839,19 +2086,19 @@
           "ER_quality_control",
           "ERAD"
         ],
-        "activity": 0.20181984087714974,
-        "age_h": 3.333333333333332,
-        "capacity": 1.0450784477069,
+        "activity": 0.20184091849829752,
+        "age_h": 3.2666666666666657,
+        "capacity": 1.0401645495535445,
         "damage": 0.0,
         "health": 1.0,
         "id": "rough_er",
-        "local_atp": 0.7580163387983871,
+        "local_atp": 0.7624661091275048,
         "location_um": [
           -2.2,
           0.8,
           0.5
         ],
-        "risk_per_hour": 0.003985575183136913,
+        "risk_per_hour": 0.003985427034988764,
         "transport_delay_s": 1.1439999999999997
       },
       "smooth_er": {
@@ -1861,19 +2108,19 @@
           "cholesterol_bile_coupling",
           "calcium_storage"
         ],
-        "activity": 0.20659485798457938,
-        "age_h": 3.333333333333332,
-        "capacity": 1.0621722364680592,
+        "activity": 0.2066619046895701,
+        "age_h": 3.2666666666666657,
+        "capacity": 1.055408299180305,
         "damage": 0.0,
         "health": 1.0,
         "id": "smooth_er",
-        "local_atp": 0.7580163387983894,
+        "local_atp": 0.7624661091275071,
         "location_um": [
           2.5,
           -1.0,
           0.7
         ],
-        "risk_per_hour": 0.0040606561885888,
+        "risk_per_hour": 0.004060522855255467,
         "transport_delay_s": 4.341
       }
     },
@@ -1883,241 +2130,467 @@
         "compartment_id": "cytosol",
         "id": "ADP",
         "unit": "relative_pool_0_1",
-        "value": 0.22290279704445704
+        "value": 0.21922592105097838
       },
       "AMP": {
         "compartment_id": "cytosol",
         "id": "AMP",
         "unit": "relative_pool_0_1",
-        "value": 0.021373343832333795
+        "value": 0.020612549049197966
       },
       "ATP": {
         "compartment_id": "cytosol",
         "id": "ATP",
         "unit": "relative_pool_0_1",
-        "value": 0.7557238591232092
+        "value": 0.7601615298998237
       },
       "Ca2+": {
         "compartment_id": "cytosol",
         "id": "Ca2+",
         "unit": "relative_pool_0_1",
-        "value": 0.026838495222649326
+        "value": 0.027818244303154487
       },
       "GSH": {
         "compartment_id": "cytosol",
         "id": "GSH",
         "unit": "relative_pool_0_1",
-        "value": 1.1040119396571204
+        "value": 1.0474590119781957
       },
       "GSSG": {
         "compartment_id": "cytosol",
         "id": "GSSG",
         "unit": "relative_pool_0_1",
-        "value": 0.08161639576658308
+        "value": 0.08127295686010835
       },
       "NAD+": {
         "compartment_id": "cytosol",
         "id": "NAD+",
         "unit": "relative_pool_0_1",
-        "value": 0.650572997509011
+        "value": 0.650450637390981
       },
       "NADH": {
         "compartment_id": "cytosol",
         "id": "NADH",
         "unit": "relative_pool_0_1",
-        "value": 0.349427002490989
+        "value": 0.34954936260901903
       },
       "NADPH": {
         "compartment_id": "cytosol",
         "id": "NADPH",
         "unit": "relative_pool_0_1",
-        "value": 0.7133224470109379
+        "value": 0.7146851818849076
       },
       "ROS": {
         "compartment_id": "cytosol",
         "id": "ROS",
         "unit": "relative_pool_0_1",
-        "value": 0.019243211734077777
+        "value": 0.019423046378243974
       },
       "acetyl_CoA": {
         "compartment_id": "mitochondria_pool",
         "id": "acetyl_CoA",
         "unit": "relative_pool_0_1",
-        "value": 0.20967518523653492
+        "value": 0.20767947728009925
       },
       "albumin": {
         "compartment_id": "golgi",
         "id": "albumin",
         "unit": "relative_pool_0_1",
-        "value": 0.18068201372760173
+        "value": 0.18054572682887676
       },
       "amino_acids": {
         "compartment_id": "cytosol",
         "id": "amino_acids",
         "unit": "relative_pool_0_1",
-        "value": 0.4249083630683767
+        "value": 0.42011849554653324
       },
       "ammonia": {
         "compartment_id": "cytosol",
         "id": "ammonia",
         "unit": "relative_pool_0_1",
-        "value": 0.04487252883903763
+        "value": 0.04584162843073264
       },
       "autophagy_cargo": {
         "compartment_id": "lysosome_pool",
         "id": "autophagy_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.020552866618058756
+        "value": 0.02044801496094772
       },
       "bile_acids": {
         "compartment_id": "cytosol",
         "id": "bile_acids",
         "unit": "relative_pool_0_1",
-        "value": 0.13476673995306918
+        "value": 0.13577904812434566
       },
       "bilirubin_conjugates": {
         "compartment_id": "cytosol",
         "id": "bilirubin_conjugates",
         "unit": "relative_pool_0_1",
-        "value": 0.04571824177978387
+        "value": 0.046546493919919156
       },
       "canalicular_cargo": {
         "compartment_id": "golgi",
         "id": "canalicular_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.0302922915975436
+        "value": 0.03023388292666148
       },
       "cholesterol": {
         "compartment_id": "smooth_er",
         "id": "cholesterol",
         "unit": "relative_pool_0_1",
-        "value": 0.22285928755344847
+        "value": 0.22230366628049444
       },
       "cytosolic_protein": {
         "compartment_id": "cytosol",
         "id": "cytosolic_protein",
         "unit": "relative_pool_0_1",
-        "value": 0.352338487863466
+        "value": 0.35179612820747713
       },
       "damaged_organelle_mass": {
         "compartment_id": "cytosol",
         "id": "damaged_organelle_mass",
         "unit": "relative_pool_0_1",
-        "value": 0.017693279449165763
+        "value": 0.01818014289252975
       },
       "detoxified_xenobiotic": {
         "compartment_id": "cytosol",
         "id": "detoxified_xenobiotic",
         "unit": "relative_pool_0_1",
-        "value": 0.00018618101981318974
+        "value": 0.00018199249362876643
       },
       "endocytosed_cargo": {
         "compartment_id": "lysosome_pool",
         "id": "endocytosed_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.030638554162352182
+        "value": 0.028603325062079098
       },
       "fatty_acids": {
         "compartment_id": "cytosol",
         "id": "fatty_acids",
         "unit": "relative_pool_0_1",
-        "value": 0.2632493091924163
+        "value": 0.26657714433462615
       },
       "folded_cargo": {
         "compartment_id": "rough_er",
         "id": "folded_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.020621255679793667
+        "value": 0.02050838218576932
       },
       "glucose": {
         "compartment_id": "cytosol",
         "id": "glucose",
         "unit": "relative_pool_0_1",
-        "value": 0.3056052436093287
+        "value": 0.30454572100037675
       },
       "glycogen": {
         "compartment_id": "cytosol",
         "id": "glycogen",
         "unit": "relative_pool_0_1",
-        "value": 0.6231534623884502
+        "value": 0.6226434955973454
       },
       "lactate": {
         "compartment_id": "cytosol",
         "id": "lactate",
         "unit": "relative_pool_0_1",
-        "value": 0.07290670060554028
+        "value": 0.07427679026231881
       },
       "lipids": {
         "compartment_id": "smooth_er",
         "id": "lipids",
         "unit": "relative_pool_0_1",
-        "value": 0.28880622554039853
+        "value": 0.2870741231021642
       },
       "lysosome_enzyme_cargo": {
         "compartment_id": "golgi",
         "id": "lysosome_enzyme_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.030259814753372086
+        "value": 0.0302078959348102
       },
       "mRNA": {
         "compartment_id": "cytosol",
         "id": "mRNA",
         "unit": "relative_pool_0_1",
-        "value": 0.14686820302681944
+        "value": 0.1376513979064685
       },
       "membrane_cargo": {
         "compartment_id": "golgi",
         "id": "membrane_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.04038972213005813
+        "value": 0.0403118439022153
       },
       "misfolded_protein": {
         "compartment_id": "rough_er",
         "id": "misfolded_protein",
         "unit": "relative_pool_0_1",
-        "value": 0.028549592769238148
+        "value": 0.028804989577571258
       },
       "oxygen": {
         "compartment_id": "cytosol",
         "id": "oxygen",
         "unit": "relative_pool_0_1",
-        "value": 0.7453126553923513
+        "value": 0.7363921954105807
       },
       "pyruvate": {
         "compartment_id": "cytosol",
         "id": "pyruvate",
         "unit": "relative_pool_0_1",
-        "value": 0.15281487100117333
+        "value": 0.1503601657789155
       },
       "secretory_protein_cargo": {
         "compartment_id": "rough_er",
         "id": "secretory_protein_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.0792516759739063
+        "value": 0.07932213514719465
       },
       "ubiquitinated_cargo": {
         "compartment_id": "proteasome_pool",
         "id": "ubiquitinated_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.019494164046277816
+        "value": 0.01959615484282381
       },
       "urea": {
         "compartment_id": "cytosol",
         "id": "urea",
         "unit": "relative_pool_0_1",
-        "value": 0.050841053996182675
+        "value": 0.056644868083043566
       },
       "very_long_chain_fatty_acids": {
         "compartment_id": "peroxisome_pool",
         "id": "very_long_chain_fatty_acids",
         "unit": "relative_pool_0_1",
-        "value": 0.09218742266419037
+        "value": 0.09374356779911379
       },
       "xenobiotic": {
         "compartment_id": "smooth_er",
         "id": "xenobiotic",
         "unit": "relative_pool_0_1",
-        "value": 0.035251412298856165
+        "value": 0.036258872374422976
+      }
+    },
+    "regeneration_context": {
+      "decision": {
+        "anti_proliferative_brake_active": false,
+        "blocked_by": [
+          "no injury/development/regeneration context or liver mass already restored",
+          "no active direct mitogenic axis (HGF/MET or EGFR)",
+          "HGF/MET ligand state unknown",
+          "EGFR ligand state unknown"
+        ],
+        "cell_cycle_entry_permitted": false,
+        "cytokinesis_failure_supported": false,
+        "direct_mitogen_axes": [
+          {
+            "active": false,
+            "axis": "HGF/MET",
+            "blocked_by": [
+              "HGF/MET ligand state unknown"
+            ],
+            "downstream_mapk_pi3k": "unknown",
+            "ligand": "unknown",
+            "receptor": "baseline",
+            "receptor_phosphorylation": "unknown",
+            "sources": [
+              "integrin_beta1",
+              "met_egfr_direct_mitogens",
+              "signals_cells_liver_regeneration"
+            ],
+            "supported_by": [
+              "HGF/MET receptor available",
+              "ECM/beta1-integrin context permits receptor phosphorylation"
+            ],
+            "uncalibrated": [
+              "HGF/MET ligand not asserted",
+              "HGF/MET receptor phosphorylation not explicitly measured",
+              "HGF/MET ERK/AKT-family downstream signaling not explicitly measured"
+            ]
+          },
+          {
+            "active": false,
+            "axis": "EGFR",
+            "blocked_by": [
+              "EGFR ligand state unknown"
+            ],
+            "downstream_mapk_pi3k": "unknown",
+            "ligand": "unknown",
+            "receptor": "baseline",
+            "receptor_phosphorylation": "unknown",
+            "sources": [
+              "egfr_g1s",
+              "integrin_beta1",
+              "met_egfr_direct_mitogens",
+              "signals_cells_liver_regeneration"
+            ],
+            "supported_by": [
+              "EGFR receptor available",
+              "ECM/beta1-integrin context permits receptor phosphorylation"
+            ],
+            "uncalibrated": [
+              "EGFR ligand not asserted",
+              "EGFR receptor phosphorylation not explicitly measured",
+              "EGFR ERK/AKT-family downstream signaling not explicitly measured"
+            ]
+          }
+        ],
+        "polyploid_binucleation_supported": false,
+        "priming_supported": false,
+        "regeneration_context_active": false,
+        "regulatory_axes": [
+          {
+            "active": false,
+            "blocked_by": [],
+            "effector": "unknown",
+            "inhibitory": false,
+            "ligand": "unknown",
+            "pathway": "TNF/TNFR1/NF-kB",
+            "receptor": "baseline",
+            "role": "priming",
+            "sources": [
+              "tnf_il6_priming",
+              "signals_cells_liver_regeneration"
+            ],
+            "supported_by": [
+              "TNF/TNFR1/NF-kB receptor context available"
+            ],
+            "uncalibrated": [
+              "TNF/TNFR1/NF-kB ligand not asserted",
+              "TNF/TNFR1/NF-kB downstream effector not explicitly measured"
+            ]
+          },
+          {
+            "active": false,
+            "blocked_by": [],
+            "effector": "unknown",
+            "inhibitory": false,
+            "ligand": "unknown",
+            "pathway": "IL-6/IL-6R-gp130/STAT3",
+            "receptor": "baseline",
+            "role": "priming",
+            "sources": [
+              "il6_deficient_regeneration",
+              "signals_cells_liver_regeneration"
+            ],
+            "supported_by": [
+              "IL-6/IL-6R-gp130/STAT3 receptor context available"
+            ],
+            "uncalibrated": [
+              "IL-6/IL-6R-gp130/STAT3 ligand not asserted",
+              "IL-6/IL-6R-gp130/STAT3 downstream effector not explicitly measured"
+            ]
+          },
+          {
+            "active": false,
+            "blocked_by": [],
+            "effector": "unknown",
+            "inhibitory": false,
+            "ligand": "unknown",
+            "pathway": "Wnt/FZD-LRP/beta-catenin",
+            "receptor": "baseline",
+            "role": "support",
+            "sources": [
+              "wnt_beta_catenin_regeneration",
+              "signals_cells_liver_regeneration"
+            ],
+            "supported_by": [
+              "Wnt/FZD-LRP/beta-catenin receptor context available"
+            ],
+            "uncalibrated": [
+              "Wnt/FZD-LRP/beta-catenin ligand not asserted",
+              "Wnt/FZD-LRP/beta-catenin downstream effector not explicitly measured"
+            ]
+          },
+          {
+            "active": false,
+            "blocked_by": [
+              "TGF-beta/TGFBR/SMAD downstream effector not elevated above baseline"
+            ],
+            "effector": "baseline",
+            "inhibitory": false,
+            "ligand": "baseline",
+            "pathway": "TGF-beta/TGFBR/SMAD",
+            "receptor": "baseline",
+            "role": "brake",
+            "sources": [
+              "tgfb_regeneration_brake",
+              "signals_cells_liver_regeneration"
+            ],
+            "supported_by": [
+              "TGF-beta/TGFBR/SMAD receptor context available"
+            ],
+            "uncalibrated": []
+          }
+        ],
+        "sources": [
+          "egfr_g1s",
+          "hepatectomy_timing",
+          "hippo_contact",
+          "il6_deficient_regeneration",
+          "integrin_beta1",
+          "met_egfr_direct_mitogens",
+          "signals_cells_liver_regeneration",
+          "tgfb_regeneration_brake",
+          "tnf_il6_priming",
+          "wnt_beta_catenin_regeneration"
+        ],
+        "support_signaling_supported": false,
+        "supported_by": [],
+        "uncalibrated": [
+          "HGF/MET ligand not asserted",
+          "HGF/MET receptor phosphorylation not explicitly measured",
+          "HGF/MET ERK/AKT-family downstream signaling not explicitly measured",
+          "EGFR ligand not asserted",
+          "EGFR receptor phosphorylation not explicitly measured",
+          "EGFR ERK/AKT-family downstream signaling not explicitly measured",
+          "TNF/TNFR1/NF-kB ligand not asserted",
+          "TNF/TNFR1/NF-kB downstream effector not explicitly measured",
+          "IL-6/IL-6R-gp130/STAT3 ligand not asserted",
+          "IL-6/IL-6R-gp130/STAT3 downstream effector not explicitly measured",
+          "Wnt/FZD-LRP/beta-catenin ligand not asserted",
+          "Wnt/FZD-LRP/beta-catenin downstream effector not explicitly measured",
+          "TNF/IL-6 priming not active/asserted; current gate treats this as delay/impaired support, not an absolute mitogen blockade"
+        ]
+      },
+      "division_demo_is_time_compressed": false,
+      "input": {
+        "beta_catenin_nuclear": "unknown",
+        "e2f7_e2f8_polyploid_program": "unknown",
+        "ecm_integrin_attachment": "baseline",
+        "egfr_downstream_mapk_pi3k": "unknown",
+        "egfr_ligand": "unknown",
+        "egfr_phosphorylation": "unknown",
+        "egfr_receptor": "baseline",
+        "fzd_lrp_receptor": "baseline",
+        "hgf_ligand": "unknown",
+        "hgf_met": "unknown",
+        "hippo_contact_inhibition": "baseline",
+        "il6_ligand": "unknown",
+        "il6_stat3": "unknown",
+        "il6r_gp130_receptor": "baseline",
+        "liver_mass_restored": true,
+        "met_downstream_mapk_pi3k": "unknown",
+        "met_phosphorylation": "unknown",
+        "met_receptor": "baseline",
+        "nfkb_activation": "unknown",
+        "smad2_3_activation": "unknown",
+        "stat3_activation": "unknown",
+        "tgfb_ligand": "unknown",
+        "tgfb_smad": "baseline",
+        "tgfbr_receptor": "baseline",
+        "tnf_alpha": "unknown",
+        "tnf_nfkb": "unknown",
+        "tnfr1_receptor": "baseline",
+        "trigger": "none",
+        "wnt_beta_catenin": "unknown",
+        "wnt_ligand": "unknown"
+      },
+      "timing_is_real_world_reference": true,
+      "timing_profile": {
+        "dna_synthesis_onset_h": null,
+        "dna_synthesis_peak_h": null,
+        "mass_restoration_days": null,
+        "notes": "No universal timing profile is encoded for this context.",
+        "source_ids": [],
+        "species": "mouse",
+        "trigger": "none"
       }
     },
     "signaling_results": [
@@ -2284,48 +2757,6 @@
           "p53_like": 0.09994386306674424,
           "stress_receptor": 0.02507855138670138,
           "upr_like": 0.06180866402191947
-        },
-        "model_id": "hepatocyte_rule_based_signaling_v1",
-        "notes": "PySB-compatible boundary; built-in deterministic rules used when PySB is not installed.",
-        "provenance": "docs/07-integrated-cell-engine-roadmap.md#m020-pysb-rule-based-signaling"
-      },
-      {
-        "actions": {
-          "er_chaperone_capacity": 0.2431956731907249,
-          "mitochondrial_apoptosis_pressure": 0.0055084620857213575,
-          "proteasome_capacity": 0.190110267962816,
-          "smooth_er_detox_capacity": 0.3373139976094595
-        },
-        "engine": "rule_based_subset",
-        "id": "hepatocyte_rule_based_signaling_v1_1080",
-        "markers": {
-          "apoptosis_switch": 0.0055084620857213575,
-          "nfkb_like": 0.07573920312204145,
-          "nrf2_like": 0.21523490332536205,
-          "p53_like": 0.10050673519162606,
-          "stress_receptor": 0.024799937234758783,
-          "upr_like": 0.06170810455817844
-        },
-        "model_id": "hepatocyte_rule_based_signaling_v1",
-        "notes": "PySB-compatible boundary; built-in deterministic rules used when PySB is not installed.",
-        "provenance": "docs/07-integrated-cell-engine-roadmap.md#m020-pysb-rule-based-signaling"
-      },
-      {
-        "actions": {
-          "er_chaperone_capacity": 0.24312752412343955,
-          "mitochondrial_apoptosis_pressure": 0.005532599421555503,
-          "proteasome_capacity": 0.190046986686051,
-          "smooth_er_detox_capacity": 0.3371389698667162
-        },
-        "engine": "rule_based_subset",
-        "id": "hepatocyte_rule_based_signaling_v1_1200",
-        "markers": {
-          "apoptosis_switch": 0.005532599421555503,
-          "nfkb_like": 0.07561191519886976,
-          "nrf2_like": 0.21497452921272503,
-          "p53_like": 0.10105630564902365,
-          "stress_receptor": 0.024517075183266138,
-          "upr_like": 0.061610748747770776
         },
         "model_id": "hepatocyte_rule_based_signaling_v1",
         "notes": "PySB-compatible boundary; built-in deterministic rules used when PySB is not installed.",
