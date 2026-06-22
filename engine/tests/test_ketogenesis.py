@@ -21,9 +21,9 @@ def _coa_moiety(counts: dict[str, float]) -> float:
 class KetogenesisTests(unittest.TestCase):
     def test_ketone_output_scales_with_acetyl_coa_supply(self):
         """Ketogenesis is an acetyl-CoA overflow pathway: more supply -> more ketones."""
-        low = total_ketones(run_ketogenesis(120.0, EngineRng(2), acetyl_coa=4000.0))
-        high = total_ketones(run_ketogenesis(120.0, EngineRng(2), acetyl_coa=12000.0))
-        self.assertGreater(low, 100.0)
+        low = total_ketones(run_ketogenesis(120.0, EngineRng(2), acetyl_coa_mM=0.1))
+        high = total_ketones(run_ketogenesis(120.0, EngineRng(2), acetyl_coa_mM=0.3))
+        self.assertGreater(low, 1.0e6)
         # 2 acetyl-CoA -> 1 ketone, so a 3x load gives ~3x ketones.
         self.assertGreater(high, 2.0 * low)
 
@@ -33,13 +33,13 @@ class KetogenesisTests(unittest.TestCase):
         A more reduced matrix (high NADH/NAD+) shifts ketones toward
         beta-hydroxybutyrate.
         """
-        def ratio(nadh: float, nad_plus: float) -> float:
-            out = run_ketogenesis(120.0, EngineRng(3), nadh=nadh, nad_plus=nad_plus)
+        def ratio(nadh_mM: float, nad_plus_mM: float) -> float:
+            out = run_ketogenesis(120.0, EngineRng(3), nadh_mM=nadh_mM, nad_plus_mM=nad_plus_mM)
             return out["beta_hydroxybutyrate"] / max(out["acetoacetate"], 1.0)
 
-        reduced = ratio(4000.0, 500.0)
-        balanced = ratio(2000.0, 2000.0)
-        oxidized = ratio(500.0, 4000.0)
+        reduced = ratio(4.0, 0.5)
+        balanced = ratio(2.0, 2.0)
+        oxidized = ratio(0.5, 4.0)
         self.assertGreater(reduced, balanced)
         self.assertGreater(balanced, oxidized)
         self.assertGreater(reduced, 3.0 * oxidized)
@@ -48,12 +48,12 @@ class KetogenesisTests(unittest.TestCase):
         """Hegardt 1999: HMGCS2 controls ketogenic flux. Raising its capacity lifts
         early-time flux far more than raising the downstream lyase (HMGCL)."""
         t = 5.0  # enzyme-limited regime, before substrate is exhausted
-        base = total_ketones(run_ketogenesis(t, EngineRng(7), acetyl_coa=12000.0))
+        base = total_ketones(run_ketogenesis(t, EngineRng(7), acetyl_coa_mM=0.3))
         more_hmgcs2 = total_ketones(
-            run_ketogenesis(t, EngineRng(7), acetyl_coa=12000.0,
+            run_ketogenesis(t, EngineRng(7), acetyl_coa_mM=0.3,
                             params=KetogenesisParams(hmgcs2_per_s=0.16)))
         more_hmgcl = total_ketones(
-            run_ketogenesis(t, EngineRng(7), acetyl_coa=12000.0,
+            run_ketogenesis(t, EngineRng(7), acetyl_coa_mM=0.3,
                             params=KetogenesisParams(hmgcl_per_s=1.6)))
         # Relieving the committed step raises flux; relieving the downstream step barely does.
         self.assertGreater(more_hmgcs2, 1.3 * base)
