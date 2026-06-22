@@ -71,6 +71,26 @@ class KetogenesisTests(unittest.TestCase):
         self.assertAlmostEqual(_coa_moiety(out), 2000.0, places=6)
         self.assertAlmostEqual(out["NADH"] + out["NAD_plus"], 2000.0, places=6)
 
+    def test_fasting_drives_ketogenesis_and_insulin_suppresses_it(self):
+        """Fed->fasted switch produces ketones; insulin is anti-ketogenic."""
+        from cell_engine.stochastic.signaling import FED, FASTED
+        from cell_engine.stochastic.ketogenesis import run_fasting_ketogenesis
+
+        fed = total_ketones(run_fasting_ketogenesis(FED, 90.0, EngineRng(11)))
+        fasted = total_ketones(run_fasting_ketogenesis(FASTED, 90.0, EngineRng(11)))
+        self.assertLess(fed, 100.0)           # insulin suppresses ketogenesis
+        self.assertGreater(fasted, 1000.0)    # fasting drives it
+        self.assertGreater(fasted, 20.0 * (fed + 1.0))
+
+    def test_fasting_ketones_are_beta_hydroxybutyrate_dominant(self):
+        """beta-oxidation reduces the matrix (NADH up), so fasting ketones are
+        beta-hydroxybutyrate-dominant -- as in real fasting/diabetic ketoacidosis."""
+        from cell_engine.stochastic.signaling import FASTED
+        from cell_engine.stochastic.ketogenesis import run_fasting_ketogenesis
+
+        out = run_fasting_ketogenesis(FASTED, 90.0, EngineRng(13))
+        self.assertGreater(out["beta_hydroxybutyrate"], 2.0 * out["acetoacetate"])
+
     def test_pathway_is_source_backed(self):
         for source_id in ("hmgcs2_control", "ketone_redox_ratio", "ketone_physiology"):
             self.assertIn(source_id, KETOGENESIS_SOURCES)
