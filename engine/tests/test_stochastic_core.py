@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 from math import sqrt
 
+from cell_engine.core.provenance import ParameterProvenance
 from cell_engine.core.random import EngineRng
 from cell_engine.quantitative.geometry import AVOGADRO
 from cell_engine.stochastic.integrators import (
@@ -11,7 +12,7 @@ from cell_engine.stochastic.integrators import (
     simulate_cle,
 )
 from cell_engine.stochastic.kinetics_data import GLUCOKINASE, glucokinase_reaction
-from cell_engine.stochastic.reactions import ReactionNetwork, mass_action
+from cell_engine.stochastic.reactions import ReactionNetwork, mass_action, michaelis_menten
 
 
 def ssa_moments(network, counts0, t_end, rng, species, burn):
@@ -150,6 +151,84 @@ class MichaelisMentenTests(unittest.TestCase):
         c = 1.0 / (AVOGADRO * volume_l)  # second-order stochastic constant
         self.assertAlmostEqual(reaction.propensity({"A": 4.0}, volume_l), c * (4 * 3) / 2)
         self.assertEqual(reaction.propensity({"A": 1.0}, volume_l), 0.0)  # needs two molecules
+
+
+class ReactionProvenanceTests(unittest.TestCase):
+    def test_builders_default_to_empty_parameter_provenance(self):
+        reaction = mass_action("toy_deg", {"X": 1}, {}, 2.0)
+        enzyme_reaction = michaelis_menten(
+            "toy_enzyme",
+            {"S": 1},
+            {"P": 1},
+            vmax_M_per_s=1.0,
+            km_M=1.0e-3,
+            substrate="S",
+        )
+
+        self.assertEqual(reaction.parameter_provenance, ())
+        self.assertEqual(enzyme_reaction.parameter_provenance, ())
+
+    def test_mass_action_carries_parameter_provenance_without_changing_propensity(self):
+        provenance = ParameterProvenance(
+            name="toy_decay_rate",
+            value=2.0,
+            unit="s^-1",
+            source_id="unit_test",
+            assumption_level="placeholder",
+            confidence=0.0,
+            notes="Non-biological test constant used only to verify metadata plumbing.",
+        )
+        with_metadata = mass_action(
+            "toy_deg",
+            {"X": 1},
+            {},
+            2.0,
+            parameter_provenance=provenance,
+        )
+        baseline = mass_action("toy_deg", {"X": 1}, {}, 2.0)
+
+        self.assertEqual(with_metadata.parameter_provenance, (provenance,))
+        self.assertEqual(with_metadata.parameter_provenance[0].source_id, "unit_test")
+        self.assertEqual(with_metadata.parameter_provenance[0].unit, "s^-1")
+        self.assertEqual(with_metadata.parameter_provenance[0].assumption_level, "placeholder")
+        self.assertEqual(with_metadata.parameter_provenance[0].confidence, 0.0)
+        self.assertIn("Non-biological test constant", with_metadata.parameter_provenance[0].notes)
+        self.assertEqual(
+            with_metadata.propensity({"X": 100.0}, 1.0e-15),
+            baseline.propensity({"X": 100.0}, 1.0e-15),
+        )
+
+    def test_michaelis_menten_accepts_multiple_parameter_provenance_records(self):
+        vmax = ParameterProvenance(
+            name="toy_vmax",
+            value=1.0,
+            unit="M s^-1",
+            source_id="unit_test",
+            assumption_level="placeholder",
+            confidence=0.0,
+            notes="Non-biological test constant used only to verify metadata plumbing.",
+        )
+        km = ParameterProvenance(
+            name="toy_km",
+            value=1.0e-3,
+            unit="M",
+            source_id="unit_test",
+            assumption_level="placeholder",
+            confidence=0.0,
+            notes="Non-biological test constant used only to verify metadata plumbing.",
+        )
+        reaction = michaelis_menten(
+            "toy_enzyme",
+            {"S": 1},
+            {"P": 1},
+            vmax_M_per_s=1.0,
+            km_M=1.0e-3,
+            substrate="S",
+            parameter_provenance=(vmax, km),
+        )
+
+        self.assertEqual(reaction.parameter_provenance, (vmax, km))
+        self.assertEqual([item.name for item in reaction.parameter_provenance], ["toy_vmax", "toy_km"])
 
 
 class PartitionTests(unittest.TestCase):

@@ -13,6 +13,10 @@ from cell_engine.stochastic.spatial import (
 
 
 class DiffusionTests(unittest.TestCase):
+    def test_default_field_quantity_is_concentration(self):
+        field = uniform_field(("X",), 4, dx_um=1.0, value=2.0)
+        self.assertEqual(field.quantity, "concentration_mM")
+
     def test_pure_diffusion_conserves_mass(self):
         # A spike in the middle; reflecting boundaries -> total amount is invariant.
         n = 40
@@ -41,6 +45,10 @@ class DiffusionTests(unittest.TestCase):
         field = uniform_field(("X",), 10, 1.0, 1.0)
         with self.assertRaises(ValueError):
             react_diffuse(field, diffusion={"X": 10.0}, dt_s=1.0, steps=1)
+
+    def test_invalid_field_quantity_is_rejected(self):
+        with self.assertRaises(ValueError):
+            SpatialField(("X",), dx_um=1.0, conc={"X": (1.0,)}, quantity="moles")  # type: ignore[arg-type]
 
 
 class ReactionDiffusionGradientTests(unittest.TestCase):

@@ -39,6 +39,107 @@ link back here or to a more specific research file.
     organelle); mitochondria ~0.5–1 µm × 1–5 µm (hundreds–thousands per cell);
     Golgi 4–10 cisternae; lysosomes ~0.1–0.5 µm; ribosomes ~25 nm; ER forms a
     network contiguous with the nuclear envelope and contacts mitochondria/Golgi.
+- Hepatocyte / animal-cell division and organelle inheritance:
+  - Cytokinesis, Molecular Biology of the Cell / NCBI Bookshelf:
+    https://www.ncbi.nlm.nih.gov/books/NBK26831/
+    - Use for spindle-defined division plane, contractile ring, cleavage furrow,
+      membrane insertion, midbody and the rule that membrane-bound organelles
+      must be inherited.
+  - Mechanics and regulation of cytokinetic abscission:
+    https://www.frontiersin.org/journals/cell-and-developmental-biology/articles/10.3389/fcell.2022.1046617/full
+    - Use for intercellular bridge/midbody maturation, ESCRT-III abscission and
+      bridge-tension effects.
+  - Organelle inheritance control of mitotic entry and progression:
+    https://www.frontiersin.org/journals/cell-and-developmental-biology/articles/10.3389/fcell.2019.00133/full
+    - Use for mitotic Golgi disassembly, mitochondrial/peroxisome positioning,
+      endosome/lysosome inheritance and organelle-spindle coupling.
+  - Mitochondrial dynamics during mitosis:
+    https://www.frontiersin.org/journals/cell-and-developmental-biology/articles/10.3389/fcell.2021.767221/full
+    - Use for CDK1/Aurora-A/DRP1-driven mitotic mitochondrial fragmentation.
+  - Centrosome duplication/segregation:
+    https://www.mdpi.com/2073-4409/11/15/2445
+    - Use for one centrosome in G1, duplication before mitosis and one
+      centrosome inherited by each normal daughter.
+  - Hepatocyte binucleation / polyploidy:
+    https://pubmed.ncbi.nlm.nih.gov/38727809/ and
+    https://pubmed.ncbi.nlm.nih.gov/23150829/
+    - Use for hepatocyte-specific endomitosis/cytokinesis failure and late
+      cytokinetic regression.
+  - Mammalian cell-cycle timing:
+    https://book.bionumbers.org/how-long-do-the-different-stages-of-the-cell-cycle-take/
+    - Use for real-time anchors: S phase ~6-8 h, G2 ~2-3 h, M ~1 h; browser
+      visualization remains time-compressed and discloses this.
+  - HeLa phase-duration benchmark, BioNumbers BNID 106404:
+    https://bionumbers.hms.harvard.edu/bionumber.aspx?id=106404&s=n&v=2
+    - Use only as a mammalian cell-cycle timing benchmark: G1 8.40 h, S 6.04 h,
+      G2 4.56 h, M 1.10 h. Not hepatocyte-specific.
+  - Rat hepatocyte post-partial-hepatectomy cell-cycle regulator timing:
+    https://www.nature.com/articles/emm199629
+    - Use for the hepatocyte regeneration timing profile: S phase begins around
+      18 h after PHx and DNA synthesis peaks around 21-24 h. S/M durations still
+      use mammalian anchors until hepatocyte-specific durations are added.
+  - The Restriction Point of the Cell Cycle:
+    https://www.ncbi.nlm.nih.gov/books/NBK6318/
+    - Use for the qualitative G1/S network: mitogen-driven Cyclin D/CDK4/6,
+      RB phosphorylation, E2F release and Cyclin E/CDK2 commitment.
+  - Intracellular Control of Cell-Cycle Events:
+    https://www.ncbi.nlm.nih.gov/books/NBK26856/
+    - Use for ordered cyclin-CDK switches, APC/C-Cdc20, securin destruction,
+      separase activation and spindle-attachment checkpoint logic.
+  - Regulators of Cell Cycle Progression:
+    https://www.ncbi.nlm.nih.gov/books/NBK9962/
+    - Use for p21 CDK inhibition and Chk1/Cdc25/CDK1 G2/M checkpoint logic.
+  - Cell cycle regulation: p53-p21-RB signaling:
+    https://pubmed.ncbi.nlm.nih.gov/35361964/
+    - Use for p53 -> p21 -> cyclin-CDK inhibition -> RB/E2F repression after
+      DNA damage or equivalent checkpoint stress.
+- Hepatocyte regeneration and proliferation gating:
+  - Liver Regeneration after Hepatectomy and Partial Liver Transplantation:
+    https://www.mdpi.com/1422-0067/21/21/8414
+    - Use for PHx/PLTx regeneration context, rodent/human timing anchors,
+      hemodynamic triggers, partial hepatectomy size effects and termination
+      biology.
+  - Signals and Cells Involved in Regulating Liver Regeneration:
+    https://www.mdpi.com/2073-4409/1/4/1261
+    - Use for HGF/MET, EGF/EGFR and cytokine orchestration in hepatocyte
+      cell-cycle entry.
+  - Combined systemic elimination of MET and epidermal growth factor receptor
+    signaling completely abolishes liver regeneration:
+    https://pubmed.ncbi.nlm.nih.gov/27397846/
+    - Use for the direct-mitogen redundancy rule: MET or EGFR alone can support
+      regeneration, while combined MET+EGFR loss abolishes regeneration and
+      prevents liver-mass restoration.
+  - EGFR: A Master Piece in G1/S Phase Transition of Liver Regeneration:
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC3461622/
+    - Use for EGFR as a dedicated hepatocyte G1/S-transition axis rather than a
+      generic growth knob.
+  - Initiation of liver growth by tumor necrosis factor:
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC19810/
+    - Use for TNF/TNFR1 as an initiation/priming pathway that acts through an
+      IL-6-dependent regeneration route, not as a standalone direct mitogen.
+  - Liver failure and defective hepatocyte regeneration in interleukin-6-deficient
+    mice:
+    https://pubmed.ncbi.nlm.nih.gov/8910279/
+    - Use for IL-6/STAT3 as a hepatocyte priming/survival and DNA-synthesis
+      support pathway after liver-mass loss.
+  - Conditional deletion of beta-catenin reveals its role in liver growth and
+    regeneration:
+    https://pubmed.ncbi.nlm.nih.gov/17101329/
+    - Use for Wnt/beta-catenin support: loss delays/suboptimizes regeneration
+      rather than behaving as a universal absolute gate.
+  - Inactivation of TGF-beta signaling in hepatocytes results in an increased
+    proliferative response after partial hepatectomy:
+    https://pubmed.ncbi.nlm.nih.gov/15735717/
+    - Use for TGF-beta/SMAD as a proliferation brake/termination pressure in
+      hepatocyte regeneration.
+  - Knockdown and knockout of beta1-integrin in hepatocytes impairs liver
+    regeneration through inhibition of growth factor signalling:
+    https://pubmed.ncbi.nlm.nih.gov/24844558/
+    - Use for ECM/integrin attachment as a permissive requirement for HGF/EGF
+      signalling.
+  - Hippo signaling in the liver: role in development, regeneration and disease:
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC9199961/
+    - Use for contact/organ-size control and YAP/TAZ/Hippo context.
 - Michaelis, L. & Menten, M. L. (1913) — Michaelis–Menten enzyme kinetics, the
   standard rate law used for the living cell's metabolic fluxes (uptake,
   respiration, synthesis) across all organelle modules.

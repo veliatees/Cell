@@ -3,10 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Mapping
 
+from cell_engine.core.provenance import ParameterProvenance
 from cell_engine.quantitative.geometry import AVOGADRO
 
 # A propensity is a function (counts, volume_l) -> rate in molecules / second.
 PropensityFn = Callable[[Mapping[str, float], float], float]
+ParameterProvenanceInput = ParameterProvenance | tuple[ParameterProvenance, ...] | None
 
 
 @dataclass(frozen=True)
@@ -17,6 +19,8 @@ class Reaction:
     returns the firing rate in molecules/second given current counts and the
     compartment volume. Build reactions with :func:`mass_action` or
     :func:`michaelis_menten` so the real-world rate constants convert correctly.
+    ``parameter_provenance`` records source/unit/assumption/confidence metadata
+    for constants without changing the numerical kinetics.
     """
 
     id: str
@@ -25,6 +29,7 @@ class Reaction:
     propensity: PropensityFn
     source_id: str = ""
     notes: str = ""
+    parameter_provenance: tuple[ParameterProvenance, ...] = ()
 
     def net_change(self) -> dict[str, int]:
         delta: dict[str, int] = {}
@@ -48,6 +53,16 @@ class ReactionNetwork:
 _FACTORIAL = {0: 1, 1: 1, 2: 2, 3: 6, 4: 24}
 
 
+def _normalize_parameter_provenance(
+    parameter_provenance: ParameterProvenanceInput,
+) -> tuple[ParameterProvenance, ...]:
+    if parameter_provenance is None:
+        return ()
+    if isinstance(parameter_provenance, ParameterProvenance):
+        return (parameter_provenance,)
+    return tuple(parameter_provenance)
+
+
 def _falling_factorial(x: float, n: int) -> float:
     """x*(x-1)*...*(x-n+1), clamped at 0. Reduces to x**n for large x and is the
     exact combinatorial count for small integer x (low-copy correctness)."""
@@ -65,6 +80,7 @@ def mass_action(
     *,
     source_id: str = "",
     notes: str = "",
+    parameter_provenance: ParameterProvenanceInput = None,
 ) -> Reaction:
     """Mass-action reaction from a *deterministic* rate constant ``k``.
 
@@ -82,7 +98,15 @@ def mass_action(
             combinatorial *= _falling_factorial(counts.get(species, 0.0), n) / _FACTORIAL[n]
         return c * combinatorial
 
-    return Reaction(reaction_id, dict(reactants), dict(products), propensity, source_id, notes)
+    return Reaction(
+        reaction_id,
+        dict(reactants),
+        dict(products),
+        propensity,
+        source_id,
+        notes,
+        _normalize_parameter_provenance(parameter_provenance),
+    )
 
 
 def michaelis_menten(
@@ -100,6 +124,7 @@ def michaelis_menten(
     kcat_per_s: float = 0.0,
     source_id: str = "",
     notes: str = "",
+    parameter_provenance: ParameterProvenanceInput = None,
 ) -> Reaction:
     """Enzyme reaction with Michaelis-Menten (or Hill, if ``hill != 1``) kinetics.
 
@@ -136,7 +161,15 @@ def michaelis_menten(
             velocity *= c_conc / (cosubstrate_km_M + c_conc)
         return velocity * scale  # molecules/s
 
-    return Reaction(reaction_id, dict(reactants), dict(products), propensity, source_id, notes)
+    return Reaction(
+        reaction_id,
+        dict(reactants),
+        dict(products),
+        propensity,
+        source_id,
+        notes,
+        _normalize_parameter_provenance(parameter_provenance),
+    )
 
 
 def compose_networks(*networks: ReactionNetwork, volume_l: float | None = None) -> ReactionNetwork:
