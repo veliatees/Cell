@@ -41,8 +41,12 @@ from typing import Mapping
 
 from cell_engine.core.provenance import ParameterProvenance, SourceReference
 from cell_engine.core.random import EngineRng
-from cell_engine.quantitative.geometry import AVOGADRO
-from cell_engine.stochastic.cell_model import CellReactionModel
+from cell_engine.processes.hepatocyte import build_hepatocyte_definition
+from cell_engine.quantitative.geometry import (
+    build_hepatocyte_geometry,
+    molecules_from_concentration_mM,
+)
+from cell_engine.stochastic.cell_model import CYTOSOL, CellReactionModel
 from cell_engine.stochastic.reactions import Reaction, ReactionNetwork
 from cell_engine.stochastic.signaling import HormoneState
 
@@ -76,7 +80,10 @@ GLUCONEOGENESIS_SOURCES: dict[str, SourceReference] = {
     ),
 }
 
-GLUCONEOGENESIS_VOLUME_L = 1.0 / AVOGADRO
+# Real hepatocyte cytosolic volume (pseudo-first-order reactions are volume-
+# independent, so kinetics are unchanged; seeds become real mM and outputs become
+# real mM concentrations, HMDB-scoreable).
+GLUCONEOGENESIS_VOLUME_L = build_hepatocyte_geometry(build_hepatocyte_definition()).volume_of(CYTOSOL)
 
 
 def _clamp01(x: float) -> float:
@@ -221,27 +228,30 @@ def run_gluconeogenesis(
     t_end_s: float,
     rng: EngineRng,
     *,
-    lactate: float = 6000.0,
-    alanine: float = 0.0,
-    pyruvate: float = 0.0,
-    atp: float = 30000.0,
-    nad_pool: float = 4000.0,
+    lactate_mM: float = 6.0,
+    alanine_mM: float = 0.0,
+    pyruvate_mM: float = 0.0,
+    atp_mM: float = 30.0,
+    nad_pool_mM: float = 4.0,
     params: GluconeogenesisParams = GluconeogenesisParams(),
     dt_s: float = 0.05,
 ) -> dict[str, float]:
-    """Run gluconeogenesis from a gluconeogenic-substrate load at a hormone state.
+    """Run gluconeogenesis from a gluconeogenic-substrate load (mM) at a hormone state.
 
-    ATP is seeded high: in the fasted liver, fatty-acid oxidation supplies the ATP
-    that gluconeogenesis spends (6 per glucose). NAD+ dominates the resting pool.
+    ATP is seeded high (``atp_mM`` ~30 mM, well above the instantaneous ~3 mM pool):
+    it stands for the ATP *budget* that fatty-acid oxidation continuously regenerates
+    and that gluconeogenesis spends (6 per glucose); this module does not model ATP
+    regeneration. NAD+ dominates the resting pool.
     """
     network = build_gluconeogenesis_network(hormones, params)
+    v = network.volume_l
     counts = {s: 0.0 for s in network.species}
-    counts["lactate"] = lactate
-    counts["alanine"] = alanine
-    counts["pyruvate"] = pyruvate
-    counts["ATP"] = atp
-    counts["NAD_plus"] = nad_pool
-    counts["NADH"] = nad_pool * 0.25
+    counts["lactate"] = molecules_from_concentration_mM(lactate_mM, v)
+    counts["alanine"] = molecules_from_concentration_mM(alanine_mM, v)
+    counts["pyruvate"] = molecules_from_concentration_mM(pyruvate_mM, v)
+    counts["ATP"] = molecules_from_concentration_mM(atp_mM, v)
+    counts["NAD_plus"] = molecules_from_concentration_mM(nad_pool_mM, v)
+    counts["NADH"] = molecules_from_concentration_mM(nad_pool_mM * 0.25, v)
     return CellReactionModel(network=network, counts=counts).advance(
         t_end_s, rng, mode="cle", dt_s=dt_s
     ).counts
