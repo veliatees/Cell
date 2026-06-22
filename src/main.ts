@@ -1760,6 +1760,10 @@ function updateModeControls() {
   if (!isCell && tempLabelEl) tempLabelEl.textContent = "Temp (K)";
   timeScaleBadge.style.display = isCell ? "block" : "none";
   splitStateBadge.style.display = isCell ? "grid" : "none";
+  // The floor grid is a scale reference for the molecular scenes, but it cuts
+  // straight through the hepatocyte sphere and reads as a flat 2D artifact. Hide
+  // it in the cell scene so the cell reads as a clean 3D body.
+  grid.visible = !isCell;
   if (!isCell) divisionPanelsEl.style.display = "none";
 }
 
