@@ -208,9 +208,9 @@ def build_gluconeogenesis_network(
             notes="G6Pase (ER lumen): bypass 3; glucagon-induced; the committed step of hepatic glucose release.",
         ),
         _pseudo_first_order(
-            "glucose_export", {"glucose": 1}, {"glucose_blood": 1},
+            "hepatic_glucose_output", {"glucose": 1}, {"glucose_blood": 1},
             params.glucose_export_per_s * drive, driver="glucose", source_id="hepatic_glucose_homeostasis",
-            notes="GLUT2 hepatic glucose output to blood (fasted).",
+            notes="GLUT2 hepatic glucose output to blood (fasted). Distinct id from glycogenolysis' glucose_export so the two glucose sources compose without an id clash.",
         ),
     )
     return ReactionNetwork(species=species, reactions=reactions, volume_l=volume_l)

@@ -21,10 +21,13 @@ pushed.
 - [x] **Gluconeogenesis** (PYC/PEPCK/FBPase/G6Pase; reciprocal control; 6 ATP/glucose)
 
 ## Queue (in order)
-- [ ] **1. Whole-cell fasting integration.** Wire ketogenesis + gluconeogenesis
-  into the fed/fasted whole-cell so blood glucose and ketones rise together from
-  one `HormoneState`. Reconcile species names; keep the snapshot + whole-cell
-  tests green. (König 2012)
+- [x] **1a. Integrated fasting response.** `fasting_response.py` composes
+  glycogenolysis + gluconeogenesis + ketogenesis under one `HormoneState`
+  (shared `glucose_blood` + redox pools). FASTED raises both blood glucose and
+  ketones; FED stores glucose as glycogen and makes neither. (compose_networks)
+- [ ] **1b. Fuse into whole_cell.py core + snapshot.** Carry the fasting fuel
+  program into the tracked whole-cell state and `engine-snapshot.json` so the
+  browser shows it. Larger surgical cycle (309-line whole-cell test + snapshot).
 - [ ] **2. Amino-acid catabolism.** Glutamine/glutamate + alanine transamination
   feeding the urea cycle (aspartate/fumarate node) and gluconeogenesis. (HEPATOKIN1)
 - [ ] **3. Glycerol → gluconeogenesis.** Glycerol kinase + G3P dehydrogenase entry;
