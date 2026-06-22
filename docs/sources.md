@@ -404,3 +404,18 @@ link back here or to a more specific research file.
   https://www.jci.org/articles/view/15593
   - Insulin -> SREBP-1c induces ACC/FASN; insulin/AKT/FOXO1 suppress gluconeogenic
     genes. Grounds the reciprocal transcriptional control.
+
+## Malonyl-CoA node (lipogenesis / fatty-acid-oxidation switch)
+
+- Malonyl-CoA inhibition of CPT1 (fat synthesis vs oxidation switch):
+  McGarry, Mannaerts & Foster, "A possible role for malonyl-CoA in the regulation
+  of hepatic fatty acid oxidation and ketogenesis," J Clin Invest 1977;60:265.
+  https://ncbi.nlm.nih.gov/pmc/articles/PMC372365
+  - Malonyl-CoA inhibits long-chain fatty-acid oxidation/ketogenesis at CPT1; high
+    fatty-acid synthesis -> low oxidation, and vice versa. Grounds the CPT1
+    inhibition in malonyl_coa_node.py.
+- Malonyl-CoA as the regulator (ACC/MCD/AMPK control):
+  Foster DW, "Malonyl-CoA: the regulator of fatty acid synthesis and oxidation,"
+  J Clin Invest 2012;122:1958.
+  https://www.jci.org/articles/view/63967
+  - ACC (insulin/fed) makes malonyl-CoA; AMPK switches ACC off and MCD on in fasting.
