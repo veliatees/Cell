@@ -37,8 +37,10 @@ pushed.
 > too much regression risk (snapshot drives the browser) for autonomous execution.
 > Tech debt: `_pseudo_first_order` is now duplicated in ketogenesis/gluconeogenesis/
 > amino_acid_catabolism — lift into `reactions.py` during an attended refactor.
-- [ ] **3. Glycerol → gluconeogenesis.** Glycerol kinase + G3P dehydrogenase entry;
-  link lipolysis to glucose output.
+- [x] **3. Glycerol → gluconeogenesis.** `glycerol_gluconeogenesis.py`: glycerol
+  kinase + GPD1 entry at DHAP (below PEP), so glucose costs ~2 ATP vs pyruvate's 6;
+  2:1 carbon; fasted/fed reciprocal control; adenine+NAD conserved. Completes the
+  fate of lipolysis (fat→ketones, glycerol→glucose). (Lal 2018; glycerol/G3P review)
 - [ ] **4. Validation panel expansion.** Add HMDB physiological concentration
   ranges (β-OHB, acetoacetate, glucose, lactate, alanine, …) as validation targets;
   grow the scorecard from a handful to dozens. (HMDB 5.0)

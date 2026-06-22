@@ -363,3 +363,17 @@ link back here or to a more specific research file.
   - GDH oxidative deamination links amino-acid-derived gluconeogenesis to ammonia/
     urea. Note: GDH uses NAD+ or NADP+; modelled on NAD+ only (NADP(H) is a gated
     evidence class here).
+
+## Glycerol gluconeogenesis
+
+- Glycerol as the preferred, low-energy gluconeogenic substrate:
+  Lal et al., "Glycerol induces G6pc in primary mouse hepatocytes and is the
+  preferred substrate for gluconeogenesis both in vitro and in vivo," (PMC6885632).
+  https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6885632/
+  - Glucose from glycerol takes fewer steps / less energy (~2 ATP/glucose vs 6 from
+    pyruvate); glycerol induces G6Pase. Grounds glycerol_gluconeogenesis.py.
+- Glycerol kinase / GPD1 / G3P-DHAP entry:
+  "Glycerol and Glycerol-3-Phosphate: Multifaceted Metabolites...," Endocrine Reviews.
+  https://academic.oup.com/edrv/advance-article/doi/10.1210/endrev/bnaf033/8250484
+  - Liver-only glycerol kinase (ATP) -> G3P; cytosolic GPD1 (NAD+/NADH) interconverts
+    G3P and DHAP, which enters gluconeogenesis below PEP.
