@@ -38,7 +38,8 @@ from cell_engine.core.provenance import ParameterProvenance, SourceReference
 from cell_engine.core.random import EngineRng
 from cell_engine.quantitative.geometry import AVOGADRO
 from cell_engine.stochastic.cell_model import CellReactionModel
-from cell_engine.stochastic.reactions import Reaction, ReactionNetwork
+from cell_engine.stochastic.reactions import Reaction, ReactionNetwork, compose_networks
+from cell_engine.stochastic.signaling import HormoneState
 
 DATE_VERIFIED = "2026-06-22"
 
@@ -255,3 +256,80 @@ def run_ketogenesis(
 def total_ketones(counts: dict[str, float]) -> float:
     """Total ketone bodies = acetoacetate + beta-hydroxybutyrate (+ acetone)."""
     return counts["acetoacetate"] + counts["beta_hydroxybutyrate"] + counts["acetone"]
+
+
+# ---------------------------------------------------------------------------
+# Hormonal coupling: fasting ketosis
+#
+# Ketogenesis is not constitutive — it is switched on by the fasted state. Low
+# insulin (insulin is anti-ketogenic) plus glucagon/energy stress drive adipose
+# lipolysis and hepatic fatty-acid beta-oxidation, which floods the mitochondrion
+# with acetyl-CoA (and NADH). This module couples a hormone-gated beta-oxidation
+# source to the ketogenesis network so the fed->fasted switch *produces* the rise
+# in ketone bodies, beta-hydroxybutyrate-dominant, that real fasting/DKA shows.
+# ---------------------------------------------------------------------------
+
+
+def _clamp01(x: float) -> float:
+    return min(1.0, max(0.0, x))
+
+
+def ketogenic_drive(hormones: HormoneState) -> float:
+    """0..1 ketogenic drive. Insulin is anti-ketogenic; low insulin + AMPK energy
+    stress drive lipolysis/beta-oxidation. Fed -> ~0, fasted -> ~1."""
+    return _clamp01((1.0 - hormones.insulin) * (1.0 + 0.5 * hormones.ampk))
+
+
+@dataclass(frozen=True)
+class FastingKetogenesisParams:
+    beta_oxidation_per_s: float = 0.25   # fatty_acids (+NAD+) -> acetyl-CoA + NADH, x drive
+    keto: KetogenesisParams = KetogenesisParams()
+
+
+def build_hepatic_ketogenic_response(
+    hormones: HormoneState,
+    params: FastingKetogenesisParams = FastingKetogenesisParams(),
+    volume_l: float = KETOGENESIS_VOLUME_L,
+) -> ReactionNetwork:
+    """Hormone-gated beta-oxidation feeding the ketogenesis network.
+
+    beta-oxidation is scaled by :func:`ketogenic_drive` (so insulin suppresses it)
+    and generates both acetyl-CoA and NADH — the NADH reduces the matrix, which via
+    BDH1 makes the fasting ketone pool beta-hydroxybutyrate-dominant, as observed.
+    """
+    drive = ketogenic_drive(hormones)
+    beta_oxidation = _pseudo_first_order(
+        "beta_oxidation", {"fatty_acids": 1, "NAD_plus": 1}, {"acetyl_CoA": 1, "NADH": 1},
+        params.beta_oxidation_per_s * drive, driver="fatty_acids", source_id="ketone_physiology",
+        notes="Mitochondrial beta-oxidation: insulin-suppressed (anti-ketogenic), fasting-driven; yields acetyl-CoA + NADH.",
+    )
+    source = ReactionNetwork(
+        species=("fatty_acids", "acetyl_CoA", "NADH", "NAD_plus"),
+        reactions=(beta_oxidation,),
+        volume_l=volume_l,
+    )
+    return compose_networks(source, build_ketogenesis_network(params.keto, volume_l))
+
+
+def run_fasting_ketogenesis(
+    hormones: HormoneState,
+    t_end_s: float,
+    rng: EngineRng,
+    *,
+    fatty_acid_load: float = 8000.0,
+    nad_pool: float = 3000.0,
+    params: FastingKetogenesisParams = FastingKetogenesisParams(),
+    dt_s: float = 0.05,
+) -> dict[str, float]:
+    """Run the hormone-gated fasting-ketogenesis response from a fatty-acid load.
+
+    The matrix starts oxidized (NAD+ >> NADH); beta-oxidation reduces it as it runs.
+    """
+    network = build_hepatic_ketogenic_response(hormones, params)
+    counts = {s: 0.0 for s in network.species}
+    counts["fatty_acids"] = fatty_acid_load
+    counts["NAD_plus"] = nad_pool
+    counts["NADH"] = nad_pool * 0.2
+    return CellReactionModel(network=network, counts=counts).advance(
+        t_end_s, rng, mode="cle", dt_s=dt_s
+    ).counts
