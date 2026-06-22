@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/gate.sh",
+            "async": true,
+            "asyncRewake": true,
+            "timeout": 240,
+            "statusMessage": "Cell gate: validating changed subsystems",
+            "rewakeSummary": "Cell validation gate failed",
+            "rewakeMessage": "The automatic Cell validation gate failed after this work cycle. Route the failure back to the owning agent and fix it:"
+          }
+        ]
+      }
+    ]
+  }
+}
