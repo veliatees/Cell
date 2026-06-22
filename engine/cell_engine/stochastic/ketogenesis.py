@@ -36,8 +36,12 @@ from typing import Mapping
 
 from cell_engine.core.provenance import ParameterProvenance, SourceReference
 from cell_engine.core.random import EngineRng
-from cell_engine.quantitative.geometry import AVOGADRO
-from cell_engine.stochastic.cell_model import CellReactionModel
+from cell_engine.processes.hepatocyte import build_hepatocyte_definition
+from cell_engine.quantitative.geometry import (
+    build_hepatocyte_geometry,
+    molecules_from_concentration_mM,
+)
+from cell_engine.stochastic.cell_model import CYTOSOL, CellReactionModel
 from cell_engine.stochastic.reactions import Reaction, ReactionNetwork, compose_networks
 from cell_engine.stochastic.signaling import HormoneState
 
@@ -83,9 +87,14 @@ KETOGENESIS_SOURCES: dict[str, SourceReference] = {
     ),
 }
 
-# Normalized "1 molecule == 1 concentration unit" volume, matching lipid.py so the
-# two hepatic-lipid modules compose on the same copy-number scale.
-KETOGENESIS_VOLUME_L = 1.0 / AVOGADRO
+# Real hepatocyte cytosolic volume (same approach as lipid.py / glycolysis.py), so
+# steady-state pools come out as real mM concentrations and compose with the other
+# pathways on one shared volume. The reactions here are pseudo-first-order in their
+# driver (volume-independent), so the kinetics are unchanged by the volume; only the
+# seed magnitudes (now real molecule counts from mM) and the reported concentrations
+# change. Converting these to true Michaelis-Menten with curated Km is a later
+# fidelity refinement, tracked separately.
+KETOGENESIS_VOLUME_L = build_hepatocyte_geometry(build_hepatocyte_definition()).volume_of(CYTOSOL)
 
 
 @dataclass(frozen=True)
@@ -232,22 +241,24 @@ def run_ketogenesis(
     t_end_s: float,
     rng: EngineRng,
     *,
-    acetyl_coa: float = 4000.0,
-    nadh: float = 1000.0,
-    nad_plus: float = 1000.0,
+    acetyl_coa_mM: float = 0.1,
+    nadh_mM: float = 1.0,
+    nad_plus_mM: float = 1.0,
     params: KetogenesisParams = KetogenesisParams(),
     dt_s: float = 0.05,
 ) -> dict[str, float]:
     """Run ketogenesis from an acetyl-CoA load at a given mitochondrial redox state.
 
-    ``nadh``/``nad_plus`` set the matrix redox poise that BDH1 reads out into the
-    beta-hydroxybutyrate : acetoacetate ratio.
+    Concentrations are in mM (hepatic acetyl-CoA ~0.05-0.1 mM). ``nadh_mM``/
+    ``nad_plus_mM`` set the matrix redox poise that BDH1 reads out into the
+    beta-hydroxybutyrate : acetoacetate ratio (only their ratio matters).
     """
     network = build_ketogenesis_network(params)
+    v = network.volume_l
     counts = {s: 0.0 for s in network.species}
-    counts["acetyl_CoA"] = acetyl_coa
-    counts["NADH"] = nadh
-    counts["NAD_plus"] = nad_plus
+    counts["acetyl_CoA"] = molecules_from_concentration_mM(acetyl_coa_mM, v)
+    counts["NADH"] = molecules_from_concentration_mM(nadh_mM, v)
+    counts["NAD_plus"] = molecules_from_concentration_mM(nad_plus_mM, v)
     return CellReactionModel(network=network, counts=counts).advance(
         t_end_s, rng, mode="cle", dt_s=dt_s
     ).counts
@@ -316,20 +327,21 @@ def run_fasting_ketogenesis(
     t_end_s: float,
     rng: EngineRng,
     *,
-    fatty_acid_load: float = 8000.0,
-    nad_pool: float = 3000.0,
+    fatty_acid_load_mM: float = 5.0,
+    nad_pool_mM: float = 2.0,
     params: FastingKetogenesisParams = FastingKetogenesisParams(),
     dt_s: float = 0.05,
 ) -> dict[str, float]:
-    """Run the hormone-gated fasting-ketogenesis response from a fatty-acid load.
+    """Run the hormone-gated fasting-ketogenesis response from a fatty-acid load (mM).
 
     The matrix starts oxidized (NAD+ >> NADH); beta-oxidation reduces it as it runs.
     """
     network = build_hepatic_ketogenic_response(hormones, params)
+    v = network.volume_l
     counts = {s: 0.0 for s in network.species}
-    counts["fatty_acids"] = fatty_acid_load
-    counts["NAD_plus"] = nad_pool
-    counts["NADH"] = nad_pool * 0.2
+    counts["fatty_acids"] = molecules_from_concentration_mM(fatty_acid_load_mM, v)
+    counts["NAD_plus"] = molecules_from_concentration_mM(nad_pool_mM, v)
+    counts["NADH"] = molecules_from_concentration_mM(nad_pool_mM * 0.2, v)
     return CellReactionModel(network=network, counts=counts).advance(
         t_end_s, rng, mode="cle", dt_s=dt_s
     ).counts
