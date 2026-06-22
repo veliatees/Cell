@@ -70,8 +70,8 @@ Emergent outputs are checked against measured hepatocyte values — energy charg
 steady-state ATP, ATP:ADP, glucokinase glucose-sensing (S₀.₅ ≈ 8 mM), and the
 GSH:GSSG redox ratio — **all within the measured physiological range**. A
 calibration routine fits placeholder constants to measured targets and records
-them as *fitted* rather than guessed. The full engine suite is **170 tests, all
-passing**.
+them as *fitted* rather than guessed. The full engine suite is covered by unit
+tests and should be re-run after every biology change.
 
 ### The browser scene (TypeScript + Three.js)
 
@@ -154,7 +154,9 @@ What is real now: the engine does the *right kind* of thing the field does
 TCA/OXPHOS, urea, redox) is grounded in literature stoichiometry and kinetics; a
 broad set of cell processes is implemented and tested; and a handful of emergent
 behaviours are **validated** against measured hepatocyte data (all current targets
-in range). The full suite is **170 tests, all passing**.
+in range). The division module now separates compressed demo timing from
+source-traced biological timing profiles, including a rat post-partial-
+hepatectomy profile that blocks fast G1/S entry.
 
 What is still depth-work (the road ahead is depth, not a new approach):
 
@@ -168,8 +170,10 @@ What is still depth-work (the road ahead is depth, not a new approach):
   metabolomics / fluxomics / perturbation data;
 - the spatial layer is 1-D and deterministic (the field standard is 3-D stochastic
   RDME) and is not yet fused with the whole-cell network;
-- volume dynamics at division and real CDK/cyclin/p53 checkpoint circuitry are
-  not yet modelled.
+- volume dynamics at division and quantitative CDK/cyclin/p53 kinetics are not
+  yet modelled; the current checkpoint layer is qualitative and source-traced,
+  with real-time phase anchors available separately from the accelerated browser
+  demo.
 
 This is an open-ended research programme, not a checklist with an end. The
 direction and the next steps are tracked in the depth roadmap
@@ -188,6 +192,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Platform recommendation](docs/03-platform-recommendation.md)
 - [Integrated cell engine roadmap](docs/07-integrated-cell-engine-roadmap.md)
 - [Depth roadmap & literature foundation](docs/08-depth-roadmap-and-literature.md)
+- [Hepatocyte division roadmap](docs/09-hepatocyte-division-roadmap.md)
 - [Atomic foundations](docs/research/physics/atomic-foundations.md)
 - [Epithelial cell starting scope](docs/research/biology/epithelial-cell.md)
 - [Input/output registry](docs/research/biology/input-output-registry.md)
@@ -238,6 +243,33 @@ lamina) remain useful background for polarity and barrier thinking.
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)
+
+## Agent Roster
+
+This project uses a multi-agent workflow. The main Claude Code thread acts as the
+**Organizer** (coordination, scope release, routing). Six specialist subagents are
+defined in `.claude/agents/` and can be invoked by name or routed to automatically.
+Scope ownership is tracked in `artifacts/agent-scope-ownership.md`.
+
+| Agent | Owns | Edits code? |
+| --- | --- | --- |
+| **engine-biologist** | Biology mechanisms & parameters in `engine/cell_engine` (metabolism, signaling, organelles, cargo, regeneration) | Yes — engine biology |
+| **stochastic-numerics** | Numerical-method correctness: SSA/Gillespie (`stochastic/reactions.py`), spatial PDE (`spatial.py`), convergence & statistical tests | Yes — solver internals |
+| **snapshot-bridge** | The Python→JSON→TS contract: `io/snapshots.py`, `scripts/export_engine_snapshot.py`, `src/engineSnapshot.ts`, the snapshot schema | Yes — both bridge sides |
+| **viz-frontend** | Three.js / Vite rendering and visual realism: `src/main.ts`, `src/styles.css`, `index.html` | Yes — frontend |
+| **validation-qa** | Runs pytest/vitest/build + the validation harness; enforces scope and evidence gates | No — verify-only (PASS/FAIL/BLOCK) |
+| **evidence-curator** | Provenance: `docs/sources.md`, research files, evidence classification and gate clearing | Docs only, not engine |
+
+Invoke one explicitly, e.g. *"use the engine-biologist to add a glutathione synthesis
+pathway"*, or let the Organizer route automatically. Boundaries enforced across all
+agents:
+
+- No biological parameter enters the engine without accepted, recorded evidence.
+- Gated evidence classes (NADP(H), G6PD/6PGD, GPx/glutathione reductase, direct PPP
+  flux) stay blocked until `evidence-curator` verifies and `validation-qa` clears them.
+- Generated artifacts (e.g. `public/engine-snapshot.json`) are not committed unless a
+  snapshot-generation task is explicitly released.
+- `validation-qa` audits but never edits — it hands failures back to the owning agent.
 
 ## Project Rule
 
