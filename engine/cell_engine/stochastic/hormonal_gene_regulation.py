@@ -28,8 +28,9 @@ from dataclasses import dataclass
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.random import EngineRng
-from cell_engine.quantitative.geometry import AVOGADRO
-from cell_engine.stochastic.cell_model import CellReactionModel
+from cell_engine.processes.hepatocyte import build_hepatocyte_definition
+from cell_engine.quantitative.geometry import AVOGADRO, build_hepatocyte_geometry
+from cell_engine.stochastic.cell_model import CYTOSOL, CellReactionModel
 from cell_engine.stochastic.reactions import ReactionNetwork, mass_action
 from cell_engine.stochastic.signaling import HormoneState
 
@@ -62,7 +63,19 @@ GENE_REGULATION_SOURCES: dict[str, SourceReference] = {
     ),
 }
 
-GENE_VOLUME_L = 1.0 / AVOGADRO
+# Real cytosolic volume of the canonical hepatocyte (same approach as lipid.py /
+# signaling.py): build the geometry from the hepatocyte definition and take the
+# cytosol compartment volume (~1.77e-12 L). This puts enzyme/mRNA copy numbers on
+# the real molar / hepatocyte-volume scale.
+# NOTE on volume dependence: the FIRST-order reactions here (translation, mRNA
+# decay, enzyme decay) have volume-independent rate constants ((N_A*V)^(order-1)
+# == 1) and are unchanged. The ZEROTH-order transcription reactions are
+# volume-dependent: mass_action treats their rate as a macroscopic molar rate
+# (M/s) and multiplies by (N_A*V) to get molecules/s. To preserve the realized,
+# low-copy mRNA production we keep transcription as a target molecules/s and
+# divide by (N_A*V) once when handing it to mass_action (see
+# build_hormonal_gene_network).
+GENE_VOLUME_L = build_hepatocyte_geometry(build_hepatocyte_definition()).volume_of(CYTOSOL)
 
 
 def _clamp01(x: float) -> float:
@@ -96,8 +109,13 @@ def build_hormonal_gene_network(
 ) -> ReactionNetwork:
     """Hormone-gated transcription -> mRNA -> enzyme for the gluconeogenic and
     lipogenic programs, reciprocally controlled."""
-    gng = params.transcription_per_s * gluconeogenic_gene_drive(hormones)
-    lipo = params.transcription_per_s * lipogenic_gene_drive(hormones)
+    # Target transcription in molecules/s (gene expression is low-copy). For these
+    # ZEROTH-order reactions mass_action interprets the rate as a molar rate (M/s)
+    # and multiplies by (N_A*V) to get molecules/s, so divide by (N_A*V) once here
+    # to preserve the realized mRNA/s at the real cytosolic volume.
+    na_v = AVOGADRO * volume_l
+    gng = params.transcription_per_s * gluconeogenic_gene_drive(hormones) / na_v
+    lipo = params.transcription_per_s * lipogenic_gene_drive(hormones) / na_v
     species = ("gng_mRNA", "gng_enzyme", "lipo_mRNA", "lipo_enzyme")
     reactions = (
         mass_action("gng_transcription", {}, {"gng_mRNA": 1}, gng,
