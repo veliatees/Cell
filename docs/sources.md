@@ -389,3 +389,18 @@ link back here or to a more specific research file.
     lactate, pyruvate, alanine, glutamine, glutamate, beta-hydroxybutyrate,
     acetoacetate, ammonia, urea, glycerol). Standard clinical/HMDB reference values;
     hmdb.ca blocks automated fetch so per-accession re-verification is manual.
+
+## Gene-level hormonal control (reciprocal transcription)
+
+- Glucagon/CREB induction of gluconeogenic genes:
+  Herzig et al., "CREB regulates hepatic gluconeogenesis through the coactivator
+  PGC-1," Nature 2001;413:179-183.
+  https://www.nature.com/articles/35093131
+  - Fasting/glucagon -> cAMP/PKA/CREB -> PGC-1alpha induces PEPCK/G6Pase. Grounds the
+    gluconeogenic-gene induction in hormonal_gene_regulation.py.
+- Insulin/SREBP-1c induction of lipogenic genes (and reciprocal gng suppression):
+  Horton, Goldstein & Brown, "SREBPs: activators of the complete program of
+  cholesterol and fatty acid synthesis in the liver," J Clin Invest 2002;109:1125.
+  https://www.jci.org/articles/view/15593
+  - Insulin -> SREBP-1c induces ACC/FASN; insulin/AKT/FOXO1 suppress gluconeogenic
+    genes. Grounds the reciprocal transcriptional control.
