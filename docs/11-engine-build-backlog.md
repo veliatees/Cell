@@ -85,14 +85,19 @@ Tracking the re-architecture from "normalized/qualitative" to a real-units model
 - [x] **M2 (first-order modules)** — migrated to the real cytosolic volume + mM seeds:
   `lipid.py`, `signaling.py`, `hormonal_gene_regulation.py`. These were scale-only
   flips (first/zeroth-order rates are volume-independent or rescaled by N_A·V).
-- [ ] **M3** — curate real BRENDA/SABIO-RK human/liver Km/kcat into `kinetics_data.py`
-  for the committed enzymes (HMGCS2, PEPCK, FBPase, G6Pase, ACC, CPT1, transaminases,
-  glycerol kinase).
-- [ ] **M4** — migrate the **bi-substrate** modules (amino_acid_catabolism,
-  gluconeogenesis, glycerol_gluconeogenesis, ketogenesis, malonyl_coa_node,
-  fasting_response). These need their `_pseudo_first_order` (first-order-in-driver,
-  a normalized-scale hack) converted to true `mass_action`/`michaelis_menten` — a
-  real kinetics change, not just a scale flip. Depends on M3.
+- [~] **M4 — scale migration of the bi-substrate modules (CHEAP, in progress).**
+  KEY REALISATION: `_pseudo_first_order` ignores volume, so these migrate to the real
+  cytosolic volume + mM seeds with kinetics UNCHANGED — like the first-order modules.
+  Every pathway then outputs real mM concentrations (HMDB-scoreable); NOT blocked on
+  kinetics research.
+  - [x] `ketogenesis.py` — bHB ~2.1 mM in fasting; all behaviors preserved.
+  - [ ] `gluconeogenesis.py`, `glycerol_gluconeogenesis.py`, `amino_acid_catabolism.py`,
+    `malonyl_coa_node.py` — same pattern (volume + mM seeds + retune ratio-sensitive
+    seeds + rescale test thresholds).
+- [ ] **M3 — kinetics fidelity refinement (LATER, not a blocker).** Convert the
+  pseudo-first-order form to true `michaelis_menten` with curated human/liver Km/kcat
+  where it improves HMDB scores. Honest flagged placeholders on the real molar scale
+  are acceptable until curated (the `glycolysis.py` pattern).
 - [ ] **M5** — fuse all migrated pathways into `whole_cell.py`; rebalance shared
   ATP/CoA/NAD pools; remove lumped reactions superseded by detailed pathways.
 - [ ] **M6** — turn on HMDB validation scoring against the integrated steady state.
