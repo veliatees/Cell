@@ -56,8 +56,10 @@ pushed.
   insulin→SREBP-1c induces lipogenic enzyme (ACC/FASN) and suppresses gluconeogenic
   (FOXO1). Smooth insulin dose-response; the mechanistic basis of the flux modules'
   drive multiplier. (Herzig 2001; Horton 2002)
-- [ ] **7. Transport kinetics.** Ground NTCP, OATP1B1/3, GLUT2, BSEP, MRP2,
-  Na⁺/K⁺-ATPase with literature Km/Vmax; couple to membrane potential.
+- [ ] **7. Transport kinetics.** _(ATTENDED)_ The six transporters already exist in
+  `transport.py` with vectorial flux + BSEP cholestasis; what remains is grounding
+  Km/Vmax (needs the molar/MM re-architecture, item 5) and membrane-potential
+  coupling (item 8) — both attended.
 - [ ] **8. Calcium / electrophysiology depth.** _(ATTENDED — large: IP3R Markov clusters + membrane potential)_ Stochastic IP₃R Markov clusters;
   membrane potential from Na/K-ATPase + K⁺ channel. (IP3R stochastic models)
 - [ ] **9. Lipid depth.** DNL (ACC/FASN), VLDL biogenesis (ApoB100/MTP), steatosis
