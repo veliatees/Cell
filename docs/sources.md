@@ -308,3 +308,25 @@ link back here or to a more specific research file.
 - SBML:
   https://sbml.org/
   - Use as the standard model-exchange format for biochemical reaction networks.
+
+## Ketogenesis (hepatic, mitochondrial)
+
+- HMGCS2 as the rate-limiting control enzyme of ketogenesis:
+  Hegardt FG, Biochem J 1999;338:569-582.
+  https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1220089/
+  - Mitochondrial HMG-CoA synthase (HMGCS2) is the liver-specific, committed,
+    rate-limiting step (acetoacetyl-CoA + acetyl-CoA -> HMG-CoA). Grounds the
+    `hmgcs2` reaction and the "rate-limiting" control test in
+    `engine/cell_engine/stochastic/ketogenesis.py`.
+- Ketone bodies as a mitochondrial redox readout:
+  Williamson DH, Lund P, Krebs HA, Biochem J 1967;103:514-527.
+  https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1270436/
+  - The beta-hydroxybutyrate/acetoacetate ratio measures free mitochondrial
+    NAD+/NADH via near-equilibrium BDH1. Grounds the BDH1 redox coupling and the
+    `bhb_to_acetoacetate_ratio_tracks_mitochondrial_redox` test.
+- Ketone body physiology and concentration ranges:
+  Metabolic Messengers: ketone bodies, Nat Metab 2023.
+  https://www.nature.com/articles/s42255-023-00935-3
+  - Total blood ketones <~0.3 mM fed/rested, ~0.3-0.5 mM overnight-fasted, several
+    mM in prolonged fasting; beta-hydroxybutyrate normally dominant. Cross-checked
+    with HMDB (HMDB0000357 beta-hydroxybutyrate, HMDB0000060 acetoacetate).
