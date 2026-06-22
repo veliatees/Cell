@@ -76,3 +76,28 @@ pushed.
   voxel), sinusoidal↔canalicular gradients, mito ATP microdomains. (4D WCM, Lattice Microbes)
 
 
+
+## v1.0 migration (molar-grounded, integrated, validated, visualized)
+
+Tracking the re-architecture from "normalized/qualitative" to a real-units model.
+
+- [x] **M1** — composition safety guards (no double-counted flux; cofactor-pool audit).
+- [x] **M2 (first-order modules)** — migrated to the real cytosolic volume + mM seeds:
+  `lipid.py`, `signaling.py`, `hormonal_gene_regulation.py`. These were scale-only
+  flips (first/zeroth-order rates are volume-independent or rescaled by N_A·V).
+- [ ] **M3** — curate real BRENDA/SABIO-RK human/liver Km/kcat into `kinetics_data.py`
+  for the committed enzymes (HMGCS2, PEPCK, FBPase, G6Pase, ACC, CPT1, transaminases,
+  glycerol kinase).
+- [ ] **M4** — migrate the **bi-substrate** modules (amino_acid_catabolism,
+  gluconeogenesis, glycerol_gluconeogenesis, ketogenesis, malonyl_coa_node,
+  fasting_response). These need their `_pseudo_first_order` (first-order-in-driver,
+  a normalized-scale hack) converted to true `mass_action`/`michaelis_menten` — a
+  real kinetics change, not just a scale flip. Depends on M3.
+- [ ] **M5** — fuse all migrated pathways into `whole_cell.py`; rebalance shared
+  ATP/CoA/NAD pools; remove lumped reactions superseded by detailed pathways.
+- [ ] **M6** — turn on HMDB validation scoring against the integrated steady state.
+- [ ] **M7** — browser shows live concentrations + in-range badges.
+
+Design lens (per user): apply the **rise-peak-decline / Gaussian life-arc** to
+time-varying inputs and capacities (e.g. nutrient score low→high→low) rather than
+flat constants, once the agency/senescence layer is added post-v1.0.
