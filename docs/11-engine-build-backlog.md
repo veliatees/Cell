@@ -28,8 +28,15 @@ pushed.
 - [ ] **1b. Fuse into whole_cell.py core + snapshot.** Carry the fasting fuel
   program into the tracked whole-cell state and `engine-snapshot.json` so the
   browser shows it. Larger surgical cycle (309-line whole-cell test + snapshot).
-- [ ] **2. Amino-acid catabolism.** Glutamine/glutamate + alanine transamination
-  feeding the urea cycle (aspartate/fumarate node) and gluconeogenesis. (HEPATOKIN1)
+- [x] **2. Amino-acid catabolism.** `amino_acid_catabolism.py`: transdeamination
+  (glutaminase + ALT + AST + GDH) produces the urea cycle's two N donors (ammonia,
+  aspartate) and gluconeogenic pyruvate; glutamate is the N hub; N + NAD conserved
+  exactly. GDH modelled on NAD+ (NADP(H) gated). (Brosnan 2000; Karaca 2018)
+
+> Note: `1b` (whole_cell.py + snapshot fusion) is deferred to an **attended** cycle —
+> too much regression risk (snapshot drives the browser) for autonomous execution.
+> Tech debt: `_pseudo_first_order` is now duplicated in ketogenesis/gluconeogenesis/
+> amino_acid_catabolism — lift into `reactions.py` during an attended refactor.
 - [ ] **3. Glycerol → gluconeogenesis.** Glycerol kinase + G3P dehydrogenase entry;
   link lipolysis to glucose output.
 - [ ] **4. Validation panel expansion.** Add HMDB physiological concentration

@@ -346,3 +346,20 @@ link back here or to a more specific research file.
     (PFK1/FBPase1, PK/PEPCK). Grounds the hormone-gated bypass enzymes and the
     `fasted_produces_glucose_fed_is_suppressed` test. Energetic cost (6 ATP per
     glucose from 2 pyruvate) is enforced by reaction stoichiometry.
+
+## Amino-acid catabolism (hepatic nitrogen disposal)
+
+- Transdeamination and the glutamate nitrogen hub:
+  Brosnan JT, "Glutamate, at the Interface between Amino Acid and Carbohydrate
+  Metabolism," J Nutr 2000;130:988S-990S.
+  https://jn.nutrition.org/article/S0022-3166(22)14024-1/fulltext
+  - Aminotransferases funnel amino-N onto glutamate; GDH releases it as ammonia;
+    carbon skeletons -> glucose, nitrogen -> urea. Grounds
+    engine/cell_engine/stochastic/amino_acid_catabolism.py.
+- Hepatic GDH bridging gluconeogenesis and ammonia homeostasis:
+  Karaca et al., "Liver Glutamate Dehydrogenase Controls Whole-Body Energy
+  Partitioning...," Diabetes 2018;67:1949.
+  https://diabetesjournals.org/diabetes/article/67/10/1949/35297
+  - GDH oxidative deamination links amino-acid-derived gluconeogenesis to ammonia/
+    urea. Note: GDH uses NAD+ or NADP+; modelled on NAD+ only (NADP(H) is a gated
+    evidence class here).
