@@ -8,6 +8,7 @@ from cell_engine.stochastic.spatial import (
     cfl_limit_dt,
     network_voxel_reaction,
     react_diffuse,
+    tag_reaction_quantity,
     uniform_field,
 )
 
@@ -37,6 +38,28 @@ class NetworkVoxelReactionTests(unittest.TestCase):
                 reaction=network_voxel_reaction(net, 1.0e-15),
             )
 
+    def test_count_reaction_runs_on_molecule_count_field(self):
+        # Method-only values: verifies ReactionNetwork count semantics are allowed
+        # on a molecule_count field without adding biological assumptions.
+        net = ReactionNetwork(("ATP", "ADP"), (mass_action("maint", {"ATP": 1}, {"ADP": 1}, 0.1),), 1.0e-15)
+        field = uniform_field(("ATP", "ADP"), n=1, dx_um=1.0, value=0.0, quantity="molecule_count")
+        field = field.__class__(
+            field.species,
+            field.dx_um,
+            {"ATP": (100.0,), "ADP": (0.0,)},
+            quantity="molecule_count",
+        )
+        out = react_diffuse(
+            field,
+            diffusion={"ATP": 0.0, "ADP": 0.0},
+            dt_s=1.0,
+            steps=1,
+            reaction=network_voxel_reaction(net, 1.0e-15),
+        )
+        self.assertEqual(out.quantity, "molecule_count")
+        self.assertAlmostEqual(out.profile("ATP")[0], 90.0)
+        self.assertAlmostEqual(out.profile("ADP")[0], 10.0)
+
     def test_spatial_atp_microdomain_from_real_network(self):
         # The real engine network drives the spatial field: ATP is produced at the
         # mitochondria voxel and consumed everywhere. This field is explicitly in
@@ -56,7 +79,7 @@ class NetworkVoxelReactionTests(unittest.TestCase):
                 ddt["ADP"] = ddt.get("ADP", 0.0) - prod
             return ddt
 
-        reaction.quantity = "molecule_count"  # type: ignore[attr-defined]
+        reaction = tag_reaction_quantity(reaction, "molecule_count")
         field = uniform_field(("ATP", "ADP"), n, dx_um=1.0, value=0.0, quantity="molecule_count")
         field = field.__class__(field.species, field.dx_um,
                                 {"ATP": tuple(0.0 for _ in range(n)),

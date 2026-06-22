@@ -1,6 +1,6 @@
 # Engine Build Backlog (living queue)
 
-The ordered, trackable queue the agent loop works through. Derived from
+The ordered, trackable queue the build queue tracks. Derived from
 [docs/08-depth-roadmap-and-literature.md](08-depth-roadmap-and-literature.md)
 §"Uygulama sırası". Each item is one gated cycle: **source → implement →
 conservation/behavior test → validation → commit → push**. Accuracy > coverage;
@@ -75,11 +75,4 @@ pushed.
   (per-species diffusion); then 3-D voxel RDME (low-copy SSA / high-copy CLE per
   voxel), sinusoidal↔canalicular gradients, mito ATP microdomains. (4D WCM, Lattice Microbes)
 
-## Loop protocol
-1. Pick the top unchecked item.
-2. Curate sources first; never implement an unsourced value (respect the gated
-   classes: NADP(H), G6PD/6PGD, GPx/glutathione reductase, direct PPP flux).
-3. Implement at the established altitude; explore dynamics before fixing test
-   thresholds; keep conservation exact under SSA.
-4. Gate (`scripts/gate.sh`), commit, push, check the item off here.
-5. If an item is too large for one cycle, split it and record the split here.
+

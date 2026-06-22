@@ -8,6 +8,7 @@ from cell_engine.stochastic.spatial import (
     cfl_limit_dt,
     decay_length_um,
     react_diffuse,
+    tag_reaction_quantity,
     uniform_field,
 )
 
@@ -49,6 +50,29 @@ class DiffusionTests(unittest.TestCase):
     def test_invalid_field_quantity_is_rejected(self):
         with self.assertRaises(ValueError):
             SpatialField(("X",), dx_um=1.0, conc={"X": (1.0,)}, quantity="moles")  # type: ignore[arg-type]
+
+    def test_tagged_concentration_reaction_rejects_count_field(self):
+        # Method-only values: this checks unit contract wiring, not biology.
+        def reaction(_i: int, voxel: dict[str, float]) -> dict[str, float]:
+            return {"X": -0.1 * voxel["X"]}
+
+        tagged = tag_reaction_quantity(reaction, "concentration_mM")
+        count_field = uniform_field(("X",), n=2, dx_um=1.0, value=10.0, quantity="molecule_count")
+        with self.assertRaisesRegex(ValueError, "concentration_mM"):
+            react_diffuse(
+                count_field,
+                diffusion={"X": 0.0},
+                dt_s=1.0,
+                steps=1,
+                reaction=tagged,
+            )
+
+    def test_invalid_reaction_quantity_tag_is_rejected(self):
+        def reaction(_i: int, _voxel: dict[str, float]) -> dict[str, float]:
+            return {}
+
+        with self.assertRaises(ValueError):
+            tag_reaction_quantity(reaction, "moles")  # type: ignore[arg-type]
 
 
 class ReactionDiffusionGradientTests(unittest.TestCase):

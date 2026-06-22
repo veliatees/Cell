@@ -135,6 +135,19 @@ def react_diffuse(
     return replace(field, conc={s: tuple(values[s]) for s in species})
 
 
+def tag_reaction_quantity(reaction: ReactionFn, quantity: SpatialQuantity) -> ReactionFn:
+    """Attach an explicit unit contract to a spatial reaction callback.
+
+    Untagged callbacks remain supported for simple concentration-based tests and
+    backward compatibility. Tag reusable callbacks when a caller should be
+    protected from mixing concentration fields with molecule-count fields.
+    """
+    if quantity not in _VALID_QUANTITIES:
+        raise ValueError("quantity must be 'concentration_mM' or 'molecule_count'")
+    setattr(reaction, "quantity", quantity)
+    return reaction
+
+
 def _reaction_quantity(reaction: ReactionFn | None) -> SpatialQuantity | None:
     if reaction is None:
         return None
@@ -191,5 +204,4 @@ def network_voxel_reaction(network, voxel_volume_l: float) -> ReactionFn:
                 ddt[species] = ddt.get(species, 0.0) + stoich * a
         return ddt
 
-    reaction.quantity = "molecule_count"  # type: ignore[attr-defined]
-    return reaction
+    return tag_reaction_quantity(reaction, "molecule_count")
