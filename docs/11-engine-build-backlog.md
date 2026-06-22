@@ -41,9 +41,12 @@ pushed.
   kinase + GPD1 entry at DHAP (below PEP), so glucose costs ~2 ATP vs pyruvate's 6;
   2:1 carbon; fasted/fed reciprocal control; adenine+NAD conserved. Completes the
   fate of lipolysis (fat→ketones, glycerol→glucose). (Lal 2018; glycerol/G3P review)
-- [ ] **4. Validation panel expansion.** Add HMDB physiological concentration
-  ranges (β-OHB, acetoacetate, glucose, lactate, alanine, …) as validation targets;
-  grow the scorecard from a handful to dozens. (HMDB 5.0)
+- [x] **4. Validation panel expansion.** `validation/hmdb_ranges.py`: 11 curated
+  HMDB physiological concentration ranges (glucose, lactate, pyruvate, alanine,
+  glutamine, glutamate, β-OHB, acetoacetate, ammonia, urea, glycerol) as
+  `ReferenceRange`s + a `classify_concentration` checker. Gated classes excluded.
+  Ready to score once pathways are wired into the validated whole-cell run (1b).
+  (HMDB 5.0)
 - [ ] **5. Ground illustrative magnitudes.** Replace flagged `placeholder` rate
   magnitudes module-by-module with BRENDA/SABIO-RK human/liver kinetics; drive the
   placeholder count toward zero. (BRENDA, SABIO-RK)

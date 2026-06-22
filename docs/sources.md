@@ -377,3 +377,15 @@ link back here or to a more specific research file.
   https://academic.oup.com/edrv/advance-article/doi/10.1210/endrev/bnaf033/8250484
   - Liver-only glycerol kinase (ATP) -> G3P; cytosolic GPD1 (NAD+/NADH) interconverts
     G3P and DHAP, which enters gluconeogenesis below PEP.
+
+## HMDB physiological concentration ranges (validation targets)
+
+- HMDB 5.0, the Human Metabolome Database:
+  Wishart et al., Nucleic Acids Res 2022 (PMC8728138).
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC8728138/
+  - Normal physiological concentrations (blood/plasma; tissue where noted) for the
+    metabolites the engine tracks, curated in
+    engine/cell_engine/validation/hmdb_ranges.py as validation targets (glucose,
+    lactate, pyruvate, alanine, glutamine, glutamate, beta-hydroxybutyrate,
+    acetoacetate, ammonia, urea, glycerol). Standard clinical/HMDB reference values;
+    hmdb.ca blocks automated fetch so per-accession re-verification is manual.
