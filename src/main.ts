@@ -171,6 +171,8 @@ app.innerHTML = `
         </div>
       </div>
 
+      <div class="cell-validation" data-cell-validation hidden></div>
+
       <div class="formula-stack">
         <code>F = k q1 q2 / (ε r²)</code>
         <code>U = k q1 q2 / (ε r)</code>
@@ -1563,6 +1565,7 @@ function setMetricLabels(m: Mode) {
 
 const tempLabelEl = app.querySelector<HTMLElement>("[data-label='temp']");
 const formulaStackEl = app.querySelector<HTMLElement>(".formula-stack");
+const cellValidationEl = app.querySelector<HTMLElement>("[data-cell-validation]");
 const leftPanelTitleText = app.querySelector<HTMLElement>(".inspector--left .panel-title span");
 const rightPanelTitleText = app.querySelector<HTMLElement>(".inspector--right .panel-title span");
 
@@ -2641,6 +2644,24 @@ function renderHmdbValidation(im: EngineSnapshotSummary["integratedMetabolism"])
     `<div class="hmdb-badges">${badges}</div>` +
     `</div>`
   );
+}
+
+/** Compact "is this cell real?" readout for the Cell State panel: the integrated
+ *  cell's concentrations validated against measured (HMDB) physiological ranges. */
+function updateCellValidation(im: EngineSnapshotSummary["integratedMetabolism"]): void {
+  if (!cellValidationEl) return;
+  if (!im) {
+    cellValidationEl.hidden = true;
+    return;
+  }
+  cellValidationEl.hidden = false;
+  const frac = im.n_scored > 0 ? im.n_in_range / im.n_scored : 0;
+  const tone = frac >= 0.5 ? "good" : frac > 0 ? "partial" : "none";
+  cellValidationEl.className = `cell-validation cell-validation--${tone}`;
+  cellValidationEl.innerHTML =
+    `<span class="cell-validation__label">Validated vs measured biology</span>` +
+    `<span class="cell-validation__score"><strong>${im.n_in_range}</strong> / ${im.n_scored} ` +
+    `metabolites in HMDB physiological range</span>`;
 }
 
 function labelEngineOrganelle(id: string): string {
@@ -4434,6 +4455,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     setText(values.drift, cargoFidelity.toFixed(2));
     if (values.drift) values.drift.style.color = "";
     setText(values.elapsed, `${Math.round(display?.elapsedS ?? s.elapsedS)} s`);
+    updateCellValidation(display?.integratedMetabolism ?? null);
   }
 
   updateHoverTooltip();

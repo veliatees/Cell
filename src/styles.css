@@ -657,6 +657,48 @@ input[type="checkbox"] {
   border-color: rgba(255, 99, 99, 0.36);
 }
 
+.cell-validation {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  display: grid;
+  gap: 3px;
+  background: rgba(46, 204, 133, 0.08);
+  border: 1px solid rgba(46, 204, 133, 0.28);
+}
+
+.cell-validation--partial {
+  background: rgba(255, 184, 76, 0.08);
+  border-color: rgba(255, 184, 76, 0.28);
+}
+
+.cell-validation--none {
+  background: rgba(168, 179, 195, 0.08);
+  border-color: rgba(168, 179, 195, 0.22);
+}
+
+.cell-validation__label {
+  font-size: 9.75px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ec6ff;
+}
+
+.cell-validation__score {
+  font-size: 11.5px;
+  color: #cfe0d6;
+}
+
+.cell-validation__score strong {
+  font-size: 15px;
+  color: #93f0c2;
+}
+
+.cell-validation--partial .cell-validation__score strong {
+  color: #ffd479;
+}
+
 .local-visual-pill {
   display: inline-flex;
   margin-right: 4px;
