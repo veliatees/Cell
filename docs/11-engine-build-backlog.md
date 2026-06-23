@@ -85,15 +85,12 @@ Tracking the re-architecture from "normalized/qualitative" to a real-units model
 - [x] **M2 (first-order modules)** — migrated to the real cytosolic volume + mM seeds:
   `lipid.py`, `signaling.py`, `hormonal_gene_regulation.py`. These were scale-only
   flips (first/zeroth-order rates are volume-independent or rescaled by N_A·V).
-- [~] **M4 — scale migration of the bi-substrate modules (CHEAP, in progress).**
-  KEY REALISATION: `_pseudo_first_order` ignores volume, so these migrate to the real
-  cytosolic volume + mM seeds with kinetics UNCHANGED — like the first-order modules.
-  Every pathway then outputs real mM concentrations (HMDB-scoreable); NOT blocked on
-  kinetics research.
-  - [x] `ketogenesis.py` — bHB ~2.1 mM in fasting; all behaviors preserved.
-  - [ ] `gluconeogenesis.py`, `glycerol_gluconeogenesis.py`, `amino_acid_catabolism.py`,
-    `malonyl_coa_node.py` — same pattern (volume + mM seeds + retune ratio-sensitive
-    seeds + rescale test thresholds).
+- [x] **M4 — scale migration of the bi-substrate modules (DONE).** All five migrated
+  to the real cytosolic volume + mM seeds; `_pseudo_first_order` ignores volume so
+  kinetics were unchanged. Every pathway now outputs real mM concentrations
+  (HMDB-scoreable): `ketogenesis` (bHB ~2.1 mM), `gluconeogenesis` (glucose 3 mM),
+  `glycerol_gluconeogenesis`, `amino_acid_catabolism`, `malonyl_coa_node` (CPT1 Ki
+  expressed in mM). 263 tests green.
 - [ ] **M3 — kinetics fidelity refinement (LATER, not a blocker).** Convert the
   pseudo-first-order form to true `michaelis_menten` with curated human/liver Km/kcat
   where it improves HMDB scores. Honest flagged placeholders on the real molar scale
