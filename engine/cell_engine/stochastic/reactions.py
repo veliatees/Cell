@@ -172,7 +172,11 @@ def michaelis_menten(
     )
 
 
-def compose_networks(*networks: ReactionNetwork, volume_l: float | None = None) -> ReactionNetwork:
+def compose_networks(
+    *networks: ReactionNetwork,
+    volume_l: float | None = None,
+    dedupe_reactions: bool = False,
+) -> ReactionNetwork:
     """Merge sub-networks into one system: union of species, all reactions, shared volume.
 
     Reactions referencing the same species name share that pool automatically, so
@@ -183,7 +187,12 @@ def compose_networks(*networks: ReactionNetwork, volume_l: float | None = None) 
     Coupling-by-name is powerful but unforgiving: a duplicated reaction id means the
     same flux is counted twice, and a misspelled cofactor silently splits one pool
     into two. To keep the implicit coupling honest, composition raises on duplicate
-    reaction ids; callers can audit shared pools with :func:`shared_species`.
+    reaction ids by default; callers can audit shared pools with :func:`shared_species`.
+
+    ``dedupe_reactions=True`` instead keeps the FIRST occurrence of each reaction id
+    and drops later ones. Use only when fusing pathways that intentionally share an
+    enzyme (e.g. gluconeogenesis and glycerol both name the lower-pathway bypass
+    enzymes): order the networks so the authoritative owner comes first.
     """
     if not networks:
         raise ValueError("need at least one network to compose")
@@ -199,6 +208,8 @@ def compose_networks(*networks: ReactionNetwork, volume_l: float | None = None) 
                 species.append(s)
         for reaction in net.reactions:
             if reaction.id in reaction_ids:
+                if dedupe_reactions:
+                    continue  # keep the first (authoritative) definition
                 duplicate_ids.add(reaction.id)
             reaction_ids.add(reaction.id)
             reactions.append(reaction)
