@@ -104,9 +104,14 @@ Tracking the re-architecture from "normalized/qualitative" to a real-units model
   values: urea 2.78 mM, beta-hydroxybutyrate 0.13 mM, acetoacetate 0.09 mM all in
   HMDB range. Substrate pools deplete in a closed run (need a continuous-influx
   layer) and are honestly flagged LOW.
-- [ ] **M7** — browser shows live concentrations + in-range badges. Snapshot-export
-  the integrated scorecard (Python, additive) then render badges in `main.ts`
-  (focused browser session; pairs with the visual improvements).
+- [x] **M7** — browser shows the HMDB validation. M7a exported the integrated
+  scorecard into the snapshot (`state.integrated_metabolism`); M7b renders it in the
+  Cell Activity panel as colour-coded badges (green in-range: urea/bHB/acetoacetate;
+  amber below-range), each tooltipping value + HMDB range + accession. No console
+  errors, tsc + 73 vitest green.
+
+**v1.0 COMPLETE: an integrated, molar-grounded, HMDB-validated hepatocyte that
+visibly validates against measured human biology in the browser.**
 - [ ] **M5b (next refinement)** — continuous substrate-influx / buffered blood
   reservoirs so substrate pools and blood glucose reach physiological steady state
   (would move several more HMDB metabolites in-range).
