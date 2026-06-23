@@ -485,7 +485,8 @@ type FlowPacket = {
   wander: number;
   from?: THREE.Vector3; // per-packet origin (e.g. a specific sinusoid fenestra)
   to?: THREE.Vector3;   // per-packet destination
-  walk?: THREE.Vector3; // free-diffusion position (random walk, not route-bound)
+  walk?: THREE.Vector3; // current position (active caged subdiffusion, not route-bound)
+  cage?: THREE.Vector3; // crowding-cage centre the particle is confined to
 };
 type FlowVisual = {
   id: string;
@@ -2198,7 +2199,7 @@ function buildCellFlowVisuals(parent: THREE.Group) {
         opacity: 0.78
       });
       const particle = new THREE.Mesh(new THREE.SphereGeometry(0.055 + packetIndex * 0.006, 12, 8), particleMat);
-      particle.userData.label = `${def.from} -> ${def.to} schematic route-family particle; not a one-to-one Python snapshot cargo packet`;
+      particle.userData.label = `metabolite particle (${def.from}/${def.to} family) - active caged subdiffusion: crowded, cytoskeleton-confined, ATP/motor-fluidized; not a routed cargo packet`;
       parent.add(particle);
       // Spread each flow's packets across nearby fenestrae so they enter/exit
       // through a cluster of pores, not one shared point.
@@ -2249,20 +2250,33 @@ function updateFlowVisuals(s: CellSnapshot) {
       packet.particle.visible = strength > 0.025;
       packet.particleMat.opacity = 0.22 + 0.68 * strength;
       packet.particle.scale.setScalar((0.55 + 1.35 * strength) * (0.82 + packet.wander * 0.18));
-      // FREE DIFFUSION: a small molecule does not follow a route or a shortest path.
-      // It random-walks (Brownian motion) -- millions of random collisions/second --
-      // exploring space stochastically until it happens upon a target. So each packet
-      // takes an independent random step every frame, reflected off the cell boundary.
-      // No trajectory, no plan; flux only sets how briskly the cloud diffuses.
-      if (!packet.walk) packet.walk = packet.curve.getPointAt(packet.offset % 1).clone();
+      // Intracellular motion is NOT free Brownian diffusion. The cytoplasm is densely
+      // crowded, so particles SUBDIFFUSE -- caged by crowders + the actin cytoskeleton
+      // (Weiss et al. 2004). And the motion is largely ACTIVE: ATP/motor-driven
+      // stirring that fluidizes an otherwise glass-like cytoplasm (Parry 2014; Guo
+      // 2014) -- when metabolism is low it freezes. So each particle jiggles within a
+      // confining cage, and only metabolic activity lets the cage hop (escape).
+      if (!packet.walk) {
+        packet.walk = packet.curve.getPointAt(packet.offset % 1).clone();
+        packet.cage = packet.walk.clone();
+      }
       const w = packet.walk;
-      const step = CELL_R * 0.016 * (0.5 + 1.3 * strength) * (0.7 + packet.speedScale * 0.6);
-      w.x += (Math.random() - 0.5) * step;
-      w.y += (Math.random() - 0.5) * step;
-      w.z += (Math.random() - 0.5) * step;
-      const bound = CELL_R * 0.92;
-      const r2 = w.lengthSq();
-      if (r2 > bound * bound) w.multiplyScalar(bound / Math.sqrt(r2)); // reflective membrane
+      const cage = packet.cage!;
+      const metabolic = strength; // ATP/flux-driven activity; near 0 => cytoplasm glassy
+      // (a) confined jiggle inside the crowding cage (subdiffusion), metabolism-scaled
+      const jiggle = CELL_R * 0.011 * (0.1 + 0.9 * metabolic) * (0.7 + packet.speedScale * 0.6);
+      w.x += (Math.random() - 0.5) * jiggle;
+      w.y += (Math.random() - 0.5) * jiggle;
+      w.z += (Math.random() - 0.5) * jiggle;
+      w.lerp(cage, 0.07); // elastic confinement back toward the cage centre
+      // (b) rare active escape hop -- only metabolism fluidizes the cytoplasm enough
+      if (Math.random() < 0.006 * metabolic) {
+        cage.x += (Math.random() - 0.5) * CELL_R * 0.13;
+        cage.y += (Math.random() - 0.5) * CELL_R * 0.13;
+        cage.z += (Math.random() - 0.5) * CELL_R * 0.13;
+        const cr = cage.length();
+        if (cr > CELL_R * 0.9) cage.multiplyScalar((CELL_R * 0.9) / cr); // stay in the cell
+      }
       packet.particle.position.copy(w);
     }
   }
