@@ -2617,7 +2617,29 @@ function renderExternalEngineStatus(): string {
     `<span class="external-snapshot__diag">${regenText}</span>` +
     `<span class="external-snapshot__org">${organelles || "no organelle state"}</span>` +
     `<span class="external-snapshot__diag">${stress ? `stress ${stress}` : "stress -"}</span>` +
-    `<span class="external-snapshot__diag">${processes ? `active ${processes}` : "active processes -"}</span>`
+    `<span class="external-snapshot__diag">${processes ? `active ${processes}` : "active processes -"}</span>` +
+    renderHmdbValidation(s.integratedMetabolism)
+  );
+}
+
+/** HMDB validation badges: the integrated cell's concentrations vs measured ranges. */
+function renderHmdbValidation(im: EngineSnapshotSummary["integratedMetabolism"]): string {
+  if (!im) return "";
+  const badges = im.metabolites
+    .slice()
+    .sort((a, b) => (a.classification === "in_range" ? 1 : 0) - (b.classification === "in_range" ? 1 : 0))
+    .map((m) => {
+      const label = m.species.replace(/_/g, " ");
+      const tip = `${label}: ${m.value_mM} mM (HMDB ${m.low_mM}-${m.high_mM} mM, ${m.hmdb_id})`;
+      return `<span class="hmdb-badge hmdb-badge--${m.classification}" title="${tip}">${label} ${m.value_mM.toFixed(2)}</span>`;
+    })
+    .join("");
+  return (
+    `<div class="hmdb-validation">` +
+    `<span class="hmdb-validation__title">HMDB validation · integrated ${im.state} cell — ` +
+    `<strong>${im.n_in_range}/${im.n_scored}</strong> in physiological range</span>` +
+    `<div class="hmdb-badges">${badges}</div>` +
+    `</div>`
   );
 }
 
