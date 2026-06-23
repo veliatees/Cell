@@ -1363,7 +1363,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-06-21T12:51:44.570711+00:00",
+    "created_at_utc": "2026-06-23T17:01:11.193974+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -1736,6 +1736,93 @@
         "text": "Cargo lysosomal_hydrolase retained on er_quality_control->golgi: success_probability=0.602, edge_stress=0.045, quality=0.880."
       }
     ],
+    "integrated_metabolism": {
+      "metabolites": [
+        {
+          "classification": "below",
+          "high_mM": 2.2,
+          "hmdb_id": "HMDB0000190",
+          "low_mM": 0.5,
+          "species": "lactate",
+          "value_mM": 0.0
+        },
+        {
+          "classification": "below",
+          "high_mM": 0.1,
+          "hmdb_id": "HMDB0000243",
+          "low_mM": 0.04,
+          "species": "pyruvate",
+          "value_mM": 0.0
+        },
+        {
+          "classification": "below",
+          "high_mM": 0.45,
+          "hmdb_id": "HMDB0000161",
+          "low_mM": 0.2,
+          "species": "alanine",
+          "value_mM": 0.0
+        },
+        {
+          "classification": "below",
+          "high_mM": 0.75,
+          "hmdb_id": "HMDB0000641",
+          "low_mM": 0.45,
+          "species": "glutamine",
+          "value_mM": 0.0
+        },
+        {
+          "classification": "below",
+          "high_mM": 0.1,
+          "hmdb_id": "HMDB0000148",
+          "low_mM": 0.01,
+          "species": "glutamate",
+          "value_mM": 0.0
+        },
+        {
+          "classification": "in_range",
+          "high_mM": 0.5,
+          "hmdb_id": "HMDB0000357",
+          "low_mM": 0.02,
+          "species": "beta_hydroxybutyrate",
+          "value_mM": 0.1316
+        },
+        {
+          "classification": "in_range",
+          "high_mM": 0.15,
+          "hmdb_id": "HMDB0000060",
+          "low_mM": 0.01,
+          "species": "acetoacetate",
+          "value_mM": 0.088
+        },
+        {
+          "classification": "below",
+          "high_mM": 0.035,
+          "hmdb_id": "HMDB0000051",
+          "low_mM": 0.011,
+          "species": "ammonia",
+          "value_mM": 0.0026
+        },
+        {
+          "classification": "in_range",
+          "high_mM": 7.1,
+          "hmdb_id": "HMDB0000294",
+          "low_mM": 2.5,
+          "species": "urea",
+          "value_mM": 2.7829
+        },
+        {
+          "classification": "below",
+          "high_mM": 0.2,
+          "hmdb_id": "HMDB0000131",
+          "low_mM": 0.03,
+          "species": "glycerol",
+          "value_mM": 0.0
+        }
+      ],
+      "n_in_range": 3,
+      "n_scored": 10,
+      "state": "fasted"
+    },
     "membrane_state": {
       "channel_open_probability": 0.05695517311822298,
       "cytosolic_ca": 0.027818244303154487,
@@ -2519,6 +2606,9 @@
             "uncalibrated": []
           }
         ],
+        "reporting_labels": [
+          "polyploid_program:unknown_not_asserted"
+        ],
         "sources": [
           "egfr_g1s",
           "hepatectomy_timing",
@@ -2546,7 +2636,8 @@
           "IL-6/IL-6R-gp130/STAT3 downstream effector not explicitly measured",
           "Wnt/FZD-LRP/beta-catenin ligand not asserted",
           "Wnt/FZD-LRP/beta-catenin downstream effector not explicitly measured",
-          "TNF/IL-6 priming not active/asserted; current gate treats this as delay/impaired support, not an absolute mitogen blockade"
+          "TNF/IL-6 priming not active/asserted; current gate treats this as delay/impaired support, not an absolute mitogen blockade",
+          "E2F7/E2F8 polyploid program not asserted; not counted as binucleation support"
         ]
       },
       "division_demo_is_time_compressed": false,
