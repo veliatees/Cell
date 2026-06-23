@@ -18,6 +18,35 @@ from cell_engine.stochastic.hepatocyte_regeneration import (
     evaluate_hepatocyte_regeneration,
     regeneration_timing_profile,
 )
+from cell_engine.stochastic.signaling import FASTED
+from cell_engine.stochastic.integrated_cell import (
+    SCOREABLE_SPECIES,
+    concentrations_mM,
+    run_integrated_hepatocyte,
+)
+from cell_engine.validation.hmdb_ranges import score_concentrations
+
+
+def integrated_metabolism_snapshot() -> dict:
+    """The fused integrated hepatocyte scored against HMDB (for the browser badges)."""
+    conc = concentrations_mM(run_integrated_hepatocyte(FASTED, 120.0, EngineRng(7)))
+    scored = score_concentrations(conc, only=SCOREABLE_SPECIES)
+    return {
+        "state": "fasted",
+        "n_in_range": sum(1 for s in scored if s.classification == "in_range"),
+        "n_scored": len(scored),
+        "metabolites": [
+            {
+                "species": s.species,
+                "value_mM": round(s.value_mM, 4),
+                "low_mM": s.low_mM,
+                "high_mM": s.high_mM,
+                "classification": s.classification,
+                "hmdb_id": s.hmdb_id,
+            }
+            for s in scored
+        ],
+    }
 
 
 def main() -> None:
@@ -80,6 +109,7 @@ def main() -> None:
             definition,
             state,
             state_extras={
+                "integrated_metabolism": integrated_metabolism_snapshot(),
                 "division": whole_cell_population_snapshot(population, params=division_params),
                 "regeneration_context": {
                     "input": regeneration_input,
