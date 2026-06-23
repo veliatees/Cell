@@ -2117,8 +2117,10 @@ function buildFlowCurve(from: THREE.Vector3, to: THREE.Vector3, id: string, rout
 
   const wobbleA = flowHashUnit(`${id}:${routeIndex}:${cycle}:a`) - 0.5;
   const wobbleB = flowHashUnit(`${id}:${routeIndex}:${cycle}:b`) - 0.5;
-  const lift = 0.34 + flowHashUnit(`${id}:${routeIndex}:${cycle}:lift`) * 0.95;
-  const spread = 0.28 + flowHashUnit(`${id}:${routeIndex}:${cycle}:spread`) * 0.9;
+  // Motor cargo runs fairly directly along its track -- a gentle arc, not a wild
+  // loop out to nowhere. Keep lift/spread small so the path stays near the chord.
+  const lift = 0.08 + flowHashUnit(`${id}:${routeIndex}:${cycle}:lift`) * 0.2;
+  const spread = 0.1 + flowHashUnit(`${id}:${routeIndex}:${cycle}:spread`) * 0.22;
   const twist = chordDir.clone().cross(side).normalize();
   const c1 = from
     .clone()
@@ -2238,7 +2240,10 @@ function updateFlowVisuals(s: CellSnapshot) {
   for (const visual of flowVisuals) {
     const flow = byId.get(visual.id);
     const strength = flow ? flowIntensity(flow) : 0;
-    visual.lineMat.opacity = 0.004 + 0.035 * strength;
+    // Keep the route lines essentially invisible -- a visible web of curves reads as
+    // a confusing tangle. The motion itself conveys transport; the line is just a
+    // faint hint for cargo modes, none for diffusing small molecules.
+    visual.lineMat.opacity = visual.mode === "diffusion" ? 0 : 0.004 + 0.012 * strength;
     const speed = FLOW_MODE_SPEED[visual.mode] ?? 0.18;
     const guideCycle = Math.floor(s.elapsedS * (0.18 + speed * 1.1) + visual.routeIndex);
     if (guideCycle !== visual.lineCycle) {
@@ -2247,37 +2252,65 @@ function updateFlowVisuals(s: CellSnapshot) {
       updateFlowLineGeometry(visual);
     }
     for (const packet of visual.packets) {
-      packet.particle.visible = strength > 0.025;
-      packet.particleMat.opacity = 0.22 + 0.68 * strength;
-      packet.particle.scale.setScalar((0.55 + 1.35 * strength) * (0.82 + packet.wander * 0.18));
-      // Intracellular motion is NOT free Brownian diffusion. The cytoplasm is densely
-      // crowded, so particles SUBDIFFUSE -- caged by crowders + the actin cytoskeleton
-      // (Weiss et al. 2004). And the motion is largely ACTIVE: ATP/motor-driven
-      // stirring that fluidizes an otherwise glass-like cytoplasm (Parry 2014; Guo
-      // 2014) -- when metabolism is low it freezes. So each particle jiggles within a
-      // confining cage, and only metabolic activity lets the cage hop (escape).
-      if (!packet.walk) {
-        packet.walk = packet.curve.getPointAt(packet.offset % 1).clone();
-        packet.cage = packet.walk.clone();
+      packet.particle.visible = strength > 0.04;
+      packet.particleMat.opacity = 0.12 + 0.42 * strength;
+      packet.particle.scale.setScalar((0.5 + 1.1 * strength) * (0.82 + packet.wander * 0.18));
+
+      if (visual.mode === "diffusion") {
+        // SMALL MOLECULES -- active caged subdiffusion. The cytoplasm is densely
+        // crowded, so particles are caged by crowders + the actin cytoskeleton (Weiss
+        // 2004); the motion is ATP/motor-driven stirring that fluidizes an otherwise
+        // glass-like cytoplasm (Parry 2014; Guo 2014) -- low metabolism => frozen.
+        if (!packet.walk) {
+          packet.walk = packet.curve.getPointAt(packet.offset % 1).clone();
+          const ir = packet.walk.length();
+          if (ir > CELL_R * 0.8) packet.walk.multiplyScalar((CELL_R * 0.8) / ir); // seed inside
+          packet.cage = packet.walk.clone();
+        }
+        const w = packet.walk;
+        const cage = packet.cage!;
+        const metabolic = strength; // near 0 => cytoplasm glassy
+        const jiggle = CELL_R * 0.011 * (0.1 + 0.9 * metabolic) * (0.7 + packet.speedScale * 0.6);
+        w.x += (Math.random() - 0.5) * jiggle;
+        w.y += (Math.random() - 0.5) * jiggle;
+        w.z += (Math.random() - 0.5) * jiggle;
+        w.lerp(cage, 0.07); // elastic confinement to the cage centre (subdiffusion)
+        if (Math.random() < 0.006 * metabolic) { // rare metabolism-powered escape hop
+          cage.x += (Math.random() - 0.5) * CELL_R * 0.13;
+          cage.y += (Math.random() - 0.5) * CELL_R * 0.13;
+          cage.z += (Math.random() - 0.5) * CELL_R * 0.13;
+          const cr = cage.length();
+          if (cr > CELL_R * 0.8) cage.multiplyScalar((CELL_R * 0.8) / cr);
+        }
+        packet.particle.position.copy(w);
+      } else {
+        // LARGE CARGO (vesicles, motor/autophagy traffic) + transporter/channel
+        // crossings -- DIRECTED transport: motor proteins haul cargo processively
+        // ALONG a cytoskeletal track (the curve IS the track), in straight-ish runs,
+        // not by diffusion. So follow the route from source to destination.
+        const rawT = packet.offset + s.elapsedS * speed * packet.speedScale;
+        const cycle = Math.floor(rawT);
+        if (cycle !== packet.lastCycle) {
+          packet.lastCycle = cycle;
+          packet.curve = buildFlowCurve(packet.from ?? visual.from, packet.to ?? visual.to, visual.id, packet.seed, cycle);
+        }
+        const t = rawT % 1;
+        const pos = packet.curve.getPointAt(t);
+        const tangent = packet.curve.getTangentAt(t).normalize();
+        const radial = pos.lengthSq() > 1e-4 ? pos.clone().normalize() : new THREE.Vector3(0, 1, 0);
+        let side = tangent.clone().cross(radial);
+        if (side.lengthSq() < 1e-5) side = tangent.clone().cross(new THREE.Vector3(0, 1, 0));
+        if (side.lengthSq() < 1e-5) side = new THREE.Vector3(1, 0, 0);
+        side.normalize();
+        const lift = radial.clone().cross(side).normalize();
+        // small motor "wobble"/pauses along the track (cargo doesn't glide perfectly)
+        const noiseA = Math.sin(s.elapsedS * (0.9 + packet.speedScale * 0.7) + packet.seed * 0.37 + t * 13.7);
+        const noiseB = Math.cos(s.elapsedS * (0.7 + packet.speedScale * 0.5) + packet.seed * 0.19 + t * 9.1);
+        const cp = pos.add(side.multiplyScalar(noiseA * packet.wander)).add(lift.multiplyScalar(noiseB * packet.wander * 0.55));
+        const cr = cp.length();
+        if (cr > CELL_R * 0.8) cp.multiplyScalar((CELL_R * 0.8) / cr); // never leave the cell
+        packet.particle.position.copy(cp);
       }
-      const w = packet.walk;
-      const cage = packet.cage!;
-      const metabolic = strength; // ATP/flux-driven activity; near 0 => cytoplasm glassy
-      // (a) confined jiggle inside the crowding cage (subdiffusion), metabolism-scaled
-      const jiggle = CELL_R * 0.011 * (0.1 + 0.9 * metabolic) * (0.7 + packet.speedScale * 0.6);
-      w.x += (Math.random() - 0.5) * jiggle;
-      w.y += (Math.random() - 0.5) * jiggle;
-      w.z += (Math.random() - 0.5) * jiggle;
-      w.lerp(cage, 0.07); // elastic confinement back toward the cage centre
-      // (b) rare active escape hop -- only metabolism fluidizes the cytoplasm enough
-      if (Math.random() < 0.006 * metabolic) {
-        cage.x += (Math.random() - 0.5) * CELL_R * 0.13;
-        cage.y += (Math.random() - 0.5) * CELL_R * 0.13;
-        cage.z += (Math.random() - 0.5) * CELL_R * 0.13;
-        const cr = cage.length();
-        if (cr > CELL_R * 0.9) cage.multiplyScalar((CELL_R * 0.9) / cr); // stay in the cell
-      }
-      packet.particle.position.copy(w);
     }
   }
 }
