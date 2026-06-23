@@ -200,12 +200,29 @@ export type EngineSnapshot = {
     };
     division?: EngineDivisionSnapshot;
     regeneration_context?: EngineRegenerationContext;
+    integrated_metabolism?: EngineIntegratedMetabolism;
   };
   metadata?: {
     engine?: string;
     created_at_utc?: string;
     definition_id?: string;
   };
+};
+
+export type EngineIntegratedMetabolite = {
+  species: string;
+  value_mM: number;
+  low_mM: number;
+  high_mM: number;
+  classification: "in_range" | "below" | "above";
+  hmdb_id: string;
+};
+
+export type EngineIntegratedMetabolism = {
+  state: string;
+  n_in_range: number;
+  n_scored: number;
+  metabolites: EngineIntegratedMetabolite[];
 };
 
 export type EngineOrganelleSummary = {
@@ -239,6 +256,7 @@ export type EngineSnapshotSummary = {
   division: EngineDivisionSnapshot | null;
   divisionDisplay: EngineDivisionDisplayState;
   regenerationContext: EngineRegenerationContext | null;
+  integratedMetabolism: EngineIntegratedMetabolism | null;
 };
 
 export type EngineDivisionDisplayState = {
@@ -356,6 +374,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     division,
     divisionDisplay: summarizeEngineDivisionDisplay(division),
     regenerationContext: isEngineRegenerationContext(snapshot.state.regeneration_context) ? snapshot.state.regeneration_context : null,
+    integratedMetabolism: snapshot.state.integrated_metabolism ?? null,
     topFluxes: (snapshot.state.metabolic_fluxes ?? [])
       .slice()
       .sort((a, b) => b.value - a.value)
