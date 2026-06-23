@@ -95,10 +95,21 @@ Tracking the re-architecture from "normalized/qualitative" to a real-units model
   pseudo-first-order form to true `michaelis_menten` with curated human/liver Km/kcat
   where it improves HMDB scores. Honest flagged placeholders on the real molar scale
   are acceptable until curated (the `glycolysis.py` pattern).
-- [ ] **M5** — fuse all migrated pathways into `whole_cell.py`; rebalance shared
-  ATP/CoA/NAD pools; remove lumped reactions superseded by detailed pathways.
-- [ ] **M6** — turn on HMDB validation scoring against the integrated steady state.
-- [ ] **M7** — browser shows live concentrations + in-range badges.
+- [x] **M5** — fused integrated network (`integrated_cell.py`): 7 pathways +
+  urea cycle composed on one volume (opt-in `dedupe_reactions`), shared ATP/NAD/
+  acetyl-CoA pools, exact cofactor conservation, correct fed/fasted behaviour.
+  Built additively, so the existing whole-cell tests + snapshot are untouched.
+- [x] **M6** — HMDB validation scoring (`score_concentrations`/`format_scorecard`).
+  The integrated FASTED cell's emergent PRODUCTS validate against measured human
+  values: urea 2.78 mM, beta-hydroxybutyrate 0.13 mM, acetoacetate 0.09 mM all in
+  HMDB range. Substrate pools deplete in a closed run (need a continuous-influx
+  layer) and are honestly flagged LOW.
+- [ ] **M7** — browser shows live concentrations + in-range badges. Snapshot-export
+  the integrated scorecard (Python, additive) then render badges in `main.ts`
+  (focused browser session; pairs with the visual improvements).
+- [ ] **M5b (next refinement)** — continuous substrate-influx / buffered blood
+  reservoirs so substrate pools and blood glucose reach physiological steady state
+  (would move several more HMDB metabolites in-range).
 
 Design lens (per user): apply the **rise-peak-decline / Gaussian life-arc** to
 time-varying inputs and capacities (e.g. nutrient score low→high→low) rather than
