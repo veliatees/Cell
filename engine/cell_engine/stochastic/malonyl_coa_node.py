@@ -31,8 +31,12 @@ from typing import Mapping
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.random import EngineRng
-from cell_engine.quantitative.geometry import AVOGADRO
-from cell_engine.stochastic.cell_model import CellReactionModel
+from cell_engine.processes.hepatocyte import build_hepatocyte_definition
+from cell_engine.quantitative.geometry import (
+    build_hepatocyte_geometry,
+    molecules_from_concentration_mM,
+)
+from cell_engine.stochastic.cell_model import CYTOSOL, CellReactionModel
 from cell_engine.stochastic.reactions import Reaction, ReactionNetwork
 from cell_engine.stochastic.signaling import HormoneState
 
@@ -66,7 +70,10 @@ MALONYL_SOURCES: dict[str, SourceReference] = {
     ),
 }
 
-MALONYL_VOLUME_L = 1.0 / AVOGADRO
+# Real hepatocyte cytosolic volume (the pseudo-first-order / CPT1 reactions are
+# volume-independent in form, but the CPT1 Ki is a concentration and is converted
+# to a count threshold against this volume; seeds/outputs become real mM).
+MALONYL_VOLUME_L = build_hepatocyte_geometry(build_hepatocyte_definition()).volume_of(CYTOSOL)
 
 
 def _clamp01(x: float) -> float:
@@ -102,7 +109,7 @@ class MalonylNodeParams:
     fasn_per_s: float = 0.04         # malonyl-CoA -> palmitate (slow: malonyl persists as a pool)
     mcd_per_s: float = 0.40          # malonyl-CoA -> acetyl-CoA (x mcd_activity)
     cpt1_per_s: float = 0.05         # fatty_acids -> mito_acetyl_CoA (malonyl-inhibited)
-    cpt1_ki: float = 300.0           # malonyl-CoA level for half-inhibition of CPT1
+    cpt1_ki_mM: float = 0.3          # malonyl-CoA concentration for half-inhibition of CPT1
 
 
 def build_malonyl_node_network(
@@ -116,7 +123,7 @@ def build_malonyl_node_network(
     """
     acc = params.acc_per_s * acc_activity(hormones)
     mcd = params.mcd_per_s * mcd_activity(hormones)
-    ki = params.cpt1_ki
+    ki = molecules_from_concentration_mM(params.cpt1_ki_mM, volume_l)  # mM -> count threshold
     k_cpt1 = params.cpt1_per_s
 
     def cpt1_propensity(counts: Mapping[str, float], volume_l: float) -> float:
@@ -154,20 +161,22 @@ def run_malonyl_node(
     t_end_s: float,
     rng: EngineRng,
     *,
-    acetyl_coa: float = 4000.0,
-    fatty_acids: float = 4000.0,
-    malonyl_coa: float = 0.0,
-    atp: float = 20000.0,
+    acetyl_coa_mM: float = 0.1,
+    fatty_acids_mM: float = 0.3,
+    malonyl_coa_mM: float = 0.0,
+    atp_mM: float = 20.0,
     params: MalonylNodeParams = MalonylNodeParams(),
     dt_s: float = 0.05,
 ) -> dict[str, float]:
-    """Run the malonyl-CoA node; ``mito_acetyl_CoA`` accumulates with beta-oxidation flux."""
+    """Run the malonyl-CoA node (concentrations in mM); ``mito_acetyl_CoA`` accumulates
+    with beta-oxidation flux. ATP seeded as a supplied budget."""
     network = build_malonyl_node_network(hormones, params)
+    v = network.volume_l
     counts = {s: 0.0 for s in network.species}
-    counts["acetyl_CoA"] = acetyl_coa
-    counts["fatty_acids"] = fatty_acids
-    counts["malonyl_CoA"] = malonyl_coa
-    counts["ATP"] = atp
+    counts["acetyl_CoA"] = molecules_from_concentration_mM(acetyl_coa_mM, v)
+    counts["fatty_acids"] = molecules_from_concentration_mM(fatty_acids_mM, v)
+    counts["malonyl_CoA"] = molecules_from_concentration_mM(malonyl_coa_mM, v)
+    counts["ATP"] = molecules_from_concentration_mM(atp_mM, v)
     return CellReactionModel(network=network, counts=counts).advance(
         t_end_s, rng, mode="cle", dt_s=dt_s
     ).counts

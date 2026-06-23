@@ -33,8 +33,12 @@ from typing import Mapping
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.random import EngineRng
-from cell_engine.quantitative.geometry import AVOGADRO
-from cell_engine.stochastic.cell_model import CellReactionModel
+from cell_engine.processes.hepatocyte import build_hepatocyte_definition
+from cell_engine.quantitative.geometry import (
+    build_hepatocyte_geometry,
+    molecules_from_concentration_mM,
+)
+from cell_engine.stochastic.cell_model import CYTOSOL, CellReactionModel
 from cell_engine.stochastic.reactions import Reaction, ReactionNetwork
 
 DATE_VERIFIED = "2026-06-22"
@@ -65,7 +69,9 @@ AMINO_ACID_SOURCES: dict[str, SourceReference] = {
     ),
 }
 
-AMINO_ACID_VOLUME_L = 1.0 / AVOGADRO
+# Real hepatocyte cytosolic volume (pseudo-first-order reactions are volume-
+# independent; seeds/outputs become real mM concentrations).
+AMINO_ACID_VOLUME_L = build_hepatocyte_geometry(build_hepatocyte_definition()).volume_of(CYTOSOL)
 
 
 def _pseudo_first_order(
@@ -158,23 +164,24 @@ def run_amino_acid_catabolism(
     t_end_s: float,
     rng: EngineRng,
     *,
-    alanine: float = 3000.0,
-    glutamine: float = 3000.0,
-    alpha_ketoglutarate: float = 2000.0,
-    oxaloacetate: float = 2000.0,
-    nad_pool: float = 4000.0,
+    alanine_mM: float = 3.0,
+    glutamine_mM: float = 3.0,
+    alpha_ketoglutarate_mM: float = 2.0,
+    oxaloacetate_mM: float = 2.0,
+    nad_pool_mM: float = 4.0,
     params: AminoAcidCatabolismParams = AminoAcidCatabolismParams(),
     dt_s: float = 0.05,
 ) -> dict[str, float]:
-    """Run amino-acid catabolism from an amino-acid load with alpha-KG/OAA acceptors."""
+    """Run amino-acid catabolism from an amino-acid load (mM) with alpha-KG/OAA acceptors."""
     network = build_amino_acid_catabolism_network(params)
+    v = network.volume_l
     counts = {s: 0.0 for s in network.species}
-    counts["alanine"] = alanine
-    counts["glutamine"] = glutamine
-    counts["alpha_ketoglutarate"] = alpha_ketoglutarate
-    counts["oxaloacetate"] = oxaloacetate
-    counts["NAD_plus"] = nad_pool
-    counts["NADH"] = nad_pool * 0.25
+    counts["alanine"] = molecules_from_concentration_mM(alanine_mM, v)
+    counts["glutamine"] = molecules_from_concentration_mM(glutamine_mM, v)
+    counts["alpha_ketoglutarate"] = molecules_from_concentration_mM(alpha_ketoglutarate_mM, v)
+    counts["oxaloacetate"] = molecules_from_concentration_mM(oxaloacetate_mM, v)
+    counts["NAD_plus"] = molecules_from_concentration_mM(nad_pool_mM, v)
+    counts["NADH"] = molecules_from_concentration_mM(nad_pool_mM * 0.25, v)
     return CellReactionModel(network=network, counts=counts).advance(
         t_end_s, rng, mode="cle", dt_s=dt_s
     ).counts
