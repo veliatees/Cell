@@ -29,7 +29,7 @@ select {
 .sim-shell {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(260px, 310px) minmax(0, 1fr) minmax(286px, 330px);
+  grid-template-columns: minmax(196px, 224px) minmax(0, 1fr) minmax(286px, 330px);
   grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas:
     "topbar topbar topbar"
@@ -86,12 +86,12 @@ select {
 
 .split-state-badge {
   position: absolute;
-  right: 12px;
-  top: 12px;
+  left: 14px;
+  top: 14px;
   z-index: 8;
-  width: min(260px, calc(100% - 24px));
-  padding: 10px 11px;
-  gap: 5px;
+  width: min(218px, calc(100% - 28px));
+  padding: 8px 10px;
+  gap: 4px;
   border-radius: 8px;
   color: #eaf3ff;
   border: 1px solid rgba(255, 202, 117, 0.26);
@@ -311,12 +311,12 @@ select {
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .metric {
-  min-height: 74px;
-  padding: 12px;
+  min-height: 50px;
+  padding: 8px 9px;
   border: 1px solid rgba(188, 208, 231, 0.14);
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.045);
@@ -326,14 +326,14 @@ select {
 .time-readout span {
   display: block;
   color: #8ea1b8;
-  font-size: 11px;
+  font-size: 9.75px;
 }
 
 .metric strong {
   display: block;
-  margin-top: 8px;
+  margin-top: 3px;
   color: #f3f7ff;
-  font-size: clamp(12px, 2vw, 16px);
+  font-size: 14px;
   letter-spacing: 0;
   overflow-wrap: anywhere;
 }

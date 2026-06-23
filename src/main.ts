@@ -376,6 +376,10 @@ let membrane: MembraneSystem | null = null;
 let membraneIsVesicle = false;
 let reaction: ReactionSystem | null = null;
 let organelleGroup: THREE.Group | null = null; // schematic whole-cell anatomy
+// Organelles that get a gentle Brownian jiggle (real organelles are never still:
+// motor transport on cytoskeletal tracks + thermal motion). Cached once per scene.
+let organelleJiggleTargets: { obj: THREE.Object3D; base: THREE.Vector3; seed: number }[] | null = null;
+const ORGANELLE_JIGGLE_RE = /mitochond|lysosome|peroxisome|ribosome|golgi|vesicle|granule|endosome|cargo/i;
 let livingCell: LivingCell | null = null; // the metabolic model behind the organelle scene
 const organelleMitos: THREE.Mesh[] = []; // mitochondria meshes (glow with ATP production)
 let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by cell status)
@@ -481,6 +485,7 @@ type FlowPacket = {
   wander: number;
   from?: THREE.Vector3; // per-packet origin (e.g. a specific sinusoid fenestra)
   to?: THREE.Vector3;   // per-packet destination
+  walk?: THREE.Vector3; // free-diffusion position (random walk, not route-bound)
 };
 type FlowVisual = {
   id: string;
@@ -599,7 +604,7 @@ function makeRenderer(): RendererHandle {
 }
 
 const renderer = makeRenderer();
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(viewportElement.clientWidth, viewportElement.clientHeight);
 viewportElement.append(renderer.domElement);
 
@@ -1358,7 +1363,7 @@ if (realRenderer) {
     );
     composer.addPass(bloomPass);
     composer.addPass(new OutputPass());
-    composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    composer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     composer.setSize(viewportElement.clientWidth, viewportElement.clientHeight);
   } catch {
     composer = null;
@@ -2244,24 +2249,21 @@ function updateFlowVisuals(s: CellSnapshot) {
       packet.particle.visible = strength > 0.025;
       packet.particleMat.opacity = 0.22 + 0.68 * strength;
       packet.particle.scale.setScalar((0.55 + 1.35 * strength) * (0.82 + packet.wander * 0.18));
-      const rawT = packet.offset + s.elapsedS * speed * packet.speedScale;
-      const cycle = Math.floor(rawT);
-      if (cycle !== packet.lastCycle) {
-        packet.lastCycle = cycle;
-        packet.curve = buildFlowCurve(packet.from ?? visual.from, packet.to ?? visual.to, visual.id, packet.seed, cycle);
-      }
-      const t = rawT % 1;
-      const pos = packet.curve.getPointAt(t);
-      const tangent = packet.curve.getTangentAt(t).normalize();
-      const radial = pos.lengthSq() > 1e-4 ? pos.clone().normalize() : new THREE.Vector3(0, 1, 0);
-      let side = tangent.clone().cross(radial);
-      if (side.lengthSq() < 1e-5) side = tangent.clone().cross(new THREE.Vector3(0, 1, 0));
-      if (side.lengthSq() < 1e-5) side = new THREE.Vector3(1, 0, 0);
-      side.normalize();
-      const lift = radial.clone().cross(side).normalize();
-      const noiseA = Math.sin(s.elapsedS * (0.9 + packet.speedScale * 0.7) + packet.seed * 0.37 + t * 13.7);
-      const noiseB = Math.cos(s.elapsedS * (0.7 + packet.speedScale * 0.5) + packet.seed * 0.19 + t * 9.1);
-      packet.particle.position.copy(pos.add(side.multiplyScalar(noiseA * packet.wander)).add(lift.multiplyScalar(noiseB * packet.wander * 0.55)));
+      // FREE DIFFUSION: a small molecule does not follow a route or a shortest path.
+      // It random-walks (Brownian motion) -- millions of random collisions/second --
+      // exploring space stochastically until it happens upon a target. So each packet
+      // takes an independent random step every frame, reflected off the cell boundary.
+      // No trajectory, no plan; flux only sets how briskly the cloud diffuses.
+      if (!packet.walk) packet.walk = packet.curve.getPointAt(packet.offset % 1).clone();
+      const w = packet.walk;
+      const step = CELL_R * 0.016 * (0.5 + 1.3 * strength) * (0.7 + packet.speedScale * 0.6);
+      w.x += (Math.random() - 0.5) * step;
+      w.y += (Math.random() - 0.5) * step;
+      w.z += (Math.random() - 0.5) * step;
+      const bound = CELL_R * 0.92;
+      const r2 = w.lengthSq();
+      if (r2 > bound * bound) w.multiplyScalar(bound / Math.sqrt(r2)); // reflective membrane
+      packet.particle.position.copy(w);
     }
   }
 }
@@ -4340,6 +4342,7 @@ function buildOrganelleScene() {
 
   root.add(group);
   organelleGroup = group;
+  organelleJiggleTargets = null; // rebuilt lazily for the new scene graph
 
   if (sceneNote) {
     sceneNote.textContent =
@@ -4364,6 +4367,28 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     // so triggering regeneration has immediate on-screen feedback.
     const growthScale = 1 + Math.min(0.32, Math.max(0, cellCycle.biomass - 1) * 0.16);
     organelleGroup.scale.setScalar(growthScale);
+
+    // Per-organelle Brownian jiggle: organelles are never still in a real cell.
+    // Built once (cheap), then a few sin() per organelle per frame -- CPU-light.
+    if (organelleJiggleTargets === null) {
+      organelleJiggleTargets = [];
+      let n = 0;
+      organelleGroup.traverse((o) => {
+        if (ORGANELLE_JIGGLE_RE.test((o.userData?.label as string) ?? "")) {
+          organelleJiggleTargets!.push({ obj: o, base: o.position.clone(), seed: (n++) * 0.61 });
+        }
+      });
+    }
+    const tJ = tNow;
+    for (const t of organelleJiggleTargets) {
+      const { base: b, seed: s } = t;
+      const a = 0.055; // small, in cell-radius display units
+      t.obj.position.set(
+        b.x + Math.sin(tJ * 0.9 + s) * a + Math.sin(tJ * 2.4 + s * 1.4) * a * 0.35,
+        b.y + Math.sin(tJ * 0.75 + s * 1.7) * a + Math.sin(tJ * 2.0 + s) * a * 0.35,
+        b.z + Math.sin(tJ * 1.05 + s * 0.6) * a,
+      );
+    }
   }
 
   if (livingCell && running) {
