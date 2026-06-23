@@ -119,3 +119,49 @@ def classify_concentration(value_mM: float, rng: HMDBConcentrationRange) -> Clas
     if value_mM > rng.high_mM:
         return "above"
     return "in_range"
+
+
+@dataclass(frozen=True)
+class ScoredMetabolite:
+    species: str
+    value_mM: float
+    low_mM: float
+    high_mM: float
+    classification: Classification
+    hmdb_id: str
+
+
+def score_concentrations(
+    concentrations_mM: dict[str, float],
+    only: tuple[str, ...] | None = None,
+) -> list[ScoredMetabolite]:
+    """Score model concentrations (mM) against the curated HMDB ranges.
+
+    Returns one :class:`ScoredMetabolite` per metabolite that has both a model
+    concentration and a curated range. Restrict to ``only`` to score a chosen subset.
+    """
+    scored: list[ScoredMetabolite] = []
+    for species, rng in _BY_SPECIES.items():
+        if only is not None and species not in only:
+            continue
+        if species not in concentrations_mM:
+            continue
+        v = concentrations_mM[species]
+        scored.append(ScoredMetabolite(
+            species=species, value_mM=v, low_mM=rng.low_mM, high_mM=rng.high_mM,
+            classification=classify_concentration(v, rng), hmdb_id=rng.hmdb_id,
+        ))
+    return scored
+
+
+def format_scorecard(scored: list[ScoredMetabolite]) -> str:
+    """Human-readable HMDB validation scorecard."""
+    mark = {"in_range": "OK ", "below": "LO ", "above": "HI "}
+    n_ok = sum(1 for s in scored if s.classification == "in_range")
+    lines = [f"HMDB validation: {n_ok}/{len(scored)} metabolites in physiological range"]
+    for s in sorted(scored, key=lambda x: (x.classification != "in_range", x.species)):
+        lines.append(
+            f"  [{mark[s.classification]}] {s.species:22s} {s.value_mM:8.3f} mM  "
+            f"(range {s.low_mM}-{s.high_mM})"
+        )
+    return "\n".join(lines)
