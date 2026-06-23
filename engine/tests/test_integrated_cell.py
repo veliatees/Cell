@@ -39,6 +39,18 @@ class IntegratedHepatocyteTests(unittest.TestCase):
         self.assertGreater(fed["glycogen"], 50.0)
         self.assertLess(fed["glucose_blood"], 1.0)
 
+    def test_emergent_products_validate_against_hmdb(self):
+        """M6: the integrated fasting cell's emergent products (urea + ketone bodies)
+        land in the measured HMDB physiological range."""
+        from cell_engine.stochastic.integrated_cell import SCOREABLE_SPECIES
+        from cell_engine.validation.hmdb_ranges import score_concentrations
+
+        c = concentrations_mM(run_integrated_hepatocyte(FASTED, 120.0, EngineRng(1)))
+        scored = {s.species: s for s in score_concentrations(c, only=SCOREABLE_SPECIES)}
+        for product in ("urea", "beta_hydroxybutyrate", "acetoacetate"):
+            self.assertEqual(scored[product].classification, "in_range",
+                             f"{product}={scored[product].value_mM:.3f} mM not in HMDB range")
+
     def test_cofactor_pools_conserved_exactly(self):
         """Across all fused pathways, the shared ATP and NAD pools are conserved."""
         net = build_integrated_hepatocyte_network(FASTED)
