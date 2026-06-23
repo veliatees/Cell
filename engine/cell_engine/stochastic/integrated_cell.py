@@ -40,8 +40,9 @@ from cell_engine.stochastic.glycerol_gluconeogenesis import build_glycerol_gluco
 from cell_engine.stochastic.gluconeogenesis import build_gluconeogenesis_network
 from cell_engine.stochastic.ketogenesis import build_hepatic_ketogenic_response
 from cell_engine.stochastic.malonyl_coa_node import build_malonyl_node_network
-from cell_engine.stochastic.reactions import ReactionNetwork, compose_networks
+from cell_engine.stochastic.reactions import ReactionNetwork, compose_networks, mass_action
 from cell_engine.stochastic.signaling import HormoneState, build_glycogen_control_network
+from cell_engine.stochastic.urea_cycle import build_urea_cycle_network
 
 INTEGRATED_VOLUME_L = build_hepatocyte_geometry(build_hepatocyte_definition()).volume_of(CYTOSOL)
 
@@ -52,8 +53,18 @@ DEFAULT_SEEDS_mM: dict[str, float] = {
     "alpha_ketoglutarate": 0.2, "oxaloacetate": 0.2,
     "glycerol": 0.2, "fatty_acids": 0.5,             # lipolysis products
     "acetyl_CoA": 0.1,
+    "ornithine": 0.3, "aspartate": 1.0,              # urea-cycle carrier + 2nd N donor
     "ATP": 30.0, "NAD_plus": 2.0, "NADH": 0.5,       # ATP a supplied budget; matrix oxidised
 }
+
+# Metabolites whose mM concentration is meaningful to score against HMDB. The blood
+# "export" pools (glucose_blood, vldl_blood) are cumulative output flux, not regulated
+# blood concentrations, so they are NOT scored here (they need a homeostatic reservoir
+# + continuous-influx layer, tracked separately).
+SCOREABLE_SPECIES = (
+    "urea", "ammonia", "beta_hydroxybutyrate", "acetoacetate",
+    "lactate", "pyruvate", "alanine", "glutamine", "glutamate", "glycerol",
+)
 
 
 def build_integrated_hepatocyte_network(
@@ -68,6 +79,7 @@ def build_integrated_hepatocyte_network(
         build_glycerol_gluconeogenesis_network(hormones, volume_l=volume_l),
         build_hepatic_ketogenic_response(hormones, volume_l=volume_l),
         build_malonyl_node_network(hormones, volume_l=volume_l),
+        build_urea_cycle_network(volume_l),       # consumes ammonia + aspartate -> urea
         volume_l=volume_l,
         dedupe_reactions=True,
     )
