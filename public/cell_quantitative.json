@@ -1,0 +1,181 @@
+{
+  "_note": "Human hepatocyte quantitative reference. Every value is measured+cited, an explicitly flagged order-of-magnitude estimate, or null. NOT fabricated. Honesty flags and rat-vs-human provenance are preserved from the source research pass; see docs/12-hepatocyte-quantitative.md for full citations and caveats. Sizes are NOT stored here when not directly measured; characteristic diameters are derived at consumption from volumeFractionPct + countTypical (see engine quantitative/hepatocyte_counts.py).",
+  "generated": "2026-06-30",
+  "cell": {
+    "organism": "human",
+    "diameterUm": { "typical": 25, "range": [20, 30], "quality": "measured", "source": "consensus" },
+    "volumeUm3": { "typical": 3400, "range": [3000, 11000], "quality": "order-of-magnitude", "organism": "human", "source": "bionumbers/consensus", "note": "Wide due to ploidy/zonation; 3400 commonly cited, not consensus." },
+    "volumeUm3Rat": { "typical": 5000, "range": [4900, 5100], "quality": "measured", "organism": "rat", "source": "weibel1969" },
+    "totalProteinPerCellPg": { "typical": 464, "range": [150, 700], "quality": "measured", "organism": "human", "source": "wisniewski2014/niu2022" },
+    "totalProteinMoleculesPerCell": { "typical": 5.0e9, "range": [2.0e9, 8.0e9], "quality": "measured", "organism": "human", "source": "niu2022" },
+    "binucleateFraction": { "typical": 0.20, "range": [0.15, 0.25], "quality": "order-of-magnitude", "organism": "human", "source": "consensus", "note": "Polyploidy (4n,8n) common; per-cell copy numbers likely underestimated for polyploid cells." },
+    "membraneDomainSplitPct": { "sinusoidal": 37, "lateral": 50, "canalicular": 13, "quality": "order-of-magnitude", "organism": "rat", "source": "weibel1969/blouin1977", "note": "Sinusoidal (blood/basolateral) ~37%, lateral (cell-cell) ~50%, canalicular (bile/apical) ~13% of hepatocyte plasma-membrane area." }
+  },
+  "organelles": [
+    {
+      "id": "nucleus", "name": "Nucleus",
+      "countTypical": 1, "countRange": [1, 4], "binucleatePct": 20,
+      "volumeFractionPct": 6.2, "volumeFractionRangePct": [5, 8],
+      "location": "central", "renderable": true,
+      "organism": "rat", "quality": "measured", "source": "weibel1969",
+      "note": "Volume fraction rat (Weibel 1969); binucleate/ploidy human consensus. Characteristic diameter derived ~7-8 um."
+    },
+    {
+      "id": "mitochondria", "name": "Mitochondria",
+      "countTypical": 1000, "countRange": [500, 2500],
+      "volumeFractionPct": 20, "volumeFractionRangePct": [18, 22],
+      "location": "dispersed cytoplasm", "renderable": true,
+      "organism": "rat", "quality": "order-of-magnitude",
+      "source": "weibel1969(volume)/loud1968(count)",
+      "note": "Rat ~20% volume (Weibel 1969); human mitochondrial protein-mass fraction ~23% (Niu 2022) cross-checks. Count ~500-2500, commonly ~1000-1500. Derived char. diameter ~1 um (elongated)."
+    },
+    {
+      "id": "rough_er", "name": "Rough endoplasmic reticulum",
+      "countTypical": null, "countRange": null,
+      "volumeFractionPct": 15, "volumeFractionRangePct": [10, 18],
+      "location": "perinuclear network", "renderable": true,
+      "organism": "rat", "quality": "measured", "source": "weibel1969",
+      "note": "Network, not discrete particles; rendered as a volume-correct network/region."
+    },
+    {
+      "id": "smooth_er", "name": "Smooth endoplasmic reticulum",
+      "countTypical": null, "countRange": null,
+      "volumeFractionPct": 6, "volumeFractionRangePct": [4, 8],
+      "location": "cytoplasmic network", "renderable": true,
+      "organism": "rat", "quality": "measured", "source": "weibel1969",
+      "note": "State-dependent: induced by xenobiotic exposure. Model as variable, not constant."
+    },
+    {
+      "id": "golgi", "name": "Golgi apparatus",
+      "countTypical": null, "countRange": null,
+      "volumeFractionPct": 2.6, "volumeFractionRangePct": [2, 4],
+      "location": "near canalicular pole", "renderable": true,
+      "organism": "rat", "quality": "measured", "source": "blouin1977",
+      "note": "A few stacks/dictyosomes per cell; polarized toward the bile-canalicular face."
+    },
+    {
+      "id": "lysosomes", "name": "Lysosomes",
+      "countTypical": 400, "countRange": [200, 600],
+      "volumeFractionPct": 1.0, "volumeFractionRangePct": [0.8, 1.5],
+      "location": "near canalicular pole", "renderable": true,
+      "organism": "rat", "quality": "order-of-magnitude", "source": "weibel1969",
+      "note": "Volume fraction measured (Weibel 1969); count is an order-of-magnitude estimate derived from volume fraction and a ~0.5 um characteristic diameter."
+    },
+    {
+      "id": "peroxisomes", "name": "Peroxisomes (microbodies)",
+      "countTypical": 500, "countRange": [350, 620],
+      "volumeFractionPct": 1.5, "volumeFractionRangePct": [1, 2],
+      "location": "dispersed cytoplasm", "renderable": true,
+      "organism": "rat", "quality": "order-of-magnitude", "source": "weibel1969",
+      "note": "Count ~350-620 (Weibel 1969). Derived char. diameter ~0.5-0.6 um."
+    },
+    {
+      "id": "ribosomes", "name": "Ribosomes (free + ER-bound)",
+      "countTypical": 1.0e7, "countRange": [1.0e7, 1.0e7],
+      "volumeFractionPct": null, "volumeFractionRangePct": null,
+      "location": "cytosol + rough ER", "renderable": false,
+      "organism": "consensus", "quality": "order-of-magnitude", "source": "consensus",
+      "note": "~1e7 per large mammalian cell, order of magnitude only. Too many to draw individually; represent statistically (LOD / density)."
+    },
+    {
+      "id": "glycogen", "name": "Glycogen rosettes",
+      "countTypical": null, "countRange": null,
+      "volumeFractionPct": 6, "volumeFractionRangePct": [3, 12],
+      "location": "cytosol (near SER)", "renderable": true,
+      "organism": "rat", "quality": "order-of-magnitude", "source": "loud1968",
+      "note": "Strongly state-dependent: ~0 fasted to >10% fed. Model as a variable pool, not a constant."
+    }
+  ],
+  "proteins": [
+    {
+      "id": "glut2", "gene": "SLC2A2", "uniprot": "P11168",
+      "location": "membrane-basolateral",
+      "copiesPerCellTypical": 79057, "copiesPerCellRange": [25000, 250000],
+      "footprintNm": 7, "densityPerUm2": null,
+      "quality": "order-of-magnitude",
+      "derivation": "fraction-of-total-molecules; absolute values exist (Ohtsuki 2012 / Wisniewski 2016) but behind paywall, not transcribed.",
+      "mrnaLiverNtpmHpa": 781.9,
+      "organism": "human", "source": "ohtsuki2012/wisniewski2016/hpa"
+    },
+    {
+      "id": "naka", "gene": "ATP1A1", "uniprot": "P05023",
+      "location": "membrane-basolateral",
+      "copiesPerCellTypical": 158114, "copiesPerCellRange": [50000, 500000],
+      "footprintNm": 10, "densityPerUm2": null,
+      "quality": "order-of-magnitude",
+      "derivation": "fraction-of-total-molecules; absolute values exist (Ohtsuki 2012) but not transcribed.",
+      "mrnaLiverNtpmHpa": null,
+      "organism": "human", "source": "ohtsuki2012"
+    },
+    {
+      "id": "ntcp", "gene": "SLC10A1", "uniprot": "Q14973",
+      "location": "membrane-basolateral",
+      "copiesPerCellTypical": 316228, "copiesPerCellRange": [100000, 1000000],
+      "footprintNm": 6, "densityPerUm2": null,
+      "quality": "order-of-magnitude",
+      "derivation": "fraction-of-total-molecules; absolute values exist (Ohtsuki 2012 / Qiu 2013 / Wisniewski 2016) but not transcribed.",
+      "mrnaLiverNtpmHpa": 399.1,
+      "organism": "human", "source": "ohtsuki2012/qiu2013/wisniewski2016"
+    },
+    {
+      "id": "bsep", "gene": "ABCB11", "uniprot": "O95342",
+      "location": "membrane-canalicular",
+      "copiesPerCellTypical": 15811, "copiesPerCellRange": [5000, 50000],
+      "footprintNm": 10, "densityPerUm2": null,
+      "quality": "order-of-magnitude",
+      "derivation": "fraction-of-total-molecules; absolute values exist (Ohtsuki 2012 / Wisniewski 2016) but not transcribed.",
+      "mrnaLiverNtpmHpa": 75.3,
+      "organism": "human", "source": "ohtsuki2012/wisniewski2016"
+    },
+    {
+      "id": "mrp2", "gene": "ABCC2", "uniprot": "Q92887",
+      "location": "membrane-canalicular",
+      "copiesPerCellTypical": 31623, "copiesPerCellRange": [10000, 100000],
+      "footprintNm": 10, "densityPerUm2": null,
+      "quality": "order-of-magnitude",
+      "derivation": "fraction-of-total-molecules; absolute values exist (Ohtsuki 2012 / Wisniewski 2016) but not transcribed.",
+      "mrnaLiverNtpmHpa": 113.8,
+      "organism": "human", "source": "ohtsuki2012/wisniewski2016"
+    },
+    {
+      "id": "glucokinase", "gene": "GCK", "uniprot": "P35557",
+      "location": "cytosol",
+      "copiesPerCellTypical": 61237, "copiesPerCellRange": [25000, 150000],
+      "footprintNm": 7, "densityPerUm2": null,
+      "quality": "order-of-magnitude",
+      "derivation": "fraction-of-total-molecules (low-abundance regulatory enzyme; HPA nTPM 16.7).",
+      "mrnaLiverNtpmHpa": 16.7,
+      "organism": "human", "source": "hpa/uniprot"
+    },
+    {
+      "id": "cps1", "gene": "CPS1", "uniprot": "P31327",
+      "location": "mitochondria",
+      "copiesPerCellTypical": 53571693, "copiesPerCellRange": [33881714, 84704285],
+      "footprintNm": 14, "densityPerUm2": null,
+      "quality": "order-of-magnitude",
+      "derivation": "mass-fraction; CPS1 in top-10 most abundant hepatocyte proteins (28 most-abundant = 25% mass; Niu 2022). Best-anchored of the seven (~half an order of magnitude).",
+      "mrnaLiverNtpmHpa": 994.6,
+      "organism": "human", "source": "niu2022/wisniewski2016"
+    }
+  ],
+  "derivation": {
+    "copiesPerCellFormula": "copies = (fmol/ug membrane protein) * (ug membrane protein per cell) * 1e-15 mol/fmol * 6.022e23",
+    "ugMembraneProteinPerCell": { "rangePg": [9.28, 23.2], "basis": "464 pg total protein/cell (Wisniewski 2014) x 2-5% plasma-membrane fraction (ASSUMPTION, flagged)" },
+    "note": "The fmol/ug -> copies/cell conversion is exact; the membrane-fraction factor is the assumption. Drop measured Ohtsuki 2012 / Wisniewski 2016 fmol/ug values into the formula to upgrade order-of-magnitude transporter estimates to measured.",
+    "polyploidyCaveat": "Proteomic-ruler copy numbers assume diploidy; hepatocytes are often 4n/8n and 15-25% binucleate, so per-cell copy numbers are likely UNDERESTIMATED (Niu 2022)."
+  },
+  "citations": {
+    "weibel1969": "Weibel ER, Staubli W, Gnagi HR, Hess FA. Correlated morphometric and biochemical studies on the liver cell. I. Morphometric model, stereologic methods, and normal morphometric data for RAT liver. J Cell Biol. 1969;42(1):68-91. PMID 4891915.",
+    "blouin1977": "Blouin A, Bolender RP, Weibel ER. Distribution of organelles and membranes between hepatocytes and nonhepatocytes in the rat liver parenchyma. A stereological study. J Cell Biol. 1977;72(2):441-455. PMID 833203.",
+    "loud1968": "Loud AV. A quantitative stereological description of the ultrastructure of normal rat liver parenchymal cells. J Cell Biol. 1968;37(1):27-46. PMID 5645844.",
+    "niu2022": "Niu L, et al. Dynamic human liver proteome atlas reveals functional insights into disease pathways. Mol Syst Biol. 2022;18(5):e10947. (human liver proteome).",
+    "wisniewski2014": "Wisniewski JR, et al. Total-protein-approach quantitative proteomics (proteomic ruler); ~464 pg protein per average liver cell. (Verify exact ref/DOI against source.)",
+    "wisniewski2016": "Wisniewski JR, et al. Absolute proteome quantification of human hepatocytes (~9400-protein, copies/cell). 2016. (Per-protein tables paywalled; not transcribed.)",
+    "ohtsuki2012": "Ohtsuki S, et al. Simultaneous absolute protein quantification of transporters, cytochromes P450, and UGTs in human liver (fmol/ug membrane protein). Drug Metab Dispos. 2012;40(1):83-92. PMID 21994434.",
+    "qiu2013": "Qiu X, et al. Absolute quantification of hepatic transporters including NTCP. 2013. (Verify exact ref against source.)",
+    "hpa": "Human Protein Atlas, proteinatlas.org (liver, nTPM mRNA + immunofluorescence localization).",
+    "uniprot": "UniProt Consortium, canonical subcellular localization (ECO-coded evidence).",
+    "bionumbers": "BioNumbers, bionumbers.hms.harvard.edu; Cell Biology by the Numbers.",
+    "_note": "Citations were assembled from a science-research pass provided by the user. Landmark stereology refs (Weibel/Blouin/Loud) and Ohtsuki 2012 are high-confidence; entries marked 'verify' should be checked against the primary source for exact volume:page/DOI before publication use."
+  }
+}
