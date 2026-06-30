@@ -4519,6 +4519,10 @@ function buildOrganelleScene() {
   organelleGroup = group;
   organelleJiggleTargets = null; // rebuilt lazily for the new scene graph
 
+  // Embed the 7 REAL all-atom protein structures (manifest.json) at their true
+  // subcellular locations/orientations. Async (PDBLoader XHR); guards teardown.
+  void embedRealProteins(group, { nmToWorld, sinusoidAnchor, canaliculusAnchor });
+
   if (sceneNote) {
     sceneNote.textContent =
       "A polarized hepatocyte-scale cell renderer. When the Python snapshot is loaded, its state is authoritative; local organelle pulses, Ca-vis trace, and route particles are schematic visual aids unless explicitly tied to snapshot fields. Blood-side and bile-side domains follow the loaded hepatocyte polarity.";
@@ -4528,6 +4532,286 @@ function buildOrganelleScene() {
     compositionEl.innerHTML =
       chip("#3a9bd9", "sinusoid") + chip("#d9e778", "bile canaliculus") + chip("#cfa94b", "glycogen") + chip("#ff7a4d", "mitochondria") + chip("#e8b24a", "ER");
     netChargeEl.innerHTML = chip("#3fc7a6", "Golgi") + chip("#d7e868", "peroxisome") + chip("#ff6fae", "lysosome") + chip("#e9eef8", "ribosomes");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Real protein structures embedded in the hepatocyte scene.
+//
+// Anti-fake mandate: every rendered atom is a real atom read from the deposited
+// .pdb file. Positions/orientations follow real biology (OPM membrane normal for
+// calibrated structures; the manifest's caveats are carried verbatim into each
+// object's userData.label). The ONLY non-physical move is a uniform visibility
+// magnification (these molecules are sub-pixel at true cell scale) — and that
+// magnification factor + the structure's true size are stated in every label.
+// ---------------------------------------------------------------------------
+interface RealProteinEntry {
+  id: string;
+  name: string;
+  gene: string;
+  uniprot: string;
+  location: "cytosol" | "membrane-basolateral" | "membrane-canalicular" | "mitochondria";
+  file: string;
+  pdbId: string | null;
+  predicted: boolean;
+  method: string;
+  oriented: boolean;
+  extracellularSide: string | null;
+  atomCount: number;
+  note: string;
+}
+
+async function embedRealProteins(
+  targetGroup: THREE.Group,
+  ctx: {
+    nmToWorld: (nm: number) => number;
+    sinusoidAnchor: THREE.Vector3;
+    canaliculusAnchor: THREE.Vector3;
+  }
+) {
+  const BASE = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/";
+  const live = () => organelleGroup === targetGroup && !!targetGroup.parent;
+
+  // True world-units-per-Angstrom: rendering at this scale would be sub-pixel.
+  const worldPerAngstromTrue = ctx.nmToWorld(0.1);
+
+  // PDBLoader is callback-based; wrap it so we can await all 7 in parallel.
+  const loadPdb = (url: string) =>
+    new Promise<{ geometryAtoms: THREE.BufferGeometry }>((resolve, reject) =>
+      new PDBLoader().load(url, (pdb) => resolve(pdb), undefined, reject)
+    );
+
+  let manifest: RealProteinEntry[];
+  try {
+    const res = await fetch(BASE + "proteins/manifest.json");
+    manifest = (await res.json()) as RealProteinEntry[];
+  } catch {
+    return; // no manifest -> silently skip; the rest of the scene is intact
+  }
+  if (!live()) return;
+
+  // Load every structure (and the NTCP raw text, to drop the nanobody chain).
+  type Loaded = { entry: RealProteinEntry; geom: THREE.BufferGeometry; spanA: number; centroid: THREE.Vector3; chainIds: string[] | null };
+  const loadedList: Loaded[] = [];
+  await Promise.all(
+    manifest.map(async (entry) => {
+      try {
+        const geomWrap = await loadPdb(BASE + entry.file);
+        const geom = geomWrap.geometryAtoms;
+        const pos = geom.getAttribute("position") as THREE.BufferAttribute;
+        let chainIds: string[] | null = null;
+        if (entry.id === "ntcp") {
+          // Parse chain IDs in the same line order PDBLoader uses, so we can drop
+          // the conformation-locking nanobody (Nb87, chain B) — not part of NTCP.
+          try {
+            const raw = await (await fetch(BASE + entry.file)).text();
+            const ids: string[] = [];
+            for (const lineRaw of raw.split("\n")) {
+              if (lineRaw.slice(0, 4) === "ATOM" || lineRaw.slice(0, 6) === "HETATM") {
+                ids.push(lineRaw.slice(21, 22));
+              }
+            }
+            if (ids.length === pos.count) chainIds = ids;
+          } catch {
+            chainIds = null; // fall back to rendering all + disclosing in the label
+          }
+        }
+        // Bounding box / centroid over the atoms we will actually KEEP (so the
+        // NTCP nanobody, once dropped, does not skew NTCP's center or true size).
+        const bbox = new THREE.Box3();
+        const v = new THREE.Vector3();
+        for (let i = 0; i < pos.count; i++) {
+          if (chainIds && chainIds[i] === "B") continue;
+          bbox.expandByPoint(v.set(pos.getX(i), pos.getY(i), pos.getZ(i)));
+        }
+        if (bbox.isEmpty()) bbox.setFromBufferAttribute(pos);
+        const size = new THREE.Vector3();
+        const centroid = new THREE.Vector3();
+        bbox.getSize(size);
+        bbox.getCenter(centroid);
+        const spanA = Math.max(size.x, size.y, size.z) || 1; // PDBLoader coords are raw Angstrom
+        loadedList.push({ entry, geom, spanA, centroid, chainIds });
+      } catch {
+        /* one bad file shouldn't kill the others */
+      }
+    })
+  );
+  if (!live()) {
+    for (const l of loadedList) l.geom.dispose();
+    return;
+  }
+
+  // ONE shared magnification across the membrane proteome so their REAL relative
+  // sizes are preserved (NKA > GLUT2 > NTCP, BSEP/MRP2 ...). Largest membrane
+  // structure renders ~2.0 world units; the rest scale proportionally.
+  const membraneSpans = loadedList
+    .filter((l) => l.entry.location.startsWith("membrane"))
+    .map((l) => l.spanA);
+  const maxMembraneSpanA = membraneSpans.length ? Math.max(...membraneSpans) : 1;
+  const membraneWorldPerA = 2.0 / maxMembraneSpanA;
+
+  // Membrane domain directions: spread the basolateral set around the sinusoid
+  // (-x, blood) side and the canalicular set around the canaliculus (+x, bile).
+  const tangentFrame = (d: THREE.Vector3) => {
+    const up = Math.abs(d.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+    const t1 = new THREE.Vector3().crossVectors(d, up).normalize();
+    const t2 = new THREE.Vector3().crossVectors(d, t1).normalize();
+    return [t1, t2] as const;
+  };
+  const spreadDir = (base: THREE.Vector3, angle: number, spread: number) => {
+    const [t1, t2] = tangentFrame(base);
+    return base
+      .clone()
+      .add(t1.clone().multiplyScalar(Math.cos(angle) * spread))
+      .add(t2.clone().multiplyScalar(Math.sin(angle) * spread))
+      .normalize();
+  };
+  const basoBase = ctx.sinusoidAnchor.clone().normalize();
+  const canalBase = ctx.canaliculusAnchor.clone().normalize();
+  const basoAngles = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3];
+  const canalAngles = [0.6, 0.6 + Math.PI];
+  let basoIdx = 0;
+  let canalIdx = 0;
+
+  // Mitochondrion target for CPS1 (matrix enzyme): a real placed mito position.
+  const mitoHost = organelleMitos[Math.min(2, organelleMitos.length - 1)];
+  const mitoLocalPos =
+    mitoHost && mitoHost.parent ? mitoHost.parent.position.clone() : organelleAnchors?.mitochondria?.clone() ?? new THREE.Vector3();
+
+  // Render entries in a stable manifest order.
+  loadedList.sort((a, b) => manifest.indexOf(a.entry) - manifest.indexOf(b.entry));
+
+  for (const { entry, geom, spanA, centroid, chainIds } of loadedList) {
+    const positions = geom.getAttribute("position") as THREE.BufferAttribute;
+    const colors = geom.getAttribute("color") as THREE.BufferAttribute;
+    const total = positions.count;
+
+    // Selectable atom indices (drop NTCP nanobody chain B if we resolved chains).
+    let indices: number[];
+    let nanobodyDropped = false;
+    if (entry.id === "ntcp" && chainIds) {
+      indices = [];
+      for (let i = 0; i < total; i++) if (chainIds[i] !== "B") indices.push(i);
+      nanobodyDropped = true;
+    } else {
+      indices = Array.from({ length: total }, (_, i) => i);
+    }
+
+    // Performance subsample: keep each protein <= ~4500 instances.
+    const stride = indices.length > 6000 ? Math.ceil(indices.length / 4500) : 1;
+    const drawIndices = stride > 1 ? indices.filter((_, k) => k % stride === 0) : indices;
+    const drawCount = drawIndices.length;
+
+    // Choose this protein's magnification.
+    const isMembrane = entry.location.startsWith("membrane");
+    // Cytosol/mito each get their own magnification (different compartments, not
+    // compared side-by-side); their true sizes are still stated in the label.
+    const worldPerA = isMembrane ? membraneWorldPerA : 1.7 / spanA;
+    const magFactor = Math.round(worldPerA / worldPerAngstromTrue);
+    const trueNm = Math.round((spanA / 10) * 10) / 10;
+
+    // Atom draw radius (Angstrom): real vdW-scale, enlarged by cbrt(stride) when
+    // subsampled so the cloud keeps roughly constant coverage (disclosed).
+    const atomRadiusA = 1.7 * Math.cbrt(stride);
+    const sphereGeo = new THREE.IcosahedronGeometry(atomRadiusA, 1);
+    const atomMat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.12 });
+    const atoms = new THREE.InstancedMesh(sphereGeo, atomMat, drawCount);
+
+    // Per-placement atom centering: OPM membrane keeps z (bilayer mid-plane).
+    const keepZForMembraneNormal = isMembrane && entry.oriented;
+    const cx = centroid.x;
+    const cy = centroid.y;
+    const cz = keepZForMembraneNormal ? 0 : centroid.z;
+
+    const dummy = new THREE.Object3D();
+    const color = new THREE.Color();
+    for (let k = 0; k < drawCount; k++) {
+      const i = drawIndices[k];
+      dummy.position.set(positions.getX(i) - cx, positions.getY(i) - cy, positions.getZ(i) - cz);
+      dummy.rotation.set(0, 0, 0);
+      dummy.updateMatrix();
+      atoms.setMatrixAt(k, dummy.matrix);
+      color.setRGB(colors.getX(i), colors.getY(i), colors.getZ(i));
+      atoms.setColorAt(k, color);
+    }
+    atoms.instanceMatrix.needsUpdate = true;
+    if (atoms.instanceColor) atoms.instanceColor.needsUpdate = true;
+    geom.dispose(); // instances copied out; raw geometry no longer needed
+
+    // Holder carries placement (position), orientation (quaternion) and the
+    // uniform visibility magnification (scale, Angstrom -> world).
+    const holder = new THREE.Group();
+    holder.scale.setScalar(worldPerA);
+
+    let domainText: string;
+    let orientationText: string;
+    if (isMembrane) {
+      const baso = entry.location === "membrane-basolateral";
+      const dir = baso
+        ? spreadDir(basoBase, basoAngles[basoIdx++ % basoAngles.length], 0.33)
+        : spreadDir(canalBase, canalAngles[canalIdx++ % canalAngles.length], 0.28);
+      holder.position.copy(dir.clone().multiplyScalar(CELL_R));
+      if (entry.oriented) {
+        // OPM frame: local +z (extracellular) -> outward membrane normal `dir`.
+        holder.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+        orientationText = `OPM-oriented (extracellular ${entry.extracellularSide ?? "+z"} points outward; cytosolic domains inward)`;
+      } else {
+        // No calibrated normal: align the structure's longest axis to the normal.
+        const bb = new THREE.Box3().setFromBufferAttribute(positions);
+        const s = new THREE.Vector3();
+        bb.getSize(s);
+        const longAxis =
+          s.x >= s.y && s.x >= s.z
+            ? new THREE.Vector3(1, 0, 0)
+            : s.y >= s.z
+            ? new THREE.Vector3(0, 1, 0)
+            : new THREE.Vector3(0, 0, 1);
+        holder.quaternion.setFromUnitVectors(longAxis, dir);
+        orientationText = "orientation APPROXIMATE (no OPM frame; longest structural axis aligned to membrane normal)";
+      }
+      domainText = baso ? "basolateral (sinusoid / blood side, -x)" : "canalicular (apical bile side, +x)";
+    } else if (entry.location === "mitochondria") {
+      holder.position.copy(mitoLocalPos);
+      domainText = "mitochondrial matrix";
+      orientationText = "free orientation (soluble matrix enzyme)";
+    } else {
+      // Cytosol: interior point chosen to avoid the nucleus (-3.4,1.4,-1.2, r~4.6)
+      // and the glycogen field (2.6,-3.65).
+      holder.position.copy(new THREE.Vector3(0.35, 0.55, 0.75).normalize().multiplyScalar(CELL_R * 0.45));
+      domainText = "cytosol";
+      orientationText = "free orientation (soluble enzyme)";
+    }
+
+    // ---- Honest label ----
+    const idText = entry.pdbId
+      ? `PDB ${entry.pdbId}`
+      : entry.predicted
+      ? `AlphaFold ${entry.uniprot}`
+      : entry.uniprot;
+    const provenance = entry.predicted
+      ? `${entry.method} — PREDICTED model, no experimental structure`
+      : `experimental (${entry.method})`;
+    const magText = `shown ~${magFactor}x true size for visibility (true span ~${trueNm} nm)`;
+    const strideText =
+      stride > 1
+        ? ` | atom-subsampled for performance (showing 1 in ${stride}; spheres enlarged ~${(Math.cbrt(stride)).toFixed(1)}x to keep coverage)`
+        : "";
+    const extraCaveat: string[] = [];
+    if (nanobodyDropped) extraCaveat.push("conformation-locking nanobody chain (Nb87) removed");
+    else if (entry.id === "ntcp") extraCaveat.push("bound nanobody Nb87 INCLUDED as a crystallization aid (not part of NTCP)");
+    if (entry.id === "mrp2") extraCaveat.push("bilirubin-conjugate substrate bound");
+    if (entry.id === "glucokinase") extraCaveat.push("captured WITH a synthetic allosteric activator (MRK); engine already models its kinetics");
+    if (entry.id === "cps1") extraCaveat.push("urea-cycle entry enzyme, active form with NAG activator bound");
+    const caveatText = extraCaveat.length ? ` | ${extraCaveat.join("; ")}` : "";
+
+    const label =
+      `Real structure — ${entry.name} (${entry.gene}); ${domainText}; ${idText}, ${provenance}; ` +
+      `${orientationText}; ${drawCount.toLocaleString()} real atoms drawn${strideText}; ${magText}${caveatText}`;
+    atoms.userData.label = label;
+    atoms.userData.hoverKind = "real-protein";
+
+    holder.add(atoms);
+    targetGroup.add(holder);
   }
 }
 
