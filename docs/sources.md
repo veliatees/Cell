@@ -442,3 +442,75 @@ link back here or to a more specific research file.
     Modelled residues span 14-461 — the N-terminal ~13 residues and 14 disordered
     residues (REMARK 465) are absent from the coordinates, as is normal for X-ray
     structures.
+
+### Membrane and intracellular protein structures
+
+Real, named hepatocyte proteins placed at their correct subcellular location and
+membrane orientation for the 3D scene, replacing the abstract family "footprints".
+Files live in `public/proteins/` with the machine-readable index in
+`public/proteins/manifest.json`. Membrane proteins prefer the OPM
+(Orientations of Proteins in Membranes, https://opm.phar.umich.edu) membrane-aligned
+coordinates, which bake in the correct tilt (membrane normal = z, dummy DUM atoms
+at the two bilayer boundaries; hydrophobic thickness ~31 Å for all three). For these
+OPM files the extracellular side was determined here to be +z because the large
+cytosolic domain sits at -z (BSEP/MRP2 NBDs, Na/K-ATPase catalytic head, NTCP's
+nanobody on the cytosolic face). Selection prioritises proteins whose FUNCTION the
+engine already models, so rendered atoms and simulated flux describe the same protein.
+
+- GLUT2 / glucose transporter 2 (SLC2A2, UniProt P11168) — `proteins/glut2_slc2a2.pdb`.
+  Location: basolateral/sinusoidal plasma membrane. PREDICTED structure: AlphaFold
+  AF-P11168-F1 (model_v6, global pLDDT 86.62), https://alphafold.ebi.ac.uk/entry/P11168.
+  Organism: Homo sapiens. 12-TM major-facilitator carrier, both termini cytosolic.
+  No experimental human GLUT2 structure exists in the PDB (relatives GLUT1 4PYP/6THA,
+  GLUT4 7WSN are experimental). Citation: Jumper et al., Nature 2021;596:583
+  (DOI 10.1038/s41586-021-03819-2); Varadi et al., Nucleic Acids Res 2024;52:D368
+  (DOI 10.1093/nar/gkad1011). Caveat: PREDICTED model, orientation not membrane-
+  calibrated — renderer must embed in the bilayer (may borrow tilt from an OPM GLUT
+  homolog).
+- Na+/K+-ATPase α1/β1 (ATP1A1, UniProt P05023) — `proteins/naka_atp1a1.pdb`.
+  Location: basolateral plasma membrane. PDB 7E1Z, cryo-EM 3.2 Å, Homo sapiens
+  (recombinant), E1·3Na state. RCSB https://www.rcsb.org/structure/7E1Z;
+  OPM-oriented https://opm.phar.umich.edu/proteins?search=7E1Z (extracellular = +z).
+  Ligands: 3 Na+ (transported), Mg, N-glycan, cholesterol-hemisuccinate, phospholipid.
+  Citation: Guo et al., "Cryo-EM structures of recombinant human sodium-potassium pump
+  determined in three different states," Nat Commun 2022;13:3957
+  (DOI 10.1038/s41467-022-31602-y, PMID 35803952). Caveat: single E1 catalytic state;
+  sets the Na+ gradient/membrane potential that powers NTCP cotransport.
+- NTCP / Na+-taurocholate cotransporting polypeptide (SLC10A1, UniProt Q14973) —
+  `proteins/ntcp_slc10a1.pdb`. Location: basolateral/sinusoidal plasma membrane
+  (bile-salt UPTAKE). PDB 7PQG, cryo-EM 3.7 Å, Homo sapiens. RCSB
+  https://www.rcsb.org/structure/7PQG; OPM-oriented
+  https://opm.phar.umich.edu/proteins?search=7PQG (extracellular = +z). Citation:
+  Goutam, Ielasi, Pardon, Steyaert, Reyes, "Structural basis of sodium-dependent bile
+  salt uptake into the liver," Nature 2022;606:1015 (DOI 10.1038/s41586-022-04723-z,
+  PMID 35545671). Caveat: THERMOSTABILISED construct with a conformation-locking
+  nanobody (Nb87, chain B) bound on the cytosolic face and no bile salt (apo) — the
+  nanobody chain should be hidden by the renderer.
+- BSEP / bile salt export pump (ABCB11, UniProt O95342) — `proteins/bsep_abcb11.pdb`.
+  Location: canalicular/apical plasma membrane (ATP-driven bile-salt EXPORT; the
+  cholestasis-demo transporter). PDB 6LR0, cryo-EM 3.5 Å, Homo sapiens, apo inward-open.
+  RCSB https://www.rcsb.org/structure/6LR0; OPM-oriented
+  https://opm.phar.umich.edu/proteins?search=6LR0 (canalicular lumen = +z; cytosolic
+  NBDs at -z). Citation: Wang et al., "Cryo-EM structure of human bile salts exporter
+  ABCB11," Cell Res 2020;30:623 (DOI 10.1038/s41422-020-0302-0, PMID 32203132). Caveat:
+  apo state, no bile salt or nucleotide bound.
+- MRP2 / multidrug resistance-associated protein 2 (ABCC2, UniProt Q92887) —
+  `proteins/mrp2_abcc2.pdb`. Location: canalicular/apical plasma membrane (conjugated
+  bilirubin / organic-anion EXPORT; loss = Dubin-Johnson syndrome). PDB 8JXQ, cryo-EM
+  3.32 Å, Homo sapiens, with a CONJUGATED-BILIRUBIN substrate (bilirubin ditaurate, FEI)
+  plus cholesterol bound. RCSB https://www.rcsb.org/structure/8JXQ. Citation: Mao et al.,
+  "Transport mechanism of human bilirubin transporter ABCC2 tuned by the inter-module
+  regulatory domain," Nat Commun 2024;15:1061 (DOI 10.1038/s41467-024-45337-5,
+  PMID 38316776). Caveat: NOT in OPM — orientation is the raw deposited cryo-EM frame and
+  is NOT membrane-calibrated; renderer must orient it (TMDs in membrane, NBDs + regulatory
+  R-domain cytosolic), approximating tilt from OPM-oriented BSEP (6LR0, same ABC-exporter
+  fold). Flagged as approximate.
+- CPS1 / carbamoyl-phosphate synthetase 1 (CPS1, UniProt P31327, EC 6.3.4.16) —
+  `proteins/cps1.pdb`. Location: mitochondrial matrix (committed first step of the urea
+  cycle; engine models urea-cycle entry). PDB 5DOU, X-ray 2.6 Å, Homo sapiens,
+  ligand-bound active form. RCSB https://www.rcsb.org/structure/5DOU. Ligands:
+  N-acetyl-L-glutamate (NLG, essential activator), ADP, phosphate, Mg, K. Citation:
+  de Cima et al., "Structure of human carbamoyl phosphate synthetase: deciphering the
+  on/off switch of human ureagenesis," Sci Rep 2015;5:16950 (DOI 10.1038/srep16950,
+  PMID 26592762). Caveat: large soluble ~1500-residue matrix enzyme — place inside the
+  mitochondrion, not in a membrane.
