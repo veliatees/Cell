@@ -419,3 +419,26 @@ link back here or to a more specific research file.
   J Clin Invest 2012;122:1958.
   https://www.jci.org/articles/view/63967
   - ACC (insulin/fed) makes malonyl-CoA; AMPK switches ACC off and MCD on in fasting.
+
+## Real protein structures
+
+- Human glucokinase (GCK / hexokinase IV), glucose-bound — PDB 1V4S:
+  https://www.rcsb.org/structure/1V4S
+  - Organism: Homo sapiens. Method: X-ray diffraction, 2.30 Å. Single chain (A),
+    glucokinase is the monomeric glucose sensor of the hepatocyte.
+  - Bound ligands: GLC (alpha-D-glucopyranose, the physiological substrate),
+    MRK (a synthetic small-molecule allosteric activator), NA (sodium), HOH (waters).
+  - UniProt: P35557 (human GCK). EC 2.7.1.1.
+  - Citation: Kamata, Mitsuya, Nishimura, Eiki & Nagata, "Structural Basis for
+    Allosteric Regulation of the Monomeric Allosteric Enzyme Human Glucokinase,"
+    Structure 2004;12:429-438. DOI 10.1016/j.str.2004.02.005, PMID 15016359.
+  - This is the experimentally-determined structure rendered in 3D for glucokinase
+    (downloaded to public/glucokinase.pdb via https://files.rcsb.org/download/1V4S.pdb).
+    Chosen because the engine already models GCK's function (glucose S0.5 ~8 mM,
+    Hill ~1.7; see kinetics_data.py / glucokinase_mol_physiol) — so the rendered
+    atoms and the computed kinetics describe the same real protein.
+  - Caveats: this is the closed/active conformation captured WITH a synthetic
+    activator (MRK) bound at the allosteric site; the activator is not physiological.
+    Modelled residues span 14-461 — the N-terminal ~13 residues and 14 disordered
+    residues (REMARK 465) are absent from the coordinates, as is normal for X-ray
+    structures.
