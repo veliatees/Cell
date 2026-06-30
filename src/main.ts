@@ -3770,6 +3770,71 @@ function buildOrganelleScene() {
     return null;
   };
 
+  // True-count organelle populations. Real hepatocyte numbers (rat-stereology
+  // proxy, order-of-magnitude; see public/cell_quantitative.json and
+  // docs/12-hepatocyte-quantitative.md) are far too many to draw as individual
+  // detailed meshes, so each kind is drawn as ONE InstancedMesh at its derived
+  // characteristic size. The cytoplasm then shows its real crowding (e.g.
+  // mitochondria ~20% of cell volume) instead of a sparse schematic. A handful
+  // of "hero" copies are additionally drawn in cutaway detail. The instanced
+  // material is tagged into the activity-glow buckets so the whole population
+  // brightens with ATP/organelle activity.
+  const interiorPoint = (rMax: number): THREE.Vector3 => {
+    for (let t = 0; t < 24; t += 1) {
+      const dir = randDir();
+      const dist = (0.16 + 0.82 * Math.cbrt(rnd())) * rMax; // ~uniform in volume
+      const p = dir.multiplyScalar(dist);
+      p.y *= 0.92;
+      if (p.length() + 0.4 < rMax) return p;
+    }
+    return randDir().multiplyScalar(0.5 * rMax);
+  };
+  const addOrganellePopulation = (
+    kind: keyof OrganelleActivity,
+    count: number,
+    geo: THREE.BufferGeometry,
+    color: string,
+    opts: { opacity?: number; emissive?: number; rMax?: number; label: string; jitterScale?: number }
+  ): THREE.InstancedMesh | null => {
+    if (count <= 0) return null;
+    const opacity = opts.opacity ?? 1;
+    const mat = new THREE.MeshStandardMaterial({
+      color,
+      emissive: color,
+      emissiveIntensity: opts.emissive ?? 0.14,
+      roughness: 0.55,
+      metalness: 0.03,
+      transparent: opacity < 1,
+      opacity,
+      depthWrite: opacity >= 0.6
+    });
+    const inst = new THREE.InstancedMesh(geo, mat, count);
+    const m4 = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const e = new THREE.Euler();
+    const scl = new THREE.Vector3();
+    const pos = new THREE.Vector3();
+    const centroid = new THREE.Vector3();
+    const rMax = opts.rMax ?? CELL_R * 0.86;
+    const jitter = opts.jitterScale ?? 0.28;
+    for (let i = 0; i < count; i += 1) {
+      pos.copy(interiorPoint(rMax));
+      centroid.add(pos);
+      e.set(rnd() * Math.PI * 2, rnd() * Math.PI * 2, rnd() * Math.PI * 2);
+      q.setFromEuler(e);
+      const sc = 1 + jitter * (rnd() - 0.5) * 2;
+      scl.set(sc, sc, sc);
+      m4.compose(pos, q, scl);
+      inst.setMatrixAt(i, m4);
+    }
+    inst.instanceMatrix.needsUpdate = true;
+    inst.userData.label = opts.label;
+    group.add(inst);
+    addPos(kind, centroid.multiplyScalar(1 / count));
+    (glowBuckets[kind] ??= []).push(mat); // population brightens with activity
+    return inst;
+  };
+
   // --- Plasma membrane (organic, translucent so we can see inside) ---
   organelleMembrane = mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.1, emissive: 0.05, label: "Plasma membrane — the cell's boundary; controls what enters and leaves" });
   mesh(organicSphere(CELL_R * 0.97, 0.06), "#9ec6ff", new THREE.Vector3(), { opacity: 0.06, emissive: 0.04 });
@@ -3953,8 +4018,15 @@ function buildOrganelleScene() {
     trackMotion(vesicle, vesicle.position, 0.14, 0.36 + rnd() * 0.18, 0.006);
   }
 
-  // --- Mitochondria: bean-shaped, with an inner matrix and folded cristae ---
-  for (let i = 0; i < 14; i += 1) {
+  // --- Mitochondria: TRUE hepatocyte count (~1500), drawn as an instanced
+  // population (~20% of cell volume). A few are additionally rendered as
+  // detailed cutaways (inner matrix + cristae) and act as the CPS1 host and the
+  // per-mesh ATP-glow handles. Counts: cell_quantitative.json (rat proxy). ---
+  const REAL_MITO = 1500;
+  const REAL_PEROX = 500;
+  const REAL_LYSO = 300;
+  const HERO_MITO = 8;
+  for (let i = 0; i < HERO_MITO; i += 1) {
     const len = 1.6 + rnd() * 1.8;
     const p = place(len * 0.55 + 0.9, 5, CELL_R - 2);
     if (!p) break;
@@ -3976,9 +4048,23 @@ function buildOrganelleScene() {
       crista.scale.set(1, 0.55, 1);
     }
   }
+  // The remaining mitochondria as one instanced population at true count.
+  addOrganellePopulation(
+    "mitochondria",
+    REAL_MITO - HERO_MITO,
+    new THREE.CapsuleGeometry(0.42, 1.0, 5, 10),
+    "#ff8a5c",
+    {
+      opacity: 0.9,
+      emissive: 0.14,
+      jitterScale: 0.5,
+      label: `Mitochondria — true hepatocyte count ~${REAL_MITO.toLocaleString()} (~20% of cell volume). Instanced population; ${HERO_MITO} shown in cutaway detail. Rat-stereology proxy, order-of-magnitude (Weibel 1969 / Loud 1968).`
+    }
+  );
 
-  // --- Lysosomes & peroxisomes (no overlaps) ---
-  for (let i = 0; i < 12; i += 1) {
+  // --- Lysosomes & peroxisomes: a few hero copies + true-count instanced rest ---
+  const HERO_VESICLES = 8;
+  for (let i = 0; i < HERO_VESICLES; i += 1) {
     const p = place(0.78, 5, CELL_R - 1.5);
     if (!p) continue;
     const isLysosome = i % 2 === 1;
@@ -3990,6 +4076,30 @@ function buildOrganelleScene() {
     trackMotion(lys, p, 0.22, 0.3 + rnd() * 0.25, 0.01);
     addPos(isLysosome ? "lysosome" : "peroxisome", p);
   }
+  const heroLyso = Math.floor(HERO_VESICLES / 2);
+  const heroPerox = HERO_VESICLES - heroLyso;
+  addOrganellePopulation(
+    "peroxisome",
+    REAL_PEROX - heroPerox,
+    new THREE.SphereGeometry(0.34, 8, 6),
+    "#d7e868",
+    {
+      opacity: 0.92,
+      emissive: 0.16,
+      label: `Peroxisomes — true hepatocyte count ~${REAL_PEROX.toLocaleString()} (~0.5-0.6 um across, ~1.5% of cell volume). Rat-stereology proxy, order-of-magnitude (Weibel 1969).`
+    }
+  );
+  addOrganellePopulation(
+    "lysosome",
+    REAL_LYSO - heroLyso,
+    new THREE.SphereGeometry(0.36, 8, 6),
+    "#ff6fae",
+    {
+      opacity: 0.92,
+      emissive: 0.16,
+      label: `Lysosomes — true hepatocyte count ~${REAL_LYSO.toLocaleString()} (~0.5 um across, ~1% of cell volume). Rat-stereology proxy, order-of-magnitude (Weibel 1969).`
+    }
+  );
 
   // --- Plasma-membrane transport proteins ---
   // Real hepatocyte-scale truth: embedded proteins are nanometres wide. They are
