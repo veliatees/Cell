@@ -181,3 +181,65 @@ def simulate_hybrid(
                 local += event_dt
         t += step
     return TrajectoryPoint(t=t, counts=counts)
+
+
+# ---------------------------------------------------------------------------
+# Tau-leaping (explicit Poisson tau-leap)
+#
+# Instead of advancing one reaction event at a time (SSA), fix a time step tau
+# and fire each reaction a Poisson(a*tau) number of times. Cost is independent
+# of the flux, so it is far cheaper than SSA for high-copy/high-flux species
+# while preserving discreteness and the right (Poisson) event statistics in the
+# regime where propensities are roughly constant over tau. It is an
+# approximation: tau must be small enough that no propensity changes much over
+# the step. Counts are clamped at zero (a known tau-leap artefact); choose tau
+# conservatively for low-copy reactants or keep those on SSA via the hybrid.
+# ---------------------------------------------------------------------------
+
+
+def tau_leap_step(
+    network: ReactionNetwork,
+    counts: dict[str, float],
+    tau: float,
+    rng: EngineRng,
+) -> dict[str, float]:
+    """One explicit Poisson tau-leap of length ``tau``. Returns updated counts.
+
+    Each reaction fires ``Poisson(propensity * tau)`` times; net stoichiometric
+    changes are accumulated and applied, then every species is clamped at zero.
+    """
+    if tau <= 0:
+        raise ValueError("tau must be positive")
+    updated = dict(counts)
+    props = network.propensities(updated)
+    for reaction, a in zip(network.reactions, props):
+        if a <= 0.0:
+            continue
+        fires = rng.poisson(a * tau)
+        if fires == 0:
+            continue
+        for species, delta in reaction.net_change().items():
+            updated[species] = updated.get(species, 0.0) + delta * fires
+    for species, value in updated.items():
+        if value < 0.0:
+            updated[species] = 0.0
+    return updated
+
+
+def simulate_tau_leap(
+    network: ReactionNetwork,
+    initial_counts: dict[str, float],
+    t_end: float,
+    tau: float,
+    rng: EngineRng,
+) -> TrajectoryPoint:
+    """Advance the network to ``t_end`` in fixed Poisson tau-leaps of size ``tau``."""
+    if tau <= 0:
+        raise ValueError("tau must be positive")
+    counts = dict(initial_counts)
+    t = 0.0
+    while t < t_end - 1e-12:
+        step = min(tau, t_end - t)
+        counts = tau_leap_step(network, counts, step, rng)
+        t += step
+    return TrajectoryPoint(t=t, counts=counts)
