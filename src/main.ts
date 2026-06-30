@@ -18,6 +18,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import { PDBLoader } from "three/examples/jsm/loaders/PDBLoader.js";
 import {
   IonSimulation,
   SCENE_PRESETS,
@@ -82,11 +83,14 @@ document.title = "Cell Engine: Hepatocyte Visualizer";
 
 const opt = (p: { id: string; label: string }) => `<option value="${p.id}">${p.label}</option>`;
 const EUKARYOTE_SCENE_ID = "eukaryotic-cell";
+const PROTEIN_SCENE_ID = "glucokinase-structure";
 // The unified cell reality comes first; the rest are the building blocks /
 // "zoom-ins" that show the rules underneath it.
 const sceneOptions =
   `<optgroup label="Hepatocyte (organelles)">` +
   `<option value="${EUKARYOTE_SCENE_ID}">Hepatocyte — organelle network</option>` +
+  `</optgroup><optgroup label="Real proteins">` +
+  `<option value="${PROTEIN_SCENE_ID}">Glucokinase — real structure (PDB 1V4S)</option>` +
   `</optgroup><optgroup label="The cell (molecular scale)">` +
   MEMBRANE_SCENES.map(opt).join("") +
   `</optgroup><optgroup label="Building blocks · ions">` +
@@ -102,7 +106,7 @@ const sceneOptions =
   `</optgroup>`;
 const DEFAULT_SCENE_ID = EUKARYOTE_SCENE_ID;
 
-type Mode = "ions" | "water" | "solvation" | "diffusion" | "membrane" | "reaction" | "organelles";
+type Mode = "ions" | "water" | "solvation" | "diffusion" | "membrane" | "reaction" | "organelles" | "protein";
 const isWaterId = (id: string) => WATER_SCENES.some((p) => p.id === id);
 const isSolvationId = (id: string) => SOLVATION_SCENES.some((p) => p.id === id);
 const isDiffusionId = (id: string) => DIFFUSION_SCENES.some((p) => p.id === id);
@@ -376,6 +380,8 @@ let membrane: MembraneSystem | null = null;
 let membraneIsVesicle = false;
 let reaction: ReactionSystem | null = null;
 let organelleGroup: THREE.Group | null = null; // schematic whole-cell anatomy
+let proteinGroup: THREE.Group | null = null; // real atomic structure (PDB)
+let proteinSpin = 0;
 // Organelles that get a gentle Brownian jiggle (real organelles are never still:
 // motor transport on cytoskeletal tracks + thermal motion). Cached once per scene.
 let organelleJiggleTargets: { obj: THREE.Object3D; base: THREE.Vector3; seed: number }[] | null = null;
@@ -1543,6 +1549,14 @@ const METRIC_LABELS: Record<Mode, MetricLabels> = {
     kinetic: "Energy charge",
     total: "Status",
     drift: "Cargo fidelity"
+  },
+  protein: {
+    distance: "—",
+    force: "—",
+    potential: "—",
+    kinetic: "—",
+    total: "—",
+    drift: "—"
   }
 };
 
@@ -1786,6 +1800,20 @@ function loadScene(id: string) {
     reaction = null;
     buildOrganelleScene();
     cameraDistance = 36;
+    setMetricLabels(mode);
+    updateModeControls();
+    resize();
+    return;
+  }
+  if (id === PROTEIN_SCENE_ID) {
+    mode = "protein";
+    water = null;
+    solvation = null;
+    diffusion = null;
+    membrane = null;
+    reaction = null;
+    buildProteinScene();
+    cameraDistance = 18;
     setMetricLabels(mode);
     updateModeControls();
     resize();
@@ -2826,6 +2854,12 @@ function animate() {
 
   if (mode === "organelles") {
     renderOrganelleScene(delta / 1000);
+  } else if (mode === "protein") {
+    if (proteinGroup) {
+      proteinSpin += (delta / 1000) * 0.25;
+      proteinGroup.rotation.y = proteinSpin;
+    }
+    renderFrame();
   } else if (mode === "reaction" && reaction) {
     if (running) {
       reaction.step(1);
@@ -2924,6 +2958,25 @@ function clearWaterVisuals() {
     });
     organelleGroup = null;
   }
+
+  if (proteinGroup) {
+    root.remove(proteinGroup);
+    proteinGroup.traverse((o) => {
+      if (
+        o instanceof THREE.Mesh ||
+        o instanceof THREE.Points ||
+        o instanceof THREE.Line ||
+        o instanceof THREE.LineSegments
+      ) {
+        o.geometry.dispose();
+        const m = o.material as THREE.Material | THREE.Material[];
+        if (Array.isArray(m)) m.forEach((x) => x.dispose());
+        else m.dispose();
+      }
+    });
+    proteinGroup = null;
+  }
+
   organelleMitos.length = 0;
   organelleMembrane = null;
   organelleGlow = [];
@@ -3522,6 +3575,81 @@ function renderReactionSnapshot(snapshot: ReactionSnapshot) {
 }
 
 // ---- Eukaryotic cell (whole-cell schematic, sourced sizes) ----
+async function buildProteinScene() {
+  clearIonVisuals();
+  clearWaterVisuals();
+
+  proteinGroup = new THREE.Group();
+  proteinSpin = 0;
+  root.add(proteinGroup);
+  const targetGroup = proteinGroup;
+
+  // Vite serves public/ at the base URL. The project has no vite/client types, so
+  // read BASE_URL through a narrow cast (defaults to "/" at runtime).
+  const baseUrl =
+    (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/";
+
+  // PDBLoader is async (XHR). Build the meshes in the callback. Guard against the
+  // scene having been switched away while the file was loading.
+  new PDBLoader().load(`${baseUrl}glucokinase.pdb`, (pdb) => {
+    if (proteinGroup !== targetGroup) return;
+    const geometryAtoms = pdb.geometryAtoms;
+    const geometryBonds = pdb.geometryBonds;
+
+    // Center on the molecule's centroid and fit its largest extent into ~10 units
+    // (PDBLoader pre-scales Å coords by ~0.75; glucokinase lands at ~40 units, so
+    // we rescale the whole group to keep cameraDistance modest).
+    geometryAtoms.computeBoundingBox();
+    const bbox = geometryAtoms.boundingBox ?? new THREE.Box3();
+    const center = new THREE.Vector3();
+    bbox.getCenter(center);
+    const size = new THREE.Vector3();
+    bbox.getSize(size);
+    const maxExtent = Math.max(size.x, size.y, size.z) || 1;
+    const fitScale = 10 / maxExtent;
+
+    const positions = geometryAtoms.getAttribute("position");
+    const colors = geometryAtoms.getAttribute("color");
+    const atomCount = positions.count;
+
+    // One small sphere instanced per atom — CPU-friendly vs. 3505 meshes.
+    const sphereGeo = new THREE.IcosahedronGeometry(0.28, 2);
+    const atomMat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.1 });
+    const atoms = new THREE.InstancedMesh(sphereGeo, atomMat, atomCount);
+    const dummy = new THREE.Object3D();
+    const color = new THREE.Color();
+    for (let i = 0; i < atomCount; i++) {
+      dummy.position.set(
+        positions.getX(i) - center.x,
+        positions.getY(i) - center.y,
+        positions.getZ(i) - center.z
+      );
+      dummy.updateMatrix();
+      atoms.setMatrixAt(i, dummy.matrix);
+      // CPK colors come straight from the PDBLoader (0–1 RGB per atom).
+      color.setRGB(colors.getX(i), colors.getY(i), colors.getZ(i));
+      atoms.setColorAt(i, color);
+    }
+    atoms.instanceMatrix.needsUpdate = true;
+    if (atoms.instanceColor) atoms.instanceColor.needsUpdate = true;
+    targetGroup.add(atoms);
+
+    // Bonds as dim line segments from the loader's bond geometry.
+    if (geometryBonds) {
+      const bondGeo = geometryBonds.clone();
+      bondGeo.translate(-center.x, -center.y, -center.z);
+      const bondMat = new THREE.LineBasicMaterial({
+        color: 0x99a7c4,
+        transparent: true,
+        opacity: 0.5
+      });
+      targetGroup.add(new THREE.LineSegments(bondGeo, bondMat));
+    }
+
+    targetGroup.scale.setScalar(fitScale);
+  });
+}
+
 function buildOrganelleScene() {
   clearIonVisuals();
   clearWaterVisuals();
