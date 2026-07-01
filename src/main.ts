@@ -525,6 +525,20 @@ type MotionTarget = {
   axis: THREE.Vector3;
 };
 const organelleMotions: MotionTarget[] = [];
+// Instanced organelle populations (mitochondria/peroxisomes/lysosomes at true
+// count) that jiggle with thermal + slow motor-like motion each frame. Base
+// transforms are kept so the per-frame offset stays bounded (no drift).
+type OrganellePopulation = {
+  mesh: THREE.InstancedMesh;
+  basePos: Float32Array; // 3 * count
+  baseQuat: Float32Array; // 4 * count
+  scale: Float32Array; // count
+  axis: Float32Array; // 3 * count, per-instance jiggle direction
+  phase: Float32Array; // count
+  amp: number; // world-unit jiggle amplitude
+  speed: number;
+};
+const organellePopulations: OrganellePopulation[] = [];
 type MembraneProteinAnchor = {
   object: THREE.Object3D;
   dir: THREE.Vector3;
@@ -2381,6 +2395,35 @@ function updateMembraneProteinAnchors(t: number) {
   }
 }
 
+// Per-frame thermal/motor jiggle of the instanced true-count organelle
+// populations, so the crowded cytoplasm is alive rather than frozen. Offsets are
+// bounded oscillations around the baked base transform (no net drift).
+const _popPos = new THREE.Vector3();
+const _popQuat = new THREE.Quaternion();
+const _popScale = new THREE.Vector3();
+const _popMat = new THREE.Matrix4();
+function updateOrganellePopulations(t: number) {
+  for (const pop of organellePopulations) {
+    const count = pop.scale.length;
+    const amp = pop.amp;
+    for (let i = 0; i < count; i += 1) {
+      const ph = pop.phase[i];
+      const tt = t * pop.speed + ph;
+      _popPos.set(
+        pop.basePos[i * 3] + Math.sin(tt) * pop.axis[i * 3] * amp,
+        pop.basePos[i * 3 + 1] + Math.sin(tt * 1.13 + 1.7) * pop.axis[i * 3 + 1] * amp,
+        pop.basePos[i * 3 + 2] + Math.cos(tt * 0.91) * pop.axis[i * 3 + 2] * amp
+      );
+      _popQuat.set(pop.baseQuat[i * 4], pop.baseQuat[i * 4 + 1], pop.baseQuat[i * 4 + 2], pop.baseQuat[i * 4 + 3]);
+      const sc = pop.scale[i];
+      _popScale.set(sc, sc, sc);
+      _popMat.compose(_popPos, _popQuat, _popScale);
+      pop.mesh.setMatrixAt(i, _popMat);
+    }
+    pop.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+
 function updateOrganelleMotion(t: number) {
   const mechanics = cellCycle.mechanics;
   const mitoticRedistribution =
@@ -3029,6 +3072,7 @@ function clearWaterVisuals() {
   flowVisuals.length = 0;
   organelleAnchors = {};
   organelleMotions.length = 0;
+  organellePopulations.length = 0;
   membraneProteinAnchors.length = 0;
   livingCell = null;
   reportPanel.style.display = "none";
@@ -3927,7 +3971,7 @@ function buildOrganelleScene() {
     count: number,
     geo: THREE.BufferGeometry,
     color: string,
-    opts: { opacity?: number; emissive?: number; rMax?: number; label: string; jitterScale?: number }
+    opts: { opacity?: number; emissive?: number; rMax?: number; label: string; jitterScale?: number; jiggleAmp?: number; jiggleSpeed?: number }
   ): THREE.InstancedMesh | null => {
     if (count <= 0) return null;
     const opacity = opts.opacity ?? 1;
@@ -3950,6 +3994,12 @@ function buildOrganelleScene() {
     const centroid = new THREE.Vector3();
     const rMax = opts.rMax ?? CELL_R * 0.86;
     const jitter = opts.jitterScale ?? 0.28;
+    // Base transforms, kept so the animated jiggle stays bounded (no net drift).
+    const basePos = new Float32Array(count * 3);
+    const baseQuat = new Float32Array(count * 4);
+    const scaleArr = new Float32Array(count);
+    const axisArr = new Float32Array(count * 3);
+    const phaseArr = new Float32Array(count);
     for (let i = 0; i < count; i += 1) {
       pos.copy(interiorPoint(rMax));
       centroid.add(pos);
@@ -3959,12 +4009,38 @@ function buildOrganelleScene() {
       scl.set(sc, sc, sc);
       m4.compose(pos, q, scl);
       inst.setMatrixAt(i, m4);
+      basePos[i * 3] = pos.x;
+      basePos[i * 3 + 1] = pos.y;
+      basePos[i * 3 + 2] = pos.z;
+      baseQuat[i * 4] = q.x;
+      baseQuat[i * 4 + 1] = q.y;
+      baseQuat[i * 4 + 2] = q.z;
+      baseQuat[i * 4 + 3] = q.w;
+      scaleArr[i] = sc;
+      const a = randDir();
+      axisArr[i * 3] = a.x;
+      axisArr[i * 3 + 1] = a.y;
+      axisArr[i * 3 + 2] = a.z;
+      phaseArr[i] = rnd() * Math.PI * 2;
     }
     inst.instanceMatrix.needsUpdate = true;
     inst.userData.label = opts.label;
     group.add(inst);
     addPos(kind, centroid.multiplyScalar(1 / count));
     (glowBuckets[kind] ??= []).push(mat); // population brightens with activity
+    // Thermal + slow motor-like jiggle. Amplitude is a physically-motivated
+    // placeholder (~0.1-0.2 um); to be calibrated with measured diffusion /
+    // motor-velocity data (research Part E). Larger organelles jiggle less.
+    organellePopulations.push({
+      mesh: inst,
+      basePos,
+      baseQuat,
+      scale: scaleArr,
+      axis: axisArr,
+      phase: phaseArr,
+      amp: opts.jiggleAmp ?? 0.26,
+      speed: opts.jiggleSpeed ?? 0.55
+    });
     return inst;
   };
 
@@ -5101,6 +5177,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     const s = livingCell.snapshot();
     const engineSignal = externalEngineSummary ? engineVisualSignal(externalEngineSummary) : null;
     updateOrganelleMotion(s.elapsedS);
+    updateOrganellePopulations(s.elapsedS);
     updateMembraneProteinAnchors(s.elapsedS);
     updateFlowVisuals(s);
     syncVisualDivisionFromEngine(externalEngineSummary);
