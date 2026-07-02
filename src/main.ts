@@ -538,6 +538,8 @@ type OrganellePopulation = {
   offset: Float32Array; // 3 * count, current random-walk displacement from base
   cage: Float32Array; // count, max displacement radius (< neighbour clearance)
   step: number; // per-frame random increment (world units)
+  bright: Float32Array; // count, per-instance brightness (independent random walk)
+  brightStep: number; // per-frame brightness increment
 };
 const organellePopulations: OrganellePopulation[] = [];
 type MembraneProteinAnchor = {
@@ -2407,10 +2409,12 @@ const _popPos = new THREE.Vector3();
 const _popQuat = new THREE.Quaternion();
 const _popScale = new THREE.Vector3();
 const _popMat = new THREE.Matrix4();
+const _popColor = new THREE.Color();
 function updateOrganellePopulations() {
   for (const pop of organellePopulations) {
     const count = pop.scale.length;
     const step = pop.step;
+    const bstep = pop.brightStep;
     for (let i = 0; i < count; i += 1) {
       let ox = pop.offset[i * 3] + (Math.random() * 2 - 1) * step;
       let oy = pop.offset[i * 3 + 1] + (Math.random() * 2 - 1) * step;
@@ -2432,8 +2436,17 @@ function updateOrganellePopulations() {
       _popScale.set(sc, sc, sc);
       _popMat.compose(_popPos, _popQuat, _popScale);
       pop.mesh.setMatrixAt(i, _popMat);
+      // Independent random brightness walk — each organelle brightens/dims on
+      // its own, so the population never pulses in unison.
+      let b = pop.bright[i] + (Math.random() * 2 - 1) * bstep;
+      if (b < 0.35) b = 0.35;
+      else if (b > 1.5) b = 1.5;
+      pop.bright[i] = b;
+      _popColor.setRGB(b, b, b);
+      pop.mesh.setColorAt(i, _popColor);
     }
     pop.mesh.instanceMatrix.needsUpdate = true;
+    if (pop.mesh.instanceColor) pop.mesh.instanceColor.needsUpdate = true;
   }
 }
 
@@ -4078,6 +4091,8 @@ function buildOrganelleScene() {
     const scaleArr = new Float32Array(actual);
     const offsetArr = new Float32Array(actual * 3); // starts at rest
     const cageArr = new Float32Array(actual);
+    const brightArr = new Float32Array(actual);
+    const col = new THREE.Color();
     for (let i = 0; i < actual; i += 1) {
       const pos = placed[i];
       centroid.add(pos);
@@ -4096,12 +4111,21 @@ function buildOrganelleScene() {
       baseQuat[i * 4 + 3] = q.w;
       scaleArr[i] = sc;
       cageArr[i] = cageR;
+      // Independent random starting brightness (per-instance instanceColor
+      // multiplies the material colour) — no two organelles start in phase.
+      const b0 = 0.45 + rnd() * 0.7;
+      brightArr[i] = b0;
+      col.setRGB(b0, b0, b0);
+      inst.setColorAt(i, col);
     }
     inst.instanceMatrix.needsUpdate = true;
+    if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
     inst.userData.label = opts.label;
     group.add(inst);
     addPos(kind, centroid.multiplyScalar(1 / actual));
-    (glowBuckets[kind] ??= []).push(mat); // population brightens with activity
+    // NOTE: deliberately NOT added to the activity-glow buckets. A shared
+    // emissiveIntensity would make every organelle pulse in unison (unphysical);
+    // instead each instance's brightness does its own independent random walk.
     organellePopulations.push({
       mesh: inst,
       basePos,
@@ -4109,7 +4133,9 @@ function buildOrganelleScene() {
       scale: scaleArr,
       offset: offsetArr,
       cage: cageArr,
-      step: opts.step ?? 0.03
+      step: opts.step ?? 0.03,
+      bright: brightArr,
+      brightStep: 0.05
     });
     return inst;
   };
