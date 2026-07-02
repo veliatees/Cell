@@ -5,6 +5,10 @@ import unittest
 from pathlib import Path
 
 from cell_engine.quantitative.hepatocyte_counts import (
+    ION_CONCENTRATIONS_mM,
+    MACROMOLECULE_VOLUME_OCCUPANCY_PCT,
+    MOST_ABUNDANT_CYTOSOLIC_PROTEINS,
+    NUCLEOTIDE_CONCENTRATIONS_mM,
     ORGANELLE_BY_ID,
     PROTEIN_BY_ID,
     PROTEINS,
@@ -64,6 +68,21 @@ class JsonMirrorTest(unittest.TestCase):
         for oid, o in ORGANELLE_BY_ID.items():
             self.assertEqual(json_org[oid]["countTypical"], o.count_typical, oid)
             self.assertEqual(json_org[oid]["volumeFractionPct"], o.volume_fraction_pct, oid)
+
+
+class CytoplasmInventoryTest(unittest.TestCase):
+    def test_crowding_and_ions_are_physiological(self) -> None:
+        self.assertTrue(20.0 <= MACROMOLECULE_VOLUME_OCCUPANCY_PCT <= 30.0)
+        # K+ is the dominant intracellular cation; Ca2+ free is sub-micromolar.
+        self.assertGreater(ION_CONCENTRATIONS_mM["K"], ION_CONCENTRATIONS_mM["Na"])
+        self.assertLess(ION_CONCENTRATIONS_mM["Ca_free"], 1e-3)
+        # ATP is the largest free nucleotide pool.
+        self.assertEqual(max(NUCLEOTIDE_CONCENTRATIONS_mM, key=NUCLEOTIDE_CONCENTRATIONS_mM.get), "ATP")
+
+    def test_albumin_is_the_top_crowder(self) -> None:
+        top = max(MOST_ABUNDANT_CYTOSOLIC_PROTEINS, key=lambda p: p.copies_typical)
+        self.assertEqual(top.gene, "ALB")
+        self.assertGreater(top.copies_typical, 1e8)
 
 
 if __name__ == "__main__":
