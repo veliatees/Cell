@@ -47,6 +47,22 @@ QUANTITATIVE_SOURCES: dict[str, SourceReference] = {
         date_verified=DATE_VERIFIED,
         notes="Standard cytosolic adenine-nucleotide, redox, and glycolytic intermediate concentration ranges.",
     ),
+    "physiology_consensus": SourceReference(
+        id="physiology_consensus",
+        title="Consensus mammalian intracellular ion concentrations (Alberts MBoC; BioNumbers)",
+        url="https://bionumbers.hms.harvard.edu/",
+        source_type="textbook",
+        date_verified="2026-07-02",
+        notes="Free cytosolic ion pools: K+ ~140, Na+ ~12, Cl- ~10 mM; free Mg2+ ~0.5 mM.",
+    ),
+    "traut1994": SourceReference(
+        id="traut1994",
+        title="Traut TW, Physiological concentrations of purines and pyrimidines, Mol Cell Biochem 140:1 (1994)",
+        url="https://doi.org/10.1007/BF00928361",
+        source_type="review",
+        date_verified="2026-07-02",
+        notes="Measured mammalian nucleotide pools (GTP, NADP+, etc.).",
+    ),
 }
 
 
@@ -147,6 +163,37 @@ HEPATOCYTE_SPECIES: tuple[SpeciesQuantity, ...] = (
         "Ca2+", "Free cytosolic calcium", "cytosol", 1.0e-4, (5.0e-5, 2.0e-4),
         "lehninger_textbook", "measured", 0.7,
         "Resting free cytosolic Ca2+ ~100 nM (1e-4 mM); steep gradient vs ER/outside.",
+    ),
+    SpeciesQuantity(
+        "K+", "Potassium", "cytosol", 140.0, (120.0, 150.0),
+        "physiology_consensus", "measured", 0.8,
+        "Dominant intracellular cation; sets resting potential with the Na/K pump.",
+    ),
+    SpeciesQuantity(
+        "Na+", "Sodium", "cytosol", 12.0, (5.0, 15.0),
+        "physiology_consensus", "measured", 0.7,
+        "Low inside (~12 mM) vs ~145 mM outside; the Na gradient powers secondary transport.",
+    ),
+    SpeciesQuantity(
+        "Cl-", "Chloride", "cytosol", 10.0, (5.0, 40.0),
+        "physiology_consensus", "literature_derived", 0.5,
+        "Intracellular Cl- ~10-40 mM, tissue-dependent.",
+    ),
+    SpeciesQuantity(
+        "Mg2+", "Free magnesium", "cytosol", 0.5, (0.3, 1.0),
+        "physiology_consensus", "measured", 0.6,
+        "FREE Mg2+ ~0.5 mM; total Mg (ATP/ribosome-bound) is ~15-25 mM.",
+    ),
+    # --- Additional nucleotides / redox ---
+    SpeciesQuantity(
+        "GTP", "GTP", "cytosol", 0.5, (0.3, 0.9),
+        "traut1994", "measured", 0.55,
+        "Guanine nucleotide pool; drives signaling GTPases and biosynthesis.",
+    ),
+    SpeciesQuantity(
+        "NADP+", "NADP+", "cytosol", 0.02, (0.005, 0.05),
+        "traut1994", "measured", 0.45,
+        "Small oxidised NADP pool; kept low so NADPH/NADP+ stays high (reducing).",
     ),
 )
 
