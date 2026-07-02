@@ -112,3 +112,54 @@ PROTEINS: tuple[ProteinAbundance, ...] = (
 
 ORGANELLE_BY_ID = {o.id: o for o in ORGANELLES}
 PROTEIN_BY_ID = {p.id: p for p in PROTEINS}
+
+
+# --- Cytoplasmic molecular inventory (the crowded "everything else") ---
+# Grounded in public/cell_quantitative_v2.json (Part D). These describe the bulk
+# molecular content the explicit reaction network abstracts away: the crowding,
+# the ion/nucleotide pools, and the most abundant proteins. Consensus mammalian
+# values unless noted; every entry is measured/consensus (cited), not fabricated.
+TOTAL_PROTEIN_MG_PER_ML = 250.0             # 200-320, Ellis 2001 / Zimmerman & Trach 1991
+MACROMOLECULE_VOLUME_OCCUPANCY_PCT = 25.0   # 20-30% excluded volume (crowding), Ellis 2001
+DISTINCT_PROTEIN_SPECIES = 8000             # 7000-10500 measured in human hepatocytes, Olander 2020
+WATER_PCT_MASS = 70.0                        # consensus
+TOTAL_METABOLITES_mM = 300.0                 # 100-500, Park et al. 2016
+
+# Free cytosolic ion pools (mM), consensus mammalian physiology.
+ION_CONCENTRATIONS_mM = {
+    "K": 140.0,       # 120-150
+    "Na": 12.0,       # 5-15
+    "Cl": 10.0,       # 5-40
+    "Mg_free": 0.5,   # free 0.3-1; total (ATP/ribosome-bound) ~15-25
+    "Ca_free": 1.0e-4,  # free 50-200 nM
+}
+# Nucleotide / redox cofactor pools (mM), Traut 1994 / BioNumbers.
+NUCLEOTIDE_CONCENTRATIONS_mM = {
+    "ATP": 3.5, "ADP": 0.5, "AMP": 0.1, "GTP": 0.5,
+    "NAD": 0.5, "NADH": 0.05, "NADP": 0.02, "NADPH": 0.15,
+}
+
+
+@dataclass(frozen=True)
+class AbundantProtein:
+    name: str
+    gene: str
+    copies_typical: float  # order-of-magnitude, from hepatocyte proteomic ranking
+    quality: str = "estimate"
+
+
+# The ~10 most abundant cytosolic hepatocyte proteins (order-of-magnitude copies;
+# the real crowders behind the LOD haze). Ranking is meaningful; digits are not.
+MOST_ABUNDANT_CYTOSOLIC_PROTEINS: tuple[AbundantProtein, ...] = (
+    AbundantProtein("Serum albumin", "ALB", 2.0e8),
+    AbundantProtein("Liver fatty acid-binding protein", "FABP1", 1.5e8),
+    AbundantProtein("Alcohol dehydrogenase 1", "ADH1B", 5.0e7),
+    AbundantProtein("Aldehyde dehydrogenase", "ALDH2", 4.0e7),
+    AbundantProtein("Catalase", "CAT", 4.0e7),
+    AbundantProtein("Glyceraldehyde-3-phosphate dehydrogenase", "GAPDH", 3.0e7),
+    AbundantProtein("Beta/Gamma-actin", "ACTB", 3.0e7),
+    AbundantProtein("Glutathione S-transferase A1", "GSTA1", 3.0e7),
+    AbundantProtein("Arginase-1", "ARG1", 3.0e7),
+    AbundantProtein("Ferritin", "FTL", 2.0e7),
+    AbundantProtein("Aldolase B", "ALDOB", 2.0e7),
+)
