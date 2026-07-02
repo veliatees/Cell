@@ -4042,7 +4042,7 @@ function buildOrganelleScene() {
     const placed: THREE.Vector3[] = [];
     for (let i = 0; i < count; i += 1) {
       let found: THREE.Vector3 | null = null;
-      for (let t = 0; t < 48; t += 1) {
+      for (let t = 0; t < 90; t += 1) {
         const cand = interiorPoint(rMax);
         if (cand.length() + exclR > rMax) continue;
         if (organelleCollides(cand.x, cand.y, cand.z, exclR)) continue;
@@ -4331,15 +4331,15 @@ function buildOrganelleScene() {
   addOrganellePopulation(
     "mitochondria",
     REAL_MITO - HERO_MITO,
-    new THREE.CapsuleGeometry(0.46, 0.7, 5, 10), // discrete ovoid ~0.7 um wide x ~1.2 um long
+    new THREE.CapsuleGeometry(0.42, 0.18, 5, 10), // discrete ovoid ~0.6 um wide x ~0.73 um; half-length ~0.51 == collisionRadius (bounding sphere fully covers it -> no interpenetration)
     "#ff8a5c",
     {
       opacity: 0.9,
       emissive: 0.14,
-      jitterScale: 0.5,
-      collisionRadius: 0.5,
-      cage: 0.14,
-      step: 0.032,
+      jitterScale: 0.45,
+      collisionRadius: 0.53,
+      cage: 0.22,
+      step: 0.06,
       label: `Mitochondria — true hepatocyte count ~${REAL_MITO.toLocaleString()} (~20% of cell volume). Discrete ovoid ~0.7 um wide x ~1.5 um long (measured, Part C). Non-overlapping placement + random caged motion. ${HERO_MITO} shown in cutaway detail. Rat-stereology proxy (Weibel 1969 / Loud 1968).`
     }
   );
@@ -4369,8 +4369,8 @@ function buildOrganelleScene() {
       opacity: 0.92,
       emissive: 0.16,
       collisionRadius: 0.36,
-      cage: 0.12,
-      step: 0.03,
+      cage: 0.18,
+      step: 0.05,
       label: `Peroxisomes — true hepatocyte count ~${REAL_PEROX.toLocaleString()} (~0.5-0.6 um across, ~1.5% of cell volume). Non-overlapping + random caged motion. Rat-stereology proxy (Weibel 1969).`
     }
   );
@@ -4383,8 +4383,8 @@ function buildOrganelleScene() {
       opacity: 0.92,
       emissive: 0.16,
       collisionRadius: 0.38,
-      cage: 0.12,
-      step: 0.03,
+      cage: 0.18,
+      step: 0.05,
       label: `Lysosomes — true hepatocyte count ~${REAL_LYSO.toLocaleString()} (~0.5 um across, ~1% of cell volume). Non-overlapping + random caged motion. Rat-stereology proxy (Weibel 1969).`
     }
   );
