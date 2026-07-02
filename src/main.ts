@@ -4700,6 +4700,77 @@ function buildOrganelleScene() {
   addMembraneProteomeShell();
   addTrueDensityMembranePatch();
 
+  // --- Cytoplasmic macromolecular crowd (the "everything else") ---
+  // A real hepatocyte cytoplasm is ~25% macromolecule by volume (~250 mg/mL,
+  // ~5e9 protein molecules of ~8,000 distinct species; Ellis 2001, Niu 2022),
+  // plus mM pools of metabolites, nucleotides and ions. Far too many to draw, so
+  // this is a representative LOD haze that fills the cytosol so the cell reads as
+  // crowded (not empty). Values: public/cell_quantitative_v2.json cytoplasmInventory.
+  const addCytoplasmCrowding = () => {
+    // Protein crowd (~5 nm each): the dominant haze.
+    const proteinDots = 30000;
+    const proteinPerDot = Math.round(5e9 / proteinDots); // ~166,000 molecules per dot
+    const pPos = new Float32Array(proteinDots * 3);
+    for (let i = 0; i < proteinDots; i += 1) {
+      const p = interiorPoint(CELL_R * 0.9);
+      pPos[i * 3] = p.x;
+      pPos[i * 3 + 1] = p.y;
+      pPos[i * 3 + 2] = p.z;
+    }
+    const pGeo = new THREE.BufferGeometry();
+    pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
+    const proteins = new THREE.Points(
+      pGeo,
+      new THREE.PointsMaterial({
+        color: "#9fb4d8",
+        size: nmToWorld(6),
+        sizeAttenuation: true,
+        map: DISC_TEXTURE,
+        alphaTest: 0.2,
+        transparent: true,
+        opacity: 0.4,
+        depthWrite: false
+      })
+    );
+    proteins.userData.label =
+      `Cytoplasmic protein crowd — ~5x10^9 protein molecules of ~8,000 distinct species ` +
+      `(~250 mg/mL, ~25% of cell volume; Ellis 2001 / Niu 2022). LOD haze: 1 dot ~ ${proteinPerDot.toLocaleString()} molecules at ~5 nm true size.`;
+    proteins.userData.hoverKind = "cytoplasm-crowd";
+    group.add(proteins);
+
+    // A finer, more numerous haze standing in for small molecules / metabolites /
+    // ions (mM pools: K+ ~140, Na+ ~12, ATP ~3.5 mM ... = ~1e8-1e9 molecules each).
+    const soluteDots = 16000;
+    const sPos = new Float32Array(soluteDots * 3);
+    for (let i = 0; i < soluteDots; i += 1) {
+      const p = interiorPoint(CELL_R * 0.92);
+      sPos[i * 3] = p.x;
+      sPos[i * 3 + 1] = p.y;
+      sPos[i * 3 + 2] = p.z;
+    }
+    const sGeo = new THREE.BufferGeometry();
+    sGeo.setAttribute("position", new THREE.BufferAttribute(sPos, 3));
+    const solutes = new THREE.Points(
+      sGeo,
+      new THREE.PointsMaterial({
+        color: "#7fd8c4",
+        size: nmToWorld(2.5),
+        sizeAttenuation: true,
+        map: DISC_TEXTURE,
+        alphaTest: 0.15,
+        transparent: true,
+        opacity: 0.28,
+        depthWrite: false
+      })
+    );
+    solutes.userData.label =
+      `Small-molecule / ion crowd — metabolites (~300 mM total), nucleotides (ATP ~3.5 mM), ` +
+      `ions (K+ ~140, Na+ ~12, Cl- ~10 mM), ~70% water. LOD haze; ~1e8-1e9 molecules per species.`;
+    solutes.userData.hoverKind = "cytoplasm-crowd";
+    group.add(solutes);
+  };
+  addCytoplasmCrowding();
+
   const builders = [makeIonChannel, makeAquaporin, makePump, makeCarrier, makeReceptor];
   const detailDir = (i: number) => {
     const r = Math.sqrt(rnd()) * patchRadiusWorld * 0.72;
