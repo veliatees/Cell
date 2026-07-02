@@ -1,0 +1,120 @@
+{
+  "_schemaNote": "Human hepatocyte reference dataset for computational modeling. Every numeric value is (a) measured+cited, (b) flagged order-of-magnitude with derivation, or null. NEVER fabricated. See CAVEATS. | v2: added organelleDimensions (Part C), cytoplasmInventory (Part D), motion (Part E). Values carry organism + estimateQuality + source; null where unsourced.",
+  "_generated": "2026-07-02 (Parts C/D/E appended)",
+  "_provenance": "Produced by the user's Claude Science research pass. Pasted verbatim and persisted here as the source-of-record. To be folded into cell_quantitative.json + engine constants once file-read access is restored.",
+  "organelleDimensions": [
+    {
+      "id": "mitochondria",
+      "widthUm": { "typical": 0.7, "range": [0.5, 1.0] },
+      "lengthUm": { "typical": 1.5, "range": [0.7, 4.0] },
+      "morphology": "Predominantly discrete, ovoid/bean-shaped individual organelles with a minority tubular/elongated forms; hepatocyte mitochondria are less reticular/interconnected than the fused networks seen in cardiomyocytes or fibroblasts. Classic EM morphometry treats them as discrete profiles.",
+      "networkedFractionPct": null,
+      "numberPerCell": { "typical": 1000, "range": [500, 2500] },
+      "organism": "rat (number/cell and dimensions from rat liver EM morphometry; treat as rat proxy for human)",
+      "estimateQuality": "measured",
+      "source": "Loud 1968 (rat); Weibel et al. 1969 (rat)",
+      "note": "Individual dimensions ~0.5-1.0 um wide x ~1-2 um long (up to ~4 um). Rat mitochondrial volume fraction ~20%. networkedFractionPct null - no quantitative source for hepatocyte networked fraction."
+    },
+    {
+      "id": "lysosome",
+      "diameterUm": { "typical": 0.5, "range": [0.1, 1.2] },
+      "organism": "eukaryote/mammal (generic; not hepatocyte-specific)",
+      "estimateQuality": "consensus",
+      "source": "BioNumbers BNID 106072; Milo & Phillips, Cell Biology by the Numbers"
+    },
+    {
+      "id": "peroxisome",
+      "diameterUm": { "typical": 0.5, "range": [0.1, 1.0] },
+      "organism": "mammal (rat liver morphometry; hepatocyte peroxisomes relatively large)",
+      "estimateQuality": "measured",
+      "source": "BioNumbers / mammalian liver peroxisome morphometry"
+    },
+    {
+      "id": "er_tubule",
+      "tubuleDiameterUm": { "typical": 0.05, "range": [0.03, 0.1] },
+      "organism": "mammal (generic)",
+      "estimateQuality": "measured",
+      "source": "Nixon-Abell et al. 2016 (Science); consensus 30-50 nm"
+    },
+    {
+      "id": "golgi",
+      "cisternaLengthUm": { "typical": 1.0, "range": [0.5, 2.0] },
+      "cisternaThicknessUm": { "typical": 0.02, "range": [0.015, 0.03] },
+      "organism": "mammal (generic)",
+      "estimateQuality": "measured",
+      "source": "Classic Golgi EM morphometry"
+    },
+    {
+      "id": "nucleus",
+      "diameterUm": { "typical": 8.0, "range": [5.0, 12.0] },
+      "organism": "human (larger for polyploid/binucleate)",
+      "estimateQuality": "measured",
+      "source": "Watanabe & Tanaka 1982 (human hepatocytes)"
+    },
+    {
+      "id": "lipid_droplet",
+      "diameterUm": { "typical": 1.0, "range": [0.2, 5.0] },
+      "numberPerCell": null,
+      "volumeFractionPct": null,
+      "organism": "human/mammal (highly variable with steatotic state)",
+      "estimateQuality": "measured",
+      "source": "Schott et al. 2019 (J Cell Biol)"
+    }
+  ],
+  "cytoplasmInventory": {
+    "totalProtein_mg_per_mL": { "typical": 250, "range": [200, 320], "organism": "consensus", "source": "Ellis 2001; Zimmerman & Trach 1991", "estimateQuality": "consensus" },
+    "macromoleculeVolumeOccupancyPct": { "typical": 25, "range": [20, 30], "source": "Ellis 2001", "estimateQuality": "consensus" },
+    "distinctProteinSpecies": { "typical": 8000, "range": [7000, 10500], "source": "Olander et al. 2020 (human hepatocytes)", "estimateQuality": "measured" },
+    "classes": [
+      { "class": "protein_molecules", "perCell": 4000000000, "range": [2000000000, 8000000000], "source": "Wisniewski 2014", "estimateQuality": "measured" },
+      { "class": "phospholipids", "perCell": null, "perCell_estimate": 10000000000, "unit": "molecules/cell", "source": "derived (membrane area x ~5e6 lipids/um2)", "estimateQuality": "derived" },
+      { "class": "triacylglycerol_droplets", "perCell": null, "source": "null - highly variable", "estimateQuality": "estimate" },
+      { "class": "nucleotide", "name": "ATP", "mM": 3.5, "range": [2.0, 5.0], "source": "Traut 1994; BioNumbers", "estimateQuality": "measured" },
+      { "class": "nucleotide", "name": "ADP", "mM": 0.5, "range": [0.2, 1.0], "source": "Traut 1994", "estimateQuality": "measured", "note": "free ADP much lower (tens of uM)" },
+      { "class": "nucleotide", "name": "AMP", "mM": 0.1, "range": [0.02, 0.3], "source": "Traut 1994", "estimateQuality": "measured" },
+      { "class": "nucleotide", "name": "GTP", "mM": 0.5, "range": [0.3, 0.9], "source": "Traut 1994", "estimateQuality": "measured" },
+      { "class": "nucleotide", "name": "NAD+", "mM": 0.5, "range": [0.3, 1.0], "source": "Traut 1994; BioNumbers", "estimateQuality": "measured" },
+      { "class": "nucleotide", "name": "NADH", "mM": 0.05, "range": [0.01, 0.1], "source": "Traut 1994", "estimateQuality": "measured" },
+      { "class": "nucleotide", "name": "NADP+", "mM": 0.02, "range": [0.005, 0.05], "source": "BioNumbers", "estimateQuality": "measured" },
+      { "class": "nucleotide", "name": "NADPH", "mM": 0.15, "range": [0.05, 0.3], "source": "BioNumbers", "estimateQuality": "measured" },
+      { "class": "metabolites_total", "mM": 300, "range": [100, 500], "source": "Park et al. 2016", "estimateQuality": "measured", "note": "glutamate typically single largest, tens of mM" },
+      { "class": "tRNA", "perCell": null, "perCell_estimate": 100000000, "range_estimate": [30000000, 300000000], "source": "derived from ribosome:tRNA stoichiometry", "estimateQuality": "derived" },
+      { "class": "mRNA", "perCell": null, "perCell_estimate": 500000, "range_estimate": [100000, 1000000], "source": "consensus (Cell Biology by the Numbers)", "estimateQuality": "estimate" },
+      { "class": "ribosomes", "perCell": null, "perCell_estimate": 10000000, "range_estimate": [5000000, 30000000], "source": "consensus", "estimateQuality": "estimate" },
+      { "class": "ion", "name": "K", "mM": 140, "range": [120, 150], "source": "consensus physiology", "estimateQuality": "consensus" },
+      { "class": "ion", "name": "Na", "mM": 12, "range": [5, 15], "source": "consensus physiology", "estimateQuality": "consensus" },
+      { "class": "ion", "name": "Cl", "mM": 10, "range": [5, 40], "source": "consensus physiology", "estimateQuality": "consensus" },
+      { "class": "ion", "name": "Mg", "mM": 0.5, "range": [0.3, 1.0], "source": "consensus", "estimateQuality": "consensus", "note": "FREE Mg2+; total ~15-25 mM" },
+      { "class": "ion", "name": "Ca", "mM": 0.0001, "range": [0.00005, 0.0002], "source": "consensus physiology", "estimateQuality": "consensus", "note": "FREE cytosolic Ca2+ 50-200 nM" },
+      { "class": "water", "pctMass": 70, "range": [65, 75], "source": "consensus", "estimateQuality": "consensus" }
+    ],
+    "mostAbundantCytosolicProteins": [
+      { "name": "Serum albumin", "gene": "ALB", "approxCopiesPerCell": 200000000, "range": [100000000, 500000000], "estimateQuality": "estimate" },
+      { "name": "Liver fatty acid-binding protein (L-FABP)", "gene": "FABP1", "approxCopiesPerCell": 150000000, "range": [50000000, 300000000], "estimateQuality": "estimate" },
+      { "name": "Alcohol dehydrogenase 1", "gene": "ADH1B/ADH1C", "approxCopiesPerCell": 50000000, "range": [10000000, 100000000], "estimateQuality": "estimate" },
+      { "name": "Aldehyde dehydrogenase", "gene": "ALDH1A1/ALDH2", "approxCopiesPerCell": 40000000, "range": [10000000, 100000000], "estimateQuality": "estimate" },
+      { "name": "Catalase", "gene": "CAT", "approxCopiesPerCell": 40000000, "range": [10000000, 100000000], "estimateQuality": "estimate" },
+      { "name": "GAPDH", "gene": "GAPDH", "approxCopiesPerCell": 30000000, "range": [10000000, 80000000], "estimateQuality": "estimate" },
+      { "name": "Beta/Gamma-actin", "gene": "ACTB/ACTG1", "approxCopiesPerCell": 30000000, "range": [10000000, 100000000], "estimateQuality": "estimate" },
+      { "name": "Ferritin", "gene": "FTL/FTH1", "approxCopiesPerCell": 20000000, "range": [5000000, 100000000], "estimateQuality": "estimate" },
+      { "name": "Glutathione S-transferase A1", "gene": "GSTA1", "approxCopiesPerCell": 30000000, "range": [10000000, 80000000], "estimateQuality": "estimate" },
+      { "name": "Arginase-1", "gene": "ARG1", "approxCopiesPerCell": 30000000, "range": [10000000, 80000000], "estimateQuality": "estimate" },
+      { "name": "Aldolase B", "gene": "ALDOB", "approxCopiesPerCell": 20000000, "range": [10000000, 60000000], "estimateQuality": "estimate" }
+    ]
+  },
+  "motion": {
+    "subdiffusionAlpha": { "typical": 0.75, "range": [0.5, 0.9], "estimateQuality": "measured", "organism": "human HeLa + mammalian", "source": "Weiss 2004; Guo 2014", "note": "MSD ~ t^alpha, alpha<1 subdiffusion in crowded cytoplasm; crosses to motor-driven super-diffusion at longer times" },
+    "subdiffusionCrossover": { "lengthScale_um": 0.1, "timeScale_s": 1.0, "estimateQuality": "estimate", "source": "Guo 2014; Parry 2013", "note": "subdiffusive at sub-micron/sub-second (caging); diffusive/motor-driven at longer scales" },
+    "motorVelocities_um_s": [
+      { "motor": "kinesin", "typical": 0.8, "range": [0.5, 1.0], "estimateQuality": "measured", "source": "Hirokawa 2009" },
+      { "motor": "dynein", "typical": 1.0, "range": [0.5, 1.5], "estimateQuality": "measured", "source": "Hirokawa 2009" },
+      { "motor": "myosin", "typical": 0.35, "range": [0.2, 0.5], "estimateQuality": "measured", "source": "Hirokawa 2009", "note": "myosin V processive cargo transport" }
+    ],
+    "mitochondrialMotion_um_per_min": { "typical": 30.0, "range": [6.0, 60.0], "estimateQuality": "consensus", "organism": "rodent neurons - NOT human hepatocyte", "source": "Saxton 2012; Hollenbeck 2005", "note": "instantaneous ~0.3-1.0 um/s during runs; mitochondria spend much time paused/stationary so net transport lower; hepatocyte mito expected slower/more stationary" },
+    "brownianDisplacement": [
+      { "particle": "vesicle_50nm", "diameterNm": 50, "diffusionCoeff_um2_s": 0.5, "diffusionCoeff_range_um2_s": [0.01, 1.0], "displacement1s_um": 1.73, "estimateQuality": "estimate", "source": "derived (Stokes-Einstein hindered per Luby-Phelps/Verkman 2002)", "note": "passive; real 50nm vesicles usually motor-driven over such distances" },
+      { "particle": "protein_5nm", "diameterNm": 5, "diffusionCoeff_um2_s": 27.0, "diffusionCoeff_range_um2_s": [20.0, 30.0], "displacement1s_um": 12.7, "estimateQuality": "measured", "organism": "mammalian cytoplasm (GFP)", "source": "Swaminathan 1997; Verkman 2002", "note": "GFP ~5nm ~27kDa D~25-27 um2/s (FRAP), ~3-4x lower than water" }
+    ],
+    "_conventions": { "displacementFormula": "3D rms = sqrt(6*D*t)", "temperature": "37C (310 K)", "note": "use per-particle D for jiggle amplitude; for subdiffusion MSD = 6*D_app*t^alpha" }
+  }
+}

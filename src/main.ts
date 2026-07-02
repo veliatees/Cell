@@ -526,17 +526,18 @@ type MotionTarget = {
 };
 const organelleMotions: MotionTarget[] = [];
 // Instanced organelle populations (mitochondria/peroxisomes/lysosomes at true
-// count) that jiggle with thermal + slow motor-like motion each frame. Base
-// transforms are kept so the per-frame offset stays bounded (no drift).
+// count). Each instance does a bounded RANDOM WALK confined to its own cage —
+// genuine stochastic motion (not a repeating oscillation), and because the cage
+// radius is smaller than the clearance left at placement, moving never makes two
+// organelles interpenetrate.
 type OrganellePopulation = {
   mesh: THREE.InstancedMesh;
   basePos: Float32Array; // 3 * count
   baseQuat: Float32Array; // 4 * count
   scale: Float32Array; // count
-  axis: Float32Array; // 3 * count, per-instance jiggle direction
-  phase: Float32Array; // count
-  amp: number; // world-unit jiggle amplitude
-  speed: number;
+  offset: Float32Array; // 3 * count, current random-walk displacement from base
+  cage: Float32Array; // count, max displacement radius (< neighbour clearance)
+  step: number; // per-frame random increment (world units)
 };
 const organellePopulations: OrganellePopulation[] = [];
 type MembraneProteinAnchor = {
@@ -2395,25 +2396,37 @@ function updateMembraneProteinAnchors(t: number) {
   }
 }
 
-// Per-frame thermal/motor jiggle of the instanced true-count organelle
-// populations, so the crowded cytoplasm is alive rather than frozen. Offsets are
-// bounded oscillations around the baked base transform (no net drift).
+// Per-frame RANDOM motion of the instanced true-count organelle populations.
+// Each instance takes an independent random step (genuinely stochastic — not a
+// repeating oscillation) and its cumulative displacement is clamped to its cage
+// radius. The cage is smaller than the clearance reserved at placement, so this
+// crowded cytoplasm is alive AND no two organelles ever interpenetrate. The
+// caged random walk is subdiffusive (MSD plateaus at the cage), matching the
+// measured ~0.1 um caging plateau of crowded cytoplasm.
 const _popPos = new THREE.Vector3();
 const _popQuat = new THREE.Quaternion();
 const _popScale = new THREE.Vector3();
 const _popMat = new THREE.Matrix4();
-function updateOrganellePopulations(t: number) {
+function updateOrganellePopulations() {
   for (const pop of organellePopulations) {
     const count = pop.scale.length;
-    const amp = pop.amp;
+    const step = pop.step;
     for (let i = 0; i < count; i += 1) {
-      const ph = pop.phase[i];
-      const tt = t * pop.speed + ph;
-      _popPos.set(
-        pop.basePos[i * 3] + Math.sin(tt) * pop.axis[i * 3] * amp,
-        pop.basePos[i * 3 + 1] + Math.sin(tt * 1.13 + 1.7) * pop.axis[i * 3 + 1] * amp,
-        pop.basePos[i * 3 + 2] + Math.cos(tt * 0.91) * pop.axis[i * 3 + 2] * amp
-      );
+      let ox = pop.offset[i * 3] + (Math.random() * 2 - 1) * step;
+      let oy = pop.offset[i * 3 + 1] + (Math.random() * 2 - 1) * step;
+      let oz = pop.offset[i * 3 + 2] + (Math.random() * 2 - 1) * step;
+      const cage = pop.cage[i];
+      const d2 = ox * ox + oy * oy + oz * oz;
+      if (d2 > cage * cage) {
+        const s = cage / Math.sqrt(d2);
+        ox *= s;
+        oy *= s;
+        oz *= s;
+      }
+      pop.offset[i * 3] = ox;
+      pop.offset[i * 3 + 1] = oy;
+      pop.offset[i * 3 + 2] = oz;
+      _popPos.set(pop.basePos[i * 3] + ox, pop.basePos[i * 3 + 1] + oy, pop.basePos[i * 3 + 2] + oz);
       _popQuat.set(pop.baseQuat[i * 4], pop.baseQuat[i * 4 + 1], pop.baseQuat[i * 4 + 2], pop.baseQuat[i * 4 + 3]);
       const sc = pop.scale[i];
       _popScale.set(sc, sc, sc);
@@ -3922,8 +3935,16 @@ function buildOrganelleScene() {
     return g;
   };
 
-  // Collision-free placement: organelles are membrane-bound and exclude volume —
-  // they do not interpenetrate. Track occupied spheres and reject overlaps.
+  // Excluded volume: organelles are membrane-bound and do NOT interpenetrate.
+  // A spatial hash makes overlap tests O(1) so it scales to the thousands of
+  // instanced organelles (mitochondria etc.), and it is shared by both the
+  // detailed "hero" organelles (place()) and the instanced populations, so no
+  // two organelles of any kind overlap.
+  // Detailed "hero" organelles are large and few — kept in a plain list with an
+  // exact O(N^2) check. The thousands of instanced organelles use a spatial hash
+  // (below), and also test against this list, so no organelle of any kind
+  // overlaps another. (The hash's 1-cell neighbour search is only valid for the
+  // small instanced radii, which is why heroes stay in the exact list.)
   const occupied: { c: THREE.Vector3; r: number }[] = [];
   const place = (orgR: number, minR: number, maxR: number): THREE.Vector3 | null => {
     for (let t = 0; t < 240; t += 1) {
@@ -3945,6 +3966,40 @@ function buildOrganelleScene() {
       }
     }
     return null;
+  };
+  const HGRID = 1.6; // grid cell >= largest instanced exclusion diameter
+  const hashCells = new Map<number, { x: number; y: number; z: number; r: number }[]>();
+  const hkey = (ix: number, iy: number, iz: number) => (ix + 512) * 1_048_576 + (iy + 512) * 1024 + (iz + 512);
+  const gi = (v: number) => Math.floor(v / HGRID);
+  const hashInsert = (x: number, y: number, z: number, r: number) => {
+    const k = hkey(gi(x), gi(y), gi(z));
+    const arr = hashCells.get(k);
+    if (arr) arr.push({ x, y, z, r });
+    else hashCells.set(k, [{ x, y, z, r }]);
+  };
+  const hashCollides = (x: number, y: number, z: number, r: number): boolean => {
+    const ix = gi(x), iy = gi(y), iz = gi(z);
+    for (let dx = -1; dx <= 1; dx += 1)
+      for (let dy = -1; dy <= 1; dy += 1)
+        for (let dz = -1; dz <= 1; dz += 1) {
+          const arr = hashCells.get(hkey(ix + dx, iy + dy, iz + dz));
+          if (!arr) continue;
+          for (const o of arr) {
+            const ex = o.x - x, ey = o.y - y, ez = o.z - z;
+            const rr = o.r + r;
+            if (ex * ex + ey * ey + ez * ez < rr * rr) return true;
+          }
+        }
+    return false;
+  };
+  // Instanced organelle overlaps any already-placed hero (exact) OR instanced (hash).
+  const organelleCollides = (x: number, y: number, z: number, r: number): boolean => {
+    for (const o of occupied) {
+      const ex = o.c.x - x, ey = o.c.y - y, ez = o.c.z - z;
+      const rr = o.r + r;
+      if (ex * ex + ey * ey + ez * ez < rr * rr) return true;
+    }
+    return hashCollides(x, y, z, r);
   };
 
   // True-count organelle populations. Real hepatocyte numbers (rat-stereology
@@ -3971,9 +4026,36 @@ function buildOrganelleScene() {
     count: number,
     geo: THREE.BufferGeometry,
     color: string,
-    opts: { opacity?: number; emissive?: number; rMax?: number; label: string; jitterScale?: number; jiggleAmp?: number; jiggleSpeed?: number }
+    opts: { opacity?: number; emissive?: number; rMax?: number; label: string; jitterScale?: number; collisionRadius: number; cage?: number; step?: number }
   ): THREE.InstancedMesh | null => {
     if (count <= 0) return null;
+    const rMax = opts.rMax ?? CELL_R * 0.86;
+    const jitter = opts.jitterScale ?? 0.28;
+    const cageR = opts.cage ?? 0.14;
+    // Reserve bounding radius + cage so the whole random walk fits in the gap to
+    // the nearest neighbour: motion can NEVER cause an overlap.
+    const exclR = opts.collisionRadius + cageR;
+
+    // Non-overlapping placement (excluded volume) via the shared spatial hash.
+    // If the cytoplasm jams before all copies fit, we render only what fits
+    // without overlap rather than force interpenetration (honest).
+    const placed: THREE.Vector3[] = [];
+    for (let i = 0; i < count; i += 1) {
+      let found: THREE.Vector3 | null = null;
+      for (let t = 0; t < 48; t += 1) {
+        const cand = interiorPoint(rMax);
+        if (cand.length() + exclR > rMax) continue;
+        if (organelleCollides(cand.x, cand.y, cand.z, exclR)) continue;
+        hashInsert(cand.x, cand.y, cand.z, exclR);
+        found = cand;
+        break;
+      }
+      if (!found) break;
+      placed.push(found);
+    }
+    const actual = placed.length;
+    if (actual === 0) return null;
+
     const opacity = opts.opacity ?? 1;
     const mat = new THREE.MeshStandardMaterial({
       color,
@@ -3985,23 +4067,19 @@ function buildOrganelleScene() {
       opacity,
       depthWrite: opacity >= 0.6
     });
-    const inst = new THREE.InstancedMesh(geo, mat, count);
+    const inst = new THREE.InstancedMesh(geo, mat, actual);
     const m4 = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const e = new THREE.Euler();
     const scl = new THREE.Vector3();
-    const pos = new THREE.Vector3();
     const centroid = new THREE.Vector3();
-    const rMax = opts.rMax ?? CELL_R * 0.86;
-    const jitter = opts.jitterScale ?? 0.28;
-    // Base transforms, kept so the animated jiggle stays bounded (no net drift).
-    const basePos = new Float32Array(count * 3);
-    const baseQuat = new Float32Array(count * 4);
-    const scaleArr = new Float32Array(count);
-    const axisArr = new Float32Array(count * 3);
-    const phaseArr = new Float32Array(count);
-    for (let i = 0; i < count; i += 1) {
-      pos.copy(interiorPoint(rMax));
+    const basePos = new Float32Array(actual * 3);
+    const baseQuat = new Float32Array(actual * 4);
+    const scaleArr = new Float32Array(actual);
+    const offsetArr = new Float32Array(actual * 3); // starts at rest
+    const cageArr = new Float32Array(actual);
+    for (let i = 0; i < actual; i += 1) {
+      const pos = placed[i];
       centroid.add(pos);
       e.set(rnd() * Math.PI * 2, rnd() * Math.PI * 2, rnd() * Math.PI * 2);
       q.setFromEuler(e);
@@ -4017,29 +4095,21 @@ function buildOrganelleScene() {
       baseQuat[i * 4 + 2] = q.z;
       baseQuat[i * 4 + 3] = q.w;
       scaleArr[i] = sc;
-      const a = randDir();
-      axisArr[i * 3] = a.x;
-      axisArr[i * 3 + 1] = a.y;
-      axisArr[i * 3 + 2] = a.z;
-      phaseArr[i] = rnd() * Math.PI * 2;
+      cageArr[i] = cageR;
     }
     inst.instanceMatrix.needsUpdate = true;
     inst.userData.label = opts.label;
     group.add(inst);
-    addPos(kind, centroid.multiplyScalar(1 / count));
+    addPos(kind, centroid.multiplyScalar(1 / actual));
     (glowBuckets[kind] ??= []).push(mat); // population brightens with activity
-    // Thermal + slow motor-like jiggle. Amplitude is a physically-motivated
-    // placeholder (~0.1-0.2 um); to be calibrated with measured diffusion /
-    // motor-velocity data (research Part E). Larger organelles jiggle less.
     organellePopulations.push({
       mesh: inst,
       basePos,
       baseQuat,
       scale: scaleArr,
-      axis: axisArr,
-      phase: phaseArr,
-      amp: opts.jiggleAmp ?? 0.26,
-      speed: opts.jiggleSpeed ?? 0.55
+      offset: offsetArr,
+      cage: cageArr,
+      step: opts.step ?? 0.03
     });
     return inst;
   };
@@ -4261,13 +4331,16 @@ function buildOrganelleScene() {
   addOrganellePopulation(
     "mitochondria",
     REAL_MITO - HERO_MITO,
-    new THREE.CapsuleGeometry(0.42, 1.0, 5, 10),
+    new THREE.CapsuleGeometry(0.46, 0.7, 5, 10), // discrete ovoid ~0.7 um wide x ~1.2 um long
     "#ff8a5c",
     {
       opacity: 0.9,
       emissive: 0.14,
       jitterScale: 0.5,
-      label: `Mitochondria — true hepatocyte count ~${REAL_MITO.toLocaleString()} (~20% of cell volume). Instanced population; ${HERO_MITO} shown in cutaway detail. Rat-stereology proxy, order-of-magnitude (Weibel 1969 / Loud 1968).`
+      collisionRadius: 0.5,
+      cage: 0.14,
+      step: 0.032,
+      label: `Mitochondria — true hepatocyte count ~${REAL_MITO.toLocaleString()} (~20% of cell volume). Discrete ovoid ~0.7 um wide x ~1.5 um long (measured, Part C). Non-overlapping placement + random caged motion. ${HERO_MITO} shown in cutaway detail. Rat-stereology proxy (Weibel 1969 / Loud 1968).`
     }
   );
 
@@ -4295,7 +4368,10 @@ function buildOrganelleScene() {
     {
       opacity: 0.92,
       emissive: 0.16,
-      label: `Peroxisomes — true hepatocyte count ~${REAL_PEROX.toLocaleString()} (~0.5-0.6 um across, ~1.5% of cell volume). Rat-stereology proxy, order-of-magnitude (Weibel 1969).`
+      collisionRadius: 0.36,
+      cage: 0.12,
+      step: 0.03,
+      label: `Peroxisomes — true hepatocyte count ~${REAL_PEROX.toLocaleString()} (~0.5-0.6 um across, ~1.5% of cell volume). Non-overlapping + random caged motion. Rat-stereology proxy (Weibel 1969).`
     }
   );
   addOrganellePopulation(
@@ -4306,7 +4382,10 @@ function buildOrganelleScene() {
     {
       opacity: 0.92,
       emissive: 0.16,
-      label: `Lysosomes — true hepatocyte count ~${REAL_LYSO.toLocaleString()} (~0.5 um across, ~1% of cell volume). Rat-stereology proxy, order-of-magnitude (Weibel 1969).`
+      collisionRadius: 0.38,
+      cage: 0.12,
+      step: 0.03,
+      label: `Lysosomes — true hepatocyte count ~${REAL_LYSO.toLocaleString()} (~0.5 um across, ~1% of cell volume). Non-overlapping + random caged motion. Rat-stereology proxy (Weibel 1969).`
     }
   );
 
@@ -5177,7 +5256,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     const s = livingCell.snapshot();
     const engineSignal = externalEngineSummary ? engineVisualSignal(externalEngineSummary) : null;
     updateOrganelleMotion(s.elapsedS);
-    updateOrganellePopulations(s.elapsedS);
+    updateOrganellePopulations();
     updateMembraneProteinAnchors(s.elapsedS);
     updateFlowVisuals(s);
     syncVisualDivisionFromEngine(externalEngineSummary);
