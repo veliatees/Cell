@@ -393,6 +393,13 @@ const ORGANELLE_JIGGLE_RE = /mitochond|lysosome|peroxisome|ribosome|golgi|vesicl
 let livingCell: LivingCell | null = null; // the metabolic model behind the organelle scene
 const organelleMitos: THREE.Mesh[] = []; // mitochondria meshes (glow with ATP production)
 let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by cell status)
+// The plasma membrane is a fluid, deformable surface: it breathes/wobbles like a
+// water balloon and shows localized endocytosis (inward) / exocytosis (outward)
+// events. Base vertex positions + a few event centres drive a per-frame radial
+// deformation.
+let membraneBase: Float32Array | null = null;
+type MembraneEvent = { dx: number; dy: number; dz: number; freq: number; phase: number; sign: number; width: number; amp: number };
+let membraneEvents: MembraneEvent[] = [];
 type CellCyclePhase = "G1" | "S" | "G2" | "M";
 type DivisionStage = "none" | "dna_replication" | "centrosome_separation" | "chromosome_alignment" | "ring_assembly" | "furrow_ingression" | "intercellular_bridge" | "abscission_pending" | "regressed";
 type DivisionOutcome = "none" | "abscission_success" | "cytokinesis_failure";
@@ -2450,6 +2457,41 @@ function updateOrganellePopulations() {
   }
 }
 
+// Deform the plasma membrane each frame: a slow water-balloon breathing/wobble
+// plus localized endocytosis (inward) / exocytosis (outward) pulses. Vertices are
+// displaced radially from their captured rest positions, so the cell's outline is
+// a living, fluid surface rather than a rigid sphere.
+function updateMembraneShape(t: number) {
+  if (!organelleMembrane || !membraneBase) return;
+  const attr = organelleMembrane.geometry.getAttribute("position") as THREE.BufferAttribute;
+  const arr = attr.array as Float32Array;
+  const base = membraneBase;
+  for (let i = 0; i < arr.length; i += 3) {
+    const bx = base[i], by = base[i + 1], bz = base[i + 2];
+    const r = Math.sqrt(bx * bx + by * by + bz * bz) || 1;
+    const nx = bx / r, ny = by / r, nz = bz / r;
+    // Smooth breathing/wobble (low spatial + temporal frequency).
+    let w =
+      0.05 *
+      (Math.sin(1.4 * nx + 0.6 * t) +
+        Math.sin(1.2 * ny - 0.5 * t + 1.7) +
+        Math.sin(1.1 * nz + 0.55 * t + 3.1)) /
+      3;
+    // Localized endo/exocytosis pulses on the facing cap of each event centre.
+    for (const e of membraneEvents) {
+      const dot = nx * e.dx + ny * e.dy + nz * e.dz;
+      if (dot <= 0) continue;
+      const pulse = Math.max(0, Math.sin(t * e.freq + e.phase));
+      w += e.sign * e.amp * pulse * Math.pow(dot, e.width);
+    }
+    const f = 1 + w;
+    arr[i] = bx * f;
+    arr[i + 1] = by * f;
+    arr[i + 2] = bz * f;
+  }
+  attr.needsUpdate = true;
+}
+
 function updateOrganelleMotion(t: number) {
   const mechanics = cellCycle.mechanics;
   const mitoticRedistribution =
@@ -3092,6 +3134,8 @@ function clearWaterVisuals() {
 
   organelleMitos.length = 0;
   organelleMembrane = null;
+  membraneBase = null;
+  membraneEvents = [];
   organelleGlow = [];
   ribosomeMat = null;
   divisionOverlay = null;
@@ -3859,6 +3903,8 @@ function buildOrganelleScene() {
 
   organelleMitos.length = 0;
   organelleMembrane = null;
+  membraneBase = null;
+  membraneEvents = [];
   organelleGlow = [];
   ribosomeMat = null;
   divisionOverlay = null;
@@ -4043,11 +4089,15 @@ function buildOrganelleScene() {
   ): THREE.InstancedMesh | null => {
     if (count <= 0) return null;
     const rMax = opts.rMax ?? CELL_R * 0.86;
-    const jitter = opts.jitterScale ?? 0.28;
-    const cageR = opts.cage ?? 0.14;
-    // Reserve bounding radius + cage so the whole random walk fits in the gap to
-    // the nearest neighbour: motion can NEVER cause an overlap.
-    const exclR = opts.collisionRadius + cageR;
+    const jitter = opts.jitterScale ?? 0.2;
+    // Cage ~0.13 world = ~0.1 um: the measured subdiffusion caging plateau of
+    // crowded cytoplasm (cell_quantitative_v2.json motion.subdiffusionCrossover).
+    const cageR = opts.cage ?? 0.13;
+    // Reserve the MAX-scaled bounding radius (collisionRadius * (1+jitter)) + cage,
+    // so even the largest-jittered instance, at the far edge of its random-walk
+    // cage, still cannot overlap a neighbour. (The earlier bug reserved only the
+    // unscaled radius, so up-scaled instances interpenetrated.)
+    const exclR = opts.collisionRadius * (1 + jitter) + cageR;
 
     // Non-overlapping placement (excluded volume) via the shared spatial hash.
     // If the cytoplasm jams before all copies fit, we render only what fits
@@ -4141,8 +4191,27 @@ function buildOrganelleScene() {
   };
 
   // --- Plasma membrane (organic, translucent so we can see inside) ---
-  organelleMembrane = mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.1, emissive: 0.05, label: "Plasma membrane — the cell's boundary; controls what enters and leaves" });
+  organelleMembrane = mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.1, emissive: 0.05, label: "Plasma membrane — a fluid, deformable bilayer; flexes and undergoes endocytosis/exocytosis" });
   mesh(organicSphere(CELL_R * 0.97, 0.06), "#9ec6ff", new THREE.Vector3(), { opacity: 0.06, emissive: 0.04 });
+  // Capture the membrane's rest shape and seed endo/exocytosis event centres so
+  // the surface can deform each frame (see updateMembraneShape).
+  {
+    const posAttr = organelleMembrane.geometry.getAttribute("position") as THREE.BufferAttribute;
+    membraneBase = new Float32Array(posAttr.array as Float32Array); // copy of rest positions
+    membraneEvents = [];
+    const nEvents = 6;
+    for (let i = 0; i < nEvents; i += 1) {
+      const d = randDir();
+      membraneEvents.push({
+        dx: d.x, dy: d.y, dz: d.z,
+        freq: 0.15 + rnd() * 0.4,
+        phase: rnd() * Math.PI * 2,
+        sign: rnd() < 0.5 ? -1 : 1, // -1 endocytosis (inward), +1 exocytosis (outward)
+        width: 3.5 + rnd() * 3.5,
+        amp: 0.1 + rnd() * 0.1
+      });
+    }
+  }
 
   // --- Hepatocyte polarity: sinusoidal blood vessel side vs canalicular bile side ---
   const sinusoidCurve = new THREE.CatmullRomCurve3([
@@ -4362,11 +4431,11 @@ function buildOrganelleScene() {
     {
       opacity: 0.9,
       emissive: 0.14,
-      jitterScale: 0.45,
-      collisionRadius: 0.53,
-      cage: 0.22,
-      step: 0.06,
-      label: `Mitochondria — true hepatocyte count ~${REAL_MITO.toLocaleString()} (~20% of cell volume). Discrete ovoid ~0.7 um wide x ~1.5 um long (measured, Part C). Non-overlapping placement + random caged motion. ${HERO_MITO} shown in cutaway detail. Rat-stereology proxy (Weibel 1969 / Loud 1968).`
+      jitterScale: 0.15,
+      collisionRadius: 0.52,
+      cage: 0.13,
+      step: 0.045,
+      label: `Mitochondria — true hepatocyte count ~${REAL_MITO.toLocaleString()} (~20% of cell volume). Discrete ovoid ~0.7 um wide x ~1.5 um long (measured, Part C). Non-overlapping (excluded volume) + random caged motion (~0.1 um plateau, measured). ${HERO_MITO} shown in cutaway detail. Rat-stereology proxy (Weibel 1969 / Loud 1968).`
     }
   );
 
@@ -4394,9 +4463,10 @@ function buildOrganelleScene() {
     {
       opacity: 0.92,
       emissive: 0.16,
-      collisionRadius: 0.36,
-      cage: 0.18,
-      step: 0.05,
+      collisionRadius: 0.34,
+      cage: 0.12,
+      step: 0.045,
+      jitterScale: 0.18,
       label: `Peroxisomes — true hepatocyte count ~${REAL_PEROX.toLocaleString()} (~0.5-0.6 um across, ~1.5% of cell volume). Non-overlapping + random caged motion. Rat-stereology proxy (Weibel 1969).`
     }
   );
@@ -4408,9 +4478,10 @@ function buildOrganelleScene() {
     {
       opacity: 0.92,
       emissive: 0.16,
-      collisionRadius: 0.38,
-      cage: 0.18,
-      step: 0.05,
+      collisionRadius: 0.36,
+      cage: 0.12,
+      step: 0.045,
+      jitterScale: 0.18,
       label: `Lysosomes — true hepatocyte count ~${REAL_LYSO.toLocaleString()} (~0.5 um across, ~1% of cell volume). Non-overlapping + random caged motion. Rat-stereology proxy (Weibel 1969).`
     }
   );
@@ -5354,6 +5425,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     const engineSignal = externalEngineSummary ? engineVisualSignal(externalEngineSummary) : null;
     updateOrganelleMotion(s.elapsedS);
     updateOrganellePopulations();
+    updateMembraneShape(s.elapsedS);
     updateMembraneProteinAnchors(s.elapsedS);
     updateFlowVisuals(s);
     syncVisualDivisionFromEngine(externalEngineSummary);
