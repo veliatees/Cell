@@ -262,3 +262,8 @@ Every simulated object should eventually have:
 - equations or rules of motion when known
 - visual representation and hidden state representation
 - confidence level and assumptions
+
+## License
+
+Released under the [MIT License](LICENSE) — free to use, study, modify, and
+build on, including commercially, with attribution.
