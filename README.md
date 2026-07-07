@@ -1,5 +1,11 @@
 # Cell
 
+> A source-grounded, real-units **stochastic simulation of a hepatocyte (liver cell)** — reaching from single molecules to tissue, checked against measured biology rather than tuned to look right.
+
+![The hepatocyte organelle scene: a polarized liver cell with organelles, live metabolic readout (ATP, glycogen, energy charge, cargo fidelity) and per-process activity](docs/images/hepatocyte-scene.png)
+
+**Contents:** [What It Is Now](#what-it-is-now) · [Run The Prototype](#run-the-prototype) · [Verify](#verify) · [Current Target Cell Type](#current-target-cell-type) · [Status — honest accounting](#status--honest-accounting) · [Documentation Map](#documentation-map)
+
 A research-first, source-grounded simulation of a **hepatocyte (liver cell)**,
 built the way the whole-cell modelling field builds them: a stochastic, real-units
 biochemical engine, validated against measured data, with an interactive 3-D scene
