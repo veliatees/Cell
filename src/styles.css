@@ -84,6 +84,44 @@ select {
   pointer-events: none;
 }
 
+.conc-legend {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 7;
+  width: min(300px, calc(100% - 24px));
+  padding: 8px 12px 9px;
+  border-radius: 8px;
+  color: #eaf3ff;
+  border: 1px solid rgba(190, 211, 237, 0.18);
+  background: rgba(7, 10, 15, 0.74);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+
+.conc-legend__title {
+  font-size: 11px;
+  line-height: 1.3;
+  margin-bottom: 6px;
+  color: #dce8f8;
+}
+
+.conc-legend__bar {
+  height: 9px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.conc-legend__scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  margin-top: 4px;
+  color: #9fb2cc;
+}
+
 .split-state-badge {
   position: absolute;
   left: 14px;

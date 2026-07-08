@@ -2,7 +2,7 @@
 
 > A source-grounded, real-units **stochastic simulation of a hepatocyte (liver cell)** — reaching from single molecules to tissue, checked against measured biology rather than tuned to look right.
 
-![The hepatocyte organelle scene: a polarized liver cell with organelles, live metabolic readout (ATP, glycogen, energy charge, cargo fidelity) and per-process activity](docs/images/hepatocyte-scene.png)
+![The hepatocyte organelle scene: a polarized liver cell — plasma membrane, nucleus, mitochondria, ER, Golgi, peroxisomes and lysosomes in a crowded molecular interior, beside a blood-filled sinusoid vessel](docs/images/hepatocyte-scene.png)
 
 **Contents:** [What It Is Now](#what-it-is-now) · [Run The Prototype](#run-the-prototype) · [Verify](#verify) · [Current Target Cell Type](#current-target-cell-type) · [Status — honest accounting](#status--honest-accounting) · [Documentation Map](#documentation-map)
 
@@ -85,6 +85,21 @@ A polarized hepatocyte with a **fenestrated sinusoidal endothelium** (sieve-plat
 pores, LSEC nuclei), a canalicular bile groove, true-size membrane-protein
 footprints, and blood-side cargo crossing the endothelium through many fenestrae.
 The scene only ever shows the engine's state — it never fakes biology.
+
+**Concentration fields from the spatial engine.** Two views render the RDME's
+steady-state output directly on the hepatocyte lattice — the same geometry and
+diffusion coefficients the engine uses — coloured by concentration (mM):
+
+| Glucose gradient (sinusoid → canaliculus) | ATP micro-domains (peri-mitochondrial) |
+|:---:|:---:|
+| ![Glucose steady-state concentration field: warm at the blood-facing sinusoid pole where glucose enters, cooling toward the depleted bile canaliculus](docs/images/concentration-glucose.png) | ![ATP steady-state concentration field: bright hot cores around the dispersed mitochondria decaying into the darker low-ATP cytosol](docs/images/concentration-atp.png) |
+
+Glucose enters at the blood-facing membrane and is consumed as it crosses the
+cell, so it runs high (≈5 mM) at the sinusoid and falls toward the bile pole; ATP
+is produced in the mitochondria and consumed everywhere, forming bright halos
+that decay over `λ = √(D/k)` ≈ 1 µm. Both are the deterministic mean-field steady
+state of the engine's reaction–diffusion
+(`scripts/export_concentration_field.py`).
 
 This is **not** a predictive digital twin, and it does not pretend to be. It is an
 early-stage, source-grounded model whose architecture is now field-aligned and

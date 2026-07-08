@@ -1087,6 +1087,90 @@
       {
         "assumption_level": "placeholder",
         "compartment_id": "cytosol",
+        "id": "K+",
+        "initial_value": 0.9,
+        "label": "Potassium",
+        "normal_range": [
+          0.0,
+          1.0
+        ],
+        "notes": "Dominant intracellular cation (~140 mM); sets resting potential.",
+        "source_id": "project_roadmap_07",
+        "unit": "relative_pool_0_1"
+      },
+      {
+        "assumption_level": "placeholder",
+        "compartment_id": "cytosol",
+        "id": "Na+",
+        "initial_value": 0.1,
+        "label": "Sodium",
+        "normal_range": [
+          0.0,
+          1.0
+        ],
+        "notes": "Low inside (~12 mM); its gradient powers secondary transport.",
+        "source_id": "project_roadmap_07",
+        "unit": "relative_pool_0_1"
+      },
+      {
+        "assumption_level": "placeholder",
+        "compartment_id": "cytosol",
+        "id": "Cl-",
+        "initial_value": 0.2,
+        "label": "Chloride",
+        "normal_range": [
+          0.0,
+          1.0
+        ],
+        "notes": "Intracellular chloride (~10-40 mM).",
+        "source_id": "project_roadmap_07",
+        "unit": "relative_pool_0_1"
+      },
+      {
+        "assumption_level": "placeholder",
+        "compartment_id": "cytosol",
+        "id": "Mg2+",
+        "initial_value": 0.5,
+        "label": "Magnesium",
+        "normal_range": [
+          0.0,
+          1.0
+        ],
+        "notes": "Free Mg2+ (~0.5 mM); cofactor for ATP-dependent enzymes.",
+        "source_id": "project_roadmap_07",
+        "unit": "relative_pool_0_1"
+      },
+      {
+        "assumption_level": "placeholder",
+        "compartment_id": "cytosol",
+        "id": "GTP",
+        "initial_value": 0.4,
+        "label": "GTP",
+        "normal_range": [
+          0.0,
+          1.0
+        ],
+        "notes": "Guanine nucleotide pool for GTPases and biosynthesis.",
+        "source_id": "project_roadmap_07",
+        "unit": "relative_pool_0_1"
+      },
+      {
+        "assumption_level": "placeholder",
+        "compartment_id": "cytosol",
+        "id": "NADP+",
+        "initial_value": 0.1,
+        "label": "NADP+",
+        "normal_range": [
+          0.0,
+          1.0
+        ],
+        "notes": "Oxidised NADP pool; kept small so NADPH/NADP+ stays high.",
+        "source_id": "project_roadmap_07",
+        "unit": "relative_pool_0_1"
+      },
+      {
+        "assumption_level": "placeholder",
+        "compartment_id": "cytosol",
         "id": "oxygen",
         "initial_value": 0.7,
         "label": "Oxygen",
@@ -1363,7 +1447,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-06-23T17:01:11.193974+00:00",
+    "created_at_utc": "2026-07-08T20:58:41.674060+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -2237,6 +2321,12 @@
         "unit": "relative_pool_0_1",
         "value": 0.027818244303154487
       },
+      "Cl-": {
+        "compartment_id": "cytosol",
+        "id": "Cl-",
+        "unit": "relative_pool_0_1",
+        "value": 0.2
+      },
       "GSH": {
         "compartment_id": "cytosol",
         "id": "GSH",
@@ -2248,6 +2338,24 @@
         "id": "GSSG",
         "unit": "relative_pool_0_1",
         "value": 0.08127295686010835
+      },
+      "GTP": {
+        "compartment_id": "cytosol",
+        "id": "GTP",
+        "unit": "relative_pool_0_1",
+        "value": 0.4
+      },
+      "K+": {
+        "compartment_id": "cytosol",
+        "id": "K+",
+        "unit": "relative_pool_0_1",
+        "value": 0.9
+      },
+      "Mg2+": {
+        "compartment_id": "cytosol",
+        "id": "Mg2+",
+        "unit": "relative_pool_0_1",
+        "value": 0.5
       },
       "NAD+": {
         "compartment_id": "cytosol",
@@ -2261,11 +2369,23 @@
         "unit": "relative_pool_0_1",
         "value": 0.34954936260901903
       },
+      "NADP+": {
+        "compartment_id": "cytosol",
+        "id": "NADP+",
+        "unit": "relative_pool_0_1",
+        "value": 0.1
+      },
       "NADPH": {
         "compartment_id": "cytosol",
         "id": "NADPH",
         "unit": "relative_pool_0_1",
         "value": 0.7146851818849076
+      },
+      "Na+": {
+        "compartment_id": "cytosol",
+        "id": "Na+",
+        "unit": "relative_pool_0_1",
+        "value": 0.1
       },
       "ROS": {
         "compartment_id": "cytosol",
