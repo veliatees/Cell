@@ -430,12 +430,13 @@ class OrganelleInventory:
     organelles if the engine state gives them to that daughter.
     """
 
-    # Hepatocytes are mitochondria-rich; 1500 sits inside the textbook 1000-2000
-    # range. Lysosome/peroxisome/ribosome values are coarse placeholders with
-    # source tags in the roadmap and must be calibrated as morphometry improves.
-    mitochondria: int = 1500
-    mitochondrial_fragments: int = 1500
-    lysosomes: int = 300
+    # Grounded counts mirror quantitative/hepatocyte_counts.py (rat-stereology
+    # proxy; human mitochondria ~800-1000). Hepatocyte mitochondria are discrete
+    # spherical/oblong units, so a per-unit count == the fragment count is expected
+    # (these two fields track one population's fission state, not two organelles).
+    mitochondria: int = 1000
+    mitochondrial_fragments: int = 1000
+    lysosomes: int = 400
     peroxisomes: int = 500
     ribosomes: int = 10_000_000
     golgi_stacks: int = 1

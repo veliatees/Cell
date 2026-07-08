@@ -1447,7 +1447,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-08T20:58:41.674060+00:00",
+    "created_at_utc": "2026-07-08T21:53:00.367889+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -1755,10 +1755,10 @@
             "er_mass": 1.0,
             "golgi_fragments": 1,
             "golgi_stacks": 1,
-            "lysosomes": 300,
+            "lysosomes": 400,
             "membrane_area": 1.0,
-            "mitochondria": 1500,
-            "mitochondrial_fragments": 1500,
+            "mitochondria": 1000,
+            "mitochondrial_fragments": 1000,
             "peroxisomes": 500,
             "ribosomes": 10000000
           },
