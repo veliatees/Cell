@@ -96,6 +96,11 @@ ORGANELLES: tuple[OrganelleQuantity, ...] = (
     OrganelleQuantity("peroxisomes", "Peroxisomes", 500, (350, 620), 1.5, "dispersed cytoplasm", True, "rat", "order-of-magnitude", "weibel1969"),
     OrganelleQuantity("ribosomes", "Ribosomes", 1.0e7, (1.0e7, 1.0e7), None, "cytosol + rough ER", False, "consensus", "order-of-magnitude", "consensus"),
     OrganelleQuantity("glycogen", "Glycogen rosettes", None, None, 6.0, "cytosol (near SER)", True, "rat", "order-of-magnitude", "loud1968"),
+    # Lipid droplets: ER-derived neutral-lipid stores, highly variable with
+    # nutritional state (few in a lean fed cell, dominating the cytoplasm in
+    # steatosis). Count and the ~1% volume fraction are order-of-magnitude for a
+    # normal (non-steatotic) hepatocyte. (Fujimoto & Parton 2011; Ohsaki 2014)
+    OrganelleQuantity("lipid_droplets", "Lipid droplets", 100, (10, 500), 1.0, "cytosol (ER-derived)", True, "human/rat", "order-of-magnitude", "fujimoto2011/ohsaki2014"),
 )
 
 

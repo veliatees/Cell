@@ -40,6 +40,18 @@ Volume fractions are rat stereology (best available proxy for human). The
 | Peroxisomes | ~500 (350–620) | 1.5 % | ~0.5–0.6 µm | dispersed | order-of-mag | Weibel 1969 |
 | Ribosomes | ~10⁷ | — | — | cytosol + RER | order-of-mag | consensus |
 | Glycogen | rosettes | 6 % (3–12, fed) | — | cytosol | order-of-mag | Loud 1968 |
+| Lipid droplets | ~100 (10–600) | ~1 % (≫ in steatosis) | ~0.4–1 µm | cytosol (ER-derived) | order-of-mag | Fujimoto 2011 |
+
+> **Mitochondria are one heterogeneous population, not several "types."** Hepatocyte
+> mitochondria are discrete **spherical/oblong** units (~0.7 × 1.5 µm) — not the
+> filamentous reticulum seen in many cell lines — kept heterogeneous in size/shape
+> by ongoing fission↔fusion. The model's `mitochondria` and `mitochondrialFragments`
+> fields track that single population's fission state, not two distinct organelles.
+>
+> **Lipid droplets** are ER-derived neutral-lipid stores bounded by a phospholipid
+> *monolayer* (not a bilayer organelle). Their count and volume are strongly
+> nutritional-state-dependent — few in a lean fed cell, dominating the cytoplasm in
+> steatosis — so the ~100 / ~1 % figures are a normal-cell order-of-magnitude anchor.
 
 ## Protein copy numbers (per cell)
 

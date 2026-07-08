@@ -84,6 +84,14 @@
       "location": "cytosol (near SER)", "renderable": true,
       "organism": "rat", "quality": "order-of-magnitude", "source": "loud1968",
       "note": "Strongly state-dependent: ~0 fasted to >10% fed. Model as a variable pool, not a constant."
+    },
+    {
+      "id": "lipid_droplets", "name": "Lipid droplets",
+      "countTypical": 100, "countRange": [10, 500],
+      "volumeFractionPct": 1, "volumeFractionRangePct": [0.5, 2],
+      "location": "cytosol (ER-derived)", "renderable": true,
+      "organism": "human/rat", "quality": "order-of-magnitude", "source": "fujimoto2011/ohsaki2014",
+      "note": "ER-derived neutral-lipid stores; highly state-dependent (few when lean/fed, dominating in steatosis). ~1% volume + ~100 count are order-of-magnitude for a normal hepatocyte."
     }
   ],
   "proteins": [
