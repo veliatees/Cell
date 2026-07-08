@@ -430,6 +430,7 @@ type OrganelleInventoryVisual = {
   mitochondrialFragments: number;
   lysosomes: number;
   peroxisomes: number;
+  lipidDroplets: number;
   ribosomes: number;
   centrosomes: number;
   golgiFragments: number;
@@ -733,10 +734,15 @@ const IDLE_DIVISION_MECHANICS = (): DivisionMechanicsState => ({
   golgiFragmentation: 0
 });
 const baselineOrganelleInventory = (): OrganelleInventoryVisual => ({
-  mitochondria: 1500,
-  mitochondrialFragments: 1500,
-  lysosomes: 300,
+  // Grounded counts mirror public/cell_quantitative.json (rat-stereology proxy).
+  // Hepatocyte mitochondria are discrete spherical/oblong units (not a filamentous
+  // reticulum), so a per-unit count ~= the fragment count is expected here — the
+  // two fields track one population's fission state, not two organelle types.
+  mitochondria: 1000,
+  mitochondrialFragments: 1000,
+  lysosomes: 400,
   peroxisomes: 500,
+  lipidDroplets: 100,
   ribosomes: 10_000_000,
   centrosomes: 1,
   golgiFragments: 1,
@@ -791,6 +797,7 @@ function partitionVisualOrganelles(parent: OrganelleInventoryVisual): [Organelle
   const [fragA, fragB] = splitIntegerCount(parent.mitochondrialFragments);
   const [lysoA, lysoB] = splitIntegerCount(parent.lysosomes);
   const [peroxA, peroxB] = splitIntegerCount(parent.peroxisomes);
+  const [lipidA, lipidB] = splitIntegerCount(parent.lipidDroplets);
   const [riboA, riboB] = splitIntegerCount(parent.ribosomes);
   const [golgiA, golgiB] = splitIntegerCount(Math.max(2, parent.golgiFragments));
   const cenA = 1;
@@ -801,6 +808,7 @@ function partitionVisualOrganelles(parent: OrganelleInventoryVisual): [Organelle
       mitochondrialFragments: Math.max(mitoA, fragA),
       lysosomes: lysoA,
       peroxisomes: peroxA,
+      lipidDroplets: lipidA,
       ribosomes: riboA,
       centrosomes: cenA,
       golgiFragments: golgiA > 0 ? 1 : 0,
@@ -812,6 +820,7 @@ function partitionVisualOrganelles(parent: OrganelleInventoryVisual): [Organelle
       mitochondrialFragments: Math.max(mitoB, fragB),
       lysosomes: lysoB,
       peroxisomes: peroxB,
+      lipidDroplets: lipidB,
       ribosomes: riboB,
       centrosomes: cenB,
       golgiFragments: golgiB > 0 ? 1 : 0,
@@ -992,6 +1001,9 @@ function visualCellFromEngineCell(cell: EngineDivisionCell, fallbackIndex: numbe
       mitochondrialFragments: cell.organelles.mitochondrial_fragments,
       lysosomes: cell.organelles.lysosomes,
       peroxisomes: cell.organelles.peroxisomes,
+      // Lipid droplets are visual-only (the engine does not track them yet); seed
+      // from the grounded baseline scaled by biomass so daughters inherit sanely.
+      lipidDroplets: Math.max(1, Math.round(100 * cell.biomass)),
       ribosomes: cell.organelles.ribosomes,
       centrosomes: cell.organelles.centrosomes,
       golgiFragments: cell.organelles.golgi_fragments,
@@ -4261,7 +4273,7 @@ function buildOrganelleScene() {
     return randDir().multiplyScalar(0.5 * rMax);
   };
   const addOrganellePopulation = (
-    kind: keyof OrganelleActivity,
+    kind: keyof OrganelleActivity | null,
     count: number,
     geo: THREE.BufferGeometry,
     color: string,
@@ -4352,7 +4364,7 @@ function buildOrganelleScene() {
     if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
     inst.userData.label = opts.label;
     group.add(inst);
-    addPos(kind, centroid.multiplyScalar(1 / actual));
+    if (kind) addPos(kind, centroid.multiplyScalar(1 / actual));
     // NOTE: deliberately NOT added to the activity-glow buckets. A shared
     // emissiveIntensity would make every organelle pulse in unison (unphysical);
     // instead each instance's brightness does its own independent random walk.
@@ -4576,9 +4588,12 @@ function buildOrganelleScene() {
   // population (~20% of cell volume). A few are additionally rendered as
   // detailed cutaways (inner matrix + cristae) and act as the CPS1 host and the
   // per-mesh ATP-glow handles. Counts: cell_quantitative.json (rat proxy). ---
-  const REAL_MITO = 1500;
+  // Grounded counts mirror public/cell_quantitative.json (rat-stereology proxy;
+  // human mitochondria ~800-1000). Kept in sync with the quantitative dataset.
+  const REAL_MITO = 1000;
   const REAL_PEROX = 500;
-  const REAL_LYSO = 300;
+  const REAL_LYSO = 400;
+  const REAL_LIPID = 100;
   const HERO_MITO = 8;
   for (let i = 0; i < HERO_MITO; i += 1) {
     const len = 1.6 + rnd() * 1.8;
@@ -4663,6 +4678,25 @@ function buildOrganelleScene() {
       step: 0.045,
       jitterScale: 0.18,
       label: `Lysosomes — true hepatocyte count ~${REAL_LYSO.toLocaleString()} (~0.5 um across, ~1% of cell volume). Non-overlapping + random caged motion. Rat-stereology proxy (Weibel 1969).`
+    }
+  );
+  // --- Lipid droplets: ER-derived neutral-lipid stores (pale, near-spherical,
+  // no bounding membrane — a phospholipid monolayer). Count/volume are highly
+  // state-dependent (few when lean/fed, dominating in steatosis); ~100 at ~1% of
+  // volume is order-of-magnitude for a normal hepatocyte. (Fujimoto & Parton 2011) ---
+  addOrganellePopulation(
+    null,
+    REAL_LIPID,
+    new THREE.SphereGeometry(0.43, 10, 8),
+    "#f2d675",
+    {
+      opacity: 0.95,
+      emissive: 0.1,
+      collisionRadius: 0.43,
+      cage: 0.11,
+      step: 0.04,
+      jitterScale: 0.4,
+      label: `Lipid droplets — ER-derived neutral-lipid (triacylglycerol/cholesteryl-ester) stores, ~${REAL_LIPID.toLocaleString()} (order-of-magnitude, highly state-dependent; ~1% of volume normally, far more in steatosis). A phospholipid monolayer, not a bilayer-bound organelle. (Fujimoto & Parton 2011)`
     }
   );
 
