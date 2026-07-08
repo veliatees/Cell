@@ -2,7 +2,7 @@
 
 > A source-grounded, real-units **stochastic simulation of a hepatocyte (liver cell)** — reaching from single molecules to tissue, checked against measured biology rather than tuned to look right.
 
-![The hepatocyte organelle scene: a polarized liver cell — plasma membrane, nucleus, mitochondria, ER, Golgi, peroxisomes and lysosomes in a crowded molecular interior, beside a blood-filled sinusoid vessel](docs/images/hepatocyte-scene.png)
+![The hepatocyte organelle scene: a polarized liver cell — plasma membrane, nucleus, mitochondria, ER, Golgi, peroxisomes and lysosomes in a crowded molecular interior, beside a blood-filled sinusoid vessel](docs/images/hepatocyte-hero.png)
 
 **Contents:** [What It Is Now](#what-it-is-now) · [Run The Prototype](#run-the-prototype) · [Verify](#verify) · [Current Target Cell Type](#current-target-cell-type) · [Status — honest accounting](#status--honest-accounting) · [Documentation Map](#documentation-map)
 
