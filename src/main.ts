@@ -4675,6 +4675,11 @@ function buildOrganelleScene() {
     label: "Bile canaliculus - apical bile groove; BSEP/MRP-like transporters export bile acids, bilirubin and conjugates"
   });
   trackMotion(canaliculus, canaliculus.position, 0.035, 0.16, 0.001);
+  // Reserve the bile-canaliculus volume: it is a solid apical structure, so no
+  // organelle may be placed inside it (excluded volume).
+  for (let s = 0; s <= 10; s += 1) {
+    occupied.push({ c: canalCurve.getPointAt(s / 10), r: 0.55 });
+  }
 
   // --- Nucleus + envelope + nucleolus + nuclear pores ---
   const nuc = new THREE.Vector3(-3.4, 1.4, -1.2);
@@ -4780,6 +4785,8 @@ function buildOrganelleScene() {
     trackMotion(erTube, erTube.position, 0.045, 0.16 + rnd() * 0.08, 0.0008);
     addPos("er", pts[3]);
     addPos("ribosome", pts[3]);
+    // Reserve the ER tube nodes so organelles don't clip through the network.
+    for (const p of pts) occupied.push({ c: p, r: 0.34 });
   }
 
   // --- Golgi apparatus: a coherent stack of full, flattened cisternae + vesicles ---
