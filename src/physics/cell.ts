@@ -221,7 +221,7 @@ const ATP_TOTAL = 1;
 // ~= 35 s on-screen; a 10 h fast ~= 75 s), separate from the fast metabolic clock.
 const HOURS_PER_SIM_SEC = 0.0267;
 const MAX_FAST_HOURS = 10; // a meal is forced by 10 h — a normal overnight fast
-const MEAN_MEAL_INTERVAL_H = 5.5;
+const MEAN_MEAL_INTERVAL_H = 4.5;
 const ALL_IDS: OrganelleId[] = [
   "membrane",
   "glycolysis",
@@ -417,6 +417,7 @@ export class LivingCell {
   // interval until the next meal, and the resulting nutrient level (0..1).
   private mealClockH = 0;
   private nextMealH = 3.5;
+  private mealSize = 1.0;
   private nutrition = 0.7;
   private lowAtp = 0;
   private prevStatus: CellSnapshot["status"] = "healthy";
@@ -601,14 +602,29 @@ export class LivingCell {
     this.mealClockH += dt * HOURS_PER_SIM_SEC;
     if (this.mealClockH >= this.nextMealH) {
       this.mealClockH = 0;
-      this.nextMealH = this.stochastic
-        ? clamp(-MEAN_MEAL_INTERVAL_H * Math.log(Math.max(1e-6, this.rand())), 1.5, MAX_FAST_HOURS)
-        : MEAN_MEAL_INTERVAL_H;
+      if (this.stochastic) {
+        // Fresh meal: a random SIZE (so the fed peak and its duration vary) and a
+        // random interval to the next one. The interval is exponential (memoryless
+        // eating) resampled into (1.2, 10] h — no artificial pile-up exactly at the
+        // 10 h overnight cap, so fasts are genuinely varied, not "always 10 h".
+        this.mealSize = 0.72 + 0.56 * this.rand();
+        let iv = MEAN_MEAL_INTERVAL_H;
+        for (let k = 0; k < 6; k += 1) {
+          iv = -MEAN_MEAL_INTERVAL_H * Math.log(Math.max(1e-6, this.rand()));
+          if (iv >= 1.2 && iv <= MAX_FAST_HOURS) break;
+        }
+        this.nextMealH = clamp(iv, 1.2, MAX_FAST_HOURS);
+      } else {
+        this.mealSize = 1.0;
+        this.nextMealH = MEAN_MEAL_INTERVAL_H;
+      }
     }
     const h = this.mealClockH;
+    // Nutrient level: rise-peak-decline absorption scaled by this meal's size, so
+    // a big meal keeps the cell fed longer and a small one only briefly.
     this.nutrition = clamp(
-      (0.5 + 0.5 * (1 - Math.exp(-h / 0.7))) * Math.exp(-Math.max(0, h - 1.5) / 3.2),
-      0.08,
+      this.mealSize * (0.5 + 0.5 * (1 - Math.exp(-h / 0.7))) * Math.exp(-Math.max(0, h - 1.5) / 3.2),
+      0.06,
       1
     );
     const nutrition = this.nutrition;
