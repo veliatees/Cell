@@ -2508,7 +2508,7 @@ const _popQuat = new THREE.Quaternion();
 const _popScale = new THREE.Vector3();
 const _popMat = new THREE.Matrix4();
 const _popColor = new THREE.Color();
-function updateOrganellePopulations() {
+function updateOrganellePopulations(t: number) {
   for (const pop of organellePopulations) {
     const count = pop.scale.length;
     const step = pop.step;
@@ -2528,7 +2528,11 @@ function updateOrganellePopulations() {
       pop.offset[i * 3] = ox;
       pop.offset[i * 3 + 1] = oy;
       pop.offset[i * 3 + 2] = oz;
-      _popPos.set(pop.basePos[i * 3] + ox, pop.basePos[i * 3 + 1] + oy, pop.basePos[i * 3 + 2] + oz);
+      // Ride the membrane deformation (attenuated by depth), then add the caged
+      // random walk on top.
+      const bx = pop.basePos[i * 3], by = pop.basePos[i * 3 + 1], bz = pop.basePos[i * 3 + 2];
+      const mf = membraneCoupledFactor(bx, by, bz, t);
+      _popPos.set(bx * mf + ox, by * mf + oy, bz * mf + oz);
       _popQuat.set(pop.baseQuat[i * 4], pop.baseQuat[i * 4 + 1], pop.baseQuat[i * 4 + 2], pop.baseQuat[i * 4 + 3]);
       const sc = pop.scale[i];
       _popScale.set(sc, sc, sc);
@@ -2661,6 +2665,18 @@ function membraneRadialFactor(nx: number, ny: number, nz: number, t: number): nu
   return 1 + w;
 }
 
+// The cytoplasm is (near-)incompressible: when the membrane flexes, the interior
+// moves WITH it — most at the surface, tapering to nothing at the centre. This
+// returns the radial factor to apply to an organelle at (x,y,z) so it rides the
+// membrane's deformation (breathing + endo/exocytosis) instead of floating free.
+function membraneCoupledFactor(x: number, y: number, z: number, t: number): number {
+  const r = Math.sqrt(x * x + y * y + z * z);
+  if (r < 1e-3) return 1;
+  const surface = membraneRadialFactor(x / r, y / r, z / r, t); // 1 + w at the surface
+  const depth = Math.min(1, r / (CELL_R * 0.95)); // 0 at centre → 1 near membrane
+  return 1 + (surface - 1) * depth;
+}
+
 function updateMembraneShape(t: number) {
   if (!organelleMembrane || !membraneBase) return;
   const attr = organelleMembrane.geometry.getAttribute("position") as THREE.BufferAttribute;
@@ -2725,7 +2741,13 @@ function updateOrganelleMotion(t: number) {
     const dy = Math.sin(t * m.speed * 0.73 + m.phase * 1.7) * m.amp * 0.38;
     const dz = Math.cos(t * m.speed * 0.91 + m.phase * 0.6) * m.amp * 0.62;
     const poleBias = Math.sign(m.base.x || Math.sin(m.phase)) * mitoticRedistribution * 0.5;
-    m.object.position.set(m.base.x + dx + poleBias, m.base.y + dy * (1 - 0.25 * mitoticRedistribution), m.base.z + dz);
+    // Ride the membrane deformation (depth-attenuated) beneath the local jiggle.
+    const mf = membraneCoupledFactor(m.base.x, m.base.y, m.base.z, t);
+    m.object.position.set(
+      m.base.x * mf + dx + poleBias,
+      m.base.y * mf + dy * (1 - 0.25 * mitoticRedistribution),
+      m.base.z * mf + dz
+    );
     m.object.rotateOnAxis(m.axis, m.spin);
   }
 }
@@ -5922,7 +5944,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     const s = livingCell.snapshot();
     const engineSignal = externalEngineSummary ? engineVisualSignal(externalEngineSummary) : null;
     updateOrganelleMotion(s.elapsedS);
-    updateOrganellePopulations();
+    updateOrganellePopulations(s.elapsedS);
     updateNucleusExpression(realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND);
     updateMembraneShape(s.elapsedS);
     updateMembraneProteinAnchors(s.elapsedS);
