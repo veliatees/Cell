@@ -2679,7 +2679,7 @@ function updateMembraneShape(t: number) {
 
 // Feeding/fasting: fill or mobilise the glycogen store and refresh the readout.
 function updateNutritionVisual(s: CellSnapshot) {
-  const frac = clamp((s.hepatocyte.glycogenRatio - 0.15) / 0.6, 0.06, 1);
+  const frac = clamp(s.glycogenStore01, 0.04, 1);
   const visN = Math.round(glycogenBeads.length * frac);
   for (let i = 0; i < glycogenBeads.length; i += 1) glycogenBeads[i].visible = i < visN;
   const label = s.fedState === "fed" ? "FED" : s.fedState === "fasting" ? "FASTED" : "post-absorptive";
