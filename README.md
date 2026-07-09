@@ -86,6 +86,24 @@ pores, LSEC nuclei), a canalicular bile groove, true-size membrane-protein
 footprints, and blood-side cargo crossing the endothelium through many fenestrae.
 The scene only ever shows the engine's state — it never fakes biology.
 
+Recent additions make more of the engine visible and keep it physically honest:
+
+- **The central dogma, animated.** Inside the interphase nucleus, gene loci with
+  two-state promoters flare as they fire transcription bursts; mRNA transcripts
+  stream to a nuclear pore, exit, and head into the cytoplasm — burst intensity
+  tracking the engine's mRNA pool.
+- **Stochastic feeding / fasting.** Meals arrive on a compressed physiological
+  clock (random interval, capped at a 10 h overnight fast). Glycogen granules
+  visibly fill when fed and mobilise when fasting; ketone bodies are a *real fuel*
+  (fat → ketones → ATP) that buffers the cell through a fast while glycogen is
+  spent, and a readout reports state, hours-since-meal, blood glucose and ketones.
+- **One solid, deformable membrane.** A single fluid bilayer (no second static
+  shell) that flexes, with every embedded transport protein riding the deforming
+  surface. Nothing interpenetrates: the membrane cannot balloon into the
+  neighbouring sinusoid (a real space-of-Disse gap separates them), and every
+  organelle — mitochondria, the many Golgi dictyosomes, ER, canaliculus, lipid
+  droplets — is placed with hard excluded-volume so none clips through another.
+
 **Concentration fields from the spatial engine.** Two views render the RDME's
 steady-state output directly on the hepatocyte lattice — the same geometry and
 diffusion coefficients the engine uses — coloured by concentration (mM):

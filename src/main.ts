@@ -2678,10 +2678,15 @@ function updateMembraneShape(t: number) {
 }
 
 // Feeding/fasting: fill or mobilise the glycogen store and refresh the readout.
+let lastNutritionBadgeMs = 0;
 function updateNutritionVisual(s: CellSnapshot) {
   const frac = clamp(s.glycogenStore01, 0.04, 1);
   const visN = Math.round(glycogenBeads.length * frac);
   for (let i = 0; i < glycogenBeads.length; i += 1) glycogenBeads[i].visible = i < visN;
+  // The badge is text/DOM — refresh a few times a second, not every frame.
+  const now = performance.now();
+  if (now - lastNutritionBadgeMs < 220) return;
+  lastNutritionBadgeMs = now;
   const label = s.fedState === "fed" ? "FED" : s.fedState === "fasting" ? "FASTED" : "post-absorptive";
   const cls = s.fedState === "fed" ? "is-fed" : s.fedState === "fasting" ? "is-fasted" : "is-post";
   nutritionBadge.className = `nutrition-badge ${cls}`;
