@@ -35,7 +35,7 @@ Volume fractions are rat stereology (best available proxy for human). The
 | Mitochondria | ~1 000 (500–2 500) | 20 % | ~1 µm | dispersed | order-of-mag (count) | Weibel 1969 / Loud 1968 |
 | Rough ER | network | 15 % | — | perinuclear | measured | Weibel 1969 |
 | Smooth ER | network | 6 % | — | cytoplasm | measured | Weibel 1969 |
-| Golgi | few stacks | 2.6 % | — | canalicular pole | measured | Blouin 1977 |
+| Golgi | ~40–50 dictyosomes (one apparatus) | 2.6 % | — | canalicular pole | order-of-mag | Blouin 1977 |
 | Lysosomes | ~400 (200–600) | 1.0 % | ~0.5 µm | canalicular pole | order-of-mag | Weibel 1969 |
 | Peroxisomes | ~500 (350–620) | 1.5 % | ~0.5–0.6 µm | dispersed | order-of-mag | Weibel 1969 |
 | Ribosomes | ~10⁷ | — | — | cytosol + RER | order-of-mag | consensus |

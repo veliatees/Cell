@@ -4815,32 +4815,54 @@ function buildOrganelleScene() {
     for (const p of pts) occupied.push({ c: p, r: 0.34 });
   }
 
-  // --- Golgi apparatus: a coherent stack of full, flattened cisternae + vesicles ---
-  const golgi = place(2.8, 5.5, 9) ?? new THREE.Vector3(6, -2, 2);
-  const golgiGroup = new THREE.Group();
-  golgiGroup.position.copy(golgi);
-  group.add(golgiGroup);
-  trackMotion(golgiGroup, golgi, 0.09, 0.18, 0.002);
-  const golgiAxis: [number, number, number] = [Math.PI / 2 + 0.3, 0.4, 0];
-  for (let i = 0; i < 6; i += 1) {
-    const disc = mesh(
-      new THREE.CylinderGeometry(2.0 - i * 0.22, 2.0 - i * 0.22, 0.34, 36),
-      "#3fc7a6",
-      new THREE.Vector3(i * 0.12, (i - 2.5) * 0.5, 0),
-      { emissive: 0.12, rot: golgiAxis, rough: 0.45, label: "Golgi apparatus — modifies, sorts & ships proteins", parent: golgiGroup }
-    );
-    disc.scale.set(1, 1, 1.18); // make cisternae elliptical (flattened sacs)
-    tagGlow("golgi", disc);
-    addPos("golgi", golgi);
-  }
-  for (let i = 0; i < 6; i += 1) {
-    const vesicle = mesh(new THREE.SphereGeometry(0.34, 14, 10), "#7fe0c6", randDir().multiplyScalar(2.7), {
-      emissive: 0.18,
-      label: "Transport vesicle — carries cargo between compartments",
-      parent: golgiGroup
-    });
-    tagGlow("golgi", vesicle);
-    trackMotion(vesicle, vesicle.position, 0.14, 0.36 + rnd() * 0.18, 0.006);
+  // --- Golgi apparatus: hepatocytes carry MANY Golgi stacks (dictyosomes,
+  // ~40-50), polarized toward the canalicular pole — not one big organelle. Draw
+  // several representative stacks dispersed on the canalicular (+x) side, each
+  // reserved for excluded volume. ---
+  const N_GOLGI = 6;
+  for (let g = 0; g < N_GOLGI; g += 1) {
+    // Bias toward the canalicular (+x) pole; keep inside the cell, non-overlapping.
+    let pos: THREE.Vector3 | null = null;
+    for (let t = 0; t < 120; t += 1) {
+      const dir = new THREE.Vector3(0.5 + rnd() * 0.45, (rnd() - 0.4) * 0.8, (rnd() - 0.5) * 0.9).normalize();
+      const cand = dir.multiplyScalar(3.5 + rnd() * (CELL_R * 0.6 - 3.5));
+      cand.y *= 0.92;
+      if (cand.length() + 1.2 > CELL_R * 0.9) continue;
+      if (organelleCollides(cand.x, cand.y, cand.z, 1.15)) continue;
+      hashInsert(cand.x, cand.y, cand.z, 1.15);
+      occupied.push({ c: cand.clone(), r: 1.1 });
+      pos = cand;
+      break;
+    }
+    if (!pos) continue;
+    const stack = new THREE.Group();
+    stack.position.copy(pos);
+    group.add(stack);
+    trackMotion(stack, pos, 0.08, 0.16 + rnd() * 0.08, 0.002);
+    const axis: [number, number, number] = [Math.PI / 2 + 0.3 * (rnd() - 0.5), rnd() * Math.PI, 0];
+    const nCis = 5;
+    for (let i = 0; i < nCis; i += 1) {
+      const r = 0.9 - i * 0.09;
+      const disc = mesh(
+        new THREE.CylinderGeometry(r, r, 0.16, 28),
+        "#3fc7a6",
+        new THREE.Vector3(i * 0.06, (i - (nCis - 1) / 2) * 0.24, 0),
+        { emissive: 0.12, rot: axis, rough: 0.45, label: "Golgi stack (dictyosome) — one of ~40-50 in a hepatocyte; modifies, sorts & ships proteins toward the canalicular pole", parent: stack }
+      );
+      disc.scale.set(1, 1, 1.18);
+      tagGlow("golgi", disc);
+    }
+    addPos("golgi", pos);
+    // a couple of transport vesicles budding off this stack
+    for (let v = 0; v < 2; v += 1) {
+      const vesicle = mesh(new THREE.SphereGeometry(0.18, 12, 8), "#7fe0c6", randDir().multiplyScalar(1.1), {
+        emissive: 0.18,
+        label: "Transport vesicle — carries cargo between compartments",
+        parent: stack
+      });
+      tagGlow("golgi", vesicle);
+      trackMotion(vesicle, vesicle.position, 0.1, 0.34 + rnd() * 0.18, 0.006);
+    }
   }
 
   // --- Mitochondria: TRUE hepatocyte count (~1500), drawn as an instanced
@@ -5472,17 +5494,9 @@ function buildOrganelleScene() {
   }
   trackMotion(glycogenGroup, glycogenAnchor, 0.13, 0.34, 0.004);
 
-  // Small neutral lipid droplets: normal hepatocytes traffic lipids constantly;
-  // this is not a fatty-liver state unless the model drives them to dominate.
-  for (let i = 0; i < 5; i += 1) {
-    const p = place(0.7, 5, CELL_R - 2) ?? glycogenAnchor.clone().add(randDir().multiplyScalar(2.2));
-    const droplet = mesh(organicSphere(0.54 + rnd() * 0.28, 0.08), "#e7d37a", p, {
-      opacity: 0.48,
-      emissive: 0.08,
-      label: "Lipid droplet - neutral lipid storage / exchange with ER, mitochondria and peroxisomes"
-    });
-    trackMotion(droplet, p, 0.12, 0.22 + rnd() * 0.12, 0.004);
-  }
+  // (Lipid droplets are rendered once, earlier, as the grounded ~100-count
+  // instanced population with full excluded-volume placement — no separate,
+  // weaker set here.)
 
   // Glycolysis is not a membrane-bound organelle; it is a cytosolic enzyme
   // network. Give it a visible hub so the metabolic traffic can connect to it.
