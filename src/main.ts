@@ -295,6 +295,12 @@ const timeScaleBadge = document.createElement("div");
 timeScaleBadge.className = "time-scale-badge";
 timeScaleBadge.style.display = "none";
 viewportElement.append(timeScaleBadge);
+// Feeding/fasting readout (organelle scene): stochastic meals on a compressed
+// hours clock; glycogen granules fill/deplete with the state.
+const nutritionBadge = document.createElement("div");
+nutritionBadge.className = "nutrition-badge";
+nutritionBadge.style.display = "none";
+viewportElement.append(nutritionBadge);
 const splitStateBadge = document.createElement("div");
 splitStateBadge.className = "split-state-badge";
 splitStateBadge.style.display = "none";
@@ -540,6 +546,9 @@ type MotionTarget = {
   axis: THREE.Vector3;
 };
 const organelleMotions: MotionTarget[] = [];
+// Glycogen granules: shown/hidden per-frame so the store visibly fills (fed) and
+// mobilises (fasted) with the model's glycogen pool.
+let glycogenBeads: THREE.Mesh[] = [];
 // Instanced organelle populations (mitochondria/peroxisomes/lysosomes at true
 // count). Each instance does a bounded RANDOM WALK confined to its own cage —
 // genuine stochastic motion (not a repeating oscillation), and because the cage
@@ -1883,6 +1892,7 @@ function updateModeControls() {
   if (formulaStackEl) formulaStackEl.style.display = isCell ? "none" : "";
   if (!isCell && tempLabelEl) tempLabelEl.textContent = "Temp (K)";
   timeScaleBadge.style.display = isCell ? "block" : "none";
+  nutritionBadge.style.display = isCell ? "block" : "none";
   splitStateBadge.style.display = isCell ? "grid" : "none";
   // The floor grid is a scale reference for the molecular scenes, but it cuts
   // straight through the hepatocyte sphere and reads as a flat 2D artifact. Hide
@@ -2665,6 +2675,22 @@ function updateMembraneShape(t: number) {
     arr[i + 2] = bz * f;
   }
   attr.needsUpdate = true;
+}
+
+// Feeding/fasting: fill or mobilise the glycogen store and refresh the readout.
+function updateNutritionVisual(s: CellSnapshot) {
+  const frac = clamp((s.hepatocyte.glycogenRatio - 0.15) / 0.6, 0.06, 1);
+  const visN = Math.round(glycogenBeads.length * frac);
+  for (let i = 0; i < glycogenBeads.length; i += 1) glycogenBeads[i].visible = i < visN;
+  const label = s.fedState === "fed" ? "FED" : s.fedState === "fasting" ? "FASTED" : "post-absorptive";
+  const cls = s.fedState === "fed" ? "is-fed" : s.fedState === "fasting" ? "is-fasted" : "is-post";
+  nutritionBadge.className = `nutrition-badge ${cls}`;
+  nutritionBadge.innerHTML =
+    `<div class="nutrition-badge__head"><span class="nutrition-badge__state">${label}</span>` +
+    `<span class="nutrition-badge__clock">${s.hoursSinceMeal.toFixed(1)} h since meal</span></div>` +
+    `<div class="nutrition-badge__row">glycogen store <b>${Math.round(frac * 100)}%</b></div>` +
+    `<div class="nutrition-badge__row">blood glucose <b>${s.bloodGlucoseMM.toFixed(1)} mM</b> · ketones <b>${s.ketoneMM.toFixed(2)} mM</b></div>` +
+    `<div class="nutrition-badge__bar"><span style="width:${Math.round(frac * 100)}%"></span></div>`;
 }
 
 // The LOD proteome point clouds ride the same deforming surface.
@@ -5432,6 +5458,7 @@ function buildOrganelleScene() {
   glycogenGroup.position.copy(glycogenAnchor);
   glycogenGroup.userData.label = "Glycogen granules - hepatocyte glucose buffer; filled after feeding and mobilised during fasting";
   group.add(glycogenGroup);
+  glycogenBeads = [];
   for (let i = 0; i < 90; i += 1) {
     const p = randDir().multiplyScalar(rnd() ** 0.55 * 1.55);
     const bead = mesh(new THREE.SphereGeometry(0.08 + rnd() * 0.08, 8, 6), "#cfa94b", p, {
@@ -5441,6 +5468,7 @@ function buildOrganelleScene() {
       label: "Glycogen granule - branched glucose polymer used as a hepatocyte buffer"
     });
     tagGlow("glycolysis", bead);
+    glycogenBeads.push(bead);
   }
   trackMotion(glycogenGroup, glycogenAnchor, 0.13, 0.34, 0.004);
 
@@ -5880,6 +5908,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     updateMembraneShape(s.elapsedS);
     updateMembraneProteinAnchors(s.elapsedS);
     updateMembraneRidingClouds(s.elapsedS);
+    updateNutritionVisual(s);
     updateFlowVisuals(s);
     syncVisualDivisionFromEngine(externalEngineSummary);
     updateCellCyclePanel(
