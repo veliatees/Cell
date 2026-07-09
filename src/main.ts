@@ -2693,7 +2693,7 @@ function updateNutritionVisual(s: CellSnapshot) {
   nutritionBadge.innerHTML =
     `<div class="nutrition-badge__head"><span class="nutrition-badge__state">${label}</span>` +
     `<span class="nutrition-badge__clock">${s.hoursSinceMeal.toFixed(1)} h since meal</span></div>` +
-    `<div class="nutrition-badge__row">glycogen store <b>${Math.round(frac * 100)}%</b></div>` +
+    `<div class="nutrition-badge__row">glycogen store <b>${Math.round(s.glycogenMM)} mM</b> (${Math.round(frac * 100)}%)</div>` +
     `<div class="nutrition-badge__row">blood glucose <b>${s.bloodGlucoseMM.toFixed(1)} mM</b> · ketones <b>${s.ketoneMM.toFixed(2)} mM</b></div>` +
     `<div class="nutrition-badge__bar"><span style="width:${Math.round(frac * 100)}%"></span></div>`;
 }
