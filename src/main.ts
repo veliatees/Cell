@@ -557,6 +557,39 @@ type OrganellePopulation = {
   brightStep: number; // per-frame brightness increment
 };
 const organellePopulations: OrganellePopulation[] = [];
+// --- Nucleus gene expression (central dogma made visible) -------------------
+// The engine runs a two-state promoter → mRNA → protein network (transcriptional
+// bursting). This renders that mechanism: gene loci flare when their promoter is
+// ON, emit mRNA transcripts that travel to a nuclear pore, exit, and head into the
+// cytoplasm toward the translation machinery. Burst intensity tracks the engine's
+// mRNA pool when a Python snapshot is loaded.
+type GeneLocus = {
+  pos: THREE.Vector3;
+  mat: THREE.MeshStandardMaterial;
+  on: boolean;
+  flash: number; // 0..1 transient brightness after a transcription firing
+};
+type MrnaParticle = {
+  active: boolean;
+  phase: 0 | 1; // 0: locus → pore, 1: pore → cytoplasm (then decay)
+  t: number; // 0..1 progress in the current phase
+  speed: number;
+  from: THREE.Vector3;
+  via: THREE.Vector3; // pore
+  to: THREE.Vector3; // cytoplasmic destination
+};
+type NucleusExpression = {
+  center: THREE.Vector3;
+  loci: GeneLocus[];
+  pores: THREE.Vector3[];
+  mesh: THREE.InstancedMesh; // mRNA transcript pool (recycled instances)
+  particles: MrnaParticle[];
+  kOn: number; // promoter activation rate (1/s, sim time)
+  kOff: number; // promoter deactivation rate (1/s)
+  kTx: number; // transcription firing rate while ON (1/s)
+  burstScale: number; // multiplies firing to track engine mRNA pool
+};
+let nucleusExpression: NucleusExpression | null = null;
 type MembraneProteinAnchor = {
   object: THREE.Object3D;
   dir: THREE.Vector3;
@@ -2498,6 +2531,88 @@ function updateOrganellePopulations() {
   }
 }
 
+// --- Central dogma, animated: two-state promoters fire transcription bursts;
+// mRNA transcripts stream to a nuclear pore, exit, and head for the cytoplasm.
+const _nucMat = new THREE.Matrix4();
+const _nucPos = new THREE.Vector3();
+const _nucQuat = new THREE.Quaternion();
+const _nucScale = new THREE.Vector3();
+function spawnMrna(nx: NucleusExpression, from: THREE.Vector3) {
+  const slot = nx.particles.find((p) => !p.active);
+  if (!slot) return;
+  // Nearest nuclear pore is this transcript's export gate.
+  let best = nx.pores[0];
+  let bd = Infinity;
+  for (const pore of nx.pores) {
+    const d = pore.distanceToSquared(from);
+    if (d < bd) { bd = d; best = pore; }
+  }
+  slot.active = true;
+  slot.phase = 0;
+  slot.t = 0;
+  slot.speed = 0.6 + Math.random() * 0.4;
+  slot.from.copy(from);
+  slot.via.copy(best);
+  // Cytoplasmic destination: continue outward past the pore into the cytosol,
+  // clamped inside the cell.
+  const outward = best.clone().sub(nx.center).normalize();
+  const dest = best.clone().add(outward.multiplyScalar(3.0 + Math.random() * 3.0));
+  if (dest.length() > CELL_R * 0.86) dest.setLength(CELL_R * 0.86);
+  slot.to.copy(dest);
+}
+function updateNucleusExpression(simDt: number) {
+  const nx = nucleusExpression;
+  if (!nx) return;
+  const dt = Math.min(0.12, Math.max(0, simDt));
+  // Burst intensity tracks the engine's mRNA pool when a snapshot is loaded
+  // (baseline pool ~30 transcripts).
+  const mrnaPool = externalEngineSummary?.division?.cells?.[0]?.counts?.mRNA;
+  nx.burstScale = mrnaPool && mrnaPool > 0 ? clamp(mrnaPool / 30, 0.4, 2.5) : 1;
+
+  // 1) Promoter ON/OFF telegraph + transcription firing per locus.
+  for (const locus of nx.loci) {
+    if (locus.on) {
+      if (Math.random() < nx.kOff * dt) locus.on = false;
+      if (Math.random() < nx.kTx * nx.burstScale * dt) {
+        spawnMrna(nx, locus.pos);
+        locus.flash = 1;
+      }
+    } else if (Math.random() < nx.kOn * dt) {
+      locus.on = true;
+    }
+    locus.flash = Math.max(0, locus.flash - dt * 2.5);
+    locus.mat.emissiveIntensity = (locus.on ? 0.5 : 0.18) + locus.flash * 1.2;
+  }
+
+  // 2) Advance mRNA transcripts along locus → pore → cytoplasm, then recycle.
+  const mesh = nx.mesh;
+  let dirty = false;
+  for (let i = 0; i < nx.particles.length; i += 1) {
+    const p = nx.particles[i];
+    if (!p.active) continue;
+    p.t += p.speed * dt * (p.phase === 0 ? 1.4 : 1.0);
+    if (p.phase === 0) {
+      _nucPos.lerpVectors(p.from, p.via, Math.min(1, p.t));
+      if (p.t >= 1) { p.phase = 1; p.t = 0; }
+    } else {
+      _nucPos.lerpVectors(p.via, p.to, Math.min(1, p.t));
+      if (p.t >= 1) {
+        p.active = false;
+        _nucMat.makeScale(0, 0, 0);
+        mesh.setMatrixAt(i, _nucMat);
+        dirty = true;
+        continue;
+      }
+    }
+    const fade = p.phase === 1 ? 1 - Math.max(0, p.t - 0.7) / 0.3 : 1;
+    _nucScale.setScalar(Math.max(0.001, clamp(fade, 0, 1)));
+    _nucMat.compose(_nucPos, _nucQuat, _nucScale);
+    mesh.setMatrixAt(i, _nucMat);
+    dirty = true;
+  }
+  if (dirty) mesh.instanceMatrix.needsUpdate = true;
+}
+
 // Deform the plasma membrane each frame: a slow water-balloon breathing/wobble
 // plus localized endocytosis (inward) / exocytosis (outward) pulses. Vertices are
 // displaced radially from their captured rest positions, so the cell's outline is
@@ -3148,6 +3263,7 @@ function clearWaterVisuals() {
     });
     organelleGroup = null;
   }
+  nucleusExpression = null;
 
   if (proteinFieldGroup) {
     root.remove(proteinFieldGroup);
@@ -4513,7 +4629,7 @@ function buildOrganelleScene() {
   // --- Nucleus + envelope + nucleolus + nuclear pores ---
   const nuc = new THREE.Vector3(-3.4, 1.4, -1.2);
   occupied.push({ c: nuc, r: 5.1 }); // reserve the nucleus volume (incl. ER shell)
-  const nucleusBody = mesh(organicSphere(4.6, 0.04), "#b07ed8", nuc, { opacity: 0.34, emissive: 0.08, label: "Nucleus — stores the DNA and controls gene expression" });
+  const nucleusBody = mesh(organicSphere(4.6, 0.04), "#b07ed8", nuc, { opacity: 0.26, emissive: 0.08, label: "Nucleus — stores the DNA and controls gene expression" });
   const nuclearEnvelope = mesh(organicSphere(4.75, 0.04), "#caa3e6", nuc, { opacity: 0.12, emissive: 0.05, label: "Nuclear envelope — double membrane studded with pores" });
   const nucleolus = mesh(organicSphere(1.7, 0.12), "#6f3fa0", nuc.clone().add(new THREE.Vector3(0.7, -0.5, 0.4)), { emissive: 0.16, label: "Nucleolus — builds ribosomes; transcribes DNA → mRNA" });
   tagGlow("nucleus", nucleolus);
@@ -4539,6 +4655,66 @@ function buildOrganelleScene() {
   );
   group.add(nuclearPores);
   trackMotion(nuclearPores, nuclearPores.position, 0.035, 0.12, 0.001, nucleusPhase);
+
+  // --- Chromatin: packed DNA filling the nucleoplasm (heterochromatin denser at
+  // the periphery, euchromatin looser inside). A point haze, purely structural. ---
+  {
+    const chromN = 620;
+    const cp = new Float32Array(chromN * 3);
+    for (let i = 0; i < chromN; i += 1) {
+      // bias radius toward the envelope (heterochromatin rim) but fill interior too
+      const u = rnd();
+      const r = 1.2 + (0.55 * u + 0.45 * Math.sqrt(u)) * 3.0; // ~1.2..4.35
+      const q = randDir().multiplyScalar(r).add(nuc);
+      cp[i * 3] = q.x; cp[i * 3 + 1] = q.y; cp[i * 3 + 2] = q.z;
+    }
+    const chromGeo = new THREE.BufferGeometry();
+    chromGeo.setAttribute("position", new THREE.BufferAttribute(cp, 3));
+    const chromatin = new THREE.Points(
+      chromGeo,
+      new THREE.PointsMaterial({ color: "#9b6fd0", size: 0.34, map: DISC_TEXTURE, alphaTest: 0.35, transparent: true, opacity: 0.5, depthWrite: false })
+    );
+    chromatin.userData.label = "Chromatin — the cell's DNA packed with histones; denser (heterochromatin, silenced) at the nuclear rim, looser (euchromatin, active) inside";
+    group.add(chromatin);
+    trackMotion(chromatin, chromatin.position, 0.03, 0.1, 0.0008, nucleusPhase);
+  }
+
+  // --- Gene loci + central-dogma transcription (see updateNucleusExpression) ---
+  {
+    const nLoci = 7;
+    const loci: GeneLocus[] = [];
+    for (let i = 0; i < nLoci; i += 1) {
+      const p = randDir().multiplyScalar(1.6 + rnd() * 2.4).add(nuc);
+      const locus = mesh(new THREE.SphereGeometry(0.28, 14, 12), "#ffd873", p, {
+        emissive: 0.25,
+        label: "Active gene locus — a two-state promoter (ON/OFF); flares when transcribing DNA → mRNA (transcriptional bursting, the engine's central-dogma model)"
+      });
+      loci.push({ pos: p.clone(), mat: locus.material as THREE.MeshStandardMaterial, on: false, flash: 0 });
+    }
+    // mRNA transcript pool (recycled instances), hidden until emitted.
+    const MRNA_POOL = 60;
+    const mrnaMat = new THREE.MeshStandardMaterial({
+      color: "#7cf0ff", emissive: "#66e6ff", emissiveIntensity: 1.1, roughness: 0.35,
+      transparent: true, opacity: 1, depthWrite: false
+    });
+    const mrnaMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.28, 0), mrnaMat, MRNA_POOL);
+    const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
+    for (let i = 0; i < MRNA_POOL; i += 1) mrnaMesh.setMatrixAt(i, hidden);
+    mrnaMesh.instanceMatrix.needsUpdate = true;
+    mrnaMesh.userData.label = "mRNA transcripts — made at a gene locus, exported through a nuclear pore, then translated by ribosomes in the cytoplasm";
+    mrnaMesh.frustumCulled = false;
+    group.add(mrnaMesh);
+    const pores: THREE.Vector3[] = [];
+    for (let i = 0; i < poreN; i += 1) pores.push(new THREE.Vector3(porePos[i * 3], porePos[i * 3 + 1], porePos[i * 3 + 2]));
+    const particles: MrnaParticle[] = Array.from({ length: MRNA_POOL }, () => ({
+      active: false, phase: 0, t: 0, speed: 0.8,
+      from: new THREE.Vector3(), via: new THREE.Vector3(), to: new THREE.Vector3()
+    }));
+    nucleusExpression = {
+      center: nuc.clone(), loci, pores, mesh: mrnaMesh, particles,
+      kOn: 0.06, kOff: 0.25, kTx: 0.95, burstScale: 1
+    };
+  }
 
   // --- Rough ER: tubular network hugging the nuclear envelope ---
   for (let i = 0; i < 11; i += 1) {
@@ -5639,6 +5815,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     const engineSignal = externalEngineSummary ? engineVisualSignal(externalEngineSummary) : null;
     updateOrganelleMotion(s.elapsedS);
     updateOrganellePopulations();
+    updateNucleusExpression(realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND);
     updateMembraneShape(s.elapsedS);
     updateMembraneProteinAnchors(s.elapsedS);
     updateFlowVisuals(s);
