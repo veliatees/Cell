@@ -599,6 +599,11 @@ type MembraneProteinAnchor = {
   drift: number;
 };
 const membraneProteinAnchors: MembraneProteinAnchor[] = [];
+// Point-cloud protein populations (the LOD proteome shell + dense zoom patch) that
+// ride the deforming membrane: their vertex positions are recomputed each frame
+// from a saved rest direction × the same radial displacement the membrane uses.
+type MembraneRidingCloud = { geo: THREE.BufferGeometry; base: Float32Array };
+const membraneRidingClouds: MembraneRidingCloud[] = [];
 type TransportPortAccumulator = Record<string, { s: THREE.Vector3; n: number }>;
 let mode: Mode = "ions";
 const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
@@ -2474,7 +2479,9 @@ function updateMembraneProteinAnchors(t: number) {
       .multiplyScalar(Math.sin(t * 0.13 + p.phase) * p.drift)
       .add(p.tangentB.clone().multiplyScalar(Math.cos(t * 0.11 + p.phase * 1.7) * p.drift));
     const dir = p.dir.clone().add(tangentOffset).normalize();
-    p.object.position.copy(dir.clone().multiplyScalar(CELL_R * 0.985));
+    // Ride the deforming membrane: sit at the local displaced surface radius.
+    const f = membraneRadialFactor(dir.x, dir.y, dir.z, t);
+    p.object.position.copy(dir.clone().multiplyScalar(CELL_R * f * 0.99));
     p.object.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
   }
 }
@@ -2617,6 +2624,33 @@ function updateNucleusExpression(simDt: number) {
 // plus localized endocytosis (inward) / exocytosis (outward) pulses. Vertices are
 // displaced radially from their captured rest positions, so the cell's outline is
 // a living, fluid surface rather than a rigid sphere.
+// The membrane's radial displacement factor along a unit direction at time t.
+// Shared by the membrane surface AND everything embedded in it (transport
+// proteins, the LOD proteome cloud) so they all deform as one bilayer.
+function membraneRadialFactor(nx: number, ny: number, nz: number, t: number): number {
+  // Smooth breathing/wobble (low spatial + temporal frequency).
+  let w =
+    0.05 *
+    (Math.sin(1.4 * nx + 0.6 * t) +
+      Math.sin(1.2 * ny - 0.5 * t + 1.7) +
+      Math.sin(1.1 * nz + 0.55 * t + 3.1)) /
+    3;
+  // Localized endo/exocytosis pulses on the facing cap of each event centre.
+  // dot^6 (cheap: two squarings) stands in for the old Math.pow(dot,width) so this
+  // can run per-frame over tens of thousands of embedded points without stalling.
+  for (const e of membraneEvents) {
+    const dot = nx * e.dx + ny * e.dy + nz * e.dz;
+    if (dot <= 0) continue;
+    const pulse = Math.max(0, Math.sin(t * e.freq + e.phase));
+    const d2 = dot * dot;
+    w += e.sign * e.amp * pulse * (d2 * d2 * d2);
+  }
+  // Hard cap the OUTWARD excursion so the solid membrane (and everything riding
+  // it) can never balloon past CELL_R*1.12 into a neighbouring structure.
+  if (w > 0.12) w = 0.12;
+  return 1 + w;
+}
+
 function updateMembraneShape(t: number) {
   if (!organelleMembrane || !membraneBase) return;
   const attr = organelleMembrane.geometry.getAttribute("position") as THREE.BufferAttribute;
@@ -2625,27 +2659,30 @@ function updateMembraneShape(t: number) {
   for (let i = 0; i < arr.length; i += 3) {
     const bx = base[i], by = base[i + 1], bz = base[i + 2];
     const r = Math.sqrt(bx * bx + by * by + bz * bz) || 1;
-    const nx = bx / r, ny = by / r, nz = bz / r;
-    // Smooth breathing/wobble (low spatial + temporal frequency).
-    let w =
-      0.05 *
-      (Math.sin(1.4 * nx + 0.6 * t) +
-        Math.sin(1.2 * ny - 0.5 * t + 1.7) +
-        Math.sin(1.1 * nz + 0.55 * t + 3.1)) /
-      3;
-    // Localized endo/exocytosis pulses on the facing cap of each event centre.
-    for (const e of membraneEvents) {
-      const dot = nx * e.dx + ny * e.dy + nz * e.dz;
-      if (dot <= 0) continue;
-      const pulse = Math.max(0, Math.sin(t * e.freq + e.phase));
-      w += e.sign * e.amp * pulse * Math.pow(dot, e.width);
-    }
-    const f = 1 + w;
+    const f = membraneRadialFactor(bx / r, by / r, bz / r, t);
     arr[i] = bx * f;
     arr[i + 1] = by * f;
     arr[i + 2] = bz * f;
   }
   attr.needsUpdate = true;
+}
+
+// The LOD proteome point clouds ride the same deforming surface.
+function updateMembraneRidingClouds(t: number) {
+  for (const c of membraneRidingClouds) {
+    const attr = c.geo.getAttribute("position") as THREE.BufferAttribute;
+    const arr = attr.array as Float32Array;
+    const base = c.base;
+    for (let i = 0; i < base.length; i += 3) {
+      const bx = base[i], by = base[i + 1], bz = base[i + 2];
+      const r = Math.sqrt(bx * bx + by * by + bz * bz) || 1;
+      const f = membraneRadialFactor(bx / r, by / r, bz / r, t);
+      arr[i] = bx * f;
+      arr[i + 1] = by * f;
+      arr[i + 2] = bz * f;
+    }
+    attr.needsUpdate = true;
+  }
 }
 
 function updateOrganelleMotion(t: number) {
@@ -3322,6 +3359,7 @@ function clearWaterVisuals() {
   organelleMotions.length = 0;
   organellePopulations.length = 0;
   membraneProteinAnchors.length = 0;
+  membraneRidingClouds.length = 0;
   livingCell = null;
   reportPanel.style.display = "none";
 
@@ -4252,7 +4290,10 @@ function buildOrganelleScene() {
     organelleMotions.push({ object, base: base.clone(), amp, speed, phase, spin, axis: randDir() });
   };
   const nmToWorld = (nm: number) => (nm / 1000) / (CELL_RADIUS_UM / CELL_R);
-  const sinusoidAnchor = new THREE.Vector3(-CELL_R * 1.12, -1.0, 0);
+  // Sinusoid sits OUTSIDE the cell: its tube (radius ~3.6) inner edge must clear
+  // the cell's max membrane excursion, leaving the space of Disse as a real gap —
+  // the cell membrane is solid and may not penetrate the vessel.
+  const sinusoidAnchor = new THREE.Vector3(-CELL_R * 1.45, -1.0, 0);
   const membraneHub = new THREE.Vector3(-CELL_R * 0.78, -1.0, 0);
   const canaliculusAnchor = new THREE.Vector3(CELL_R * 0.82, 2.15, 0.25);
   const glycogenAnchor = new THREE.Vector3(2.6, -3.65, -1.25);
@@ -4498,9 +4539,10 @@ function buildOrganelleScene() {
     return inst;
   };
 
-  // --- Plasma membrane (organic, translucent so we can see inside) ---
-  organelleMembrane = mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.1, emissive: 0.05, label: "Plasma membrane — a fluid, deformable bilayer; flexes and undergoes endocytosis/exocytosis" });
-  mesh(organicSphere(CELL_R * 0.97, 0.06), "#9ec6ff", new THREE.Vector3(), { opacity: 0.06, emissive: 0.04 });
+  // --- Plasma membrane: ONE fluid, deformable bilayer (no second static shell).
+  // Everything embedded in it (transport proteins, the proteome cloud) rides this
+  // same surface via membraneRadialFactor, so the membrane reads as a single skin. ---
+  organelleMembrane = mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.12, emissive: 0.05, label: "Plasma membrane — a fluid, deformable bilayer; flexes and undergoes endocytosis/exocytosis" });
   // Capture the membrane's rest shape and seed endo/exocytosis event centres so
   // the surface can deform each frame (see updateMembraneShape).
   {
@@ -4516,10 +4558,15 @@ function buildOrganelleScene() {
         phase: rnd() * Math.PI * 2,
         sign: rnd() < 0.5 ? -1 : 1, // -1 endocytosis (inward), +1 exocytosis (outward)
         width: 3.5 + rnd() * 3.5,
-        amp: 0.1 + rnd() * 0.1
+        // Small, bounded bumps: with breathing (~0.05) the outward radius stays
+        // < CELL_R*1.11, so the cell never balloons into the neighbouring sinusoid.
+        amp: 0.03 + rnd() * 0.03
       });
     }
   }
+  // Max outward membrane excursion (breathing + event cap), used to keep solid
+  // neighbours (the sinusoid) clear of the cell — nothing may interpenetrate.
+  const MEMBRANE_MAX_OUT = CELL_R * 1.12;
 
   // --- Hepatocyte polarity: sinusoidal blood vessel side vs canalicular bile side ---
   const sinusoidCurve = new THREE.CatmullRomCurve3([
@@ -4539,7 +4586,8 @@ function buildOrganelleScene() {
     emissive: 0.08,
     label: "Sinusoidal blood lumen - nutrients, oxygen, hormones, ammonia, bilirubin and xenobiotics arrive from flowing blood"
   });
-  const disseSpace = mesh(new THREE.BoxGeometry(0.18, 14.8, 6.8), "#8fd0ff", sinusoidAnchor.clone().add(new THREE.Vector3(2.0, 0, 0)), {
+  // Space of Disse: the thin gap between the cell surface and the sinusoid wall.
+  const disseSpace = mesh(new THREE.BoxGeometry(0.18, 14.8, 6.8), "#8fd0ff", new THREE.Vector3(-(MEMBRANE_MAX_OUT + 0.45), -1.0, 0), {
     opacity: 0.08,
     emissive: 0.06,
     label: "Space of Disse - extracellular exchange gap between fenestrated sinusoid and hepatocyte microvilli"
@@ -4561,8 +4609,10 @@ function buildOrganelleScene() {
   for (let i = 0; i < 34; i += 1) {
     const y = -5.2 + rnd() * 8.9;
     const z = -3.1 + rnd() * 6.2;
-    const a = new THREE.Vector3(-CELL_R * 0.98, y, z);
-    const b = new THREE.Vector3(-CELL_R * (0.78 + rnd() * 0.08), y + (rnd() - 0.5) * 0.22, z + (rnd() - 0.5) * 0.22);
+    // Microvilli project OUTWARD from the cell surface into the space of Disse
+    // (toward the sinusoid), stopping short of the vessel wall.
+    const a = new THREE.Vector3(-CELL_R * 0.99, y, z);
+    const b = new THREE.Vector3(-CELL_R * (1.06 + rnd() * 0.04), y + (rnd() - 0.5) * 0.22, z + (rnd() - 0.5) * 0.22);
     microvilliPts.push(a.x, a.y, a.z, b.x, b.y, b.z);
   }
   const microvilliGeo = new THREE.BufferGeometry();
@@ -4887,7 +4937,9 @@ function buildOrganelleScene() {
   const averageEmbeddedFootprintNm = 7;
   const averageEmbeddedFootprintAreaNm2 = Math.PI * (averageEmbeddedFootprintNm / 2) ** 2;
   const estimatedEmbeddedProteinCopies = Math.round((hepatocytePlasmaMembraneAreaUm2 * 1_000_000 * proteinAreaOccupancy) / averageEmbeddedFootprintAreaNm2);
-  const membraneProteinRenderBudget = 120_000;
+  // Render budget kept modest because the cloud now rides the deforming membrane
+  // (its vertex positions are recomputed on the CPU each frame).
+  const membraneProteinRenderBudget = 16_000;
   const membraneProteinRenderStride = Math.max(1, Math.ceil(estimatedEmbeddedProteinCopies / membraneProteinRenderBudget));
   const surfaceWorldPerUm = CELL_R / CELL_RADIUS_UM;
   const frontPatchDir = new THREE.Vector3(0.18, -0.05, 0.98).normalize();
@@ -4951,6 +5003,7 @@ function buildOrganelleScene() {
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      membraneRidingClouds.push({ geo, base: positions.slice() }); // rides the deforming membrane
       const pts = new THREE.Points(
         geo,
         new THREE.PointsMaterial({
@@ -4992,6 +5045,7 @@ function buildOrganelleScene() {
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      membraneRidingClouds.push({ geo, base: positions.slice() }); // rides the deforming membrane
       const pts = new THREE.Points(
         geo,
         new THREE.PointsMaterial({
@@ -5818,6 +5872,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     updateNucleusExpression(realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND);
     updateMembraneShape(s.elapsedS);
     updateMembraneProteinAnchors(s.elapsedS);
+    updateMembraneRidingClouds(s.elapsedS);
     updateFlowVisuals(s);
     syncVisualDivisionFromEngine(externalEngineSummary);
     updateCellCyclePanel(
