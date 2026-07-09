@@ -201,6 +201,12 @@ export type CellSnapshot = {
   apoptosisRiskPerHour: number;
   projectedMedianSurvivalH: number;
   elapsedS: number;
+  // Feeding / fasting state (stochastic meals; see updateExternal).
+  nutrition: number; // 0..1, 1 = just-fed peak, decays toward fasted
+  hoursSinceMeal: number; // physiological hours since the last meal
+  fedState: "fed" | "postabsorptive" | "fasting";
+  bloodGlucoseMM: number;
+  ketoneMM: number;
   // convenience aliases used by the viewer readout
   glucoseIn: number;
   atp: number;
@@ -208,6 +214,12 @@ export type CellSnapshot = {
 };
 
 const ATP_TOTAL = 1;
+// Nutritional clock: physiological hours advanced per simulated second. Meals and
+// fasting play out on an HOURS axis compressed for viewing (a ~5 h inter-meal gap
+// ~= 35 s on-screen; a 10 h fast ~= 75 s), separate from the fast metabolic clock.
+const HOURS_PER_SIM_SEC = 0.0267;
+const MAX_FAST_HOURS = 10; // a meal is forced by 10 h — a normal overnight fast
+const MEAN_MEAL_INTERVAL_H = 4.5;
 const ALL_IDS: OrganelleId[] = [
   "membrane",
   "glycolysis",
@@ -399,6 +411,11 @@ export class LivingCell {
   private hepatocyte: HepatocyteState = blankHepatocyte();
   private fidelity: IntracellularFidelity = blankFidelity();
   private elapsed = 0;
+  // Stochastic feeding: physiological hours since the last meal, the (stochastic)
+  // interval until the next meal, and the resulting nutrient level (0..1).
+  private mealClockH = 0;
+  private nextMealH = 3.5;
+  private nutrition = 0.7;
   private lowAtp = 0;
   private prevStatus: CellSnapshot["status"] = "healthy";
   private senescent = false;
@@ -574,8 +591,28 @@ export class LivingCell {
 
   private updateExternal(dt: number, f: ReturnType<LivingCell["fluxes"]>) {
     const source = clamp(this.perfusion, 0, 1.2);
-    const mealWave = 0.5 + 0.5 * Math.sin(this.elapsed / 38);
+    // Stochastic feeding: advance the meal clock; when the (random, capped)
+    // interval elapses the organism eats and the clock resets. Nutrient level
+    // then follows a rise-peak-decline absorption curve (peak ~1.5 h) and decays
+    // toward the fasted floor over the following hours.
+    this.mealClockH += dt * HOURS_PER_SIM_SEC;
+    if (this.mealClockH >= this.nextMealH) {
+      this.mealClockH = 0;
+      this.nextMealH = this.stochastic
+        ? clamp(-MEAN_MEAL_INTERVAL_H * Math.log(Math.max(1e-6, this.rand())), 1.5, MAX_FAST_HOURS)
+        : MEAN_MEAL_INTERVAL_H;
+    }
+    const h = this.mealClockH;
+    this.nutrition = clamp(
+      (0.5 + 0.5 * (1 - Math.exp(-h / 0.7))) * Math.exp(-Math.max(0, h - 1.5) / 3.7),
+      0.05,
+      1
+    );
+    const nutrition = this.nutrition;
     const target = {
+      // Glucose availability stays perfusion-driven (the liver buffers blood
+      // glucose); the fed/fasted swing is carried by insulin/glucagon → glycogen,
+      // so energy supply is not perturbed by meal timing.
       glucose: 0.85 * source,
       aminoAcids: 0.65 * source,
       oxygen: 0.92 * source,
@@ -584,8 +621,8 @@ export class LivingCell {
       bilirubin: 0.08 * source,
       bileAcids: 0.12 * source,
       xenobiotic: 0.05 * source,
-      insulin: clamp((0.2 + 0.58 * mealWave) * source, 0, 1.2),
-      glucagon: clamp(0.22 + 0.52 * (1 - clamp(source, 0, 1)) + 0.24 * (1 - mealWave), 0, 1.2)
+      insulin: clamp((0.2 + 0.58 * nutrition) * source, 0, 1.2),
+      glucagon: clamp(0.22 + 0.52 * (1 - clamp(source, 0, 1)) + 0.24 * (1 - nutrition), 0, 1.2)
     };
     // Perfusion replenishes extracellular substrate; transport and respiration
     // consume it. This makes starvation a consequence of the outside world, not
@@ -1660,6 +1697,12 @@ export class LivingCell {
       apoptosisRiskPerHour: this.apoptosisRiskPerHour,
       projectedMedianSurvivalH: survivalRisk > 0.001 ? (100 * Math.LN2) / survivalRisk : Infinity,
       elapsedS: this.elapsed,
+      nutrition: this.nutrition,
+      hoursSinceMeal: this.mealClockH,
+      fedState: this.nutrition > 0.6 ? "fed" : this.nutrition > 0.3 ? "postabsorptive" : "fasting",
+      // Liver holds blood glucose remarkably stable; ketones rise as fasting deepens.
+      bloodGlucoseMM: 4.7 + 2.0 * this.nutrition,
+      ketoneMM: 0.05 + 0.35 * (1 - this.nutrition),
       glucoseIn: this.p.glucose,
       atp: this.p.atp,
       protein: this.p.foldedProtein
