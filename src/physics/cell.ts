@@ -491,7 +491,7 @@ export class LivingCell {
   private freshPools(): Pools {
     return {
       glucose: 0.3,
-      glycogen: 0.62,
+      glycogen: 2.5,
       lactate: 0.08,
       pyruvate: 0.14,
       aminoAcids: 0.4,
@@ -1718,7 +1718,7 @@ export class LivingCell {
       // ketone pool (fat-derived fasting fuel), not a cosmetic function of nutrition.
       bloodGlucoseMM: 4.7 + 2.0 * this.nutrition,
       ketoneMM: clamp(0.05 + this.p.ketones * 1.8, 0.03, 8),
-      glycogenStore01: clamp((this.p.glycogen - 2.3) / 4.8, 0.05, 1),
+      glycogenStore01: clamp((this.p.glycogen - 0.9) / 2.5, 0.03, 1),
       glucoseIn: this.p.glucose,
       atp: this.p.atp,
       protein: this.p.foldedProtein
