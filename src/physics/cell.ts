@@ -41,6 +41,7 @@ export type Pools = {
   aminoAcids: number;
   ammonia: number;
   urea: number;
+  ketones: number; // β-hydroxybutyrate/acetoacetate — fasting fuel made from fat
   atp: number; // ADP = ATP_TOTAL − atp (conserved)
   mrna: number;
   protein: number; // nascent / ER-bound protein cargo
@@ -207,6 +208,7 @@ export type CellSnapshot = {
   fedState: "fed" | "postabsorptive" | "fasting";
   bloodGlucoseMM: number;
   ketoneMM: number;
+  glycogenStore01: number; // 0..1 fill of the glycogen store (drives the granule visual)
   // convenience aliases used by the viewer readout
   glucoseIn: number;
   atp: number;
@@ -219,7 +221,7 @@ const ATP_TOTAL = 1;
 // ~= 35 s on-screen; a 10 h fast ~= 75 s), separate from the fast metabolic clock.
 const HOURS_PER_SIM_SEC = 0.0267;
 const MAX_FAST_HOURS = 10; // a meal is forced by 10 h — a normal overnight fast
-const MEAN_MEAL_INTERVAL_H = 4.5;
+const MEAN_MEAL_INTERVAL_H = 5.5;
 const ALL_IDS: OrganelleId[] = [
   "membrane",
   "glycolysis",
@@ -495,6 +497,7 @@ export class LivingCell {
       aminoAcids: 0.4,
       ammonia: 0.05,
       urea: 0.08,
+      ketones: 0.02,
       atp: 0.78,
       mrna: 0.1,
       protein: 0.08,
@@ -604,8 +607,8 @@ export class LivingCell {
     }
     const h = this.mealClockH;
     this.nutrition = clamp(
-      (0.5 + 0.5 * (1 - Math.exp(-h / 0.7))) * Math.exp(-Math.max(0, h - 1.5) / 3.7),
-      0.05,
+      (0.5 + 0.5 * (1 - Math.exp(-h / 0.7))) * Math.exp(-Math.max(0, h - 1.5) / 3.2),
+      0.08,
       1
     );
     const nutrition = this.nutrition;
@@ -796,6 +799,13 @@ export class LivingCell {
     // Mitochondria: pyruvate → lots of ATP (+ waste), gated by energy demand.
     const mito = 2.8 * mm(p.pyruvate, 0.3) * demand * oxygenGate * clamp(1 - 0.35 * stress.oxidative, 0.35, 1) * e("mitochondria") * r("mitochondria");
     const ureaCycle = 0.55 * (0.5 + 0.5 * periportal) * mm(p.ammonia + 0.14 * p.aminoAcids, 0.22) * en("mitochondria") * e("mitochondria") * (0.65 + 0.35 * fasting) * r("mitochondria");
+    // Ketogenesis: in fasting, mitochondrial β-oxidation of fat overflows into
+    // ketone bodies (glucagon/AMPK-driven). Consumes fat; makes a glucose-sparing
+    // fuel. Needs fatty-acid substrate — so it fails under true perfusion loss.
+    const ketogenesis = 0.95 * fasting * (0.4 + 0.6 * ampk) * mm(p.lipids + importFa, 0.4) * en("mitochondria") * e("mitochondria") * r("mitochondria");
+    // Ketolysis: ketones are oxidised back to acetyl-CoA for ATP on demand — the
+    // fasting survival buffer that spares glucose while glycogen is depleted.
+    const ketolysis = 1.15 * mm(p.ketones, 0.28) * (0.5 + 0.5 * demand) * oxygenGate * e("mitochondria") * r("mitochondria");
     // Peroxisomes oxidize fatty-acid substrates and detoxify peroxide via catalase.
     const peroxisome = 0.52 * mm(p.ros + 0.5 * p.lipids, 0.28) * e("peroxisome") * r("peroxisome");
     // Nucleus: transcription DNA → mRNA — in bursts.
@@ -869,6 +879,8 @@ export class LivingCell {
       gluconeogenesis,
       mito,
       ureaCycle,
+      ketogenesis,
+      ketolysis,
       peroxisome,
       transcription,
       translation,
@@ -1362,6 +1374,7 @@ export class LivingCell {
       const dAtp =
         0.5 * f.glycolysis +
         0.16 * f.peroxisome +
+        2.4 * f.ketolysis +
         2.35 * f.mito -
         (0.32 * f.importGlc +
           0.24 * f.importAa +
@@ -1394,13 +1407,14 @@ export class LivingCell {
         aminoAcids: f.importAa + 0.8 * f.lysosome + 0.35 * f.proteasome - 1.0 * f.translation - 0.35 * f.albuminSynth - 0.12 * f.ureaCycle - 0.08 * f.glutathioneRegen,
         ammonia: f.importAmmonia + 0.1 * f.translation + 0.12 * f.proteasome + 0.08 * f.lysosome + 0.05 * this.p.aminoAcids - f.ureaCycle - 0.1 * this.p.ammonia,
         urea: f.ureaCycle - 0.28 * this.p.urea,
+        ketones: f.ketogenesis - f.ketolysis - 0.05 * this.p.ketones,
         atp: dAtp,
         mrna: f.transcriptionProduct - 0.15 * this.p.mrna,
         protein: f.translationProduct - f.erFolding - f.proteasome - 0.04 * this.p.protein,
         misfoldedProtein: f.translationErrors + f.foldingFailures + 0.35 * f.erRetention + 0.01 * this.p.protein - 0.18 * f.proteasome - 0.08 * f.lysosome - 0.025 * this.p.misfoldedProtein,
         foldedProtein: f.erFoldingProduct - f.golgi - 0.45 * f.albuminSynth - 0.04 * this.p.foldedProtein,
         albumin: f.albuminSynth - 0.35 * f.vesicleLost - 0.24 * this.p.albumin,
-        lipids: f.importFa + f.erLipid - 0.18 * f.peroxisome - 0.16 * f.golgi - 0.05 * this.p.lipids - 0.08 * f.bileSynthesis,
+        lipids: f.importFa + f.erLipid - 0.18 * f.peroxisome - 0.16 * f.golgi - 0.05 * this.p.lipids - 0.08 * f.bileSynthesis - 0.3 * f.ketogenesis,
         cholesterol: 0.12 * f.erLipid + 0.08 * f.importFa - f.bileSynthesis - 0.03 * this.p.cholesterol,
         bileAcids: f.importBileAcids + f.bileSynthesis - f.bileExportDelivered - 0.04 * this.p.bileAcids,
         bilirubin: f.importBilirubin + 0.035 + 0.04 * this.p.waste - f.bilirubinConj - 0.28 * f.bileExportDelivered - 0.06 * this.p.bilirubin,
@@ -1469,7 +1483,7 @@ export class LivingCell {
       this.act = {
         membrane: f.sinusoidalImport + f.bileExport + f.naKPump,
         glycolysis: f.glycolysis + f.glycogenSynth + f.glycogenBreakdown + f.gluconeogenesis,
-        mitochondria: f.mito + f.ureaCycle,
+        mitochondria: f.mito + f.ureaCycle + f.ketogenesis + f.ketolysis,
         nucleus: f.transcription,
         er: f.erFolding + f.erLipid + f.cypDetox + f.bilirubinConj + f.bileSynthesis + f.foldingFailures + f.erRetention,
         ribosome: f.translation + f.translationErrors,
@@ -1700,9 +1714,11 @@ export class LivingCell {
       nutrition: this.nutrition,
       hoursSinceMeal: this.mealClockH,
       fedState: this.nutrition > 0.6 ? "fed" : this.nutrition > 0.3 ? "postabsorptive" : "fasting",
-      // Liver holds blood glucose remarkably stable; ketones rise as fasting deepens.
+      // Liver holds blood glucose remarkably stable; ketones now come from the real
+      // ketone pool (fat-derived fasting fuel), not a cosmetic function of nutrition.
       bloodGlucoseMM: 4.7 + 2.0 * this.nutrition,
-      ketoneMM: 0.05 + 0.35 * (1 - this.nutrition),
+      ketoneMM: clamp(0.05 + this.p.ketones * 1.8, 0.03, 8),
+      glycogenStore01: clamp((this.p.glycogen - 2.3) / 4.8, 0.05, 1),
       glucoseIn: this.p.glucose,
       atp: this.p.atp,
       protein: this.p.foldedProtein
@@ -1717,6 +1733,7 @@ export class LivingCell {
     this.p.aminoAcids = Math.max(0, this.p.aminoAcids);
     this.p.ammonia = Math.max(0, this.p.ammonia);
     this.p.urea = Math.max(0, this.p.urea);
+    this.p.ketones = Math.max(0, this.p.ketones);
     this.p.atp = clamp(this.p.atp, 0, ATP_TOTAL);
     this.p.mrna = Math.max(0, this.p.mrna);
     this.p.protein = Math.max(0, this.p.protein);
