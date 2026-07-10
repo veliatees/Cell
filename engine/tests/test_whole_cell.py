@@ -5,6 +5,7 @@ from dataclasses import replace
 
 from cell_engine.core.random import EngineRng
 from cell_engine.processes.hepatocyte import build_hepatocyte_definition
+from cell_engine.quantitative.cytoplasm_inventory import protein_inventory_counts
 from cell_engine.stochastic.cell_cycle import divide
 from cell_engine.stochastic.whole_cell import (
     PROLIFERATING_HEPATOCYTE_CYCLE,
@@ -47,6 +48,16 @@ class WholeCellStructureTests(unittest.TestCase):
         # Shared pools are unified (ATP appears once in the species list).
         self.assertEqual(network.species.count("ATP"), 1)
         self.assertIn("gene", network.species)
+
+    def test_glut2_capacity_uses_protein_inventory_effect_layer(self):
+        inventory = protein_inventory_counts()
+        inventory["protein:SLC2A2"] *= 0.25
+        reference = build_whole_cell_network(1.0e-12)
+        depleted = seed_whole_cell(build_hepatocyte_definition(), protein_inventory=inventory).network
+        counts = {"glucose_blood": 1.0e6, "glucose": 0.0, "ATP": 1.0e6, "ADP": 0.0}
+        baseline_flux = next(r for r in reference.reactions if r.id == "glut2_uptake").propensity(counts, 1.0e-12)
+        depleted_flux = next(r for r in depleted.reactions if r.id == "glut2_uptake").propensity(counts, 1.0e-12)
+        self.assertAlmostEqual(depleted_flux / baseline_flux, 0.25)
 
 
 class WholeCellRunTests(unittest.TestCase):

@@ -3,6 +3,10 @@ from __future__ import annotations
 import unittest
 
 from cell_engine.core.random import EngineRng
+from cell_engine.quantitative.geometry import (
+    daughter_membrane_area_requirement,
+    relative_membrane_area_from_biomass,
+)
 from cell_engine.stochastic.cell_cycle import (
     CELL_CYCLE_SOURCES,
     CELL_CYCLE_TIMING_PROFILES,
@@ -73,6 +77,13 @@ class PhaseProgressionTests(unittest.TestCase):
         self.assertEqual(state.organelles.centrosomes, 2)
         self.assertGreater(state.organelles.golgi_fragments, 1)
         self.assertGreater(state.organelles.mitochondrial_fragments, state.organelles.mitochondria)
+
+    def test_membrane_area_grows_with_volume_to_the_two_thirds_power(self):
+        params = CellCycleParams(growth_per_s=1.0)
+        initial = CellCycleState(counts={"gene": 2.0, "ATP": 1.0e6})
+        advanced = step(initial, 0.5, params)
+        expected = relative_membrane_area_from_biomass(advanced.biomass)
+        self.assertAlmostEqual(advanced.organelles.membrane_area, expected)
 
     def test_starved_cell_does_not_pass_checkpoint(self):
         params = CellCycleParams()
@@ -151,6 +162,24 @@ class DivisionTests(unittest.TestCase):
         self.assertEqual(a.centrosomes + b.centrosomes, self.parent.organelles.centrosomes)
         self.assertAlmostEqual(a.er_mass + b.er_mass, self.parent.organelles.er_mass)
         self.assertAlmostEqual(a.membrane_area + b.membrane_area, self.parent.organelles.membrane_area)
+
+    def test_equal_daughters_receive_geometrically_required_membrane_area(self):
+        parent_biomass = 8.0
+        parent_area = relative_membrane_area_from_biomass(parent_biomass)
+        parent = CellCycleState(
+            biomass=parent_biomass,
+            counts={"gene": 4.0},
+            ready_to_divide=True,
+            organelles=self.parent.organelles.__class__(
+                **{**self.parent.organelles.__dict__, "membrane_area": parent_area}
+            ),
+        )
+        a, b = divide(parent, self.params, EngineRng(19))
+        required_total = daughter_membrane_area_requirement(parent_biomass)
+        expected_daughter = relative_membrane_area_from_biomass(parent_biomass / 2.0)
+        self.assertAlmostEqual(a.organelles.membrane_area + b.organelles.membrane_area, required_total)
+        self.assertAlmostEqual(a.organelles.membrane_area, expected_daughter)
+        self.assertAlmostEqual(b.organelles.membrane_area, expected_daughter)
 
     def test_failure_risk_responds_to_hepatocyte_context(self):
         baseline = CellCycleParams(cytokinesis_failure_probability=0.05)

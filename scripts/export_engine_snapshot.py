@@ -4,6 +4,8 @@ import argparse
 from pathlib import Path
 
 from cell_engine import EngineRng, build_hepatocyte_definition, initial_hepatocyte_state, run_cell
+from cell_engine.core.genome import GENOME_SOURCES
+from cell_engine.core.serialization import to_plain
 from cell_engine.io.snapshots import snapshot_to_json
 from cell_engine.stochastic.cell_cycle import CELL_CYCLE_TIMING_PROFILES, apply_timing_profile
 from cell_engine.stochastic.whole_cell import (
@@ -25,6 +27,9 @@ from cell_engine.stochastic.integrated_cell import (
     run_integrated_hepatocyte,
 )
 from cell_engine.validation.hmdb_ranges import score_concentrations
+from cell_engine.validation.experiments import CURATED_EXPERIMENTS, apply_scenario
+from cell_engine.processes.cellular_memory import CELLULAR_MEMORY_SOURCES
+from cell_engine.processes.cellular_response import CELLULAR_RESPONSE_SOURCES
 
 
 def integrated_metabolism_snapshot() -> dict:
@@ -60,10 +65,13 @@ def main() -> None:
     parser.add_argument("--division-seed", type=int, default=20260621)
     parser.add_argument("--division-timing-profile", choices=tuple(CELL_CYCLE_TIMING_PROFILES), default=None)
     parser.add_argument("--regeneration-species", choices=("rat", "mouse", "human", "unknown"), default="mouse")
+    parser.add_argument("--experiment", choices=tuple(CURATED_EXPERIMENTS), default="baseline")
     args = parser.parse_args()
 
     definition = build_hepatocyte_definition()
     state = initial_hepatocyte_state(definition)
+    experiment = CURATED_EXPERIMENTS[args.experiment]
+    state = apply_scenario(state, experiment)
     state = run_cell(definition, state, dt_s=args.dt, steps=args.steps, rng=EngineRng(definition.stochastic_policy.seed))
     if args.include_division_demo:
         regeneration_input = HepatocyteRegenerationInput(
@@ -109,7 +117,19 @@ def main() -> None:
             definition,
             state,
             state_extras={
+                "evidence_sources": to_plain({
+                    **GENOME_SOURCES,
+                    **CELLULAR_MEMORY_SOURCES,
+                    **CELLULAR_RESPONSE_SOURCES,
+                }),
                 "integrated_metabolism": integrated_metabolism_snapshot(),
+                "experiment": {
+                    "id": experiment.id,
+                    "description": experiment.description,
+                    "controls": experiment.controls,
+                    "source_ids": ["bsep_cholestasis", "cholestasis_er_stress", "bile_acid_mitochondrial_apoptosis", "upr_proteostasis", "atp_death_switch"],
+                    "notes": "Control values are exact loss-of-function (0) or reference (1). Intermediate surface activity requires matched measurement or calibration.",
+                },
                 "division": whole_cell_population_snapshot(population, params=division_params),
                 "regeneration_context": {
                     "input": regeneration_input,

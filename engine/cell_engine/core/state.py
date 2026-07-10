@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from cell_engine.core.genome import HepatocyteGenomeState
+from cell_engine.core.history import CellHistoryState
 from cell_engine.core.serialization import to_plain
 
 Vector3 = tuple[float, float, float]
@@ -111,6 +113,35 @@ class MembraneElectrochemicalState:
 
 
 @dataclass(frozen=True)
+class CellularResponseState:
+    """Evidence-bound disease-response readout for one engine step.
+
+    ``damage_exposure_s`` is a stress-time integral, not a calibrated lesion
+    count. It deliberately records exposure without inventing a repair rate.
+    ``fate_evidence`` ranks current biological pressure; it is not an
+    irreversible fate commitment unless a calibrated death submodel is used.
+    """
+
+    experiment_id: str
+    cholestasis_state: str
+    bsep_surface_activity: float
+    mrp2_surface_activity: float
+    bile_acid_retention: float
+    bilirubin_retention: float
+    upr_signal: float | None
+    misfolded_protein: float
+    ubiquitinated_cargo: float
+    damage_exposure_s: dict[str, float]
+    dominant_damage_axis: str
+    fate_evidence: str
+    source_ids: tuple[str, ...]
+    notes: str = ""
+
+    def to_dict(self) -> dict[str, object]:
+        return to_plain(self)
+
+
+@dataclass(frozen=True)
 class CellState:
     definition_id: str
     elapsed_s: float
@@ -123,6 +154,10 @@ class CellState:
     pathway_results: tuple[PathwayResult, ...] = field(default_factory=tuple)
     signaling_results: tuple[SignalingResult, ...] = field(default_factory=tuple)
     membrane_state: MembraneElectrochemicalState | None = None
+    model_controls: dict[str, float | str] = field(default_factory=dict)
+    cellular_response: CellularResponseState | None = None
+    genome: HepatocyteGenomeState | None = None
+    history: CellHistoryState | None = None
     events: tuple[CellEvent, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, object]:

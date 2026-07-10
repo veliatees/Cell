@@ -514,3 +514,33 @@ engine already models, so rendered atoms and simulated flux describe the same pr
   on/off switch of human ureagenesis," Sci Rep 2015;5:16950 (DOI 10.1038/srep16950,
   PMID 26592762). Caveat: large soluble ~1500-residue matrix enzyme — place inside the
   mitochondrion, not in a membrane.
+
+### Cholestasis, proteostasis and cell-fate response
+
+- BSEP loss and intracellular bile-acid disposition — Y. Imai et al.,
+  "Disruption of BSEP Function in HepaRG Cells Alters Bile Acid Disposition and
+  Is a Susceptive Factor to Drug-Induced Cholestatic Injury," *Molecular
+  Pharmaceutics* 2015. DOI 10.1021/acs.molpharmaceut.5b00659. Used for the
+  causal BSEP-loss → bile-acid-retention experiment; it does not supply an
+  absolute whole-cell export rate.
+- Transporter dysregulation, cholestasis and ER stress — I. M. Bochkis et al.,
+  "Hepatocyte-specific ablation of Foxa2 alters bile acid homeostasis and
+  results in endoplasmic reticulum stress," *Nature Medicine* 2008;14:828-836.
+  https://www.nature.com/articles/nm.1853. Used for the cholestasis → ER-stress
+  causal edge.
+- Bile-acid ROS, mitochondrial permeability transition and apoptosis — B.
+  Yerushalmi et al., "Bile acid-induced rat hepatocyte apoptosis is inhibited
+  by antioxidants and blockers of the mitochondrial permeability transition,"
+  *Journal of Hepatology* 2001. PMID 11230742,
+  https://pubmed.ncbi.nlm.nih.gov/11230742/. Freshly isolated rat hepatocytes;
+  used as a mechanistic, not human-quantitative, link.
+- UPR and bile-acid hepatotoxicity — H. H. Li et al., "The involvement of
+  endoplasmic reticulum stress in bile acid-induced hepatocellular injury,"
+  *Cell Death & Disease* 2013. PMCID PMC3947968,
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC3947968/. Used for the unresolved
+  UPR → pro-apoptotic-response edge.
+- ATP-dependent apoptosis/necrosis selection — M. Leist et al., "Intracellular
+  adenosine triphosphate (ATP) concentration: a switch in the decision between
+  apoptosis and necrosis," *Journal of Experimental Medicine* 1997;185:1481.
+  https://rupress.org/jem/article/185/8/1481/7145/Intracellular-Adenosine-Triphosphate-ATP.
+  Used by the separately calibrated death-commitment module.

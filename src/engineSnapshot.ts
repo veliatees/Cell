@@ -175,6 +175,139 @@ export type EngineRegenerationContext = {
   division_demo_is_time_compressed?: boolean;
 };
 
+export type EngineCellularResponse = {
+  experiment_id: string;
+  cholestasis_state: string;
+  bsep_surface_activity: number;
+  mrp2_surface_activity: number;
+  bile_acid_retention: number;
+  bilirubin_retention: number;
+  upr_signal: number | null;
+  misfolded_protein: number;
+  ubiquitinated_cargo: number;
+  damage_exposure_s: Record<string, number>;
+  dominant_damage_axis: string;
+  fate_evidence: string;
+  source_ids: string[];
+  notes?: string;
+};
+
+export type EngineExperiment = {
+  id: string;
+  description: string;
+  controls: Record<string, number | string>;
+  source_ids: string[];
+  notes?: string;
+};
+
+export type EngineChromosomeReference = {
+  name: string;
+  refseq_accession: string;
+  length_bp: number;
+  chromosome_type: "autosome" | "sex_chromosome";
+};
+
+export type EngineFunctionalGeneLocus = {
+  symbol: string;
+  ncbi_gene_id: string;
+  ensembl_gene_id: string;
+  chromosome: string;
+  start_bp: number;
+  end_bp: number;
+  strand: "plus" | "minus";
+  simulation_role: string;
+  source_url: string;
+};
+
+export type EngineSomaticVariant = {
+  id: string;
+  chromosome: string;
+  position_bp: number;
+  variant_type: string;
+  reference: string | null;
+  alternate: string | null;
+  observed_time_s: number;
+  source_id: string;
+  evidence: string;
+  allele_fraction?: number | null;
+  affected_gene?: string | null;
+  notes?: string;
+};
+
+export type EngineGenomeState = {
+  assembly_name: string;
+  assembly_accession: string;
+  annotation_release: string;
+  primary_assembly_length_bp: number;
+  all_scaffolds_length_bp: number;
+  chromosomes: EngineChromosomeReference[];
+  functional_loci: EngineFunctionalGeneLocus[];
+  chromosome_sets_per_nucleus: number[];
+  sex_chromosome_complement: string;
+  individual_genotype_status: string;
+  somatic_variants: EngineSomaticVariant[];
+  mitochondrial: {
+    reference_accession: string;
+    reference_length_bp: number;
+    copy_number: number | null;
+    heteroplasmy_status: string;
+    variants: EngineSomaticVariant[];
+    source_ids: string[];
+  };
+  source_ids: string[];
+  notes?: string;
+};
+
+export type EngineCellHistory = {
+  lineage_id: string;
+  parent_cell_id: string | null;
+  birth_time_s: number;
+  lineage_generation: number;
+  completed_dna_replications: number;
+  completed_cytokineses: number;
+  lifecycle: {
+    state: string;
+    entered_state_time_s: number;
+    cell_age_s: number;
+    terminal_status: string;
+    evidence_status: string;
+    source_ids: string[];
+    notes?: string;
+  };
+  event_log: {
+    id: string;
+    event_type: string;
+    start_time_s: number;
+    last_observed_time_s: number;
+    duration_s: number;
+    status: string;
+    compartment: string;
+    measurements: Record<string, number>;
+    measurement_unit: string;
+    source_ids: string[];
+    notes?: string;
+  }[];
+  memory_traces: {
+    id: string;
+    substrate_type: string;
+    compartment: string;
+    locus_or_entity: string;
+    written_by_event_id: string;
+    value: number | string;
+    unit: string;
+    established_time_s: number;
+    last_measured_time_s: number;
+    persistence_status: string;
+    inheritance_mode: string;
+    source_ids: string[];
+    experimental_system: string;
+    uncertainty: string;
+    notes?: string;
+  }[];
+  source_ids: string[];
+  notes?: string;
+};
+
 export type EngineSnapshot = {
   schema_version: string;
   definition: {
@@ -201,6 +334,10 @@ export type EngineSnapshot = {
     division?: EngineDivisionSnapshot;
     regeneration_context?: EngineRegenerationContext;
     integrated_metabolism?: EngineIntegratedMetabolism;
+    cellular_response?: EngineCellularResponse;
+    experiment?: EngineExperiment;
+    genome?: EngineGenomeState | null;
+    history?: EngineCellHistory | null;
   };
   metadata?: {
     engine?: string;
@@ -257,6 +394,10 @@ export type EngineSnapshotSummary = {
   divisionDisplay: EngineDivisionDisplayState;
   regenerationContext: EngineRegenerationContext | null;
   integratedMetabolism: EngineIntegratedMetabolism | null;
+  cellularResponse: EngineCellularResponse | null;
+  experiment: EngineExperiment | null;
+  genome: EngineGenomeState | null;
+  history: EngineCellHistory | null;
 };
 
 export type EngineDivisionDisplayState = {
@@ -375,6 +516,10 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     divisionDisplay: summarizeEngineDivisionDisplay(division),
     regenerationContext: isEngineRegenerationContext(snapshot.state.regeneration_context) ? snapshot.state.regeneration_context : null,
     integratedMetabolism: snapshot.state.integrated_metabolism ?? null,
+    cellularResponse: snapshot.state.cellular_response ?? null,
+    experiment: snapshot.state.experiment ?? null,
+    genome: snapshot.state.genome ?? null,
+    history: snapshot.state.history ?? null,
     topFluxes: (snapshot.state.metabolic_fluxes ?? [])
       .slice()
       .sort((a, b) => b.value - a.value)

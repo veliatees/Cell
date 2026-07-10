@@ -65,13 +65,6 @@ import {
 } from "./physics/reactions";
 import { LivingCell, type OrganelleActivity, type OrganelleId, type CellFlow, type CellSnapshot } from "./physics/cell";
 import {
-  createMembraneSim,
-  stepMembrane,
-  computeNormals as computeMembraneNormals,
-  MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT,
-  type MembraneSim
-} from "./physics/membrane_mechanics";
-import {
   engineSnapshotEndpointFromLocation,
   loadEngineSnapshot,
   type EngineDivisionCell,
@@ -153,12 +146,6 @@ app.innerHTML = `
         <button class="icon-button" data-action="divide" title="Trigger regeneration → cell division (adult hepatocytes are quiescent by default)" aria-label="Trigger cell division">
           <i data-lucide="git-fork"></i>
         </button>
-        <select class="toolbar-experiment" data-control="experiment" aria-label="Engine experiment">
-          <option value="baseline">Control</option>
-          <option value="bsep_loss">BSEP loss</option>
-          <option value="mrp2_loss">MRP2 loss</option>
-          <option value="canalicular_export_loss">BSEP + MRP2 loss</option>
-        </select>
         <span class="toolbar-status" data-role="division-gate">Python snapshot loading</span>
       </div>
     </header>
@@ -304,7 +291,6 @@ if (!viewport) {
 }
 
 const viewportElement = viewport;
-let concLegendEl: HTMLElement | null = null;
 const timeScaleBadge = document.createElement("div");
 timeScaleBadge.className = "time-scale-badge";
 timeScaleBadge.style.display = "none";
@@ -368,12 +354,7 @@ reportPanel.className = "report-panel";
 reportPanel.style.display = "none";
 reportPanel.innerHTML =
   '<div class="report-panel__head">Python engine snapshot - authority</div>' +
-  '<section class="history-panel" aria-label="Cell life history"><div class="response-panel__head">Life history</div><div class="report-history"></div></section>' +
-  '<section class="genome-panel" aria-label="Genome state"><div class="response-panel__head">Genome</div><div class="report-genome"></div></section>' +
   '<div class="external-snapshot"></div>' +
-  '<section class="response-panel" aria-label="Engine disease response"><div class="response-panel__head">Engine response</div><div class="report-response"></div></section>' +
-  '<section class="comparison-panel" aria-label="Experiment comparison"><div class="response-panel__head">Experiment comparison</div><div class="report-comparison"></div></section>' +
-  '<section class="evidence-panel" aria-label="Evidence boundary"><div class="response-panel__head">Evidence boundary</div><div class="report-evidence"></div></section>' +
   '<div class="local-visual-panel__head">Browser-local schematic renderer</div>' +
   '<div class="report-status"></div>' +
   '<div class="report-cellcycle"></div>' +
@@ -387,16 +368,7 @@ reportPanel.innerHTML =
 let lastEventId = 0;
 let externalEngineSummary: EngineSnapshotSummary | null = null;
 let externalEngineDiagnostic = "Python engine snapshot loading...";
-const defaultExternalEngineSnapshotUrl = engineSnapshotEndpointFromLocation(window.location);
-let externalEngineSnapshotUrl = defaultExternalEngineSnapshotUrl;
-const ENGINE_EXPERIMENTS = ["baseline", "bsep_loss", "mrp2_loss", "canalicular_export_loss"] as const;
-const ENGINE_EXPERIMENT_LABELS: Record<(typeof ENGINE_EXPERIMENTS)[number], string> = {
-  baseline: "Control",
-  bsep_loss: "BSEP loss",
-  mrp2_loss: "MRP2 loss",
-  canalicular_export_loss: "BSEP + MRP2 loss"
-};
-let experimentComparisonSummaries: Partial<Record<(typeof ENGINE_EXPERIMENTS)[number], EngineSnapshotSummary>> = {};
+const externalEngineSnapshotUrl = engineSnapshotEndpointFromLocation(window.location);
 
 async function refreshExternalEngineSnapshot() {
   const result = await loadEngineSnapshot(externalEngineSnapshotUrl);
@@ -412,29 +384,6 @@ async function refreshExternalEngineSnapshot() {
 
 void refreshExternalEngineSnapshot();
 window.setInterval(() => void refreshExternalEngineSnapshot(), 5000);
-
-async function loadExperimentComparisons() {
-  const loaded = await Promise.all(
-    ENGINE_EXPERIMENTS.map(async (id) => ({ id, result: await loadEngineSnapshot(`/experiments/${id}.json`) }))
-  );
-  const summaries: Partial<Record<(typeof ENGINE_EXPERIMENTS)[number], EngineSnapshotSummary>> = {};
-  for (const item of loaded) {
-    if (item.result.status === "loaded") summaries[item.id] = item.result.summary;
-  }
-  experimentComparisonSummaries = summaries;
-}
-
-void loadExperimentComparisons();
-
-app.querySelector<HTMLSelectElement>("[data-control='experiment']")?.addEventListener("change", (event) => {
-  const experimentId = (event.currentTarget as HTMLSelectElement).value;
-  externalEngineSnapshotUrl = experimentId === "baseline"
-    ? defaultExternalEngineSnapshotUrl
-    : `/experiments/${experimentId}.json`;
-  externalEngineSummary = null;
-  externalEngineDiagnostic = "Python experiment snapshot loading...";
-  void refreshExternalEngineSnapshot();
-});
 
 const simulation = new IonSimulation();
 let water: WaterSystem | null = null;
@@ -457,31 +406,13 @@ const ORGANELLE_JIGGLE_RE = /mitochond|lysosome|peroxisome|ribosome|golgi|vesicl
 let livingCell: LivingCell | null = null; // the metabolic model behind the organelle scene
 const organelleMitos: THREE.Mesh[] = []; // mitochondria meshes (glow with ATP production)
 let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by cell status)
-// Physically-grounded membrane: a real deformable bilayer (tension + Helfrich
-// bending + volume conservation, overdamped). A coarse lon/lat field of its radial
-// deformation lets embedded proteins and interior organelles ride the true shape.
-let membraneSim: MembraneSim | null = null;
-let membraneRestPos: Float32Array | null = null;
-let membraneFaceDirs: Float32Array | null = null;
-const MF_LON = 32;
-const MF_LAT = 16;
-let membraneField: Float32Array | null = null;
-const _mfCount = new Float32Array(MF_LON * MF_LAT);
-type DiseaseSceneVisuals = {
-  canaliculusMaterial: THREE.MeshStandardMaterial;
-  bsepMaterials: THREE.MeshStandardMaterial[];
-  mrp2Materials: THREE.MeshStandardMaterial[];
-  bsepPackets: THREE.InstancedMesh;
-  mrp2Packets: THREE.InstancedMesh;
-  retentionCloud: THREE.InstancedMesh;
-  retentionOffsets: THREE.Vector3[];
-  erMaterials: THREE.MeshStandardMaterial[];
-  erBurdenMaterial: THREE.PointsMaterial | null;
-  fateHalo: THREE.MeshStandardMaterial | null;
-  curve: THREE.CatmullRomCurve3;
-  canaliculusAnchor: THREE.Vector3;
-};
-let diseaseSceneVisuals: DiseaseSceneVisuals | null = null;
+// The plasma membrane is a fluid, deformable surface: it breathes/wobbles like a
+// water balloon and shows localized endocytosis (inward) / exocytosis (outward)
+// events. Base vertex positions + a few event centres drive a per-frame radial
+// deformation.
+let membraneBase: Float32Array | null = null;
+type MembraneEvent = { dx: number; dy: number; dz: number; freq: number; phase: number; sign: number; width: number; amp: number };
+let membraneEvents: MembraneEvent[] = [];
 type CellCyclePhase = "G1" | "S" | "G2" | "M";
 type DivisionStage = "none" | "dna_replication" | "centrosome_separation" | "chromosome_alignment" | "ring_assembly" | "furrow_ingression" | "intercellular_bridge" | "abscission_pending" | "regressed";
 type DivisionOutcome = "none" | "abscission_success" | "cytokinesis_failure";
@@ -673,8 +604,6 @@ type MembraneProteinAnchor = {
   dir: THREE.Vector3;
   tangentA: THREE.Vector3;
   tangentB: THREE.Vector3;
-  localNormal: THREE.Vector3;
-  surfaceOffset: number;
   phase: number;
   drift: number;
 };
@@ -682,14 +611,7 @@ const membraneProteinAnchors: MembraneProteinAnchor[] = [];
 // Point-cloud protein populations (the LOD proteome shell + dense zoom patch) that
 // ride the deforming membrane: their vertex positions are recomputed each frame
 // from a saved rest direction × the same radial displacement the membrane uses.
-type MembraneSurfaceBinding = {
-  face: Int32Array;
-  wa: Float32Array;
-  wb: Float32Array;
-  wc: Float32Array;
-  offset: Float32Array;
-};
-type MembraneRidingCloud = { geo: THREE.BufferGeometry; base: Float32Array; binding: MembraneSurfaceBinding };
+type MembraneRidingCloud = { geo: THREE.BufferGeometry; base: Float32Array };
 const membraneRidingClouds: MembraneRidingCloud[] = [];
 type TransportPortAccumulator = Record<string, { s: THREE.Vector3; n: number }>;
 let mode: Mode = "ions";
@@ -875,14 +797,6 @@ const baselineOrganelleInventory = (): OrganelleInventoryVisual => ({
   membraneArea: 1.0
 });
 const cloneOrganelleInventory = (inv: OrganelleInventoryVisual): OrganelleInventoryVisual => ({ ...inv });
-// Treat biomass as relative cell volume/mass. For a near-spherical cell:
-// radius ∝ volume^(1/3), surface area ∝ volume^(2/3). This is geometry, not a
-// fitted biological parameter.
-const visualRadiusScaleFromBiomass = (biomass: number) => Math.cbrt(Math.max(0.001, biomass));
-const visualMembraneAreaScaleFromBiomass = (biomass: number) => {
-  const r = visualRadiusScaleFromBiomass(biomass);
-  return r * r;
-};
 const cellCycle: VisualCellInstance = {
   id: 1,
   parentId: null,
@@ -1165,8 +1079,7 @@ function visualCytokinesisFailureRisk(energyCharge: number, healthy: boolean) {
   if (!healthy) risk += 0.22;
   risk += Math.max(0, 0.62 - energyCharge) * 0.35;
   risk += Math.max(0, cellCycle.mechanics.bridgeTension - 0.35) * 0.35;
-  const requiredMembraneArea = visualMembraneAreaScaleFromBiomass(cellCycle.biomass);
-  risk += Math.max(0, 0.85 - Math.min(1, cellCycle.organelles.membraneArea / requiredMembraneArea)) * 0.12;
+  risk += Math.max(0, 0.85 - Math.min(1, cellCycle.organelles.membraneArea / Math.max(1, cellCycle.biomass))) * 0.12;
   return clamp(risk, 0.02, 0.85);
 }
 function makeCellParticleCloud(state: VisualCellInstance, radius: number, family: "mitochondria" | "vesicles", parent: THREE.Group): THREE.MeshStandardMaterial[] {
@@ -1229,7 +1142,7 @@ function createResolvedDivisionVisual(cells: VisualCellInstance[], outcome: Divi
     cellGroup.position.copy(start);
     cellGroup.userData.label =
       outcome === "abscission_success"
-        ? `${engineBacked ? "Engine-backed" : "Browser-local visual demo"} daughter cell state ${state.id}; parent ${state.parentId}; mitochondria ${state.organelles.mitochondria.toLocaleString()}, centrosomes ${state.organelles.centrosomes}, relative membrane area ${state.organelles.membraneArea.toFixed(3)}`
+        ? `${engineBacked ? "Engine-backed" : "Browser-local visual demo"} daughter cell state ${state.id}; parent ${state.parentId}; mitochondria ${state.organelles.mitochondria.toLocaleString()}, centrosomes ${state.organelles.centrosomes}`
         : `${engineBacked ? "Engine-backed" : "Browser-local visual demo"} cytokinesis regression state ${state.id}; one hepatocyte with ${state.nuclei} nuclei and conserved organelles`;
 
     const membraneMat = new THREE.MeshStandardMaterial({
@@ -1254,7 +1167,7 @@ function createResolvedDivisionVisual(cells: VisualCellInstance[], outcome: Divi
     membrane.scale.set(1, 0.88, 0.96);
     membrane.userData.label =
       outcome === "abscission_success"
-        ? `${engineBacked ? `Daughter plasma membrane from an engine division result; relative area ${state.organelles.membraneArea.toFixed(3)}` : "Browser-local daughter membrane demo; not Python engine state"}`
+        ? `${engineBacked ? "Daughter plasma membrane from an engine division result" : "Browser-local daughter membrane demo; not Python engine state"}`
         : "One plasma membrane after failed cytokinesis; no fake split";
     cellGroup.add(membrane);
     const cytoplasm = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.95, 48, 28), cytoplasmMat);
@@ -1431,15 +1344,13 @@ function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy:
     }
     if (c.biomass > previousBiomass && !c.abscissionPending) {
       const factor = c.biomass / Math.max(previousBiomass, 0.001);
-      const membraneAreaFactor =
-        visualMembraneAreaScaleFromBiomass(c.biomass) / visualMembraneAreaScaleFromBiomass(previousBiomass);
       c.organelles.mitochondria = Math.max(c.organelles.mitochondria, Math.round(c.organelles.mitochondria * factor));
       c.organelles.mitochondrialFragments = Math.max(c.organelles.mitochondria, c.organelles.mitochondrialFragments);
       c.organelles.lysosomes = Math.max(c.organelles.lysosomes, Math.round(c.organelles.lysosomes * (1 + (factor - 1) * 0.65)));
       c.organelles.peroxisomes = Math.max(c.organelles.peroxisomes, Math.round(c.organelles.peroxisomes * (1 + (factor - 1) * 0.65)));
       c.organelles.ribosomes = Math.max(c.organelles.ribosomes, Math.round(c.organelles.ribosomes * factor));
       c.organelles.erMass *= factor;
-      c.organelles.membraneArea *= membraneAreaFactor;
+      c.organelles.membraneArea *= factor;
     }
     if (!c.abscissionPending) {
       if (proliferationPermitted) c.phaseTime += simSeconds;
@@ -2248,71 +2159,6 @@ function engineVisualSignal(summary: EngineSnapshotSummary): EngineVisualSignal 
   };
 }
 
-function updateDiseaseVisuals(timeS: number) {
-  const visuals = diseaseSceneVisuals;
-  const response = externalEngineSummary?.cellularResponse;
-  if (!visuals || !response) return;
-
-  const bsep = Math.min(response.bsep_surface_activity, 1);
-  const mrp2 = Math.min(response.mrp2_surface_activity, 1);
-  for (const material of visuals.bsepMaterials) {
-    material.emissiveIntensity = 0.03 + 0.45 * bsep;
-    material.opacity = 0.18 + 0.82 * bsep;
-  }
-  for (const material of visuals.mrp2Materials) {
-    material.emissiveIntensity = 0.03 + 0.45 * mrp2;
-    material.opacity = 0.18 + 0.82 * mrp2;
-  }
-  visuals.canaliculusMaterial.emissiveIntensity = 0.08 + 0.24 * Math.max(bsep, mrp2);
-
-  const updatePackets = (packets: THREE.InstancedMesh, activity: number, phase: number) => {
-    for (let i = 0; i < 14; i += 1) {
-      if (activity <= 0) {
-        dummyObj.scale.setScalar(0);
-      } else {
-        const u = (timeS * 0.12 * activity + i / 14 + phase) % 1;
-        dummyObj.position.copy(visuals.curve.getPointAt(u));
-        dummyObj.scale.setScalar(0.65 + 0.35 * activity);
-      }
-      dummyObj.updateMatrix();
-      packets.setMatrixAt(i, dummyObj.matrix);
-    }
-    packets.instanceMatrix.needsUpdate = true;
-  };
-  updatePackets(visuals.bsepPackets, bsep, 0.0);
-  updatePackets(visuals.mrp2Packets, mrp2, 0.5);
-
-  // This is a legibility mapping of a normalized engine pool, explicitly
-  // labelled as such in the hover text. It never claims a molecule count.
-  const exportLoss = Math.max(1 - bsep, 1 - mrp2);
-  const cloudMaterial = visuals.retentionCloud.material as THREE.MeshStandardMaterial;
-  cloudMaterial.opacity = 0.04 + 0.42 * exportLoss;
-  for (let i = 0; i < visuals.retentionOffsets.length; i += 1) {
-    const offset = visuals.retentionOffsets[i];
-    dummyObj.position.copy(visuals.canaliculusAnchor).add(offset);
-    dummyObj.scale.setScalar((0.35 + response.bile_acid_retention) * (0.4 + 0.6 * exportLoss));
-    dummyObj.updateMatrix();
-    visuals.retentionCloud.setMatrixAt(i, dummyObj.matrix);
-  }
-  visuals.retentionCloud.instanceMatrix.needsUpdate = true;
-
-  const upr = response.upr_signal ?? 0;
-  for (const material of visuals.erMaterials) material.emissiveIntensity = 0.08 + 0.8 * upr;
-  if (visuals.erBurdenMaterial) visuals.erBurdenMaterial.opacity = Math.min(0.7, response.misfolded_protein);
-  if (visuals.fateHalo) {
-    const color = response.fate_evidence === "apoptotic_pressure"
-      ? "#ff7070"
-      : response.fate_evidence === "senescence_pressure"
-        ? "#caa3e6"
-        : response.fate_evidence === "proteostasis_adaptation"
-          ? "#f2c45b"
-          : "#7fb6ff";
-    visuals.fateHalo.color.set(color);
-    visuals.fateHalo.emissive.set(color);
-    visuals.fateHalo.opacity = 0.02 + 0.14 * Math.max(upr, exportLoss);
-  }
-}
-
 const FLOW_REF: Record<string, number> = {
   "outside-water": 0.22,
   "outside-glucose": 0.8,
@@ -2643,9 +2489,10 @@ function updateMembraneProteinAnchors(t: number) {
       .multiplyScalar(Math.sin(t * 0.13 + p.phase) * p.drift)
       .add(p.tangentB.clone().multiplyScalar(Math.cos(t * 0.11 + p.phase * 1.7) * p.drift));
     const dir = p.dir.clone().add(tangentOffset).normalize();
-    sampleMembraneSurface(dir.x, dir.y, dir.z, p.surfaceOffset, _anchorPos, _anchorNorm);
-    p.object.position.copy(_anchorPos);
-    p.object.quaternion.setFromUnitVectors(p.localNormal, _anchorNorm);
+    // Ride the deforming membrane: sit at the local displaced surface radius.
+    const f = membraneRadialFactor(dir.x, dir.y, dir.z, t);
+    p.object.position.copy(dir.clone().multiplyScalar(CELL_R * f * 0.99));
+    p.object.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
   }
 }
 
@@ -2661,9 +2508,7 @@ const _popQuat = new THREE.Quaternion();
 const _popScale = new THREE.Vector3();
 const _popMat = new THREE.Matrix4();
 const _popColor = new THREE.Color();
-const _anchorPos = new THREE.Vector3();
-const _anchorNorm = new THREE.Vector3();
-function updateOrganellePopulations(t: number) {
+function updateOrganellePopulations() {
   for (const pop of organellePopulations) {
     const count = pop.scale.length;
     const step = pop.step;
@@ -2683,11 +2528,7 @@ function updateOrganellePopulations(t: number) {
       pop.offset[i * 3] = ox;
       pop.offset[i * 3 + 1] = oy;
       pop.offset[i * 3 + 2] = oz;
-      // Ride the membrane deformation (attenuated by depth), then add the caged
-      // random walk on top.
-      const bx = pop.basePos[i * 3], by = pop.basePos[i * 3 + 1], bz = pop.basePos[i * 3 + 2];
-      const mf = membraneCoupledFactor(bx, by, bz, t);
-      _popPos.set(bx * mf + ox, by * mf + oy, bz * mf + oz);
+      _popPos.set(pop.basePos[i * 3] + ox, pop.basePos[i * 3 + 1] + oy, pop.basePos[i * 3 + 2] + oz);
       _popQuat.set(pop.baseQuat[i * 4], pop.baseQuat[i * 4 + 1], pop.baseQuat[i * 4 + 2], pop.baseQuat[i * 4 + 3]);
       const sc = pop.scale[i];
       _popScale.set(sc, sc, sc);
@@ -2789,223 +2630,51 @@ function updateNucleusExpression(simDt: number) {
   if (dirty) mesh.instanceMatrix.needsUpdate = true;
 }
 
-// The membrane's radial deformation factor along a unit direction, SAMPLED from
-// the physics membrane (membrane_mechanics.ts) via a coarse lon/lat field rebuilt
-// each frame. Everything embedded in / coupled to the membrane reads the SAME real
-// deformation, so proteins and organelles ride the true bilayer shape.
-function membraneRadialFactor(nx: number, ny: number, nz: number, _t: number): number {
-  if (!membraneField) return 1;
-  const r = Math.hypot(nx, ny, nz) || 1;
-  const lat = Math.acos(clamp(ny / r, -1, 1)); // 0..π
-  const lon = Math.atan2(nz, nx) + Math.PI; // 0..2π
-  const li = Math.min(MF_LAT - 1, Math.max(0, Math.floor((lat / Math.PI) * MF_LAT)));
-  const oi = Math.min(MF_LON - 1, Math.max(0, Math.floor((lon / (2 * Math.PI)) * MF_LON)));
-  return membraneField[li * MF_LON + oi];
-}
-
-function rebuildMembraneSurfaceIndex(): void {
-  const sim = membraneSim;
-  const rest = membraneRestPos;
-  if (!sim || !rest) {
-    membraneFaceDirs = null;
-    return;
+// Deform the plasma membrane each frame: a slow water-balloon breathing/wobble
+// plus localized endocytosis (inward) / exocytosis (outward) pulses. Vertices are
+// displaced radially from their captured rest positions, so the cell's outline is
+// a living, fluid surface rather than a rigid sphere.
+// The membrane's radial displacement factor along a unit direction at time t.
+// Shared by the membrane surface AND everything embedded in it (transport
+// proteins, the LOD proteome cloud) so they all deform as one bilayer.
+function membraneRadialFactor(nx: number, ny: number, nz: number, t: number): number {
+  // Smooth breathing/wobble (low spatial + temporal frequency).
+  let w =
+    0.05 *
+    (Math.sin(1.4 * nx + 0.6 * t) +
+      Math.sin(1.2 * ny - 0.5 * t + 1.7) +
+      Math.sin(1.1 * nz + 0.55 * t + 3.1)) /
+    3;
+  // Localized endo/exocytosis pulses on the facing cap of each event centre.
+  // dot^6 (cheap: two squarings) stands in for the old Math.pow(dot,width) so this
+  // can run per-frame over tens of thousands of embedded points without stalling.
+  for (const e of membraneEvents) {
+    const dot = nx * e.dx + ny * e.dy + nz * e.dz;
+    if (dot <= 0) continue;
+    const pulse = Math.max(0, Math.sin(t * e.freq + e.phase));
+    const d2 = dot * dot;
+    w += e.sign * e.amp * pulse * (d2 * d2 * d2);
   }
-  const nf = sim.faces.length / 3;
-  membraneFaceDirs = new Float32Array(nf * 3);
-  for (let f = 0; f < nf; f += 1) {
-    const ia = sim.faces[f * 3] * 3;
-    const ib = sim.faces[f * 3 + 1] * 3;
-    const ic = sim.faces[f * 3 + 2] * 3;
-    let x = (rest[ia] + rest[ib] + rest[ic]) / 3;
-    let y = (rest[ia + 1] + rest[ib + 1] + rest[ic + 1]) / 3;
-    let z = (rest[ia + 2] + rest[ib + 2] + rest[ic + 2]) / 3;
-    const inv = 1 / (Math.hypot(x, y, z) || 1);
-    x *= inv; y *= inv; z *= inv;
-    membraneFaceDirs[f * 3] = x;
-    membraneFaceDirs[f * 3 + 1] = y;
-    membraneFaceDirs[f * 3 + 2] = z;
-  }
+  // Hard cap the OUTWARD excursion so the solid membrane (and everything riding
+  // it) can never balloon past CELL_R*1.12 into a neighbouring structure.
+  if (w > 0.12) w = 0.12;
+  return 1 + w;
 }
 
-function nearestMembraneFace(nx: number, ny: number, nz: number): number {
-  const dirs = membraneFaceDirs;
-  if (!dirs) return 0;
-  let best = 0;
-  let bestDot = -Infinity;
-  for (let f = 0; f < dirs.length; f += 3) {
-    const dot = nx * dirs[f] + ny * dirs[f + 1] + nz * dirs[f + 2];
-    if (dot > bestDot) {
-      bestDot = dot;
-      best = f / 3;
-    }
-  }
-  return best;
-}
-
-function barycentricOnRestFace(face: number, px: number, py: number, pz: number): [number, number, number] {
-  const sim = membraneSim;
-  const rest = membraneRestPos;
-  if (!sim || !rest) return [1, 0, 0];
-  const ia = sim.faces[face * 3] * 3;
-  const ib = sim.faces[face * 3 + 1] * 3;
-  const ic = sim.faces[face * 3 + 2] * 3;
-  const ax = rest[ia], ay = rest[ia + 1], az = rest[ia + 2];
-  const v0x = rest[ib] - ax, v0y = rest[ib + 1] - ay, v0z = rest[ib + 2] - az;
-  const v1x = rest[ic] - ax, v1y = rest[ic + 1] - ay, v1z = rest[ic + 2] - az;
-  const v2x = px - ax, v2y = py - ay, v2z = pz - az;
-  const d00 = v0x * v0x + v0y * v0y + v0z * v0z;
-  const d01 = v0x * v1x + v0y * v1y + v0z * v1z;
-  const d11 = v1x * v1x + v1y * v1y + v1z * v1z;
-  const d20 = v2x * v0x + v2y * v0y + v2z * v0z;
-  const d21 = v2x * v1x + v2y * v1y + v2z * v1z;
-  const denom = d00 * d11 - d01 * d01;
-  if (Math.abs(denom) < 1e-9) return [1, 0, 0];
-  let wb = (d11 * d20 - d01 * d21) / denom;
-  let wc = (d00 * d21 - d01 * d20) / denom;
-  let wa = 1 - wb - wc;
-  if (!Number.isFinite(wa) || !Number.isFinite(wb) || !Number.isFinite(wc)) return [1, 0, 0];
-  wa = Math.max(0, wa);
-  wb = Math.max(0, wb);
-  wc = Math.max(0, wc);
-  const sum = wa + wb + wc || 1;
-  return [wa / sum, wb / sum, wc / sum];
-}
-
-function bindMembraneSurfacePoints(base: Float32Array): MembraneSurfaceBinding {
-  const n = base.length / 3;
-  const face = new Int32Array(n);
-  const wa = new Float32Array(n);
-  const wb = new Float32Array(n);
-  const wc = new Float32Array(n);
-  const offset = new Float32Array(n);
-  const radius = membraneSim?.radius ?? CELL_R;
-  for (let i = 0; i < n; i += 1) {
-    const x = base[i * 3], y = base[i * 3 + 1], z = base[i * 3 + 2];
-    const r = Math.hypot(x, y, z) || radius;
-    const nx = x / r, ny = y / r, nz = z / r;
-    const f = nearestMembraneFace(nx, ny, nz);
-    face[i] = f;
-    const b = barycentricOnRestFace(f, nx * radius, ny * radius, nz * radius);
-    wa[i] = b[0]; wb[i] = b[1]; wc[i] = b[2];
-    offset[i] = clamp(r / radius, 0.985, 1.01);
-  }
-  return { face, wa, wb, wc, offset };
-}
-
-const _surfacePos = new THREE.Vector3();
-const _surfaceNorm = new THREE.Vector3();
-function writeMembraneBoundPositions(binding: MembraneSurfaceBinding, arr: Float32Array): void {
-  const sim = membraneSim;
-  if (!sim) return;
-  const { faces, pos, normals } = sim;
-  const radius = sim.radius;
-  for (let i = 0; i < binding.face.length; i += 1) {
-    const f = binding.face[i] * 3;
-    const ia = faces[f] * 3, ib = faces[f + 1] * 3, ic = faces[f + 2] * 3;
-    const wa = binding.wa[i], wb = binding.wb[i], wc = binding.wc[i];
-    const sx = pos[ia] * wa + pos[ib] * wb + pos[ic] * wc;
-    const sy = pos[ia + 1] * wa + pos[ib + 1] * wb + pos[ic + 1] * wc;
-    const sz = pos[ia + 2] * wa + pos[ib + 2] * wb + pos[ic + 2] * wc;
-    let nx = normals[ia] * wa + normals[ib] * wb + normals[ic] * wc;
-    let ny = normals[ia + 1] * wa + normals[ib + 1] * wb + normals[ic + 1] * wc;
-    let nz = normals[ia + 2] * wa + normals[ib + 2] * wb + normals[ic + 2] * wc;
-    const inv = 1 / (Math.hypot(nx, ny, nz) || 1);
-    nx *= inv; ny *= inv; nz *= inv;
-    const lift = (binding.offset[i] - 1) * radius;
-    arr[i * 3] = sx + nx * lift;
-    arr[i * 3 + 1] = sy + ny * lift;
-    arr[i * 3 + 2] = sz + nz * lift;
-  }
-}
-
-function sampleMembraneSurface(nx: number, ny: number, nz: number, offset: number, outPos: THREE.Vector3, outNorm: THREE.Vector3): void {
-  const sim = membraneSim;
-  if (!sim) {
-    outNorm.set(nx, ny, nz).normalize();
-    outPos.copy(outNorm).multiplyScalar(CELL_R * offset);
-    return;
-  }
-  const r = Math.hypot(nx, ny, nz) || 1;
-  nx /= r; ny /= r; nz /= r;
-  const face = nearestMembraneFace(nx, ny, nz);
-  const b = barycentricOnRestFace(face, nx * sim.radius, ny * sim.radius, nz * sim.radius);
-  const binding: MembraneSurfaceBinding = {
-    face: Int32Array.of(face),
-    wa: Float32Array.of(b[0]),
-    wb: Float32Array.of(b[1]),
-    wc: Float32Array.of(b[2]),
-    offset: Float32Array.of(offset)
-  };
-  const arr = new Float32Array(3);
-  writeMembraneBoundPositions(binding, arr);
-  outPos.set(arr[0], arr[1], arr[2]);
-  const f = face * 3;
-  const ia = sim.faces[f] * 3, ib = sim.faces[f + 1] * 3, ic = sim.faces[f + 2] * 3;
-  const wa = b[0], wb = b[1], wc = b[2];
-  outNorm.set(
-    sim.normals[ia] * wa + sim.normals[ib] * wb + sim.normals[ic] * wc,
-    sim.normals[ia + 1] * wa + sim.normals[ib + 1] * wb + sim.normals[ic + 1] * wc,
-    sim.normals[ia + 2] * wa + sim.normals[ib + 2] * wb + sim.normals[ic + 2] * wc
-  ).normalize();
-}
-
-// Rasterise the physics membrane's per-vertex radial factor (|x|/R) into the coarse
-// lon/lat field that membraneRadialFactor samples.
-function rebuildMembraneField(): void {
-  const sim = membraneSim;
-  if (!sim) return;
-  if (!membraneField) membraneField = new Float32Array(MF_LON * MF_LAT);
-  membraneField.fill(0);
-  _mfCount.fill(0);
-  const inv = 1 / sim.radius;
-  for (let v = 0; v < sim.n; v += 1) {
-    const x = sim.pos[v * 3], y = sim.pos[v * 3 + 1], z = sim.pos[v * 3 + 2];
-    const r = Math.hypot(x, y, z) || 1;
-    const lat = Math.acos(clamp(y / r, -1, 1));
-    const lon = Math.atan2(z, x) + Math.PI;
-    const li = Math.min(MF_LAT - 1, Math.floor((lat / Math.PI) * MF_LAT));
-    const oi = Math.min(MF_LON - 1, Math.floor((lon / (2 * Math.PI)) * MF_LON));
-    const idx = li * MF_LON + oi;
-    membraneField[idx] += r * inv;
-    _mfCount[idx] += 1;
-  }
-  for (let i = 0; i < membraneField.length; i += 1) {
-    membraneField[i] = _mfCount[i] > 0 ? membraneField[i] / _mfCount[i] : 1;
-  }
-}
-
-// The cytoplasm is (near-)incompressible: when the membrane flexes, the interior
-// moves WITH it — most at the surface, tapering to nothing at the centre. This
-// returns the radial factor to apply to an organelle at (x,y,z) so it rides the
-// membrane's deformation (breathing + endo/exocytosis) instead of floating free.
-function membraneCoupledFactor(x: number, y: number, z: number, t: number): number {
-  const r = Math.sqrt(x * x + y * y + z * z);
-  if (r < 1e-3) return 1;
-  const surface = membraneRadialFactor(x / r, y / r, z / r, t); // 1 + w at the surface
-  const shell = clamp((r - CELL_R * 0.72) / (CELL_R * 0.23), 0, 1);
-  const depth = shell * shell * (3 - 2 * shell); // smoothstep: only cortex follows
-  return 1 + (surface - 1) * depth * 0.22;
-}
-
-// Advance the whole-cell membrane one numerical relaxation step, then push the
-// source-bounded radial shell to the render mesh and rebuild the deformation
-// field the rest of the scene reads.
-function updateMembraneShape(dtReal: number) {
-  const sim = membraneSim;
-  if (!sim || !organelleMembrane) return;
-  // Overdamped substeps: this is a numerical relaxation step, not a biological
-  // time constant. Whole-cell endocytic pits are below this scene's resolution,
-  // so we do not spawn exaggerated macroscopic buds here.
-  const simDt = clamp(dtReal, 0.004, 0.024);
-  const sub = 3;
-  for (let i = 0; i < sub; i += 1) stepMembrane(sim, simDt / sub);
+function updateMembraneShape(t: number) {
+  if (!organelleMembrane || !membraneBase) return;
   const attr = organelleMembrane.geometry.getAttribute("position") as THREE.BufferAttribute;
-  (attr.array as Float32Array).set(sim.pos);
+  const arr = attr.array as Float32Array;
+  const base = membraneBase;
+  for (let i = 0; i < arr.length; i += 3) {
+    const bx = base[i], by = base[i + 1], bz = base[i + 2];
+    const r = Math.sqrt(bx * bx + by * by + bz * bz) || 1;
+    const f = membraneRadialFactor(bx / r, by / r, bz / r, t);
+    arr[i] = bx * f;
+    arr[i + 1] = by * f;
+    arr[i + 2] = bz * f;
+  }
   attr.needsUpdate = true;
-  computeMembraneNormals(sim);
-  const nrm = organelleMembrane.geometry.getAttribute("normal") as THREE.BufferAttribute | null;
-  if (nrm) { (nrm.array as Float32Array).set(sim.normals); nrm.needsUpdate = true; }
-  rebuildMembraneField();
 }
 
 // Feeding/fasting: fill or mobilise the glycogen store and refresh the readout.
@@ -3034,7 +2703,15 @@ function updateMembraneRidingClouds(t: number) {
   for (const c of membraneRidingClouds) {
     const attr = c.geo.getAttribute("position") as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
-    writeMembraneBoundPositions(c.binding, arr);
+    const base = c.base;
+    for (let i = 0; i < base.length; i += 3) {
+      const bx = base[i], by = base[i + 1], bz = base[i + 2];
+      const r = Math.sqrt(bx * bx + by * by + bz * bz) || 1;
+      const f = membraneRadialFactor(bx / r, by / r, bz / r, t);
+      arr[i] = bx * f;
+      arr[i + 1] = by * f;
+      arr[i + 2] = bz * f;
+    }
     attr.needsUpdate = true;
   }
 }
@@ -3048,16 +2725,7 @@ function updateOrganelleMotion(t: number) {
     const dy = Math.sin(t * m.speed * 0.73 + m.phase * 1.7) * m.amp * 0.38;
     const dz = Math.cos(t * m.speed * 0.91 + m.phase * 0.6) * m.amp * 0.62;
     const poleBias = Math.sign(m.base.x || Math.sin(m.phase)) * mitoticRedistribution * 0.5;
-    // Ride the membrane deformation (depth-attenuated) beneath the local jiggle.
-    const mf = membraneCoupledFactor(m.base.x, m.base.y, m.base.z, t);
-    _popPos.set(
-      m.base.x * mf + dx + poleBias,
-      m.base.y * mf + dy * (1 - 0.25 * mitoticRedistribution),
-      m.base.z * mf + dz
-    );
-    const maxInside = CELL_R * 0.88;
-    if (_popPos.length() > maxInside) _popPos.setLength(maxInside);
-    m.object.position.copy(_popPos);
+    m.object.position.set(m.base.x + dx + poleBias, m.base.y + dy * (1 - 0.25 * mitoticRedistribution), m.base.z + dz);
     m.object.rotateOnAxis(m.axis, m.spin);
   }
 }
@@ -3257,16 +2925,6 @@ function updateReportPanel(s: CellSnapshot) {
   if (externalEl) {
     externalEl.innerHTML = renderExternalEngineStatus();
   }
-  const historyEl = reportPanel.querySelector(".report-history");
-  if (historyEl) historyEl.innerHTML = renderCellHistory(externalEngineSummary);
-  const genomeEl = reportPanel.querySelector(".report-genome");
-  if (genomeEl) genomeEl.innerHTML = renderGenomeState(externalEngineSummary);
-  const responseEl = reportPanel.querySelector(".report-response");
-  if (responseEl) responseEl.innerHTML = renderEngineResponse(externalEngineSummary);
-  const comparisonEl = reportPanel.querySelector(".report-comparison");
-  if (comparisonEl) comparisonEl.innerHTML = renderExperimentComparison(externalEngineSummary);
-  const evidenceEl = reportPanel.querySelector(".report-evidence");
-  if (evidenceEl) evidenceEl.innerHTML = renderEvidenceBoundary(externalEngineSummary);
   const timescaleEl = reportPanel.querySelector(".report-timescale");
   if (timescaleEl) {
     timescaleEl.textContent = timeScaleDisclosureText();
@@ -3391,14 +3049,6 @@ function renderExternalEngineStatus(): string {
     .slice(0, 3)
     .map(([axis, value]) => `${axis} ${value.toFixed(2)}`)
     .join(" · ");
-  const response = s.cellularResponse;
-  const experiment = s.experiment;
-  const experimentText = experiment
-    ? `experiment ${experiment.id.replaceAll("_", " ")} · ${experiment.description}`
-    : "experiment -";
-  const responseText = response
-    ? `cholestasis ${response.cholestasis_state.replaceAll("_", " ")} · BSEP ${response.bsep_surface_activity.toFixed(2)}× · MRP2 ${response.mrp2_surface_activity.toFixed(2)}× · UPR ${response.upr_signal == null ? "-" : response.upr_signal.toFixed(2)} · fate evidence ${response.fate_evidence.replaceAll("_", " ")} · cumulative ${response.dominant_damage_axis} exposure ${Math.round(response.damage_exposure_s[response.dominant_damage_axis] ?? 0)} s`
-    : "cellular response -";
   return (
     `<span class="external-snapshot__label">Python engine snapshot - authoritative</span>` +
     `<span>${s.cellType} · ${s.status} · ${atp} · ${ca} · ${vm} · ${pump} · cargo ${cargo || "none"} · ` +
@@ -3408,105 +3058,8 @@ function renderExternalEngineStatus(): string {
     `<span class="external-snapshot__diag">${regenText}</span>` +
     `<span class="external-snapshot__org">${organelles || "no organelle state"}</span>` +
     `<span class="external-snapshot__diag">${stress ? `stress ${stress}` : "stress -"}</span>` +
-    `<span class="external-snapshot__diag">${experimentText}</span>` +
-    `<span class="external-snapshot__diag">${responseText}</span>` +
     `<span class="external-snapshot__diag">${processes ? `active ${processes}` : "active processes -"}</span>` +
     renderHmdbValidation(s.integratedMetabolism)
-  );
-}
-
-function renderEngineResponse(summary: EngineSnapshotSummary | null): string {
-  const response = summary?.cellularResponse;
-  if (!response) return '<span class="response-empty">Awaiting a disease-response snapshot.</span>';
-  const activityBar = (label: string, value: number, color: string) =>
-    `<div class="response-row"><span>${label}</span><div class="response-track"><i style="width:${Math.min(value, 1) * 100}%;background:${color}"></i></div><b>${value.toFixed(2)}×</b></div>`;
-  const exposure = Object.entries(response.damage_exposure_s).sort(([, a], [, b]) => b - a);
-  const maximumExposure = Math.max(1, ...exposure.map(([, value]) => value));
-  const damageRows = exposure
-    .map(([axis, value]) =>
-      `<div class="damage-row${axis === response.dominant_damage_axis ? " is-dominant" : ""}"><span>${axis}</span><div><i style="width:${(value / maximumExposure) * 100}%"></i></div><b>${Math.round(value)} s</b></div>`
-    )
-    .join("");
-  const fate = response.fate_evidence.replaceAll("_", " ");
-  const cholestasis = response.cholestasis_state.replaceAll("_", " ");
-  return (
-    `<div class="response-state"><span class="response-state__dot response-state__dot--${response.fate_evidence}"></span><strong>${cholestasis}</strong><span>fate evidence: ${fate}</span></div>` +
-    activityBar("BSEP surface activity", response.bsep_surface_activity, "#d9e778") +
-    activityBar("MRP2 surface activity", response.mrp2_surface_activity, "#d8b35c") +
-    `<div class="response-metrics"><span>bile-acid pool <b>${response.bile_acid_retention.toFixed(3)}</b></span><span>bilirubin pool <b>${response.bilirubin_retention.toFixed(3)}</b></span><span>UPR <b>${response.upr_signal == null ? "-" : response.upr_signal.toFixed(3)}</b></span></div>` +
-    `<div class="response-metrics"><span>misfolded <b>${response.misfolded_protein.toFixed(3)}</b></span><span>ubiquitinated <b>${response.ubiquitinated_cargo.toFixed(3)}</b></span></div>` +
-    `<div class="damage-caption">Cumulative stress-time exposure · not a lesion count</div><div class="damage-grid">${damageRows}</div>`
-  );
-}
-
-function renderCellHistory(summary: EngineSnapshotSummary | null): string {
-  const history = summary?.history;
-  if (!history) return '<span class="response-empty">Awaiting a cell-history snapshot.</span>';
-  const lifecycle = history.lifecycle;
-  const events = history.event_log
-    .slice()
-    .sort((a, b) => b.last_observed_time_s - a.last_observed_time_s)
-    .slice(0, 4)
-    .map((event) => {
-      const measurement = Object.entries(event.measurements)
-        .map(([key, value]) => `${key.replaceAll("_", " ")} ${value}`)
-        .join(" · ");
-      return `<div class="history-event"><span>${event.event_type.replaceAll("_", " ")}</span><b>${Math.round(event.duration_s)} s</b><small>${measurement || event.status}</small></div>`;
-    })
-    .join("");
-  const traces = history.memory_traces.length
-    ? history.memory_traces.map((trace) => `<span class="memory-trace" title="${trace.persistence_status} · ${trace.experimental_system}">${trace.locus_or_entity}</span>`).join("")
-    : '<span class="history-empty-trace">No persistent trace consolidated</span>';
-  return (
-    `<div class="history-head"><span class="history-state">${lifecycle.state.replaceAll("_", " ")}</span><span>${lifecycle.terminal_status.replaceAll("_", " ")}</span></div>` +
-    `<div class="history-metrics"><span>engine age <b>${Math.round(lifecycle.cell_age_s)} s</b></span><span>generation <b>${history.lineage_generation}</b></span><span>DNA replications <b>${history.completed_dna_replications}</b></span><span>cytokineses <b>${history.completed_cytokineses}</b></span></div>` +
-    `<div class="history-events">${events}</div>` +
-    `<div class="memory-traces">${traces}</div>` +
-    `<div class="history-boundary">Exposure is recorded; persistence is never inferred from stress-time alone.</div>`
-  );
-}
-
-function renderGenomeState(summary: EngineSnapshotSummary | null): string {
-  const genome = summary?.genome;
-  if (!genome) return '<span class="response-empty">Awaiting a genome snapshot.</span>';
-  const nuclearVariants = genome.somatic_variants.length;
-  const mitochondrialVariants = genome.mitochondrial.variants.length;
-  const loci = genome.functional_loci
-    .map((locus) => `<a class="genome-locus" href="${locus.source_url}" target="_blank" rel="noreferrer" title="chr${locus.chromosome}:${locus.start_bp}-${locus.end_bp} · ${locus.simulation_role}">${locus.symbol}</a>`)
-    .join("");
-  const ploidy = genome.chromosome_sets_per_nucleus.map((sets) => `${sets}n`).join(" / ");
-  return (
-    `<div class="genome-head"><strong>${genome.assembly_name}</strong><span>${genome.assembly_accession}</span></div>` +
-    `<div class="genome-metrics"><span>${genome.chromosomes.length} reference chromosomes</span><span>${(genome.primary_assembly_length_bp / 1e9).toFixed(3)} Gbp placed</span><span>${genome.chromosome_sets_per_nucleus.length} nucleus · ${ploidy}</span></div>` +
-    `<div class="genome-unknown">Individual genotype: ${genome.individual_genotype_status.replaceAll("_", " ")} · sex complement ${genome.sex_chromosome_complement.replaceAll("_", " ")}</div>` +
-    `<div class="genome-variants"><span>nuclear variants <b>${nuclearVariants}</b></span><span>mtDNA variants <b>${mitochondrialVariants}</b></span><span>heteroplasmy <b>${genome.mitochondrial.heteroplasmy_status.replaceAll("_", " ")}</b></span></div>` +
-    `<div class="genome-loci">${loci}</div>` +
-    `<div class="history-boundary">Reference coordinates only; zero variants means none supplied, not genetically identical to GRCh38.</div>`
-  );
-}
-
-function renderExperimentComparison(summary: EngineSnapshotSummary | null): string {
-  const baseline = experimentComparisonSummaries.baseline?.cellularResponse;
-  const selectedId = summary?.experiment?.id ?? summary?.cellularResponse?.experiment_id;
-  const rows = ENGINE_EXPERIMENTS.map((id) => {
-    const response = experimentComparisonSummaries[id]?.cellularResponse;
-    if (!response) return "";
-    const bileDelta = baseline ? ((response.bile_acid_retention - baseline.bile_acid_retention) / Math.max(baseline.bile_acid_retention, Number.EPSILON)) * 100 : 0;
-    const bilirubinDelta = baseline ? ((response.bilirubin_retention - baseline.bilirubin_retention) / Math.max(baseline.bilirubin_retention, Number.EPSILON)) * 100 : 0;
-    const selected = selectedId === id ? " is-selected" : "";
-    return `<div class="comparison-row${selected}"><span>${ENGINE_EXPERIMENT_LABELS[id]}</span><b>Bile ${bileDelta >= 0 ? "+" : ""}${bileDelta.toFixed(1)}%</b><b>Bilirubin ${bilirubinDelta >= 0 ? "+" : ""}${bilirubinDelta.toFixed(1)}%</b></div>`;
-  }).join("");
-  return rows || '<span class="response-empty">Experiment snapshots loading.</span>';
-}
-
-function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
-  const response = summary?.cellularResponse;
-  if (!response) return '<span class="response-empty">Source registry unavailable until snapshot loads.</span>';
-  return (
-    `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Source-backed</span><span>BSEP/MRP2 directionality; cholestasis → ER stress; bile-acid ROS/MPT links.</span></div>` +
-    `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Model state</span><span>Relative pools and UPR marker.</span></div>` +
-    `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Derived</span><span>Stress-time exposure and fate evidence; no calibrated time-to-death.</span></div>` +
-    `<div class="evidence-sources">Sources: ${response.source_ids.join(" · ")}</div>`
   );
 }
 
@@ -3827,11 +3380,8 @@ function clearWaterVisuals() {
 
   organelleMitos.length = 0;
   organelleMembrane = null;
-  membraneSim = null;
-  membraneRestPos = null;
-  membraneFaceDirs = null;
-  membraneField = null;
-  diseaseSceneVisuals = null;
+  membraneBase = null;
+  membraneEvents = [];
   organelleGlow = [];
   ribosomeMat = null;
   divisionOverlay = null;
@@ -3841,7 +3391,6 @@ function clearWaterVisuals() {
   organellePopulations.length = 0;
   membraneProteinAnchors.length = 0;
   membraneRidingClouds.length = 0;
-  organelleJiggleTargets = null;
   livingCell = null;
   reportPanel.style.display = "none";
 
@@ -4625,6 +4174,7 @@ function sampleRamp(stops: string[], t: number): THREE.Color {
   return a.lerp(b, f);
 }
 
+let concLegendEl: HTMLElement | null = null;
 function ensureConcLegend(): HTMLElement {
   if (concLegendEl) return concLegendEl;
   const el = document.createElement("div");
@@ -4730,10 +4280,8 @@ function buildOrganelleScene() {
 
   organelleMitos.length = 0;
   organelleMembrane = null;
-  membraneSim = null;
-  membraneRestPos = null;
-  membraneFaceDirs = null;
-  membraneField = null;
+  membraneBase = null;
+  membraneEvents = [];
   organelleGlow = [];
   ribosomeMat = null;
   divisionOverlay = null;
@@ -5022,34 +4570,34 @@ function buildOrganelleScene() {
     return inst;
   };
 
-  // --- Plasma membrane: a REAL deformable lipid bilayer, simulated with the true
-  // membrane energies — area/stretch elasticity (tension), Helfrich bending, and
-  // conserved enclosed volume (incompressible cytoplasm) — under overdamped
-  // low-Reynolds dynamics. Everything embedded in / coupled to it rides the true
-  // shape via the deformation field (see membrane_mechanics.ts). ---
-  membraneSim = createMembraneSim(CELL_R, 3);
-  membraneRestPos = new Float32Array(membraneSim.pos);
-  rebuildMembraneSurfaceIndex();
-  membraneField = null;
+  // --- Plasma membrane: ONE fluid, deformable bilayer (no second static shell).
+  // Everything embedded in it (transport proteins, the proteome cloud) rides this
+  // same surface via membraneRadialFactor, so the membrane reads as a single skin. ---
+  organelleMembrane = mesh(organicSphere(CELL_R, 0.06), "#7fb6ff", new THREE.Vector3(), { opacity: 0.12, emissive: 0.05, label: "Plasma membrane — a fluid, deformable bilayer; flexes and undergoes endocytosis/exocytosis" });
+  // Capture the membrane's rest shape and seed endo/exocytosis event centres so
+  // the surface can deform each frame (see updateMembraneShape).
   {
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(membraneSim.pos), 3));
-    geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(membraneSim.normals), 3));
-    geo.setIndex(Array.from(membraneSim.faces));
-    const mat = new THREE.MeshStandardMaterial({
-      color: "#7fb6ff", emissive: "#7fb6ff", emissiveIntensity: 0.05,
-      roughness: 0.5, metalness: 0.03, transparent: true, opacity: 0.12,
-      depthWrite: false, side: THREE.DoubleSide
-    });
-    organelleMembrane = new THREE.Mesh(geo, mat);
-    organelleMembrane.userData.label =
-      "Plasma membrane — whole-cell radial shell; elastic surface strain is capped from bilayer mechanics, and growth area follows biomass^(2/3). Nanoscopic endocytic pits are below this scene scale.";
-    group.add(organelleMembrane);
-    rebuildMembraneField();
+    const posAttr = organelleMembrane.geometry.getAttribute("position") as THREE.BufferAttribute;
+    membraneBase = new Float32Array(posAttr.array as Float32Array); // copy of rest positions
+    membraneEvents = [];
+    const nEvents = 6;
+    for (let i = 0; i < nEvents; i += 1) {
+      const d = randDir();
+      membraneEvents.push({
+        dx: d.x, dy: d.y, dz: d.z,
+        freq: 0.15 + rnd() * 0.4,
+        phase: rnd() * Math.PI * 2,
+        sign: rnd() < 0.5 ? -1 : 1, // -1 endocytosis (inward), +1 exocytosis (outward)
+        width: 3.5 + rnd() * 3.5,
+        // Small, bounded bumps: with breathing (~0.05) the outward radius stays
+        // < CELL_R*1.11, so the cell never balloons into the neighbouring sinusoid.
+        amp: 0.03 + rnd() * 0.03
+      });
+    }
   }
-  // Max local elastic outward excursion from sourced bilayer area-strain cap;
-  // whole-cell growth is applied separately as the group radius scale.
-  const MEMBRANE_MAX_OUT = CELL_R * Math.sqrt(1 + MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT);
+  // Max outward membrane excursion (breathing + event cap), used to keep solid
+  // neighbours (the sinusoid) clear of the cell — nothing may interpenetrate.
+  const MEMBRANE_MAX_OUT = CELL_R * 1.12;
 
   // --- Hepatocyte polarity: sinusoidal blood vessel side vs canalicular bile side ---
   const sinusoidCurve = new THREE.CatmullRomCurve3([
@@ -5158,70 +4706,6 @@ function buildOrganelleScene() {
     label: "Bile canaliculus - apical bile groove; BSEP/MRP-like transporters export bile acids, bilirubin and conjugates"
   });
   trackMotion(canaliculus, canaliculus.position, 0.035, 0.16, 0.001);
-  const canaliculusMaterial = canaliculus.material as THREE.MeshStandardMaterial;
-  const bsepMaterials: THREE.MeshStandardMaterial[] = [];
-  const mrp2Materials: THREE.MeshStandardMaterial[] = [];
-  const makeCanalicularMarker = (label: string, color: string, materials: THREE.MeshStandardMaterial[], phase: number) => {
-    for (let i = 0; i < 7; i += 1) {
-      const t = (i + 0.5) / 7;
-      const p = canalCurve.getPointAt(t);
-      const tangent = canalCurve.getTangentAt(t).normalize();
-      const radial = new THREE.Vector3(Math.cos(i * 2.41 + phase), Math.sin(i * 1.73 + phase), Math.cos(i * 1.13 - phase))
-        .cross(tangent)
-        .normalize();
-      const marker = mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.34, 8), color, p.addScaledVector(radial, 0.33), {
-        emissive: 0.22,
-        rough: 0.4,
-        label: `${label} grouped canalicular-surface activity marker — a visibility proxy for engine surface activity, not one rendered molecule`
-      });
-      marker.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent);
-      materials.push(marker.material as THREE.MeshStandardMaterial);
-    }
-  };
-  makeCanalicularMarker("BSEP/ABCB11", "#d9e778", bsepMaterials, 0.2);
-  makeCanalicularMarker("MRP2/ABCC2", "#d8b35c", mrp2Materials, 1.4);
-  const makeCanalicularPackets = (color: string, label: string) => {
-    const material = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.8, roughness: 0.35, transparent: true, depthWrite: false });
-    const packets = new THREE.InstancedMesh(new THREE.SphereGeometry(0.11, 10, 8), material, 14);
-    packets.userData.label = `${label} carrier packets — engine-coupled relative export activity; packet count is a visibility proxy, not molecule count`;
-    packets.frustumCulled = false;
-    group.add(packets);
-    return packets;
-  };
-  const bsepPackets = makeCanalicularPackets("#ecf58f", "BSEP bile-acid export");
-  const mrp2Packets = makeCanalicularPackets("#e6bd62", "MRP2 bilirubin-conjugate export");
-  const retentionCloud = new THREE.InstancedMesh(
-    new THREE.IcosahedronGeometry(0.13, 1),
-    new THREE.MeshStandardMaterial({ color: "#eaf08c", emissive: "#d9e778", emissiveIntensity: 0.35, transparent: true, opacity: 0, depthWrite: false }),
-    28
-  );
-  retentionCloud.userData.label = "Intracellular bile-retention cloud — magnified rendering of the snapshot's normalized retained pool, not a literal molecular count";
-  retentionCloud.frustumCulled = false;
-  group.add(retentionCloud);
-  const retentionOffsets: THREE.Vector3[] = [];
-  for (let i = 0; i < 28; i += 1) {
-    const q = new THREE.Vector3(0.35 + rnd() * 0.95, (rnd() - 0.5) * 2.2, (rnd() - 0.5) * 2.4);
-    retentionOffsets.push(q);
-    dummyObj.position.set(0, 0, 0);
-    dummyObj.scale.setScalar(0);
-    dummyObj.updateMatrix();
-    retentionCloud.setMatrixAt(i, dummyObj.matrix);
-  }
-  retentionCloud.instanceMatrix.needsUpdate = true;
-  diseaseSceneVisuals = {
-    canaliculusMaterial,
-    bsepMaterials,
-    mrp2Materials,
-    bsepPackets,
-    mrp2Packets,
-    retentionCloud,
-    retentionOffsets,
-    erMaterials: [],
-    erBurdenMaterial: null,
-    fateHalo: null,
-    curve: canalCurve,
-    canaliculusAnchor: canaliculusAnchor.clone()
-  };
   // Reserve the bile-canaliculus volume: it is a solid apical structure, so no
   // organelle may be placed inside it (excluded volume).
   for (let s = 0; s <= 10; s += 1) {
@@ -5234,12 +4718,6 @@ function buildOrganelleScene() {
   const nucleusBody = mesh(organicSphere(4.6, 0.04), "#b07ed8", nuc, { opacity: 0.26, emissive: 0.08, label: "Nucleus — stores the DNA and controls gene expression" });
   const nuclearEnvelope = mesh(organicSphere(4.75, 0.04), "#caa3e6", nuc, { opacity: 0.12, emissive: 0.05, label: "Nuclear envelope — double membrane studded with pores" });
   const nucleolus = mesh(organicSphere(1.7, 0.12), "#6f3fa0", nuc.clone().add(new THREE.Vector3(0.7, -0.5, 0.4)), { emissive: 0.16, label: "Nucleolus — builds ribosomes; transcribes DNA → mRNA" });
-  const fateHalo = mesh(new THREE.SphereGeometry(5.15, 48, 32), "#7fb6ff", nuc, {
-    opacity: 0.02,
-    emissive: 0.05,
-    label: "Cell-fate evidence halo — colour encodes current engine evidence only; it does not assert irreversible apoptosis, senescence, or death"
-  });
-  if (diseaseSceneVisuals) diseaseSceneVisuals.fateHalo = fateHalo.material as THREE.MeshStandardMaterial;
   tagGlow("nucleus", nucleolus);
   const nucleusPhase = rnd() * Math.PI * 2;
   trackMotion(nucleusBody, nucleusBody.position, 0.035, 0.12, 0.0012, nucleusPhase);
@@ -5334,29 +4812,12 @@ function buildOrganelleScene() {
     }
     const curve = new THREE.CatmullRomCurve3(pts);
     const erTube = mesh(new THREE.TubeGeometry(curve, 40, 0.16, 6), "#e8b24a", new THREE.Vector3(), { opacity: 0.85, emissive: 0.1, label: "Endoplasmic reticulum — protein folding, glycosylation, lipid synthesis and Ca storage" });
-    diseaseSceneVisuals?.erMaterials.push(erTube.material as THREE.MeshStandardMaterial);
     tagGlow("er", erTube);
     trackMotion(erTube, erTube.position, 0.045, 0.16 + rnd() * 0.08, 0.0008);
     addPos("er", pts[3]);
     addPos("ribosome", pts[3]);
     // Reserve the ER tube nodes so organelles don't clip through the network.
     for (const p of pts) occupied.push({ c: p, r: 0.34 });
-  }
-  if (diseaseSceneVisuals) {
-    const burdenPositions = new Float32Array(42 * 3);
-    for (let i = 0; i < 42; i += 1) {
-      const q = randDir().multiplyScalar(5.4 + rnd() * 1.3).add(nuc);
-      burdenPositions[i * 3] = q.x;
-      burdenPositions[i * 3 + 1] = q.y;
-      burdenPositions[i * 3 + 2] = q.z;
-    }
-    const burdenGeometry = new THREE.BufferGeometry();
-    burdenGeometry.setAttribute("position", new THREE.BufferAttribute(burdenPositions, 3));
-    const burdenMaterial = new THREE.PointsMaterial({ color: "#ff6fae", size: 0.18, transparent: true, opacity: 0.03, depthWrite: false });
-    const burden = new THREE.Points(burdenGeometry, burdenMaterial);
-    burden.userData.label = "ER proteostasis burden — opacity follows the engine's normalized misfolded-protein pool; points are not individual proteins";
-    group.add(burden);
-    diseaseSceneVisuals.erBurdenMaterial = burdenMaterial;
   }
 
   // --- Golgi apparatus: hepatocytes carry MANY Golgi stacks (dictyosomes,
@@ -5567,16 +5028,7 @@ function buildOrganelleScene() {
     group.add(rootProtein);
     const tangentA = dir.clone().cross(Math.abs(dir.y) < 0.92 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0)).normalize();
     const tangentB = dir.clone().cross(tangentA).normalize();
-    membraneProteinAnchors.push({
-      object: rootProtein,
-      dir: dir.clone(),
-      tangentA,
-      tangentB,
-      localNormal: new THREE.Vector3(0, 1, 0),
-      surfaceOffset: 1.0,
-      phase: rnd() * Math.PI * 2,
-      drift: 0.006 + rnd() * 0.006
-    });
+    membraneProteinAnchors.push({ object: rootProtein, dir: dir.clone(), tangentA, tangentB, phase: rnd() * Math.PI * 2, drift: 0.018 + rnd() * 0.014 });
     const annulus = mesh(new THREE.TorusGeometry(footprintNm * 0.62, 0.16, 8, 32), "#8fc6ff", new THREE.Vector3(), {
       parent: rootProtein,
       rot: [Math.PI / 2, 0, 0],
@@ -5611,7 +5063,7 @@ function buildOrganelleScene() {
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      membraneRidingClouds.push({ geo, base: positions.slice(), binding: bindMembraneSurfacePoints(positions) });
+      membraneRidingClouds.push({ geo, base: positions.slice() }); // rides the deforming membrane
       const pts = new THREE.Points(
         geo,
         new THREE.PointsMaterial({
@@ -5653,7 +5105,7 @@ function buildOrganelleScene() {
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      membraneRidingClouds.push({ geo, base: positions.slice(), binding: bindMembraneSurfacePoints(positions) });
+      membraneRidingClouds.push({ geo, base: positions.slice() }); // rides the deforming membrane
       const pts = new THREE.Points(
         geo,
         new THREE.PointsMaterial({
@@ -6137,7 +5589,7 @@ function buildOrganelleScene() {
 
   if (sceneNote) {
     sceneNote.textContent =
-      "A polarized hepatocyte-scale cell renderer. The visible membrane is a source-bounded whole-cell radial shell: elastic area strain is capped, nanoscopic pits are not exaggerated into macro folds, and growth uses biomass^(1/3) radius / biomass^(2/3) area geometry. Visible PDB/AlphaFold proteins such as BSEP and MRP2 are magnified hero structures for inspection; at true whole-cell scale they would be sub-pixel. Protein populations and effects are represented by RDME copy-number fields and engine flux capacity, not by drawing billions of molecules. When the Python snapshot is loaded, its state is authoritative; route particles are schematic unless tied to snapshot fields.";
+      "A polarized hepatocyte-scale cell renderer. When the Python snapshot is loaded, its state is authoritative; local organelle pulses, Ca-vis trace, and route particles are schematic visual aids unless explicitly tied to snapshot fields. Blood-side and bile-side domains follow the loaded hepatocyte polarity.";
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;
@@ -6357,7 +5809,6 @@ async function embedRealProteins(
 
     let domainText: string;
     let orientationText: string;
-    let membraneAnchorLocalNormal = new THREE.Vector3(0, 0, 1);
     if (isMembrane) {
       const baso = entry.location === "membrane-basolateral";
       const dir = baso
@@ -6366,8 +5817,7 @@ async function embedRealProteins(
       holder.position.copy(dir.clone().multiplyScalar(CELL_R));
       if (entry.oriented) {
         // OPM frame: local +z (extracellular) -> outward membrane normal `dir`.
-        membraneAnchorLocalNormal = new THREE.Vector3(0, 0, 1);
-        holder.quaternion.setFromUnitVectors(membraneAnchorLocalNormal, dir);
+        holder.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
         orientationText = `OPM-oriented (extracellular ${entry.extracellularSide ?? "+z"} points outward; cytosolic domains inward)`;
       } else {
         // No calibrated normal: align the structure's longest axis to the normal.
@@ -6380,21 +5830,9 @@ async function embedRealProteins(
             : s.y >= s.z
             ? new THREE.Vector3(0, 1, 0)
             : new THREE.Vector3(0, 0, 1);
-        membraneAnchorLocalNormal = longAxis.clone();
         holder.quaternion.setFromUnitVectors(longAxis, dir);
         orientationText = "orientation APPROXIMATE (no OPM frame; longest structural axis aligned to membrane normal)";
       }
-      const [tangentA, tangentB] = tangentFrame(dir);
-      membraneProteinAnchors.push({
-        object: holder,
-        dir: dir.clone(),
-        tangentA,
-        tangentB,
-        localNormal: membraneAnchorLocalNormal,
-        surfaceOffset: 1.0,
-        phase: Math.random() * Math.PI * 2,
-        drift: 0.0025
-      });
       domainText = baso ? "basolateral (sinusoid / blood side, -x)" : "canalicular (apical bile side, +x)";
     } else if (entry.location === "mitochondria") {
       holder.position.copy(mitoLocalPos);
@@ -6417,7 +5855,7 @@ async function embedRealProteins(
     const provenance = entry.predicted
       ? `${entry.method} — PREDICTED model, no experimental structure`
       : `experimental (${entry.method})`;
-    const magText = `ZOOMED HERO STRUCTURE, not true-size population: shown ~${magFactor}x true linear size for visibility (true span ~${trueNm} nm; sub-pixel at whole-cell scale)`;
+    const magText = `shown ~${magFactor}x true size for visibility (true span ~${trueNm} nm)`;
     const strideText =
       stride > 1
         ? ` | atom-subsampled for performance (showing 1 in ${stride}; spheres enlarged ~${(Math.cbrt(stride)).toFixed(1)}x to keep coverage)`
@@ -6431,7 +5869,7 @@ async function embedRealProteins(
     const caveatText = extraCaveat.length ? ` | ${extraCaveat.join("; ")}` : "";
 
     const label =
-      `Real atom structure reference — ${entry.name} (${entry.gene}); ${domainText}; ${idText}, ${provenance}; ` +
+      `Real structure — ${entry.name} (${entry.gene}); ${domainText}; ${idText}, ${provenance}; ` +
       `${orientationText}; ${drawCount.toLocaleString()} real atoms drawn${strideText}; ${magText}${caveatText}`;
     atoms.userData.label = label;
     atoms.userData.hoverKind = "real-protein";
@@ -6448,9 +5886,9 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     const tNow = performance.now() / 1000;
     organelleGroup.position.x = Math.sin(tNow * 0.16) * 0.14;
     organelleGroup.position.y = Math.sin(tNow * 0.11 + 1.0) * 0.10;
-    // Visible growth: biomass is treated as relative volume/mass, so radius
-    // scales with the cube root. Membrane area then follows radius^2.
-    const growthScale = visualRadiusScaleFromBiomass(cellCycle.biomass);
+    // Visible growth: the cell swells with its biomass as it heads toward mitosis,
+    // so triggering regeneration has immediate on-screen feedback.
+    const growthScale = 1 + Math.min(0.32, Math.max(0, cellCycle.biomass - 1) * 0.16);
     organelleGroup.scale.setScalar(growthScale);
 
     // Per-organelle Brownian jiggle: organelles are never still in a real cell.
@@ -6459,7 +5897,6 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       organelleJiggleTargets = [];
       let n = 0;
       organelleGroup.traverse((o) => {
-        if (o instanceof THREE.InstancedMesh || o instanceof THREE.Points) return;
         if (ORGANELLE_JIGGLE_RE.test((o.userData?.label as string) ?? "")) {
           organelleJiggleTargets!.push({ obj: o, base: o.position.clone(), seed: (n++) * 0.61 });
         }
@@ -6484,15 +5921,12 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
   if (livingCell) {
     const s = livingCell.snapshot();
     const engineSignal = externalEngineSummary ? engineVisualSignal(externalEngineSummary) : null;
-    // Step the physics membrane FIRST so the deformation field is fresh for
-    // everything that rides it (proteins, clouds, and the coupled organelles).
-    updateMembraneShape(realDeltaS);
     updateOrganelleMotion(s.elapsedS);
-    updateOrganellePopulations(s.elapsedS);
+    updateOrganellePopulations();
     updateNucleusExpression(realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND);
+    updateMembraneShape(s.elapsedS);
     updateMembraneProteinAnchors(s.elapsedS);
     updateMembraneRidingClouds(s.elapsedS);
-    updateDiseaseVisuals(s.elapsedS);
     updateNutritionVisual(s);
     updateFlowVisuals(s);
     syncVisualDivisionFromEngine(externalEngineSummary);
