@@ -1447,7 +1447,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-10T08:39:00.015789+00:00",
+    "created_at_utc": "2026-07-10T08:39:04.276367+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -1546,23 +1546,23 @@
       }
     ],
     "cellular_response": {
-      "bile_acid_retention": 0.13434513617749053,
-      "bilirubin_retention": 0.04798040577767518,
+      "bile_acid_retention": 0.13434172452458318,
+      "bilirubin_retention": 0.05,
       "bsep_surface_activity": 1.0,
-      "cholestasis_state": "canalicular_export_available",
+      "cholestasis_state": "mrp2_export_loss",
       "damage_exposure_s": {
-        "cholestatic": 120.33100800000001,
+        "cholestatic": 120.50572799999999,
         "energy": 0.0,
-        "genotoxic": 38.78171312748293,
+        "genotoxic": 38.78168452748293,
         "oxidative": 70.43213005823999,
         "proteotoxic": 60.48000000000001,
-        "senescence": 31.18544349557866
+        "senescence": 31.18543106206652
       },
       "dominant_damage_axis": "cholestatic",
-      "experiment_id": "baseline",
+      "experiment_id": "mrp2_loss",
       "fate_evidence": "homeostatic",
-      "misfolded_protein": 0.028804990240517813,
-      "mrp2_surface_activity": 1.0,
+      "misfolded_protein": 0.02880383275519262,
+      "mrp2_surface_activity": 0.0,
       "notes": "Surface activity is a relative experimental input, not a turnover rate. Damage exposure is stress-time (s), not a lesion count. Fate is evidence-only until a matched temporal commitment calibration is supplied.",
       "source_ids": [
         "bsep_cholestasis",
@@ -1571,8 +1571,8 @@
         "upr_proteostasis",
         "atp_death_switch"
       ],
-      "ubiquitinated_cargo": 0.01959615485090016,
-      "upr_signal": 0.06180947208623195
+      "ubiquitinated_cargo": 0.0195958180348056,
+      "upr_signal": 0.06182470677794577
     },
     "definition_id": "human_hepatocyte_midlobular_v1",
     "division": {
@@ -1948,9 +1948,12 @@
       }
     },
     "experiment": {
-      "controls": {},
-      "description": "Fed baseline hepatocyte",
-      "id": "baseline",
+      "controls": {
+        "experiment_id": "mrp2_loss",
+        "mrp2_surface_activity": 0.0
+      },
+      "description": "Exact MRP2/ABCC2 loss-of-function experiment",
+      "id": "mrp2_loss",
       "notes": "Control values are exact loss-of-function (0) or reference (1). Intermediate surface activity requires matched measurement or calibration.",
       "source_ids": [
         "bsep_cholestasis",
@@ -2299,6 +2302,27 @@
           ],
           "start_time_s": 0.0,
           "status": "instantaneous"
+        },
+        {
+          "compartment": "plasma_membrane_and_cell",
+          "duration_s": 960.0,
+          "event_type": "mrp2_loss",
+          "id": "experiment-mrp2_loss",
+          "last_observed_time_s": 960.0,
+          "measurement_unit": "relative_to_reference_condition",
+          "measurements": {
+            "mrp2_surface_activity": 0.0
+          },
+          "notes": "Recorded exposure/intervention. No persistent memory trace is consolidated without washout, persistence, rechallenge, or inheritance evidence.",
+          "source_ids": [
+            "bsep_cholestasis",
+            "cholestasis_er_stress",
+            "bile_acid_mitochondrial_apoptosis",
+            "upr_proteostasis",
+            "atp_death_switch"
+          ],
+          "start_time_s": 0.0,
+          "status": "ongoing"
         }
       ],
       "lifecycle": {
@@ -2411,14 +2435,14 @@
       "state": "fasted"
     },
     "membrane_state": {
-      "channel_open_probability": 0.05695517306220143,
-      "cytosolic_ca": 0.027818243664244183,
+      "channel_open_probability": 0.056951736773064456,
+      "cytosolic_ca": 0.027779921352391504,
       "engine": "brian2_boundary_fallback",
-      "er_ca": 0.7369624460008889,
-      "membrane_potential_mv": -61.29172576448906,
+      "er_ca": 0.7369908162830834,
+      "membrane_potential_mv": -61.33780324225751,
       "notes": "membrane_ca_brian2_boundary_v1; deterministic ODE fallback used unless Brian2 backend is attached.",
       "provenance": "docs/07-integrated-cell-engine-roadmap.md#m021-brian2-membraneca-module",
-      "pump_activity": 0.7624661266362058
+      "pump_activity": 0.7635133420400343
     },
     "metabolic_fluxes": [
       {
@@ -2441,7 +2465,7 @@
         "source": "glucose",
         "target": "glycogen",
         "unit": "relative_pool_delta",
-        "value": 0.0002766066751240712
+        "value": 0.00028262822468875723
       },
       {
         "consumed_by": "mitochondria",
@@ -2452,7 +2476,7 @@
         "source": "glucose",
         "target": "pyruvate_ATP",
         "unit": "relative_pool_delta",
-        "value": 0.002214981100240528
+        "value": 0.002211696267384792
       },
       {
         "consumed_by": "mitochondria",
@@ -2463,7 +2487,7 @@
         "source": "lactate",
         "target": "pyruvate",
         "unit": "relative_pool_delta",
-        "value": 0.00042502229741432277
+        "value": 0.0004250133772736632
       },
       {
         "consumed_by": "cellular_ATP_consumers",
@@ -2474,7 +2498,7 @@
         "source": "pyruvate_ADP",
         "target": "ATP_ROS",
         "unit": "relative_pool_delta",
-        "value": 0.0007965275745702722
+        "value": 0.0007935783915230663
       },
       {
         "consumed_by": "cellular_ATP_consumers",
@@ -2485,7 +2509,7 @@
         "source": "fatty_acids_ADP",
         "target": "ATP_acetyl_CoA",
         "unit": "relative_pool_delta",
-        "value": 0.000490223242765367
+        "value": 0.0004884036307905163
       },
       {
         "consumed_by": "sinusoidal_export",
@@ -2496,7 +2520,7 @@
         "source": "ammonia_ATP",
         "target": "urea",
         "unit": "relative_pool_delta",
-        "value": 0.0004946139034052516
+        "value": 0.0004951928639047734
       },
       {
         "consumed_by": "export_transporters",
@@ -2507,7 +2531,7 @@
         "source": "xenobiotic_NADPH_GSH_ATP",
         "target": "detoxified_xenobiotic_ROS",
         "unit": "relative_pool_delta",
-        "value": 0.00031261063043221897
+        "value": 0.0003126104898298973
       },
       {
         "consumed_by": "bile_canaliculus",
@@ -2518,7 +2542,7 @@
         "source": "bile_acids_ATP",
         "target": "bile_canaliculus",
         "unit": "relative_pool_delta",
-        "value": 0.0006863748181724782
+        "value": 0.000687192917488938
       },
       {
         "consumed_by": "bile_canaliculus",
@@ -2529,7 +2553,7 @@
         "source": "bilirubin_conjugates_ATP",
         "target": "bile_canaliculus",
         "unit": "relative_pool_delta",
-        "value": 0.00024513386363302786
+        "value": 0.0
       },
       {
         "consumed_by": "bile_canaliculus",
@@ -2540,7 +2564,7 @@
         "source": "bile_acids_bilirubin_ATP",
         "target": "bile_canaliculus",
         "unit": "relative_pool_delta",
-        "value": 0.0009315086818055061
+        "value": 0.000687192917488938
       },
       {
         "consumed_by": "all_organelles",
@@ -2551,11 +2575,12 @@
         "source": "ATP",
         "target": "organelle_maintenance",
         "unit": "relative_pool_delta",
-        "value": 0.002043920222378674
+        "value": 0.0020439307642159863
       }
     ],
     "model_controls": {
-      "experiment_id": "baseline"
+      "experiment_id": "mrp2_loss",
+      "mrp2_surface_activity": 0.0
     },
     "organelles": {
       "cytoskeleton": {
@@ -2565,19 +2590,19 @@
           "cell_polarity",
           "mechanical_integrity"
         ],
-        "activity": 0.21868358790033965,
+        "activity": 0.21870877222724835,
         "age_h": 1.2666666666666675,
-        "capacity": 1.0018197795937385,
+        "capacity": 1.0018211873519447,
         "damage": 0.0,
         "health": 1.0,
         "id": "cytoskeleton",
-        "local_atp": 0.7624661266362058,
+        "local_atp": 0.7635133420400343,
         "location_um": [
           0.0,
           0.0,
           0.0
         ],
-        "risk_per_hour": 0.0022293962820043576,
+        "risk_per_hour": 0.002230035780043573,
         "transport_delay_s": 2.1210000000000004
       },
       "cytosol_metabolism": {
@@ -2587,19 +2612,19 @@
           "metabolite_diffusion",
           "local_availability"
         ],
-        "activity": 0.21277275768081877,
+        "activity": 0.21279026726318062,
         "age_h": 0.26666666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "cytosol_metabolism",
-        "local_atp": 0.7624661266362058,
+        "local_atp": 0.7635133420400343,
         "location_um": [
           0.0,
           -1.0,
           0.0
         ],
-        "risk_per_hour": 0.0017159571011985352,
+        "risk_per_hour": 0.001715957066582507,
         "transport_delay_s": 1.8210000000000002
       },
       "golgi": {
@@ -2609,19 +2634,19 @@
           "vesicle_budding",
           "polarized_delivery"
         ],
-        "activity": 0.20072588158887572,
+        "activity": 0.20072687731326522,
         "age_h": 2.7666666666666657,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "golgi",
-        "local_atp": 0.762466126636229,
+        "local_atp": 0.7635133420400563,
         "location_um": [
           1.3,
           2.3,
           0.2
         ],
-        "risk_per_hour": 0.0033336685414457213,
+        "risk_per_hour": 0.003335147260066411,
         "transport_delay_s": 4.738999999999999
       },
       "lysosome_endosome": {
@@ -2631,19 +2656,19 @@
           "organelle_turnover",
           "receptor_recycling"
         ],
-        "activity": 0.20208475831051384,
+        "activity": 0.20208774009184682,
         "age_h": 4.766666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "lysosome_endosome",
-        "local_atp": 0.7624661269421106,
+        "local_atp": 0.7635133423301191,
         "location_um": [
           3.7,
           1.2,
           -1.4
         ],
-        "risk_per_hour": 0.003090403187763274,
+        "risk_per_hour": 0.003090403153999858,
         "transport_delay_s": 7.577999999999999
       },
       "mitochondria": {
@@ -2654,19 +2679,19 @@
           "ROS_balance",
           "mitophagy_commit"
         ],
-        "activity": 0.2024878045240004,
+        "activity": 0.20248356430157394,
         "age_h": 18.26666666666668,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "mitochondria",
-        "local_atp": 0.7624661266362058,
+        "local_atp": 0.7635133420400343,
         "location_um": [
           -4.0,
           -2.0,
           1.1
         ],
-        "risk_per_hour": 0.004576067705691174,
+        "risk_per_hour": 0.004576067249758723,
         "transport_delay_s": 0.25
       },
       "nucleus": {
@@ -2676,19 +2701,19 @@
           "mRNA_export",
           "DNA_damage_response"
         ],
-        "activity": 0.22205521180185303,
+        "activity": 0.22208550797185364,
         "age_h": 12.266666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "nucleus",
-        "local_atp": 0.7624661266362058,
+        "local_atp": 0.7635133420400343,
         "location_um": [
           0.0,
           0.0,
           0.0
         ],
-        "risk_per_hour": 0.0020305756432442952,
+        "risk_per_hour": 0.0020305753724473036,
         "transport_delay_s": 2.1210000000000004
       },
       "peroxisome": {
@@ -2698,19 +2723,19 @@
           "lipid_metabolism",
           "ROS_buffering"
         ],
-        "activity": 0.2061776755216653,
+        "activity": 0.20617795268252875,
         "age_h": 5.266666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "peroxisome",
-        "local_atp": 0.7624661266362058,
+        "local_atp": 0.7635133420400343,
         "location_um": [
           -1.5,
           -3.2,
           -1.2
         ],
-        "risk_per_hour": 0.0031660443506439763,
+        "risk_per_hour": 0.0031660443160279475,
         "transport_delay_s": 1.298
       },
       "plasma_membrane": {
@@ -2720,19 +2745,19 @@
           "endocytosis",
           "exocytosis"
         ],
-        "activity": 0.24910730258832264,
+        "activity": 0.24916862386677574,
         "age_h": 4.266666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "plasma_membrane",
-        "local_atp": 0.7624717635234037,
+        "local_atp": 0.763518687412485,
         "location_um": [
           0.0,
           11.5,
           0.0
         ],
-        "risk_per_hour": 0.0030711379913000033,
+        "risk_per_hour": 0.0030723581377099405,
         "transport_delay_s": 19.946000000000005
       },
       "proteasome": {
@@ -2741,13 +2766,13 @@
           "ERAD_degradation",
           "regulatory_protein_turnover"
         ],
-        "activity": 0.20172240281525866,
+        "activity": 0.20172473556559742,
         "age_h": 3.7666666666666657,
-        "capacity": 1.0312144728414196,
+        "capacity": 1.0312161340805317,
         "damage": 0.0,
         "health": 1.0,
         "id": "proteasome",
-        "local_atp": 0.7624661266362058,
+        "local_atp": 0.7635133420400343,
         "location_um": [
           0.9,
           -0.8,
@@ -2763,13 +2788,13 @@
           "ribosome_quality_control",
           "ER_targeting"
         ],
-        "activity": 0.20253231159921958,
+        "activity": 0.2025364281262593,
         "age_h": 2.2666666666666657,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
         "id": "ribosome",
-        "local_atp": 0.7624661266362058,
+        "local_atp": 0.7635133420400343,
         "location_um": [
           -3.5,
           1.5,
@@ -2785,19 +2810,19 @@
           "ER_quality_control",
           "ERAD"
         ],
-        "activity": 0.20184091855799313,
+        "activity": 0.2018433173184468,
         "age_h": 3.2666666666666657,
-        "capacity": 1.0401646422787432,
+        "capacity": 1.0401664302407665,
         "damage": 0.0,
         "health": 1.0,
         "id": "rough_er",
-        "local_atp": 0.7624661266362058,
+        "local_atp": 0.7635133420400343,
         "location_um": [
           -2.2,
           0.8,
           0.5
         ],
-        "risk_per_hour": 0.003985444887751922,
+        "risk_per_hour": 0.003985796914067712,
         "transport_delay_s": 1.1439999999999997
       },
       "smooth_er": {
@@ -2807,19 +2832,19 @@
           "cholesterol_bile_coupling",
           "calcium_storage"
         ],
-        "activity": 0.20666190469452364,
+        "activity": 0.20666208996229837,
         "age_h": 3.2666666666666657,
-        "capacity": 1.0554082991789877,
+        "capacity": 1.0554082735530868,
         "damage": 0.0,
         "health": 1.0,
         "id": "smooth_er",
-        "local_atp": 0.7624661266362082,
+        "local_atp": 0.7635133420400364,
         "location_um": [
           2.5,
           -1.0,
           0.7
         ],
-        "risk_per_hour": 0.004060563467255467,
+        "risk_per_hour": 0.004061364267255467,
         "transport_delay_s": 4.341
       }
     },
@@ -2829,25 +2854,25 @@
         "compartment_id": "cytosol",
         "id": "ADP",
         "unit": "relative_pool_0_1",
-        "value": 0.21922590438582695
+        "value": 0.21836048813609704
       },
       "AMP": {
         "compartment_id": "cytosol",
         "id": "AMP",
         "unit": "relative_pool_0_1",
-        "value": 0.020612545638588785
+        "value": 0.020435891600897142
       },
       "ATP": {
         "compartment_id": "cytosol",
         "id": "ATP",
         "unit": "relative_pool_0_1",
-        "value": 0.7601615499755843
+        "value": 0.7612036202630058
       },
       "Ca2+": {
         "compartment_id": "cytosol",
         "id": "Ca2+",
         "unit": "relative_pool_0_1",
-        "value": 0.027818243664244183
+        "value": 0.027779921352391504
       },
       "Cl-": {
         "compartment_id": "cytosol",
@@ -2859,13 +2884,13 @@
         "compartment_id": "cytosol",
         "id": "GSH",
         "unit": "relative_pool_0_1",
-        "value": 1.0474590119773415
+        "value": 1.047458965624337
       },
       "GSSG": {
         "compartment_id": "cytosol",
         "id": "GSSG",
         "unit": "relative_pool_0_1",
-        "value": 0.08127295686005435
+        "value": 0.08127295564832862
       },
       "GTP": {
         "compartment_id": "cytosol",
@@ -2889,13 +2914,13 @@
         "compartment_id": "cytosol",
         "id": "NAD+",
         "unit": "relative_pool_0_1",
-        "value": 0.6504506373555167
+        "value": 0.6504495072192192
       },
       "NADH": {
         "compartment_id": "cytosol",
         "id": "NADH",
         "unit": "relative_pool_0_1",
-        "value": 0.34954936264448344
+        "value": 0.3495504927807807
       },
       "NADP+": {
         "compartment_id": "cytosol",
@@ -2907,7 +2932,7 @@
         "compartment_id": "cytosol",
         "id": "NADPH",
         "unit": "relative_pool_0_1",
-        "value": 0.7146851818768363
+        "value": 0.7146847728993384
       },
       "Na+": {
         "compartment_id": "cytosol",
@@ -2919,187 +2944,187 @@
         "compartment_id": "cytosol",
         "id": "ROS",
         "unit": "relative_pool_0_1",
-        "value": 0.01942304635080021
+        "value": 0.019422583923555562
       },
       "acetyl_CoA": {
         "compartment_id": "mitochondria_pool",
         "id": "acetyl_CoA",
         "unit": "relative_pool_0_1",
-        "value": 0.20767947700716924
+        "value": 0.20766999847365405
       },
       "albumin": {
         "compartment_id": "golgi",
         "id": "albumin",
         "unit": "relative_pool_0_1",
-        "value": 0.18054572503879956
+        "value": 0.1805461273533074
       },
       "amino_acids": {
         "compartment_id": "cytosol",
         "id": "amino_acids",
         "unit": "relative_pool_0_1",
-        "value": 0.42011847477125036
+        "value": 0.42013338769760883
       },
       "ammonia": {
         "compartment_id": "cytosol",
         "id": "ammonia",
         "unit": "relative_pool_0_1",
-        "value": 0.04584162838342092
+        "value": 0.045839169823700635
       },
       "autophagy_cargo": {
         "compartment_id": "lysosome_pool",
         "id": "autophagy_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.020448014967034446
+        "value": 0.020448341220555565
       },
       "bile_acids": {
         "compartment_id": "cytosol",
         "id": "bile_acids",
         "unit": "relative_pool_0_1",
-        "value": 0.13434513617749053
+        "value": 0.13434172452458318
       },
       "bilirubin_conjugates": {
         "compartment_id": "cytosol",
         "id": "bilirubin_conjugates",
         "unit": "relative_pool_0_1",
-        "value": 0.04798040577767518
+        "value": 0.05
       },
       "canalicular_cargo": {
         "compartment_id": "golgi",
         "id": "canalicular_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.030233882159485553
+        "value": 0.030234054579988904
       },
       "cholesterol": {
         "compartment_id": "smooth_er",
         "id": "cholesterol",
         "unit": "relative_pool_0_1",
-        "value": 0.2223036662812163
+        "value": 0.22230369343672396
       },
       "cytosolic_protein": {
         "compartment_id": "cytosol",
         "id": "cytosolic_protein",
         "unit": "relative_pool_0_1",
-        "value": 0.35179612818582223
+        "value": 0.35179798620321995
       },
       "damaged_organelle_mass": {
         "compartment_id": "cytosol",
         "id": "damaged_organelle_mass",
         "unit": "relative_pool_0_1",
-        "value": 0.018180142857465775
+        "value": 0.01817864458445607
       },
       "detoxified_xenobiotic": {
         "compartment_id": "cytosol",
         "id": "detoxified_xenobiotic",
         "unit": "relative_pool_0_1",
-        "value": 0.000181992493626681
+        "value": 0.000181992386733107
       },
       "endocytosed_cargo": {
         "compartment_id": "lysosome_pool",
         "id": "endocytosed_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.0286033255430788
+        "value": 0.028605229947827743
       },
       "fatty_acids": {
         "compartment_id": "cytosol",
         "id": "fatty_acids",
         "unit": "relative_pool_0_1",
-        "value": 0.26657714458562864
+        "value": 0.2665859841940519
       },
       "folded_cargo": {
         "compartment_id": "rough_er",
         "id": "folded_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.020508384070596037
+        "value": 0.020508679261433026
       },
       "glucose": {
         "compartment_id": "cytosol",
         "id": "glucose",
         "unit": "relative_pool_0_1",
-        "value": 0.30454569598456877
+        "value": 0.30455332029851745
       },
       "glycogen": {
         "compartment_id": "cytosol",
         "id": "glycogen",
         "unit": "relative_pool_0_1",
-        "value": 0.622643495980159
+        "value": 0.6226681139177697
       },
       "lactate": {
         "compartment_id": "cytosol",
         "id": "lactate",
         "unit": "relative_pool_0_1",
-        "value": 0.07427679022551792
+        "value": 0.07427488802473317
       },
       "lipids": {
         "compartment_id": "smooth_er",
         "id": "lipids",
         "unit": "relative_pool_0_1",
-        "value": 0.2870741231197856
+        "value": 0.2870748170928304
       },
       "lysosome_enzyme_cargo": {
         "compartment_id": "golgi",
         "id": "lysosome_enzyme_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.030207895252876052
+        "value": 0.030208048515545687
       },
       "mRNA": {
         "compartment_id": "cytosol",
         "id": "mRNA",
         "unit": "relative_pool_0_1",
-        "value": 0.13765139848003116
+        "value": 0.13768089611936346
       },
       "membrane_cargo": {
         "compartment_id": "golgi",
         "id": "membrane_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.04031184287931407
+        "value": 0.04031207277331853
       },
       "misfolded_protein": {
         "compartment_id": "rough_er",
         "id": "misfolded_protein",
         "unit": "relative_pool_0_1",
-        "value": 0.028804990240517813
+        "value": 0.02880383275519262
       },
       "oxygen": {
         "compartment_id": "cytosol",
         "id": "oxygen",
         "unit": "relative_pool_0_1",
-        "value": 0.7363921560591487
+        "value": 0.7364249865983626
       },
       "pyruvate": {
         "compartment_id": "cytosol",
         "id": "pyruvate",
         "unit": "relative_pool_0_1",
-        "value": 0.15036016549089995
+        "value": 0.15036685646877204
       },
       "secretory_protein_cargo": {
         "compartment_id": "rough_er",
         "id": "secretory_protein_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.07932213509810686
+        "value": 0.07932213429946504
       },
       "ubiquitinated_cargo": {
         "compartment_id": "proteasome_pool",
         "id": "ubiquitinated_cargo",
         "unit": "relative_pool_0_1",
-        "value": 0.01959615485090016
+        "value": 0.0195958180348056
       },
       "urea": {
         "compartment_id": "cytosol",
         "id": "urea",
         "unit": "relative_pool_0_1",
-        "value": 0.056644960770013436
+        "value": 0.056627580248516884
       },
       "very_long_chain_fatty_acids": {
         "compartment_id": "peroxisome_pool",
         "id": "very_long_chain_fatty_acids",
         "unit": "relative_pool_0_1",
-        "value": 0.09374356798842805
+        "value": 0.09374341134984294
       },
       "xenobiotic": {
         "compartment_id": "smooth_er",
         "id": "xenobiotic",
         "unit": "relative_pool_0_1",
-        "value": 0.03625887237443628
+        "value": 0.0362588730585438
       }
     },
     "regeneration_context": {
@@ -3335,20 +3360,20 @@
     "signaling_results": [
       {
         "actions": {
-          "er_chaperone_capacity": 0.24382361900000002,
-          "mitochondrial_apoptosis_pressure": 0.005297004202308654,
-          "proteasome_capacity": 0.1906933605,
+          "er_chaperone_capacity": 0.24383476650000002,
+          "mitochondrial_apoptosis_pressure": 0.005295497496953864,
+          "proteasome_capacity": 0.19070371175,
           "smooth_er_detox_capacity": 0.338566949481848
         },
         "engine": "rule_based_subset",
         "id": "hepatocyte_rule_based_signaling_v1_120",
         "markers": {
-          "apoptosis_switch": 0.005297004202308654,
+          "apoptosis_switch": 0.005295497496953864,
           "nfkb_like": 0.0766794815264,
           "nrf2_like": 0.21708559836408728,
-          "p53_like": 0.09558715249821333,
+          "p53_like": 0.09555140249821333,
           "stress_receptor": 0.0268894448,
-          "upr_like": 0.06260517
+          "upr_like": 0.062621095
         },
         "model_id": "hepatocyte_rule_based_signaling_v1",
         "notes": "PySB-compatible boundary; built-in deterministic rules used when PySB is not installed.",
@@ -3356,20 +3381,20 @@
       },
       {
         "actions": {
-          "er_chaperone_capacity": 0.24373751105708702,
-          "mitochondrial_apoptosis_pressure": 0.005326077676102878,
-          "proteasome_capacity": 0.19061340312443795,
-          "smooth_er_detox_capacity": 0.3384257246913633
+          "er_chaperone_capacity": 0.24374863938995606,
+          "mitochondrial_apoptosis_pressure": 0.005323085018543324,
+          "proteasome_capacity": 0.19062373657638776,
+          "smooth_er_detox_capacity": 0.33842571179683195
         },
         "engine": "rule_based_subset",
         "id": "hepatocyte_rule_based_signaling_v1_240",
         "markers": {
-          "apoptosis_switch": 0.005326077676102878,
-          "nfkb_like": 0.07657054738025001,
-          "nrf2_like": 0.2168783415387286,
-          "p53_like": 0.09627501305220357,
-          "stress_receptor": 0.02664736891966671,
-          "upr_like": 0.062482158652981463
+          "apoptosis_switch": 0.005323085018543324,
+          "nfkb_like": 0.07657054454995829,
+          "nrf2_like": 0.2168783193806225,
+          "p53_like": 0.09620438126469251,
+          "stress_receptor": 0.026647362630129533,
+          "upr_like": 0.06249805627136577
         },
         "model_id": "hepatocyte_rule_based_signaling_v1",
         "notes": "PySB-compatible boundary; built-in deterministic rules used when PySB is not installed.",
@@ -3377,20 +3402,20 @@
       },
       {
         "actions": {
-          "er_chaperone_capacity": 0.24365320139458216,
-          "mitochondrial_apoptosis_pressure": 0.005353584096166824,
-          "proteasome_capacity": 0.19053511558068342,
-          "smooth_er_detox_capacity": 0.3382798806546631
+          "er_chaperone_capacity": 0.24366429184345254,
+          "mitochondrial_apoptosis_pressure": 0.005349129593996145,
+          "proteasome_capacity": 0.1905454138546345,
+          "smooth_er_detox_capacity": 0.3382798427238838
         },
         "engine": "rule_based_subset",
         "id": "hepatocyte_rule_based_signaling_v1_360",
         "markers": {
-          "apoptosis_switch": 0.005353584096166824,
-          "nfkb_like": 0.07645894109589238,
-          "nrf2_like": 0.21666390069216349,
-          "p53_like": 0.09692236850294303,
-          "stress_receptor": 0.02639935495442751,
-          "upr_like": 0.0623617162779745
+          "apoptosis_switch": 0.005349129593996145,
+          "nfkb_like": 0.07645893276632837,
+          "nrf2_like": 0.21666383551327578,
+          "p53_like": 0.09681775792383658,
+          "stress_receptor": 0.026399336444285285,
+          "upr_like": 0.062377559776360766
         },
         "model_id": "hepatocyte_rule_based_signaling_v1",
         "notes": "PySB-compatible boundary; built-in deterministic rules used when PySB is not installed.",
@@ -3398,20 +3423,20 @@
       },
       {
         "actions": {
-          "er_chaperone_capacity": 0.24357118989952986,
-          "mitochondrial_apoptosis_pressure": 0.0053806025033340844,
-          "proteasome_capacity": 0.19045896204956345,
-          "smooth_er_detox_capacity": 0.3381295241195253
+          "er_chaperone_capacity": 0.24358222507234636,
+          "mitochondrial_apoptosis_pressure": 0.005374709455379305,
+          "proteasome_capacity": 0.19046920899575018,
+          "smooth_er_detox_capacity": 0.3381294497525682
         },
         "engine": "rule_based_subset",
         "id": "hepatocyte_rule_based_signaling_v1_480",
         "markers": {
-          "apoptosis_switch": 0.0053806025033340844,
-          "nfkb_like": 0.07634476886950682,
-          "nrf2_like": 0.21644242164027008,
-          "p53_like": 0.0975550260585415,
-          "stress_receptor": 0.026145638895792935,
-          "upr_like": 0.06224455699932837
+          "apoptosis_switch": 0.005374709455379305,
+          "nfkb_like": 0.07634475253073855,
+          "nrf2_like": 0.21644229385433367,
+          "p53_like": 0.09741730549089574,
+          "stress_receptor": 0.026145602587418996,
+          "upr_like": 0.06226032153192336
         },
         "model_id": "hepatocyte_rule_based_signaling_v1",
         "notes": "PySB-compatible boundary; built-in deterministic rules used when PySB is not installed.",
@@ -3419,20 +3444,20 @@
       },
       {
         "actions": {
-          "er_chaperone_capacity": 0.24349154498900105,
-          "mitochondrial_apoptosis_pressure": 0.005407136575560681,
-          "proteasome_capacity": 0.19038500606121525,
-          "smooth_er_detox_capacity": 0.33797476492397566
+          "er_chaperone_capacity": 0.24350250872829216,
+          "mitochondrial_apoptosis_pressure": 0.005399828437901418,
+          "proteasome_capacity": 0.19039518667627128,
+          "smooth_er_detox_capacity": 0.33797464344846984
         },
         "engine": "rule_based_subset",
         "id": "hepatocyte_rule_based_signaling_v1_600",
         "markers": {
-          "apoptosis_switch": 0.005407136575560681,
-          "nfkb_like": 0.07622813800224777,
-          "nrf2_like": 0.21621405531529758,
-          "p53_like": 0.09817327477194784,
-          "stress_receptor": 0.02588645919077284,
-          "upr_like": 0.06213077855571576
+          "apoptosis_switch": 0.005399828437901418,
+          "nfkb_like": 0.0762281113004447,
+          "nrf2_like": 0.21621384658792486,
+          "p53_like": 0.09800329544154295,
+          "stress_receptor": 0.025886399853432666,
+          "upr_like": 0.06214644104041736
         },
         "model_id": "hepatocyte_rule_based_signaling_v1",
         "notes": "PySB-compatible boundary; built-in deterministic rules used when PySB is not installed.",
@@ -3440,20 +3465,20 @@
       },
       {
         "actions": {
-          "er_chaperone_capacity": 0.2434142547956769,
-          "mitochondrial_apoptosis_pressure": 0.005433187985508922,
-          "proteasome_capacity": 0.19031323659598567,
-          "smooth_er_detox_capacity": 0.3378157158329683
+          "er_chaperone_capacity": 0.2434251321411498,
+          "mitochondrial_apoptosis_pressure": 0.005424488348037681,
+          "proteasome_capacity": 0.19032333698821052,
+          "smooth_er_detox_capacity": 0.33781553728927066
         },
         "engine": "rule_based_subset",
         "id": "hepatocyte_rule_based_signaling_v1_720",
         "markers": {
-          "apoptosis_switch": 0.005433187985508922,
-          "nfkb_like": 0.07610915672444729,
-          "nrf2_like": 0.21597895754882995,
-          "p53_like": 0.09877734876290001,
-          "stress_receptor": 0.025622056351216206,
-          "upr_like": 0.06202036399382413
+          "apoptosis_switch": 0.005424488348037681,
+          "nfkb_like": 0.07610911745881634,
+          "nrf2_like": 0.21597865077193917,
+          "p53_like": 0.0985759445723096,
+          "stress_receptor": 0.025621969094258526,
+          "upr_like": 0.062035903058785424
         },
         "model_id": "hepatocyte_rule_based_signaling_v1",
         "notes": "PySB-compatible boundary; built-in deterministic rules used when PySB is not installed.",
@@ -3461,20 +3486,20 @@
       },
       {
         "actions": {
-          "er_chaperone_capacity": 0.2433392928638083,
-          "mitochondrial_apoptosis_pressure": 0.005458758216108915,
-          "proteasome_capacity": 0.19024362908782197,
-          "smooth_er_detox_capacity": 0.3376524923883625
+          "er_chaperone_capacity": 0.24335007001685,
+          "mitochondrial_apoptosis_pressure": 0.005448690779305037,
+          "proteasome_capacity": 0.19025363644421783,
+          "smooth_er_detox_capacity": 0.3376522475141598
         },
         "engine": "rule_based_subset",
         "id": "hepatocyte_rule_based_signaling_v1_840",
         "markers": {
-          "apoptosis_switch": 0.005458758216108915,
-          "nfkb_like": 0.07598793402549243,
-          "nrf2_like": 0.21573728887634425,
-          "p53_like": 0.09936747045507396,
-          "stress_receptor": 0.025352672575760966,
-          "upr_like": 0.0619132755197261
+          "apoptosis_switch": 0.005448690779305037,
+          "nfkb_like": 0.07598788014510346,
+          "nrf2_like": 0.21573686814160703,
+          "p53_like": 0.09913545823634647,
+          "stress_receptor": 0.02535255284156325,
+          "upr_like": 0.06192867145264283
         },
         "model_id": "hepatocyte_rule_based_signaling_v1",
         "notes": "PySB-compatible boundary; built-in deterministic rules used when PySB is not installed.",
@@ -3482,20 +3507,20 @@
       },
       {
         "actions": {
-          "er_chaperone_capacity": 0.24326663046036237,
-          "mitochondrial_apoptosis_pressure": 0.005483848898154746,
-          "proteasome_capacity": 0.19017615685605077,
-          "smooth_er_detox_capacity": 0.3374852127589775
+          "er_chaperone_capacity": 0.24327729474456206,
+          "mitochondrial_apoptosis_pressure": 0.005472437450245105,
+          "proteasome_capacity": 0.19018605940566474,
+          "smooth_er_detox_capacity": 0.3374848929733634
         },
         "engine": "rule_based_subset",
         "id": "hepatocyte_rule_based_signaling_v1_960",
         "markers": {
-          "apoptosis_switch": 0.005483848898154746,
-          "nfkb_like": 0.07586457948676492,
-          "nrf2_like": 0.21548921434052049,
-          "p53_like": 0.09994385868956898,
-          "stress_receptor": 0.025078551378588724,
-          "upr_like": 0.06180947208623195
+          "apoptosis_switch": 0.005472437450245105,
+          "nfkb_like": 0.0758645090872727,
+          "nrf2_like": 0.21548866491190044,
+          "p53_like": 0.09968203845319519,
+          "stress_receptor": 0.025078394935272662,
+          "upr_like": 0.06182470677794577
         },
         "model_id": "hepatocyte_rule_based_signaling_v1",
         "notes": "PySB-compatible boundary; built-in deterministic rules used when PySB is not installed.",
@@ -3505,16 +3530,16 @@
     "status": "healthy",
     "stress": {
       "autophagy": 0.0412,
-      "cholestatic": 0.1253448,
+      "cholestatic": 0.1255268,
       "detox": 0.132107230944,
       "energy": 0.0,
-      "genotoxic": 0.04039761784112805,
+      "genotoxic": 0.040397588049461385,
       "ionic": 0.0,
-      "membrane": 0.0313362,
+      "membrane": 0.0313817,
       "oxidative": 0.073366802144,
       "proteotoxic": 0.063,
-      "senescence": 0.03248483697456111,
-      "trafficking": 0.07222068000000001
+      "senescence": 0.032484824022985956,
+      "trafficking": 0.07228438
     }
   }
 }

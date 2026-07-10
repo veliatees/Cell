@@ -10,6 +10,8 @@ from cell_engine.organelles.registry import build_organelle_modules
 from cell_engine.processes.membrane_ca import apply_membrane_calcium_module
 from cell_engine.processes.metabolism import step_hepatocyte_metabolism
 from cell_engine.processes.signaling import apply_rule_based_signaling
+from cell_engine.processes.cellular_response import apply_cellular_response
+from cell_engine.processes.cellular_memory import apply_cellular_memory
 from cell_engine.stochastic.hazard import clamp
 
 
@@ -54,7 +56,7 @@ def step_cell(
     cargo_base_state = replace(organelle_state, stress=next_stress)
     cargo_result = route_cargo_packets(cargo_base_state, dt_s=dt_s, rng=rng)
     emitted_events.extend(cargo_result.events)
-    return replace(
+    final_state = replace(
         organelle_state,
         elapsed_s=stressed_state.elapsed_s + dt_s,
         status=_status_from_stress(next_stress),
@@ -63,6 +65,8 @@ def step_cell(
         cargo_packets=cargo_result.packets,
         events=stressed_state.events + tuple(emitted_events),
     )
+    responded_state = apply_cellular_response(final_state, dt_s=dt_s)
+    return apply_cellular_memory(responded_state, dt_s=dt_s)
 
 
 def run_cell(

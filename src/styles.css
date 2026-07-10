@@ -242,18 +242,38 @@ select {
    Shrink it to a compact corner chip so the cell body stays visible. */
 @media (max-width: 720px) {
   .split-state-badge {
-    width: min(190px, calc(60% - 12px));
-    right: 8px;
+    left: 8px;
+    right: auto;
     top: 8px;
+    width: calc(50% - 12px);
     padding: 7px 8px;
     gap: 3px;
     background: rgba(8, 13, 18, 0.62);
+  }
+  .nutrition-badge {
+    top: 8px;
+    right: 8px;
+    width: calc(50% - 12px);
+    padding: 7px 8px;
+    font-size: 9.5px;
+  }
+  .nutrition-badge__head {
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .nutrition-badge__clock {
+    font-size: 8.5px;
+    text-align: right;
   }
   .split-state-badge__meta {
     display: none;
   }
   .split-state-badge__head {
     font-size: 11px;
+  }
+  .split-state-badge__head span {
+    font-size: 9px;
+    line-height: 1.2;
   }
 }
 
@@ -364,6 +384,13 @@ select {
   color: #aebbd0;
   font-size: 10.5px;
   line-height: 1.25;
+}
+
+.toolbar-experiment {
+  width: 146px;
+  min-width: 146px;
+  height: 34px;
+  font-size: 12px;
 }
 
 .toolbar-status.is-locked {
@@ -694,6 +721,192 @@ input[type="checkbox"] {
   color: #e4eefc;
   font-weight: 600;
 }
+
+.response-panel,
+.comparison-panel,
+.evidence-panel,
+.history-panel,
+.genome-panel {
+  margin: 0 0 10px;
+  padding: 8px 0 0;
+  border-top: 1px solid rgba(190, 211, 237, 0.12);
+}
+
+.response-panel__head {
+  margin-bottom: 6px;
+  color: #8b96ad;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.response-empty,
+.damage-caption,
+.evidence-sources {
+  color: #8290a7;
+  font-size: 9.5px;
+  line-height: 1.35;
+}
+
+.response-state,
+.response-row,
+.response-metrics,
+.damage-row,
+.comparison-row,
+.evidence-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.response-state {
+  margin-bottom: 7px;
+  color: #dce8f8;
+  font-size: 10.5px;
+}
+
+.response-state span:last-child {
+  color: #aebbd0;
+}
+
+.response-state__dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #70c6ff;
+}
+
+.response-state__dot--proteostasis_adaptation { background: #f2c45b; }
+.response-state__dot--senescence_pressure { background: #caa3e6; }
+.response-state__dot--apoptotic_pressure { background: #ff7b7b; }
+
+.response-row {
+  margin: 4px 0;
+  color: #aebbd0;
+  font-size: 10px;
+}
+
+.response-row > span { width: 104px; }
+.response-row > b { width: 32px; color: #e8f1ff; font-size: 10px; text-align: right; }
+.response-track { height: 4px; flex: 1; overflow: hidden; border-radius: 3px; background: rgba(255, 255, 255, 0.08); }
+.response-track i { display: block; height: 100%; border-radius: inherit; transition: width 0.25s ease; }
+
+.response-metrics { flex-wrap: wrap; margin-top: 5px; color: #8d9ab0; font-size: 9.5px; }
+.response-metrics span { white-space: nowrap; }
+.response-metrics b { color: #dce8f8; }
+
+.damage-caption { margin-top: 8px; }
+.damage-grid { display: grid; gap: 3px; margin-top: 4px; }
+.damage-row { color: #8e9bb1; font-size: 9.5px; }
+.damage-row > span { width: 72px; }
+.damage-row > div { height: 3px; flex: 1; overflow: hidden; border-radius: 3px; background: rgba(255, 255, 255, 0.07); }
+.damage-row i { display: block; height: 100%; border-radius: inherit; background: #709ed8; }
+.damage-row.is-dominant i { background: #ffb56b; }
+.damage-row > b { width: 38px; text-align: right; font-size: 9px; color: #cbd6e8; }
+
+.comparison-row { justify-content: space-between; margin: 3px 0; padding: 3px 5px; border-left: 2px solid transparent; color: #9ba9bf; font-size: 9.5px; }
+.comparison-row b { color: #dce8f8; font-size: 9px; font-weight: 600; }
+.comparison-row.is-selected { border-left-color: #9ec6ff; background: rgba(126, 184, 229, 0.09); color: #edf5ff; }
+
+.evidence-panel { margin-bottom: 4px; }
+.evidence-row { align-items: flex-start; margin: 4px 0; color: #8e9bb1; font-size: 9.5px; line-height: 1.35; }
+.evidence-tag { flex: 0 0 72px; padding: 1px 3px; border-radius: 3px; font-size: 8.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; text-align: center; }
+.evidence-tag--source { color: #7ee0a8; background: rgba(126, 224, 168, 0.12); }
+.evidence-tag--model { color: #f2c45b; background: rgba(242, 196, 91, 0.12); }
+.evidence-tag--derived { color: #9ec6ff; background: rgba(158, 198, 255, 0.12); }
+.evidence-sources { margin-top: 6px; overflow-wrap: anywhere; }
+
+.history-head,
+.genome-head,
+.history-metrics,
+.genome-metrics,
+.genome-variants {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 9px;
+}
+
+.history-head,
+.genome-head {
+  justify-content: space-between;
+  color: #aebbd0;
+  font-size: 10px;
+}
+
+.history-state {
+  color: #7ee0a8;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.history-metrics,
+.genome-metrics,
+.genome-variants {
+  margin-top: 6px;
+  color: #8e9bb1;
+  font-size: 9.5px;
+}
+
+.history-metrics b,
+.genome-variants b { color: #dce8f8; }
+
+.history-events {
+  display: grid;
+  gap: 3px;
+  margin-top: 7px;
+}
+
+.history-event {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1px 8px;
+  padding-left: 6px;
+  border-left: 2px solid rgba(126, 184, 229, 0.35);
+  color: #c7d4e7;
+  font-size: 9.5px;
+}
+
+.history-event b { color: #9ec6ff; font-size: 9px; }
+.history-event small { grid-column: 1 / -1; color: #7f8da4; overflow-wrap: anywhere; }
+
+.memory-traces,
+.genome-loci {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.memory-trace,
+.genome-locus,
+.history-empty-trace {
+  padding: 2px 5px;
+  border: 1px solid rgba(158, 198, 255, 0.18);
+  border-radius: 3px;
+  color: #b9d7ff;
+  background: rgba(85, 128, 177, 0.1);
+  font-size: 8.75px;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.genome-locus:hover { border-color: rgba(126, 224, 168, 0.55); color: #a9efc7; }
+.history-empty-trace { color: #8996aa; }
+
+.genome-unknown,
+.history-boundary {
+  margin-top: 6px;
+  color: #7f8da4;
+  font-size: 9px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.genome-head strong { color: #e4eefc; }
+.genome-head span { color: #8da5c4; }
 
 .hmdb-validation {
   margin-top: 7px;
@@ -1058,6 +1271,18 @@ input[type="checkbox"] {
 @media (max-width: 650px) {
   .topbar {
     align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .brand,
+  .toolbar {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .toolbar {
+    justify-content: flex-start;
   }
 
   .toolbar {

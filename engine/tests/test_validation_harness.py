@@ -3,6 +3,7 @@ import unittest
 from cell_engine.processes.hepatocyte import build_hepatocyte_definition, initial_hepatocyte_state
 from cell_engine.validation import (
     BASELINE_SCENARIO,
+    BSEP_LOSS_SCENARIO,
     DETOX_LOAD_SCENARIO,
     build_assumption_report,
     build_reference_registry,
@@ -44,7 +45,12 @@ class ValidationHarnessTests(unittest.TestCase):
         self.assertGreater(detox.frames[-1].pools["detoxified_xenobiotic"], baseline.frames[-1].pools["detoxified_xenobiotic"])
         self.assertGreater(detox.frames[-1].pools["ROS"], baseline.frames[-1].pools["ROS"])
 
+    def test_experiment_scenario_records_explicit_surface_control_and_response(self) -> None:
+        result = run_scenario(self.definition, self.state, BSEP_LOSS_SCENARIO, dt_s=120.0, steps=2, seed=12)
+        self.assertEqual(result.scenario.controls["bsep_surface_activity"], 0.0)
+        self.assertIsNotNone(result.frames[-1].response)
+        self.assertEqual(result.frames[-1].response["cholestasis_state"], "bsep_export_loss")
+
 
 if __name__ == "__main__":
     unittest.main()
-

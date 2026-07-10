@@ -74,6 +74,84 @@ membrane protein/cell ≈ 9–23 pg (464 pg total × 2–5% PM fraction). Drop m
 Ohtsuki 2012 / Wiśniewski 2016 fmol/µg values into this to upgrade the
 transporters from order-of-magnitude to measured.
 
+## Functional use in the simulation
+
+The engine does **not** draw one object for every protein molecule. Instead, the
+gene-keyed inventory (for example `protein:ABCB11`) is converted into a
+dimensionless capacity multiplier relative to its healthy-reference abundance:
+`activity = copies / reference copies`. This multiplier scales the corresponding
+transporter pathway: GLUT2 for whole-cell glucose exchange; BSEP for canalicular
+bile-salt export; MRP2 for bilirubin-conjugate export; NTCP and Na+/K+-ATPase for
+their represented transport functions. A zero count is an explicit functional
+depletion; a missing entry means the reference healthy abundance.
+
+This is a **relative-effect model**, not an absolute flux prediction. The current
+base transport rates are explicitly recorded in reaction provenance as
+`placeholder`: copy number alone cannot establish transporter turnover,
+membrane area, substrate gradients, or zonal polarization. Those base rates must
+be replaced with transporter-specific primary kinetic measurements and calibrated
+against measured uptake/export fluxes before the model is used quantitatively.
+
+### Assay kinetics and trafficking guardrail
+
+The engine now records published **assay-specific** kinetic anchors without
+misusing them as whole-cell values. Human recombinant BSEP has reported
+taurocholate `Km = 4.25 µM`, `Vmax = 200 pmol/mg protein/min`; human recombinant
+MRP2 has reported bilirubin-glucuronide kinetics. These measurements retain their
+membrane-vesicle units in `stochastic/transporter_kinetics.py`.
+
+Correct membrane localization is a separate biological state: BSEP and MRP2 are
+targeted to the canalicular surface and can be retrieved/reinserted. Therefore a
+whole-cell capacity can use **measured surface copies** only when a matched healthy
+surface-copy reference is supplied. The code refuses to infer surface abundance
+from total protein abundance or from the schematic cargo-routing layer. This keeps
+trafficking uncertainty visible instead of inventing a surface fraction.
+
+The corresponding lifecycle state has explicit ER, Golgi, canalicular-surface,
+basolateral-surface, subapical-endosome, unresolved-intracellular, and degraded
+copy pools. It can apply **observed copy-number transfers** while conserving total
+protein synthesis. It does not contain a default BSEP/MRP2 trafficking rate: the
+literature establishes the topology and regulatory importance of canalicular
+targeting, but the rate must be measured or calibrated in the chosen experimental
+system before a dynamic run is defensible.
+
+## Cholestasis, proteostasis, fate and experiments
+
+The disease-response layer deliberately separates **causal biology** from
+quantitative prediction. BSEP (`ABCB11`) loss removes the represented bile-acid
+export term; MRP2 (`ABCC2`) loss removes the represented bilirubin-conjugate
+export term. The browser's experiment menu currently exposes only exact control
+(`1`) and loss-of-function (`0`) states. It does **not** present an invented
+"50% inhibition" as a biological measurement. A non-binary activity may be
+supplied only from a matched surface-abundance measurement or calibration.
+
+Each engine step exports a `cellular_response` record with: retained bile-acid
+and bilirubin pools; UPR marker and misfolded/ubiquitinated protein loads;
+stress-time exposure (units: seconds) across cholestatic, proteotoxic,
+oxidative, genotoxic, energetic, and senescence axes; and the dominant current
+fate evidence. The exposure integral is explicitly **not** a lesion count and
+contains no guessed repair half-life. Likewise, `fate_evidence` is not an
+irreversible death decision. The existing ATP-dependent apoptosis/necrosis model
+remains available for a separately calibrated temporal commitment experiment.
+
+The causal links are source-backed: transporter loss can produce intracellular
+bile-acid retention; cholestasis is associated with ER stress; unresolved UPR
+can become pro-apoptotic; and hydrophobic bile acids can drive ROS and
+mitochondrial permeability transition in isolated hepatocytes. The internal
+source registry is `processes/cellular_response.py`; browser snapshots expose
+the source IDs alongside every experiment.
+
+## Growth and membrane geometry contract
+
+The cell-cycle biomass proxy is interpreted as relative cell volume. Therefore
+the engine and visualizer share the same derived geometry: radius scales as
+`biomass^(1/3)` and membrane area as `biomass^(2/3)`. During cytokinesis, two
+equal-volume daughters require more total area than the mother; the exact
+equivalent-sphere requirement is computed before partition. Existing
+`membrane_supply` can limit that insertion, exposing a membrane deficit instead
+of allowing unbounded elastic stretching. This is a shape-model approximation,
+not a claim that a hepatocyte is a perfect sphere.
+
 ## CAVEATS (read before use)
 
 1. **Rat vs human — the biggest caveat.** The gold-standard hepatocyte

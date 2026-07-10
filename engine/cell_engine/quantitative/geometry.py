@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import pi
 
 from cell_engine.core.cell_definition import CellDefinition
 
@@ -16,6 +17,55 @@ LITERS_PER_PICOLITER = 1.0e-12
 # source-anchored reference, not a measured per-cell value.
 # Source: BioNumbers / Wikipedia "Hepatocyte".
 HEPATOCYTE_CELL_VOLUME_L = 3.4 * LITERS_PER_PICOLITER  # 3.4e-12 L
+
+
+def relative_radius_from_biomass(biomass: float) -> float:
+    """Equivalent-sphere radius relative to a unit-biomass reference cell.
+
+    The cell-cycle biomass proxy is explicitly treated as relative volume/mass.
+    For similar shapes, radius therefore scales as ``V^(1/3)``. This is pure
+    geometry rather than a fitted biological parameter.
+    """
+    if biomass < 0:
+        raise ValueError("biomass must be non-negative")
+    return biomass ** (1.0 / 3.0)
+
+
+def relative_membrane_area_from_biomass(biomass: float) -> float:
+    """Equivalent-sphere membrane area relative to a unit-biomass cell.
+
+    For similar shapes, area scales as ``V^(2/3)``. A value of ``1`` is the
+    reference cell surface area; units cancel, so this also works for the
+    cycle's normalized membrane-area inventory.
+    """
+    radius = relative_radius_from_biomass(biomass)
+    return radius * radius
+
+
+def daughter_membrane_area_requirement(biomass: float) -> float:
+    """Total area required by two equal-volume daughters after cytokinesis.
+
+    Two daughters have the same total volume as their mother but a larger total
+    surface area. The difference is a geometric requirement for membrane
+    insertion during cytokinesis, not a fitted strain or decorative effect.
+    """
+    if biomass < 0:
+        raise ValueError("biomass must be non-negative")
+    return 2.0 * relative_membrane_area_from_biomass(biomass / 2.0)
+
+
+def equivalent_sphere_radius_um(volume_l: float) -> float:
+    """Radius of a sphere with the supplied volume, returned in micrometres."""
+    if volume_l <= 0:
+        raise ValueError("volume_l must be positive")
+    volume_um3 = volume_l * 1.0e15
+    return (3.0 * volume_um3 / (4.0 * pi)) ** (1.0 / 3.0)
+
+
+def equivalent_sphere_surface_area_um2(volume_l: float) -> float:
+    """Surface area of the equivalent sphere for a volume in litres."""
+    radius_um = equivalent_sphere_radius_um(volume_l)
+    return 4.0 * pi * radius_um * radius_um
 
 
 @dataclass(frozen=True)
@@ -38,6 +88,16 @@ class HepatocyteGeometry:
         get the whole-cell volume as a deliberate coarse fallback.
         """
         return self.compartment_volume_l.get(compartment_id, self.cell_volume_l)
+
+    @property
+    def equivalent_sphere_radius_um(self) -> float:
+        """Coarse radius for whole-cell geometric sanity checks only."""
+        return equivalent_sphere_radius_um(self.cell_volume_l)
+
+    @property
+    def equivalent_sphere_surface_area_um2(self) -> float:
+        """Coarse surface area for whole-cell membrane sanity checks only."""
+        return equivalent_sphere_surface_area_um2(self.cell_volume_l)
 
 
 def build_hepatocyte_geometry(

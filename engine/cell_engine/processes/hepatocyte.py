@@ -10,6 +10,8 @@ from cell_engine.core.cell_definition import (
     ValidationTarget,
 )
 from cell_engine.core.provenance import ParameterProvenance, SourceReference
+from cell_engine.core.genome import build_reference_hepatocyte_genome
+from cell_engine.core.history import initial_cell_history
 from cell_engine.core.state import CargoPacket, CellEvent, CellState, OrganelleState, PoolState
 
 DATE_VERIFIED = "2026-06-19"
@@ -405,6 +407,8 @@ def initial_hepatocyte_state(definition: CellDefinition) -> CellState:
         pools=pools,
         organelles=organelles,
         stress=stress,
+        genome=build_reference_hepatocyte_genome(),
+        history=initial_cell_history(),
         cargo_packets=_initial_cargo_packets(),
         events=(
             CellEvent(

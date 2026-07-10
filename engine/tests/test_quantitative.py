@@ -10,7 +10,10 @@ from cell_engine.quantitative import (
     QUANTITATIVE_SOURCES,
     build_hepatocyte_geometry,
     concentration_mM_from_molecules,
+    daughter_membrane_area_requirement,
     molecules_from_concentration_mM,
+    relative_membrane_area_from_biomass,
+    relative_radius_from_biomass,
     species_copy_numbers,
 )
 
@@ -59,6 +62,19 @@ class GeometryTests(unittest.TestCase):
         self.assertEqual(
             self.geometry.volume_of("does_not_exist"), self.geometry.cell_volume_l
         )
+
+    def test_growth_geometry_uses_volume_one_third_and_two_thirds_scaling(self):
+        self.assertAlmostEqual(relative_radius_from_biomass(8.0), 2.0)
+        self.assertAlmostEqual(relative_membrane_area_from_biomass(8.0), 4.0)
+        # Two equal daughters preserve volume but require extra total surface.
+        self.assertGreater(
+            daughter_membrane_area_requirement(8.0),
+            relative_membrane_area_from_biomass(8.0),
+        )
+
+    def test_equivalent_sphere_geometry_is_positive(self):
+        self.assertGreater(self.geometry.equivalent_sphere_radius_um, 0.0)
+        self.assertGreater(self.geometry.equivalent_sphere_surface_area_um2, 0.0)
 
 
 class SpeciesRegistryTests(unittest.TestCase):
