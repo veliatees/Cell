@@ -163,6 +163,89 @@ const snapshot: EngineSnapshot = {
       pump_activity: 0.8,
       channel_open_probability: 0.1
     },
+    experiment: {
+      id: "bsep_loss",
+      description: "Exact BSEP loss-of-function experiment",
+      controls: { experiment_id: "bsep_loss", bsep_surface_activity: 0 },
+      source_ids: ["bsep_cholestasis"]
+    },
+    cellular_response: {
+      experiment_id: "bsep_loss",
+      cholestasis_state: "bsep_export_loss",
+      bsep_surface_activity: 0,
+      mrp2_surface_activity: 1,
+      bile_acid_retention: 0.31,
+      bilirubin_retention: 0.04,
+      upr_signal: 0.42,
+      misfolded_protein: 0.09,
+      ubiquitinated_cargo: 0.03,
+      damage_exposure_s: { cholestatic: 90, proteotoxic: 45 },
+      dominant_damage_axis: "cholestatic",
+      fate_evidence: "proteostasis_adaptation",
+      source_ids: ["bsep_cholestasis"]
+    },
+    genome: {
+      assembly_name: "GRCh38.p14",
+      assembly_accession: "GCF_000001405.40",
+      annotation_release: "RS_2025_08",
+      primary_assembly_length_bp: 3088269832,
+      all_scaffolds_length_bp: 3099734149,
+      chromosomes: [{ name: "2", refseq_accession: "NC_000002.12", length_bp: 242193529, chromosome_type: "autosome" }],
+      functional_loci: [{
+        symbol: "ABCB11",
+        ncbi_gene_id: "8647",
+        ensembl_gene_id: "ENSG00000073734",
+        chromosome: "2",
+        start_bp: 168915391,
+        end_bp: 169031325,
+        strand: "minus",
+        simulation_role: "BSEP canalicular bile-acid export",
+        source_url: "https://www.ncbi.nlm.nih.gov/gene/8647"
+      }],
+      chromosome_sets_per_nucleus: [2],
+      sex_chromosome_complement: "not_provided",
+      individual_genotype_status: "not_provided_reference_coordinates_only",
+      somatic_variants: [],
+      mitochondrial: {
+        reference_accession: "NC_012920.1",
+        reference_length_bp: 16569,
+        copy_number: null,
+        heteroplasmy_status: "not_measured",
+        variants: [],
+        source_ids: ["ncbi_mtdna_rcrs"]
+      },
+      source_ids: ["ncbi_grch38_p14", "ncbi_gene_records", "ncbi_mtdna_rcrs"]
+    },
+    history: {
+      lineage_id: "hepatocyte-lineage-0",
+      parent_cell_id: null,
+      birth_time_s: 0,
+      lineage_generation: 0,
+      completed_dna_replications: 0,
+      completed_cytokineses: 0,
+      lifecycle: {
+        state: "quiescent_G0",
+        entered_state_time_s: 0,
+        cell_age_s: 120,
+        terminal_status: "alive",
+        evidence_status: "source_backed_state_identity",
+        source_ids: ["hepatocyte_regeneration_cycle"]
+      },
+      event_log: [{
+        id: "experiment-bsep_loss",
+        event_type: "bsep_loss",
+        start_time_s: 0,
+        last_observed_time_s: 120,
+        duration_s: 120,
+        status: "ongoing",
+        compartment: "plasma_membrane_and_cell",
+        measurements: { bsep_surface_activity: 0 },
+        measurement_unit: "relative_to_reference_condition",
+        source_ids: ["bsep_cholestasis"]
+      }],
+      memory_traces: [],
+      source_ids: ["human_hepatocyte_renewal", "hcv_epigenetic_scar"]
+    },
     division: {
       engine: "whole_cell_population",
       cell_count: 2,
@@ -270,6 +353,14 @@ describe("engine snapshot client", () => {
     expect(summary.regenerationContext?.decision?.cell_cycle_entry_permitted).toBe(true);
     expect(summary.regenerationContext?.decision?.direct_mitogen_axes?.[0].active).toBe(true);
     expect(summary.regenerationContext?.timing_profile?.dna_synthesis_peak_h).toEqual([36, 48]);
+    expect(summary.experiment?.id).toBe("bsep_loss");
+    expect(summary.cellularResponse?.cholestasis_state).toBe("bsep_export_loss");
+    expect(summary.genome?.assembly_name).toBe("GRCh38.p14");
+    expect(summary.genome?.functional_loci[0].symbol).toBe("ABCB11");
+    expect(summary.genome?.somatic_variants).toHaveLength(0);
+    expect(summary.history?.lifecycle.state).toBe("quiescent_G0");
+    expect(summary.history?.event_log[0].event_type).toBe("bsep_loss");
+    expect(summary.history?.memory_traces).toHaveLength(0);
   });
 
   it("preserves cytokinesis regression as one real binucleated engine cell", () => {

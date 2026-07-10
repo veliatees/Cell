@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Literal
+from typing import Literal, Mapping
 
 from cell_engine.core.cell_definition import CellDefinition
 from cell_engine.core.random import EngineRng
@@ -24,6 +24,11 @@ from cell_engine.stochastic.glycolysis import build_glycolysis_network
 from cell_engine.stochastic.integrators import simulate_hybrid
 from cell_engine.stochastic.reactions import ReactionNetwork, compose_networks, mass_action
 from cell_engine.stochastic.redox import build_redox_network
+from cell_engine.stochastic.transport import (
+    transport_rate_parameter_provenance,
+    transporter_activity_from_inventory_counts,
+    transporter_activity_scale,
+)
 from cell_engine.stochastic.urea_cycle import build_urea_cycle_network
 
 # The whole cell grows on glucose; division needs a size checkpoint reached only
@@ -259,7 +264,11 @@ def whole_cell_population_snapshot(
     }
 
 
-def build_whole_cell_network(volume_l: float) -> ReactionNetwork:
+def build_whole_cell_network(
+    volume_l: float,
+    *,
+    transporter_activity: Mapping[str, float] | None = None,
+) -> ReactionNetwork:
     """Compose the subsystems into one network, plus energy/glucose homeostasis.
 
     Glucose is not pumped in one-way and unlimited. Instead it crosses the
@@ -269,6 +278,7 @@ def build_whole_cell_network(volume_l: float) -> ReactionNetwork:
     Equal forward/back rates make the cell glucose track the blood pool, so supply
     is bounded by what's actually in the sinusoid (``glucose_blood``), not infinite.
     """
+    glut2_activity = transporter_activity_scale(transporter_activity, "glut2")
     homeostasis = ReactionNetwork(
         species=("ATP", "ADP", "glucose", "glucose_blood"),
         reactions=(
@@ -276,10 +286,14 @@ def build_whole_cell_network(volume_l: float) -> ReactionNetwork:
                         notes="LUMPED OXPHOS regenerating ATP against the combined draw."),
             mass_action("atp_maintenance", {"ATP": 1}, {"ADP": 1}, 0.1,
                         notes="LUMPED baseline ATP consumption."),
-            mass_action("glut2_uptake", {"glucose_blood": 1}, {"glucose": 1}, 0.4,
-                        notes="GLUT2 facilitated uptake (down-gradient from blood)."),
-            mass_action("glut2_release", {"glucose": 1}, {"glucose_blood": 1}, 0.4,
-                        notes="GLUT2 is bidirectional: glucose flows back to blood when cell glucose is high (fasting output)."),
+            mass_action("glut2_uptake", {"glucose_blood": 1}, {"glucose": 1}, 0.4 * glut2_activity,
+                        source_id="bile_formation",
+                        notes=f"GLUT2 facilitated uptake (down-gradient from blood). Activity scale={glut2_activity:.3g} from transporter abundance/function.",
+                        parameter_provenance=transport_rate_parameter_provenance("whole_cell_glut2_uptake", 0.4, "glut2", glut2_activity)),
+            mass_action("glut2_release", {"glucose": 1}, {"glucose_blood": 1}, 0.4 * glut2_activity,
+                        source_id="bile_formation",
+                        notes=f"GLUT2 is bidirectional: glucose flows back to blood when cell glucose is high (fasting output). Activity scale={glut2_activity:.3g} from transporter abundance/function.",
+                        parameter_provenance=transport_rate_parameter_provenance("whole_cell_glut2_release", 0.4, "glut2", glut2_activity)),
         ),
         volume_l=volume_l,
     )
@@ -293,7 +307,13 @@ def build_whole_cell_network(volume_l: float) -> ReactionNetwork:
     )
 
 
-def seed_whole_cell(definition: CellDefinition, *, fed: bool = True) -> WholeCell:
+def seed_whole_cell(
+    definition: CellDefinition,
+    *,
+    fed: bool = True,
+    protein_inventory: Mapping[str, float] | None = None,
+    transporter_activity: Mapping[str, float] | None = None,
+) -> WholeCell:
     """Seed every subsystem from the M030 grounded concentrations.
 
     ``fed=False`` starts with no glucose in the cell *or* the blood — a starved
@@ -301,9 +321,14 @@ def seed_whole_cell(definition: CellDefinition, *, fed: bool = True) -> WholeCel
     When fed, ``glucose_blood`` is a buffered sinusoidal reservoir the cell
     exchanges with through GLUT2 (bidirectional), not an infinite one-way feed.
     """
+    if protein_inventory is not None and transporter_activity is not None:
+        raise ValueError("provide protein_inventory or transporter_activity, not both")
+    if protein_inventory is not None:
+        transporter_activity = transporter_activity_from_inventory_counts(protein_inventory)
+
     geometry = build_hepatocyte_geometry(definition)
     volume = geometry.volume_of(CYTOSOL)
-    network = build_whole_cell_network(volume)
+    network = build_whole_cell_network(volume, transporter_activity=transporter_activity)
 
     def n(mM: float) -> float:
         return molecules_from_concentration_mM(mM, volume)
@@ -322,9 +347,22 @@ def seed_whole_cell(definition: CellDefinition, *, fed: bool = True) -> WholeCel
     return WholeCell(network=network, counts=counts, cycle=cycle, t_s=0.0)
 
 
-def seed_whole_cell_population(definition: CellDefinition, *, fed: bool = True) -> WholeCellPopulation:
+def seed_whole_cell_population(
+    definition: CellDefinition,
+    *,
+    fed: bool = True,
+    protein_inventory: Mapping[str, float] | None = None,
+    transporter_activity: Mapping[str, float] | None = None,
+) -> WholeCellPopulation:
     """Seed a population with one real hepatocyte."""
-    return WholeCellPopulation(cells=(seed_whole_cell(definition, fed=fed),))
+    return WholeCellPopulation(
+        cells=(seed_whole_cell(
+            definition,
+            fed=fed,
+            protein_inventory=protein_inventory,
+            transporter_activity=transporter_activity,
+        ),),
+    )
 
 
 def step_whole_cell(

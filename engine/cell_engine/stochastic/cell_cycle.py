@@ -6,6 +6,10 @@ from typing import Literal
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.random import EngineRng
+from cell_engine.quantitative.geometry import (
+    daughter_membrane_area_requirement,
+    relative_membrane_area_from_biomass,
+)
 
 # Ordered cell-cycle phases.
 PHASES = ("G1", "S", "G2", "M")
@@ -829,7 +833,7 @@ def _grow_organelles(inv: OrganelleInventory, old_biomass: float, new_biomass: f
     if old_biomass <= 0 or new_biomass <= old_biomass or phase == "M":
         return inv
     factor = new_biomass / old_biomass
-    # ER, membrane, ribosomes and mitochondria expand with cell growth before the
+    # ER, ribosomes and mitochondria expand with cell growth before the
     # final split. Lysosome/peroxisome biogenesis is slower but still rises.
     slow = 1.0 + (factor - 1.0) * 0.65
     centrosomes = inv.centrosomes
@@ -844,7 +848,14 @@ def _grow_organelles(inv: OrganelleInventory, old_biomass: float, new_biomass: f
         ribosomes=_scaled_count(inv.ribosomes, factor),
         centrosomes=centrosomes,
         er_mass=inv.er_mass * factor,
-        membrane_area=inv.membrane_area * factor * max(0.0, params.membrane_supply),
+        # Biomass is relative volume, so membrane area follows V^(2/3), not V.
+        # ``membrane_supply`` is applied only at cytokinesis, where new area is
+        # required to make two daughters; applying it every growth step caused an
+        # unphysical exponential area loss/gain.
+        membrane_area=inv.membrane_area * (
+            relative_membrane_area_from_biomass(new_biomass)
+            / relative_membrane_area_from_biomass(old_biomass)
+        ),
     )
 
 
@@ -977,7 +988,10 @@ def divide(
             counts_a[species] = a
             counts_b[species] = n - a
 
-    org_a, org_b = partition_organelles(state.organelles, rng)
+    org_a, org_b = partition_organelles(
+        _prepare_membrane_for_daughters(state.organelles, state.biomass, params),
+        rng,
+    )
 
     daughter = lambda c, o: CellCycleState(
         phase="G1", biomass=state.biomass / 2.0, counts=c, phase_time_s=0.0,
@@ -985,6 +999,25 @@ def divide(
         ploidy=state.ploidy, cytokinesis=CytokinesisState(), organelles=o,
     )
     return daughter(counts_a, org_a), daughter(counts_b, org_b)
+
+
+def _prepare_membrane_for_daughters(
+    inv: OrganelleInventory,
+    biomass: float,
+    params: CellCycleParams,
+) -> OrganelleInventory:
+    """Insert only the geometrically required membrane before equal division.
+
+    For two equal-volume daughters, total surface area is larger than the
+    mother's. ``membrane_supply`` is an existing 0..1 availability input: 1
+    permits the exact geometric requirement; 0 exposes the deficit rather than
+    creating membrane from an unstated source. A future lipid/ER synthesis model
+    can provide this value dynamically.
+    """
+    required_total = daughter_membrane_area_requirement(biomass)
+    deficit = max(0.0, required_total - inv.membrane_area)
+    inserted = deficit * min(max(params.membrane_supply, 0.0), 1.0)
+    return replace(inv, membrane_area=inv.membrane_area + inserted)
 
 
 def _split_int(n: int, rng: EngineRng, *, exact_half: bool = False) -> tuple[int, int]:

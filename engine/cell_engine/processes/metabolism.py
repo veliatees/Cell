@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from math import dist, exp
+from math import dist, exp, isfinite
 
 from cell_engine.core.state import CellState, MetabolicFlux, OrganelleState, PoolState
 from cell_engine.stochastic.hazard import clamp
@@ -38,6 +38,8 @@ def step_hepatocyte_metabolism(state: CellState, dt_s: float) -> MetabolismStepR
     gsh = _pool(pools, "GSH")
     bile_acids = _pool(pools, "bile_acids")
     bilirubin = _pool(pools, "bilirubin_conjugates")
+    bsep_activity = _surface_activity(state, "bsep_surface_activity")
+    mrp2_activity = _surface_activity(state, "mrp2_surface_activity")
 
     cytosol = _health(state, "cytosol_metabolism")
     mitochondria = _health(state, "mitochondria")
@@ -58,7 +60,12 @@ def step_hepatocyte_metabolism(state: CellState, dt_s: float) -> MetabolismStepR
     beta_oxidation = _flux_value(0.24 * fatty_acids * adp_drive * mitochondria, dt_h)
     urea_cycle = _flux_value(0.42 * ammonia * atp * mitochondria * cytosol, dt_h)
     detox = _flux_value(0.35 * xenobiotic * nadph * gsh * smooth_er, dt_h)
-    bile_export = _flux_value(0.20 * (bile_acids + bilirubin) * atp * membrane * golgi, dt_h)
+    # BSEP exports bile salts while MRP2 exports bilirubin conjugates. The
+    # normalized base rate already present in this coarse metabolism layer is
+    # retained; only experimentally supplied relative surface capacity scales it.
+    bile_acid_export = _flux_value(0.20 * bile_acids * atp * membrane * golgi * bsep_activity, dt_h)
+    bilirubin_export = _flux_value(0.20 * bilirubin * atp * membrane * golgi * mrp2_activity, dt_h)
+    bile_export = bile_acid_export + bilirubin_export
     maintenance = _flux_value((0.055 + 0.030 * _mean_activity(state)) * (0.4 + 0.6 * _mean_health(state)), dt_h)
 
     _add(pools, "glycogen", -glycogen_breakdown + glycogen_storage)
@@ -75,8 +82,8 @@ def step_hepatocyte_metabolism(state: CellState, dt_s: float) -> MetabolismStepR
     _add(pools, "GSH", -0.60 * detox + 0.04 * _pool(pools, "NADPH"))
     _add(pools, "GSSG", 0.35 * detox)
     _add(pools, "ROS", 0.16 * mito_oxidation * (1.0 - mitochondria) + 0.20 * detox + 0.05 * beta_oxidation)
-    _add(pools, "bile_acids", -0.55 * bile_export)
-    _add(pools, "bilirubin_conjugates", -0.45 * bile_export)
+    _add(pools, "bile_acids", -bile_acid_export)
+    _add(pools, "bilirubin_conjugates", -bilirubin_export)
 
     atp_delta = (
         0.42 * glycolysis
@@ -100,7 +107,9 @@ def step_hepatocyte_metabolism(state: CellState, dt_s: float) -> MetabolismStepR
             _flux("beta-oxidation", "fatty_acid_oxidation", "fatty_acids_ADP", "ATP_acetyl_CoA", beta_oxidation, "mitochondria", "cellular_ATP_consumers", "fatty acid contribution to energy"),
             _flux("urea-cycle", "urea_cycle", "ammonia_ATP", "urea", urea_cycle, "mitochondria_cytosol", "sinusoidal_export", "ATP-costly ammonia detox"),
             _flux("detox", "CYP_detox", "xenobiotic_NADPH_GSH_ATP", "detoxified_xenobiotic_ROS", detox, "smooth_er", "export_transporters", "CYP-like detox consumes redox reserve and adds ROS"),
-            _flux("bile-export", "bile_export", "bile_acids_bilirubin_ATP", "bile_canaliculus", bile_export, "plasma_membrane_golgi", "bile_canaliculus", "ATP-dependent canalicular export abstraction"),
+            _flux("bsep-bile-acid-export", "bile_export", "bile_acids_ATP", "bile_canaliculus", bile_acid_export, "BSEP_canalicular_surface", "bile_canaliculus", "BSEP-scaled bile-acid export; absolute base rate remains an existing normalized model rate"),
+            _flux("mrp2-bilirubin-export", "bilirubin_export", "bilirubin_conjugates_ATP", "bile_canaliculus", bilirubin_export, "MRP2_canalicular_surface", "bile_canaliculus", "MRP2-scaled bilirubin-conjugate export; absolute base rate remains an existing normalized model rate"),
+            _flux("bile-export", "bile_export", "bile_acids_bilirubin_ATP", "bile_canaliculus", bile_export, "plasma_membrane_golgi", "bile_canaliculus", "Total ATP-dependent canalicular export abstraction"),
             _flux("maintenance", "ATP_maintenance", "ATP", "organelle_maintenance", maintenance, "shared_cell", "all_organelles", "baseline ATP spending"),
         )
     )
@@ -151,6 +160,13 @@ def _add(pools: dict[str, PoolState], id: str, delta: float) -> None:
 def _health(state: CellState, organelle_id: str) -> float:
     organelle = state.organelles.get(organelle_id)
     return organelle.health if organelle is not None else 0.75
+
+
+def _surface_activity(state: CellState, control_id: str) -> float:
+    value = float(state.model_controls.get(control_id, 1.0))
+    if not isfinite(value) or value < 0:
+        raise ValueError(f"{control_id} must be finite and non-negative")
+    return value
 
 
 def _mean_health(state: CellState) -> float:
