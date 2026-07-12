@@ -36,6 +36,37 @@ from cell_engine.quantitative.species import (
     SpeciesQuantity,
     species_copy_numbers,
 )
+from cell_engine.quantitative.phh_profiles import (
+    DEFAULT_PHH_PROFILE_ID,
+    PHH_NUTRITIONAL_PROFILES,
+    PhhNutritionalProfile,
+    PhhPoolValue,
+    phh_profile,
+    phh_profiles_snapshot,
+)
+from cell_engine.quantitative.phh_state import (
+    QuantitativePhhState,
+    QuantitativePoolState,
+    build_quantitative_phh_state,
+    quantitative_phh_state_snapshot,
+    schematic_visual_state_snapshot,
+    validate_quantitative_phh_state,
+)
+from cell_engine.quantitative.zonation import (
+    HepaticZone,
+    HumanHepatocyteZonationState,
+    ZONATION_SOURCES,
+    build_human_hepatocyte_zonation,
+    human_hepatocyte_zonation_snapshot,
+    validate_human_hepatocyte_zonation,
+)
+from cell_engine.quantitative.homeostasis_v3 import (
+    HOMEOSTASIS_V3_SOURCES,
+    HumanNutritionalHomeostasisV3,
+    build_human_nutritional_homeostasis_v3,
+    human_nutritional_homeostasis_v3_snapshot,
+    validate_human_nutritional_homeostasis_v3,
+)
 
 __all__ = [
     "AVOGADRO",
@@ -53,4 +84,27 @@ __all__ = [
     "QUANTITATIVE_SOURCES",
     "SpeciesQuantity",
     "species_copy_numbers",
+    "DEFAULT_PHH_PROFILE_ID",
+    "PHH_NUTRITIONAL_PROFILES",
+    "PhhNutritionalProfile",
+    "PhhPoolValue",
+    "phh_profile",
+    "phh_profiles_snapshot",
+    "QuantitativePhhState",
+    "QuantitativePoolState",
+    "build_quantitative_phh_state",
+    "quantitative_phh_state_snapshot",
+    "schematic_visual_state_snapshot",
+    "validate_quantitative_phh_state",
+    "HepaticZone",
+    "HumanHepatocyteZonationState",
+    "ZONATION_SOURCES",
+    "build_human_hepatocyte_zonation",
+    "human_hepatocyte_zonation_snapshot",
+    "validate_human_hepatocyte_zonation",
+    "HOMEOSTASIS_V3_SOURCES",
+    "HumanNutritionalHomeostasisV3",
+    "build_human_nutritional_homeostasis_v3",
+    "human_nutritional_homeostasis_v3_snapshot",
+    "validate_human_nutritional_homeostasis_v3",
 ]

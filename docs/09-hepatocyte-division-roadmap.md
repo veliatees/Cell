@@ -46,7 +46,7 @@ means a realistic hepatocyte division module must model both outcomes:
 - cytokinesis failure/regression -> one binucleated/polyploid hepatocyte.
 
 Equally important: division is not the default visual purpose of the cell. Adult
-hepatocytes are normally quiescent (G0/G1). Nutrients and ATP are necessary for
+hepatocytes are normally quiescent in G0. Nutrients and ATP are necessary for
 growth, but they are not sufficient to force proliferation. The simulation must
 require regeneration/mitogen signalling plus checkpoint clearance before biomass
 growth, S phase, mitosis, or cytokinesis visuals are allowed to start.

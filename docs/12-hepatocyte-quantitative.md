@@ -134,6 +134,14 @@ contains no guessed repair half-life. Likewise, `fate_evidence` is not an
 irreversible death decision. The existing ATP-dependent apoptosis/necrosis model
 remains available for a separately calibrated temporal commitment experiment.
 
+Canalicular export is now explicitly mass-conserving. The legacy `bile_acids`
+and `bilirubin_conjugates` ids denote intracellular retained cargo, while
+`canalicular_bile_acids` and `canalicular_bilirubin_conjugates` receive the
+exact BSEP/MRP2 export transfer. Canalicular cargo is outside the hepatocyte and
+does not contribute to intracellular cholestatic stress. This is a structural
+upgrade, not a kinetic calibration: CYP7A1 synthesis feedback and basolateral
+escape remain absent until assay-matched rates can be identified.
+
 The causal links are source-backed: transporter loss can produce intracellular
 bile-acid retention; cholestasis is associated with ER stress; unresolved UPR
 can become pro-apoptotic; and hydrophobic bile acids can drive ROS and

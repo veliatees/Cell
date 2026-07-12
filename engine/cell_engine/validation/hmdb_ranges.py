@@ -20,7 +20,7 @@ are deliberately **not** added here until the curator clears them.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Mapping
 
 from cell_engine.core.provenance import AssumptionLevel, SourceReference
 from cell_engine.validation.reference_ranges import ReferenceRange
@@ -129,6 +129,15 @@ class ScoredMetabolite:
     high_mM: float
     classification: Classification
     hmdb_id: str
+    compartment: Compartment = "blood"
+
+
+@dataclass(frozen=True)
+class UnavailableMetabolite:
+    species: str
+    required_compartment: Compartment
+    hmdb_id: str
+    reason: str
 
 
 def score_concentrations(
@@ -150,8 +159,45 @@ def score_concentrations(
         scored.append(ScoredMetabolite(
             species=species, value_mM=v, low_mM=rng.low_mM, high_mM=rng.high_mM,
             classification=classify_concentration(v, rng), hmdb_id=rng.hmdb_id,
+            compartment=rng.compartment,
         ))
     return scored
+
+
+def score_compartment_concentrations(
+    concentrations: Mapping[Compartment, Mapping[str, float]],
+    only: tuple[str, ...] | None = None,
+) -> tuple[list[ScoredMetabolite], list[UnavailableMetabolite]]:
+    """Score only observations from the specimen compartment of each range.
+
+    Missing blood pools are returned as unavailable instead of comparing a
+    cytosolic value with a plasma reference interval.
+    """
+    scored: list[ScoredMetabolite] = []
+    unavailable: list[UnavailableMetabolite] = []
+    for species, rng in _BY_SPECIES.items():
+        if only is not None and species not in only:
+            continue
+        compartment_values = concentrations.get(rng.compartment, {})
+        if species not in compartment_values:
+            unavailable.append(UnavailableMetabolite(
+                species=species,
+                required_compartment=rng.compartment,
+                hmdb_id=rng.hmdb_id,
+                reason=f"no explicit {rng.compartment} pool connected to a source-backed transport boundary",
+            ))
+            continue
+        value = compartment_values[species]
+        scored.append(ScoredMetabolite(
+            species=species,
+            value_mM=value,
+            low_mM=rng.low_mM,
+            high_mM=rng.high_mM,
+            classification=classify_concentration(value, rng),
+            hmdb_id=rng.hmdb_id,
+            compartment=rng.compartment,
+        ))
+    return scored, unavailable
 
 
 def format_scorecard(scored: list[ScoredMetabolite]) -> str:

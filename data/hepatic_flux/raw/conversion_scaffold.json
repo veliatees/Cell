@@ -1,0 +1,129 @@
+{
+  "_meta": {
+    "layer": "DERIVED \u2014 physiological conversion constants",
+    "purpose": "Machinery a downstream user could apply to convert whole-organ or whole-body flux to per-gram-liver or per-hepatocyte units. Provided as a documented scaffold, NOT executed.",
+    "critical_warning": "None of these constants were retrieved as primary sources during this session. They are widely-used standard reference-physiology values named here so the user can independently verify each against the cited source before use. They are NOT interchangeable with the verbatim MEASURED values in measured_records.json.",
+    "conversion_policy": "NO per-hepatocyte conversion is performed anywhere in this dataset. Per the anti-fabrication rule, a per-cell value is computed only if ONE paper supplies EVERY denominator (organ mass, hepatocellularity, cell volume, flow) for its OWN cohort. No session-retrieved paper does. Therefore all per-hepatocyte fields resolve to null by necessity."
+  },
+  "constants": [
+    {
+      "name": "adult_liver_mass",
+      "typical_value": 1500,
+      "unit": "g",
+      "plausible_range": "1400-1800 g (sex/body-size dependent)",
+      "standard_reference": "ICRP Publication 89 (Reference Man/Woman): ~1800 g male, ~1400 g female",
+      "verification_status": "NOT_retrieved_this_session_requires_independent_verification",
+      "role_in_conversion": "scales whole-organ flux to per-gram; converts per-kg-body-weight rates to hepatic totals via body mass"
+    },
+    {
+      "name": "hepatocellularity_HPGL",
+      "typical_value": 99000000.0,
+      "unit": "hepatocytes per gram liver",
+      "plausible_range": "99-120 x10^6 cells/g",
+      "standard_reference": "Barter et al. 2007, Curr Drug Metab (pooled human HPGL ~99 x10^6/g); also Sohlenius-Sternbeck 2006",
+      "verification_status": "NOT_retrieved_this_session_requires_independent_verification",
+      "role_in_conversion": "converts per-gram-liver flux to per-hepatocyte; MOST uncertain denominator"
+    },
+    {
+      "name": "total_hepatocyte_number",
+      "typical_value": 140000000000.0,
+      "unit": "hepatocytes (whole liver)",
+      "plausible_range": "~1.4-2.4 x10^11 (= liver_mass x HPGL x hepatocyte_fraction)",
+      "standard_reference": "Derived product (liver_mass x HPGL); commonly cited ~2.4 x10^11",
+      "verification_status": "DERIVED_from_two_unverified_constants",
+      "role_in_conversion": "denominator for whole-organ flux -> per-hepatocyte"
+    },
+    {
+      "name": "hepatocyte_volume_fraction_of_liver",
+      "typical_value": 0.78,
+      "unit": "fraction",
+      "plausible_range": "0.78-0.80 (hepatocytes ~78% of liver volume, ~60% of cell number)",
+      "standard_reference": "Blouin et al. 1977 J Cell Biol (rat stereology, widely extrapolated); human values sparse",
+      "verification_status": "NOT_retrieved_this_session; rat-derived, human uncertain",
+      "role_in_conversion": "corrects per-gram-liver to per-gram-hepatocyte"
+    },
+    {
+      "name": "single_hepatocyte_volume",
+      "typical_value": 3400,
+      "unit": "\u00b5m^3",
+      "plausible_range": "~3400-11000 \u00b5m^3 (large variance; ploidy-dependent)",
+      "standard_reference": "Multiple; wide range reported. No consensus single human value.",
+      "verification_status": "NOT_retrieved_this_session; high_variance_parameter",
+      "role_in_conversion": "converts per-cell amount to intracellular concentration; needed for flux-per-cell-volume"
+    },
+    {
+      "name": "total_hepatic_blood_flow",
+      "typical_value": 1.5,
+      "unit": "L/min",
+      "plausible_range": "1.0-1.8 L/min (~25% of cardiac output at rest)",
+      "standard_reference": "Standard physiology; often measured by ICG/dye clearance in the source papers themselves",
+      "verification_status": "NOT_retrieved_this_session_as_constant; several source papers report their own measured flow",
+      "role_in_conversion": "converts A-V concentration difference (mM) to net flux (concentration x flow)"
+    },
+    {
+      "name": "portal_vein_flow_fraction",
+      "typical_value": 0.75,
+      "unit": "fraction of hepatic inflow",
+      "plausible_range": "0.70-0.80 (portal ~75%, hepatic artery ~25%)",
+      "standard_reference": "Standard hepatic physiology",
+      "verification_status": "NOT_retrieved_this_session_requires_independent_verification",
+      "role_in_conversion": "partitions splanchnic inflow between portal and arterial supply"
+    },
+    {
+      "name": "assumed_body_weight",
+      "typical_value": 70,
+      "unit": "kg",
+      "plausible_range": "study-specific; use each cohort's actual mean when reported",
+      "standard_reference": "Convention for kg-normalized-rate -> whole-body-rate back-calculation",
+      "verification_status": "convention_only",
+      "role_in_conversion": "converts \u00b5mol/kg/min (as reported by most tracer studies) to \u00b5mol/min whole-body"
+    }
+  ],
+  "conversion_formulae": [
+    {
+      "id": "F1_AVdiff_to_organ_flux",
+      "formula": "net_hepatic_flux (\u00b5mol/min) = (A - HV concentration, mM) x hepatic_blood_flow (L/min) x 1000",
+      "requires": [
+        "arterial_conc",
+        "hepatic_vein_conc",
+        "hepatic_blood_flow"
+      ],
+      "applicable": "Only for papers reporting BOTH A-HV difference AND their own measured flow. Most session sources report EITHER a balance OR a concentration, not both in accessible text."
+    },
+    {
+      "id": "F2_organ_to_per_gram",
+      "formula": "flux_per_gram_liver = organ_flux / liver_mass_g",
+      "requires": [
+        "organ_flux",
+        "liver_mass"
+      ],
+      "applicable": "liver_mass never measured per-subject in session sources -> would rely on unverified constant."
+    },
+    {
+      "id": "F3_per_gram_to_per_hepatocyte",
+      "formula": "flux_per_hepatocyte = flux_per_gram_liver / (HPGL x hepatocyte_volume_fraction)",
+      "requires": [
+        "flux_per_gram_liver",
+        "hepatocellularity_HPGL",
+        "hepatocyte_volume_fraction"
+      ],
+      "applicable": "NEVER executed. No session paper supplies HPGL for its own cohort; chaining unverified constants would fabricate precision."
+    },
+    {
+      "id": "F4_kgnorm_to_wholebody",
+      "formula": "whole_body_rate (\u00b5mol/min) = rate (\u00b5mol/kg/min) x body_weight_kg",
+      "requires": [
+        "kg_normalized_rate",
+        "body_weight"
+      ],
+      "applicable": "Usable when a paper reports the cohort's mean body weight; several do not in the accessible abstract."
+    }
+  ],
+  "why_per_cell_is_null_everywhere": [
+    "Human in-vivo methods measure ORGAN or WHOLE-BODY flux (catheter A-V balance, or systemic tracer Ra), never single-cell flux.",
+    "Chaining F1->F2->F3 requires liver_mass + HPGL + hepatocyte_fraction, none measured per-cohort in session sources.",
+    "Hepatocellularity and single-cell volume are themselves high-variance, largely rodent-derived or drug-metabolism-pooled constants.",
+    "Portal-vein concentrations (needed for true hepatic input) are obtainable only in surgical cohorts (18703642, 2189767) that are NOT healthy fasting volunteers.",
+    "Therefore per-hepatocyte flux is unidentifiable both in principle (no method) and in practice (no complete denominator set)."
+  ]
+}

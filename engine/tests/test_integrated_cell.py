@@ -4,6 +4,7 @@ import unittest
 
 from cell_engine.core.random import EngineRng
 from cell_engine.quantitative.geometry import molecules_from_concentration_mM
+from cell_engine.quantitative.phh_profiles import phh_profile
 from cell_engine.stochastic.cell_model import CellReactionModel
 from cell_engine.stochastic.signaling import FED, FASTED
 from cell_engine.stochastic.integrated_cell import (
@@ -39,24 +40,27 @@ class IntegratedHepatocyteTests(unittest.TestCase):
         self.assertGreater(fed["glycogen"], 50.0)
         self.assertLess(fed["glucose_blood"], 1.0)
 
-    def test_emergent_products_validate_against_hmdb(self):
-        """M6: the integrated fasting cell's emergent products (urea + ketone bodies)
-        land in the measured HMDB physiological range."""
+    def test_intracellular_products_are_not_scored_against_blood_hmdb_ranges(self):
+        """Cytosolic products remain unavailable until a blood boundary exists."""
         from cell_engine.stochastic.integrated_cell import SCOREABLE_SPECIES
-        from cell_engine.validation.hmdb_ranges import score_concentrations
+        from cell_engine.validation.hmdb_ranges import score_compartment_concentrations
 
         c = concentrations_mM(run_integrated_hepatocyte(FASTED, 120.0, EngineRng(1)))
-        scored = {s.species: s for s in score_concentrations(c, only=SCOREABLE_SPECIES)}
+        scored, unavailable = score_compartment_concentrations(
+            {"intracellular": c, "blood": {}}, only=SCOREABLE_SPECIES
+        )
+        unavailable_ids = {item.species for item in unavailable}
+        self.assertEqual(scored, [])
         for product in ("urea", "beta_hydroxybutyrate", "acetoacetate"):
-            self.assertEqual(scored[product].classification, "in_range",
-                             f"{product}={scored[product].value_mM:.3f} mM not in HMDB range")
+            self.assertIn(product, unavailable_ids)
 
     def test_cofactor_pools_conserved_exactly(self):
         """Across all fused pathways, the shared ATP and NAD pools are conserved."""
         net = build_integrated_hepatocyte_network(FASTED)
         v = net.volume_l
         counts = {s: 0.0 for s in net.species}
-        for s, mM in DEFAULT_SEEDS_mM.items():
+        seeds = {**DEFAULT_SEEDS_mM, **phh_profile("prolonged_fasted").concentrations_mM()}
+        for s, mM in seeds.items():
             if s in counts:
                 counts[s] = molecules_from_concentration_mM(mM, v)
         ad0 = counts["ATP"] + counts["ADP"]

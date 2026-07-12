@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from cell_engine.core.genome import HepatocyteGenomeState
+from cell_engine.core.expression import GeneExpressionProgramState
+from cell_engine.core.genomic_architecture import GenomicArchitectureState
 from cell_engine.core.history import CellHistoryState
 from cell_engine.core.serialization import to_plain
 
@@ -123,11 +125,20 @@ class CellularResponseState:
     """
 
     experiment_id: str
+    intervention_type: str
     cholestasis_state: str
     bsep_surface_activity: float
     mrp2_surface_activity: float
     bile_acid_retention: float
     bilirubin_retention: float
+    intracellular_bile_acids: float
+    canalicular_bile_acids: float
+    intracellular_bilirubin_conjugates: float
+    canalicular_bilirubin_conjugates: float
+    bile_acid_system_total: float
+    bilirubin_system_total: float
+    cyp7a1_feedback_status: str
+    basolateral_escape_status: str
     upr_signal: float | None
     misfolded_protein: float
     ubiquitinated_cargo: float
@@ -157,6 +168,8 @@ class CellState:
     model_controls: dict[str, float | str] = field(default_factory=dict)
     cellular_response: CellularResponseState | None = None
     genome: HepatocyteGenomeState | None = None
+    gene_expression: GeneExpressionProgramState | None = None
+    genomic_architecture: GenomicArchitectureState | None = None
     history: CellHistoryState | None = None
     events: tuple[CellEvent, ...] = field(default_factory=tuple)
 

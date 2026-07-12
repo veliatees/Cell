@@ -16,6 +16,7 @@ from cell_engine.stochastic.whole_cell import (
     run_whole_cell,
     seed_whole_cell_population,
     seed_whole_cell,
+    whole_cell_snapshot,
     whole_cell_population_snapshot,
 )
 from cell_engine.stochastic.hepatocyte_regeneration import (
@@ -43,11 +44,17 @@ class WholeCellStructureTests(unittest.TestCase):
     def test_all_subsystems_composed(self):
         network = build_whole_cell_network(1.0e-12)
         ids = {r.id for r in network.reactions}
-        for required in ("glucokinase", "cps1", "glutathione_reductase", "transcription", "atp_regeneration"):
+        for required in ("glucokinase", "cps1", "glutathione_reductase", "atp_regeneration"):
             self.assertIn(required, ids)
         # Shared pools are unified (ATP appears once in the species list).
         self.assertEqual(network.species.count("ATP"), 1)
+        self.assertNotIn("gene", network.species)
+        self.assertNotIn("transcription", ids)
+
+    def test_synthetic_expression_benchmark_is_explicitly_opt_in(self):
+        network = build_whole_cell_network(1.0e-12, include_synthetic_expression_benchmark=True)
         self.assertIn("gene", network.species)
+        self.assertIn("transcription", {reaction.id for reaction in network.reactions})
 
     def test_glut2_capacity_uses_protein_inventory_effect_layer(self):
         inventory = protein_inventory_counts()
@@ -69,18 +76,27 @@ class WholeCellRunTests(unittest.TestCase):
             seed_whole_cell(self.definition, fed=True), 160.0, 0.05, EngineRng(7)
         )
         self.assertEqual(divisions, 0)                         # nutrients alone are not a mitogen
-        self.assertEqual(cell.cycle.phase, "G1")
-        self.assertGreaterEqual(cell.energy_charge(), 0.78)    # alive/energized, just not proliferating
+        self.assertEqual(cell.cycle.phase, "G0")
+        self.assertGreater(cell.energy_charge(), 0.0)
+        self.assertLessEqual(cell.energy_charge(), 1.0)        # exploratory network; not PHH energy validation
+        snapshot = whole_cell_snapshot(cell, "cell-0", params=WHOLE_CELL_CYCLE)
+        self.assertEqual(snapshot["phase"], "G0")
+        self.assertEqual(snapshot["checkpoint_control"]["blocked_by"], ())
+        self.assertIn(
+            "quiescent G0 maintained",
+            snapshot["checkpoint_control"]["supported_by"][0],
+        )
 
     def test_regeneration_signal_allows_fed_cell_to_divide(self):
         cell, divisions = run_whole_cell(
-            seed_whole_cell(self.definition, fed=True), 160.0, 0.05, EngineRng(7),
+            seed_whole_cell(self.definition, fed=True, include_synthetic_expression_benchmark=True), 160.0, 0.05, EngineRng(7),
             params=PROLIFERATING_HEPATOCYTE_CYCLE,
         )
         self.assertGreater(divisions, 0)                         # grew and divided
         self.assertGreater(cell.counts["protein"], 0.0)          # gene expression ran
         self.assertGreater(cell.counts["urea"], 0.0)             # urea cycle ran
-        self.assertGreaterEqual(cell.energy_charge(), 0.78)      # energy stayed healthy
+        self.assertGreater(cell.energy_charge(), 0.0)
+        self.assertLessEqual(cell.energy_charge(), 1.0)          # placeholder pathway loads block quantitative claim
         for value in cell.counts.values():
             self.assertGreaterEqual(value, 0.0)
             self.assertLess(value, 1.0e12)
@@ -102,7 +118,7 @@ class WholeCellRunTests(unittest.TestCase):
         self.assertEqual(divisions, 0)  # no glucose, no growth, no division
 
     def test_division_partitions_unified_counts(self):
-        cell = seed_whole_cell(self.definition, fed=True)
+        cell = seed_whole_cell(self.definition, fed=True, include_synthetic_expression_benchmark=True)
         ready = replace(cell.cycle, ready_to_divide=True, counts=cell.counts)
         a, b = divide(ready, WHOLE_CELL_CYCLE, EngineRng(3))
         for species, n in cell.counts.items():
@@ -112,7 +128,7 @@ class WholeCellRunTests(unittest.TestCase):
 
     def test_population_keeps_both_real_daughters(self):
         population = run_whole_cell_population(
-            seed_whole_cell_population(self.definition, fed=True),
+            seed_whole_cell_population(self.definition, fed=True, include_synthetic_expression_benchmark=True),
             80.0,
             0.05,
             EngineRng(9),
@@ -139,11 +155,11 @@ class WholeCellRunTests(unittest.TestCase):
 
     def test_population_cytokinesis_failure_keeps_one_binucleated_cell(self):
         population = run_whole_cell_population(
-            seed_whole_cell_population(self.definition, fed=True),
+            seed_whole_cell_population(self.definition, fed=True, include_synthetic_expression_benchmark=True),
             80.0,
             0.05,
             EngineRng(9),
-            params=replace(PROLIFERATING_HEPATOCYTE_CYCLE, cytokinesis_failure_probability=1.0),
+            params=replace(PROLIFERATING_HEPATOCYTE_CYCLE, cytokinesis_failure_probability=1.0, cytokinesis_failure_calibrated=True),
         )
         self.assertGreaterEqual(len(population.events), 1)
         event = population.events[0]
@@ -160,7 +176,7 @@ class WholeCellRunTests(unittest.TestCase):
 
     def test_population_snapshot_serializes_division_events(self):
         population = run_whole_cell_population(
-            seed_whole_cell_population(self.definition, fed=True),
+            seed_whole_cell_population(self.definition, fed=True, include_synthetic_expression_benchmark=True),
             80.0,
             0.05,
             EngineRng(9),

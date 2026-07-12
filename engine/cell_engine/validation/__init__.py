@@ -13,8 +13,34 @@ from cell_engine.validation.experiments import (
     run_scenario,
 )
 from cell_engine.validation.invariants import ValidationError, validate_definition, validate_state
+from cell_engine.validation.cholestasis_panel import (
+    CholestasisCalibrationAnchor,
+    CholestasisObservation,
+    CholestasisPanelAudit,
+    EvidencePanelError,
+    audit_panel,
+    load_calibration_anchors,
+    load_master_panel,
+    parse_strict_numeric_value,
+    validate_panel_bundle,
+)
 from cell_engine.validation.reference_ranges import ReferenceRange, build_reference_registry
 from cell_engine.validation.reports import AssumptionReport, build_assumption_report
+from cell_engine.validation.phh_baseline import (
+    PhhBaselineError,
+    PhhBaselineRegistry,
+    PhhMeasurement,
+    PhhQuantitativeAnchor,
+    load_phh_baseline,
+    phh_baseline_snapshot,
+)
+from cell_engine.validation.scientific_release import (
+    ScientificReleaseGate,
+    assert_scientific_release,
+    evaluate_scientific_release,
+    scientific_release_snapshot,
+)
+from cell_engine.validation.model_audit import MODEL_SURFACE_AUDIT, ModelSurfaceAudit, scientific_model_audit_snapshot
 
 __all__ = [
     "BASELINE_SCENARIO",
@@ -25,6 +51,14 @@ __all__ = [
     "ENERGY_STARVATION_SCENARIO",
     "MRP2_LOSS_SCENARIO",
     "AssumptionReport",
+    "CholestasisCalibrationAnchor",
+    "CholestasisObservation",
+    "CholestasisPanelAudit",
+    "EvidencePanelError",
+    "PhhBaselineError",
+    "PhhBaselineRegistry",
+    "PhhMeasurement",
+    "PhhQuantitativeAnchor",
     "ReferenceRange",
     "Scenario",
     "ScenarioResult",
@@ -32,8 +66,22 @@ __all__ = [
     "ValidationError",
     "build_assumption_report",
     "build_reference_registry",
+    "audit_panel",
+    "load_calibration_anchors",
+    "load_master_panel",
+    "load_phh_baseline",
+    "parse_strict_numeric_value",
     "apply_scenario",
     "run_scenario",
+    "phh_baseline_snapshot",
+    "ScientificReleaseGate",
+    "assert_scientific_release",
+    "evaluate_scientific_release",
+    "scientific_release_snapshot",
+    "MODEL_SURFACE_AUDIT",
+    "ModelSurfaceAudit",
+    "scientific_model_audit_snapshot",
     "validate_definition",
+    "validate_panel_bundle",
     "validate_state",
 ]

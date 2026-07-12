@@ -12,6 +12,7 @@ from cell_engine.processes.metabolism import step_hepatocyte_metabolism
 from cell_engine.processes.signaling import apply_rule_based_signaling
 from cell_engine.processes.cellular_response import apply_cellular_response
 from cell_engine.processes.cellular_memory import apply_cellular_memory
+from cell_engine.processes.gene_expression import step_gene_expression
 from cell_engine.stochastic.hazard import clamp
 
 
@@ -26,9 +27,10 @@ def step_cell(
         raise ValueError("dt_s must be positive")
 
     rng = rng or EngineRng(definition.stochastic_policy.seed)
-    metabolism_result = step_hepatocyte_metabolism(state, dt_s)
+    expression_state = step_gene_expression(state, dt_s, rng)
+    metabolism_result = step_hepatocyte_metabolism(expression_state, dt_s)
     metabolized_state = replace(
-        state,
+        expression_state,
         pools=metabolism_result.pools,
         organelles=metabolism_result.organelles,
         metabolic_fluxes=metabolism_result.fluxes,
@@ -91,6 +93,9 @@ def _derive_stress(state: CellState) -> dict[str, float]:
     energy = clamp((0.55 - get("ATP", 0.55)) / 0.55 + 0.45 * get("AMP", 0.0), 0.0, 1.0)
     oxidative = clamp(0.75 * get("ROS", 0.0) + 0.35 * get("GSSG", 0.0) + 0.2 * (1.0 - get("GSH", 1.0)), 0.0, 1.0)
     detox = clamp(0.8 * get("xenobiotic", 0.0) + 0.25 * (1.0 - get("NADPH", 1.0)) + 0.2 * (1.0 - get("GSH", 1.0)), 0.0, 1.0)
+    # Only intracellular retained cargo produces cell-autonomous cholestatic
+    # pressure. Material already transferred to the canalicular sink is outside
+    # the hepatocyte and must not be counted as intracellular stress.
     cholestatic = clamp(0.65 * get("bile_acids", 0.0) + 0.7 * get("bilirubin_conjugates", 0.0), 0.0, 1.0)
     proteotoxic = clamp(0.9 * get("misfolded_protein", 0.0) + 0.45 * get("secretory_protein_cargo", 0.0), 0.0, 1.0)
     autophagy = clamp(0.8 * get("damaged_organelle_mass", 0.0) + 0.4 * proteotoxic, 0.0, 1.0)
