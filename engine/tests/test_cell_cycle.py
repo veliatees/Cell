@@ -49,7 +49,7 @@ class PhaseProgressionTests(unittest.TestCase):
             if state.ready_to_divide:
                 break
         # Reached mitosis having passed through S and G2 in order.
-        self.assertEqual(seen, ["G1", "S", "G2", "M"])
+        self.assertEqual(seen, ["G0", "G1", "S", "G2", "M"])
         self.assertTrue(state.ready_to_divide)
 
     def test_genome_replicated_during_s(self):
@@ -91,7 +91,7 @@ class PhaseProgressionTests(unittest.TestCase):
         state = CellCycleState(counts={"gene": 2.0, "ATP": 0.0})
         for _ in range(500):
             state = step(state, 1.0, params)
-        self.assertEqual(state.phase, "G1")
+        self.assertEqual(state.phase, "G0")
         self.assertFalse(state.ready_to_divide)
 
 
@@ -114,10 +114,10 @@ class DivisionTests(unittest.TestCase):
         self.assertEqual(a.counts["gene"], 2.0)
         self.assertEqual(b.counts["gene"], 2.0)
 
-    def test_daughters_reset_to_G1_and_halve_biomass(self):
+    def test_daughters_return_to_G0_and_halve_biomass(self):
         a, b = divide(self.parent, self.params, EngineRng(2))
         for d in (a, b):
-            self.assertEqual(d.phase, "G1")
+            self.assertEqual(d.phase, "G0")
             self.assertAlmostEqual(d.biomass, self.parent.biomass / 2.0)
             self.assertEqual(d.generation, self.parent.generation + 1)
             self.assertEqual(d.ploidy.nuclei, 1)
@@ -141,7 +141,7 @@ class DivisionTests(unittest.TestCase):
 
     def test_failed_cytokinesis_keeps_one_binucleated_cell(self):
         failed = fail_cytokinesis(self.parent, self.params)
-        self.assertEqual(failed.phase, "G1")
+        self.assertEqual(failed.phase, "G0")
         self.assertEqual(failed.ploidy.nuclei, 2)
         self.assertEqual(failed.ploidy.chromosome_sets_per_nucleus, (2.0, 2.0))
         self.assertEqual(failed.cytokinesis.stage, "regressed")
@@ -182,9 +182,10 @@ class DivisionTests(unittest.TestCase):
         self.assertAlmostEqual(b.organelles.membrane_area, expected_daughter)
 
     def test_failure_risk_responds_to_hepatocyte_context(self):
-        baseline = CellCycleParams(cytokinesis_failure_probability=0.05)
+        baseline = CellCycleParams(cytokinesis_failure_probability=0.05, cytokinesis_failure_calibrated=True)
         stressed = CellCycleParams(
             cytokinesis_failure_probability=0.05,
+            cytokinesis_failure_calibrated=True,
             rhoa_activity=0.3,
             midbody_anchor_strength=0.25,
             wnt_activity=0.2,
@@ -230,16 +231,28 @@ class CancerTests(unittest.TestCase):
 class CheckpointTests(unittest.TestCase):
     """The G1 restriction point needs size + growth factor + no DNA damage."""
 
-    def test_no_growth_factor_arrests_in_g1(self):
+    def test_no_growth_factor_maintains_quiescent_g0(self):
         params = CellCycleParams(growth_factor=0.0)  # no mitogen signal
         state = CellCycleState(counts=dict(_FED))
         for _ in range(500):
             state = step(state, 1.0, params)
-        self.assertEqual(state.phase, "G1")          # cannot pass the restriction point
+        self.assertEqual(state.phase, "G0")          # no signal to re-enter the cycle
         self.assertFalse(state.ready_to_divide)
         self.assertAlmostEqual(state.biomass, 1.0)   # nutrients alone do not drive proliferation growth
+        control = evaluate_cell_cycle_control(state, params)
+        self.assertEqual(control.blocked_by, ())
+        self.assertIn("quiescent G0 maintained", control.supported_by[0])
         self.assertIn("cell_cycle_checkpoints", CELL_CYCLE_SOURCES)
         self.assertIn("restriction_point", CELL_CYCLE_SOURCES)
+        self.assertIn("hepatocyte_quiescence_regeneration", CELL_CYCLE_SOURCES)
+
+    def test_mitogen_allows_g0_to_g1_reentry_without_invented_priming_delay(self):
+        params = CellCycleParams(growth_factor=1.0, dna_damage=0.0)
+        state = CellCycleState(counts=dict(_FED))
+        after = step(state, 1.0, params)
+        self.assertEqual(after.phase, "G1")
+        self.assertEqual(after.phase_time_s, 0.0)
+        self.assertAlmostEqual(after.biomass, state.biomass)
 
     def test_dna_damage_blocks_division(self):
         params = CellCycleParams(dna_damage=0.9)     # damaged genome
@@ -376,6 +389,11 @@ class DivisionReadinessTests(unittest.TestCase):
 
     def test_phase_color_follows_fucci(self):
         params = CellCycleParams()
+        g0 = division_readiness(CellCycleState(phase="G0", counts=dict(_FED)), params)
+        self.assertEqual(g0.readiness, 0.0)
+        self.assertFalse(g0.arrested)
+        self.assertIn("quiescent G0", g0.reason)
+        self.assertEqual(g0.fucci_color, "#8da0b8")
         self.assertEqual(division_readiness(CellCycleState(phase="G1", counts=dict(_FED)), params).fucci_color, "#ff9d3a")
         self.assertEqual(division_readiness(CellCycleState(phase="S", counts=dict(_FED)), params).fucci_color, "#41d97a")
 

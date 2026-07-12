@@ -1,0 +1,340 @@
+{
+  "schema_version": 1,
+  "date_verified": "2026-07-11",
+  "policy": "Measurements retain their original assay denominator and biological context. None is converted to a whole-cell initial value or flux without the missing matched conversion measurement.",
+  "sources": {
+    "human_hepatocyte_proteome_2016": {
+      "title": "In-depth quantitative analysis and comparison of the human hepatocyte and hepatoma cell line HepG2 proteomes",
+      "url": "https://doi.org/10.1016/j.jprot.2016.01.016",
+      "source_type": "primary_paper",
+      "notes": "Quantitative LC-MS/MS of purified hepatocytes from seven human liver donors using Total Protein Approach and Proteomic Ruler."
+    },
+    "human_liver_glycogen_mrs_2012": {
+      "title": "Liver metabolite concentrations measured with 1H MR spectroscopy",
+      "url": "https://doi.org/10.1148/radiol.12112344",
+      "source_type": "primary_paper",
+      "notes": "In-vivo human liver tissue measurement; glycogen was quantifiable in 25 participants."
+    },
+    "human_mrp2_abundance_2012": {
+      "title": "Interindividual variability in hepatic expression of the multidrug resistance-associated protein 2 (MRP2/ABCC2)",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3336801/",
+      "source_type": "primary_paper",
+      "notes": "Targeted LC-MS/MS of liver membrane fractions from 51 human donors."
+    },
+    "human_bsep_taurocholate_2013": {
+      "title": "Early identification of clinically relevant drug interactions with the human bile salt export pump",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3858191/",
+      "source_type": "primary_paper",
+      "notes": "Taurocholate transport by recombinant human BSEP in inverted Sf9 membrane vesicles."
+    },
+    "human_ntcp_uptake_2003": {
+      "title": "Function of uptake transporters for taurocholate and estradiol 17beta-D-glucuronide in cryopreserved human hepatocytes",
+      "url": "https://doi.org/10.2133/dmpk.18.33",
+      "source_type": "primary_paper",
+      "notes": "Taurocholate uptake kinetics in fresh and cryopreserved human hepatocytes; cryopreservation caused large activity variability."
+    },
+    "human_liver_adenylates_1992": {
+      "title": "Can adenine nucleotides predict primary nonfunction of the human liver homograft?",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2952479/",
+      "source_type": "primary_paper",
+      "notes": "HPLC measurements in control human liver tissue: ATP, ADP, AMP, total adenine nucleotides, energy charge and NAD+."
+    },
+    "human_liver_atp_synthesis_2008": {
+      "title": "Quantitative ATP synthesis in human liver measured by localized 31P spectroscopy using the magnetization transfer experiment",
+      "url": "https://doi.org/10.1002/nbm.1207",
+      "source_type": "primary_paper",
+      "notes": "In-vivo 31P magnetization-transfer measurements in nine healthy volunteers; the reported rate is apparent Pi-to-ATP exchange."
+    },
+    "human_liver_phosphorus_mrs_2017": {
+      "title": "Phosphodiester content measured in human liver by in vivo 31P MR spectroscopy at 7 tesla",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5697655/",
+      "source_type": "primary_paper",
+      "notes": "Healthy-volunteer liver spectroscopy; reports the 1.054 kg/L liver density used for wet-tissue concentration conversion."
+    },
+    "human_liver_glycogen_mixed_meal_2000": {
+      "title": "Direct assessment of hepatic glycogen metabolism in humans with 13C NMR spectroscopy",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC507070/",
+      "source_type": "primary_paper",
+      "notes": "Serial in-vivo human hepatic glycogen measurements around a mixed meal."
+    },
+    "human_liver_glycogen_overnight_1996": {
+      "title": "Natural abundance 13C NMR measurement of human liver glycogen",
+      "url": "https://doi.org/10.1016/S0730-725X(96)00243-3",
+      "source_type": "primary_paper",
+      "notes": "Overnight-fasted healthy volunteers measured with localized 13C MRS."
+    },
+    "human_liver_glycogen_starvation_1973": {
+      "title": "Liver glycogen in man: the effect of total starvation or a carbohydrate-poor diet followed by carbohydrate refeeding",
+      "url": "https://doi.org/10.3109/00365517309084355",
+      "source_type": "primary_paper",
+      "notes": "Human liver biopsy glycogen after prolonged starvation or carbohydrate-poor diet."
+    },
+    "human_liver_glutathione_1980": {
+      "title": "Glutathione in human liver in normal and pathological conditions",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/7336124/",
+      "source_type": "primary_paper",
+      "notes": "Total glutathione measured in six histologically normal human liver biopsies, reported per hepatic protein."
+    },
+    "human_hepatic_transit_1996": {
+      "title": "An anatomic and physiological model of hepatic vascular system",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/8567497/",
+      "source_type": "primary_paper",
+      "notes": "Tracer transit-time model fitted in eight normal volunteers; reports portal flow fraction and liver mean transit time."
+    },
+    "hmdb_2022": {
+      "title": "HMDB 5.0: the Human Metabolome Database for 2022",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8728138/",
+      "source_type": "database",
+      "notes": "Curated human blood/plasma concentration reference ranges; specimen compartment is retained explicitly."
+    },
+    "primary_hepatocyte_isolation_metabolism_2018": {
+      "title": "From in vivo to in vitro: Major metabolic alterations take place in hepatocytes during and following isolation",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/29284039/",
+      "source_type": "primary_paper",
+      "notes": "Tracks energetic and redox metabolites from in-situ liver through hepatocyte isolation and culture; isolation substantially changes ATP, NADP(H), GSH and GSSG."
+    }
+  },
+  "anchors": [
+    {
+      "id": "human_hepatocyte_albumin_copies",
+      "target": "ALB protein abundance",
+      "measurement": {"value": 20000000, "low": null, "high": null, "uncertainty_type": null, "uncertainty_value": null, "unit": "copies_per_cell"},
+      "biological_system": "purified primary human hepatocytes from surgical liver resections",
+      "assay": "LC-MS/MS with Total Protein Approach and Proteomic Ruler",
+      "sample_size": 7,
+      "source_id": "human_hepatocyte_proteome_2016",
+      "model_use": "validation_target",
+      "applicability": "Checks the order of magnitude of the hepatocyte albumin protein pool.",
+      "limitations": "Average across donors; does not separate intracellular, secretory-pathway and newly secreted albumin, and is not a synthesis rate."
+    },
+    {
+      "id": "human_hepatocyte_bsep_total_protein",
+      "target": "ABCB11/BSEP abundance",
+      "measurement": {"value": 1.4, "low": null, "high": null, "uncertainty_type": null, "uncertainty_value": null, "unit": "pmol_per_mg_total_protein"},
+      "biological_system": "purified primary human hepatocytes from surgical liver resections",
+      "assay": "quantitative LC-MS/MS",
+      "sample_size": 7,
+      "source_id": "human_hepatocyte_proteome_2016",
+      "model_use": "calibration_anchor",
+      "applicability": "Constrains total BSEP protein abundance in a healthy human-hepatocyte reference cohort.",
+      "limitations": "Does not provide canalicular surface fraction, total protein mass per modeled cell, or transport-active copies."
+    },
+    {
+      "id": "human_liver_mrp2_total_membrane_protein",
+      "target": "ABCC2/MRP2 abundance",
+      "measurement": {"value": 1.54, "low": null, "high": null, "uncertainty_type": "SD", "uncertainty_value": 0.64, "unit": "fmol_per_ug_liver_membrane_protein"},
+      "biological_system": "human liver tissue membrane fraction",
+      "assay": "targeted LC-MS/MS",
+      "sample_size": 51,
+      "source_id": "human_mrp2_abundance_2012",
+      "model_use": "calibration_anchor",
+      "applicability": "Constrains total membrane-fraction MRP2 abundance and its donor variability.",
+      "limitations": "Tissue membrane denominator includes multiple membrane pools; canalicular surface fraction and copies per hepatocyte are not measured."
+    },
+    {
+      "id": "human_liver_glycogen_in_vivo",
+      "target": "hepatic glycogen glucosyl-unit concentration",
+      "measurement": {"value": 38.1, "low": null, "high": null, "uncertainty_type": "SD", "uncertainty_value": 14.4, "unit": "mmol_per_kg_wet_liver"},
+      "biological_system": "normal human liver in vivo",
+      "assay": "localized proton MR spectroscopy",
+      "sample_size": 25,
+      "source_id": "human_liver_glycogen_mrs_2012",
+      "model_use": "tissue_level_validation_target",
+      "applicability": "Provides an in-vivo healthy-liver glycogen distribution target.",
+      "limitations": "Tissue wet-weight concentration is not identical to cytosolic concentration in one hepatocyte and feeding state was not a matched simulation input."
+    },
+    {
+      "id": "human_bsep_taurocholate_sf9_km",
+      "target": "BSEP taurocholate Michaelis constant",
+      "measurement": {"value": 17.8, "low": null, "high": null, "uncertainty_type": "SD", "uncertainty_value": 5.0, "unit": "uM"},
+      "biological_system": "recombinant human BSEP in inverted Sf9 membrane vesicles",
+      "assay": "ATP-dependent taurocholate transport",
+      "sample_size": null,
+      "source_id": "human_bsep_taurocholate_2013",
+      "model_use": "assay_kinetic_anchor",
+      "applicability": "Independent measured affinity anchor for the BSEP taurocholate rate law.",
+      "limitations": "Recombinant vesicle affinity is assay-specific; it is not a whole-hepatocyte flux parameter."
+    },
+    {
+      "id": "human_bsep_taurocholate_sf9_vmax",
+      "target": "BSEP taurocholate assay Vmax",
+      "measurement": {"value": 286.2, "low": null, "high": null, "uncertainty_type": "SD", "uncertainty_value": 28.2, "unit": "pmol_per_mg_assay_protein_per_min"},
+      "biological_system": "recombinant human BSEP in inverted Sf9 membrane vesicles",
+      "assay": "ATP-dependent taurocholate transport",
+      "sample_size": null,
+      "source_id": "human_bsep_taurocholate_2013",
+      "model_use": "assay_kinetic_anchor",
+      "applicability": "Constrains the source assay curve when the same assay denominator is represented.",
+      "limitations": "Cannot be converted to hepatocyte molecules per second without matched active surface copies or matched membrane-protein mass."
+    },
+    {
+      "id": "human_ntcp_taurocholate_uptake_km_range",
+      "target": "NTCP-dominated taurocholate uptake Michaelis constant",
+      "measurement": {"value": null, "low": 2.0, "high": 8.0, "uncertainty_type": "reported_range", "uncertainty_value": null, "unit": "uM"},
+      "biological_system": "cryopreserved primary human hepatocytes",
+      "assay": "sodium-dependent taurocholate uptake",
+      "sample_size": null,
+      "source_id": "human_ntcp_uptake_2003",
+      "model_use": "whole_cell_affinity_range",
+      "applicability": "Constrains the human-hepatocyte taurocholate uptake affinity range.",
+      "limitations": "Measured uptake includes intact-cell context and potentially additional uptake transporters; cryopreserved activity ranged from 10-200% of fresh cells."
+    },
+    {
+      "id": "human_liver_atp_control",
+      "target": "total hepatic ATP",
+      "measurement": {"value": 2.08, "low": null, "high": null, "uncertainty_type": "SEM", "uncertainty_value": 0.298, "unit": "umol_per_g_wet_liver"},
+      "biological_system": "control human liver tissue",
+      "assay": "HPLC",
+      "sample_size": null,
+      "source_id": "human_liver_adenylates_1992",
+      "model_use": "metabolic_pool_initialization_anchor",
+      "applicability": "Constrains the tissue-equivalent ATP pool and adenylate energy charge.",
+      "limitations": "Total tissue ATP is not a compartment-resolved free cytosolic ATP measurement in isolated PHH."
+    },
+    {
+      "id": "human_liver_adp_control",
+      "target": "total hepatic ADP",
+      "measurement": {"value": 1.17, "low": null, "high": null, "uncertainty_type": "SEM", "uncertainty_value": 0.0628, "unit": "umol_per_g_wet_liver"},
+      "biological_system": "control human liver tissue",
+      "assay": "HPLC",
+      "sample_size": null,
+      "source_id": "human_liver_adenylates_1992",
+      "model_use": "metabolic_pool_initialization_anchor",
+      "applicability": "Constrains the tissue-equivalent ADP pool and adenylate energy charge.",
+      "limitations": "Total tissue ADP is not compartment resolved."
+    },
+    {
+      "id": "human_liver_amp_control",
+      "target": "total hepatic AMP",
+      "measurement": {"value": 0.445, "low": null, "high": null, "uncertainty_type": "SEM", "uncertainty_value": 0.115, "unit": "umol_per_g_wet_liver"},
+      "biological_system": "control human liver tissue",
+      "assay": "HPLC",
+      "sample_size": null,
+      "source_id": "human_liver_adenylates_1992",
+      "model_use": "metabolic_pool_initialization_anchor",
+      "applicability": "Constrains the tissue-equivalent AMP pool and adenylate energy charge.",
+      "limitations": "Total tissue AMP is not compartment resolved."
+    },
+    {
+      "id": "human_liver_energy_charge_control",
+      "target": "hepatic adenylate energy charge",
+      "measurement": {"value": 0.713, "low": null, "high": null, "uncertainty_type": "SEM", "uncertainty_value": 0.0465, "unit": "dimensionless"},
+      "biological_system": "control human liver tissue",
+      "assay": "HPLC-derived adenylate energy charge",
+      "sample_size": null,
+      "source_id": "human_liver_adenylates_1992",
+      "model_use": "metabolic_state_validation_target",
+      "applicability": "Validates consistency of the initialized ATP, ADP and AMP pools.",
+      "limitations": "Tissue-average energy charge does not resolve hepatocyte zones or organelle compartments."
+    },
+    {
+      "id": "human_liver_nad_plus_control",
+      "target": "total hepatic NAD+",
+      "measurement": {"value": 0.632, "low": null, "high": null, "uncertainty_type": "SEM", "uncertainty_value": 0.044, "unit": "umol_per_g_wet_liver"},
+      "biological_system": "control human liver tissue",
+      "assay": "HPLC",
+      "sample_size": null,
+      "source_id": "human_liver_adenylates_1992",
+      "model_use": "redox_pool_initialization_anchor",
+      "applicability": "Constrains total tissue-equivalent oxidized NAD.",
+      "limitations": "Does not provide NADH or cytosolic-versus-mitochondrial allocation."
+    },
+    {
+      "id": "human_liver_apparent_atp_synthesis",
+      "target": "apparent hepatic Pi-to-ATP exchange flux",
+      "measurement": {"value": 29.5, "low": null, "high": null, "uncertainty_type": "SEM", "uncertainty_value": 1.8, "unit": "mM_per_min"},
+      "biological_system": "healthy human liver in vivo",
+      "assay": "localized 31P saturation-transfer MRS",
+      "sample_size": 9,
+      "source_id": "human_liver_atp_synthesis_2008",
+      "model_use": "lumped_atp_turnover_anchor",
+      "applicability": "Calibrates apparent ATP turnover around the healthy baseline pools.",
+      "limitations": "Magnetization-transfer exchange is not identical to net mitochondrial ATP synthesis."
+    },
+    {
+      "id": "human_liver_glycogen_fed_peak",
+      "target": "hepatic glycogen after mixed meal",
+      "measurement": {"value": 316.0, "low": null, "high": null, "uncertainty_type": "SEM", "uncertainty_value": 19.0, "unit": "mmol_per_L_liver"},
+      "biological_system": "healthy human liver in vivo after a mixed meal",
+      "assay": "13C NMR spectroscopy",
+      "sample_size": null,
+      "source_id": "human_liver_glycogen_mixed_meal_2000",
+      "model_use": "fed_profile_initialization_anchor",
+      "applicability": "Defines the fed-peak glycogen profile.",
+      "limitations": "Whole-liver concentration is used as a tissue-equivalent lumped hepatocyte pool."
+    },
+    {
+      "id": "human_liver_glycogen_postabsorptive",
+      "target": "hepatic glycogen after overnight fast",
+      "measurement": {"value": 229.0, "low": null, "high": null, "uncertainty_type": "SEM", "uncertainty_value": 34.0, "unit": "mM_liver"},
+      "biological_system": "healthy human liver in vivo after overnight fast",
+      "assay": "localized 13C NMR spectroscopy",
+      "sample_size": 35,
+      "source_id": "human_liver_glycogen_overnight_1996",
+      "model_use": "postabsorptive_profile_initialization_anchor",
+      "applicability": "Defines the overnight-fasted/postabsorptive glycogen profile.",
+      "limitations": "Whole-liver concentration is used as a tissue-equivalent lumped hepatocyte pool."
+    },
+    {
+      "id": "human_liver_glycogen_prolonged_fast",
+      "target": "hepatic glycogen after prolonged starvation",
+      "measurement": {"value": null, "low": 24.0, "high": 55.0, "uncertainty_type": "reported_range", "uncertainty_value": null, "unit": "mmol_glucosyl_per_kg_wet_liver"},
+      "biological_system": "human liver after total starvation or carbohydrate-poor diet",
+      "assay": "liver biopsy glycogen",
+      "sample_size": null,
+      "source_id": "human_liver_glycogen_starvation_1973",
+      "model_use": "prolonged_fasted_profile_range",
+      "applicability": "Constrains the prolonged-fasted glycogen profile.",
+      "limitations": "The model uses the range midpoint and retains a tissue-mass-equivalent interpretation."
+    },
+    {
+      "id": "human_liver_total_glutathione",
+      "target": "total hepatic glutathione",
+      "measurement": {"value": 26.9, "low": 20.2, "high": 41.0, "uncertainty_type": "SD", "uncertainty_value": 8.1, "unit": "umol_per_g_hepatic_protein"},
+      "biological_system": "histologically normal human liver biopsy",
+      "assay": "total glutathione biochemical assay",
+      "sample_size": 6,
+      "source_id": "human_liver_glutathione_1980",
+      "model_use": "redox_pool_initialization_anchor",
+      "applicability": "Constrains the total hepatic glutathione pool.",
+      "limitations": "Conversion to a model concentration requires an explicit hepatic protein-density assumption and does not resolve GSH from GSSG compartments."
+    },
+    {
+      "id": "human_liver_mean_blood_transit_time",
+      "target": "mean hepatic blood transit time",
+      "measurement": {"value": 13.4, "low": null, "high": null, "uncertainty_type": "SD", "uncertainty_value": 1.71, "unit": "s"},
+      "biological_system": "normal human volunteers",
+      "assay": "dynamic tracer imaging with physiological compartment model",
+      "sample_size": 8,
+      "source_id": "human_hepatic_transit_1996",
+      "model_use": "sinusoid_boundary_turnover_anchor",
+      "applicability": "Sets the first-order replacement timescale of the effective sinusoidal concentration boundary.",
+      "limitations": "Whole-liver mean transit time does not resolve one sinusoid, acinar zone or donor-specific perfusion."
+    },
+    {
+      "id": "human_postabsorptive_plasma_glucose_range",
+      "target": "fasting/postabsorptive plasma glucose",
+      "measurement": {"value": null, "low": 3.9, "high": 5.6, "uncertainty_type": "reference_range", "uncertainty_value": null, "unit": "mM"},
+      "biological_system": "human blood/plasma",
+      "assay": "HMDB-curated physiological reference interval",
+      "sample_size": null,
+      "source_id": "hmdb_2022",
+      "model_use": "postabsorptive_sinusoid_boundary_range",
+      "applicability": "Defines the postabsorptive glucose concentration range at the blood-facing model boundary.",
+      "limitations": "Systemic plasma is used as the effective sinusoidal inlet target; portal-arterial mixing and donor variation are not resolved."
+    }
+  ],
+  "readiness": {
+    "direct_initialization_ready": false,
+    "metabolic_pool_initialization_ready": true,
+    "energy_turnover_ready": true,
+    "whole_cell_transport_flux_ready": false,
+    "blocking_measurements": [
+      "matched donor and nutritional state",
+      "per-cell total protein and membrane-protein mass for the modeled cell",
+      "canalicular surface-localized BSEP and MRP2 copy numbers",
+      "matched intracellular bile-acid substrate concentrations",
+      "held-out primary-human-hepatocyte trajectory data"
+    ]
+  }
+}

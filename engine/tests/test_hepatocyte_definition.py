@@ -27,6 +27,12 @@ class HepatocyteDefinitionTests(unittest.TestCase):
         self.assertIn("ATP", self.definition.pool_ids)
         self.assertIn("glycogen", self.definition.pool_ids)
         self.assertIn("bilirubin_conjugates", self.definition.pool_ids)
+        self.assertIn("canalicular_bile_acids", self.definition.pool_ids)
+        self.assertIn("canalicular_bilirubin_conjugates", self.definition.pool_ids)
+        self.assertEqual(
+            self.state.pools["canalicular_bile_acids"].compartment_id,
+            "bile_canaliculus",
+        )
 
     def test_every_organelle_has_behavior_not_just_geometry(self) -> None:
         for organelle in self.definition.organelles:
@@ -62,4 +68,3 @@ class HepatocyteDefinitionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

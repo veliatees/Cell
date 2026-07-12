@@ -6,6 +6,7 @@ from typing import Literal, Mapping
 from cell_engine.core.cell_definition import CellDefinition
 from cell_engine.core.random import EngineRng
 from cell_engine.quantitative.geometry import build_hepatocyte_geometry, molecules_from_concentration_mM
+from cell_engine.quantitative.phh_profiles import phh_profile
 from cell_engine.stochastic.cell_cycle import (
     RAT_HEPATOCYTE_PHX_REFERENCE_TIMING_PROFILE,
     CellCycleParams,
@@ -20,6 +21,7 @@ from cell_engine.stochastic.cell_cycle import fail_cytokinesis
 from cell_engine.stochastic.cell_cycle import step as cycle_step
 from cell_engine.stochastic.cell_model import CYTOSOL
 from cell_engine.stochastic.central_dogma import HEPATOCYTE_ENZYME_GENE, build_central_dogma_network
+from cell_engine.stochastic.bioenergetics import build_phh_atp_turnover_network
 from cell_engine.stochastic.glycolysis import build_glycolysis_network
 from cell_engine.stochastic.integrators import simulate_hybrid
 from cell_engine.stochastic.reactions import ReactionNetwork, compose_networks, mass_action
@@ -34,10 +36,11 @@ from cell_engine.stochastic.urea_cycle import build_urea_cycle_network
 # The whole cell grows on glucose; division needs a size checkpoint reached only
 # while fed, but nutrition alone is not a license to divide. Adult hepatocytes are
 # normally quiescent and need mitogen/regeneration signals to re-enter cycle.
-# Hepatocyte cytokinesis failure is context-dependent; 0.20 is a starting,
-# source-tagged modelling assumption to make binucleation possible by default in
-# population runs. Validation/calibration should replace it per species/context.
-HEPATOCYTE_CYTOKINESIS_FAILURE_PROBABILITY = 0.20
+# Hepatocyte cytokinesis failure is context-dependent. Prevalence of binucleated
+# cells is not a per-division probability, so the default fails closed at zero.
+# A non-zero risk requires ``cytokinesis_failure_calibrated=True`` and an explicit
+# context-specific calibration supplied by the caller.
+HEPATOCYTE_CYTOKINESIS_FAILURE_PROBABILITY = 0.0
 WHOLE_CELL_CYCLE = CellCycleParams(
     nutrient_species="glucose",
     regeneration_signal_active=False,
@@ -268,6 +271,7 @@ def build_whole_cell_network(
     volume_l: float,
     *,
     transporter_activity: Mapping[str, float] | None = None,
+    include_synthetic_expression_benchmark: bool = False,
 ) -> ReactionNetwork:
     """Compose the subsystems into one network, plus energy/glucose homeostasis.
 
@@ -280,12 +284,8 @@ def build_whole_cell_network(
     """
     glut2_activity = transporter_activity_scale(transporter_activity, "glut2")
     homeostasis = ReactionNetwork(
-        species=("ATP", "ADP", "glucose", "glucose_blood"),
+        species=("glucose", "glucose_blood"),
         reactions=(
-            mass_action("atp_regeneration", {"ADP": 1}, {"ATP": 1}, 0.6,
-                        notes="LUMPED OXPHOS regenerating ATP against the combined draw."),
-            mass_action("atp_maintenance", {"ATP": 1}, {"ADP": 1}, 0.1,
-                        notes="LUMPED baseline ATP consumption."),
             mass_action("glut2_uptake", {"glucose_blood": 1}, {"glucose": 1}, 0.4 * glut2_activity,
                         source_id="bile_formation",
                         notes=f"GLUT2 facilitated uptake (down-gradient from blood). Activity scale={glut2_activity:.3g} from transporter abundance/function.",
@@ -297,14 +297,16 @@ def build_whole_cell_network(
         ),
         volume_l=volume_l,
     )
-    return compose_networks(
+    networks = [
         build_glycolysis_network(volume_l),
         build_urea_cycle_network(volume_l),
         build_redox_network(volume_l),
-        build_central_dogma_network(HEPATOCYTE_ENZYME_GENE, volume_l=volume_l),
+        build_phh_atp_turnover_network(volume_l),
         homeostasis,
-        volume_l=volume_l,
-    )
+    ]
+    if include_synthetic_expression_benchmark:
+        networks.insert(3, build_central_dogma_network(HEPATOCYTE_ENZYME_GENE, volume_l=volume_l))
+    return compose_networks(*networks, volume_l=volume_l)
 
 
 def seed_whole_cell(
@@ -313,6 +315,7 @@ def seed_whole_cell(
     fed: bool = True,
     protein_inventory: Mapping[str, float] | None = None,
     transporter_activity: Mapping[str, float] | None = None,
+    include_synthetic_expression_benchmark: bool = False,
 ) -> WholeCell:
     """Seed every subsystem from the M030 grounded concentrations.
 
@@ -328,21 +331,27 @@ def seed_whole_cell(
 
     geometry = build_hepatocyte_geometry(definition)
     volume = geometry.volume_of(CYTOSOL)
-    network = build_whole_cell_network(volume, transporter_activity=transporter_activity)
+    network = build_whole_cell_network(
+        volume,
+        transporter_activity=transporter_activity,
+        include_synthetic_expression_benchmark=include_synthetic_expression_benchmark,
+    )
 
     def n(mM: float) -> float:
         return molecules_from_concentration_mM(mM, volume)
 
     counts = {s: 0.0 for s in network.species}
+    baseline = phh_profile("fed_peak" if fed else "prolonged_fasted").concentrations_mM()
     counts.update(
         glucose=n(7.0) if fed else 0.0,
         glucose_blood=n(7.0) * 8 if fed else 0.0,  # buffered blood reservoir (~7 mM, bounded)
-        ATP=n(3.5), ADP=n(1.2), AMP=n(0.3),
-        NAD_plus=n(0.5), NADH=n(0.1),
+        ATP=n(baseline["ATP"]), ADP=n(baseline["ADP"]), AMP=n(baseline["AMP"]),
+        NAD_plus=n(baseline["NAD_plus"]), NADH=n(0.1),
         ammonia=n(0.05), ornithine=n(0.3), aspartate=n(1.0),
         GSH=n(7.0), GSSG=n(0.07), NADPH=n(0.2), NADP_plus=n(0.02), ROS=n(0.002),
-        gene=float(HEPATOCYTE_ENZYME_GENE.gene_copies),
     )
+    if include_synthetic_expression_benchmark:
+        counts["gene"] = float(HEPATOCYTE_ENZYME_GENE.gene_copies)
     cycle = CellCycleState(counts=counts)
     return WholeCell(network=network, counts=counts, cycle=cycle, t_s=0.0)
 
@@ -353,6 +362,7 @@ def seed_whole_cell_population(
     fed: bool = True,
     protein_inventory: Mapping[str, float] | None = None,
     transporter_activity: Mapping[str, float] | None = None,
+    include_synthetic_expression_benchmark: bool = False,
 ) -> WholeCellPopulation:
     """Seed a population with one real hepatocyte."""
     return WholeCellPopulation(
@@ -361,6 +371,7 @@ def seed_whole_cell_population(
             fed=fed,
             protein_inventory=protein_inventory,
             transporter_activity=transporter_activity,
+            include_synthetic_expression_benchmark=include_synthetic_expression_benchmark,
         ),),
     )
 

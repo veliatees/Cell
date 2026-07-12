@@ -177,11 +177,20 @@ export type EngineRegenerationContext = {
 
 export type EngineCellularResponse = {
   experiment_id: string;
+  intervention_type?: string;
   cholestasis_state: string;
   bsep_surface_activity: number;
   mrp2_surface_activity: number;
   bile_acid_retention: number;
   bilirubin_retention: number;
+  intracellular_bile_acids?: number;
+  canalicular_bile_acids?: number;
+  intracellular_bilirubin_conjugates?: number;
+  canalicular_bilirubin_conjugates?: number;
+  bile_acid_system_total?: number;
+  bilirubin_system_total?: number;
+  cyp7a1_feedback_status?: string;
+  basolateral_escape_status?: string;
   upr_signal: number | null;
   misfolded_protein: number;
   ubiquitinated_cargo: number;
@@ -254,6 +263,145 @@ export type EngineGenomeState = {
     variants: EngineSomaticVariant[];
     source_ids: string[];
   };
+  source_ids: string[];
+  notes?: string;
+};
+
+export type EngineGenomicArchitecture = {
+  architecture_id: string;
+  gene_modules: {
+    id: string;
+    label: string;
+    member_genes: string[];
+    explicit_expression_genes: string[];
+    representation_mode: string;
+    dynamic_status: string;
+    source_ids: string[];
+    notes?: string;
+  }[];
+  epigenetic_loci: Record<string, {
+    gene_symbol: string;
+    chromatin_accessibility: string;
+    dna_methylation_fraction: number | null;
+    histone_marks: Record<string, number>;
+    observation_status: string;
+    biological_system: string;
+    assay: string;
+    source_ids: string[];
+    notes?: string;
+  }>;
+  omics_datasets: {
+    id: string;
+    assay_type: string;
+    biological_system: string;
+    donor_or_cohort: string;
+    genome_assembly: string;
+    normalization: string;
+    observed_genes: string[];
+    source_ids: string[];
+    evidence: string;
+    use: string;
+    notes?: string;
+  }[];
+  variant_functional_links: unknown[];
+  identity: {
+    species: string;
+    cell_type: string;
+    zonation: string;
+    donor_id: string;
+    donor_age: string;
+    donor_sex: string;
+    tissue_health: string;
+    genotype_status: string;
+    clone_id: string;
+    identity_status: string;
+    source_ids: string[];
+    notes?: string;
+  };
+  milestones: {
+    milestone: number;
+    title: string;
+    software_complete: boolean;
+    scientific_status: string;
+    implemented_capabilities: string[];
+    data_requirements: string[];
+  }[];
+  source_ids: string[];
+  notes?: string;
+};
+
+export type EngineGeneExpressionState = {
+  gene_symbol: string;
+  product: string;
+  role: string;
+  coupling_target: string;
+  allele_copies: number;
+  functional_dosage_scale: number;
+  active_allele_count: number | null;
+  promoter_state: "active" | "inactive" | "poised" | "unknown";
+  chromatin_state: "open" | "closed" | "poised" | "unknown";
+  nuclear_pre_mrna_count: number | null;
+  nuclear_mature_mrna_count: number | null;
+  cytoplasmic_mrna_count: number | null;
+  total_protein_count: number | null;
+  functional_protein_scale: number | null;
+  protein_location: string;
+  evidence_status: string;
+  source_ids: string[];
+  notes?: string;
+};
+
+export type EngineExpressionEvent = {
+  id: string;
+  t_s: number;
+  gene_symbol: string;
+  event_type: string;
+  changed_fields: string[];
+  source_id: string;
+  evidence: string;
+  notes?: string;
+};
+
+export type EngineExpressionKineticProfile = {
+  gene_symbol: string;
+  promoter_on_rate_per_s: number;
+  promoter_off_rate_per_s: number;
+  transcription_rate_per_active_allele_per_s: number;
+  splicing_rate_per_s: number;
+  nuclear_export_rate_per_s: number;
+  cytoplasmic_mrna_decay_rate_per_s: number;
+  translation_rate_per_mrna_per_s: number;
+  protein_decay_rate_per_s: number;
+  calibration_status: string;
+  biological_system: string;
+  assay: string;
+  evidence: string;
+  source_ids: string[];
+  notes?: string;
+};
+
+export type EngineGeneRegulatoryEdge = {
+  id: string;
+  regulator: string;
+  target_gene: string;
+  target_layer: "promoter" | "functional_protein";
+  effect: "activates" | "represses";
+  mechanism: string;
+  biological_context: string;
+  quantification_status: string;
+  source_ids: string[];
+  notes?: string;
+};
+
+export type EngineGeneExpressionProgram = {
+  program_id: string;
+  genes: Record<string, EngineGeneExpressionState>;
+  events: EngineExpressionEvent[];
+  kinetics_status: string;
+  engine_mode: string;
+  kinetic_profiles: Record<string, EngineExpressionKineticProfile>;
+  regulatory_edges: EngineGeneRegulatoryEdge[];
+  regulatory_status: string;
   source_ids: string[];
   notes?: string;
 };
@@ -334,10 +482,22 @@ export type EngineSnapshot = {
     division?: EngineDivisionSnapshot;
     regeneration_context?: EngineRegenerationContext;
     integrated_metabolism?: EngineIntegratedMetabolism;
+    quantitative_state?: EngineQuantitativePhhState;
+    zonation_state?: EngineHumanZonationState;
+    sinusoid_homeostasis?: EngineSinusoidHomeostasisState;
+    nutritional_homeostasis_v3?: EngineNutritionalHomeostasisV3;
+    hepatic_flux_evidence?: EngineHepaticFluxEvidence;
+    schematic_visual_state?: EngineSchematicVisualState;
+    phh_baseline?: EnginePhhBaseline;
     cellular_response?: EngineCellularResponse;
     experiment?: EngineExperiment;
     genome?: EngineGenomeState | null;
+    gene_expression?: EngineGeneExpressionProgram | null;
+    genomic_architecture?: EngineGenomicArchitecture | null;
     history?: EngineCellHistory | null;
+    model_authority?: EngineModelAuthority;
+    scientific_audit?: EngineScientificAudit;
+    assumption_report?: EngineAssumptionReport;
   };
   metadata?: {
     engine?: string;
@@ -353,13 +513,254 @@ export type EngineIntegratedMetabolite = {
   high_mM: number;
   classification: "in_range" | "below" | "above";
   hmdb_id: string;
+  compartment?: "blood" | "intracellular";
 };
 
 export type EngineIntegratedMetabolism = {
   state: string;
+  validation_scope?: string;
+  model_role?: string;
   n_in_range: number;
   n_scored: number;
   metabolites: EngineIntegratedMetabolite[];
+  unavailable?: {
+    species: string;
+    required_compartment: "blood" | "intracellular";
+    hmdb_id: string;
+    reason: string;
+  }[];
+  sinusoid_boundary?: {
+    profile: string;
+    status: string;
+    mean_transit_time_s: number;
+    connected_species: string[];
+    unavailable_transport: string[];
+  };
+};
+
+export type EngineModelAuthority = {
+  status: string;
+  primary_state_path?: string;
+  schematic_state_path?: string;
+  authoritative_sections: string[];
+  schematic_sections: string[];
+  policy: string;
+};
+
+export type EngineQuantitativePool = {
+  id: string;
+  value: number;
+  unit: "mM";
+  biological_basis: string;
+  compartment: string;
+  low: number | null;
+  high: number | null;
+  evidence: "measured" | "derived";
+  source_ids: string[];
+  effective_lumped_model_count: number | null;
+  count_basis: string;
+  notes: string;
+};
+
+export type EngineQuantitativePhhState = {
+  profile_id: string;
+  profile_label: string;
+  status: string;
+  authority: "authoritative_research_preview";
+  cell_volume_l: number;
+  effective_cytosol_volume_l: number;
+  energy_charge: number;
+  pools: Record<string, EngineQuantitativePool>;
+  limitations: string[];
+};
+
+export type EngineSchematicVisualState = {
+  authority: "schematic_visual_only";
+  source_path: string;
+  unit: "relative_pool_0_1";
+  pool_ids: string[];
+  may_drive_quantitative_validation: false;
+};
+
+export type EngineZonationMarker = {
+  gene: string;
+  enriched_zone: "periportal" | "midlobular" | "pericentral";
+  observed_layer: "transcript" | "protein" | "transcript_and_protein";
+  source_ids: string[];
+  notes: string;
+};
+
+export type EngineHumanZonationState = {
+  species: "Homo sapiens";
+  selected_zone: "periportal" | "midlobular" | "pericentral";
+  status: string;
+  coordinate_status: string;
+  zone: {
+    id: "periportal" | "midlobular" | "pericentral";
+    label: string;
+    porto_central_position: string;
+    oxygen_context: "relatively_higher" | "intermediate" | "relatively_lower";
+    marker_genes: string[];
+    functional_biases: string[];
+    niche_signals: string[];
+    source_ids: string[];
+  };
+  markers: EngineZonationMarker[];
+  quantitative_effect_sizes_available: false;
+  oxygen_partial_pressure_available: false;
+  dynamic_flux_scaling_enabled: false;
+  source_ids: string[];
+  limitations: string[];
+};
+
+export type EngineSinusoidCouplingEdge = {
+  id: string;
+  source: string;
+  target: string;
+  status: string;
+  flux_value: number | null;
+  flux_unit: string | null;
+  source_ids: string[];
+  blocker: string | null;
+};
+
+export type EngineSinusoidHomeostasisState = {
+  version: "sinusoid_coupled_homeostasis_v2";
+  selected_zone: "periportal" | "midlobular" | "pericentral";
+  nutritional_profile: string;
+  status: string;
+  target_glucose_mM: number;
+  reference_low_mM: number;
+  reference_high_mM: number;
+  replacement_rate_per_s: number;
+  mean_transit_time_s: number;
+  boundary_recovery_trace: { t_s: number; glucose_mM: number }[];
+  porto_central_path: ("periportal" | "midlobular" | "pericentral")[];
+  coupling_edges: EngineSinusoidCouplingEdge[];
+  anatomical_sinusoid_volume_l: number | null;
+  blood_to_cell_exchange_flux: number | null;
+  zonal_oxygen_partial_pressure: number | null;
+  source_ids: string[];
+  limitations: string[];
+};
+
+export type EngineMeasuredQuantity = {
+  value: number;
+  uncertainty: number | null;
+  uncertainty_type: string | null;
+  unit: string;
+  evidence: string;
+  source_ids: string[];
+};
+
+export type EngineNutritionalHomeostasisV3 = {
+  version: "phh_zonation_sinusoid_homeostasis_v3";
+  selected_zone: "periportal" | "midlobular" | "pericentral";
+  status: string;
+  biological_system: string;
+  intervention: string;
+  trace: {
+    phase: string;
+    time_min: number;
+    time_uncertainty_min: number | null;
+    glycogen_mM_liver: number;
+    glycogen_sem_mM_liver: number;
+  }[];
+  mean_glycogen_synthesis_rate: EngineMeasuredQuantity;
+  mean_post_peak_glycogen_decline_rate: EngineMeasuredQuantity;
+  basal_hepatic_glucose_output: EngineMeasuredQuantity;
+  hepatic_glucose_output_suppression: string;
+  suppression_time_min: number;
+  direct_pathway_windows: {
+    start_h: number;
+    end_h: number;
+    fraction: number;
+    sem: number;
+    denominator: string;
+  }[];
+  rate_time_implied_peak_mM_liver: number;
+  measured_peak_residual_mM_liver: number;
+  scale_bridge: {
+    source_scale: string;
+    target_scale: string;
+    status: string;
+    per_cell_glucose_flux: number | null;
+    per_cell_glucose_flux_unit: string | null;
+    glut2_vmax: number | null;
+    zone_allocation_factors: Record<string, number> | null;
+    blockers: string[];
+  };
+  predictive_ready: boolean;
+  source_ids: string[];
+  limitations: string[];
+};
+
+export type EngineHepaticFluxEvidence = {
+  status: string;
+  record_count: number;
+  numeric_record_count: number;
+  healthy_numeric_record_count: number;
+  metabolite_counts: Record<string, number>;
+  nutritional_state_counts: Record<string, number>;
+  bed_scope_counts: Record<string, number>;
+  per_cell_applicable_count: number;
+  readiness: {
+    organ_scale_reference_evidence_available: boolean;
+    single_cell_flux_ready: boolean;
+    healthy_portal_resolved_ready: boolean;
+    in_vivo_human_glut2_kinetics_ready: boolean;
+  };
+  policy: string;
+  raw_paths: string[];
+  audit_paths: string[];
+};
+
+export type EngineScientificAudit = {
+  status: string;
+  authoritative_surfaces: string[];
+  blocked_or_disabled_surfaces: string[];
+  policy: string;
+  surfaces: { id: string; status: string; default_snapshot_role: string; drives_scientific_validation: boolean; action: string; source_ids: string[]; limitations: string }[];
+};
+
+export type EngineAssumptionReport = {
+  definition_id: string;
+  counts: Record<string, number>;
+  placeholder_pools: string[];
+  placeholder_parameters: string[];
+};
+
+export type EnginePhhBaseline = {
+  date_verified: string;
+  policy: string;
+  anchor_count: number;
+  readiness: {
+    direct_initialization_ready: boolean;
+    metabolic_pool_initialization_ready?: boolean;
+    energy_turnover_ready?: boolean;
+    whole_cell_transport_flux_ready: boolean;
+    blocking_measurements: string[];
+  };
+  selected_profile?: string;
+  profiles?: Record<string, {
+    label: string;
+    energy_charge: number;
+    pools: Record<string, {
+      value_mM: number;
+      low_mM: number | null;
+      high_mM: number | null;
+      source_ids: string[];
+      evidence: "measured" | "derived";
+      basis: string;
+      notes: string;
+    }>;
+  }>;
+  applicability?: string;
+  scientific_release?: {
+    research_preview: { target: string; passed: boolean; checks: string[]; blockers: string[] };
+    predictive: { target: string; passed: boolean; checks: string[]; blockers: string[] };
+    authoritative_scope: string;
+  };
 };
 
 export type EngineOrganelleSummary = {
@@ -377,6 +778,7 @@ export type EngineOrganelleSummary = {
 export type EngineSnapshotSummary = {
   source: string;
   cellType: string;
+  zone: string;
   status: string;
   elapsedS: number;
   pools: Record<string, number>;
@@ -394,9 +796,21 @@ export type EngineSnapshotSummary = {
   divisionDisplay: EngineDivisionDisplayState;
   regenerationContext: EngineRegenerationContext | null;
   integratedMetabolism: EngineIntegratedMetabolism | null;
+  quantitativeState: EngineQuantitativePhhState | null;
+  zonationState: EngineHumanZonationState | null;
+  sinusoidHomeostasis: EngineSinusoidHomeostasisState | null;
+  nutritionalHomeostasisV3: EngineNutritionalHomeostasisV3 | null;
+  hepaticFluxEvidence: EngineHepaticFluxEvidence | null;
+  schematicVisualState: EngineSchematicVisualState | null;
+  phhBaseline: EnginePhhBaseline | null;
+  modelAuthority: EngineModelAuthority | null;
+  scientificAudit: EngineScientificAudit | null;
+  assumptionReport: EngineAssumptionReport | null;
   cellularResponse: EngineCellularResponse | null;
   experiment: EngineExperiment | null;
   genome: EngineGenomeState | null;
+  geneExpression: EngineGeneExpressionProgram | null;
+  genomicArchitecture: EngineGenomicArchitecture | null;
   history: EngineCellHistory | null;
 };
 
@@ -500,6 +914,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
   return {
     source,
     cellType: snapshot.definition.cell_type ?? "unknown",
+    zone: snapshot.definition.zone ?? "unknown",
     status: snapshot.state.status,
     elapsedS: snapshot.state.elapsed_s,
     pools,
@@ -516,9 +931,21 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     divisionDisplay: summarizeEngineDivisionDisplay(division),
     regenerationContext: isEngineRegenerationContext(snapshot.state.regeneration_context) ? snapshot.state.regeneration_context : null,
     integratedMetabolism: snapshot.state.integrated_metabolism ?? null,
+    quantitativeState: snapshot.state.quantitative_state ?? null,
+    zonationState: snapshot.state.zonation_state ?? null,
+    sinusoidHomeostasis: snapshot.state.sinusoid_homeostasis ?? null,
+    nutritionalHomeostasisV3: snapshot.state.nutritional_homeostasis_v3 ?? null,
+    hepaticFluxEvidence: snapshot.state.hepatic_flux_evidence ?? null,
+    schematicVisualState: snapshot.state.schematic_visual_state ?? null,
+    phhBaseline: snapshot.state.phh_baseline ?? null,
+    modelAuthority: snapshot.state.model_authority ?? null,
+    scientificAudit: snapshot.state.scientific_audit ?? null,
+    assumptionReport: snapshot.state.assumption_report ?? null,
     cellularResponse: snapshot.state.cellular_response ?? null,
     experiment: snapshot.state.experiment ?? null,
     genome: snapshot.state.genome ?? null,
+    geneExpression: snapshot.state.gene_expression ?? null,
+    genomicArchitecture: snapshot.state.genomic_architecture ?? null,
     history: snapshot.state.history ?? null,
     topFluxes: (snapshot.state.metabolic_fluxes ?? [])
       .slice()

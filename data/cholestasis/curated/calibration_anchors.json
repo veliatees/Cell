@@ -1,0 +1,227 @@
+{
+  "schema_version": 1,
+  "date_verified": "2026-07-10",
+  "policy": "Raw observations remain unchanged. Curated anchors preserve assay units, intervention identity, model system, time and applicability; missing quantities are null and are never imputed.",
+  "anchors": [
+    {
+      "id": "human_mrp2_total_membrane_abundance",
+      "raw_rows": [14],
+      "source": {
+        "pmid": "22318656",
+        "doi": "10.1124/dmd.111.043810",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3336801/"
+      },
+      "organism": "human",
+      "model": "human liver tissue membrane fraction, 51 donors",
+      "intervention_type": "healthy_reference_abundance",
+      "endpoint": "MRP2 total liver membrane abundance",
+      "time_h": null,
+      "value": {"low": 1.54, "high": 1.54, "qualifier": "mean", "unit": "fmol_per_ug_liver_membrane_protein"},
+      "error": {"type": "SD", "value": 0.64},
+      "sample_size": 51,
+      "model_use": "measured_input_anchor",
+      "applicability": "Total membrane abundance conversion anchor for ABCC2/MRP2.",
+      "limitations": "Does not identify the canalicular surface fraction or copies per cell; either requires matched membrane protein mass per cell and localization data."
+    },
+    {
+      "id": "human_cytokine_bsep_protein_direction",
+      "raw_rows": [2],
+      "source": {
+        "pmid": "20702406",
+        "doi": "10.1074/jbc.M110.107805",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2951192/"
+      },
+      "organism": "human",
+      "model": "sandwich-cultured primary human hepatocytes",
+      "intervention_type": "proinflammatory_cytokine_exposure",
+      "endpoint": "BSEP protein response",
+      "time_h": null,
+      "value": {"low": null, "high": null, "qualifier": "direction_increase", "unit": "qualitative"},
+      "error": null,
+      "sample_size": 3,
+      "model_use": "qualitative_constraint",
+      "applicability": "Constrains human inflammation-response direction for BSEP total protein.",
+      "limitations": "IL-6/IL-1beta increased protein despite reduced mRNA; no numeric fold is taken from the panel and total protein is not surface activity."
+    },
+    {
+      "id": "human_cytokine_mrp2_protein_direction",
+      "raw_rows": [11],
+      "source": {
+        "pmid": "20702406",
+        "doi": "10.1074/jbc.M110.107805",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2951192/"
+      },
+      "organism": "human",
+      "model": "sandwich-cultured primary human hepatocytes",
+      "intervention_type": "proinflammatory_cytokine_exposure",
+      "endpoint": "MRP2 protein response",
+      "time_h": null,
+      "value": {"low": null, "high": null, "qualifier": "direction_decrease", "unit": "qualitative"},
+      "error": null,
+      "sample_size": 3,
+      "model_use": "qualitative_constraint",
+      "applicability": "Constrains human inflammation-response direction for MRP2 total protein.",
+      "limitations": "All three cytokines reduced MRP2 protein and mRNA; a numeric fold and surface-localized activity are not supplied."
+    },
+    {
+      "id": "dasatinib_cyp7a1_response_8h",
+      "raw_rows": [57],
+      "source": {
+        "pmid": "34794962",
+        "doi": "10.1124/jpet.121.000828",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9109172/"
+      },
+      "organism": "human",
+      "model": "sandwich-cultured human hepatocytes",
+      "intervention_type": "pharmacologic_bsep_inhibition_tki",
+      "endpoint": "CYP7A1 mRNA fold change",
+      "time_h": 8,
+      "value": {"low": 6.2, "high": 7.8, "qualifier": "reported_range", "unit": "fold_vs_control"},
+      "error": null,
+      "sample_size": null,
+      "model_use": "trajectory_validation",
+      "applicability": "Drug-specific CYP7A1 response target when dasatinib exposure is represented.",
+      "limitations": "Not an isolated BSEP knockout or generic BSEP-loss target; the range spans tested concentrations and error/n are not available in the abstract-level panel."
+    },
+    {
+      "id": "pazopanib_cyp7a1_response_8h",
+      "raw_rows": [58],
+      "source": {
+        "pmid": "34794962",
+        "doi": "10.1124/jpet.121.000828",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9109172/"
+      },
+      "organism": "human",
+      "model": "sandwich-cultured human hepatocytes",
+      "intervention_type": "pharmacologic_bsep_inhibition_tki",
+      "endpoint": "CYP7A1 mRNA fold change",
+      "time_h": 8,
+      "value": {"low": 5.7, "high": 9.3, "qualifier": "reported_range", "unit": "fold_vs_control"},
+      "error": null,
+      "sample_size": null,
+      "model_use": "trajectory_validation",
+      "applicability": "Drug-specific CYP7A1 response target when pazopanib exposure is represented.",
+      "limitations": "Not an isolated BSEP knockout or generic BSEP-loss target; the range spans tested concentrations and error/n are not available in the abstract-level panel."
+    },
+    {
+      "id": "tki_extracellular_total_bile_acid_24h",
+      "raw_rows": [59],
+      "source": {
+        "pmid": "34794962",
+        "doi": "10.1124/jpet.121.000828",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9109172/"
+      },
+      "organism": "human",
+      "model": "sandwich-cultured human hepatocytes",
+      "intervention_type": "pharmacologic_bsep_inhibition_tki",
+      "endpoint": "extracellular total bile acids",
+      "time_h": 24,
+      "value": {"low": null, "high": 2.3, "qualifier": "upper_bound", "unit": "fold_vs_control"},
+      "error": null,
+      "sample_size": null,
+      "model_use": "trajectory_validation",
+      "applicability": "Upper-bound validation for the matching TKI exposure protocol.",
+      "limitations": "The value is 'up to', pools multiple TKIs/conditions and is extracellular; it is not an equality target for BSEP loss."
+    },
+    {
+      "id": "tki_intracellular_total_bile_acid_24h",
+      "raw_rows": [60],
+      "source": {
+        "pmid": "34794962",
+        "doi": "10.1124/jpet.121.000828",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9109172/"
+      },
+      "organism": "human",
+      "model": "sandwich-cultured human hepatocytes",
+      "intervention_type": "pharmacologic_bsep_inhibition_tki",
+      "endpoint": "intracellular total bile acids",
+      "time_h": 24,
+      "value": {"low": null, "high": 1.4, "qualifier": "upper_bound", "unit": "fold_vs_control"},
+      "error": null,
+      "sample_size": null,
+      "model_use": "trajectory_validation",
+      "applicability": "Upper-bound intracellular bile-acid validation for the matching TKI exposure protocol.",
+      "limitations": "The value is 'up to' and pools multiple drug/condition results; it is not a universal BSEP-loss fold change."
+    },
+    {
+      "id": "heparg_chlorpromazine_bile_mix_cix_14d",
+      "raw_rows": [73],
+      "source": {
+        "pmid": "27759057",
+        "doi": "10.1038/srep35434",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5069690/"
+      },
+      "organism": "human",
+      "model": "HepaRG spheroid under repeated chlorpromazine plus bile-acid-mixture exposure",
+      "intervention_type": "drug_plus_bile_acid_mixture_repeated_exposure",
+      "endpoint": "ATP-based cholestatic index",
+      "time_h": 336,
+      "value": {"low": 0.66, "high": 0.66, "qualifier": "mean", "unit": "ratio"},
+      "error": {"type": "reported_plus_minus_unspecified", "value": 0.03},
+      "sample_size": null,
+      "model_use": "trajectory_validation",
+      "applicability": "Long-duration HepaRG spheroid viability/cholestatic-index target.",
+      "limitations": "Not primary hepatocyte intracellular bile-acid kinetics and not BSEP loss alone; repeated drug plus bile-acid co-exposure is required."
+    },
+    {
+      "id": "human_gcdc_necrosis_constraint_6h",
+      "raw_rows": [98],
+      "source": {
+        "pmid": "26176423",
+        "doi": "10.1111/bcpt.12449",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4713390/"
+      },
+      "organism": "human",
+      "model": "primary human hepatocytes and differentiated HepaRG",
+      "intervention_type": "glycochenodeoxycholate_exposure",
+      "endpoint": "dominant cell-death mode",
+      "time_h": 6,
+      "value": {"low": null, "high": null, "qualifier": "necrosis_dominant", "unit": "qualitative"},
+      "error": null,
+      "sample_size": null,
+      "model_use": "qualitative_constraint",
+      "applicability": "Constrains high-GCDC human hepatocyte death toward oncotic necrosis rather than rat-like apoptosis.",
+      "limitations": "Figure-level dose-response values were not transcribed; 'little/no death below 3 mM' is not promoted to a calibrated threshold."
+    },
+    {
+      "id": "alagille_liver_senescence_constraint",
+      "raw_rows": [105],
+      "source": {
+        "pmid": "37099537",
+        "doi": "10.1371/journal.pone.0285019",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10132695/"
+      },
+      "organism": "human",
+      "model": "pediatric Alagille explanted liver versus control",
+      "intervention_type": "chronic_cholestatic_disease_tissue",
+      "endpoint": "multi-marker cellular senescence",
+      "time_h": null,
+      "value": {"low": null, "high": null, "qualifier": "direction_increase", "unit": "qualitative"},
+      "error": null,
+      "sample_size": 5,
+      "model_use": "qualitative_constraint",
+      "applicability": "Supports chronic cholestatic disease association with hepatocyte senescence markers.",
+      "limitations": "Cross-sectional genetic disease tissue, not an isolated hepatocyte time course; JAG1/NOTCH biology and bile-duct paucity confound a direct bile-acid-only interpretation."
+    },
+    {
+      "id": "psc_canalicular_network_remodeling",
+      "raw_rows": [127],
+      "source": {
+        "pmid": "37522754",
+        "doi": "10.15252/embr.202357181",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10481669/"
+      },
+      "organism": "human",
+      "model": "primary sclerosing cholangitis liver tissue versus control",
+      "intervention_type": "chronic_cholestatic_disease_tissue",
+      "endpoint": "bile-canalicular network architecture",
+      "time_h": null,
+      "value": {"low": null, "high": null, "qualifier": "multimetric_remodeling", "unit": "qualitative"},
+      "error": null,
+      "sample_size": 4,
+      "model_use": "qualitative_constraint",
+      "applicability": "Supports pressure-associated canalicular dilation, altered connectivity and rosette formation at tissue scale.",
+      "limitations": "Tissue-network phenotype is not a single-cell BSEP-loss response; figure/source data are required before numeric geometry calibration."
+    }
+  ]
+}

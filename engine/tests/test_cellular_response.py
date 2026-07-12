@@ -33,6 +33,18 @@ class CellularResponseTests(unittest.TestCase):
         self.assertEqual(loss_fluxes["bsep-bile-acid-export"], 0.0)
         self.assertEqual(loss_fluxes["mrp2-bilirubin-export"], baseline_fluxes["mrp2-bilirubin-export"])
         self.assertGreater(bsep_loss.pools["bile_acids"].value, baseline.pools["bile_acids"].value)
+        self.assertGreater(baseline.pools["canalicular_bile_acids"].value, 0.0)
+        self.assertEqual(bsep_loss.pools["canalicular_bile_acids"].value, 0.0)
+        self.assertAlmostEqual(
+            baseline.pools["bile_acids"].value + baseline.pools["canalicular_bile_acids"].value,
+            self.state.pools["bile_acids"].value,
+        )
+        assert baseline.cellular_response is not None
+        self.assertEqual(baseline.cellular_response.intervention_type, "unclassified")
+        self.assertEqual(
+            baseline.cellular_response.cyp7a1_feedback_status,
+            "expression_present_function_unknown_no_synthesis_rate",
+        )
 
     def test_exact_mrp2_loss_blocks_only_bilirubin_export(self) -> None:
         baseline = step_cell(self.definition, self.state, 1800.0, rng=EngineRng(52))
@@ -48,6 +60,13 @@ class CellularResponseTests(unittest.TestCase):
         self.assertEqual(loss_fluxes["mrp2-bilirubin-export"], 0.0)
         self.assertEqual(loss_fluxes["bsep-bile-acid-export"], baseline_fluxes["bsep-bile-acid-export"])
         self.assertGreater(mrp2_loss.pools["bilirubin_conjugates"].value, baseline.pools["bilirubin_conjugates"].value)
+        self.assertGreater(baseline.pools["canalicular_bilirubin_conjugates"].value, 0.0)
+        self.assertEqual(mrp2_loss.pools["canalicular_bilirubin_conjugates"].value, 0.0)
+        self.assertAlmostEqual(
+            baseline.pools["bilirubin_conjugates"].value
+            + baseline.pools["canalicular_bilirubin_conjugates"].value,
+            self.state.pools["bilirubin_conjugates"].value,
+        )
 
     def test_response_tracks_proteostasis_damage_exposure_and_fate_evidence(self) -> None:
         stressed = replace(
@@ -65,6 +84,8 @@ class CellularResponseTests(unittest.TestCase):
         self.assertIsNotNone(response)
         assert response is not None
         self.assertEqual(response.cholestasis_state, "canalicular_export_loss")
+        self.assertEqual(response.intervention_type, "combined_genetic_abcb11_abcc2_loss")
+        self.assertEqual(response.bile_acid_system_total, response.intracellular_bile_acids + response.canalicular_bile_acids)
         self.assertGreater(response.upr_signal or 0.0, 0.0)
         self.assertGreater(response.damage_exposure_s["proteotoxic"], 0.0)
         self.assertGreater(

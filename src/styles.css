@@ -393,6 +393,13 @@ select {
   font-size: 12px;
 }
 
+.toolbar-zone {
+  width: 150px;
+  min-width: 150px;
+  height: 34px;
+  font-size: 12px;
+}
+
 .toolbar-status.is-locked {
   color: #ffcf6b;
   font-weight: 700;
@@ -818,6 +825,20 @@ input[type="checkbox"] {
 .evidence-tag--derived { color: #9ec6ff; background: rgba(158, 198, 255, 0.12); }
 .evidence-sources { margin-top: 6px; overflow-wrap: anywhere; }
 
+.phh-profile { margin: 0 0 7px; padding: 6px; border-left: 2px solid #70c6a0; background: rgba(112, 198, 160, 0.07); }
+.phh-profile__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #dce8f8; font-size: 9.5px; }
+.phh-profile__head span { color: #7ee0a8; font-size: 8.5px; text-transform: uppercase; }
+.phh-profile__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 8px; margin-top: 5px; color: #8e9bb1; font-size: 9px; }
+.phh-profile__grid span { display: flex; justify-content: space-between; gap: 5px; min-width: 0; }
+.phh-profile__grid b {
+  min-width: 0;
+  color: #dce8f8;
+  font-weight: 650;
+  text-align: right;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .history-head,
 .genome-head,
 .history-metrics,
@@ -907,6 +928,125 @@ input[type="checkbox"] {
 
 .genome-head strong { color: #e4eefc; }
 .genome-head span { color: #8da5c4; }
+
+.expression-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #8da5c4;
+  font-size: 9px;
+}
+
+.expression-head strong { color: #e4eefc; font-size: 10px; }
+.expression-head span { overflow-wrap: anywhere; text-align: right; }
+
+.expression-table,
+.expression-events,
+.regulatory-graph {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.expression-row {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 2px 7px;
+  padding: 4px 0 4px 6px;
+  border-left: 2px solid rgba(242, 196, 91, 0.32);
+  color: #9ba9bf;
+  font-size: 9px;
+}
+
+.expression-row strong { color: #f2d47d; }
+.expression-row b { color: #dce8f8; font-weight: 650; text-align: right; }
+.expression-row small {
+  grid-column: 1 / -1;
+  color: #7f8da4;
+  font-size: 8.5px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.expression-event {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 6px;
+  color: #9ba9bf;
+  font-size: 9px;
+}
+
+.expression-event strong { color: #9ec6ff; }
+.expression-event b { color: #dce8f8; font-size: 8.5px; }
+
+.regulatory-graph {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 6px;
+  border-top: 1px solid rgba(126, 184, 229, 0.16);
+}
+
+.regulatory-edge {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr);
+  align-items: center;
+  gap: 3px;
+  color: #8e9bb1;
+  font-size: 8px;
+  min-width: 0;
+}
+
+.regulatory-edge strong,
+.regulatory-edge span { overflow-wrap: anywhere; }
+.regulatory-edge strong { color: #b9c9df; }
+.regulatory-edge b { text-align: center; font-size: 11px; }
+.regulatory-edge .is-activates { color: #7ee0a8; }
+.regulatory-edge .is-represses { color: #ff9b8f; }
+
+.genomic-context,
+.genomic-metrics,
+.genomic-modules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.genomic-context { justify-content: space-between; color: #8da5c4; font-size: 9px; }
+.genomic-context strong { color: #e4eefc; }
+.genomic-context span { overflow-wrap: anywhere; }
+.genomic-metrics { margin-top: 6px; color: #8e9bb1; font-size: 8.5px; }
+.genomic-modules { margin-top: 6px; }
+
+.genomic-module {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border-left: 2px solid rgba(126, 224, 168, 0.32);
+  color: #aebbd0;
+  background: rgba(126, 224, 168, 0.05);
+  font-size: 8px;
+}
+
+.genomic-module b { color: #7ee0a8; }
+.genomic-milestones { display: grid; gap: 4px; margin-top: 7px; }
+
+.genomic-milestone {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 2px 6px;
+  color: #9ba9bf;
+  font-size: 8.5px;
+}
+
+.genomic-milestone > b { color: #9ec6ff; }
+.genomic-milestone > strong { color: #7ee0a8; font-size: 8px; }
+.genomic-milestone > small {
+  grid-column: 2 / -1;
+  color: #7f8da4;
+  font-size: 8px;
+  overflow-wrap: anywhere;
+}
 
 .hmdb-validation {
   margin-top: 7px;

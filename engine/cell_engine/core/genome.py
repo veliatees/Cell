@@ -107,6 +107,8 @@ HEPATOCYTE_FUNCTIONAL_LOCI: tuple[FunctionalGeneLocus, ...] = (
     FunctionalGeneLocus("ALB", "213", "ENSG00000163631", "4", 73_404_288, 73_421_483, "plus", "albumin synthesis and secretion", "https://www.ncbi.nlm.nih.gov/gene/213"),
     FunctionalGeneLocus("CPS1", "1373", "ENSG00000021826", "2", 210_477_686, 210_679_108, "plus", "mitochondrial urea-cycle entry", "https://www.ncbi.nlm.nih.gov/gene/1373"),
     FunctionalGeneLocus("CYP7A1", "1581", "ENSG00000167910", "8", 58_490_179, 58_500_164, "minus", "classic bile-acid synthesis", "https://www.ncbi.nlm.nih.gov/gene/1581"),
+    FunctionalGeneLocus("NR1H4", "9971", "ENSG00000012504", "12", 100_473_866, 100_564_414, "plus", "FXR bile-acid sensing and transcriptional regulation", "https://www.ncbi.nlm.nih.gov/gene/9971"),
+    FunctionalGeneLocus("NR0B2", "8431", "ENSG00000131910", "1", 26_911_489, 26_913_975, "minus", "SHP nuclear-receptor coregulator in bile-acid feedback", "https://www.ncbi.nlm.nih.gov/gene/8431"),
     FunctionalGeneLocus("HNF4A", "3172", "ENSG00000101076", "20", 44_355_700, 44_434_597, "plus", "hepatocyte identity transcriptional control", "https://www.ncbi.nlm.nih.gov/gene/3172"),
     FunctionalGeneLocus("TP53", "7157", "ENSG00000141510", "17", 7_668_422, 7_687_491, "minus", "DNA-damage and fate control", "https://www.ncbi.nlm.nih.gov/gene/7157"),
     FunctionalGeneLocus("CDKN1A", "1026", "ENSG00000124762", "6", 36_676_464, 36_687_333, "plus", "p21 cell-cycle arrest", "https://www.ncbi.nlm.nih.gov/gene/1026"),

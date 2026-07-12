@@ -7,6 +7,7 @@ from cell_engine.io.snapshots import build_snapshot
 from cell_engine.organelles.registry import build_organelle_modules
 from cell_engine.processes.hepatocyte import build_hepatocyte_definition, initial_hepatocyte_state
 from cell_engine.validation.invariants import validate_state
+from cell_engine.stochastic.hazard import HazardCalibration, state_conditioned_hazard
 
 
 class OrganelleModuleTests(unittest.TestCase):
@@ -35,9 +36,9 @@ class OrganelleModuleTests(unittest.TestCase):
             with self.subTest(organelle=organelle_id):
                 self.assertGreater(organelle_state.age_h, self.state.organelles[organelle_id].age_h)
                 self.assertGreater(organelle_state.activity, 0.0)
-                self.assertGreater(organelle_state.risk_per_hour, 0.0)
+                self.assertEqual(organelle_state.risk_per_hour, 0.0)
 
-    def test_hazard_is_conditioned_on_cell_stress(self) -> None:
+    def test_uncalibrated_hazard_fails_closed_but_stress_still_reduces_activity(self) -> None:
         baseline = step_cell(self.definition, self.state, 60.0, rng=EngineRng(1))
         stressed = replace(
             self.state,
@@ -50,9 +51,21 @@ class OrganelleModuleTests(unittest.TestCase):
             },
         )
         stressed_next = step_cell(self.definition, stressed, 60.0, rng=EngineRng(1))
-        self.assertGreater(stressed_next.organelles["mitochondria"].risk_per_hour, baseline.organelles["mitochondria"].risk_per_hour)
-        self.assertGreater(stressed_next.organelles["rough_er"].risk_per_hour, baseline.organelles["rough_er"].risk_per_hour)
+        self.assertEqual(stressed_next.organelles["mitochondria"].risk_per_hour, 0.0)
+        self.assertEqual(stressed_next.organelles["rough_er"].risk_per_hour, 0.0)
         self.assertLess(stressed_next.organelles["rough_er"].activity, baseline.organelles["rough_er"].activity)
+
+    def test_source_tagged_hazard_calibration_enables_probability(self) -> None:
+        result = state_conditioned_hazard(
+            "mitochondria",
+            self.state.organelles["mitochondria"],
+            self.state,
+            dt_s=60.0,
+            calibration=HazardCalibration(0.0025, "matched_phh_hazard_dataset"),
+        )
+        self.assertTrue(result.calibrated)
+        self.assertEqual(result.calibration_source_id, "matched_phh_hazard_dataset")
+        self.assertGreater(result.probability_per_hour, 0.0)
 
     def test_seeded_run_is_reproducible(self) -> None:
         first = run_cell(self.definition, self.state, dt_s=120.0, steps=8, rng=EngineRng(42))
@@ -63,7 +76,7 @@ class OrganelleModuleTests(unittest.TestCase):
         next_state = step_cell(self.definition, self.state, 30.0, rng=EngineRng(11))
         snapshot = build_snapshot(self.definition, next_state, metadata={"mode": "m016_step"})
         self.assertEqual(snapshot["metadata"]["mode"], "m016_step")
-        self.assertGreater(snapshot["state"]["organelles"]["mitochondria"]["risk_per_hour"], 0.0)
+        self.assertEqual(snapshot["state"]["organelles"]["mitochondria"]["risk_per_hour"], 0.0)
 
     def test_organelle_function_cycles_change_biological_pools(self) -> None:
         next_state = step_cell(self.definition, self.state, 900.0, rng=EngineRng(123))

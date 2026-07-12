@@ -7,6 +7,7 @@ from cell_engine.core.engine import step_cell
 from cell_engine.core.random import EngineRng
 from cell_engine.core.serialization import to_plain
 from cell_engine.core.state import CellState
+from cell_engine.core.expression import apply_functional_perturbation
 
 
 @dataclass(frozen=True)
@@ -37,26 +38,36 @@ class ScenarioResult:
         return to_plain(self)
 
 
-BASELINE_SCENARIO = Scenario(id="baseline", description="Fed baseline hepatocyte", interventions={})
+BASELINE_SCENARIO = Scenario(
+    id="baseline",
+    description="Fed baseline hepatocyte",
+    interventions={},
+    controls={"experiment_id": "baseline", "intervention_type": "healthy_reference"},
+)
 DETOX_LOAD_SCENARIO = Scenario(id="detox_load", description="High xenobiotic load", interventions={"xenobiotic": 0.9})
 ENERGY_STARVATION_SCENARIO = Scenario(id="energy_starvation", description="Low ATP stress", interventions={"ATP": 0.12, "ADP": 0.78, "AMP": 0.10})
 BSEP_LOSS_SCENARIO = Scenario(
     id="bsep_loss",
     description="Exact BSEP/ABCB11 loss-of-function experiment",
     interventions={},
-    controls={"experiment_id": "bsep_loss", "bsep_surface_activity": 0.0},
+    controls={"experiment_id": "bsep_loss", "intervention_type": "genetic_abcb11_loss", "bsep_surface_activity": 0.0},
 )
 MRP2_LOSS_SCENARIO = Scenario(
     id="mrp2_loss",
     description="Exact MRP2/ABCC2 loss-of-function experiment",
     interventions={},
-    controls={"experiment_id": "mrp2_loss", "mrp2_surface_activity": 0.0},
+    controls={"experiment_id": "mrp2_loss", "intervention_type": "genetic_abcc2_loss", "mrp2_surface_activity": 0.0},
 )
 CANALICULAR_EXPORT_LOSS_SCENARIO = Scenario(
     id="canalicular_export_loss",
     description="Exact combined BSEP and MRP2 loss-of-function experiment",
     interventions={},
-    controls={"experiment_id": "canalicular_export_loss", "bsep_surface_activity": 0.0, "mrp2_surface_activity": 0.0},
+    controls={
+        "experiment_id": "canalicular_export_loss",
+        "intervention_type": "combined_genetic_abcb11_abcc2_loss",
+        "bsep_surface_activity": 0.0,
+        "mrp2_surface_activity": 0.0,
+    },
 )
 
 CURATED_EXPERIMENTS = {
@@ -101,13 +112,43 @@ def apply_scenario(state: CellState, scenario: Scenario) -> CellState:
     intervened = apply_interventions(state, scenario.interventions)
     controls = {**intervened.model_controls, **scenario.controls}
     controls.setdefault("experiment_id", scenario.id)
-    return replace(intervened, model_controls=controls)
+    expression = intervened.gene_expression
+    if expression is not None:
+        for control_id, gene_symbol in (
+            ("bsep_surface_activity", "ABCB11"),
+            ("mrp2_surface_activity", "ABCC2"),
+        ):
+            if control_id not in scenario.controls:
+                continue
+            expression = apply_functional_perturbation(
+                expression,
+                gene_symbol=gene_symbol,
+                activity_scale=float(scenario.controls[control_id]),
+                event_id=f"experiment-{scenario.id}-{gene_symbol}",
+                t_s=intervened.elapsed_s,
+                source_id=f"experiment:{scenario.id}",
+                evidence=scenario.description,
+            )
+    return replace(intervened, model_controls=controls, gene_expression=expression)
 
 
 def _frame(step: int, state: CellState) -> TrajectoryFrame:
     tracked_pools = {
         id: state.pools[id].value
-        for id in ("ATP", "ADP", "AMP", "ROS", "xenobiotic", "detoxified_xenobiotic", "GSH", "urea", "bile_acids")
+        for id in (
+            "ATP",
+            "ADP",
+            "AMP",
+            "ROS",
+            "xenobiotic",
+            "detoxified_xenobiotic",
+            "GSH",
+            "urea",
+            "bile_acids",
+            "canalicular_bile_acids",
+            "bilirubin_conjugates",
+            "canalicular_bilirubin_conjugates",
+        )
         if id in state.pools
     }
     return TrajectoryFrame(

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from math import pi
+
 from cell_engine.core.cell_definition import (
     CellDefinition,
     CompartmentDefinition,
@@ -11,10 +13,14 @@ from cell_engine.core.cell_definition import (
 )
 from cell_engine.core.provenance import ParameterProvenance, SourceReference
 from cell_engine.core.genome import build_reference_hepatocyte_genome
+from cell_engine.core.expression import build_initial_hepatocyte_expression
+from cell_engine.core.genomic_architecture import build_genomic_architecture
 from cell_engine.core.history import initial_cell_history
 from cell_engine.core.state import CargoPacket, CellEvent, CellState, OrganelleState, PoolState
 
 DATE_VERIFIED = "2026-06-19"
+HEPATOCYTE_REFERENCE_VOLUME_UM3 = 3400.0
+HEPATOCYTE_EQUIVALENT_SPHERE_RADIUS_UM = (3.0 * HEPATOCYTE_REFERENCE_VOLUME_UM3 / (4.0 * pi)) ** (1.0 / 3.0)
 
 
 def build_hepatocyte_definition(zone: str = "midlobular") -> CellDefinition:
@@ -35,6 +41,14 @@ def build_hepatocyte_definition(zone: str = "midlobular") -> CellDefinition:
             date_verified=DATE_VERIFIED,
             notes="Quantitative reference for sizes, concentrations, copy numbers, and order-of-magnitude checks.",
         ),
+        "human_cell_proteome_quantitative_2023": SourceReference(
+            id="human_cell_proteome_quantitative_2023",
+            title="Quantitative Aspects of the Human Cell Proteome",
+            url="https://pmc.ncbi.nlm.nih.gov/articles/PMC10218018/",
+            source_type="review",
+            date_verified="2026-07-11",
+            notes="Reports a characteristic average hepatocyte volume of 3400 um3 and discusses cell-volume scaling of protein content.",
+        ),
         "project_roadmap_07": SourceReference(
             id="project_roadmap_07",
             title="Integrated Cell Engine Roadmap",
@@ -48,12 +62,12 @@ def build_hepatocyte_definition(zone: str = "midlobular") -> CellDefinition:
     parameters = {
         "hepatocyte_radius_um": ParameterProvenance(
             name="hepatocyte_radius_um",
-            value=12.0,
+            value=HEPATOCYTE_EQUIVALENT_SPHERE_RADIUS_UM,
             unit="um",
-            source_id="cell_biology_by_numbers",
+            source_id="human_cell_proteome_quantitative_2023",
             assumption_level="literature_derived",
-            confidence=0.55,
-            notes="Initial coarse radius for visualization and compartment scaling; must be refined per dataset.",
+            confidence=0.60,
+            notes="Equivalent-sphere radius derived geometrically from the 3400 um3 reference volume; not a claim that a polarized hepatocyte is spherical.",
         ),
         "initial_pool_unit": ParameterProvenance(
             name="initial_pool_unit",
@@ -103,8 +117,10 @@ def build_hepatocyte_definition(zone: str = "midlobular") -> CellDefinition:
         _pool("cytosolic_protein", "Cytosolic protein", "cytosol", 0.35, "Bulk translated cytosolic protein pool."),
         _pool("ammonia", "Ammonia", "cytosol", 0.05, "Urea-cycle detox substrate."),
         _pool("urea", "Urea", "cytosol", 0.08, "Ammonia detox output."),
-        _pool("bile_acids", "Bile acids", "cytosol", 0.14, "Hepatocyte bile-handling pool."),
-        _pool("bilirubin_conjugates", "Bilirubin conjugates", "cytosol", 0.05, "Canalicular export cargo."),
+        _pool("bile_acids", "Intracellular bile acids", "cytosol", 0.14, "Intracellular hepatocyte bile-acid pool; retained legacy id for snapshot compatibility."),
+        _pool("canalicular_bile_acids", "Canalicular bile acids", "bile_canaliculus", 0.00, "Mass-conserving destination for BSEP export; zero is an empty model sink at initialization, not a measured concentration."),
+        _pool("bilirubin_conjugates", "Intracellular bilirubin conjugates", "cytosol", 0.05, "Intracellular conjugated-bilirubin pool; retained legacy id for snapshot compatibility."),
+        _pool("canalicular_bilirubin_conjugates", "Canalicular bilirubin conjugates", "bile_canaliculus", 0.00, "Mass-conserving destination for MRP2 export; zero is an empty model sink at initialization, not a measured concentration."),
         _pool("cholesterol", "Cholesterol", "smooth_er", 0.22, "Bile/lipid metabolism pool."),
         _pool("lipids", "Lipids", "smooth_er", 0.28, "Membrane and secretion lipid pool."),
         _pool("xenobiotic", "Xenobiotic", "smooth_er", 0.04, "Detox load."),
@@ -332,7 +348,7 @@ def build_hepatocyte_definition(zone: str = "midlobular") -> CellDefinition:
         cell_type="hepatocyte",
         zone=zone,
         geometry=GeometryDefinition(
-            radius_um=12.0,
+            radius_um=HEPATOCYTE_EQUIVALENT_SPHERE_RADIUS_UM,
             polarity_axis=(0.0, 1.0, 0.0),
             membrane_regions={
                 "sinusoidal": "blood-facing uptake/secretion face",
@@ -354,7 +370,7 @@ def build_hepatocyte_definition(zone: str = "midlobular") -> CellDefinition:
         validation_targets=validation_targets,
         sources=sources,
         parameters=parameters,
-        notes="Authoritative M015 hepatocyte definition for the integrated engine boundary.",
+        notes="Mixed-authority hepatocyte definition: structural contracts are source-backed where stated; relative 0-1 pools and organelle cycles are schematic and cannot drive quantitative validation.",
     )
 
 
@@ -374,7 +390,7 @@ def initial_hepatocyte_state(definition: CellDefinition) -> CellState:
             id=organelle.id,
             health=1.0,
             activity=0.0,
-            age_h=_initial_age_h(organelle.id),
+            age_h=0.0,
             damage=0.0,
             capacity=1.0,
             location_um=_default_location_um(organelle.id),
@@ -400,6 +416,7 @@ def initial_hepatocyte_state(definition: CellDefinition) -> CellState:
         "senescence": 0.0,
     }
 
+    genome = build_reference_hepatocyte_genome()
     return CellState(
         definition_id=definition.id,
         elapsed_s=0.0,
@@ -407,7 +424,9 @@ def initial_hepatocyte_state(definition: CellDefinition) -> CellState:
         pools=pools,
         organelles=organelles,
         stress=stress,
-        genome=build_reference_hepatocyte_genome(),
+        genome=genome,
+        gene_expression=build_initial_hepatocyte_expression(genome),
+        genomic_architecture=build_genomic_architecture(genome, zonation=definition.zone),
         history=initial_cell_history(),
         cargo_packets=_initial_cargo_packets(),
         events=(
@@ -415,7 +434,7 @@ def initial_hepatocyte_state(definition: CellDefinition) -> CellState:
                 id="m015_initialized",
                 t_s=0.0,
                 severity="info",
-                text="Initialized authoritative hepatocyte definition/state snapshot boundary.",
+                text="Initialized mixed-authority hepatocyte snapshot; relative pools and organelle cycles are schematic.",
             ),
         ),
     )
@@ -573,21 +592,3 @@ def _default_location_um(organelle_id: str) -> tuple[float, float, float]:
         "cytosol_metabolism": (0.0, -1.0, 0.0),
     }
     return locations.get(organelle_id, (0.0, 0.0, 0.0))
-
-
-def _initial_age_h(organelle_id: str) -> float:
-    ages = {
-        "plasma_membrane": 4.0,
-        "nucleus": 12.0,
-        "ribosome": 2.0,
-        "rough_er": 3.0,
-        "smooth_er": 3.0,
-        "golgi": 2.5,
-        "mitochondria": 18.0,
-        "lysosome_endosome": 4.5,
-        "peroxisome": 5.0,
-        "proteasome": 3.5,
-        "cytoskeleton": 1.0,
-        "cytosol_metabolism": 0.0,
-    }
-    return ages.get(organelle_id, 0.0)

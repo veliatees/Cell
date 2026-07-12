@@ -54,7 +54,7 @@ describe("LivingCell — organelle network", () => {
     const ids = new Set(c.snapshot().flows.map((f) => f.id));
     expect(ids.has("glycogen-glycolysis") || ids.has("glycolysis-glycogen")).toBe(true);
     expect(ids.has("mito-urea-sinusoid")).toBe(true);
-    expect(ids.has("er-bile-canaliculus")).toBe(true);
+    expect(ids.has("bile-acid-pool-bsep-export")).toBe(true);
     expect(ids.has("er-detox-canaliculus")).toBe(true);
     expect(ids.has("golgi-albumin-sinusoid")).toBe(true);
   });

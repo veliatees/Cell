@@ -20,9 +20,10 @@ The standard two-stage model, on molecule counts:
 
 `GeneExpressionKinetics` carries the four rates plus derived analytic quantities
 (`burst_size = k_tl/k_mRNA_decay`, `mean_mrna`, `mean_protein`).
-`HEPATOCYTE_ENZYME_GENE` uses representative mammalian order-of-magnitude rates
-(2 gene copies, ~5 min mRNA half-life, burst size ~21), flagged low confidence —
-the *mechanism and noise structure* are the grounded part, and they are universal.
+The legacy constant named `HEPATOCYTE_ENZYME_GENE` is now explicitly classified
+as a synthetic software benchmark. Its rates make the stochastic statistics
+converge quickly; they are not a measured hepatocyte parameter set. The
+mechanism and analytic noise structure are the tested part.
 
 ## What emerges (and is validated)
 
@@ -43,10 +44,10 @@ Full engine suite: **82/82 passing** (78 prior + 4 new), no regressions.
 
 ## Honest limits (v1)
 
-Rates are order-of-magnitude, not gene-specific. Expression is constitutive — no
-promoter states, transcription-factor regulation, or coupling yet to the
-glycolytic enzyme Vmax values from M033. Wiring expression to enzyme levels (so
-the cell's metabolism is set by its own gene expression) is the natural follow-up.
+The bundled rates are synthetic and cannot run in the authoritative hepatocyte
+expression program. The current production path is the calibration-gated,
+compartmental exact-SSA process documented in
+`17-genomic-system-six-milestones.md`.
 
 ## Next
 

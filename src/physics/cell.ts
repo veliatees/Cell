@@ -1220,15 +1220,15 @@ export class LivingCell {
         usedBy: "proteasome and chaperone quality control"
       },
       {
-        id: "er-bile-canaliculus",
-        from: "er",
+        id: "bile-acid-pool-bsep-export",
+        from: "cytosol",
         to: "canaliculus",
-        cargo: "bile acids / cholesterol",
+        cargo: "conjugated bile-acid pool",
         value: v(f.bileExportDelivered),
         mode: "carrier",
         etaS: 1,
-        producedBy: "smooth ER bile-acid/cholesterol handling",
-        usedBy: "canalicular ABC exporters"
+        producedBy: "multi-compartment bile-acid synthesis and conjugation",
+        usedBy: "BSEP/ABCB11 at the canalicular membrane"
       },
       {
         id: "canalicular-miss-lysosome",

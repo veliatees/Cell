@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from math import isfinite
+from math import isclose, isfinite
 from typing import Mapping
 
 from cell_engine.core.provenance import SourceReference
@@ -51,6 +51,22 @@ CELLULAR_RESPONSE_SOURCES: dict[str, SourceReference] = {
         date_verified=DATE_VERIFIED,
         notes="The established apoptosis module owns irreversible apoptosis-versus-necrosis commitment.",
     ),
+    "human_tki_bile_acid_trajectory": SourceReference(
+        id="human_tki_bile_acid_trajectory",
+        title="Novel Bile Acid-Dependent Mechanisms of Hepatotoxicity Associated with Tyrosine Kinase Inhibitors",
+        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC9109172/",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes="Human SCHH data distinguish intracellular from extracellular bile-acid responses and show drug-specific CYP7A1 feedback; not a generic BSEP-knockout calibration.",
+    ),
+    "human_bile_acid_death_mode": SourceReference(
+        id="human_bile_acid_death_mode",
+        title="Mechanisms of bile acid toxicity in human and rat hepatocytes",
+        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC4713390/",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes="High GCDC exposure produced predominantly oncotic necrosis in primary human hepatocytes and HepaRG, unlike apoptosis-dominant rat responses.",
+    ),
 }
 
 CONTROL_BSEP_SURFACE_ACTIVITY = "bsep_surface_activity"
@@ -81,12 +97,19 @@ def apply_cellular_response(state: CellState, *, dt_s: float) -> CellState:
         raise ValueError("dt_s must be positive")
 
     controls = state.model_controls
-    bsep = control_activity(controls, CONTROL_BSEP_SURFACE_ACTIVITY)
-    mrp2 = control_activity(controls, CONTROL_MRP2_SURFACE_ACTIVITY)
+    bsep = _expression_bound_activity(state, CONTROL_BSEP_SURFACE_ACTIVITY, "ABCB11")
+    mrp2 = _expression_bound_activity(state, CONTROL_MRP2_SURFACE_ACTIVITY, "ABCC2")
     experiment_id = str(controls.get(CONTROL_EXPERIMENT_ID, "baseline"))
+    intervention_type = str(controls.get("intervention_type", "unclassified"))
     pools = state.pools
     bile_acids = pools.get("bile_acids").value if "bile_acids" in pools else 0.0
+    canalicular_bile_acids = pools.get("canalicular_bile_acids").value if "canalicular_bile_acids" in pools else 0.0
     bilirubin = pools.get("bilirubin_conjugates").value if "bilirubin_conjugates" in pools else 0.0
+    canalicular_bilirubin = (
+        pools.get("canalicular_bilirubin_conjugates").value
+        if "canalicular_bilirubin_conjugates" in pools
+        else 0.0
+    )
     misfolded = pools.get("misfolded_protein").value if "misfolded_protein" in pools else 0.0
     ubiquitinated = pools.get("ubiquitinated_cargo").value if "ubiquitinated_cargo" in pools else 0.0
     upr = _latest_marker(state, "upr_like")
@@ -110,11 +133,20 @@ def apply_cellular_response(state: CellState, *, dt_s: float) -> CellState:
     fate_evidence = _fate_evidence(state, upr)
     response = CellularResponseState(
         experiment_id=experiment_id,
+        intervention_type=intervention_type,
         cholestasis_state=cholestasis_state,
         bsep_surface_activity=bsep,
         mrp2_surface_activity=mrp2,
         bile_acid_retention=bile_acids,
         bilirubin_retention=bilirubin,
+        intracellular_bile_acids=bile_acids,
+        canalicular_bile_acids=canalicular_bile_acids,
+        intracellular_bilirubin_conjugates=bilirubin,
+        canalicular_bilirubin_conjugates=canalicular_bilirubin,
+        bile_acid_system_total=bile_acids + canalicular_bile_acids,
+        bilirubin_system_total=bilirubin + canalicular_bilirubin,
+        cyp7a1_feedback_status=_cyp7a1_status(state),
+        basolateral_escape_status="not_modeled_no_identifiable_rate",
         upr_signal=upr,
         misfolded_protein=misfolded,
         ubiquitinated_cargo=ubiquitinated,
@@ -123,7 +155,8 @@ def apply_cellular_response(state: CellState, *, dt_s: float) -> CellState:
         fate_evidence=fate_evidence,
         source_ids=tuple(CELLULAR_RESPONSE_SOURCES),
         notes=(
-            "Surface activity is a relative experimental input, not a turnover rate. "
+            "Intracellular-to-canalicular export is mass-conserving. Surface activity is a relative experimental input, not a turnover rate. "
+            "CYP7A1 feedback and basolateral escape remain absent because the evidence panel does not identify transferable absolute rates. "
             "Damage exposure is stress-time (s), not a lesion count. Fate is evidence-only "
             "until a matched temporal commitment calibration is supplied."
         ),
@@ -136,6 +169,30 @@ def _latest_marker(state: CellState, marker: str) -> float | None:
         return None
     value = state.signaling_results[-1].markers.get(marker)
     return clamp(float(value), 0.0, 1.0) if value is not None else None
+
+
+def _expression_bound_activity(state: CellState, control_id: str, gene_symbol: str) -> float:
+    control_is_explicit = control_id in state.model_controls
+    control_value = control_activity(state.model_controls, control_id)
+    if state.gene_expression is None or gene_symbol not in state.gene_expression.genes:
+        return control_value
+    expression_value = state.gene_expression.genes[gene_symbol].functional_protein_scale
+    if expression_value is None:
+        return control_value
+    if control_is_explicit and not isclose(expression_value, control_value, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError(f"{control_id} conflicts with {gene_symbol} expression activity")
+    return expression_value
+
+
+def _cyp7a1_status(state: CellState) -> str:
+    if state.gene_expression is None:
+        return "expression_state_unavailable"
+    gene = state.gene_expression.genes.get("CYP7A1")
+    if gene is None or gene.functional_protein_scale is None:
+        return "expression_present_function_unknown_no_synthesis_rate"
+    if "cyp7a1_bile_synthesis_rate_per_h" not in state.model_controls:
+        return "functional_scale_available_no_synthesis_rate"
+    return "calibrated_expression_to_synthesis_coupling_active"
 
 
 def _fate_evidence(state: CellState, upr: float | None) -> str:

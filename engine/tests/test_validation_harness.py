@@ -48,8 +48,10 @@ class ValidationHarnessTests(unittest.TestCase):
     def test_experiment_scenario_records_explicit_surface_control_and_response(self) -> None:
         result = run_scenario(self.definition, self.state, BSEP_LOSS_SCENARIO, dt_s=120.0, steps=2, seed=12)
         self.assertEqual(result.scenario.controls["bsep_surface_activity"], 0.0)
+        self.assertEqual(result.scenario.controls["intervention_type"], "genetic_abcb11_loss")
         self.assertIsNotNone(result.frames[-1].response)
         self.assertEqual(result.frames[-1].response["cholestasis_state"], "bsep_export_loss")
+        self.assertEqual(result.frames[-1].response["intervention_type"], "genetic_abcb11_loss")
 
 
 if __name__ == "__main__":

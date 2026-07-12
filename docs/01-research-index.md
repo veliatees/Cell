@@ -47,6 +47,14 @@ linked to its dependencies.
 - Ribosomes
 - Signaling pathways
 - Cell cycle, division, apoptosis, and stress responses
+- Cholestasis evidence and calibration contract: `15-cholestasis-evidence-panel.md`
+- Genome and gene-expression milestone 1: `16-genome-expression-milestone.md`
+- Six-milestone genomic system and validation boundary: `17-genomic-system-six-milestones.md`
+- Primary-human-hepatocyte quantitative baseline and conversion boundary: `18-primary-human-hepatocyte-baseline.md`
+- Human PHH periportal–midlobular–pericentral context: `milestones/049-human-phh-zonation-context-v1.md`
+- Sinusoid-coupled glucose boundary and transport gates: `milestones/050-phh-zonation-sinusoid-homeostasis-v2.md`
+- Healthy-human nutritional trajectory and organ-to-cell scale gate: `milestones/051-phh-zonation-sinusoid-homeostasis-v3.md`
+- Healthy-human organ/splanchnic flux evidence bundle: `../data/hepatic_flux/`
 
 ## Epithelial Biology
 
