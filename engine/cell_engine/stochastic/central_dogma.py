@@ -24,6 +24,14 @@ CENTRAL_DOGMA_SOURCES: dict[str, SourceReference] = {
         date_verified=DATE_VERIFIED,
         notes="Two-stage model: mRNA is Poisson; protein noise is super-Poissonian with Fano = 1 + b (burst size b = k_tl/k_deg_mRNA).",
     ),
+    "synthetic_expression_benchmark": SourceReference(
+        id="synthetic_expression_benchmark",
+        title="Synthetic central-dogma software benchmark",
+        url="docs/milestones/034-central-dogma.md",
+        source_type="project_assumption",
+        date_verified=DATE_VERIFIED,
+        notes="Non-biological rates retained only for analytic/SSA tests. This profile is opt-in and is excluded from authoritative hepatocyte snapshots.",
+    ),
 }
 
 
@@ -31,10 +39,8 @@ CENTRAL_DOGMA_SOURCES: dict[str, SourceReference] = {
 class GeneExpressionKinetics:
     """Rates for a single gene's two-stage expression (per second).
 
-    Values are representative mammalian order-of-magnitude figures (low mRNA copy
-    number, strong translational bursting), not gene-specific measurements;
-    flagged with a modest confidence. The *mechanism and noise structure* are the
-    grounded part here, and they are universal.
+    A profile must carry its own source and confidence. The bundled default is a
+    synthetic software benchmark, not a human-hepatocyte calibration.
     """
 
     gene_id: str
@@ -61,9 +67,8 @@ class GeneExpressionKinetics:
         return self.k_translation_per_s * self.mean_mrna / self.k_protein_decay_per_s
 
 
-# A representative hepatocyte enzyme gene (e.g. a metabolic enzyme): a few mRNA
-# copies, an ~5 min mRNA half-life, strong translational bursting, ~6 min protein
-# turnover (kept fast here so the stochastic protein statistics converge quickly).
+# Synthetic rates chosen so stochastic statistics converge quickly in tests.
+# This is not a hepatocyte parameter set and is excluded from default snapshots.
 HEPATOCYTE_ENZYME_GENE = GeneExpressionKinetics(
     gene_id="enzyme_gene",
     gene_copies=2,
@@ -71,9 +76,9 @@ HEPATOCYTE_ENZYME_GENE = GeneExpressionKinetics(
     k_mrna_decay_per_s=0.0023,     # mRNA half-life ~5 min
     k_translation_per_s=0.05,      # ~21 proteins per mRNA -> strong bursts
     k_protein_decay_per_s=0.002,   # protein half-life ~6 min (fast for testability)
-    source_id="bionumbers_expression",
-    confidence=0.3,
-    notes="Order-of-magnitude rates; burst size ~21. Universal two-stage topology.",
+    source_id="synthetic_expression_benchmark",
+    confidence=0.0,
+    notes="Synthetic software benchmark only; burst size ~21. Mechanism test, not biological calibration.",
 )
 
 

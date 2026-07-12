@@ -121,6 +121,112 @@ const snapshot: EngineSnapshot = {
       "Ca2+": { value: 0.12, unit: "relative_pool_0_1", compartment_id: "cytosol" },
       albumin: { value: 0.21, unit: "relative_pool_0_1", compartment_id: "golgi" }
     },
+    quantitative_state: {
+      profile_id: "postabsorptive",
+      profile_label: "Postabsorptive / overnight fast",
+      status: "source_backed_baseline_not_dynamic",
+      authority: "authoritative_research_preview",
+      cell_volume_l: 3.4e-12,
+      effective_cytosol_volume_l: 1.768e-12,
+      energy_charge: 0.721245,
+      pools: {
+        ATP: {
+          id: "ATP", value: 2.19232, unit: "mM", biological_basis: "whole_tissue_equivalent_mM",
+          compartment: "whole_tissue_equivalent", low: null, high: null, evidence: "derived",
+          source_ids: ["human_liver_adenylates_1992"], effective_lumped_model_count: 2334194863,
+          count_basis: "effective_lumped_cytosol_count_not_direct_single_cell_measurement", notes: ""
+        }
+      },
+      limitations: ["Tissue-equivalent pools are not compartment-resolved isolated-PHH measurements."]
+    },
+    zonation_state: {
+      species: "Homo sapiens",
+      selected_zone: "midlobular",
+      status: "source_backed_reference_context_not_donor_observation",
+      coordinate_status: "categorical_zone_not_measured_cell_coordinate",
+      zone: {
+        id: "midlobular", label: "Zone 2 / midlobular", porto_central_position: "intermediate_porto_central",
+        oxygen_context: "intermediate", marker_genes: ["HSD17B13", "LIPC"],
+        functional_biases: ["human-specific midlobular identity program"],
+        niche_signals: ["transition between portal and central niche programs"],
+        source_ids: ["human_liver_spatial_atlas_2026"]
+      },
+      markers: [{ gene: "HSD17B13", enriched_zone: "midlobular", observed_layer: "transcript", source_ids: ["human_liver_spatial_atlas_2026"], notes: "" }],
+      quantitative_effect_sizes_available: false,
+      oxygen_partial_pressure_available: false,
+      dynamic_flux_scaling_enabled: false,
+      source_ids: ["human_liver_spatial_atlas_2026"],
+      limitations: ["No donor-specific expression value is inferred."]
+    },
+    sinusoid_homeostasis: {
+      version: "sinusoid_coupled_homeostasis_v2",
+      selected_zone: "midlobular",
+      nutritional_profile: "postabsorptive",
+      status: "glucose_perfusion_active_cell_exchange_blocked",
+      target_glucose_mM: 4.75,
+      reference_low_mM: 3.9,
+      reference_high_mM: 5.6,
+      replacement_rate_per_s: 1 / 13.4,
+      mean_transit_time_s: 13.4,
+      boundary_recovery_trace: [{ t_s: 0, glucose_mM: 5.6 }, { t_s: 13.4, glucose_mM: 5.0627 }],
+      porto_central_path: ["periportal", "midlobular", "pericentral"],
+      coupling_edges: [
+        { id: "blood_perfusion_replacement", source: "systemic_blood", target: "sinusoid_boundary", status: "active_source_backed", flux_value: 1 / 13.4, flux_unit: "s^-1", source_ids: ["human_hepatic_transit_1996", "hmdb_2022"], blocker: null },
+        { id: "glut2_bidirectional_exchange", source: "sinusoid_boundary", target: "hepatocyte_cytosol", status: "blocked_missing_human_calibration", flux_value: null, flux_unit: null, source_ids: [], blocker: "Requires matched human PHH calibration." }
+      ],
+      anatomical_sinusoid_volume_l: null,
+      blood_to_cell_exchange_flux: null,
+      zonal_oxygen_partial_pressure: null,
+      source_ids: ["human_hepatic_transit_1996", "hmdb_2022"],
+      limitations: ["Boundary recovery is perfusion homeostasis, not hepatocyte uptake."]
+    },
+    nutritional_homeostasis_v3: {
+      version: "phh_zonation_sinusoid_homeostasis_v3",
+      selected_zone: "midlobular",
+      status: "human_organ_trajectory_active_single_cell_flux_blocked",
+      biological_system: "healthy_human_liver_in_vivo",
+      intervention: "liquid_mixed_meal",
+      trace: [
+        { phase: "pre_meal_baseline", time_min: 0, time_uncertainty_min: null, glycogen_mM_liver: 207, glycogen_sem_mM_liver: 22 },
+        { phase: "mixed_meal_peak", time_min: 318, time_uncertainty_min: 31, glycogen_mM_liver: 316, glycogen_sem_mM_liver: 19 }
+      ],
+      mean_glycogen_synthesis_rate: { value: 0.34, uncertainty: null, uncertainty_type: null, unit: "mmol_glucosyl_per_L_liver_per_min", evidence: "reported cohort-average rate", source_ids: ["human_mixed_meal_homeostasis_1996"] },
+      mean_post_peak_glycogen_decline_rate: { value: 0.26, uncertainty: null, uncertainty_type: null, unit: "mmol_glucosyl_per_L_liver_per_min", evidence: "reported decline rate", source_ids: ["human_mixed_meal_homeostasis_1996"] },
+      basal_hepatic_glucose_output: { value: 1.90, uncertainty: 0.04, uncertainty_type: "SEM", unit: "mg_glucose_per_kg_body_mass_per_min", evidence: "reported basal output", source_ids: ["human_mixed_meal_homeostasis_1996"] },
+      hepatic_glucose_output_suppression: "reported_complete_suppression_no_numeric_flux_assigned",
+      suppression_time_min: 30,
+      direct_pathway_windows: [
+        { start_h: 2, end_h: 4, fraction: 0.46, sem: 0.05, denominator: "fraction_of_overall_hepatic_glycogen_synthesis" },
+        { start_h: 4, end_h: 6, fraction: 0.68, sem: 0.08, denominator: "fraction_of_overall_hepatic_glycogen_synthesis" }
+      ],
+      rate_time_implied_peak_mM_liver: 315.12,
+      measured_peak_residual_mM_liver: 0.88,
+      scale_bridge: { source_scale: "whole_liver_in_vivo_cohort_average", target_scale: "single_zone_resolved_primary_human_hepatocyte", status: "blocked_non_identifiable_from_available_measurements", per_cell_glucose_flux: null, per_cell_glucose_flux_unit: null, glut2_vmax: null, zone_allocation_factors: null, blockers: ["No matched hepatocyte number."] },
+      predictive_ready: false,
+      source_ids: ["human_mixed_meal_homeostasis_1996"],
+      limitations: ["Organ-level validation trajectory, not per-cell flux."]
+    },
+    hepatic_flux_evidence: {
+      status: "organ_scale_reference_evidence_not_single_cell_calibration",
+      record_count: 31,
+      numeric_record_count: 25,
+      healthy_numeric_record_count: 21,
+      metabolite_counts: { glucose: 10, lactate: 3 },
+      nutritional_state_counts: { postabsorptive: 22, fed: 5, prolonged_fast: 4 },
+      bed_scope_counts: { whole_splanchnic_bed: 17, systemic_whole_body: 9 },
+      per_cell_applicable_count: 0,
+      readiness: { organ_scale_reference_evidence_available: true, single_cell_flux_ready: false, healthy_portal_resolved_ready: false, in_vivo_human_glut2_kinetics_ready: false },
+      policy: "Organ-scale only; no per-hepatocyte conversion.",
+      raw_paths: ["data/hepatic_flux/raw/measured_records.json"],
+      audit_paths: ["data/hepatic_flux/audit/unidentifiable_parameters.md"]
+    },
+    schematic_visual_state: {
+      authority: "schematic_visual_only",
+      source_path: "state.pools",
+      unit: "relative_pool_0_1",
+      pool_ids: ["ATP", "albumin"],
+      may_drive_quantitative_validation: false
+    },
     stress: { energy: 0.1, oxidative: 0.2 },
     organelles: {
       mitochondria: {
@@ -163,6 +269,16 @@ const snapshot: EngineSnapshot = {
       pump_activity: 0.8,
       channel_open_probability: 0.1
     },
+    phh_baseline: {
+      date_verified: "2026-07-10",
+      policy: "retain original assay units",
+      anchor_count: 7,
+      readiness: {
+        direct_initialization_ready: false,
+        whole_cell_transport_flux_ready: false,
+        blocking_measurements: ["canalicular surface copies"]
+      }
+    },
     experiment: {
       id: "bsep_loss",
       description: "Exact BSEP loss-of-function experiment",
@@ -171,11 +287,20 @@ const snapshot: EngineSnapshot = {
     },
     cellular_response: {
       experiment_id: "bsep_loss",
+      intervention_type: "genetic_abcb11_loss",
       cholestasis_state: "bsep_export_loss",
       bsep_surface_activity: 0,
       mrp2_surface_activity: 1,
       bile_acid_retention: 0.31,
       bilirubin_retention: 0.04,
+      intracellular_bile_acids: 0.31,
+      canalicular_bile_acids: 0.01,
+      intracellular_bilirubin_conjugates: 0.04,
+      canalicular_bilirubin_conjugates: 0.02,
+      bile_acid_system_total: 0.32,
+      bilirubin_system_total: 0.06,
+      cyp7a1_feedback_status: "not_modeled_no_identifiable_rate",
+      basolateral_escape_status: "not_modeled_no_identifiable_rate",
       upr_signal: 0.42,
       misfolded_protein: 0.09,
       ubiquitinated_cargo: 0.03,
@@ -215,6 +340,103 @@ const snapshot: EngineSnapshot = {
         source_ids: ["ncbi_mtdna_rcrs"]
       },
       source_ids: ["ncbi_grch38_p14", "ncbi_gene_records", "ncbi_mtdna_rcrs"]
+    },
+    gene_expression: {
+      program_id: "hepatocyte_cholestasis_vertical_slice_v1",
+      genes: {
+        ABCB11: {
+          gene_symbol: "ABCB11",
+          product: "BSEP",
+          role: "canalicular bile-acid export",
+          coupling_target: "bsep_surface_activity",
+          allele_copies: 2,
+          functional_dosage_scale: 1,
+          active_allele_count: null,
+          promoter_state: "unknown",
+          chromatin_state: "unknown",
+          nuclear_pre_mrna_count: null,
+          nuclear_mature_mrna_count: null,
+          cytoplasmic_mrna_count: null,
+          total_protein_count: 850000,
+          functional_protein_scale: 0,
+          protein_location: "canalicular_plasma_membrane",
+          evidence_status: "experimental_control",
+          source_ids: ["protein_abundance", "experiment:bsep_loss"]
+        }
+      },
+      events: [{
+        id: "experiment-bsep_loss-ABCB11",
+        t_s: 0,
+        gene_symbol: "ABCB11",
+        event_type: "functional_perturbation",
+        changed_fields: ["functional_protein_scale"],
+        source_id: "experiment:bsep_loss",
+        evidence: "experimental_control"
+      }],
+      kinetics_status: "gene_specific_kinetics_not_calibrated",
+      engine_mode: "calibration_gated_exact_ssa",
+      kinetic_profiles: {},
+      regulatory_edges: [{
+        id: "fxr-bsep-induction",
+        regulator: "activated_NR1H4",
+        target_gene: "ABCB11",
+        target_layer: "promoter",
+        effect: "activates",
+        mechanism: "FXR activation induces BSEP expression.",
+        biological_context: "primary human hepatocyte culture",
+        quantification_status: "qualitative_direction_only",
+        source_ids: ["phh_bile_acid_gene_regulation"]
+      }],
+      regulatory_status: "source_backed_qualitative_graph_no_autonomous_regulatory_inference",
+      source_ids: ["genomic_burst_kinetics", "primary_hepatocyte_protein_turnover"]
+    },
+    genomic_architecture: {
+      architecture_id: "hepatocyte_genome_program_v1",
+      gene_modules: [{
+        id: "bile_acid_homeostasis",
+        label: "Bile-acid synthesis, sensing and transport",
+        member_genes: ["HNF4A", "ABCB11"],
+        explicit_expression_genes: ["HNF4A", "ABCB11"],
+        representation_mode: "explicit_expression_states",
+        dynamic_status: "only calibrated explicit genes may evolve",
+        source_ids: ["ncbi_gene_records"]
+      }],
+      epigenetic_loci: {
+        HNF4A: {
+          gene_symbol: "HNF4A",
+          chromatin_accessibility: "unknown",
+          dna_methylation_fraction: null,
+          histone_marks: {},
+          observation_status: "not_measured",
+          biological_system: "not_provided",
+          assay: "not_provided",
+          source_ids: ["human_liver_multiome"]
+        }
+      },
+      omics_datasets: [],
+      variant_functional_links: [],
+      identity: {
+        species: "Homo sapiens",
+        cell_type: "hepatocyte",
+        zonation: "midlobular",
+        donor_id: "not_provided",
+        donor_age: "not_provided",
+        donor_sex: "not_provided",
+        tissue_health: "reference_healthy_context_not_donor_observation",
+        genotype_status: "not_provided_reference_coordinates_only",
+        clone_id: "founder-cell-no-clonal-inference",
+        identity_status: "reference_cell_context_with_unknown_donor",
+        source_ids: ["human_liver_cell_atlas"]
+      },
+      milestones: [{
+        milestone: 1,
+        title: "Reference genome to functional expression slice",
+        software_complete: true,
+        scientific_status: "implemented_data_required",
+        implemented_capabilities: ["reference loci"],
+        data_requirements: ["donor genotype"]
+      }],
+      source_ids: ["ncbi_gene_records", "human_liver_cell_atlas"]
     },
     history: {
       lineage_id: "hepatocyte-lineage-0",
@@ -355,9 +577,31 @@ describe("engine snapshot client", () => {
     expect(summary.regenerationContext?.timing_profile?.dna_synthesis_peak_h).toEqual([36, 48]);
     expect(summary.experiment?.id).toBe("bsep_loss");
     expect(summary.cellularResponse?.cholestasis_state).toBe("bsep_export_loss");
+    expect(summary.cellularResponse?.intervention_type).toBe("genetic_abcb11_loss");
+    expect(summary.cellularResponse?.canalicular_bile_acids).toBeCloseTo(0.01);
+    expect(summary.phhBaseline?.anchor_count).toBe(7);
+    expect(summary.phhBaseline?.readiness.whole_cell_transport_flux_ready).toBe(false);
+    expect(summary.quantitativeState?.authority).toBe("authoritative_research_preview");
+    expect(summary.quantitativeState?.pools.ATP.value).toBeCloseTo(2.19232);
+    expect(summary.zone).toBe("midlobular");
+    expect(summary.zonationState?.zone.marker_genes).toContain("HSD17B13");
+    expect(summary.zonationState?.dynamic_flux_scaling_enabled).toBe(false);
+    expect(summary.sinusoidHomeostasis?.target_glucose_mM).toBe(4.75);
+    expect(summary.sinusoidHomeostasis?.coupling_edges[0].status).toBe("active_source_backed");
+    expect(summary.sinusoidHomeostasis?.blood_to_cell_exchange_flux).toBeNull();
+    expect(summary.nutritionalHomeostasisV3?.trace[1].glycogen_mM_liver).toBe(316);
+    expect(summary.nutritionalHomeostasisV3?.scale_bridge.per_cell_glucose_flux).toBeNull();
+    expect(summary.nutritionalHomeostasisV3?.predictive_ready).toBe(false);
+    expect(summary.hepaticFluxEvidence?.record_count).toBe(31);
+    expect(summary.hepaticFluxEvidence?.per_cell_applicable_count).toBe(0);
+    expect(summary.hepaticFluxEvidence?.readiness.single_cell_flux_ready).toBe(false);
+    expect(summary.schematicVisualState?.may_drive_quantitative_validation).toBe(false);
     expect(summary.genome?.assembly_name).toBe("GRCh38.p14");
     expect(summary.genome?.functional_loci[0].symbol).toBe("ABCB11");
     expect(summary.genome?.somatic_variants).toHaveLength(0);
+    expect(summary.geneExpression?.genes.ABCB11.functional_protein_scale).toBe(0);
+    expect(summary.geneExpression?.events[0].event_type).toBe("functional_perturbation");
+    expect(summary.genomicArchitecture?.identity.donor_id).toBe("not_provided");
     expect(summary.history?.lifecycle.state).toBe("quiescent_G0");
     expect(summary.history?.event_log[0].event_type).toBe("bsep_loss");
     expect(summary.history?.memory_traces).toHaveLength(0);

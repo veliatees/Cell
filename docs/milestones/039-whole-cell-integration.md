@@ -2,8 +2,8 @@
 
 ## Why
 
-Until now the subsystems were separate modules. M039 runs them as **one cell**:
-glycolysis + urea cycle + glutathione redox + gene expression in a single reaction
+Until now the subsystems were separate modules. M039 can run them as **one cell**:
+glycolysis + urea cycle + glutathione redox and an optional expression benchmark in a single reaction
 network sharing pools by name, with the cell cycle coupled to the cell's *actual*
 metabolic state. This closes the loop M036 left open (growth was a free-floating
 proxy) and demonstrates the hybrid integrator on a real composed cell.
@@ -11,7 +11,8 @@ proxy) and demonstrates the hybrid integrator on a real composed cell.
 ## What was added (`stochastic/whole_cell.py`)
 
 - `build_whole_cell_network` — `compose_networks(glycolysis, urea_cycle, redox,
-  central_dogma, homeostasis)`. ATP/ADP are shared across glycolysis and the urea
+  homeostasis)`, with the synthetic central-dogma benchmark available only through
+  `include_synthetic_expression_benchmark=True`. ATP/ADP are shared across glycolysis and the urea
   cycle, so the urea cycle literally spends the ATP glycolysis makes. A lumped
   OXPHOS regeneration, maintenance, and portal glucose supply keep energy and
   glucose in homeostasis.
@@ -23,8 +24,8 @@ proxy) and demonstrates the hybrid integrator on a real composed cell.
 
 ### One network, both noise regimes
 
-The unified network contains high-copy metabolites and low-copy genes/mRNA at
-once. The hybrid integrator is pinned to a **subsystem partition**
+The opt-in benchmark network contains high-copy metabolites and low-copy genes/mRNA at
+once. In that benchmark the hybrid integrator is pinned to a **subsystem partition**
 (`discrete_species = {gene, mRNA}` → exact SSA; everything else → CLE). This is
 the choice real whole-cell models make (stochastic gene expression, continuous
 metabolism) and it avoids the trap where a fast-turnover but low-copy metabolic
@@ -52,8 +53,8 @@ Full engine suite: **113/113 passing** (109 prior + 4 new), no regressions.
   Volume dynamics are a clear next refinement.
 - Energy/glucose homeostasis leans on lumped OXPHOS/supply placeholders; the
   emergent ATP balance is only as real as those.
-- Gene expression co-runs but is not yet wired to set a specific metabolic Vmax
-  in the unified cell (that coupling was shown in isolation in M035).
+- Synthetic gene expression is excluded from authoritative snapshots. Real
+  expression uses the source- and calibration-gated seven-gene program.
 
 ## Next
 

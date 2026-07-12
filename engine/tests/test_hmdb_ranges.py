@@ -8,6 +8,7 @@ from cell_engine.validation.hmdb_ranges import (
     HMDB_SOURCES,
     classify_concentration,
     hmdb_range,
+    score_compartment_concentrations,
 )
 
 
@@ -39,6 +40,15 @@ class HMDBRangeTests(unittest.TestCase):
         species = {r.species for r in HMDB_REFERENCE_RANGES}
         for gated in ("NADPH", "NADP", "G6PD", "6PGD", "GPx", "glutathione_reductase"):
             self.assertNotIn(gated, species)
+
+    def test_compartment_aware_scoring_does_not_use_cytosol_as_blood(self):
+        scored, unavailable = score_compartment_concentrations({
+            "blood": {"glucose": 4.8},
+            "intracellular": {"lactate": 1.2, "alanine": 0.3},
+        }, only=("glucose", "lactate", "alanine"))
+        self.assertEqual([item.species for item in scored], ["glucose"])
+        self.assertEqual({item.species for item in unavailable}, {"lactate", "alanine"})
+        self.assertEqual(scored[0].compartment, "blood")
 
     def test_metabolites_match_engine_pathway_outputs(self):
         species = {r.species for r in HMDB_REFERENCE_RANGES}

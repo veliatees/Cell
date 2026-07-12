@@ -42,7 +42,9 @@ REQUIRED_HEPATOCYTE_POOLS = {
     "ammonia",
     "urea",
     "bile_acids",
+    "canalicular_bile_acids",
     "bilirubin_conjugates",
+    "canalicular_bilirubin_conjugates",
     "amino_acids",
     "oxygen",
     "cytosolic_protein",
@@ -182,6 +184,98 @@ def validate_state(definition: CellDefinition, state: CellState) -> None:
     for stress_id, value in state.stress.items():
         if not 0 <= value <= 1:
             raise ValidationError(f"Stress axis {stress_id} must be in 0..1")
+
+    if state.gene_expression is not None:
+        program = state.gene_expression
+        if set(program.genes) != {gene.gene_symbol for gene in program.genes.values()}:
+            raise ValidationError("Gene-expression map keys must equal gene symbols")
+        expected_autosomal_copies = state.genome.total_chromosome_sets if state.genome is not None else None
+        for symbol, gene in program.genes.items():
+            if not _finite(gene.allele_copies) or gene.allele_copies <= 0:
+                raise ValidationError(f"Gene {symbol} allele copies must be finite and positive")
+            if expected_autosomal_copies is not None and not math.isclose(gene.allele_copies, expected_autosomal_copies):
+                raise ValidationError(f"Gene {symbol} allele copies do not match hepatocyte ploidy")
+            for field_name in (
+                "functional_dosage_scale",
+                "active_allele_count",
+                "nuclear_pre_mrna_count",
+                "nuclear_mature_mrna_count",
+                "cytoplasmic_mrna_count",
+                "total_protein_count",
+                "functional_protein_scale",
+            ):
+                value = getattr(gene, field_name)
+                if value is not None and (not _finite(value) or value < 0):
+                    raise ValidationError(f"Gene {symbol} {field_name} must be finite and non-negative")
+            if gene.active_allele_count is not None and gene.active_allele_count > gene.allele_copies:
+                raise ValidationError(f"Gene {symbol} active alleles exceed allele copies")
+        if set(program.kinetic_profiles) - set(program.genes):
+            raise ValidationError("Gene-expression kinetic profile has an unknown gene")
+        for symbol, profile in program.kinetic_profiles.items():
+            if profile.gene_symbol != symbol:
+                raise ValidationError(f"Gene-expression kinetic profile key mismatch for {symbol}")
+            rates = (
+                profile.promoter_on_rate_per_s,
+                profile.promoter_off_rate_per_s,
+                profile.transcription_rate_per_active_allele_per_s,
+                profile.splicing_rate_per_s,
+                profile.nuclear_export_rate_per_s,
+                profile.cytoplasmic_mrna_decay_rate_per_s,
+                profile.translation_rate_per_mrna_per_s,
+                profile.protein_decay_rate_per_s,
+            )
+            if any(not _finite(rate) or rate <= 0 for rate in rates):
+                raise ValidationError(f"Gene {symbol} has invalid kinetic rates")
+            if not profile.source_ids or not profile.biological_system or not profile.assay or not profile.evidence:
+                raise ValidationError(f"Gene {symbol} kinetic profile lacks calibration provenance")
+        edge_ids: set[str] = set()
+        for edge in program.regulatory_edges:
+            if edge.id in edge_ids:
+                raise ValidationError(f"Duplicate expression regulatory edge: {edge.id}")
+            edge_ids.add(edge.id)
+            if edge.target_gene not in program.genes:
+                raise ValidationError(f"Regulatory edge {edge.id} has an unknown target gene")
+            if not edge.source_ids or edge.quantification_status != "qualitative_direction_only":
+                raise ValidationError(f"Regulatory edge {edge.id} has an invalid evidence boundary")
+        event_ids: set[str] = set()
+        for event in program.events:
+            if event.id in event_ids:
+                raise ValidationError(f"Duplicate expression event id: {event.id}")
+            event_ids.add(event.id)
+            if event.gene_symbol not in program.genes:
+                raise ValidationError(f"Expression event {event.id} has unknown gene")
+            if event.t_s < 0 or not _finite(event.t_s):
+                raise ValidationError(f"Expression event {event.id} has invalid time")
+            if not event.changed_fields or not event.source_id or not event.evidence:
+                raise ValidationError(f"Expression event {event.id} lacks state change or evidence")
+
+    if state.genomic_architecture is not None:
+        architecture = state.genomic_architecture
+        genome_symbols = {locus.symbol for locus in state.genome.functional_loci} if state.genome is not None else set()
+        if set(architecture.epigenetic_loci) != genome_symbols:
+            raise ValidationError("Epigenetic locus registry must match the simulation-facing genome loci")
+        module_ids: set[str] = set()
+        for module in architecture.gene_modules:
+            if module.id in module_ids:
+                raise ValidationError(f"Duplicate gene module: {module.id}")
+            module_ids.add(module.id)
+            if not set(module.member_genes) <= genome_symbols:
+                raise ValidationError(f"Gene module {module.id} references an unknown locus")
+            if not set(module.explicit_expression_genes) <= set(module.member_genes):
+                raise ValidationError(f"Gene module {module.id} has an invalid explicit-expression subset")
+        for symbol, locus in architecture.epigenetic_loci.items():
+            if locus.dna_methylation_fraction is not None and not 0 <= locus.dna_methylation_fraction <= 1:
+                raise ValidationError(f"Epigenetic locus {symbol} has invalid DNA methylation")
+            if any(not _finite(value) or not 0 <= value <= 1 for value in locus.histone_marks.values()):
+                raise ValidationError(f"Epigenetic locus {symbol} has invalid histone-mark values")
+        if len(architecture.milestones) != 6 or tuple(item.milestone for item in architecture.milestones) != tuple(range(1, 7)):
+            raise ValidationError("Genomic architecture must expose the ordered six-milestone contract")
+        dataset_ids = [dataset.id for dataset in architecture.omics_datasets]
+        if len(dataset_ids) != len(set(dataset_ids)):
+            raise ValidationError("Genomic architecture has duplicate omics datasets")
+        link_ids = [link.id for link in architecture.variant_functional_links]
+        if len(link_ids) != len(set(link_ids)):
+            raise ValidationError("Genomic architecture has duplicate variant-functional links")
 
     known_locations = definition.compartment_ids | definition.organelle_ids | {
         "er_quality_control",

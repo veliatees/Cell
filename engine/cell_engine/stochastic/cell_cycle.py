@@ -11,8 +11,9 @@ from cell_engine.quantitative.geometry import (
     relative_membrane_area_from_biomass,
 )
 
-# Ordered cell-cycle phases.
-PHASES = ("G1", "S", "G2", "M")
+# Ordered hepatocyte lifecycle/cell-cycle states. Mature hepatocytes spend most
+# of homeostasis in quiescent G0 and re-enter G1 only with a permitted signal.
+PHASES = ("G0", "G1", "S", "G2", "M")
 
 CELL_CYCLE_SOURCES: dict[str, SourceReference] = {
     "cell_cycle_checkpoints": SourceReference(
@@ -54,6 +55,18 @@ CELL_CYCLE_SOURCES: dict[str, SourceReference] = {
         source_type="review",
         date_verified="2026-06-21",
         notes="p53 induces p21/CDKN1A after DNA damage or other stress; p21 prevents RB hyperphosphorylation by cyclin-CDK complexes, keeping RB-E2F repression active.",
+    ),
+    "hepatocyte_quiescence_regeneration": SourceReference(
+        id="hepatocyte_quiescence_regeneration",
+        title="Cellular and Molecular Basis of Liver Regeneration",
+        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC7108750/",
+        source_type="review",
+        date_verified="2026-07-10",
+        notes=(
+            "Mature hepatocytes are normally quiescent in G0, can re-enter G1 after "
+            "injury-associated priming and mitogenic signaling, and return to quiescence "
+            "when regeneration is complete."
+        ),
     ),
     "fucci_reporter": SourceReference(
         id="fucci_reporter",
@@ -153,10 +166,11 @@ CELL_CYCLE_SOURCES: dict[str, SourceReference] = {
     ),
 }
 
-# FUCCI colours: G1 = orange (Cdt1), S/G2/M = green (Geminin).
-_FUCCI_COLOR = {"G1": "#ff9d3a", "S": "#41d97a", "G2": "#41d97a", "M": "#41d97a"}
+# Standard FUCCI distinguishes G1 from S/G2/M but does not independently prove
+# G0. Grey therefore means model-backed quiescence, not an extra FUCCI channel.
+_FUCCI_COLOR = {"G0": "#8da0b8", "G1": "#ff9d3a", "S": "#41d97a", "G2": "#41d97a", "M": "#41d97a"}
 # Fraction of the whole cycle each phase occupies (for an overall 0..1 readout).
-_PHASE_BOUNDS = {"G1": (0.0, 0.40), "S": (0.40, 0.62), "G2": (0.62, 0.85), "M": (0.85, 1.0)}
+_PHASE_BOUNDS = {"G0": (0.0, 0.0), "G1": (0.0, 0.40), "S": (0.40, 0.62), "G2": (0.62, 0.85), "M": (0.85, 1.0)}
 CellCycleMolecularSignal = Literal["absent", "reduced", "baseline", "elevated", "unknown"]
 SpindleAttachmentState = Literal["unknown", "unattached", "partial", "attached"]
 
@@ -334,6 +348,16 @@ def division_readiness(state: CellCycleState, params: CellCycleParams) -> Divisi
     if state.ready_to_divide:
         return DivisionReadiness("M", 1.0, 1.0, False, "dividing now", _FUCCI_COLOR["M"])
 
+    if phase == "G0":
+        return DivisionReadiness(
+            "G0",
+            0.0,
+            0.0,
+            False,
+            "quiescent G0; not committed to division",
+            _FUCCI_COLOR["G0"],
+        )
+
     if phase == "G1":
         size_progress = min(1.0, state.biomass / params.g1s_biomass)
         time_progress = 1.0 if params.g1_min_duration_s <= 0.0 else min(1.0, state.phase_time_s / params.g1_min_duration_s)
@@ -414,6 +438,7 @@ class CellCycleParams:
     # legacy deterministic tests; hepatocyte population runs can set a measured or
     # calibrated non-zero probability.
     cytokinesis_failure_probability: float = 0.0
+    cytokinesis_failure_calibrated: bool = False
     # Context regulators. These are dimensionless 0..1 knobs until wired to a
     # full signaling model: RhoA/midbody anchoring/WNT support abscission, while
     # TGFbeta/Src pressure and bridge tension raise late regression risk.
@@ -522,7 +547,7 @@ class CytokinesisState:
 
 @dataclass(frozen=True)
 class CellCycleState:
-    phase: str = "G1"
+    phase: str = "G0"
     biomass: float = 1.0
     counts: dict[str, float] = field(default_factory=dict)
     phase_time_s: float = 0.0       # time spent in the current phase
@@ -543,6 +568,20 @@ def _mitogen_signal_active(params: CellCycleParams) -> bool:
         params.regeneration_signal_active
         if params.regeneration_signal_active is not None
         else params.growth_factor >= params.growth_factor_threshold
+    )
+
+
+def _g0_exit_permitted(state: CellCycleState, params: CellCycleParams) -> bool:
+    p53_active, p21_active = _p53_p21_axis_active(params)
+    return (
+        params.oncogene_active
+        or (
+            _fed(state, params)
+            and _mitogen_signal_active(params)
+            and _dna_intact(params)
+            and not p53_active
+            and not p21_active
+        )
     )
 
 
@@ -603,7 +642,31 @@ def evaluate_cell_cycle_control(state: CellCycleState, params: CellCycleParams) 
         "cell_cycle_intracellular_control",
         "cell_cycle_regulators",
         "p53_p21_rb",
+        "hepatocyte_quiescence_regeneration",
     }
+
+    if state.phase == "G0" and not params.oncogene_active:
+        fed = _fed(state, params)
+        mitogen = _mitogen_signal_active(params)
+        dna_intact = _dna_intact(params)
+        p53_active, p21_active = _p53_p21_axis_active(params)
+        _node(nodes, "nutrient availability", "present" if fed else "absent", fed, True, "cell_cycle_checkpoints")
+        _node(nodes, "mitogen/regeneration signal", "elevated" if mitogen else "baseline", mitogen, True, "hepatocyte_quiescence_regeneration")
+        _node(nodes, "DNA integrity", "intact" if dna_intact else "damaged", dna_intact, True, "cell_cycle_checkpoints")
+        exit_permitted = fed and mitogen and dna_intact and not p53_active and not p21_active
+        supported.append(
+            "G0 exit permitted; enter G1"
+            if exit_permitted
+            else "quiescent G0 maintained; no cell-cycle commitment"
+        )
+        return CellCycleControlDecision(
+            g1_s_committed=False,
+            g2_m_committed=False,
+            metaphase_anaphase_permitted=False,
+            supported_by=tuple(supported),
+            nodes=tuple(nodes),
+            sources=tuple(sorted(sources)),
+        )
 
     if params.oncogene_active:
         supported.append("oncogene/checkpoint-bypass state active")
@@ -761,6 +824,8 @@ def cytokinesis_failure_risk(params: CellCycleParams) -> float:
     weak RhoA/midbody anchoring, low WNT, TGFbeta/Src pressure, membrane shortage
     and high bridge tension all push the cell toward binucleation/regression.
     """
+    if not params.cytokinesis_failure_calibrated:
+        return 0.0
     risk = params.cytokinesis_failure_probability
     risk += (1.0 - params.rhoa_activity) * 0.25
     risk += (1.0 - params.midbody_anchor_strength) * 0.25
@@ -878,6 +943,20 @@ def step(state: CellCycleState, dt_s: float, params: CellCycleParams) -> CellCyc
     if state.ready_to_divide:
         return state
 
+    if state.phase == "G0":
+        if _g0_exit_permitted(state, params):
+            return replace(
+                state,
+                phase="G1",
+                phase_time_s=0.0,
+                cytokinesis=_cytokinesis_state("G1", 0.0, params),
+            )
+        return replace(
+            state,
+            phase_time_s=state.phase_time_s + dt_s,
+            cytokinesis=_cytokinesis_state("G0", state.phase_time_s + dt_s, params),
+        )
+
     old_biomass = state.biomass
     biomass = state.biomass + (params.growth_per_s * dt_s if _growth_permitted(state, params) else 0.0)
     phase_time = state.phase_time_s + dt_s
@@ -994,7 +1073,7 @@ def divide(
     )
 
     daughter = lambda c, o: CellCycleState(
-        phase="G1", biomass=state.biomass / 2.0, counts=c, phase_time_s=0.0,
+        phase="G0", biomass=state.biomass / 2.0, counts=c, phase_time_s=0.0,
         generation=state.generation + 1, divisions=0, ready_to_divide=False,
         ploidy=state.ploidy, cytokinesis=CytokinesisState(), organelles=o,
     )
@@ -1087,7 +1166,7 @@ def fail_cytokinesis(state: CellCycleState, params: CellCycleParams) -> CellCycl
 
     nuclei = state.ploidy.chromosome_sets_per_nucleus
     return CellCycleState(
-        phase="G1",
+        phase="G0",
         biomass=state.biomass,
         counts=dict(state.counts),
         phase_time_s=0.0,

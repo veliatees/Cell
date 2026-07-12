@@ -136,7 +136,7 @@ app.innerHTML = `
         <span class="brand__mark"></span>
         <div>
           <h1>Cell Engine</h1>
-          <p>hepatocyte · Python snapshot view</p>
+          <p data-role="cell-context">hepatocyte · Python snapshot view</p>
         </div>
       </div>
 
@@ -158,6 +158,11 @@ app.innerHTML = `
           <option value="bsep_loss">BSEP loss</option>
           <option value="mrp2_loss">MRP2 loss</option>
           <option value="canalicular_export_loss">BSEP + MRP2 loss</option>
+        </select>
+        <select class="toolbar-zone" data-control="zone" aria-label="Hepatic zone">
+          <option value="periportal">Zone 1 · periportal</option>
+          <option value="midlobular" selected>Zone 2 · midlobular</option>
+          <option value="pericentral">Zone 3 · pericentral</option>
         </select>
         <span class="toolbar-status" data-role="division-gate">Python snapshot loading</span>
       </div>
@@ -367,9 +372,11 @@ const reportPanel = document.createElement("div");
 reportPanel.className = "report-panel";
 reportPanel.style.display = "none";
 reportPanel.innerHTML =
-  '<div class="report-panel__head">Python engine snapshot - authority</div>' +
+  '<div class="report-panel__head">Python engine snapshot - mixed authority</div>' +
   '<section class="history-panel" aria-label="Cell life history"><div class="response-panel__head">Life history</div><div class="report-history"></div></section>' +
   '<section class="genome-panel" aria-label="Genome state"><div class="response-panel__head">Genome</div><div class="report-genome"></div></section>' +
+  '<section class="expression-panel" aria-label="Gene expression state"><div class="response-panel__head">Gene expression</div><div class="report-expression"></div></section>' +
+  '<section class="genomic-program-panel" aria-label="Genomic program readiness"><div class="response-panel__head">Genomic program</div><div class="report-genomic-program"></div></section>' +
   '<div class="external-snapshot"></div>' +
   '<section class="response-panel" aria-label="Engine disease response"><div class="response-panel__head">Engine response</div><div class="report-response"></div></section>' +
   '<section class="comparison-panel" aria-label="Experiment comparison"><div class="response-panel__head">Experiment comparison</div><div class="report-comparison"></div></section>' +
@@ -390,6 +397,11 @@ let externalEngineDiagnostic = "Python engine snapshot loading...";
 const defaultExternalEngineSnapshotUrl = engineSnapshotEndpointFromLocation(window.location);
 let externalEngineSnapshotUrl = defaultExternalEngineSnapshotUrl;
 const ENGINE_EXPERIMENTS = ["baseline", "bsep_loss", "mrp2_loss", "canalicular_export_loss"] as const;
+const ENGINE_ZONES = ["periportal", "midlobular", "pericentral"] as const;
+type EngineExperimentId = (typeof ENGINE_EXPERIMENTS)[number];
+type EngineZoneId = (typeof ENGINE_ZONES)[number];
+let selectedExperiment: EngineExperimentId = "baseline";
+let selectedZone: EngineZoneId = "midlobular";
 const ENGINE_EXPERIMENT_LABELS: Record<(typeof ENGINE_EXPERIMENTS)[number], string> = {
   baseline: "Control",
   bsep_loss: "BSEP loss",
@@ -398,15 +410,33 @@ const ENGINE_EXPERIMENT_LABELS: Record<(typeof ENGINE_EXPERIMENTS)[number], stri
 };
 let experimentComparisonSummaries: Partial<Record<(typeof ENGINE_EXPERIMENTS)[number], EngineSnapshotSummary>> = {};
 
+function contextSnapshotUrl(zone: EngineZoneId, experiment: EngineExperimentId): string {
+  if (zone === "midlobular") {
+    return experiment === "baseline" ? defaultExternalEngineSnapshotUrl : `/experiments/${experiment}.json`;
+  }
+  return `/contexts/${zone}/${experiment}.json`;
+}
+
+function selectEngineContext(): void {
+  externalEngineSnapshotUrl = contextSnapshotUrl(selectedZone, selectedExperiment);
+  externalEngineSummary = null;
+  externalEngineDiagnostic = "Python zonation context loading...";
+  void refreshExternalEngineSnapshot();
+  void loadExperimentComparisons();
+}
+
 async function refreshExternalEngineSnapshot() {
   const result = await loadEngineSnapshot(externalEngineSnapshotUrl);
   if (result.status === "loaded") {
     externalEngineSummary = result.summary;
     externalEngineDiagnostic = "";
+    const contextEl = app?.querySelector<HTMLElement>("[data-role='cell-context']");
+    if (contextEl) contextEl.textContent = `${result.summary.cellType} · ${result.summary.zone} · Python snapshot view`;
   } else {
     externalEngineSummary = null;
     externalEngineDiagnostic = `${result.diagnostic}; TS visual model remains active.`;
   }
+  setMetricLabels(mode);
   updateDivisionDemoGate();
 }
 
@@ -415,7 +445,7 @@ window.setInterval(() => void refreshExternalEngineSnapshot(), 5000);
 
 async function loadExperimentComparisons() {
   const loaded = await Promise.all(
-    ENGINE_EXPERIMENTS.map(async (id) => ({ id, result: await loadEngineSnapshot(`/experiments/${id}.json`) }))
+    ENGINE_EXPERIMENTS.map(async (id) => ({ id, result: await loadEngineSnapshot(contextSnapshotUrl(selectedZone, id)) }))
   );
   const summaries: Partial<Record<(typeof ENGINE_EXPERIMENTS)[number], EngineSnapshotSummary>> = {};
   for (const item of loaded) {
@@ -427,13 +457,13 @@ async function loadExperimentComparisons() {
 void loadExperimentComparisons();
 
 app.querySelector<HTMLSelectElement>("[data-control='experiment']")?.addEventListener("change", (event) => {
-  const experimentId = (event.currentTarget as HTMLSelectElement).value;
-  externalEngineSnapshotUrl = experimentId === "baseline"
-    ? defaultExternalEngineSnapshotUrl
-    : `/experiments/${experimentId}.json`;
-  externalEngineSummary = null;
-  externalEngineDiagnostic = "Python experiment snapshot loading...";
-  void refreshExternalEngineSnapshot();
+  selectedExperiment = (event.currentTarget as HTMLSelectElement).value as EngineExperimentId;
+  selectEngineContext();
+});
+
+app.querySelector<HTMLSelectElement>("[data-control='zone']")?.addEventListener("change", (event) => {
+  selectedZone = (event.currentTarget as HTMLSelectElement).value as EngineZoneId;
+  selectEngineContext();
 });
 
 const simulation = new IonSimulation();
@@ -482,7 +512,7 @@ type DiseaseSceneVisuals = {
   canaliculusAnchor: THREE.Vector3;
 };
 let diseaseSceneVisuals: DiseaseSceneVisuals | null = null;
-type CellCyclePhase = "G1" | "S" | "G2" | "M";
+type CellCyclePhase = "G0" | "G1" | "S" | "G2" | "M";
 type DivisionStage = "none" | "dna_replication" | "centrosome_separation" | "chromosome_alignment" | "ring_assembly" | "furrow_ingression" | "intercellular_bridge" | "abscission_pending" | "regressed";
 type DivisionOutcome = "none" | "abscission_success" | "cytokinesis_failure";
 type DivisionMechanicsState = {
@@ -605,6 +635,14 @@ let organelleAnchors: Record<string, THREE.Vector3> = {};
 // World positions (group space) of sinusoidal endothelial fenestrae. Blood-side
 // flows cross into the cell through these many pores instead of one anchor.
 let sinusoidFenestrae: THREE.Vector3[] = [];
+type SinusoidBloodCell = {
+  mesh: THREE.Mesh;
+  baseU: number;
+  radialX: number;
+  radialZ: number;
+};
+let sinusoidCurveRef: THREE.CatmullRomCurve3 | null = null;
+const sinusoidBloodCells: SinusoidBloodCell[] = [];
 type MotionTarget = {
   object: THREE.Object3D;
   base: THREE.Vector3;
@@ -632,16 +670,14 @@ type OrganellePopulation = {
   cage: Float32Array; // count, max displacement radius (< neighbour clearance)
   step: number; // per-frame random increment (world units)
   bright: Float32Array; // count, per-instance brightness (independent random walk)
-  brightStep: number; // per-frame brightness increment
+  brightStep: number; // zero disables ungrounded activity-like blinking
 };
 const organellePopulations: OrganellePopulation[] = [];
 // --- Nucleus gene expression (central dogma made visible) -------------------
-// The engine runs a two-state promoter → mRNA → protein network (transcriptional
-// bursting). This renders that mechanism: gene loci flare when their promoter is
-// ON, emit mRNA transcripts that travel to a nuclear pore, exit, and head into the
-// cytoplasm toward the translation machinery. Burst intensity tracks the engine's
-// mRNA pool when a Python snapshot is loaded.
+// Loci mirror source-backed engine states. A transcript is emitted only for a
+// recorded expression event; unknown gene-specific kinetics remain unknown.
 type GeneLocus = {
+  symbol: string;
   pos: THREE.Vector3;
   mat: THREE.MeshStandardMaterial;
   on: boolean;
@@ -662,10 +698,7 @@ type NucleusExpression = {
   pores: THREE.Vector3[];
   mesh: THREE.InstancedMesh; // mRNA transcript pool (recycled instances)
   particles: MrnaParticle[];
-  kOn: number; // promoter activation rate (1/s, sim time)
-  kOff: number; // promoter deactivation rate (1/s)
-  kTx: number; // transcription firing rate while ON (1/s)
-  burstScale: number; // multiplies firing to track engine mRNA pool
+  seenEngineEvents: Set<string>;
 };
 let nucleusExpression: NucleusExpression | null = null;
 type MembraneProteinAnchor = {
@@ -837,9 +870,9 @@ function drawCalciumTrace() {
   overlayCtx.fill();
 }
 
-// --- Cell-cycle position readout (FUCCI-style). Grounded: how close a cell is to
-// dividing IS observable in real cells — FUCCI reporters colour G1 orange / S·G2·M
-// green, DNA content and cyclin levels report position too. This is a coarse model:
+// --- Cell-cycle position readout. Standard FUCCI reports G1 versus S·G2·M but
+// does not by itself prove G0, so grey G0 here is engine-backed quiescence rather
+// than a claimed FUCCI channel. DNA content and cyclin levels report position too.
 // growth advances ONLY while the cell is energised, and the G1/G2 checkpoints hold
 // it when stressed (a DNA-damage/health proxy), so it tracks the cell's real state,
 // not a blind clock. ---
@@ -890,7 +923,7 @@ const cellCycle: VisualCellInstance = {
   nuclei: 1,
   ploidySets: [2],
   biomass: 1.0,
-  phase: "G1",
+  phase: "G0",
   phaseTime: 0,
   abscissionPending: false,
   abscissionAge: 0,
@@ -991,7 +1024,7 @@ function resetCellCycleVisualState() {
   cellCycle.nuclei = 1;
   cellCycle.ploidySets = [2];
   cellCycle.biomass = 1.0;
-  cellCycle.phase = "G1";
+  cellCycle.phase = "G0";
   cellCycle.phaseTime = 0;
   cellCycle.abscissionPending = false;
   cellCycle.abscissionAge = 0;
@@ -1015,8 +1048,8 @@ const CC = {
   realG2H: 2.5,
   realMH: 1
 };
-const FUCCI: Record<string, string> = { G1: "#ff9d3a", S: "#41d97a", G2: "#41d97a", M: "#41d97a" };
-const CC_BOUNDS: Record<string, [number, number]> = { G1: [0, 0.4], S: [0.4, 0.62], G2: [0.62, 0.85], M: [0.85, 1] };
+const FUCCI: Record<string, string> = { G0: "#8da0b8", G1: "#ff9d3a", S: "#41d97a", G2: "#41d97a", M: "#41d97a" };
+const CC_BOUNDS: Record<string, [number, number]> = { G0: [0, 0], G1: [0, 0.4], S: [0.4, 0.62], G2: [0.62, 0.85], M: [0.85, 1] };
 const cellCycleEl = reportPanel.querySelector(".report-cellcycle");
 function divisionMechanicsFor(phase: string, phaseTime: number, abscissionPending: boolean): DivisionMechanicsState {
   const m = IDLE_DIVISION_MECHANICS();
@@ -1104,7 +1137,7 @@ function makeDaughterCell(parent: VisualCellInstance, organelles: OrganelleInven
     nuclei: 1,
     ploidySets: [2],
     biomass: parent.biomass / 2,
-    phase: "G1",
+    phase: "G0",
     phaseTime: 0,
     abscissionPending: false,
     abscissionAge: 0,
@@ -1115,7 +1148,7 @@ function makeDaughterCell(parent: VisualCellInstance, organelles: OrganelleInven
   };
 }
 function visualCellFromEngineCell(cell: EngineDivisionCell, fallbackIndex: number): VisualCellInstance {
-  const phase = cell.phase === "S" || cell.phase === "G2" || cell.phase === "M" ? cell.phase : "G1";
+  const phase = cell.phase === "G0" || cell.phase === "S" || cell.phase === "G2" || cell.phase === "M" ? cell.phase : "G1";
   return {
     id: fallbackIndex + 1,
     parentId: cell.parent_id ? 0 : null,
@@ -1344,7 +1377,7 @@ function resolveVisualDivision(energyCharge: number, healthy: boolean) {
   const failureRisk = visualCytokinesisFailureRisk(energyCharge, healthy);
   if (divisionRandom() < failureRisk) {
     latestVisualDivisionSource = "browser-local";
-    cellCycle.phase = "G1";
+    cellCycle.phase = "G0";
     cellCycle.phaseTime = 0;
     cellCycle.abscissionPending = false;
     cellCycle.abscissionAge = 0;
@@ -1422,11 +1455,16 @@ function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy:
   const regenerationOk = CC.regenerationSignalActive;
   const proliferationPermitted = CC.localDivisionFallbackEnabled && nutrientOk && regenerationOk && healthy;
   if (!alreadyResolved) {
+    const enteredG1 = c.phase === "G0" && proliferationPermitted;
+    if (enteredG1) {
+      c.phase = "G1";
+      c.phaseTime = 0;
+    }
     const previousBiomass = c.biomass;
     if (c.abscissionPending) {
       c.phaseTime = Math.min(c.phaseTime, CC.mDur);
       c.abscissionAge += simSeconds;
-    } else if (proliferationPermitted) {
+    } else if (proliferationPermitted && !enteredG1) {
       c.biomass += CC.growthPerSimS * simSeconds * Math.min(1, energyCharge);
     }
     if (c.biomass > previousBiomass && !c.abscissionPending) {
@@ -1442,9 +1480,9 @@ function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy:
       c.organelles.membraneArea *= membraneAreaFactor;
     }
     if (!c.abscissionPending) {
-      if (proliferationPermitted) c.phaseTime += simSeconds;
+      if (proliferationPermitted && !enteredG1) c.phaseTime += simSeconds;
       else if (c.phase === "G1") c.phaseTime = 0;
-      if (c.phase === "G1") { if (c.biomass >= CC.g1s && proliferationPermitted) { c.phase = "S"; c.phaseTime = 0; } }
+      if (!enteredG1 && c.phase === "G1") { if (c.biomass >= CC.g1s && proliferationPermitted) { c.phase = "S"; c.phaseTime = 0; } }
       else if (c.phase === "S") { c.organelles.centrosomes = 2; if (c.phaseTime >= CC.sDur) { c.phase = "G2"; c.phaseTime = 0; } }
       else if (c.phase === "G2") { if (c.biomass >= CC.g2m && proliferationPermitted) { c.phase = "M"; c.phaseTime = 0; } }
       else if (c.phaseTime >= CC.mDur) {
@@ -1464,7 +1502,8 @@ function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy:
   c.organelles.golgiFragments = c.phase === "M" ? Math.max(40, Math.round(80 * c.mechanics.golgiFragmentation)) : Math.max(1, c.organelles.golgiFragments);
 
   let within: number;
-  if (c.phase === "G1") within = Math.min(1, c.biomass / CC.g1s);
+  if (c.phase === "G0") within = 0;
+  else if (c.phase === "G1") within = Math.min(1, c.biomass / CC.g1s);
   else if (c.phase === "S") within = Math.min(1, c.phaseTime / CC.sDur);
   else if (c.phase === "G2") within = Math.min(1, c.biomass / CC.g2m);
   else within = Math.min(1, c.phaseTime / CC.mDur);
@@ -1479,9 +1518,9 @@ function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy:
       : "browser-local visual demo, not Python engine state"
     : "";
   let readinessPct = Math.round(readiness * 100);
-  if (!regenerationOk && c.phase === "G1" && !latestEvent) readinessPct = 0;
+  if (c.phase === "G0" && !latestEvent) readinessPct = 0;
   let note = `${readinessPct}% to division`;
-  if (!regenerationOk && !latestEvent) note = "quiescent G0/G1 — no regeneration signal";
+  if (c.phase === "G0" && !latestEvent) note = "quiescent G0 — no cycle commitment";
   else if (!nutrientOk && !latestEvent) note = "nutrient/energy low — no growth";
   else if ((c.phase === "G1" && c.biomass >= CC.g1s || c.phase === "G2" && c.biomass >= CC.g2m) && !healthy) note = "checkpoint — DNA damage";
   if (latestEvent?.outcome === "abscission_success") {
@@ -1761,13 +1800,18 @@ const METRIC_LABELS: Record<Mode, MetricLabels> = {
 
 function setMetricLabels(m: Mode) {
   app?.classList.toggle("is-organelle-mode", m === "organelles");
+  const hasQuantitativePhhState = m === "organelles" && externalEngineSummary?.quantitativeState;
   if (leftPanelTitleText) {
-    leftPanelTitleText.textContent = m === "organelles" ? "Cell State" : "System Readout";
+    leftPanelTitleText.textContent = m === "organelles"
+      ? hasQuantitativePhhState ? "Quantitative PHH State" : "Schematic Cell State"
+      : "System Readout";
   }
   if (rightPanelTitleText) {
     rightPanelTitleText.textContent = m === "organelles" ? "Cell Activity" : "Environment";
   }
-  const labels = METRIC_LABELS[m];
+  const labels = hasQuantitativePhhState
+    ? { distance: "Glycogen (mM)", force: "ATP (mM)", potential: "ADP (mM)", kinetic: "Energy charge", total: "Context", drift: "NAD+ (mM)" }
+    : METRIC_LABELS[m];
   for (const key of Object.keys(labelEls) as (keyof typeof labelEls)[]) {
     const el = labelEls[key];
     if (el && labels[key]) {
@@ -1777,7 +1821,9 @@ function setMetricLabels(m: Mode) {
   if (formulaStackEl) {
     formulaStackEl.innerHTML =
       m === "organelles"
-        ? "<code>Python snapshot is authoritative when loaded</code><code>TS organelle pulses are schematic renderer state</code><code>Route particles are schematic families unless snapshot-bound</code><code>Unknown/offline state is shown, not invented</code>"
+        ? hasQuantitativePhhState
+          ? "<code>PHH quantitative_state is the primary metric source</code><code>Tissue-equivalent mM; not isolated cytosol measurements</code><code>Effective counts are model-derived, not measured copy numbers</code><code>Relative organelle pools remain schematic visual state</code>"
+          : "<code>Relative organelle pools are schematic renderer state</code><code>Route particles are schematic families unless snapshot-bound</code><code>Unknown/offline state is shown, not invented</code>"
         : "<code>F = k q1 q2 / (ε r²)</code><code>U = k q1 q2 / (ε r)</code><code>U_ex = B·exp(-r/ρ)</code><code>KE = ½ m v²</code>";
   }
 }
@@ -2337,7 +2383,7 @@ const FLOW_REF: Record<string, number> = {
   "ribosome-er": 0.55,
   "er-golgi": 0.5,
   "er-proteasome-loss": 0.08,
-  "er-bile-canaliculus": 0.25,
+  "bile-acid-pool-bsep-export": 0.25,
   "canalicular-miss-lysosome": 0.06,
   "er-bilirubin-canaliculus": 0.2,
   "er-detox-canaliculus": 0.22,
@@ -2389,10 +2435,7 @@ const FLOW_DEFS: Record<string, { from: string; to: string; color: string; mode:
   "ribosome-er": { from: "ribosome", to: "er", color: "#e8b24a", mode: "diffusion" },
   "er-golgi": { from: "er", to: "golgi", color: "#e8b24a", mode: "vesicle" },
   "er-proteasome-loss": { from: "er", to: "cytosol", color: "#ff6fae", mode: "diffusion" },
-  "er-bile-canaliculus": { from: "er", to: "canaliculus", color: "#d9e778", mode: "carrier" },
   "canalicular-miss-lysosome": { from: "canaliculus", to: "lysosome", color: "#ffcf6b", mode: "autophagy" },
-  "er-bilirubin-canaliculus": { from: "er", to: "canaliculus", color: "#d8b35c", mode: "carrier" },
-  "er-detox-canaliculus": { from: "er", to: "canaliculus", color: "#ff9b8a", mode: "carrier" },
   "glutathione-detox": { from: "cytosol", to: "er", color: "#7ee0a8", mode: "diffusion" },
   "er-membrane-lipid": { from: "er", to: "membrane", color: "#d9e778", mode: "vesicle" },
   "ribosome-golgi": { from: "ribosome", to: "golgi", color: "#e8b24a", mode: "vesicle" },
@@ -2693,17 +2736,33 @@ function updateOrganellePopulations(t: number) {
       _popScale.set(sc, sc, sc);
       _popMat.compose(_popPos, _popQuat, _popScale);
       pop.mesh.setMatrixAt(i, _popMat);
-      // Independent random brightness walk — each organelle brightens/dims on
-      // its own, so the population never pulses in unison.
-      let b = pop.bright[i] + (Math.random() * 2 - 1) * bstep;
-      if (b < 0.35) b = 0.35;
-      else if (b > 1.5) b = 1.5;
+      // Stable optical heterogeneity only. A free random brightness walk looked
+      // like organelle activity despite having no measured biological driver.
+      const nextBrightness = bstep > 0
+        ? THREE.MathUtils.lerp(pop.bright[i], 1, 0.01) + (Math.random() * 2 - 1) * bstep
+        : pop.bright[i];
+      const b = THREE.MathUtils.clamp(nextBrightness, 0.72, 1.12);
       pop.bright[i] = b;
       _popColor.setRGB(b, b, b);
       pop.mesh.setColorAt(i, _popColor);
     }
     pop.mesh.instanceMatrix.needsUpdate = true;
     if (pop.mesh.instanceColor) pop.mesh.instanceColor.needsUpdate = true;
+  }
+}
+
+function updateSinusoidBloodFlow(timeS: number) {
+  const curve = sinusoidCurveRef;
+  if (!curve) return;
+  const localY = new THREE.Vector3(0, 1, 0);
+  for (const cell of sinusoidBloodCells) {
+    // Equal advection velocity preserves ordering, so cells do not overtake or
+    // pass through one another in the narrow sinusoidal lumen.
+    const u = (cell.baseU + timeS * 0.012) % 1;
+    const center = curve.getPointAt(u);
+    const tangent = curve.getTangentAt(u).normalize();
+    cell.mesh.position.copy(center).add(new THREE.Vector3(cell.radialX, 0, cell.radialZ));
+    cell.mesh.quaternion.setFromUnitVectors(localY, tangent);
   }
 }
 
@@ -2740,22 +2799,28 @@ function updateNucleusExpression(simDt: number) {
   const nx = nucleusExpression;
   if (!nx) return;
   const dt = Math.min(0.12, Math.max(0, simDt));
-  // Burst intensity tracks the engine's mRNA pool when a snapshot is loaded
-  // (baseline pool ~30 transcripts).
-  const mrnaPool = externalEngineSummary?.division?.cells?.[0]?.counts?.mRNA;
-  nx.burstScale = mrnaPool && mrnaPool > 0 ? clamp(mrnaPool / 30, 0.4, 2.5) : 1;
+  const program = externalEngineSummary?.geneExpression;
 
-  // 1) Promoter ON/OFF telegraph + transcription firing per locus.
-  for (const locus of nx.loci) {
-    if (locus.on) {
-      if (Math.random() < nx.kOff * dt) locus.on = false;
-      if (Math.random() < nx.kTx * nx.burstScale * dt) {
+  // Engine events are the only source of new transcripts. The renderer never
+  // invents gene-specific transcription kinetics when a calibrated model is absent.
+  if (program) {
+    for (const event of program.events) {
+      if (nx.seenEngineEvents.has(event.id)) continue;
+      nx.seenEngineEvents.add(event.id);
+      const locus = nx.loci.find((candidate) => candidate.symbol === event.gene_symbol);
+      if (!locus) continue;
+      locus.flash = 1;
+      if (["transcription_started", "transcription_fired", "pre_mrna_measured", "rna_spliced", "rna_exported"].includes(event.event_type)) {
         spawnMrna(nx, locus.pos);
-        locus.flash = 1;
       }
-    } else if (Math.random() < nx.kOn * dt) {
-      locus.on = true;
     }
+  }
+
+  // Promoter colour mirrors the engine state. Unknown is rendered inactive,
+  // rather than converted into a fabricated stochastic ON/OFF process.
+  for (const locus of nx.loci) {
+    const engineGene = program?.genes[locus.symbol];
+    locus.on = engineGene?.promoter_state === "active";
     locus.flash = Math.max(0, locus.flash - dt * 2.5);
     locus.mat.emissiveIntensity = (locus.on ? 0.5 : 0.18) + locus.flash * 1.2;
   }
@@ -3261,6 +3326,10 @@ function updateReportPanel(s: CellSnapshot) {
   if (historyEl) historyEl.innerHTML = renderCellHistory(externalEngineSummary);
   const genomeEl = reportPanel.querySelector(".report-genome");
   if (genomeEl) genomeEl.innerHTML = renderGenomeState(externalEngineSummary);
+  const expressionEl = reportPanel.querySelector(".report-expression");
+  if (expressionEl) expressionEl.innerHTML = renderGeneExpression(externalEngineSummary);
+  const genomicProgramEl = reportPanel.querySelector(".report-genomic-program");
+  if (genomicProgramEl) genomicProgramEl.innerHTML = renderGenomicProgram(externalEngineSummary);
   const responseEl = reportPanel.querySelector(".report-response");
   if (responseEl) responseEl.innerHTML = renderEngineResponse(externalEngineSummary);
   const comparisonEl = reportPanel.querySelector(".report-comparison");
@@ -3335,7 +3404,7 @@ function timeScaleDisclosureText(): string {
 
 function renderExternalEngineStatus(): string {
   if (!externalEngineSummary) {
-    return `<span class="external-snapshot__label">Python engine snapshot - authoritative</span><span class="external-snapshot__diag">${externalEngineDiagnostic}</span>`;
+    return `<span class="external-snapshot__label">Python engine snapshot - unavailable</span><span class="external-snapshot__diag">${externalEngineDiagnostic}</span>`;
   }
   const s = externalEngineSummary;
   const cargo = Object.entries(s.cargo)
@@ -3344,8 +3413,7 @@ function renderExternalEngineStatus(): string {
     .join(" · ");
   const vm = s.membranePotentialMv == null ? "Vm -" : `Vm ${s.membranePotentialMv.toFixed(1)}mV`;
   const pump = s.pumpActivity == null ? "pump -" : `pump ${(s.pumpActivity * 100).toFixed(0)}%`;
-  const ca = s.cytosolicCa == null ? "Ca -" : `Ca ${s.cytosolicCa.toFixed(2)}`;
-  const atp = s.atp == null ? "ATP -" : `ATP ${s.atp.toFixed(2)}`;
+  const atp = s.atp == null ? "ATP(rel) -" : `ATP(rel) ${s.atp.toFixed(2)}`;
   const flux = s.topFluxes.length ? ` · flux ${s.topFluxes.join(", ")}` : "";
   const divisionEvent = s.division?.latest_event ?? s.division?.events.at(-1);
   const divisionDisplay = s.divisionDisplay;
@@ -3397,11 +3465,11 @@ function renderExternalEngineStatus(): string {
     ? `experiment ${experiment.id.replaceAll("_", " ")} · ${experiment.description}`
     : "experiment -";
   const responseText = response
-    ? `cholestasis ${response.cholestasis_state.replaceAll("_", " ")} · BSEP ${response.bsep_surface_activity.toFixed(2)}× · MRP2 ${response.mrp2_surface_activity.toFixed(2)}× · UPR ${response.upr_signal == null ? "-" : response.upr_signal.toFixed(2)} · fate evidence ${response.fate_evidence.replaceAll("_", " ")} · cumulative ${response.dominant_damage_axis} exposure ${Math.round(response.damage_exposure_s[response.dominant_damage_axis] ?? 0)} s`
+    ? `cholestasis ${response.cholestasis_state.replaceAll("_", " ")} · intervention ${(response.intervention_type ?? "unclassified").replaceAll("_", " ")} · BSEP ${response.bsep_surface_activity.toFixed(2)}× · MRP2 ${response.mrp2_surface_activity.toFixed(2)}× · BA cell ${(response.intracellular_bile_acids ?? response.bile_acid_retention).toFixed(3)} / canaliculus ${(response.canalicular_bile_acids ?? 0).toFixed(3)} · UPR ${response.upr_signal == null ? "-" : response.upr_signal.toFixed(2)} · fate evidence ${response.fate_evidence.replaceAll("_", " ")} · cumulative ${response.dominant_damage_axis} exposure ${Math.round(response.damage_exposure_s[response.dominant_damage_axis] ?? 0)} s`
     : "cellular response -";
   return (
-    `<span class="external-snapshot__label">Python engine snapshot - authoritative</span>` +
-    `<span>${s.cellType} · ${s.status} · ${atp} · ${ca} · ${vm} · ${pump} · cargo ${cargo || "none"} · ` +
+    `<span class="external-snapshot__label">Python engine snapshot - mixed authority</span>` +
+    `<span>${s.cellType} · schematic status ${s.status} · ${atp} · Ca(rel) ${s.cytosolicCa == null ? "-" : s.cytosolicCa.toFixed(2)} · ${vm} · ${pump} · cargo ${cargo || "none"} · ` +
     `SBML ${s.pathwayCount} · signaling ${s.signalingCount}${flux}</span>` +
     `<span class="external-snapshot__diag">${divisionText}</span>` +
     `<span class="external-snapshot__diag">${displayReason} · ${displayGate}</span>` +
@@ -3429,11 +3497,16 @@ function renderEngineResponse(summary: EngineSnapshotSummary | null): string {
     .join("");
   const fate = response.fate_evidence.replaceAll("_", " ");
   const cholestasis = response.cholestasis_state.replaceAll("_", " ");
+  const intracellularBile = response.intracellular_bile_acids ?? response.bile_acid_retention;
+  const canalicularBile = response.canalicular_bile_acids ?? 0;
+  const intracellularBilirubin = response.intracellular_bilirubin_conjugates ?? response.bilirubin_retention;
+  const canalicularBilirubin = response.canalicular_bilirubin_conjugates ?? 0;
   return (
-    `<div class="response-state"><span class="response-state__dot response-state__dot--${response.fate_evidence}"></span><strong>${cholestasis}</strong><span>fate evidence: ${fate}</span></div>` +
+    `<div class="response-state"><span class="response-state__dot response-state__dot--${response.fate_evidence}"></span><strong>${cholestasis}</strong><span>${(response.intervention_type ?? "unclassified").replaceAll("_", " ")} · fate evidence: ${fate}</span></div>` +
     activityBar("BSEP surface activity", response.bsep_surface_activity, "#d9e778") +
     activityBar("MRP2 surface activity", response.mrp2_surface_activity, "#d8b35c") +
-    `<div class="response-metrics"><span>bile-acid pool <b>${response.bile_acid_retention.toFixed(3)}</b></span><span>bilirubin pool <b>${response.bilirubin_retention.toFixed(3)}</b></span><span>UPR <b>${response.upr_signal == null ? "-" : response.upr_signal.toFixed(3)}</b></span></div>` +
+    `<div class="response-metrics"><span>BA inside <b>${intracellularBile.toFixed(3)}</b></span><span>BA canaliculus <b>${canalicularBile.toFixed(3)}</b></span><span>system total <b>${(response.bile_acid_system_total ?? intracellularBile + canalicularBile).toFixed(3)}</b></span></div>` +
+    `<div class="response-metrics"><span>bilirubin inside <b>${intracellularBilirubin.toFixed(3)}</b></span><span>bilirubin canaliculus <b>${canalicularBilirubin.toFixed(3)}</b></span><span>UPR <b>${response.upr_signal == null ? "-" : response.upr_signal.toFixed(3)}</b></span></div>` +
     `<div class="response-metrics"><span>misfolded <b>${response.misfolded_protein.toFixed(3)}</b></span><span>ubiquitinated <b>${response.ubiquitinated_cargo.toFixed(3)}</b></span></div>` +
     `<div class="damage-caption">Cumulative stress-time exposure · not a lesion count</div><div class="damage-grid">${damageRows}</div>`
   );
@@ -3485,6 +3558,61 @@ function renderGenomeState(summary: EngineSnapshotSummary | null): string {
   );
 }
 
+function renderGeneExpression(summary: EngineSnapshotSummary | null): string {
+  const program = summary?.geneExpression;
+  if (!program) return '<span class="response-empty">Awaiting an engine gene-expression snapshot.</span>';
+  const value = (count: number | null) => count == null
+    ? "unknown"
+    : count.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const rows = Object.values(program.genes)
+    .map((gene) => {
+      const rna = gene.cytoplasmic_mrna_count ?? gene.nuclear_mature_mrna_count ?? gene.nuclear_pre_mrna_count;
+      const activity = gene.functional_protein_scale == null ? "unknown" : `${gene.functional_protein_scale.toFixed(2)}x`;
+      return (
+        `<div class="expression-row" title="${gene.role} · ${gene.notes ?? ""}">` +
+        `<strong>${gene.gene_symbol}</strong><span>${gene.promoter_state}/${gene.chromatin_state}</span><b>${activity}</b>` +
+        `<small>${gene.allele_copies} alleles · active ${value(gene.active_allele_count)} · RNA ${value(rna)} · protein ${value(gene.total_protein_count)} · ${gene.protein_location}</small></div>`
+      );
+    })
+    .join("");
+  const events = program.events.length
+    ? program.events.slice(-4).reverse().map((event) => (
+      `<div class="expression-event"><strong>${event.gene_symbol}</strong><span>${event.event_type.replaceAll("_", " ")}</span><b>${Math.round(event.t_s)} s</b></div>`
+    )).join("")
+    : '<span class="history-empty-trace">No source-backed expression event in this snapshot</span>';
+  const regulation = program.regulatory_edges
+    .map((edge) => `<div class="regulatory-edge" title="${edge.mechanism} · ${edge.notes ?? ""}"><strong>${edge.regulator}</strong><b class="is-${edge.effect}">${edge.effect === "activates" ? "+" : "-"}</b><span>${edge.target_gene} ${edge.target_layer}</span></div>`)
+    .join("");
+  return (
+    `<div class="expression-head"><strong>${Object.keys(program.genes).length} loci</strong><span>${program.engine_mode.replaceAll("_", " ")}</span></div>` +
+    `<div class="expression-table">${rows}</div><div class="regulatory-graph">${regulation}</div><div class="expression-events">${events}</div>` +
+    `<div class="history-boundary">${program.kinetics_status.replaceAll("_", " ")}. Unknown RNA/protein values are not zero.</div>`
+  );
+}
+
+function renderGenomicProgram(summary: EngineSnapshotSummary | null): string {
+  const architecture = summary?.genomicArchitecture;
+  if (!architecture) return '<span class="response-empty">Awaiting genomic architecture.</span>';
+  const measuredEpigenetic = Object.values(architecture.epigenetic_loci)
+    .filter((locus) => locus.observation_status === "measured").length;
+  const modules = architecture.gene_modules
+    .map((module) => `<span class="genomic-module" title="${module.dynamic_status}">${module.label}<b>${module.explicit_expression_genes.length}/${module.member_genes.length}</b></span>`)
+    .join("");
+  const milestones = architecture.milestones
+    .map((milestone) => (
+      `<div class="genomic-milestone"><b>M${milestone.milestone}</b><span>${milestone.title}</span>` +
+      `<strong>${milestone.software_complete ? "software ready" : "not implemented"}</strong>` +
+      `<small>${milestone.scientific_status.replaceAll("_", " ")} · needs ${milestone.data_requirements.join("; ") || "no additional data"}</small></div>`
+    )).join("");
+  return (
+    `<div class="genomic-context"><strong>${architecture.identity.cell_type} · ${architecture.identity.zonation}</strong>` +
+    `<span>donor ${architecture.identity.donor_id.replaceAll("_", " ")} · clone ${architecture.identity.clone_id.replaceAll("_", " ")}</span></div>` +
+    `<div class="genomic-metrics"><span>${architecture.gene_modules.length} modules</span><span>${measuredEpigenetic}/${Object.keys(architecture.epigenetic_loci).length} measured epigenetic loci</span><span>${architecture.omics_datasets.length} omics datasets</span><span>${architecture.variant_functional_links.length} variant-function links</span></div>` +
+    `<div class="genomic-modules">${modules}</div><div class="genomic-milestones">${milestones}</div>` +
+    `<div class="history-boundary">Software completion does not mean biological validation. Donor, omics, epigenetic and kinetic values remain data-gated.</div>`
+  );
+}
+
 function renderExperimentComparison(summary: EngineSnapshotSummary | null): string {
   const baseline = experimentComparisonSummaries.baseline?.cellularResponse;
   const selectedId = summary?.experiment?.id ?? summary?.cellularResponse?.experiment_id;
@@ -3494,7 +3622,7 @@ function renderExperimentComparison(summary: EngineSnapshotSummary | null): stri
     const bileDelta = baseline ? ((response.bile_acid_retention - baseline.bile_acid_retention) / Math.max(baseline.bile_acid_retention, Number.EPSILON)) * 100 : 0;
     const bilirubinDelta = baseline ? ((response.bilirubin_retention - baseline.bilirubin_retention) / Math.max(baseline.bilirubin_retention, Number.EPSILON)) * 100 : 0;
     const selected = selectedId === id ? " is-selected" : "";
-    return `<div class="comparison-row${selected}"><span>${ENGINE_EXPERIMENT_LABELS[id]}</span><b>Bile ${bileDelta >= 0 ? "+" : ""}${bileDelta.toFixed(1)}%</b><b>Bilirubin ${bilirubinDelta >= 0 ? "+" : ""}${bilirubinDelta.toFixed(1)}%</b></div>`;
+    return `<div class="comparison-row${selected}"><span>${ENGINE_EXPERIMENT_LABELS[id]}</span><b>Cell BA ${bileDelta >= 0 ? "+" : ""}${bileDelta.toFixed(1)}%</b><b>Cell bilirubin ${bilirubinDelta >= 0 ? "+" : ""}${bilirubinDelta.toFixed(1)}%</b></div>`;
   }).join("");
   return rows || '<span class="response-empty">Experiment snapshots loading.</span>';
 }
@@ -3502,10 +3630,60 @@ function renderExperimentComparison(summary: EngineSnapshotSummary | null): stri
 function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
   const response = summary?.cellularResponse;
   if (!response) return '<span class="response-empty">Source registry unavailable until snapshot loads.</span>';
+  const phh = summary?.phhBaseline;
+  const audit = summary?.scientificAudit;
+  const assumptions = summary?.assumptionReport;
+  const profile = phh?.selected_profile ? phh.profiles?.[phh.selected_profile] : null;
+  const pool = (id: string) => profile?.pools[id]?.value_mM;
+  const profileRow = profile
+    ? `<div class="phh-profile"><div class="phh-profile__head"><b>${profile.label}</b><span>${phh?.scientific_release?.research_preview.passed ? "research preview ready" : "release blocked"}</span></div><div class="phh-profile__grid"><span>ATP <b>${pool("ATP")?.toFixed(2)} mM</b></span><span>ADP <b>${pool("ADP")?.toFixed(2)} mM</b></span><span>AMP <b>${pool("AMP")?.toFixed(2)} mM</b></span><span>EC <b>${profile.energy_charge.toFixed(3)}</b></span><span>Glycogen <b>${pool("glycogen")?.toFixed(1)} mM</b></span><span>NAD+ <b>${pool("NAD_plus")?.toFixed(2)} mM</b></span></div></div>`
+    : "";
+  const phhRow = phh
+    ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">PHH anchors</span><span>${phh.anchor_count} quantitative records · metabolic pools ${phh.readiness.metabolic_pool_initialization_ready ? "ready" : "blocked"} · ATP turnover ${phh.readiness.energy_turnover_ready ? "ready" : "blocked"} · predictive transport ${phh.readiness.whole_cell_transport_flux_ready ? "ready" : "blocked"}.</span></div>`
+    : "";
+  const auditRow = audit
+    ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Audit</span><span>${audit.authoritative_surfaces.length} source-backed validation surfaces · ${audit.blocked_or_disabled_surfaces.length} blocked or disabled model surfaces.</span></div>`
+    : "";
+  const placeholderRow = assumptions
+    ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Schematic</span><span>${assumptions.placeholder_pools.length} relative pools remain placeholders and do not drive quantitative validation.</span></div>`
+    : "";
+  const authorityRow = summary?.quantitativeState
+    ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Unified state</span><span>Primary metrics use source-traceable quantitative_state; overlapping relative pools are quarantined as schematic visual state.</span></div>`
+    : "";
+  const zonation = summary?.zonationState;
+  const zonationRow = zonation
+    ? `<div class="phh-profile"><div class="phh-profile__head"><b>${zonation.zone.label}</b><span>${zonation.zone.oxygen_context.replaceAll("_", " ")}</span></div><div class="phh-profile__grid"><span>Markers <b>${zonation.zone.marker_genes.slice(0, 6).join(" · ")}</b></span><span>Functions <b>${zonation.zone.functional_biases.join(" · ")}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Zonation</span><span>Human atlas context only · no donor coordinate · no numeric oxygen or flux scaling.</span></div>`
+    : "";
+  const homeostasis = summary?.sinusoidHomeostasis;
+  const homeostasisRow = homeostasis
+    ? (() => {
+        const activeEdges = homeostasis.coupling_edges.filter((edge) => edge.status === "active_source_backed");
+        const blockedEdges = homeostasis.coupling_edges.filter((edge) => edge.status.startsWith("blocked"));
+        const trace = homeostasis.boundary_recovery_trace;
+        const first = trace[0];
+        const last = trace[trace.length - 1];
+        return `<div class="phh-profile"><div class="phh-profile__head"><b>Sinusoid homeostasis v2</b><span>perfusion active · cell exchange blocked</span></div><div class="phh-profile__grid"><span>Glucose target <b>${homeostasis.target_glucose_mM.toFixed(2)} mM</b></span><span>Reference interval <b>${homeostasis.reference_low_mM.toFixed(1)}–${homeostasis.reference_high_mM.toFixed(1)} mM</b></span><span>Transit anchor <b>${homeostasis.mean_transit_time_s.toFixed(1)} s</b></span><span>Upper-bound relaxation <b>${first?.glucose_mM.toFixed(2)} → ${last?.glucose_mM.toFixed(2)} mM</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--source">Sinusoid v2</span><span>${activeEdges.length} source-backed perfusion edge · ${blockedEdges.length} calibration-gated edges · GLUT2 exchange flux unknown.</span></div>`;
+      })()
+    : "";
+  const homeostasisV3 = summary?.nutritionalHomeostasisV3;
+  const homeostasisV3Row = homeostasisV3
+    ? (() => {
+        const baseline = homeostasisV3.trace[0];
+        const peak = homeostasisV3.trace[1];
+        const early = homeostasisV3.direct_pathway_windows[0];
+        const late = homeostasisV3.direct_pathway_windows[1];
+        return `<div class="phh-profile"><div class="phh-profile__head"><b>Human mixed-meal homeostasis v3</b><span>organ trajectory · single-cell blocked</span></div><div class="phh-profile__grid"><span>Liver glycogen <b>${baseline?.glycogen_mM_liver.toFixed(0)} → ${peak?.glycogen_mM_liver.toFixed(0)} mM</b></span><span>Peak time <b>${peak?.time_min.toFixed(0)} ± ${peak?.time_uncertainty_min?.toFixed(0)} min</b></span><span>Mean synthesis <b>${homeostasisV3.mean_glycogen_synthesis_rate.value.toFixed(2)} mM/min</b></span><span>Basal HGO <b>${homeostasisV3.basal_hepatic_glucose_output.value.toFixed(2)} ± ${homeostasisV3.basal_hepatic_glucose_output.uncertainty?.toFixed(2)} mg/kg/min</b></span><span>Direct pathway <b>${(early?.fraction * 100).toFixed(0)}% → ${(late?.fraction * 100).toFixed(0)}%</b></span><span>Per-cell flux <b>unidentified</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Homeostasis v3</span><span>Healthy-human in-vivo trajectory retained at liver scale · ${homeostasisV3.scale_bridge.blockers.length} scale-bridge blockers · predictive single-cell release blocked.</span></div>`;
+      })()
+    : "";
+  const fluxEvidence = summary?.hepaticFluxEvidence;
+  const fluxEvidenceRow = fluxEvidence
+    ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Human flux bundle</span><span>${fluxEvidence.record_count} literature records · ${fluxEvidence.numeric_record_count} numeric · ${fluxEvidence.per_cell_applicable_count} per-cell applicable · organ/splanchnic scale only.</span></div>`
+    : "";
   return (
-    `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Source-backed</span><span>BSEP/MRP2 directionality; cholestasis → ER stress; bile-acid ROS/MPT links.</span></div>` +
-    `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Model state</span><span>Relative pools and UPR marker.</span></div>` +
-    `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Derived</span><span>Stress-time exposure and fate evidence; no calibrated time-to-death.</span></div>` +
+    profileRow + zonationRow + homeostasisRow + homeostasisV3Row + fluxEvidenceRow + phhRow + authorityRow + auditRow + placeholderRow +
+    `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Source-backed</span><span>BSEP/MRP2 directionality; intracellular/extracellular measurement distinction; cholestasis → ER stress; human bile-acid death-mode constraint.</span></div>` +
+    `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Model state</span><span>Mass-conserving intracellular → canalicular relative pools. CYP7A1 feedback and basolateral escape are explicitly not modeled.</span></div>` +
+    `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Derived</span><span>Stress-time exposure and fate evidence; no calibrated time-to-death or canalicular pressure.</span></div>` +
     `<div class="evidence-sources">Sources: ${response.source_ids.join(" · ")}</div>`
   );
 }
@@ -3518,14 +3696,15 @@ function renderHmdbValidation(im: EngineSnapshotSummary["integratedMetabolism"])
     .sort((a, b) => (a.classification === "in_range" ? 1 : 0) - (b.classification === "in_range" ? 1 : 0))
     .map((m) => {
       const label = m.species.replace(/_/g, " ");
-      const tip = `${label}: ${m.value_mM} mM (HMDB ${m.low_mM}-${m.high_mM} mM, ${m.hmdb_id})`;
+      const compartment = m.compartment ?? "unspecified";
+      const tip = `${label}: ${m.value_mM} mM ${compartment} (HMDB ${m.low_mM}-${m.high_mM} mM, ${m.hmdb_id})`;
       return `<span class="hmdb-badge hmdb-badge--${m.classification}" title="${tip}">${label} ${m.value_mM.toFixed(2)}</span>`;
     })
     .join("");
   return (
     `<div class="hmdb-validation">` +
-    `<span class="hmdb-validation__title">HMDB validation · integrated ${im.state} cell — ` +
-    `<strong>${im.n_in_range}/${im.n_scored}</strong> in physiological range</span>` +
+    `<span class="hmdb-validation__title">HMDB blood boundary · ${im.state} — ` +
+    `<strong>${im.n_in_range}/${im.n_scored}</strong> measured pools in range · ${im.unavailable?.length ?? 0} transport-gated</span>` +
     `<div class="hmdb-badges">${badges}</div>` +
     `</div>`
   );
@@ -3544,9 +3723,9 @@ function updateCellValidation(im: EngineSnapshotSummary["integratedMetabolism"])
   const tone = frac >= 0.5 ? "good" : frac > 0 ? "partial" : "none";
   cellValidationEl.className = `cell-validation cell-validation--${tone}`;
   cellValidationEl.innerHTML =
-    `<span class="cell-validation__label">Validated vs measured biology</span>` +
+    `<span class="cell-validation__label">Compartment-correct validation</span>` +
     `<span class="cell-validation__score"><strong>${im.n_in_range}</strong> / ${im.n_scored} ` +
-    `metabolites in HMDB physiological range</span>`;
+    `measured blood pools in range · ${im.unavailable?.length ?? 0} transport-gated</span>`;
 }
 
 function labelEngineOrganelle(id: string): string {
@@ -4993,9 +5172,9 @@ function buildOrganelleScene() {
       baseQuat[i * 4 + 3] = q.w;
       scaleArr[i] = sc;
       cageArr[i] = cageR;
-      // Independent random starting brightness (per-instance instanceColor
-      // multiplies the material colour) — no two organelles start in phase.
-      const b0 = 0.45 + rnd() * 0.7;
+      // Stable optical variation only; activity comes from the engine-level
+      // organelle signal, not arbitrary per-instance flashing.
+      const b0 = 0.82 + rnd() * 0.22;
       brightArr[i] = b0;
       col.setRGB(b0, b0, b0);
       inst.setColorAt(i, col);
@@ -5017,7 +5196,7 @@ function buildOrganelleScene() {
       cage: cageArr,
       step: opts.step ?? 0.03,
       bright: brightArr,
-      brightStep: 0.05
+      brightStep: 0
     });
     return inst;
   };
@@ -5058,15 +5237,20 @@ function buildOrganelleScene() {
     sinusoidAnchor.clone().add(new THREE.Vector3(0.04, 3.2, -0.15)),
     sinusoidAnchor.clone().add(new THREE.Vector3(-0.02, 8.9, 0.9))
   ]);
-  const sinusoidWall = mesh(new THREE.TubeGeometry(sinusoidCurve, 96, 3.6, 28, false), "#3a9bd9", new THREE.Vector3(), {
-    opacity: 0.16,
-    emissive: 0.12,
-    rough: 0.42,
+  sinusoidCurveRef = sinusoidCurve;
+  sinusoidBloodCells.length = 0;
+  const sinusoidOuterRadius = 5.45;
+  const sinusoidLumenRadius = 4.85;
+  const sinusoidWall = mesh(new THREE.TubeGeometry(sinusoidCurve, 96, sinusoidOuterRadius, 36, false), "#55a7bb", new THREE.Vector3(), {
+    opacity: 0.2,
+    emissive: 0.07,
+    rough: 0.62,
     label: "Fenestrated liver sinusoid wall - thin LSEC endothelium perforated by sieve-plate fenestrae; blood flows along this vessel-facing side of the hepatocyte"
   });
-  const sinusoidLumen = mesh(new THREE.TubeGeometry(sinusoidCurve, 96, 2.7, 22, false), "#7fb6ff", new THREE.Vector3(), {
-    opacity: 0.08,
-    emissive: 0.08,
+  const sinusoidLumen = mesh(new THREE.TubeGeometry(sinusoidCurve, 96, sinusoidLumenRadius, 32, false), "#7d2633", new THREE.Vector3(), {
+    opacity: 0.12,
+    emissive: 0.025,
+    rough: 0.7,
     label: "Sinusoidal blood lumen - nutrients, oxygen, hormones, ammonia, bilirubin and xenobiotics arrive from flowing blood"
   });
   // Space of Disse: the thin gap between the cell surface and the sinusoid wall.
@@ -5076,17 +5260,31 @@ function buildOrganelleScene() {
     label: "Space of Disse - extracellular exchange gap between fenestrated sinusoid and hepatocyte microvilli"
   });
   disseSpace.rotation.z = 0.05;
-  for (let i = 0; i < 14; i += 1) {
-    const u = (i + 0.5) / 14;
+  // A ~7.5 um erythrocyte is comparable to the sinusoid diameter. Render a
+  // sparse, ordered biconcave train rather than tiny freely intersecting discs.
+  const rbcProfile = [
+    new THREE.Vector2(0, 0.12),
+    new THREE.Vector2(1.1, 0.34),
+    new THREE.Vector2(3.5, 0.58),
+    new THREE.Vector2(4.25, 0.2),
+    new THREE.Vector2(3.5, -0.58),
+    new THREE.Vector2(1.1, -0.34),
+    new THREE.Vector2(0, -0.12)
+  ];
+  const rbcGeometry = new THREE.LatheGeometry(rbcProfile, 36);
+  for (let i = 0; i < 6; i += 1) {
+    const u = (i + 0.5) / 6;
     const p = sinusoidCurve.getPointAt(u);
-    const rbc = mesh(new THREE.CylinderGeometry(0.56, 0.56, 0.13, 20), "#b84545", p.clone().add(new THREE.Vector3(-0.12 + (rnd() - 0.5) * 0.7, 0, (rnd() - 0.5) * 1.4)), {
-      opacity: 0.78,
-      emissive: 0.05,
-      rough: 0.58,
-      rot: [Math.PI / 2 + rnd() * 0.2, rnd() * 0.4, rnd() * Math.PI],
-      label: "Red blood cell in sinusoidal flow - context particle, not taken up by the hepatocyte"
+    const radialX = (rnd() - 0.5) * 0.5;
+    const radialZ = (rnd() - 0.5) * 0.5;
+    const rbc = mesh(rbcGeometry, "#b8323f", p.clone().add(new THREE.Vector3(radialX, 0, radialZ)), {
+      opacity: 0.94,
+      emissive: 0.035,
+      rough: 0.72,
+      label: "Biconcave red blood cell (~7.5 um diameter) advecting inside the sinusoid; ordered hard-body train, not hepatocyte cargo"
     });
-    trackMotion(rbc, rbc.position, 0.09, 0.35 + rnd() * 0.18, 0.006);
+    rbc.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), sinusoidCurve.getTangentAt(u).normalize());
+    sinusoidBloodCells.push({ mesh: rbc, baseU: u, radialX, radialZ });
   }
   const microvilliPts: number[] = [];
   for (let i = 0; i < 34; i += 1) {
@@ -5113,7 +5311,7 @@ function buildOrganelleScene() {
   for (let plate = 0; plate < sievePlateCount; plate += 1) {
     const u = (plate + 0.5) / sievePlateCount;
     const center = sinusoidCurve.getPointAt(u);
-    const wallX = center.x + 2.05; // cell-facing (+x) face of the sinusoid wall
+    const wallX = center.x + sinusoidOuterRadius - 0.06; // cell-facing (+x) endothelial surface
     const poresPerPlate = 4 + Math.floor(rnd() * 3);
     for (let k = 0; k < poresPerPlate; k += 1) {
       const pos = new THREE.Vector3(
@@ -5128,7 +5326,6 @@ function buildOrganelleScene() {
         rot: [0, Math.PI / 2, (rnd() - 0.5) * 0.7],
         label: "Fenestra — ~100 nm endothelial pore; blood solutes cross into the space of Disse here, clustered in sieve plates"
       });
-      trackMotion(ring, ring.position, 0.04, 0.28 + rnd() * 0.22, 0.002);
       sinusoidFenestrae.push(pos.clone());
     }
     // A thin liver sinusoidal endothelial cell (LSEC) body/nucleus between plates.
@@ -5157,7 +5354,6 @@ function buildOrganelleScene() {
     emissive: 0.18,
     label: "Bile canaliculus - apical bile groove; BSEP/MRP-like transporters export bile acids, bilirubin and conjugates"
   });
-  trackMotion(canaliculus, canaliculus.position, 0.035, 0.16, 0.001);
   const canaliculusMaterial = canaliculus.material as THREE.MeshStandardMaterial;
   const bsepMaterials: THREE.MeshStandardMaterial[] = [];
   const mrp2Materials: THREE.MeshStandardMaterial[] = [];
@@ -5169,10 +5365,11 @@ function buildOrganelleScene() {
       const radial = new THREE.Vector3(Math.cos(i * 2.41 + phase), Math.sin(i * 1.73 + phase), Math.cos(i * 1.13 - phase))
         .cross(tangent)
         .normalize();
-      const marker = mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.34, 8), color, p.addScaledVector(radial, 0.33), {
-        emissive: 0.22,
+      const transporterDiameter = nmToWorld(10);
+      const marker = mesh(new THREE.CylinderGeometry(transporterDiameter * 0.5, transporterDiameter * 0.5, nmToWorld(6), 6), color, p.addScaledVector(radial, 0.29), {
+        emissive: 0.08,
         rough: 0.4,
-        label: `${label} grouped canalicular-surface activity marker — a visibility proxy for engine surface activity, not one rendered molecule`
+        label: `${label} true-scale ~10 nm membrane footprint; expected to be sub-pixel in this whole-cell view`
       });
       marker.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent);
       materials.push(marker.material as THREE.MeshStandardMaterial);
@@ -5233,7 +5430,7 @@ function buildOrganelleScene() {
   occupied.push({ c: nuc, r: 5.1 }); // reserve the nucleus volume (incl. ER shell)
   const nucleusBody = mesh(organicSphere(4.6, 0.04), "#b07ed8", nuc, { opacity: 0.26, emissive: 0.08, label: "Nucleus — stores the DNA and controls gene expression" });
   const nuclearEnvelope = mesh(organicSphere(4.75, 0.04), "#caa3e6", nuc, { opacity: 0.12, emissive: 0.05, label: "Nuclear envelope — double membrane studded with pores" });
-  const nucleolus = mesh(organicSphere(1.7, 0.12), "#6f3fa0", nuc.clone().add(new THREE.Vector3(0.7, -0.5, 0.4)), { emissive: 0.16, label: "Nucleolus — builds ribosomes; transcribes DNA → mRNA" });
+  const nucleolus = mesh(organicSphere(1.7, 0.12), "#6f3fa0", nuc.clone().add(new THREE.Vector3(0.7, -0.5, 0.4)), { emissive: 0.16, label: "Nucleolus — transcribes and processes rRNA and assembles ribosomal subunits; protein-coding mRNA is transcribed in the nucleoplasm" });
   const fateHalo = mesh(new THREE.SphereGeometry(5.15, 48, 32), "#7fb6ff", nuc, {
     opacity: 0.02,
     emissive: 0.05,
@@ -5289,15 +5486,15 @@ function buildOrganelleScene() {
 
   // --- Gene loci + central-dogma transcription (see updateNucleusExpression) ---
   {
-    const nLoci = 7;
+    const geneSymbols = ["HNF4A", "NR1H4", "NR0B2", "CYP7A1", "SLC10A1", "ABCB11", "ABCC2"];
     const loci: GeneLocus[] = [];
-    for (let i = 0; i < nLoci; i += 1) {
+    for (const symbol of geneSymbols) {
       const p = randDir().multiplyScalar(1.6 + rnd() * 2.4).add(nuc);
       const locus = mesh(new THREE.SphereGeometry(0.28, 14, 12), "#ffd873", p, {
         emissive: 0.25,
-        label: "Active gene locus — a two-state promoter (ON/OFF); flares when transcribing DNA → mRNA (transcriptional bursting, the engine's central-dogma model)"
+        label: `${symbol} locus — promoter state and expression events come from the Python engine; unknown kinetics remain visually inactive`
       });
-      loci.push({ pos: p.clone(), mat: locus.material as THREE.MeshStandardMaterial, on: false, flash: 0 });
+      loci.push({ symbol, pos: p.clone(), mat: locus.material as THREE.MeshStandardMaterial, on: false, flash: 0 });
     }
     // mRNA transcript pool (recycled instances), hidden until emitted.
     const MRNA_POOL = 60;
@@ -5320,7 +5517,7 @@ function buildOrganelleScene() {
     }));
     nucleusExpression = {
       center: nuc.clone(), loci, pores, mesh: mrnaMesh, particles,
-      kOn: 0.06, kOff: 0.25, kTx: 0.95, burstScale: 1
+      seenEngineEvents: new Set()
     };
   }
 
@@ -5409,17 +5606,15 @@ function buildOrganelleScene() {
     }
   }
 
-  // --- Mitochondria: TRUE hepatocyte count (~1500), drawn as an instanced
-  // population (~20% of cell volume). A few are additionally rendered as
-  // detailed cutaways (inner matrix + cristae) and act as the CPS1 host and the
-  // per-mesh ATP-glow handles. Counts: cell_quantitative.json (rat proxy). ---
+  // --- Mitochondria: one instanced population. Whole-cell mode intentionally
+  // has no second set of enlarged "hero" mitochondria. ---
   // Grounded counts mirror public/cell_quantitative.json (rat-stereology proxy;
   // human mitochondria ~800-1000). Kept in sync with the quantitative dataset.
   const REAL_MITO = 1000;
   const REAL_PEROX = 500;
   const REAL_LYSO = 400;
   const REAL_LIPID = 100;
-  const HERO_MITO = 8;
+  const HERO_MITO = 0;
   for (let i = 0; i < HERO_MITO; i += 1) {
     const len = 1.6 + rnd() * 1.8;
     const p = place(len * 0.55 + 0.9, 5, CELL_R - 2);
@@ -5455,12 +5650,13 @@ function buildOrganelleScene() {
       collisionRadius: 0.52,
       cage: 0.13,
       step: 0.045,
-      label: `Mitochondria — true hepatocyte count ~${REAL_MITO.toLocaleString()} (~20% of cell volume). Discrete ovoid ~0.7 um wide x ~1.5 um long (measured, Part C). Non-overlapping (excluded volume) + random caged motion (~0.1 um plateau, measured). ${HERO_MITO} shown in cutaway detail. Rat-stereology proxy (Weibel 1969 / Loud 1968).`
+      label: `Mitochondria — one hepatocyte proxy population, count ~${REAL_MITO.toLocaleString()} (~20% of cell volume). Discrete ovoid ~0.7 um wide x ~1.5 um long. Non-overlapping excluded-volume placement with bounded caged motion. Rat-stereology proxy (Weibel 1969 / Loud 1968).`
     }
   );
 
-  // --- Lysosomes & peroxisomes: a few hero copies + true-count instanced rest ---
-  const HERO_VESICLES = 8;
+  // --- Lysosomes & peroxisomes: single instanced populations. No enlarged
+  // duplicates and no arbitrary activity-like blinking. ---
+  const HERO_VESICLES = 0;
   for (let i = 0; i < HERO_VESICLES; i += 1) {
     const p = place(0.78, 5, CELL_R - 1.5);
     if (!p) continue;
@@ -6131,13 +6327,9 @@ function buildOrganelleScene() {
   organelleGroup = group;
   organelleJiggleTargets = null; // rebuilt lazily for the new scene graph
 
-  // Embed the 7 REAL all-atom protein structures (manifest.json) at their true
-  // subcellular locations/orientations. Async (PDBLoader XHR); guards teardown.
-  void embedRealProteins(group, { nmToWorld, sinusoidAnchor, canaliculusAnchor });
-
   if (sceneNote) {
     sceneNote.textContent =
-      "A polarized hepatocyte-scale cell renderer. The visible membrane is a source-bounded whole-cell radial shell: elastic area strain is capped, nanoscopic pits are not exaggerated into macro folds, and growth uses biomass^(1/3) radius / biomass^(2/3) area geometry. Visible PDB/AlphaFold proteins such as BSEP and MRP2 are magnified hero structures for inspection; at true whole-cell scale they would be sub-pixel. Protein populations and effects are represented by RDME copy-number fields and engine flux capacity, not by drawing billions of molecules. When the Python snapshot is loaded, its state is authoritative; route particles are schematic unless tied to snapshot fields.";
+      "A polarized hepatocyte-scale renderer. Elastic bilayer area strain is capped at the measured few-percent scale; cell growth uses biomass^(1/3) radius / biomass^(2/3) membrane-area geometry. Individual proteins are sub-pixel here, so BSEP, MRP2 and glucokinase are represented by activity and population fields rather than enlarged molecules. PHH baseline and blood-boundary panels are source-backed; relative pools, organelle cycles and stress are explicitly schematic.";
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;
@@ -6487,6 +6679,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     // Step the physics membrane FIRST so the deformation field is fresh for
     // everything that rides it (proteins, clouds, and the coupled organelles).
     updateMembraneShape(realDeltaS);
+    updateSinusoidBloodFlow(s.elapsedS);
     updateOrganelleMotion(s.elapsedS);
     updateOrganellePopulations(s.elapsedS);
     updateNucleusExpression(realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND);
@@ -6557,21 +6750,26 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     const pool = (id: string, fallback: number) => display?.pools[id] ?? fallback;
     const engineAtp = display?.pools.ATP ?? display?.atp ?? s.atp;
     const engineAdp = display?.pools.ADP ?? 1 - engineAtp;
-    const energyCharge = display ? engineAtp + 0.5 * engineAdp : s.energyCharge;
+    const engineAmp = display?.pools.AMP ?? 0;
+    const adenylateTotal = engineAtp + engineAdp + engineAmp;
+    const visualEnergyCharge = display && adenylateTotal > 0
+      ? (engineAtp + 0.5 * engineAdp) / adenylateTotal
+      : s.energyCharge;
     const cargoTotal = display ? Object.values(display.cargo).reduce((sum, count) => sum + count, 0) : 0;
     const cargoGood = display ? (display.cargo.delivered ?? 0) + (display.cargo.recycled ?? 0) : 0;
     const cargoFidelity = display && cargoTotal > 0 ? cargoGood / cargoTotal : s.fidelity.deliveryQuality;
     const displayStatus = display?.status ?? s.status;
-    setText(values.distance, pool("glycogen", s.pools.glycogen).toFixed(2));
-    setText(values.force, engineAtp.toFixed(2));
-    setText(values.potential, pool("albumin", s.pools.albumin).toFixed(2));
-    setText(values.kinetic, energyCharge.toFixed(2));
-    lastEnergyCharge = energyCharge;
-    setText(values.total, displayStatus);
+    const quantitative = display?.quantitativeState;
+    setText(values.distance, quantitative ? quantitative.pools.glycogen.value.toFixed(1) : pool("glycogen", s.pools.glycogen).toFixed(2));
+    setText(values.force, quantitative ? quantitative.pools.ATP.value.toFixed(2) : engineAtp.toFixed(2));
+    setText(values.potential, quantitative ? quantitative.pools.ADP.value.toFixed(2) : pool("albumin", s.pools.albumin).toFixed(2));
+    setText(values.kinetic, quantitative ? quantitative.energy_charge.toFixed(3) : visualEnergyCharge.toFixed(2));
+    lastEnergyCharge = visualEnergyCharge;
+    setText(values.total, quantitative ? quantitative.profile_id : displayStatus);
     if (values.total) {
       values.total.style.color = displayStatus === "dying" ? "#ff8a8a" : displayStatus === "senescent" ? "#d9a6ff" : displayStatus === "stressed" ? "#ffcf6b" : "#7ee0a8";
     }
-    setText(values.drift, cargoFidelity.toFixed(2));
+    setText(values.drift, quantitative ? quantitative.pools.NAD_plus.value.toFixed(2) : cargoFidelity.toFixed(2));
     if (values.drift) values.drift.style.color = "";
     setText(values.elapsed, `${Math.round(display?.elapsedS ?? s.elapsedS)} s`);
     updateCellValidation(display?.integratedMetabolism ?? null);
@@ -6663,7 +6861,13 @@ function resize() {
   const rect = viewportElement.getBoundingClientRect();
   const isNarrow = rect.width < 700;
 
-  root.scale.setScalar(isNarrow ? 0.58 : 1);
+  // The hepatocyte scene includes an external sinusoid as well as the cell. At
+  // narrow viewport widths, frame both instead of cropping the vessel away.
+  root.scale.setScalar(
+    mode === "organelles"
+      ? (isNarrow ? 0.46 : 0.82)
+      : (isNarrow ? 0.58 : 1)
+  );
   root.position.set(0, isNarrow ? 1.45 : 0, 0);
   const heightFactor = mode === "membrane" ? (membraneIsVesicle ? 0.32 : 0.16) : isNarrow ? 0.36 : 0.33;
   camera.position.set(0, cameraDistance * heightFactor, cameraDistance);

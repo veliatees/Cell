@@ -13,25 +13,18 @@ class HazardResult:
     stress_load: float
     dominant_axis: str
     event_probability: float
+    calibrated: bool
+    calibration_source_id: str | None
 
 
-# Placeholder base probabilities until literature-derived hepatocyte rates are
-# curated. The important M016 contract is that these are modulated by state.
-BASE_PROBABILITY_PER_HOUR = {
-    "plasma_membrane": 0.0020,
-    "nucleus": 0.0012,
-    "ribosome": 0.0015,
-    "rough_er": 0.0020,
-    "smooth_er": 0.0018,
-    "golgi": 0.0017,
-    "mitochondria": 0.0025,
-    "lysosome_endosome": 0.0018,
-    "peroxisome": 0.0015,
-    "proteasome": 0.0013,
-    "cytoskeleton": 0.0016,
-    "cytosol_metabolism": 0.0014,
-}
+@dataclass(frozen=True)
+class HazardCalibration:
+    base_probability_per_hour: float
+    source_id: str
 
+
+# Stress weights remain a qualitative response model. They cannot create a
+# stochastic failure probability unless a source-tagged base calibration is passed.
 STRESS_WEIGHTS = {
     "plasma_membrane": {"energy": 0.5, "membrane": 1.2, "ionic": 0.9, "oxidative": 0.35, "cholestatic": 0.55},
     "nucleus": {"genotoxic": 1.4, "oxidative": 0.55, "senescence": 0.7, "energy": 0.25, "detox": 0.25},
@@ -54,6 +47,7 @@ def state_conditioned_hazard(
     state: CellState,
     *,
     dt_s: float,
+    calibration: HazardCalibration | None = None,
 ) -> HazardResult:
     weights = STRESS_WEIGHTS.get(organelle_id, {})
     weighted = {axis: state.stress.get(axis, 0.0) * weight for axis, weight in weights.items()}
@@ -65,7 +59,11 @@ def state_conditioned_hazard(
     damage_factor = clamp(organelle.damage, 0.0, 1.0)
     low_health_factor = clamp(1.0 - organelle.health, 0.0, 1.0)
 
-    base = BASE_PROBABILITY_PER_HOUR.get(organelle_id, 0.0015)
+    if calibration is None:
+        return HazardResult(organelle_id, 0.0, stress_load, dominant_axis, 0.0, False, None)
+    if calibration.base_probability_per_hour < 0 or not calibration.source_id:
+        raise ValueError("hazard calibration requires a non-negative rate and source_id")
+    base = calibration.base_probability_per_hour
     probability_per_hour = base * (1.0 + 14.0 * stress_load + 7.0 * damage_factor + 3.0 * low_health_factor + 0.8 * age_factor)
     probability_per_hour = clamp(probability_per_hour, 0.0, 0.95)
     event_probability = 1.0 - exp(-probability_per_hour * max(dt_s, 0.0) / 3600.0)
@@ -76,9 +74,10 @@ def state_conditioned_hazard(
         stress_load=stress_load,
         dominant_axis=dominant_axis,
         event_probability=event_probability,
+        calibrated=True,
+        calibration_source_id=calibration.source_id,
     )
 
 
 def clamp(value: float, low: float, high: float) -> float:
     return min(high, max(low, value))
-

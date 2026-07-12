@@ -118,10 +118,10 @@
         1.0,
         0.0
       ],
-      "radius_um": 12.0
+      "radius_um": 9.328176809185312
     },
     "id": "human_hepatocyte_midlobular_v1",
-    "notes": "Authoritative M015 hepatocyte definition for the integrated engine boundary.",
+    "notes": "Mixed-authority hepatocyte definition: structural contracts are source-backed where stated; relative 0-1 pools and organelle cycles are schematic and cannot drive quantitative validation.",
     "organelles": [
       {
         "compartment_id": "plasma_membrane",
@@ -702,12 +702,12 @@
     "parameters": {
       "hepatocyte_radius_um": {
         "assumption_level": "literature_derived",
-        "confidence": 0.55,
+        "confidence": 0.6,
         "name": "hepatocyte_radius_um",
-        "notes": "Initial coarse radius for visualization and compartment scaling; must be refined per dataset.",
-        "source_id": "cell_biology_by_numbers",
+        "notes": "Equivalent-sphere radius derived geometrically from the 3400 um3 reference volume; not a claim that a polarized hepatocyte is spherical.",
+        "source_id": "human_cell_proteome_quantitative_2023",
         "unit": "um",
-        "value": 12.0
+        "value": 9.328176809185312
       },
       "initial_pool_unit": {
         "assumption_level": "placeholder",
@@ -977,12 +977,26 @@
         "compartment_id": "cytosol",
         "id": "bile_acids",
         "initial_value": 0.14,
-        "label": "Bile acids",
+        "label": "Intracellular bile acids",
         "normal_range": [
           0.0,
           1.0
         ],
-        "notes": "Hepatocyte bile-handling pool.",
+        "notes": "Intracellular hepatocyte bile-acid pool; retained legacy id for snapshot compatibility.",
+        "source_id": "project_roadmap_07",
+        "unit": "relative_pool_0_1"
+      },
+      {
+        "assumption_level": "placeholder",
+        "compartment_id": "bile_canaliculus",
+        "id": "canalicular_bile_acids",
+        "initial_value": 0.0,
+        "label": "Canalicular bile acids",
+        "normal_range": [
+          0.0,
+          1.0
+        ],
+        "notes": "Mass-conserving destination for BSEP export; zero is an empty model sink at initialization, not a measured concentration.",
         "source_id": "project_roadmap_07",
         "unit": "relative_pool_0_1"
       },
@@ -991,12 +1005,26 @@
         "compartment_id": "cytosol",
         "id": "bilirubin_conjugates",
         "initial_value": 0.05,
-        "label": "Bilirubin conjugates",
+        "label": "Intracellular bilirubin conjugates",
         "normal_range": [
           0.0,
           1.0
         ],
-        "notes": "Canalicular export cargo.",
+        "notes": "Intracellular conjugated-bilirubin pool; retained legacy id for snapshot compatibility.",
+        "source_id": "project_roadmap_07",
+        "unit": "relative_pool_0_1"
+      },
+      {
+        "assumption_level": "placeholder",
+        "compartment_id": "bile_canaliculus",
+        "id": "canalicular_bilirubin_conjugates",
+        "initial_value": 0.0,
+        "label": "Canalicular bilirubin conjugates",
+        "normal_range": [
+          0.0,
+          1.0
+        ],
+        "notes": "Mass-conserving destination for MRP2 export; zero is an empty model sink at initialization, not a measured concentration.",
         "source_id": "project_roadmap_07",
         "unit": "relative_pool_0_1"
       },
@@ -1408,6 +1436,14 @@
         "title": "Cell Biology by the Numbers",
         "url": "https://book.bionumbers.org/"
       },
+      "human_cell_proteome_quantitative_2023": {
+        "date_verified": "2026-07-11",
+        "id": "human_cell_proteome_quantitative_2023",
+        "notes": "Reports a characteristic average hepatocyte volume of 3400 um3 and discusses cell-volume scaling of protein content.",
+        "source_type": "review",
+        "title": "Quantitative Aspects of the Human Cell Proteome",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10218018/"
+      },
       "project_roadmap_07": {
         "date_verified": "2026-06-19",
         "id": "project_roadmap_07",
@@ -1447,12 +1483,573 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-10T08:39:06.060921+00:00",
+    "created_at_utc": "2026-07-12T07:06:10.575848+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
   "schema_version": "cell-engine.snapshot.v1",
   "state": {
+    "assumption_report": {
+      "counts": {
+        "fitted": 0,
+        "literature_derived": 1,
+        "measured": 0,
+        "placeholder": 49
+      },
+      "definition_id": "human_hepatocyte_midlobular_v1",
+      "placeholder_parameters": [
+        "initial_pool_unit"
+      ],
+      "placeholder_pools": [
+        "ATP",
+        "ADP",
+        "AMP",
+        "NADH",
+        "NAD+",
+        "NADPH",
+        "GSH",
+        "GSSG",
+        "glucose",
+        "glycogen",
+        "lactate",
+        "pyruvate",
+        "fatty_acids",
+        "acetyl_CoA",
+        "amino_acids",
+        "cytosolic_protein",
+        "ammonia",
+        "urea",
+        "bile_acids",
+        "canalicular_bile_acids",
+        "bilirubin_conjugates",
+        "canalicular_bilirubin_conjugates",
+        "cholesterol",
+        "lipids",
+        "xenobiotic",
+        "detoxified_xenobiotic",
+        "ROS",
+        "Ca2+",
+        "K+",
+        "Na+",
+        "Cl-",
+        "Mg2+",
+        "GTP",
+        "NADP+",
+        "oxygen",
+        "mRNA",
+        "secretory_protein_cargo",
+        "folded_cargo",
+        "misfolded_protein",
+        "ubiquitinated_cargo",
+        "albumin",
+        "membrane_cargo",
+        "lysosome_enzyme_cargo",
+        "canalicular_cargo",
+        "endocytosed_cargo",
+        "autophagy_cargo",
+        "very_long_chain_fatty_acids",
+        "damaged_organelle_mass"
+      ],
+      "reference_ranges": [
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:ATP",
+          "low": 0.0,
+          "notes": "Energy currency available to ATP-costly processes.",
+          "source_id": "project_roadmap_07",
+          "target": "ATP",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:ADP",
+          "low": 0.0,
+          "notes": "Energy charge partner pool.",
+          "source_id": "project_roadmap_07",
+          "target": "ADP",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:AMP",
+          "low": 0.0,
+          "notes": "Low-energy alarm pool.",
+          "source_id": "project_roadmap_07",
+          "target": "AMP",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:NADH",
+          "low": 0.0,
+          "notes": "Redox carrier feeding mitochondrial metabolism.",
+          "source_id": "project_roadmap_07",
+          "target": "NADH",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:NAD+",
+          "low": 0.0,
+          "notes": "Oxidized redox carrier.",
+          "source_id": "project_roadmap_07",
+          "target": "NAD+",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:NADPH",
+          "low": 0.0,
+          "notes": "Detox and antioxidant reducing power.",
+          "source_id": "project_roadmap_07",
+          "target": "NADPH",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:GSH",
+          "low": 0.0,
+          "notes": "Antioxidant reserve.",
+          "source_id": "project_roadmap_07",
+          "target": "GSH",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:GSSG",
+          "low": 0.0,
+          "notes": "Oxidative load marker.",
+          "source_id": "project_roadmap_07",
+          "target": "GSSG",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:glucose",
+          "low": 0.0,
+          "notes": "Cytosolic glucose pool.",
+          "source_id": "project_roadmap_07",
+          "target": "glucose",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:glycogen",
+          "low": 0.0,
+          "notes": "Hepatocyte carbohydrate storage.",
+          "source_id": "project_roadmap_07",
+          "target": "glycogen",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:lactate",
+          "low": 0.0,
+          "notes": "Gluconeogenesis and redox-linked substrate.",
+          "source_id": "project_roadmap_07",
+          "target": "lactate",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:pyruvate",
+          "low": 0.0,
+          "notes": "Glycolysis/TCA bridge.",
+          "source_id": "project_roadmap_07",
+          "target": "pyruvate",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:fatty_acids",
+          "low": 0.0,
+          "notes": "Lipid fuel and storage substrate.",
+          "source_id": "project_roadmap_07",
+          "target": "fatty_acids",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:acetyl_CoA",
+          "low": 0.0,
+          "notes": "TCA and lipid metabolism junction.",
+          "source_id": "project_roadmap_07",
+          "target": "acetyl_CoA",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:amino_acids",
+          "low": 0.0,
+          "notes": "Translation and nitrogen metabolism input.",
+          "source_id": "project_roadmap_07",
+          "target": "amino_acids",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:cytosolic_protein",
+          "low": 0.0,
+          "notes": "Bulk translated cytosolic protein pool.",
+          "source_id": "project_roadmap_07",
+          "target": "cytosolic_protein",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:ammonia",
+          "low": 0.0,
+          "notes": "Urea-cycle detox substrate.",
+          "source_id": "project_roadmap_07",
+          "target": "ammonia",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:urea",
+          "low": 0.0,
+          "notes": "Ammonia detox output.",
+          "source_id": "project_roadmap_07",
+          "target": "urea",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:bile_acids",
+          "low": 0.0,
+          "notes": "Intracellular hepatocyte bile-acid pool; retained legacy id for snapshot compatibility.",
+          "source_id": "project_roadmap_07",
+          "target": "bile_acids",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:canalicular_bile_acids",
+          "low": 0.0,
+          "notes": "Mass-conserving destination for BSEP export; zero is an empty model sink at initialization, not a measured concentration.",
+          "source_id": "project_roadmap_07",
+          "target": "canalicular_bile_acids",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:bilirubin_conjugates",
+          "low": 0.0,
+          "notes": "Intracellular conjugated-bilirubin pool; retained legacy id for snapshot compatibility.",
+          "source_id": "project_roadmap_07",
+          "target": "bilirubin_conjugates",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:canalicular_bilirubin_conjugates",
+          "low": 0.0,
+          "notes": "Mass-conserving destination for MRP2 export; zero is an empty model sink at initialization, not a measured concentration.",
+          "source_id": "project_roadmap_07",
+          "target": "canalicular_bilirubin_conjugates",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:cholesterol",
+          "low": 0.0,
+          "notes": "Bile/lipid metabolism pool.",
+          "source_id": "project_roadmap_07",
+          "target": "cholesterol",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:lipids",
+          "low": 0.0,
+          "notes": "Membrane and secretion lipid pool.",
+          "source_id": "project_roadmap_07",
+          "target": "lipids",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:xenobiotic",
+          "low": 0.0,
+          "notes": "Detox load.",
+          "source_id": "project_roadmap_07",
+          "target": "xenobiotic",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:detoxified_xenobiotic",
+          "low": 0.0,
+          "notes": "Export-ready detox product.",
+          "source_id": "project_roadmap_07",
+          "target": "detoxified_xenobiotic",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:ROS",
+          "low": 0.0,
+          "notes": "Oxidative stress pool.",
+          "source_id": "project_roadmap_07",
+          "target": "ROS",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:Ca2+",
+          "low": 0.0,
+          "notes": "Cytosolic calcium signal pool.",
+          "source_id": "project_roadmap_07",
+          "target": "Ca2+",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:K+",
+          "low": 0.0,
+          "notes": "Dominant intracellular cation (~140 mM); sets resting potential.",
+          "source_id": "project_roadmap_07",
+          "target": "K+",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:Na+",
+          "low": 0.0,
+          "notes": "Low inside (~12 mM); its gradient powers secondary transport.",
+          "source_id": "project_roadmap_07",
+          "target": "Na+",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:Cl-",
+          "low": 0.0,
+          "notes": "Intracellular chloride (~10-40 mM).",
+          "source_id": "project_roadmap_07",
+          "target": "Cl-",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:Mg2+",
+          "low": 0.0,
+          "notes": "Free Mg2+ (~0.5 mM); cofactor for ATP-dependent enzymes.",
+          "source_id": "project_roadmap_07",
+          "target": "Mg2+",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:GTP",
+          "low": 0.0,
+          "notes": "Guanine nucleotide pool for GTPases and biosynthesis.",
+          "source_id": "project_roadmap_07",
+          "target": "GTP",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:NADP+",
+          "low": 0.0,
+          "notes": "Oxidised NADP pool; kept small so NADPH/NADP+ stays high.",
+          "source_id": "project_roadmap_07",
+          "target": "NADP+",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:oxygen",
+          "low": 0.0,
+          "notes": "Cytosolic oxygen availability for mitochondrial and peroxisomal oxidation.",
+          "source_id": "project_roadmap_07",
+          "target": "oxygen",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:mRNA",
+          "low": 0.0,
+          "notes": "Exported transcript pool.",
+          "source_id": "project_roadmap_07",
+          "target": "mRNA",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:secretory_protein_cargo",
+          "low": 0.0,
+          "notes": "ER-bound nascent protein cargo.",
+          "source_id": "project_roadmap_07",
+          "target": "secretory_protein_cargo",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:folded_cargo",
+          "low": 0.0,
+          "notes": "ER quality-control-passed cargo ready for Golgi processing.",
+          "source_id": "project_roadmap_07",
+          "target": "folded_cargo",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:misfolded_protein",
+          "low": 0.0,
+          "notes": "Protein quality-control burden.",
+          "source_id": "project_roadmap_07",
+          "target": "misfolded_protein",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:ubiquitinated_cargo",
+          "low": 0.0,
+          "notes": "ERAD/proteasome-bound degradation substrate.",
+          "source_id": "project_roadmap_07",
+          "target": "ubiquitinated_cargo",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:albumin",
+          "low": 0.0,
+          "notes": "Hepatocyte secretory cargo.",
+          "source_id": "project_roadmap_07",
+          "target": "albumin",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:membrane_cargo",
+          "low": 0.0,
+          "notes": "Golgi-sorted membrane protein/lipid cargo.",
+          "source_id": "project_roadmap_07",
+          "target": "membrane_cargo",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:lysosome_enzyme_cargo",
+          "low": 0.0,
+          "notes": "Golgi-sorted lysosomal enzyme cargo.",
+          "source_id": "project_roadmap_07",
+          "target": "lysosome_enzyme_cargo",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:canalicular_cargo",
+          "low": 0.0,
+          "notes": "Golgi-sorted canalicular membrane/bile export cargo.",
+          "source_id": "project_roadmap_07",
+          "target": "canalicular_cargo",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:endocytosed_cargo",
+          "low": 0.0,
+          "notes": "Plasma-membrane/endosome cargo awaiting lysosomal processing.",
+          "source_id": "project_roadmap_07",
+          "target": "endocytosed_cargo",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:autophagy_cargo",
+          "low": 0.0,
+          "notes": "Damaged protein/organelle material committed to autophagy.",
+          "source_id": "project_roadmap_07",
+          "target": "autophagy_cargo",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:very_long_chain_fatty_acids",
+          "low": 0.0,
+          "notes": "Peroxisomal beta-oxidation substrate.",
+          "source_id": "project_roadmap_07",
+          "target": "very_long_chain_fatty_acids",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "placeholder",
+          "high": 1.0,
+          "id": "pool:damaged_organelle_mass",
+          "low": 0.0,
+          "notes": "Autophagy/mitophagy substrate.",
+          "source_id": "project_roadmap_07",
+          "target": "damaged_organelle_mass",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "assumption_level": "literature_derived",
+          "high": 9.328176809185312,
+          "id": "parameter:hepatocyte_radius_um",
+          "low": 9.328176809185312,
+          "notes": "Equivalent-sphere radius derived geometrically from the 3400 um3 reference volume; not a claim that a polarized hepatocyte is spherical.",
+          "source_id": "human_cell_proteome_quantitative_2023",
+          "target": "hepatocyte_radius_um",
+          "unit": "um"
+        }
+      ],
+      "runtime_sections": {
+        "cargo_packets": 4,
+        "membrane_state": 1,
+        "metabolic_fluxes": 13,
+        "pathway_results": 0,
+        "signaling_results": 8
+      }
+    },
     "cargo_packets": [
       {
         "age_s": 960.0,
@@ -1546,10 +2143,16 @@
       }
     ],
     "cellular_response": {
+      "basolateral_escape_status": "not_modeled_no_identifiable_rate",
       "bile_acid_retention": 0.14,
+      "bile_acid_system_total": 0.14,
       "bilirubin_retention": 0.05,
+      "bilirubin_system_total": 0.05,
       "bsep_surface_activity": 0.0,
+      "canalicular_bile_acids": 0.0,
+      "canalicular_bilirubin_conjugates": 0.0,
       "cholestasis_state": "canalicular_export_loss",
+      "cyp7a1_feedback_status": "expression_present_function_unknown_no_synthesis_rate",
       "damage_exposure_s": {
         "cholestatic": 120.96000000000002,
         "energy": 0.0,
@@ -1561,15 +2164,20 @@
       "dominant_damage_axis": "cholestatic",
       "experiment_id": "canalicular_export_loss",
       "fate_evidence": "homeostatic",
+      "intervention_type": "combined_genetic_abcb11_abcc2_loss",
+      "intracellular_bile_acids": 0.14,
+      "intracellular_bilirubin_conjugates": 0.05,
       "misfolded_protein": 0.028800581187174212,
       "mrp2_surface_activity": 0.0,
-      "notes": "Surface activity is a relative experimental input, not a turnover rate. Damage exposure is stress-time (s), not a lesion count. Fate is evidence-only until a matched temporal commitment calibration is supplied.",
+      "notes": "Intracellular-to-canalicular export is mass-conserving. Surface activity is a relative experimental input, not a turnover rate. CYP7A1 feedback and basolateral escape remain absent because the evidence panel does not identify transferable absolute rates. Damage exposure is stress-time (s), not a lesion count. Fate is evidence-only until a matched temporal commitment calibration is supplied.",
       "source_ids": [
         "bsep_cholestasis",
         "cholestasis_er_stress",
         "bile_acid_mitochondrial_apoptosis",
         "upr_proteostasis",
-        "atp_death_switch"
+        "atp_death_switch",
+        "human_tki_bile_acid_trajectory",
+        "human_bile_acid_death_mode"
       ],
       "ubiquitinated_cargo": 0.019594873201781396,
       "upr_signal": 0.06186417306801344
@@ -1581,23 +2189,7 @@
         {
           "biomass": 1.0,
           "checkpoint_control": {
-            "blocked_by": [
-              "G1/S size checkpoint not met",
-              "G1 minimum timing not met",
-              "awaiting growth factor/mitogen",
-              "Cyclin D-CDK4/6 not active",
-              "RB remains growth-suppressive / not hyperphosphorylated",
-              "E2F S-phase transcription not active",
-              "Cyclin E-CDK2 commitment not active",
-              "G2/M size checkpoint not met",
-              "DNA replication incomplete for current ploidy",
-              "Chk1 checkpoint blocks Cdc25/CDK1",
-              "Cdc25 not active",
-              "CDK1-Cyclin B not active",
-              "spindle assembly checkpoint active: kinetochore attachment incomplete",
-              "APC/C-Cdc20 not active",
-              "securin not degraded / separase not released"
-            ],
+            "blocked_by": [],
             "g1_s_committed": false,
             "g2_m_committed": false,
             "metaphase_anaphase_permitted": false,
@@ -1614,135 +2206,35 @@
                 "derived": true,
                 "node": "mitogen/regeneration signal",
                 "signal": "baseline",
-                "source_id": "restriction_point"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "G1 minimum timing",
-                "signal": "waiting",
-                "source_id": "cell_cycle_timing"
+                "source_id": "hepatocyte_quiescence_regeneration"
               },
               {
                 "active": true,
                 "derived": true,
-                "node": "G2 minimum timing",
-                "signal": "elapsed",
-                "source_id": "cell_cycle_timing"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "p53",
-                "signal": "derived_baseline",
-                "source_id": "p53_p21_rb"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "p21/CDKN1A",
-                "signal": "derived_baseline",
-                "source_id": "p53_p21_rb"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "Cyclin D-CDK4/6",
-                "signal": "derived_baseline",
-                "source_id": "restriction_point"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "RB phosphorylation",
-                "signal": "derived_baseline",
-                "source_id": "restriction_point"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "E2F transcription",
-                "signal": "derived_baseline",
-                "source_id": "restriction_point"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "Cyclin E-CDK2",
-                "signal": "derived_baseline",
-                "source_id": "restriction_point"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "Cyclin A-CDK2",
-                "signal": "derived_baseline",
-                "source_id": "restriction_point"
-              },
-              {
-                "active": true,
-                "derived": true,
-                "node": "Chk1",
-                "signal": "derived_elevated",
-                "source_id": "cell_cycle_regulators"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "Cdc25",
-                "signal": "derived_baseline",
-                "source_id": "cell_cycle_regulators"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "CDK1-Cyclin B",
-                "signal": "derived_baseline",
-                "source_id": "cell_cycle_intracellular_control"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "spindle attachment checkpoint",
-                "signal": "derived_unattached",
-                "source_id": "cell_cycle_intracellular_control"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "APC/C-Cdc20",
-                "signal": "derived_baseline",
-                "source_id": "cell_cycle_intracellular_control"
-              },
-              {
-                "active": false,
-                "derived": true,
-                "node": "securin degradation / separase release",
-                "signal": "derived_baseline",
-                "source_id": "cell_cycle_intracellular_control"
+                "node": "DNA integrity",
+                "signal": "intact",
+                "source_id": "cell_cycle_checkpoints"
               }
             ],
             "sources": [
               "cell_cycle_checkpoints",
               "cell_cycle_intracellular_control",
               "cell_cycle_regulators",
+              "hepatocyte_quiescence_regeneration",
               "p53_p21_rb",
               "restriction_point"
             ],
-            "supported_by": [],
-            "uncalibrated": [
-              "molecular node states are qualitative/derived unless explicitly supplied"
-            ]
+            "supported_by": [
+              "quiescent G0 maintained; no cell-cycle commitment"
+            ],
+            "uncalibrated": []
           },
           "counts": {
-            "ADP": 761786081.6394038,
-            "AMP": 712574838.8406577,
-            "ATP": 3849211511.3599405,
-            "gene": 2.0,
-            "glucose": 31840399706.605312,
-            "glucose_blood": 31892526847.71472,
-            "mRNA": 30.0,
-            "protein": 1415.720800490117
+            "ADP": 1262439567.6732223,
+            "AMP": 886805601.346085,
+            "ATP": 1997317339.5754395,
+            "glucose": 31958573151.912533,
+            "glucose_blood": 32006311454.036827
           },
           "cytokinesis": {
             "abscission_readiness": 0.0,
@@ -1775,7 +2267,7 @@
             ],
             "stage": "none"
           },
-          "energy_charge": 0.794598853747084,
+          "energy_charge": 0.6339075120569811,
           "generation": 0,
           "id": "cell-0",
           "nuclei": 1,
@@ -1792,7 +2284,7 @@
             "ribosomes": 10000000
           },
           "parent_id": null,
-          "phase": "G1",
+          "phase": "G0",
           "phase_time_s": 79.9999999999976,
           "ploidy_sets": [
             2.0
@@ -1801,7 +2293,7 @@
           "t_s": 79.9999999999976
         }
       ],
-      "cytokinesis_failure_risk": 0.2,
+      "cytokinesis_failure_risk": 0.0,
       "engine": "whole_cell_population",
       "event_count": 0,
       "events": [],
@@ -1828,7 +2320,7 @@
         "id": "m015_initialized",
         "severity": "info",
         "t_s": 0.0,
-        "text": "Initialized authoritative hepatocyte definition/state snapshot boundary."
+        "text": "Initialized mixed-authority hepatocyte snapshot; relative pools and organelle cycles are schematic."
       },
       {
         "id": "cargo_cargo_er_misfolded_001_lost_120",
@@ -1882,6 +2374,30 @@
         "title": "Hepatocyte-specific ablation of Foxa2 alters bile acid homeostasis and results in ER stress",
         "url": "https://www.nature.com/articles/nm.1853"
       },
+      "expression_unknown_policy": {
+        "date_verified": "2026-07-10",
+        "id": "expression_unknown_policy",
+        "notes": "Gene-specific RNA and protein kinetics remain null until measured or calibrated; generic demo rates cannot silently become hepatocyte parameters.",
+        "source_type": "project_assumption",
+        "title": "Genome-expression milestone missing-data policy",
+        "url": "docs/16-genome-expression-milestone.md"
+      },
+      "genomic_burst_kinetics": {
+        "date_verified": "2026-07-10",
+        "id": "genomic_burst_kinetics",
+        "notes": "Mammalian alleles transcribe in bursts; enhancer and core-promoter architecture affect burst frequency and size.",
+        "source_type": "primary_paper",
+        "title": "Genomic encoding of transcriptional burst kinetics",
+        "url": "https://www.nature.com/articles/s41586-018-0836-1"
+      },
+      "gtex_v8": {
+        "date_verified": "2026-07-10",
+        "id": "gtex_v8",
+        "notes": "Bulk tissue reference; liver values are not single-hepatocyte molecule counts and require cell-composition-aware interpretation.",
+        "source_type": "database",
+        "title": "NIH Genotype-Tissue Expression project, data release V8",
+        "url": "https://commonfund.nih.gov/GTEx"
+      },
       "hcv_epigenetic_scar": {
         "date_verified": "2026-07-10",
         "id": "hcv_epigenetic_scar",
@@ -1898,6 +2414,62 @@
         "title": "Cellular and Molecular Basis of Liver Regeneration",
         "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7108750/"
       },
+      "hmdb_2022": {
+        "date_verified": "2026-07-11",
+        "id": "hmdb_2022",
+        "notes": "Curated human blood/plasma concentration reference ranges; specimen compartment is retained explicitly.",
+        "source_type": "database",
+        "title": "HMDB 5.0: the Human Metabolome Database for 2022",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8728138/"
+      },
+      "human_bile_acid_death_mode": {
+        "date_verified": "2026-07-10",
+        "id": "human_bile_acid_death_mode",
+        "notes": "High GCDC exposure produced predominantly oncotic necrosis in primary human hepatocytes and HepaRG, unlike apoptosis-dominant rat responses.",
+        "source_type": "primary_paper",
+        "title": "Mechanisms of bile acid toxicity in human and rat hepatocytes",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4713390/"
+      },
+      "human_bsep_taurocholate_2013": {
+        "date_verified": "2026-07-11",
+        "id": "human_bsep_taurocholate_2013",
+        "notes": "Taurocholate transport by recombinant human BSEP in inverted Sf9 membrane vesicles.",
+        "source_type": "primary_paper",
+        "title": "Early identification of clinically relevant drug interactions with the human bile salt export pump",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3858191/"
+      },
+      "human_cyp7a1_feedback": {
+        "date_verified": "2026-07-10",
+        "id": "human_cyp7a1_feedback",
+        "notes": "Primary human hepatocyte data support bile-acid-dependent CYP7A1 repression and show that human regulation is not reducible to a single FXR-SHP edge.",
+        "source_type": "primary_paper",
+        "title": "Bile acids and cytokines inhibit the human cholesterol 7-alpha-hydroxylase gene via the JNK/c-Jun pathway",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC1526464/"
+      },
+      "human_fxr_shp_regulation": {
+        "date_verified": "2026-07-10",
+        "id": "human_fxr_shp_regulation",
+        "notes": "Supports human FXR-to-SHP regulation and the SHP/LRH-1 links to CYP7A1 and NTCP regulation.",
+        "source_type": "primary_paper",
+        "title": "Human FXR regulates SHP expression through direct binding to an LRH-1 binding site",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3912179/"
+      },
+      "human_hepatic_transit_1996": {
+        "date_verified": "2026-07-11",
+        "id": "human_hepatic_transit_1996",
+        "notes": "Tracer transit-time model fitted in eight normal volunteers; reports portal flow fraction and liver mean transit time.",
+        "source_type": "primary_paper",
+        "title": "An anatomic and physiological model of hepatic vascular system",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/8567497/"
+      },
+      "human_hepatocyte_proteome_2016": {
+        "date_verified": "2026-07-11",
+        "id": "human_hepatocyte_proteome_2016",
+        "notes": "Quantitative LC-MS/MS of purified hepatocytes from seven human liver donors using Total Protein Approach and Proteomic Ruler.",
+        "source_type": "primary_paper",
+        "title": "In-depth quantitative analysis and comparison of the human hepatocyte and hepatoma cell line HepG2 proteomes",
+        "url": "https://doi.org/10.1016/j.jprot.2016.01.016"
+      },
       "human_hepatocyte_renewal": {
         "date_verified": "2026-07-10",
         "id": "human_hepatocyte_renewal",
@@ -1913,6 +2485,150 @@
         "source_type": "primary_paper",
         "title": "Single-cell analysis of somatic mutations in human hepatocytes",
         "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6994209/"
+      },
+      "human_hnf4a_cyp7a1": {
+        "date_verified": "2026-07-10",
+        "id": "human_hnf4a_cyp7a1",
+        "notes": "Supports HNF4A as a major positive CYP7A1 transcriptional regulator and parallel FXR/SHP and FGF19 feedback mechanisms.",
+        "source_type": "primary_paper",
+        "title": "Retinoic acid represses CYP7A1 expression in human hepatocytes and HepG2 cells",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2903807/"
+      },
+      "human_liver_adenylates_1992": {
+        "date_verified": "2026-07-11",
+        "id": "human_liver_adenylates_1992",
+        "notes": "HPLC measurements in control human liver tissue: ATP, ADP, AMP, total adenine nucleotides, energy charge and NAD+.",
+        "source_type": "primary_paper",
+        "title": "Can adenine nucleotides predict primary nonfunction of the human liver homograft?",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2952479/"
+      },
+      "human_liver_atp_synthesis_2008": {
+        "date_verified": "2026-07-11",
+        "id": "human_liver_atp_synthesis_2008",
+        "notes": "In-vivo 31P magnetization-transfer measurements in nine healthy volunteers; the reported rate is apparent Pi-to-ATP exchange.",
+        "source_type": "primary_paper",
+        "title": "Quantitative ATP synthesis in human liver measured by localized 31P spectroscopy using the magnetization transfer experiment",
+        "url": "https://doi.org/10.1002/nbm.1207"
+      },
+      "human_liver_cell_atlas": {
+        "date_verified": "2026-07-10",
+        "id": "human_liver_cell_atlas",
+        "notes": "Single-cell RNA-seq of about 10,000 cells from nine human donors supports donor-aware hepatocyte heterogeneity and zonation.",
+        "source_type": "primary_paper",
+        "title": "A human liver cell atlas reveals heterogeneity and epithelial progenitors",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6687507/"
+      },
+      "human_liver_cell_atlas_2019": {
+        "date_verified": "2026-07-11",
+        "id": "human_liver_cell_atlas_2019",
+        "notes": "Human single-cell RNA-seq supports portal-central hepatocyte heterogeneity and canonical zonation markers.",
+        "source_type": "primary_paper",
+        "title": "A human liver cell atlas reveals heterogeneity and epithelial progenitors",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6687507/"
+      },
+      "human_liver_glutathione_1980": {
+        "date_verified": "2026-07-11",
+        "id": "human_liver_glutathione_1980",
+        "notes": "Total glutathione measured in six histologically normal human liver biopsies, reported per hepatic protein.",
+        "source_type": "primary_paper",
+        "title": "Glutathione in human liver in normal and pathological conditions",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/7336124/"
+      },
+      "human_liver_glycogen_mixed_meal_2000": {
+        "date_verified": "2026-07-11",
+        "id": "human_liver_glycogen_mixed_meal_2000",
+        "notes": "Serial in-vivo human hepatic glycogen measurements around a mixed meal.",
+        "source_type": "primary_paper",
+        "title": "Direct assessment of hepatic glycogen metabolism in humans with 13C NMR spectroscopy",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC507070/"
+      },
+      "human_liver_glycogen_mrs_2012": {
+        "date_verified": "2026-07-11",
+        "id": "human_liver_glycogen_mrs_2012",
+        "notes": "In-vivo human liver tissue measurement; glycogen was quantifiable in 25 participants.",
+        "source_type": "primary_paper",
+        "title": "Liver metabolite concentrations measured with 1H MR spectroscopy",
+        "url": "https://doi.org/10.1148/radiol.12112344"
+      },
+      "human_liver_glycogen_overnight_1996": {
+        "date_verified": "2026-07-11",
+        "id": "human_liver_glycogen_overnight_1996",
+        "notes": "Overnight-fasted healthy volunteers measured with localized 13C MRS.",
+        "source_type": "primary_paper",
+        "title": "Natural abundance 13C NMR measurement of human liver glycogen",
+        "url": "https://doi.org/10.1016/S0730-725X(96)00243-3"
+      },
+      "human_liver_glycogen_starvation_1973": {
+        "date_verified": "2026-07-11",
+        "id": "human_liver_glycogen_starvation_1973",
+        "notes": "Human liver biopsy glycogen after prolonged starvation or carbohydrate-poor diet.",
+        "source_type": "primary_paper",
+        "title": "Liver glycogen in man: the effect of total starvation or a carbohydrate-poor diet followed by carbohydrate refeeding",
+        "url": "https://doi.org/10.3109/00365517309084355"
+      },
+      "human_liver_multiome": {
+        "date_verified": "2026-07-10",
+        "id": "human_liver_multiome",
+        "notes": "Human liver single-nucleus RNA plus ATAC data support joint expression/chromatin state while preserving donor and cell-type context.",
+        "source_type": "primary_paper",
+        "title": "Liver single-nucleus multiome profiling reveals cell-type mechanisms for cardiometabolic traits",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12805840/"
+      },
+      "human_liver_phosphorus_mrs_2017": {
+        "date_verified": "2026-07-11",
+        "id": "human_liver_phosphorus_mrs_2017",
+        "notes": "Healthy-volunteer liver spectroscopy; reports the 1.054 kg/L liver density used for wet-tissue concentration conversion.",
+        "source_type": "primary_paper",
+        "title": "Phosphodiester content measured in human liver by in vivo 31P MR spectroscopy at 7 tesla",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5697655/"
+      },
+      "human_liver_single_cell_proteomics_2025": {
+        "date_verified": "2026-07-11",
+        "id": "human_liver_single_cell_proteomics_2025",
+        "notes": "Healthy human single-hepatocyte proteomics across 20 portal-central bins; 413 cells from 14 individuals.",
+        "source_type": "primary_paper",
+        "title": "Single cell spatial proteomics maps human liver zonation patterns and their vulnerability to fibrosis",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12027366/"
+      },
+      "human_liver_spatial_atlas_2026": {
+        "date_verified": "2026-07-11",
+        "id": "human_liver_spatial_atlas_2026",
+        "notes": "Human spatial transcriptomics, MERFISH and protein validation; reports species-specific portal-central expression programs.",
+        "source_type": "primary_paper",
+        "title": "A spatial atlas of the healthy human liver from live donors",
+        "url": "https://www.nature.com/articles/s41586-026-10377-y"
+      },
+      "human_mixed_meal_homeostasis_1996": {
+        "date_verified": "2026-07-12",
+        "id": "human_mixed_meal_homeostasis_1996",
+        "notes": "Healthy human in-vivo serial liver glycogen, hepatic glucose output and pathway-contribution measurements after a mixed meal.",
+        "source_type": "primary_paper",
+        "title": "Direct assessment of liver glycogen storage by 13C NMR and regulation of glucose homeostasis after a mixed meal",
+        "url": "https://www.jci.org/articles/view/118379"
+      },
+      "human_mrp2_abundance_2012": {
+        "date_verified": "2026-07-11",
+        "id": "human_mrp2_abundance_2012",
+        "notes": "Targeted LC-MS/MS of liver membrane fractions from 51 human donors.",
+        "source_type": "primary_paper",
+        "title": "Interindividual variability in hepatic expression of the multidrug resistance-associated protein 2 (MRP2/ABCC2)",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3336801/"
+      },
+      "human_ntcp_uptake_2003": {
+        "date_verified": "2026-07-11",
+        "id": "human_ntcp_uptake_2003",
+        "notes": "Taurocholate uptake kinetics in fresh and cryopreserved human hepatocytes; cryopreservation caused large activity variability.",
+        "source_type": "primary_paper",
+        "title": "Function of uptake transporters for taurocholate and estradiol 17beta-D-glucuronide in cryopreserved human hepatocytes",
+        "url": "https://doi.org/10.2133/dmpk.18.33"
+      },
+      "human_tki_bile_acid_trajectory": {
+        "date_verified": "2026-07-10",
+        "id": "human_tki_bile_acid_trajectory",
+        "notes": "Human SCHH data distinguish intracellular from extracellular bile-acid responses and show drug-specific CYP7A1 feedback; not a generic BSEP-knockout calibration.",
+        "source_type": "primary_paper",
+        "title": "Novel Bile Acid-Dependent Mechanisms of Hepatotoxicity Associated with Tyrosine Kinase Inhibitors",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9109172/"
       },
       "ncbi_gene_records": {
         "date_verified": "2026-07-10",
@@ -1938,6 +2654,30 @@
         "title": "Homo sapiens mitochondrion, complete genome (NC_012920.1)",
         "url": "https://www.ncbi.nlm.nih.gov/nuccore/NC_012920.1"
       },
+      "phh_bile_acid_gene_regulation": {
+        "date_verified": "2026-07-10",
+        "id": "phh_bile_acid_gene_regulation",
+        "notes": "Primary human hepatocytes support FXR-SHP and FXR-FGF19 activation, CYP7A1 repression and BSEP induction; dose/time observations must not be converted into unsourced kinetic constants.",
+        "source_type": "primary_paper",
+        "title": "Potency of individual bile acids to regulate bile acid synthesis and transport genes in primary human hepatocyte cultures",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4271050/"
+      },
+      "primary_hepatocyte_isolation_metabolism_2018": {
+        "date_verified": "2026-07-11",
+        "id": "primary_hepatocyte_isolation_metabolism_2018",
+        "notes": "Tracks energetic and redox metabolites from in-situ liver through hepatocyte isolation and culture; isolation substantially changes ATP, NADP(H), GSH and GSSG.",
+        "source_type": "primary_paper",
+        "title": "From in vivo to in vitro: Major metabolic alterations take place in hepatocytes during and following isolation",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/29284039/"
+      },
+      "primary_hepatocyte_protein_turnover": {
+        "date_verified": "2026-07-10",
+        "id": "primary_hepatocyte_protein_turnover",
+        "notes": "Primary human hepatocyte proteins have widely different half-lives; no universal protein-decay constant is defensible.",
+        "source_type": "primary_paper",
+        "title": "Systematic analysis of protein turnover in primary cells",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5814408/"
+      },
       "upr_proteostasis": {
         "date_verified": "2026-07-10",
         "id": "upr_proteostasis",
@@ -1951,17 +2691,322 @@
       "controls": {
         "bsep_surface_activity": 0.0,
         "experiment_id": "canalicular_export_loss",
+        "intervention_type": "combined_genetic_abcb11_abcc2_loss",
         "mrp2_surface_activity": 0.0
       },
       "description": "Exact combined BSEP and MRP2 loss-of-function experiment",
       "id": "canalicular_export_loss",
-      "notes": "Control values are exact loss-of-function (0) or reference (1). Intermediate surface activity requires matched measurement or calibration.",
+      "notes": "Intervention type is explicit. Control values are exact loss-of-function (0) or reference (1). Intermediate surface activity requires matched measurement or calibration.",
       "source_ids": [
         "bsep_cholestasis",
         "cholestasis_er_stress",
         "bile_acid_mitochondrial_apoptosis",
         "upr_proteostasis",
-        "atp_death_switch"
+        "atp_death_switch",
+        "human_tki_bile_acid_trajectory",
+        "human_bile_acid_death_mode"
+      ]
+    },
+    "gene_expression": {
+      "engine_mode": "calibration_gated_exact_ssa",
+      "events": [
+        {
+          "changed_fields": [
+            "functional_protein_scale",
+            "evidence_status"
+          ],
+          "event_type": "functional_perturbation",
+          "evidence": "Exact combined BSEP and MRP2 loss-of-function experiment",
+          "gene_symbol": "ABCB11",
+          "id": "experiment-canalicular_export_loss-ABCB11",
+          "notes": "Functional experiment changes activity without inventing a variant coordinate, RNA count or total-protein change.",
+          "source_id": "experiment:canalicular_export_loss",
+          "t_s": 0.0
+        },
+        {
+          "changed_fields": [
+            "functional_protein_scale",
+            "evidence_status"
+          ],
+          "event_type": "functional_perturbation",
+          "evidence": "Exact combined BSEP and MRP2 loss-of-function experiment",
+          "gene_symbol": "ABCC2",
+          "id": "experiment-canalicular_export_loss-ABCC2",
+          "notes": "Functional experiment changes activity without inventing a variant coordinate, RNA count or total-protein change.",
+          "source_id": "experiment:canalicular_export_loss",
+          "t_s": 0.0
+        }
+      ],
+      "genes": {
+        "ABCB11": {
+          "active_allele_count": null,
+          "allele_copies": 2.0,
+          "chromatin_state": "unknown",
+          "coupling_target": "bsep_surface_activity",
+          "cytoplasmic_mrna_count": null,
+          "evidence_status": "experimental_control",
+          "functional_dosage_scale": 1.0,
+          "functional_protein_scale": 0.0,
+          "gene_symbol": "ABCB11",
+          "notes": "Protein count is an order-of-magnitude total-abundance anchor; functional scale 1 is the normalized healthy reference, not a measured surface fraction.",
+          "nuclear_mature_mrna_count": null,
+          "nuclear_pre_mrna_count": null,
+          "product": "BSEP",
+          "promoter_state": "unknown",
+          "protein_location": "canalicular_face",
+          "role": "canalicular bile-acid export",
+          "source_ids": [
+            "ncbi_gene_records",
+            "transporter_copy_numbers",
+            "expression_unknown_policy"
+          ],
+          "total_protein_count": 15811
+        },
+        "ABCC2": {
+          "active_allele_count": null,
+          "allele_copies": 2.0,
+          "chromatin_state": "unknown",
+          "coupling_target": "mrp2_surface_activity",
+          "cytoplasmic_mrna_count": null,
+          "evidence_status": "experimental_control",
+          "functional_dosage_scale": 1.0,
+          "functional_protein_scale": 0.0,
+          "gene_symbol": "ABCC2",
+          "notes": "Protein count is an order-of-magnitude total-abundance anchor; functional scale 1 is the normalized healthy reference, not a measured surface fraction.",
+          "nuclear_mature_mrna_count": null,
+          "nuclear_pre_mrna_count": null,
+          "product": "MRP2",
+          "promoter_state": "unknown",
+          "protein_location": "canalicular_face",
+          "role": "canalicular conjugate export",
+          "source_ids": [
+            "ncbi_gene_records",
+            "transporter_copy_numbers",
+            "expression_unknown_policy"
+          ],
+          "total_protein_count": 31623
+        },
+        "CYP7A1": {
+          "active_allele_count": null,
+          "allele_copies": 2.0,
+          "chromatin_state": "unknown",
+          "coupling_target": "bile_acid_synthesis",
+          "cytoplasmic_mrna_count": null,
+          "evidence_status": "unknown",
+          "functional_dosage_scale": 1.0,
+          "functional_protein_scale": null,
+          "gene_symbol": "CYP7A1",
+          "notes": "Gene-specific RNA counts, promoter kinetics and protein abundance are not calibrated.",
+          "nuclear_mature_mrna_count": null,
+          "nuclear_pre_mrna_count": null,
+          "product": "cholesterol 7 alpha-hydroxylase",
+          "promoter_state": "unknown",
+          "protein_location": "smooth_er",
+          "role": "rate-limiting classical bile-acid synthesis step",
+          "source_ids": [
+            "ncbi_gene_records",
+            "expression_unknown_policy"
+          ],
+          "total_protein_count": null
+        },
+        "HNF4A": {
+          "active_allele_count": null,
+          "allele_copies": 2.0,
+          "chromatin_state": "unknown",
+          "coupling_target": "hepatocyte_identity",
+          "cytoplasmic_mrna_count": null,
+          "evidence_status": "unknown",
+          "functional_dosage_scale": 1.0,
+          "functional_protein_scale": null,
+          "gene_symbol": "HNF4A",
+          "notes": "Gene-specific RNA counts, promoter kinetics and protein abundance are not calibrated.",
+          "nuclear_mature_mrna_count": null,
+          "nuclear_pre_mrna_count": null,
+          "product": "hepatocyte nuclear factor 4 alpha",
+          "promoter_state": "unknown",
+          "protein_location": "nucleus",
+          "role": "hepatocyte identity control",
+          "source_ids": [
+            "ncbi_gene_records",
+            "expression_unknown_policy"
+          ],
+          "total_protein_count": null
+        },
+        "NR0B2": {
+          "active_allele_count": null,
+          "allele_copies": 2.0,
+          "chromatin_state": "unknown",
+          "coupling_target": "cyp7a1_feedback",
+          "cytoplasmic_mrna_count": null,
+          "evidence_status": "unknown",
+          "functional_dosage_scale": 1.0,
+          "functional_protein_scale": null,
+          "gene_symbol": "NR0B2",
+          "notes": "Gene-specific RNA counts, promoter kinetics and protein abundance are not calibrated.",
+          "nuclear_mature_mrna_count": null,
+          "nuclear_pre_mrna_count": null,
+          "product": "small heterodimer partner (SHP)",
+          "promoter_state": "unknown",
+          "protein_location": "nucleus",
+          "role": "nuclear-receptor coregulation",
+          "source_ids": [
+            "ncbi_gene_records",
+            "expression_unknown_policy"
+          ],
+          "total_protein_count": null
+        },
+        "NR1H4": {
+          "active_allele_count": null,
+          "allele_copies": 2.0,
+          "chromatin_state": "unknown",
+          "coupling_target": "bile_acid_feedback",
+          "cytoplasmic_mrna_count": null,
+          "evidence_status": "unknown",
+          "functional_dosage_scale": 1.0,
+          "functional_protein_scale": null,
+          "gene_symbol": "NR1H4",
+          "notes": "Gene-specific RNA counts, promoter kinetics and protein abundance are not calibrated.",
+          "nuclear_mature_mrna_count": null,
+          "nuclear_pre_mrna_count": null,
+          "product": "farnesoid X receptor (FXR)",
+          "promoter_state": "unknown",
+          "protein_location": "nucleus",
+          "role": "bile-acid sensing and transcriptional regulation",
+          "source_ids": [
+            "ncbi_gene_records",
+            "expression_unknown_policy"
+          ],
+          "total_protein_count": null
+        },
+        "SLC10A1": {
+          "active_allele_count": null,
+          "allele_copies": 2.0,
+          "chromatin_state": "unknown",
+          "coupling_target": "ntcp_surface_activity",
+          "cytoplasmic_mrna_count": null,
+          "evidence_status": "literature_derived",
+          "functional_dosage_scale": 1.0,
+          "functional_protein_scale": 1.0,
+          "gene_symbol": "SLC10A1",
+          "notes": "Protein count is an order-of-magnitude total-abundance anchor; functional scale 1 is the normalized healthy reference, not a measured surface fraction.",
+          "nuclear_mature_mrna_count": null,
+          "nuclear_pre_mrna_count": null,
+          "product": "NTCP",
+          "promoter_state": "unknown",
+          "protein_location": "sinusoidal_face",
+          "role": "sinusoidal bile-acid uptake",
+          "source_ids": [
+            "ncbi_gene_records",
+            "transporter_copy_numbers",
+            "expression_unknown_policy"
+          ],
+          "total_protein_count": 316228
+        }
+      },
+      "kinetic_profiles": {},
+      "kinetics_status": "gene_specific_kinetics_not_calibrated",
+      "notes": "Seven-gene vertical slice. Missing values remain null and generate no stochastic event.",
+      "program_id": "hepatocyte_cholestasis_expression_v1",
+      "regulatory_edges": [
+        {
+          "biological_context": "primary human hepatocyte culture",
+          "effect": "activates",
+          "id": "bile-acid-fxr-activation",
+          "mechanism": "Bile acids act as FXR ligands.",
+          "notes": "",
+          "quantification_status": "qualitative_direction_only",
+          "regulator": "bile_acids",
+          "source_ids": [
+            "phh_bile_acid_gene_regulation"
+          ],
+          "target_gene": "NR1H4",
+          "target_layer": "functional_protein"
+        },
+        {
+          "biological_context": "human liver-derived and primary hepatocyte evidence",
+          "effect": "activates",
+          "id": "fxr-shp-induction",
+          "mechanism": "Ligand-activated human FXR induces SHP expression.",
+          "notes": "",
+          "quantification_status": "qualitative_direction_only",
+          "regulator": "activated_NR1H4",
+          "source_ids": [
+            "human_fxr_shp_regulation",
+            "phh_bile_acid_gene_regulation"
+          ],
+          "target_gene": "NR0B2",
+          "target_layer": "promoter"
+        },
+        {
+          "biological_context": "primary human hepatocyte culture",
+          "effect": "activates",
+          "id": "fxr-bsep-induction",
+          "mechanism": "FXR activation induces BSEP expression.",
+          "notes": "",
+          "quantification_status": "qualitative_direction_only",
+          "regulator": "activated_NR1H4",
+          "source_ids": [
+            "phh_bile_acid_gene_regulation",
+            "human_fxr_shp_regulation"
+          ],
+          "target_gene": "ABCB11",
+          "target_layer": "promoter"
+        },
+        {
+          "biological_context": "human hepatocyte regulatory evidence",
+          "effect": "represses",
+          "id": "shp-cyp7a1-repression",
+          "mechanism": "SHP interferes with positive nuclear-receptor control of CYP7A1.",
+          "notes": "FGF19/FGFR4/JNK is a parallel and potentially dominant human pathway; this edge cannot stand in for the complete feedback system.",
+          "quantification_status": "qualitative_direction_only",
+          "regulator": "NR0B2",
+          "source_ids": [
+            "human_fxr_shp_regulation",
+            "human_hnf4a_cyp7a1"
+          ],
+          "target_gene": "CYP7A1",
+          "target_layer": "promoter"
+        },
+        {
+          "biological_context": "primary human hepatocyte and human liver-derived evidence",
+          "effect": "activates",
+          "id": "hnf4a-cyp7a1-activation",
+          "mechanism": "HNF4A is a major positive transcriptional regulator of CYP7A1.",
+          "notes": "",
+          "quantification_status": "qualitative_direction_only",
+          "regulator": "HNF4A",
+          "source_ids": [
+            "human_hnf4a_cyp7a1"
+          ],
+          "target_gene": "CYP7A1",
+          "target_layer": "promoter"
+        },
+        {
+          "biological_context": "primary human hepatocyte evidence",
+          "effect": "represses",
+          "id": "fgf19-jun-cyp7a1-repression",
+          "mechanism": "FGF19/FGFR4 signalling and JNK/c-Jun repress human CYP7A1 transcription.",
+          "notes": "FGF19, FGFR4 and JNK are boundary nodes in milestone 2, not yet dynamic gene products in the seven-gene slice.",
+          "quantification_status": "qualitative_direction_only",
+          "regulator": "FGF19_FGFR4_JNK",
+          "source_ids": [
+            "human_cyp7a1_feedback",
+            "phh_bile_acid_gene_regulation"
+          ],
+          "target_gene": "CYP7A1",
+          "target_layer": "promoter"
+        }
+      ],
+      "regulatory_status": "source_backed_qualitative_graph_no_autonomous_regulatory_inference",
+      "source_ids": [
+        "ncbi_gene_records",
+        "genomic_burst_kinetics",
+        "primary_hepatocyte_protein_turnover",
+        "expression_unknown_policy",
+        "phh_bile_acid_gene_regulation",
+        "human_fxr_shp_regulation",
+        "human_cyp7a1_feedback",
+        "human_hnf4a_cyp7a1"
       ]
     },
     "genome": {
@@ -2197,6 +3242,28 @@
           "symbol": "CYP7A1"
         },
         {
+          "chromosome": "12",
+          "end_bp": 100564414,
+          "ensembl_gene_id": "ENSG00000012504",
+          "ncbi_gene_id": "9971",
+          "simulation_role": "FXR bile-acid sensing and transcriptional regulation",
+          "source_url": "https://www.ncbi.nlm.nih.gov/gene/9971",
+          "start_bp": 100473866,
+          "strand": "plus",
+          "symbol": "NR1H4"
+        },
+        {
+          "chromosome": "1",
+          "end_bp": 26913975,
+          "ensembl_gene_id": "ENSG00000131910",
+          "ncbi_gene_id": "8431",
+          "simulation_role": "SHP nuclear-receptor coregulator in bile-acid feedback",
+          "source_url": "https://www.ncbi.nlm.nih.gov/gene/8431",
+          "start_bp": 26911489,
+          "strand": "minus",
+          "symbol": "NR0B2"
+        },
+        {
           "chromosome": "20",
           "end_bp": 44434597,
           "ensembl_gene_id": "ENSG00000101076",
@@ -2284,6 +3351,471 @@
         "ncbi_mtdna_rcrs"
       ]
     },
+    "genomic_architecture": {
+      "architecture_id": "hepatocyte_genome_program_v1",
+      "epigenetic_loci": {
+        "ABCB11": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "ABCB11",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "ABCC2": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "ABCC2",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "ALB": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "ALB",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "CDKN1A": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "CDKN1A",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "CPS1": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "CPS1",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "CYP7A1": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "CYP7A1",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "DNMT1": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "DNMT1",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "HNF4A": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "HNF4A",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "NR0B2": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "NR0B2",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "NR1H4": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "NR1H4",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "SLC10A1": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "SLC10A1",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "SLC2A2": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "SLC2A2",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "TET2": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "TET2",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "TP53": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "TP53",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        },
+        "UHRF1": {
+          "assay": "not_provided",
+          "biological_system": "not_provided",
+          "chromatin_accessibility": "unknown",
+          "dna_methylation_fraction": null,
+          "gene_symbol": "UHRF1",
+          "histone_marks": {},
+          "notes": "No donor-matched locus measurement is loaded; reference atlases do not define this cell's epigenetic state.",
+          "observation_status": "not_measured",
+          "source_ids": [
+            "human_liver_multiome"
+          ]
+        }
+      },
+      "gene_modules": [
+        {
+          "dynamic_status": "only calibrated explicit genes may evolve; registry-only members are structural",
+          "explicit_expression_genes": [
+            "HNF4A",
+            "NR1H4",
+            "NR0B2",
+            "CYP7A1",
+            "SLC10A1",
+            "ABCB11",
+            "ABCC2"
+          ],
+          "id": "bile_acid_homeostasis",
+          "label": "Bile-acid synthesis, sensing and transport",
+          "member_genes": [
+            "HNF4A",
+            "NR1H4",
+            "NR0B2",
+            "CYP7A1",
+            "SLC10A1",
+            "ABCB11",
+            "ABCC2"
+          ],
+          "notes": "",
+          "representation_mode": "explicit_expression_states",
+          "source_ids": [
+            "ncbi_gene_records"
+          ]
+        },
+        {
+          "dynamic_status": "only calibrated explicit genes may evolve; registry-only members are structural",
+          "explicit_expression_genes": [
+            "HNF4A"
+          ],
+          "id": "hepatic_identity_and_secretion",
+          "label": "Hepatocyte identity and secretion",
+          "member_genes": [
+            "HNF4A",
+            "ALB"
+          ],
+          "notes": "",
+          "representation_mode": "mixed_explicit_and_registry_only",
+          "source_ids": [
+            "ncbi_gene_records"
+          ]
+        },
+        {
+          "dynamic_status": "only calibrated explicit genes may evolve; registry-only members are structural",
+          "explicit_expression_genes": [],
+          "id": "glucose_homeostasis",
+          "label": "Bidirectional glucose handling",
+          "member_genes": [
+            "SLC2A2"
+          ],
+          "notes": "",
+          "representation_mode": "mixed_explicit_and_registry_only",
+          "source_ids": [
+            "ncbi_gene_records"
+          ]
+        },
+        {
+          "dynamic_status": "only calibrated explicit genes may evolve; registry-only members are structural",
+          "explicit_expression_genes": [],
+          "id": "nitrogen_disposal",
+          "label": "Urea-cycle entry",
+          "member_genes": [
+            "CPS1"
+          ],
+          "notes": "",
+          "representation_mode": "mixed_explicit_and_registry_only",
+          "source_ids": [
+            "ncbi_gene_records"
+          ]
+        },
+        {
+          "dynamic_status": "only calibrated explicit genes may evolve; registry-only members are structural",
+          "explicit_expression_genes": [],
+          "id": "damage_checkpoint",
+          "label": "DNA-damage checkpoint and arrest",
+          "member_genes": [
+            "TP53",
+            "CDKN1A"
+          ],
+          "notes": "",
+          "representation_mode": "mixed_explicit_and_registry_only",
+          "source_ids": [
+            "ncbi_gene_records"
+          ]
+        },
+        {
+          "dynamic_status": "only calibrated explicit genes may evolve; registry-only members are structural",
+          "explicit_expression_genes": [],
+          "id": "epigenetic_maintenance",
+          "label": "DNA methylation maintenance and removal",
+          "member_genes": [
+            "DNMT1",
+            "UHRF1",
+            "TET2"
+          ],
+          "notes": "",
+          "representation_mode": "mixed_explicit_and_registry_only",
+          "source_ids": [
+            "ncbi_gene_records"
+          ]
+        }
+      ],
+      "identity": {
+        "cell_type": "hepatocyte",
+        "clone_id": "founder-cell-no-clonal-inference",
+        "donor_age": "not_provided",
+        "donor_id": "not_provided",
+        "donor_sex": "not_provided",
+        "genotype_status": "not_provided_reference_coordinates_only",
+        "identity_status": "reference_cell_context_with_unknown_donor",
+        "notes": "Zonation labels describe the simulation context; they are not inferred from a donor expression profile.",
+        "source_ids": [
+          "human_liver_cell_atlas"
+        ],
+        "species": "Homo sapiens",
+        "tissue_health": "reference_healthy_context_not_donor_observation",
+        "zonation": "midlobular"
+      },
+      "milestones": [
+        {
+          "data_requirements": [
+            "donor genotype"
+          ],
+          "implemented_capabilities": [
+            "reference loci",
+            "ploidy-aware alleles",
+            "seven-gene expression state"
+          ],
+          "milestone": 1,
+          "scientific_status": "implemented_data_required",
+          "software_complete": true,
+          "title": "Reference genome to functional expression slice"
+        },
+        {
+          "data_requirements": [
+            "matched PHH gene-specific kinetics"
+          ],
+          "implemented_capabilities": [
+            "compartmental RNA lifecycle",
+            "exact SSA",
+            "source-backed regulatory graph"
+          ],
+          "milestone": 2,
+          "scientific_status": "implemented_data_required",
+          "software_complete": true,
+          "title": "Calibration-gated central dogma and regulation"
+        },
+        {
+          "data_requirements": [
+            "donor-aware scRNA/proteomics calibration"
+          ],
+          "implemented_capabilities": [
+            "six functional gene modules",
+            "omics dataset registry"
+          ],
+          "milestone": 3,
+          "scientific_status": "implemented_data_required",
+          "software_complete": true,
+          "title": "Reduced transcriptome and proteome modules"
+        },
+        {
+          "data_requirements": [
+            "variant and epigenetic observations"
+          ],
+          "implemented_capabilities": [
+            "observed variants",
+            "locus epigenetic state",
+            "variant-function links"
+          ],
+          "milestone": 4,
+          "scientific_status": "implemented_data_required",
+          "software_complete": true,
+          "title": "Genome and epigenome change"
+        },
+        {
+          "data_requirements": [
+            "matched single-cell donor cohort"
+          ],
+          "implemented_capabilities": [
+            "donor/zone/clone context",
+            "lineage-compatible state"
+          ],
+          "milestone": 5,
+          "scientific_status": "implemented_data_required",
+          "software_complete": true,
+          "title": "Cell identity, heterogeneity and lineage"
+        },
+        {
+          "data_requirements": [
+            "held-out PHH validation datasets",
+            "uncertainty and identifiability analysis"
+          ],
+          "implemented_capabilities": [
+            "calibration-versus-validation dataset roles",
+            "per-milestone readiness report"
+          ],
+          "milestone": 6,
+          "scientific_status": "implemented_data_required",
+          "software_complete": true,
+          "title": "Validation and inference boundary"
+        }
+      ],
+      "notes": "All six software milestones are represented. Scientific validation remains per-dataset and per-parameter; missing donor data is never generated.",
+      "omics_datasets": [],
+      "source_ids": [
+        "ncbi_grch38_p14",
+        "ncbi_gene_records",
+        "human_liver_cell_atlas",
+        "gtex_v8",
+        "human_liver_multiome"
+      ],
+      "variant_functional_links": []
+    },
+    "hepatic_flux_evidence": {
+      "audit_paths": [
+        "data/hepatic_flux/audit/source_audit.md",
+        "data/hepatic_flux/audit/unidentifiable_parameters.md"
+      ],
+      "bed_scope_counts": {
+        "gut_portal_and_hepatic": 1,
+        "gut_portal_drained_viscera": 2,
+        "liver_specific": 2,
+        "systemic_whole_body": 9,
+        "whole_splanchnic_bed": 17
+      },
+      "healthy_numeric_record_count": 21,
+      "metabolite_counts": {
+        "NEFA": 2,
+        "alanine": 2,
+        "ammonia": 3,
+        "betahydroxybutyrate": 1,
+        "betahydroxybutyrate+acetoacetate": 1,
+        "glucose": 10,
+        "glutamine": 3,
+        "glycerol": 3,
+        "lactate": 3,
+        "pyruvate": 2,
+        "urea": 1
+      },
+      "numeric_record_count": 25,
+      "nutritional_state_counts": {
+        "fed": 5,
+        "postabsorptive": 22,
+        "prolonged_fast": 4
+      },
+      "per_cell_applicable_count": 0,
+      "policy": "Measured organ, splanchnic and whole-body records may validate scale-matched outputs only; no per-hepatocyte conversion is executed.",
+      "raw_paths": [
+        "data/hepatic_flux/raw/hepatic_flux_dataset.json",
+        "data/hepatic_flux/raw/hepatic_flux_flat.csv",
+        "data/hepatic_flux/raw/measured_records.json",
+        "data/hepatic_flux/raw/conversion_scaffold.json"
+      ],
+      "readiness": {
+        "healthy_portal_resolved_ready": false,
+        "in_vivo_human_glut2_kinetics_ready": false,
+        "organ_scale_reference_evidence_available": true,
+        "single_cell_flux_ready": false
+      },
+      "record_count": 31,
+      "status": "organ_scale_reference_evidence_not_single_cell_calibration"
+    },
     "history": {
       "birth_time_s": 0.0,
       "completed_cytokineses": 0,
@@ -2321,7 +3853,9 @@
             "cholestasis_er_stress",
             "bile_acid_mitochondrial_apoptosis",
             "upr_proteostasis",
-            "atp_death_switch"
+            "atp_death_switch",
+            "human_tki_bile_acid_trajectory",
+            "human_bile_acid_death_mode"
           ],
           "start_time_s": 0.0,
           "status": "ongoing"
@@ -2352,89 +3886,116 @@
     "integrated_metabolism": {
       "metabolites": [
         {
-          "classification": "below",
-          "high_mM": 2.2,
-          "hmdb_id": "HMDB0000190",
-          "low_mM": 0.5,
-          "species": "lactate",
-          "value_mM": 0.0
-        },
-        {
-          "classification": "below",
-          "high_mM": 0.1,
-          "hmdb_id": "HMDB0000243",
-          "low_mM": 0.04,
-          "species": "pyruvate",
-          "value_mM": 0.0
-        },
-        {
-          "classification": "below",
-          "high_mM": 0.45,
-          "hmdb_id": "HMDB0000161",
-          "low_mM": 0.2,
-          "species": "alanine",
-          "value_mM": 0.0
-        },
-        {
-          "classification": "below",
-          "high_mM": 0.75,
-          "hmdb_id": "HMDB0000641",
-          "low_mM": 0.45,
-          "species": "glutamine",
-          "value_mM": 0.0
-        },
-        {
-          "classification": "below",
-          "high_mM": 0.1,
-          "hmdb_id": "HMDB0000148",
-          "low_mM": 0.01,
-          "species": "glutamate",
-          "value_mM": 0.0
-        },
-        {
           "classification": "in_range",
-          "high_mM": 0.5,
-          "hmdb_id": "HMDB0000357",
-          "low_mM": 0.02,
-          "species": "beta_hydroxybutyrate",
-          "value_mM": 0.1316
-        },
-        {
-          "classification": "in_range",
-          "high_mM": 0.15,
-          "hmdb_id": "HMDB0000060",
-          "low_mM": 0.01,
-          "species": "acetoacetate",
-          "value_mM": 0.088
-        },
-        {
-          "classification": "below",
-          "high_mM": 0.035,
-          "hmdb_id": "HMDB0000051",
-          "low_mM": 0.011,
-          "species": "ammonia",
-          "value_mM": 0.0026
-        },
-        {
-          "classification": "in_range",
-          "high_mM": 7.1,
-          "hmdb_id": "HMDB0000294",
-          "low_mM": 2.5,
-          "species": "urea",
-          "value_mM": 2.7829
-        },
-        {
-          "classification": "below",
-          "high_mM": 0.2,
-          "hmdb_id": "HMDB0000131",
-          "low_mM": 0.03,
-          "species": "glycerol",
-          "value_mM": 0.0
+          "compartment": "blood",
+          "high_mM": 5.6,
+          "hmdb_id": "HMDB0000122",
+          "low_mM": 3.9,
+          "species": "glucose",
+          "value_mM": 4.75
         }
       ],
-      "n_in_range": 3,
-      "n_scored": 10,
-      "state": "fasted"
+      "model_role": "source_boundary_validation_not_integrated_pathway_output",
+      "n_in_range": 1,
+      "n_scored": 1,
+      "sinusoid_boundary": {
+        "blood_pools": {
+          "glucose": {
+            "basis": "human_plasma_mM",
+            "evidence": "derived",
+            "high_mM": 5.6,
+            "low_mM": 3.9,
+            "notes": "Midpoint of the curated fasting plasma range; used only at the sinusoidal boundary.",
+            "source_ids": [
+              "hmdb_2022"
+            ],
+            "value_mM": 4.75
+          }
+        },
+        "connected_species": [
+          "glucose_blood"
+        ],
+        "mean_transit_time_s": 13.4,
+        "notes": "No transport rate is inferred for unavailable species; their blood validation remains blocked.",
+        "profile": "postabsorptive",
+        "status": "source_backed_glucose_only",
+        "unavailable_transport": [
+          "lactate",
+          "pyruvate",
+          "alanine",
+          "glutamine",
+          "glutamate",
+          "urea",
+          "ammonia",
+          "glycerol",
+          "beta_hydroxybutyrate",
+          "acetoacetate"
+        ]
+      },
+      "state": "postabsorptive",
+      "unavailable": [
+        {
+          "hmdb_id": "HMDB0000190",
+          "reason": "no explicit blood pool connected to a source-backed transport boundary",
+          "required_compartment": "blood",
+          "species": "lactate"
+        },
+        {
+          "hmdb_id": "HMDB0000243",
+          "reason": "no explicit blood pool connected to a source-backed transport boundary",
+          "required_compartment": "blood",
+          "species": "pyruvate"
+        },
+        {
+          "hmdb_id": "HMDB0000161",
+          "reason": "no explicit blood pool connected to a source-backed transport boundary",
+          "required_compartment": "blood",
+          "species": "alanine"
+        },
+        {
+          "hmdb_id": "HMDB0000641",
+          "reason": "no explicit blood pool connected to a source-backed transport boundary",
+          "required_compartment": "blood",
+          "species": "glutamine"
+        },
+        {
+          "hmdb_id": "HMDB0000148",
+          "reason": "no explicit blood pool connected to a source-backed transport boundary",
+          "required_compartment": "blood",
+          "species": "glutamate"
+        },
+        {
+          "hmdb_id": "HMDB0000357",
+          "reason": "no explicit blood pool connected to a source-backed transport boundary",
+          "required_compartment": "blood",
+          "species": "beta_hydroxybutyrate"
+        },
+        {
+          "hmdb_id": "HMDB0000060",
+          "reason": "no explicit blood pool connected to a source-backed transport boundary",
+          "required_compartment": "blood",
+          "species": "acetoacetate"
+        },
+        {
+          "hmdb_id": "HMDB0000051",
+          "reason": "no explicit blood pool connected to a source-backed transport boundary",
+          "required_compartment": "blood",
+          "species": "ammonia"
+        },
+        {
+          "hmdb_id": "HMDB0000294",
+          "reason": "no explicit blood pool connected to a source-backed transport boundary",
+          "required_compartment": "blood",
+          "species": "urea"
+        },
+        {
+          "hmdb_id": "HMDB0000131",
+          "reason": "no explicit blood pool connected to a source-backed transport boundary",
+          "required_compartment": "blood",
+          "species": "glycerol"
+        }
+      ],
+      "validation_scope": "explicit_blood_boundary_only"
     },
     "membrane_state": {
       "channel_open_probability": 0.056942138340477205,
@@ -2536,24 +4097,35 @@
         "value": 0.0003126100955617736
       },
       {
+        "consumed_by": "bile_acid_pool",
+        "id": "cyp7a1-bile-acid-synthesis",
+        "notes": "Disabled unless both a calibrated CYP7A1 functional scale and an explicit bile-synthesis rate are supplied; no default rate is invented",
+        "process": "bile_acid_synthesis",
+        "produced_by": "CYP7A1_smooth_er",
+        "source": "cholesterol",
+        "target": "intracellular_bile_acids",
+        "unit": "relative_pool_delta",
+        "value": 0.0
+      },
+      {
         "consumed_by": "bile_canaliculus",
         "id": "bsep-bile-acid-export",
-        "notes": "BSEP-scaled bile-acid export; absolute base rate remains an existing normalized model rate",
+        "notes": "Mass-conserving intracellular-to-canalicular BSEP transfer; absolute base rate remains an existing normalized model rate",
         "process": "bile_export",
         "produced_by": "BSEP_canalicular_surface",
-        "source": "bile_acids_ATP",
-        "target": "bile_canaliculus",
+        "source": "intracellular_bile_acids_ATP",
+        "target": "canalicular_bile_acids",
         "unit": "relative_pool_delta",
         "value": 0.0
       },
       {
         "consumed_by": "bile_canaliculus",
         "id": "mrp2-bilirubin-export",
-        "notes": "MRP2-scaled bilirubin-conjugate export; absolute base rate remains an existing normalized model rate",
+        "notes": "Mass-conserving intracellular-to-canalicular MRP2 transfer; absolute base rate remains an existing normalized model rate",
         "process": "bilirubin_export",
         "produced_by": "MRP2_canalicular_surface",
-        "source": "bilirubin_conjugates_ATP",
-        "target": "bile_canaliculus",
+        "source": "intracellular_bilirubin_conjugates_ATP",
+        "target": "canalicular_bilirubin_conjugates",
         "unit": "relative_pool_delta",
         "value": 0.0
       },
@@ -2580,10 +4152,133 @@
         "value": 0.0020439603768180803
       }
     ],
+    "model_authority": {
+      "authoritative_sections": [
+        "quantitative_state",
+        "zonation_state.reference_context",
+        "sinusoid_homeostasis.perfusion_boundary",
+        "nutritional_homeostasis_v3.organ_validation_trajectory",
+        "phh_baseline",
+        "integrated_metabolism",
+        "genome.reference_assembly"
+      ],
+      "policy": "quantitative_state wins on overlapping species; relative 0-1 state may drive visualization but cannot support quantitative biological claims.",
+      "primary_state_path": "quantitative_state",
+      "schematic_sections": [
+        "pools",
+        "organelles",
+        "stress",
+        "metabolic_fluxes",
+        "pathway_results",
+        "signaling_results",
+        "membrane_state"
+      ],
+      "schematic_state_path": "pools",
+      "status": "mixed_authority_research_preview"
+    },
     "model_controls": {
       "bsep_surface_activity": 0.0,
       "experiment_id": "canalicular_export_loss",
+      "intervention_type": "combined_genetic_abcb11_abcc2_loss",
       "mrp2_surface_activity": 0.0
+    },
+    "nutritional_homeostasis_v3": {
+      "basal_hepatic_glucose_output": {
+        "evidence": "reported basal healthy-human hepatic glucose output",
+        "source_ids": [
+          "human_mixed_meal_homeostasis_1996"
+        ],
+        "uncertainty": 0.04,
+        "uncertainty_type": "SEM",
+        "unit": "mg_glucose_per_kg_body_mass_per_min",
+        "value": 1.9
+      },
+      "biological_system": "healthy_human_liver_in_vivo",
+      "direct_pathway_windows": [
+        {
+          "denominator": "fraction_of_overall_hepatic_glycogen_synthesis",
+          "end_h": 4.0,
+          "fraction": 0.46,
+          "sem": 0.05,
+          "start_h": 2.0
+        },
+        {
+          "denominator": "fraction_of_overall_hepatic_glycogen_synthesis",
+          "end_h": 6.0,
+          "fraction": 0.68,
+          "sem": 0.08,
+          "start_h": 4.0
+        }
+      ],
+      "hepatic_glucose_output_suppression": "reported_complete_suppression_no_numeric_flux_assigned",
+      "intervention": "liquid_mixed_meal",
+      "limitations": [
+        "This is an organ-level validation trajectory, not a per-cell mechanistic flux.",
+        "The cohort-average synthesis rate is not assumed constant outside the measured baseline-to-peak interval.",
+        "The trajectory is shared across zone contexts until human zone-resolved flux measurements are supplied.",
+        "Reported complete glucose-output suppression is retained categorically because no zero-valued cellular flux was measured."
+      ],
+      "mean_glycogen_synthesis_rate": {
+        "evidence": "reported cohort-average rate",
+        "source_ids": [
+          "human_mixed_meal_homeostasis_1996"
+        ],
+        "uncertainty": null,
+        "uncertainty_type": null,
+        "unit": "mmol_glucosyl_per_L_liver_per_min",
+        "value": 0.34
+      },
+      "mean_post_peak_glycogen_decline_rate": {
+        "evidence": "reported rapid post-peak decline rate",
+        "source_ids": [
+          "human_mixed_meal_homeostasis_1996"
+        ],
+        "uncertainty": null,
+        "uncertainty_type": null,
+        "unit": "mmol_glucosyl_per_L_liver_per_min",
+        "value": 0.26
+      },
+      "measured_peak_residual_mM_liver": 0.8799999999999955,
+      "predictive_ready": false,
+      "rate_time_implied_peak_mM_liver": 315.12,
+      "scale_bridge": {
+        "blockers": [
+          "No matched hepatocyte number or active parenchymal fraction for the measured liver trajectory.",
+          "No matched zone contribution to whole-liver glycogen synthesis.",
+          "No matched adult healthy-PHH GLUT2 bidirectional transport capacity.",
+          "No donor-matched insulin/glucagon concentration trajectory is loaded."
+        ],
+        "glut2_vmax": null,
+        "per_cell_glucose_flux": null,
+        "per_cell_glucose_flux_unit": null,
+        "source_scale": "whole_liver_in_vivo_cohort_average",
+        "status": "blocked_non_identifiable_from_available_measurements",
+        "target_scale": "single_zone_resolved_primary_human_hepatocyte",
+        "zone_allocation_factors": null
+      },
+      "selected_zone": "midlobular",
+      "source_ids": [
+        "human_mixed_meal_homeostasis_1996"
+      ],
+      "status": "human_organ_trajectory_active_single_cell_flux_blocked",
+      "suppression_time_min": 30.0,
+      "trace": [
+        {
+          "glycogen_mM_liver": 207.0,
+          "glycogen_sem_mM_liver": 22.0,
+          "phase": "pre_meal_baseline",
+          "time_min": 0.0,
+          "time_uncertainty_min": null
+        },
+        {
+          "glycogen_mM_liver": 316.0,
+          "glycogen_sem_mM_liver": 19.0,
+          "phase": "mixed_meal_peak",
+          "time_min": 318.0,
+          "time_uncertainty_min": 31.0
+        }
+      ],
+      "version": "phh_zonation_sinusoid_homeostasis_v3"
     },
     "organelles": {
       "cytoskeleton": {
@@ -2594,7 +4289,7 @@
           "mechanical_integrity"
         ],
         "activity": 0.21877953344635093,
-        "age_h": 1.2666666666666675,
+        "age_h": 0.26666666666666666,
         "capacity": 1.0018251767521535,
         "damage": 0.0,
         "health": 1.0,
@@ -2605,7 +4300,7 @@
           0.0,
           0.0
         ],
-        "risk_per_hour": 0.0022316984749455337,
+        "risk_per_hour": 0.0,
         "transport_delay_s": 2.1210000000000004
       },
       "cytosol_metabolism": {
@@ -2627,7 +4322,7 @@
           -1.0,
           0.0
         ],
-        "risk_per_hour": 0.0017159569696577968,
+        "risk_per_hour": 0.0,
         "transport_delay_s": 1.8210000000000002
       },
       "golgi": {
@@ -2638,7 +4333,7 @@
           "polarized_delivery"
         ],
         "activity": 0.20072967565536473,
-        "age_h": 2.7666666666666657,
+        "age_h": 0.26666666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
@@ -2649,7 +4344,7 @@
           2.3,
           0.2
         ],
-        "risk_per_hour": 0.003338991928480204,
+        "risk_per_hour": 0.0,
         "transport_delay_s": 4.738999999999999
       },
       "lysosome_endosome": {
@@ -2660,7 +4355,7 @@
           "receptor_recycling"
         ],
         "activity": 0.20209610983156232,
-        "age_h": 4.766666666666666,
+        "age_h": 0.26666666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
@@ -2671,7 +4366,7 @@
           1.2,
           -1.4
         ],
-        "risk_per_hour": 0.003090403059462455,
+        "risk_per_hour": 0.0,
         "transport_delay_s": 7.577999999999999
       },
       "mitochondria": {
@@ -2683,7 +4378,7 @@
           "mitophagy_commit"
         ],
         "activity": 0.2024716489599994,
-        "age_h": 18.26666666666668,
+        "age_h": 0.26666666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
@@ -2694,7 +4389,7 @@
           -2.0,
           1.1
         ],
-        "risk_per_hour": 0.004576065974886067,
+        "risk_per_hour": 0.0,
         "transport_delay_s": 0.25
       },
       "nucleus": {
@@ -2705,7 +4400,7 @@
           "DNA_damage_response"
         ],
         "activity": 0.2221705330811734,
-        "age_h": 12.266666666666666,
+        "age_h": 0.26666666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
@@ -2716,7 +4411,7 @@
           0.0,
           0.0
         ],
-        "risk_per_hour": 0.0020305746142159618,
+        "risk_per_hour": 0.0,
         "transport_delay_s": 2.1210000000000004
       },
       "peroxisome": {
@@ -2727,7 +4422,7 @@
           "ROS_buffering"
         ],
         "activity": 0.20617873110419566,
-        "age_h": 5.266666666666666,
+        "age_h": 0.26666666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
@@ -2738,7 +4433,7 @@
           -3.2,
           -1.2
         ],
-        "risk_per_hour": 0.003166044219103238,
+        "risk_per_hour": 0.0,
         "transport_delay_s": 1.298
       },
       "plasma_membrane": {
@@ -2749,7 +4444,7 @@
           "exocytosis"
         ],
         "activity": 0.2493410758689917,
-        "age_h": 4.266666666666666,
+        "age_h": 0.26666666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
@@ -2760,7 +4455,7 @@
           11.5,
           0.0
         ],
-        "risk_per_hour": 0.0030755269146972653,
+        "risk_per_hour": 0.0,
         "transport_delay_s": 19.946000000000005
       },
       "proteasome": {
@@ -2770,7 +4465,7 @@
           "regulatory_protein_turnover"
         ],
         "activity": 0.20173128185458286,
-        "age_h": 3.7666666666666657,
+        "age_h": 0.26666666666666666,
         "capacity": 1.0312204458247534,
         "damage": 0.0,
         "health": 1.0,
@@ -2781,7 +4476,7 @@
           -0.8,
           2.4
         ],
-        "risk_per_hour": 0.0021810605638812783,
+        "risk_per_hour": 0.0,
         "transport_delay_s": 2.714
       },
       "ribosome": {
@@ -2792,7 +4487,7 @@
           "ER_targeting"
         ],
         "activity": 0.20254798964942686,
-        "age_h": 2.2666666666666657,
+        "age_h": 0.26666666666666666,
         "capacity": 1.0,
         "damage": 0.0,
         "health": 1.0,
@@ -2803,7 +4498,7 @@
           1.5,
           1.2
         ],
-        "risk_per_hour": 0.0025306067657487677,
+        "risk_per_hour": 0.0,
         "transport_delay_s": 1.251
       },
       "rough_er": {
@@ -2814,7 +4509,7 @@
           "ERAD"
         ],
         "activity": 0.2018500490350896,
-        "age_h": 3.2666666666666657,
+        "age_h": 0.26666666666666666,
         "capacity": 1.0401710706662615,
         "damage": 0.0,
         "health": 1.0,
@@ -2825,7 +4520,7 @@
           0.8,
           0.5
         ],
-        "risk_per_hour": 0.0039867121824887644,
+        "risk_per_hour": 0.0,
         "transport_delay_s": 1.1439999999999997
       },
       "smooth_er": {
@@ -2836,7 +4531,7 @@
           "calcium_storage"
         ],
         "activity": 0.20666260964690308,
-        "age_h": 3.2666666666666657,
+        "age_h": 0.26666666666666666,
         "capacity": 1.0554082016983521,
         "damage": 0.0,
         "health": 1.0,
@@ -2847,11 +4542,655 @@
           -1.0,
           0.7
         ],
-        "risk_per_hour": 0.004063446347255467,
+        "risk_per_hour": 0.0,
         "transport_delay_s": 4.341
       }
     },
     "pathway_results": [],
+    "phh_baseline": {
+      "anchor_count": 19,
+      "anchors": [
+        {
+          "applicability": "Checks the order of magnitude of the hepatocyte albumin protein pool.",
+          "assay": "LC-MS/MS with Total Protein Approach and Proteomic Ruler",
+          "biological_system": "purified primary human hepatocytes from surgical liver resections",
+          "id": "human_hepatocyte_albumin_copies",
+          "limitations": "Average across donors; does not separate intracellular, secretory-pathway and newly secreted albumin, and is not a synthesis rate.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": null,
+            "uncertainty_value": null,
+            "unit": "copies_per_cell",
+            "value": 20000000.0
+          },
+          "model_use": "validation_target",
+          "sample_size": 7,
+          "source_id": "human_hepatocyte_proteome_2016",
+          "target": "ALB protein abundance"
+        },
+        {
+          "applicability": "Constrains total BSEP protein abundance in a healthy human-hepatocyte reference cohort.",
+          "assay": "quantitative LC-MS/MS",
+          "biological_system": "purified primary human hepatocytes from surgical liver resections",
+          "id": "human_hepatocyte_bsep_total_protein",
+          "limitations": "Does not provide canalicular surface fraction, total protein mass per modeled cell, or transport-active copies.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": null,
+            "uncertainty_value": null,
+            "unit": "pmol_per_mg_total_protein",
+            "value": 1.4
+          },
+          "model_use": "calibration_anchor",
+          "sample_size": 7,
+          "source_id": "human_hepatocyte_proteome_2016",
+          "target": "ABCB11/BSEP abundance"
+        },
+        {
+          "applicability": "Constrains total membrane-fraction MRP2 abundance and its donor variability.",
+          "assay": "targeted LC-MS/MS",
+          "biological_system": "human liver tissue membrane fraction",
+          "id": "human_liver_mrp2_total_membrane_protein",
+          "limitations": "Tissue membrane denominator includes multiple membrane pools; canalicular surface fraction and copies per hepatocyte are not measured.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SD",
+            "uncertainty_value": 0.64,
+            "unit": "fmol_per_ug_liver_membrane_protein",
+            "value": 1.54
+          },
+          "model_use": "calibration_anchor",
+          "sample_size": 51,
+          "source_id": "human_mrp2_abundance_2012",
+          "target": "ABCC2/MRP2 abundance"
+        },
+        {
+          "applicability": "Provides an in-vivo healthy-liver glycogen distribution target.",
+          "assay": "localized proton MR spectroscopy",
+          "biological_system": "normal human liver in vivo",
+          "id": "human_liver_glycogen_in_vivo",
+          "limitations": "Tissue wet-weight concentration is not identical to cytosolic concentration in one hepatocyte and feeding state was not a matched simulation input.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SD",
+            "uncertainty_value": 14.4,
+            "unit": "mmol_per_kg_wet_liver",
+            "value": 38.1
+          },
+          "model_use": "tissue_level_validation_target",
+          "sample_size": 25,
+          "source_id": "human_liver_glycogen_mrs_2012",
+          "target": "hepatic glycogen glucosyl-unit concentration"
+        },
+        {
+          "applicability": "Independent measured affinity anchor for the BSEP taurocholate rate law.",
+          "assay": "ATP-dependent taurocholate transport",
+          "biological_system": "recombinant human BSEP in inverted Sf9 membrane vesicles",
+          "id": "human_bsep_taurocholate_sf9_km",
+          "limitations": "Recombinant vesicle affinity is assay-specific; it is not a whole-hepatocyte flux parameter.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SD",
+            "uncertainty_value": 5.0,
+            "unit": "uM",
+            "value": 17.8
+          },
+          "model_use": "assay_kinetic_anchor",
+          "sample_size": null,
+          "source_id": "human_bsep_taurocholate_2013",
+          "target": "BSEP taurocholate Michaelis constant"
+        },
+        {
+          "applicability": "Constrains the source assay curve when the same assay denominator is represented.",
+          "assay": "ATP-dependent taurocholate transport",
+          "biological_system": "recombinant human BSEP in inverted Sf9 membrane vesicles",
+          "id": "human_bsep_taurocholate_sf9_vmax",
+          "limitations": "Cannot be converted to hepatocyte molecules per second without matched active surface copies or matched membrane-protein mass.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SD",
+            "uncertainty_value": 28.2,
+            "unit": "pmol_per_mg_assay_protein_per_min",
+            "value": 286.2
+          },
+          "model_use": "assay_kinetic_anchor",
+          "sample_size": null,
+          "source_id": "human_bsep_taurocholate_2013",
+          "target": "BSEP taurocholate assay Vmax"
+        },
+        {
+          "applicability": "Constrains the human-hepatocyte taurocholate uptake affinity range.",
+          "assay": "sodium-dependent taurocholate uptake",
+          "biological_system": "cryopreserved primary human hepatocytes",
+          "id": "human_ntcp_taurocholate_uptake_km_range",
+          "limitations": "Measured uptake includes intact-cell context and potentially additional uptake transporters; cryopreserved activity ranged from 10-200% of fresh cells.",
+          "measurement": {
+            "high": 8.0,
+            "low": 2.0,
+            "uncertainty_type": "reported_range",
+            "uncertainty_value": null,
+            "unit": "uM",
+            "value": null
+          },
+          "model_use": "whole_cell_affinity_range",
+          "sample_size": null,
+          "source_id": "human_ntcp_uptake_2003",
+          "target": "NTCP-dominated taurocholate uptake Michaelis constant"
+        },
+        {
+          "applicability": "Constrains the tissue-equivalent ATP pool and adenylate energy charge.",
+          "assay": "HPLC",
+          "biological_system": "control human liver tissue",
+          "id": "human_liver_atp_control",
+          "limitations": "Total tissue ATP is not a compartment-resolved free cytosolic ATP measurement in isolated PHH.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SEM",
+            "uncertainty_value": 0.298,
+            "unit": "umol_per_g_wet_liver",
+            "value": 2.08
+          },
+          "model_use": "metabolic_pool_initialization_anchor",
+          "sample_size": null,
+          "source_id": "human_liver_adenylates_1992",
+          "target": "total hepatic ATP"
+        },
+        {
+          "applicability": "Constrains the tissue-equivalent ADP pool and adenylate energy charge.",
+          "assay": "HPLC",
+          "biological_system": "control human liver tissue",
+          "id": "human_liver_adp_control",
+          "limitations": "Total tissue ADP is not compartment resolved.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SEM",
+            "uncertainty_value": 0.0628,
+            "unit": "umol_per_g_wet_liver",
+            "value": 1.17
+          },
+          "model_use": "metabolic_pool_initialization_anchor",
+          "sample_size": null,
+          "source_id": "human_liver_adenylates_1992",
+          "target": "total hepatic ADP"
+        },
+        {
+          "applicability": "Constrains the tissue-equivalent AMP pool and adenylate energy charge.",
+          "assay": "HPLC",
+          "biological_system": "control human liver tissue",
+          "id": "human_liver_amp_control",
+          "limitations": "Total tissue AMP is not compartment resolved.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SEM",
+            "uncertainty_value": 0.115,
+            "unit": "umol_per_g_wet_liver",
+            "value": 0.445
+          },
+          "model_use": "metabolic_pool_initialization_anchor",
+          "sample_size": null,
+          "source_id": "human_liver_adenylates_1992",
+          "target": "total hepatic AMP"
+        },
+        {
+          "applicability": "Validates consistency of the initialized ATP, ADP and AMP pools.",
+          "assay": "HPLC-derived adenylate energy charge",
+          "biological_system": "control human liver tissue",
+          "id": "human_liver_energy_charge_control",
+          "limitations": "Tissue-average energy charge does not resolve hepatocyte zones or organelle compartments.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SEM",
+            "uncertainty_value": 0.0465,
+            "unit": "dimensionless",
+            "value": 0.713
+          },
+          "model_use": "metabolic_state_validation_target",
+          "sample_size": null,
+          "source_id": "human_liver_adenylates_1992",
+          "target": "hepatic adenylate energy charge"
+        },
+        {
+          "applicability": "Constrains total tissue-equivalent oxidized NAD.",
+          "assay": "HPLC",
+          "biological_system": "control human liver tissue",
+          "id": "human_liver_nad_plus_control",
+          "limitations": "Does not provide NADH or cytosolic-versus-mitochondrial allocation.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SEM",
+            "uncertainty_value": 0.044,
+            "unit": "umol_per_g_wet_liver",
+            "value": 0.632
+          },
+          "model_use": "redox_pool_initialization_anchor",
+          "sample_size": null,
+          "source_id": "human_liver_adenylates_1992",
+          "target": "total hepatic NAD+"
+        },
+        {
+          "applicability": "Calibrates apparent ATP turnover around the healthy baseline pools.",
+          "assay": "localized 31P saturation-transfer MRS",
+          "biological_system": "healthy human liver in vivo",
+          "id": "human_liver_apparent_atp_synthesis",
+          "limitations": "Magnetization-transfer exchange is not identical to net mitochondrial ATP synthesis.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SEM",
+            "uncertainty_value": 1.8,
+            "unit": "mM_per_min",
+            "value": 29.5
+          },
+          "model_use": "lumped_atp_turnover_anchor",
+          "sample_size": 9,
+          "source_id": "human_liver_atp_synthesis_2008",
+          "target": "apparent hepatic Pi-to-ATP exchange flux"
+        },
+        {
+          "applicability": "Defines the fed-peak glycogen profile.",
+          "assay": "13C NMR spectroscopy",
+          "biological_system": "healthy human liver in vivo after a mixed meal",
+          "id": "human_liver_glycogen_fed_peak",
+          "limitations": "Whole-liver concentration is used as a tissue-equivalent lumped hepatocyte pool.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SEM",
+            "uncertainty_value": 19.0,
+            "unit": "mmol_per_L_liver",
+            "value": 316.0
+          },
+          "model_use": "fed_profile_initialization_anchor",
+          "sample_size": null,
+          "source_id": "human_liver_glycogen_mixed_meal_2000",
+          "target": "hepatic glycogen after mixed meal"
+        },
+        {
+          "applicability": "Defines the overnight-fasted/postabsorptive glycogen profile.",
+          "assay": "localized 13C NMR spectroscopy",
+          "biological_system": "healthy human liver in vivo after overnight fast",
+          "id": "human_liver_glycogen_postabsorptive",
+          "limitations": "Whole-liver concentration is used as a tissue-equivalent lumped hepatocyte pool.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SEM",
+            "uncertainty_value": 34.0,
+            "unit": "mM_liver",
+            "value": 229.0
+          },
+          "model_use": "postabsorptive_profile_initialization_anchor",
+          "sample_size": 35,
+          "source_id": "human_liver_glycogen_overnight_1996",
+          "target": "hepatic glycogen after overnight fast"
+        },
+        {
+          "applicability": "Constrains the prolonged-fasted glycogen profile.",
+          "assay": "liver biopsy glycogen",
+          "biological_system": "human liver after total starvation or carbohydrate-poor diet",
+          "id": "human_liver_glycogen_prolonged_fast",
+          "limitations": "The model uses the range midpoint and retains a tissue-mass-equivalent interpretation.",
+          "measurement": {
+            "high": 55.0,
+            "low": 24.0,
+            "uncertainty_type": "reported_range",
+            "uncertainty_value": null,
+            "unit": "mmol_glucosyl_per_kg_wet_liver",
+            "value": null
+          },
+          "model_use": "prolonged_fasted_profile_range",
+          "sample_size": null,
+          "source_id": "human_liver_glycogen_starvation_1973",
+          "target": "hepatic glycogen after prolonged starvation"
+        },
+        {
+          "applicability": "Constrains the total hepatic glutathione pool.",
+          "assay": "total glutathione biochemical assay",
+          "biological_system": "histologically normal human liver biopsy",
+          "id": "human_liver_total_glutathione",
+          "limitations": "Conversion to a model concentration requires an explicit hepatic protein-density assumption and does not resolve GSH from GSSG compartments.",
+          "measurement": {
+            "high": 41.0,
+            "low": 20.2,
+            "uncertainty_type": "SD",
+            "uncertainty_value": 8.1,
+            "unit": "umol_per_g_hepatic_protein",
+            "value": 26.9
+          },
+          "model_use": "redox_pool_initialization_anchor",
+          "sample_size": 6,
+          "source_id": "human_liver_glutathione_1980",
+          "target": "total hepatic glutathione"
+        },
+        {
+          "applicability": "Sets the first-order replacement timescale of the effective sinusoidal concentration boundary.",
+          "assay": "dynamic tracer imaging with physiological compartment model",
+          "biological_system": "normal human volunteers",
+          "id": "human_liver_mean_blood_transit_time",
+          "limitations": "Whole-liver mean transit time does not resolve one sinusoid, acinar zone or donor-specific perfusion.",
+          "measurement": {
+            "high": null,
+            "low": null,
+            "uncertainty_type": "SD",
+            "uncertainty_value": 1.71,
+            "unit": "s",
+            "value": 13.4
+          },
+          "model_use": "sinusoid_boundary_turnover_anchor",
+          "sample_size": 8,
+          "source_id": "human_hepatic_transit_1996",
+          "target": "mean hepatic blood transit time"
+        },
+        {
+          "applicability": "Defines the postabsorptive glucose concentration range at the blood-facing model boundary.",
+          "assay": "HMDB-curated physiological reference interval",
+          "biological_system": "human blood/plasma",
+          "id": "human_postabsorptive_plasma_glucose_range",
+          "limitations": "Systemic plasma is used as the effective sinusoidal inlet target; portal-arterial mixing and donor variation are not resolved.",
+          "measurement": {
+            "high": 5.6,
+            "low": 3.9,
+            "uncertainty_type": "reference_range",
+            "uncertainty_value": null,
+            "unit": "mM",
+            "value": null
+          },
+          "model_use": "postabsorptive_sinusoid_boundary_range",
+          "sample_size": null,
+          "source_id": "hmdb_2022",
+          "target": "fasting/postabsorptive plasma glucose"
+        }
+      ],
+      "applicability": "Healthy human liver tissue-equivalent baseline for a lumped hepatocyte model; not donor-matched isolated PHH cytosol.",
+      "date_verified": "2026-07-11",
+      "policy": "Measurements retain their original assay denominator and biological context. None is converted to a whole-cell initial value or flux without the missing matched conversion measurement.",
+      "profiles": {
+        "fed_peak": {
+          "energy_charge": 0.7212449255751014,
+          "label": "Fed peak",
+          "pools": {
+            "ADP": {
+              "basis": "whole_tissue_equivalent_mM",
+              "evidence": "derived",
+              "high_mM": null,
+              "low_mM": null,
+              "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+              "source_ids": [
+                "human_liver_adenylates_1992",
+                "human_liver_phosphorus_mrs_2017"
+              ],
+              "value_mM": 1.23318
+            },
+            "AMP": {
+              "basis": "whole_tissue_equivalent_mM",
+              "evidence": "derived",
+              "high_mM": null,
+              "low_mM": null,
+              "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+              "source_ids": [
+                "human_liver_adenylates_1992",
+                "human_liver_phosphorus_mrs_2017"
+              ],
+              "value_mM": 0.46903
+            },
+            "ATP": {
+              "basis": "whole_tissue_equivalent_mM",
+              "evidence": "derived",
+              "high_mM": null,
+              "low_mM": null,
+              "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+              "source_ids": [
+                "human_liver_adenylates_1992",
+                "human_liver_phosphorus_mrs_2017"
+              ],
+              "value_mM": 2.19232
+            },
+            "NAD_plus": {
+              "basis": "whole_tissue_equivalent_mM",
+              "evidence": "derived",
+              "high_mM": null,
+              "low_mM": null,
+              "notes": "Total tissue NAD+; no cytosol/matrix split is inferred.",
+              "source_ids": [
+                "human_liver_adenylates_1992",
+                "human_liver_phosphorus_mrs_2017"
+              ],
+              "value_mM": 0.666128
+            },
+            "glycogen": {
+              "basis": "in_vivo_liver_mM",
+              "evidence": "measured",
+              "high_mM": 335.0,
+              "low_mM": 297.0,
+              "notes": "Peak after a mixed meal; bounds are mean +/- SEM.",
+              "source_ids": [
+                "human_liver_glycogen_mixed_meal_2000"
+              ],
+              "value_mM": 316.0
+            }
+          }
+        },
+        "postabsorptive": {
+          "energy_charge": 0.7212449255751014,
+          "label": "Postabsorptive / overnight fast",
+          "pools": {
+            "ADP": {
+              "basis": "whole_tissue_equivalent_mM",
+              "evidence": "derived",
+              "high_mM": null,
+              "low_mM": null,
+              "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+              "source_ids": [
+                "human_liver_adenylates_1992",
+                "human_liver_phosphorus_mrs_2017"
+              ],
+              "value_mM": 1.23318
+            },
+            "AMP": {
+              "basis": "whole_tissue_equivalent_mM",
+              "evidence": "derived",
+              "high_mM": null,
+              "low_mM": null,
+              "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+              "source_ids": [
+                "human_liver_adenylates_1992",
+                "human_liver_phosphorus_mrs_2017"
+              ],
+              "value_mM": 0.46903
+            },
+            "ATP": {
+              "basis": "whole_tissue_equivalent_mM",
+              "evidence": "derived",
+              "high_mM": null,
+              "low_mM": null,
+              "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+              "source_ids": [
+                "human_liver_adenylates_1992",
+                "human_liver_phosphorus_mrs_2017"
+              ],
+              "value_mM": 2.19232
+            },
+            "NAD_plus": {
+              "basis": "whole_tissue_equivalent_mM",
+              "evidence": "derived",
+              "high_mM": null,
+              "low_mM": null,
+              "notes": "Total tissue NAD+; no cytosol/matrix split is inferred.",
+              "source_ids": [
+                "human_liver_adenylates_1992",
+                "human_liver_phosphorus_mrs_2017"
+              ],
+              "value_mM": 0.666128
+            },
+            "glucose_blood": {
+              "basis": "human_plasma_mM",
+              "evidence": "derived",
+              "high_mM": 5.6,
+              "low_mM": 3.9,
+              "notes": "Midpoint of the curated fasting plasma range; used only at the sinusoidal boundary.",
+              "source_ids": [
+                "hmdb_2022"
+              ],
+              "value_mM": 4.75
+            },
+            "glycogen": {
+              "basis": "in_vivo_liver_mM",
+              "evidence": "measured",
+              "high_mM": 263.0,
+              "low_mM": 195.0,
+              "notes": "Healthy volunteers without carbohydrate preparation; bounds are mean +/- SEM.",
+              "source_ids": [
+                "human_liver_glycogen_overnight_1996"
+              ],
+              "value_mM": 229.0
+            }
+          }
+        },
+        "prolonged_fasted": {
+          "energy_charge": 0.7212449255751014,
+          "label": "Prolonged fast",
+          "pools": {
+            "ADP": {
+              "basis": "whole_tissue_equivalent_mM",
+              "evidence": "derived",
+              "high_mM": null,
+              "low_mM": null,
+              "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+              "source_ids": [
+                "human_liver_adenylates_1992",
+                "human_liver_phosphorus_mrs_2017"
+              ],
+              "value_mM": 1.23318
+            },
+            "AMP": {
+              "basis": "whole_tissue_equivalent_mM",
+              "evidence": "derived",
+              "high_mM": null,
+              "low_mM": null,
+              "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+              "source_ids": [
+                "human_liver_adenylates_1992",
+                "human_liver_phosphorus_mrs_2017"
+              ],
+              "value_mM": 0.46903
+            },
+            "ATP": {
+              "basis": "whole_tissue_equivalent_mM",
+              "evidence": "derived",
+              "high_mM": null,
+              "low_mM": null,
+              "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+              "source_ids": [
+                "human_liver_adenylates_1992",
+                "human_liver_phosphorus_mrs_2017"
+              ],
+              "value_mM": 2.19232
+            },
+            "NAD_plus": {
+              "basis": "whole_tissue_equivalent_mM",
+              "evidence": "derived",
+              "high_mM": null,
+              "low_mM": null,
+              "notes": "Total tissue NAD+; no cytosol/matrix split is inferred.",
+              "source_ids": [
+                "human_liver_adenylates_1992",
+                "human_liver_phosphorus_mrs_2017"
+              ],
+              "value_mM": 0.666128
+            },
+            "glycogen": {
+              "basis": "mmol_glucosyl_per_kg_wet_liver",
+              "evidence": "derived",
+              "high_mM": 55.0,
+              "low_mM": 24.0,
+              "notes": "Midpoint of the reported biopsy range; tissue-mass denominator retained as an effective lumped-model value.",
+              "source_ids": [
+                "human_liver_glycogen_starvation_1973"
+              ],
+              "value_mM": 39.5
+            }
+          }
+        }
+      },
+      "readiness": {
+        "blocking_measurements": [
+          "matched donor and nutritional state",
+          "per-cell total protein and membrane-protein mass for the modeled cell",
+          "canalicular surface-localized BSEP and MRP2 copy numbers",
+          "matched intracellular bile-acid substrate concentrations",
+          "held-out primary-human-hepatocyte trajectory data"
+        ],
+        "direct_initialization_ready": false,
+        "energy_turnover_ready": true,
+        "metabolic_pool_initialization_ready": true,
+        "whole_cell_transport_flux_ready": false
+      },
+      "scientific_release": {
+        "authoritative_scope": "Healthy PHH metabolic pools, nutrition-state glycogen, apparent ATP turnover, human zonation reference context, postabsorptive blood-glucose perfusion boundary, and healthy-human mixed-meal organ trajectory only. Blood-to-cell, per-cell and zone-specific flux remain blocked.",
+        "predictive": {
+          "blockers": [
+            "matched donor and nutritional state",
+            "per-cell total protein and membrane-protein mass for the modeled cell",
+            "canalicular surface-localized BSEP and MRP2 copy numbers",
+            "matched intracellular bile-acid substrate concentrations",
+            "held-out primary-human-hepatocyte trajectory data",
+            "NADH and GSH/GSSG are not compartment resolved",
+            "healthy donor trajectory validation is not complete",
+            "model surface not predictive: normalized_pool_engine",
+            "model surface not predictive: organelle_functional_cycles",
+            "model surface not predictive: organelle_failure_hazards",
+            "model surface not predictive: cytokinesis_failure_probability",
+            "model surface not predictive: absolute_transporter_flux",
+            "model surface not predictive: glutathione_redox_kinetics",
+            "model surface not predictive: integrated_fuel_pathway_rates",
+            "model surface not predictive: cell_fate_thresholds"
+          ],
+          "checks": [
+            "source-traceable metabolic pool initialization",
+            "human-liver-anchored apparent ATP turnover",
+            "unified quantitative PHH state excludes relative schematic units",
+            "human-specific zonation context cannot apply unmeasured flux or oxygen scaling",
+            "sinusoid v2 enables sourced perfusion while uncalibrated cell and zonal fluxes fail closed",
+            "human mixed-meal trajectory is retained at organ scale and cannot invent per-cell flux",
+            "31-record hepatic flux bundle remains organ-scale with per-cell conversion disabled",
+            "no placeholder in authoritative PHH, ATP-turnover, or glucose-sinusoid surface",
+            "compartment-correct postabsorptive blood glucose boundary",
+            "schematic and blocked model surfaces excluded from scientific validation"
+          ],
+          "passed": false,
+          "target": "predictive"
+        },
+        "research_preview": {
+          "blockers": [],
+          "checks": [
+            "source-traceable metabolic pool initialization",
+            "human-liver-anchored apparent ATP turnover",
+            "unified quantitative PHH state excludes relative schematic units",
+            "human-specific zonation context cannot apply unmeasured flux or oxygen scaling",
+            "sinusoid v2 enables sourced perfusion while uncalibrated cell and zonal fluxes fail closed",
+            "human mixed-meal trajectory is retained at organ scale and cannot invent per-cell flux",
+            "31-record hepatic flux bundle remains organ-scale with per-cell conversion disabled",
+            "no placeholder in authoritative PHH, ATP-turnover, or glucose-sinusoid surface",
+            "compartment-correct postabsorptive blood glucose boundary",
+            "schematic and blocked model surfaces excluded from scientific validation"
+          ],
+          "passed": true,
+          "target": "research_preview"
+        }
+      },
+      "selected_profile": "postabsorptive"
+    },
     "pools": {
       "ADP": {
         "compartment_id": "cytosol",
@@ -2991,6 +5330,18 @@
         "unit": "relative_pool_0_1",
         "value": 0.05
       },
+      "canalicular_bile_acids": {
+        "compartment_id": "bile_canaliculus",
+        "id": "canalicular_bile_acids",
+        "unit": "relative_pool_0_1",
+        "value": 0.0
+      },
+      "canalicular_bilirubin_conjugates": {
+        "compartment_id": "bile_canaliculus",
+        "id": "canalicular_bilirubin_conjugates",
+        "unit": "relative_pool_0_1",
+        "value": 0.0
+      },
       "canalicular_cargo": {
         "compartment_id": "golgi",
         "id": "canalicular_cargo",
@@ -3129,6 +5480,122 @@
         "unit": "relative_pool_0_1",
         "value": 0.036258874976404135
       }
+    },
+    "quantitative_state": {
+      "authority": "authoritative_research_preview",
+      "cell_volume_l": 3.3999999999999996e-12,
+      "effective_cytosol_volume_l": 1.768e-12,
+      "energy_charge": 0.7212449255751014,
+      "limitations": [
+        "Tissue-equivalent pools are not compartment-resolved isolated-PHH measurements.",
+        "Effective molecule counts use the lumped model cytosol and are not direct copy-number measurements.",
+        "This baseline is static; source-backed substrate transport and redox dynamics remain blocked."
+      ],
+      "pools": {
+        "ADP": {
+          "biological_basis": "whole_tissue_equivalent_mM",
+          "compartment": "whole_tissue_equivalent",
+          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
+          "effective_lumped_model_count": 1312984610.29929,
+          "evidence": "derived",
+          "high": null,
+          "id": "ADP",
+          "low": null,
+          "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+          "source_ids": [
+            "human_liver_adenylates_1992",
+            "human_liver_phosphorus_mrs_2017"
+          ],
+          "unit": "mM",
+          "value": 1.23318
+        },
+        "AMP": {
+          "biological_basis": "whole_tissue_equivalent_mM",
+          "compartment": "whole_tissue_equivalent",
+          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
+          "effective_lumped_model_count": 499383035.54118305,
+          "evidence": "derived",
+          "high": null,
+          "id": "AMP",
+          "low": null,
+          "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+          "source_ids": [
+            "human_liver_adenylates_1992",
+            "human_liver_phosphorus_mrs_2017"
+          ],
+          "unit": "mM",
+          "value": 0.46903
+        },
+        "ATP": {
+          "biological_basis": "whole_tissue_equivalent_mM",
+          "compartment": "whole_tissue_equivalent",
+          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
+          "effective_lumped_model_count": 2334194862.7542934,
+          "evidence": "derived",
+          "high": null,
+          "id": "ATP",
+          "low": null,
+          "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+          "source_ids": [
+            "human_liver_adenylates_1992",
+            "human_liver_phosphorus_mrs_2017"
+          ],
+          "unit": "mM",
+          "value": 2.19232
+        },
+        "NAD_plus": {
+          "biological_basis": "whole_tissue_equivalent_mM",
+          "compartment": "whole_tissue_equivalent",
+          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
+          "effective_lumped_model_count": 709236131.3753431,
+          "evidence": "derived",
+          "high": null,
+          "id": "NAD_plus",
+          "low": null,
+          "notes": "Total tissue NAD+; no cytosol/matrix split is inferred.",
+          "source_ids": [
+            "human_liver_adenylates_1992",
+            "human_liver_phosphorus_mrs_2017"
+          ],
+          "unit": "mM",
+          "value": 0.666128
+        },
+        "glucose_blood": {
+          "biological_basis": "human_plasma_mM",
+          "compartment": "blood_boundary",
+          "count_basis": "unavailable_no_anatomical_blood_control_volume",
+          "effective_lumped_model_count": null,
+          "evidence": "derived",
+          "high": 5.6,
+          "id": "glucose_blood",
+          "low": 3.9,
+          "notes": "Midpoint of the curated fasting plasma range; used only at the sinusoidal boundary.",
+          "source_ids": [
+            "hmdb_2022"
+          ],
+          "unit": "mM",
+          "value": 4.75
+        },
+        "glycogen": {
+          "biological_basis": "in_vivo_liver_mM",
+          "compartment": "whole_liver_tissue",
+          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
+          "effective_lumped_model_count": 243819617378.272,
+          "evidence": "measured",
+          "high": 263.0,
+          "id": "glycogen",
+          "low": 195.0,
+          "notes": "Healthy volunteers without carbohydrate preparation; bounds are mean +/- SEM.",
+          "source_ids": [
+            "human_liver_glycogen_overnight_1996"
+          ],
+          "unit": "mM",
+          "value": 229.0
+        }
+      },
+      "profile_id": "postabsorptive",
+      "profile_label": "Postabsorptive / overnight fast",
+      "status": "source_backed_baseline_not_dynamic"
     },
     "regeneration_context": {
       "decision": {
@@ -3360,6 +5827,256 @@
         "trigger": "none"
       }
     },
+    "schematic_visual_state": {
+      "authority": "schematic_visual_only",
+      "may_drive_quantitative_validation": false,
+      "pool_ids": [
+        "ADP",
+        "AMP",
+        "ATP",
+        "Ca2+",
+        "Cl-",
+        "GSH",
+        "GSSG",
+        "GTP",
+        "K+",
+        "Mg2+",
+        "NAD+",
+        "NADH",
+        "NADP+",
+        "NADPH",
+        "Na+",
+        "ROS",
+        "acetyl_CoA",
+        "albumin",
+        "amino_acids",
+        "ammonia",
+        "autophagy_cargo",
+        "bile_acids",
+        "bilirubin_conjugates",
+        "canalicular_bile_acids",
+        "canalicular_bilirubin_conjugates",
+        "canalicular_cargo",
+        "cholesterol",
+        "cytosolic_protein",
+        "damaged_organelle_mass",
+        "detoxified_xenobiotic",
+        "endocytosed_cargo",
+        "fatty_acids",
+        "folded_cargo",
+        "glucose",
+        "glycogen",
+        "lactate",
+        "lipids",
+        "lysosome_enzyme_cargo",
+        "mRNA",
+        "membrane_cargo",
+        "misfolded_protein",
+        "oxygen",
+        "pyruvate",
+        "secretory_protein_cargo",
+        "ubiquitinated_cargo",
+        "urea",
+        "very_long_chain_fatty_acids",
+        "xenobiotic"
+      ],
+      "source_path": "state.pools",
+      "unit": "relative_pool_0_1"
+    },
+    "scientific_audit": {
+      "authoritative_surfaces": [
+        "phh_energy_and_glycogen",
+        "postabsorptive_glucose_boundary",
+        "human_hepatocyte_zonation_context",
+        "sinusoid_glucose_homeostasis_v2",
+        "human_nutritional_homeostasis_v3"
+      ],
+      "blocked_or_disabled_surfaces": [
+        "organelle_failure_hazards",
+        "cytokinesis_failure_probability",
+        "absolute_transporter_flux",
+        "glutathione_redox_kinetics",
+        "integrated_fuel_pathway_rates",
+        "cell_fate_thresholds"
+      ],
+      "policy": "Only source-backed surfaces may drive scientific validation. Schematic and blocked surfaces may drive visualization but not quantitative claims.",
+      "status": "mixed_authority_research_preview",
+      "surfaces": [
+        {
+          "action": "retain",
+          "default_snapshot_role": "authoritative_research_preview",
+          "drives_scientific_validation": true,
+          "id": "phh_energy_and_glycogen",
+          "limitations": "Whole-liver-equivalent values are not compartment-resolved isolated-PHH measurements.",
+          "source_ids": [
+            "human_liver_adenylates_1992",
+            "human_liver_atp_synthesis_2008",
+            "human_liver_glycogen_mixed_meal_2000",
+            "human_liver_glycogen_overnight_1996",
+            "human_liver_glycogen_starvation_1973"
+          ],
+          "status": "source_backed"
+        },
+        {
+          "action": "retain",
+          "default_snapshot_role": "authoritative_research_preview",
+          "drives_scientific_validation": true,
+          "id": "postabsorptive_glucose_boundary",
+          "limitations": "Systemic plasma target and whole-liver transit time do not resolve portal/arterial mixing or one sinusoid.",
+          "source_ids": [
+            "hmdb_2022",
+            "human_hepatic_transit_1996"
+          ],
+          "status": "source_backed"
+        },
+        {
+          "action": "retain categorical marker direction; block numeric flux scaling",
+          "default_snapshot_role": "source_backed_reference_context",
+          "drives_scientific_validation": true,
+          "id": "human_hepatocyte_zonation_context",
+          "limitations": "Human atlas marker directions are not donor-specific expression values; zonal pO2 and reaction-rate effect sizes remain unavailable.",
+          "source_ids": [
+            "human_liver_spatial_atlas_2026",
+            "human_liver_single_cell_proteomics_2025",
+            "human_liver_cell_atlas_2019"
+          ],
+          "status": "source_backed"
+        },
+        {
+          "action": "retain perfusion relaxation; block blood-cell and zonal flux",
+          "default_snapshot_role": "authoritative_research_preview",
+          "drives_scientific_validation": true,
+          "id": "sinusoid_glucose_homeostasis_v2",
+          "limitations": "Whole-liver transit and systemic fasting glucose do not identify one sinusoid volume, GLUT2 exchange capacity or zone-specific cellular flux.",
+          "source_ids": [
+            "hmdb_2022",
+            "human_hepatic_transit_1996"
+          ],
+          "status": "source_backed"
+        },
+        {
+          "action": "retain measured trajectory; prohibit per-cell allocation",
+          "default_snapshot_role": "organ_scale_validation_trajectory",
+          "drives_scientific_validation": true,
+          "id": "human_nutritional_homeostasis_v3",
+          "limitations": "Healthy-human mixed-meal glycogen and hepatic-output observations are whole-liver cohort averages, not single-cell or zone-resolved fluxes.",
+          "source_ids": [
+            "human_mixed_meal_homeostasis_1996"
+          ],
+          "status": "source_backed"
+        },
+        {
+          "action": "use only for scale-matched validation; never initialize per-cell flux",
+          "default_snapshot_role": "organ_scale_reference_only",
+          "drives_scientific_validation": false,
+          "id": "human_hepatic_flux_evidence_bundle",
+          "limitations": "Thirty-one literature records span organ, splanchnic and whole-body scopes; portal-resolved healthy and single-hepatocyte flux are unavailable.",
+          "source_ids": [],
+          "status": "source_backed"
+        },
+        {
+          "action": "never use for quantitative validation",
+          "default_snapshot_role": "legacy_relative_state",
+          "drives_scientific_validation": false,
+          "id": "normalized_pool_engine",
+          "limitations": "All 48 pools are relative 0-1 placeholders.",
+          "source_ids": [
+            "project_roadmap_07"
+          ],
+          "status": "schematic"
+        },
+        {
+          "action": "retain only as qualitative renderer driver",
+          "default_snapshot_role": "legacy_relative_state",
+          "drives_scientific_validation": false,
+          "id": "organelle_functional_cycles",
+          "limitations": "Cycle rates, error fractions, damage and repair coefficients are uncalibrated.",
+          "source_ids": [
+            "project_roadmap_07"
+          ],
+          "status": "schematic"
+        },
+        {
+          "action": "require a source-tagged calibration object",
+          "default_snapshot_role": "not_executed_without_calibration",
+          "drives_scientific_validation": false,
+          "id": "organelle_failure_hazards",
+          "limitations": "Former per-hour base risks and stress weights were project assumptions.",
+          "source_ids": [],
+          "status": "disabled"
+        },
+        {
+          "action": "require measured context-specific probability",
+          "default_snapshot_role": "not_executed_without_calibration",
+          "drives_scientific_validation": false,
+          "id": "cytokinesis_failure_probability",
+          "limitations": "Binucleated-cell prevalence cannot be used as a per-division failure probability.",
+          "source_ids": [
+            "human_hepatocyte_binucleation"
+          ],
+          "status": "disabled"
+        },
+        {
+          "action": "require active surface copies and matched turnover",
+          "default_snapshot_role": "qualitative_activity_only",
+          "drives_scientific_validation": false,
+          "id": "absolute_transporter_flux",
+          "limitations": "Total or membrane-fraction abundance is not active canalicular surface abundance.",
+          "source_ids": [
+            "human_mrp2_abundance_2012",
+            "human_bsep_taurocholate_2013",
+            "human_ntcp_uptake_2003"
+          ],
+          "status": "blocked"
+        },
+        {
+          "action": "require compartment-resolved human GSH/GSSG/NADPH trajectories",
+          "default_snapshot_role": "exploratory_network_only",
+          "drives_scientific_validation": false,
+          "id": "glutathione_redox_kinetics",
+          "limitations": "Legacy GPx, reductase, PPP and ROS influx rates are placeholders; isolation changes these pools.",
+          "source_ids": [
+            "human_liver_glutathione_1980",
+            "primary_hepatocyte_isolation_metabolism_2018"
+          ],
+          "status": "blocked"
+        },
+        {
+          "action": "replace pseudo-first-order magnitudes with fitted human fluxes",
+          "default_snapshot_role": "exploratory_network_only",
+          "drives_scientific_validation": false,
+          "id": "integrated_fuel_pathway_rates",
+          "limitations": "Topology and stoichiometry are useful, but several absolute rates are illustrative.",
+          "source_ids": [
+            "hepatic_glucose_homeostasis"
+          ],
+          "status": "blocked"
+        },
+        {
+          "action": "do not claim calibrated time-to-death",
+          "default_snapshot_role": "evidence_labels_only",
+          "drives_scientific_validation": false,
+          "id": "cell_fate_thresholds",
+          "limitations": "Relative stress thresholds are not matched human-hepatocyte commitment kinetics.",
+          "source_ids": [
+            "atp_death_switch",
+            "human_bile_acid_death_mode"
+          ],
+          "status": "blocked"
+        },
+        {
+          "action": "run dynamics only for calibrated genes",
+          "default_snapshot_role": "structural_data_gated",
+          "drives_scientific_validation": false,
+          "id": "genome_expression",
+          "limitations": "Reference coordinates are real; most donor expression and gene-specific kinetics are unknown.",
+          "source_ids": [
+            "human_hepatocyte_proteome_2016"
+          ],
+          "status": "derived"
+        }
+      ]
+    },
     "signaling_results": [
       {
         "actions": {
@@ -3530,6 +6247,88 @@
         "provenance": "docs/07-integrated-cell-engine-roadmap.md#m020-pysb-rule-based-signaling"
       }
     ],
+    "sinusoid_homeostasis": {
+      "anatomical_sinusoid_volume_l": null,
+      "blood_to_cell_exchange_flux": null,
+      "boundary_recovery_trace": [
+        {
+          "glucose_mM": 5.6,
+          "t_s": 0.0
+        },
+        {
+          "glucose_mM": 5.062697524995726,
+          "t_s": 13.4
+        },
+        {
+          "glucose_mM": 4.865034990751121,
+          "t_s": 26.8
+        },
+        {
+          "glucose_mM": 4.792319008112685,
+          "t_s": 40.2
+        }
+      ],
+      "coupling_edges": [
+        {
+          "blocker": null,
+          "flux_unit": "s^-1",
+          "flux_value": 0.07462686567164178,
+          "id": "blood_perfusion_replacement",
+          "source": "systemic_blood",
+          "source_ids": [
+            "human_hepatic_transit_1996",
+            "hmdb_2022"
+          ],
+          "status": "active_source_backed",
+          "target": "sinusoid_boundary"
+        },
+        {
+          "blocker": "Requires matched human PHH GLUT2 surface abundance and bidirectional transport capacity.",
+          "flux_unit": null,
+          "flux_value": null,
+          "id": "glut2_bidirectional_exchange",
+          "source": "sinusoid_boundary",
+          "source_ids": [],
+          "status": "blocked_missing_human_calibration",
+          "target": "hepatocyte_cytosol"
+        },
+        {
+          "blocker": "Requires human zone-resolved glucose uptake/release flux, not transcript direction alone.",
+          "flux_unit": null,
+          "flux_value": null,
+          "id": "zone_specific_glucose_consumption",
+          "source": "hepatocyte_cytosol",
+          "source_ids": [],
+          "status": "blocked_missing_human_calibration",
+          "target": "midlobular"
+        }
+      ],
+      "limitations": [
+        "The 13.4 s value is a whole-liver mean transit time, not one sinusoid residence time.",
+        "Boundary recovery is perfusion homeostasis; it does not claim hepatocyte glucose uptake.",
+        "No mouse spatial-metabolomics effect size is transferred into the human model.",
+        "No anatomical sinusoid control volume or human zonal pO2 is assigned."
+      ],
+      "mean_transit_time_s": 13.4,
+      "nutritional_profile": "postabsorptive",
+      "porto_central_path": [
+        "periportal",
+        "midlobular",
+        "pericentral"
+      ],
+      "reference_high_mM": 5.6,
+      "reference_low_mM": 3.9,
+      "replacement_rate_per_s": 0.07462686567164178,
+      "selected_zone": "midlobular",
+      "source_ids": [
+        "human_hepatic_transit_1996",
+        "hmdb_2022"
+      ],
+      "status": "glucose_perfusion_active_cell_exchange_blocked",
+      "target_glucose_mM": 4.75,
+      "version": "sinusoid_coupled_homeostasis_v2",
+      "zonal_oxygen_partial_pressure": null
+    },
     "status": "healthy",
     "stress": {
       "autophagy": 0.0412,
@@ -3543,6 +6342,104 @@
       "proteotoxic": 0.063,
       "senescence": 0.03248478775863852,
       "trafficking": 0.07245
+    },
+    "zonation_state": {
+      "coordinate_status": "categorical_zone_not_measured_cell_coordinate",
+      "dynamic_flux_scaling_enabled": false,
+      "limitations": [
+        "Marker direction is human-atlas evidence; no donor-specific expression value is inferred.",
+        "Relative oxygen context is directional only; no human zonal pO2 value is assigned.",
+        "Zonation does not scale reaction rates until matched human quantitative effects are loaded."
+      ],
+      "markers": [
+        {
+          "enriched_zone": "midlobular",
+          "gene": "HSD17B13",
+          "notes": "",
+          "observed_layer": "transcript",
+          "source_ids": [
+            "human_liver_spatial_atlas_2026"
+          ]
+        },
+        {
+          "enriched_zone": "midlobular",
+          "gene": "C6",
+          "notes": "",
+          "observed_layer": "transcript",
+          "source_ids": [
+            "human_liver_spatial_atlas_2026"
+          ]
+        },
+        {
+          "enriched_zone": "midlobular",
+          "gene": "KLKB1",
+          "notes": "",
+          "observed_layer": "transcript",
+          "source_ids": [
+            "human_liver_spatial_atlas_2026"
+          ]
+        },
+        {
+          "enriched_zone": "midlobular",
+          "gene": "LIPC",
+          "notes": "",
+          "observed_layer": "transcript",
+          "source_ids": [
+            "human_liver_spatial_atlas_2026"
+          ]
+        },
+        {
+          "enriched_zone": "midlobular",
+          "gene": "HGD",
+          "notes": "",
+          "observed_layer": "transcript",
+          "source_ids": [
+            "human_liver_spatial_atlas_2026"
+          ]
+        },
+        {
+          "enriched_zone": "midlobular",
+          "gene": "SDC1",
+          "notes": "",
+          "observed_layer": "transcript_and_protein",
+          "source_ids": [
+            "human_liver_spatial_atlas_2026"
+          ]
+        }
+      ],
+      "oxygen_partial_pressure_available": false,
+      "quantitative_effect_sizes_available": false,
+      "selected_zone": "midlobular",
+      "source_ids": [
+        "human_liver_spatial_atlas_2026",
+        "human_liver_cell_atlas_2019",
+        "human_liver_single_cell_proteomics_2025"
+      ],
+      "species": "Homo sapiens",
+      "status": "source_backed_reference_context_not_donor_observation",
+      "zone": {
+        "functional_biases": [
+          "human-specific midlobular identity program"
+        ],
+        "id": "midlobular",
+        "label": "Zone 2 / midlobular",
+        "marker_genes": [
+          "HSD17B13",
+          "C6",
+          "KLKB1",
+          "LIPC",
+          "HGD",
+          "SDC1"
+        ],
+        "niche_signals": [
+          "transition between portal and central niche programs"
+        ],
+        "oxygen_context": "intermediate",
+        "porto_central_position": "intermediate_porto_central",
+        "source_ids": [
+          "human_liver_spatial_atlas_2026"
+        ]
+      }
     }
   }
 }

@@ -25,6 +25,8 @@ class HepatocyteGenomeTests(unittest.TestCase):
         self.assertEqual(loci["ABCB11"].ncbi_gene_id, "8647")
         self.assertEqual((loci["ABCB11"].chromosome, loci["ABCB11"].start_bp, loci["ABCB11"].end_bp), ("2", 168_915_391, 169_031_325))
         self.assertEqual((loci["ABCC2"].chromosome, loci["ABCC2"].start_bp, loci["ABCC2"].end_bp), ("10", 99_782_641, 99_852_595))
+        self.assertEqual((loci["NR1H4"].chromosome, loci["NR1H4"].start_bp, loci["NR1H4"].end_bp), ("12", 100_473_866, 100_564_414))
+        self.assertEqual((loci["NR0B2"].chromosome, loci["NR0B2"].start_bp, loci["NR0B2"].end_bp), ("1", 26_911_489, 26_913_975))
         self.assertEqual(len(loci), len(HEPATOCYTE_FUNCTIONAL_LOCI))
 
     def test_reference_state_does_not_invent_an_individual_genotype(self) -> None:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from math import dist, exp, isfinite
+from math import dist, exp, isclose, isfinite
 
 from cell_engine.core.state import CellState, MetabolicFlux, OrganelleState, PoolState
 from cell_engine.stochastic.hazard import clamp
@@ -38,8 +38,10 @@ def step_hepatocyte_metabolism(state: CellState, dt_s: float) -> MetabolismStepR
     gsh = _pool(pools, "GSH")
     bile_acids = _pool(pools, "bile_acids")
     bilirubin = _pool(pools, "bilirubin_conjugates")
-    bsep_activity = _surface_activity(state, "bsep_surface_activity")
-    mrp2_activity = _surface_activity(state, "mrp2_surface_activity")
+    bsep_activity = _surface_activity(state, "bsep_surface_activity", "ABCB11")
+    mrp2_activity = _surface_activity(state, "mrp2_surface_activity", "ABCC2")
+    cyp7a1_activity = _expression_activity(state, "CYP7A1")
+    cyp7a1_rate = _optional_nonnegative_control(state, "cyp7a1_bile_synthesis_rate_per_h")
 
     cytosol = _health(state, "cytosol_metabolism")
     mitochondria = _health(state, "mitochondria")
@@ -65,6 +67,11 @@ def step_hepatocyte_metabolism(state: CellState, dt_s: float) -> MetabolismStepR
     # retained; only experimentally supplied relative surface capacity scales it.
     bile_acid_export = _flux_value(0.20 * bile_acids * atp * membrane * golgi * bsep_activity, dt_h)
     bilirubin_export = _flux_value(0.20 * bilirubin * atp * membrane * golgi * mrp2_activity, dt_h)
+    bile_acid_synthesis = (
+        _flux_value(cyp7a1_rate * cyp7a1_activity * smooth_er, dt_h)
+        if cyp7a1_rate is not None and cyp7a1_activity is not None
+        else 0.0
+    )
     bile_export = bile_acid_export + bilirubin_export
     maintenance = _flux_value((0.055 + 0.030 * _mean_activity(state)) * (0.4 + 0.6 * _mean_health(state)), dt_h)
 
@@ -82,8 +89,12 @@ def step_hepatocyte_metabolism(state: CellState, dt_s: float) -> MetabolismStepR
     _add(pools, "GSH", -0.60 * detox + 0.04 * _pool(pools, "NADPH"))
     _add(pools, "GSSG", 0.35 * detox)
     _add(pools, "ROS", 0.16 * mito_oxidation * (1.0 - mitochondria) + 0.20 * detox + 0.05 * beta_oxidation)
+    _add(pools, "cholesterol", -bile_acid_synthesis)
+    _add(pools, "bile_acids", bile_acid_synthesis)
     _add(pools, "bile_acids", -bile_acid_export)
+    _add(pools, "canalicular_bile_acids", bile_acid_export)
     _add(pools, "bilirubin_conjugates", -bilirubin_export)
+    _add(pools, "canalicular_bilirubin_conjugates", bilirubin_export)
 
     atp_delta = (
         0.42 * glycolysis
@@ -107,8 +118,9 @@ def step_hepatocyte_metabolism(state: CellState, dt_s: float) -> MetabolismStepR
             _flux("beta-oxidation", "fatty_acid_oxidation", "fatty_acids_ADP", "ATP_acetyl_CoA", beta_oxidation, "mitochondria", "cellular_ATP_consumers", "fatty acid contribution to energy"),
             _flux("urea-cycle", "urea_cycle", "ammonia_ATP", "urea", urea_cycle, "mitochondria_cytosol", "sinusoidal_export", "ATP-costly ammonia detox"),
             _flux("detox", "CYP_detox", "xenobiotic_NADPH_GSH_ATP", "detoxified_xenobiotic_ROS", detox, "smooth_er", "export_transporters", "CYP-like detox consumes redox reserve and adds ROS"),
-            _flux("bsep-bile-acid-export", "bile_export", "bile_acids_ATP", "bile_canaliculus", bile_acid_export, "BSEP_canalicular_surface", "bile_canaliculus", "BSEP-scaled bile-acid export; absolute base rate remains an existing normalized model rate"),
-            _flux("mrp2-bilirubin-export", "bilirubin_export", "bilirubin_conjugates_ATP", "bile_canaliculus", bilirubin_export, "MRP2_canalicular_surface", "bile_canaliculus", "MRP2-scaled bilirubin-conjugate export; absolute base rate remains an existing normalized model rate"),
+            _flux("cyp7a1-bile-acid-synthesis", "bile_acid_synthesis", "cholesterol", "intracellular_bile_acids", bile_acid_synthesis, "CYP7A1_smooth_er", "bile_acid_pool", "Disabled unless both a calibrated CYP7A1 functional scale and an explicit bile-synthesis rate are supplied; no default rate is invented"),
+            _flux("bsep-bile-acid-export", "bile_export", "intracellular_bile_acids_ATP", "canalicular_bile_acids", bile_acid_export, "BSEP_canalicular_surface", "bile_canaliculus", "Mass-conserving intracellular-to-canalicular BSEP transfer; absolute base rate remains an existing normalized model rate"),
+            _flux("mrp2-bilirubin-export", "bilirubin_export", "intracellular_bilirubin_conjugates_ATP", "canalicular_bilirubin_conjugates", bilirubin_export, "MRP2_canalicular_surface", "bile_canaliculus", "Mass-conserving intracellular-to-canalicular MRP2 transfer; absolute base rate remains an existing normalized model rate"),
             _flux("bile-export", "bile_export", "bile_acids_bilirubin_ATP", "bile_canaliculus", bile_export, "plasma_membrane_golgi", "bile_canaliculus", "Total ATP-dependent canalicular export abstraction"),
             _flux("maintenance", "ATP_maintenance", "ATP", "organelle_maintenance", maintenance, "shared_cell", "all_organelles", "baseline ATP spending"),
         )
@@ -162,8 +174,27 @@ def _health(state: CellState, organelle_id: str) -> float:
     return organelle.health if organelle is not None else 0.75
 
 
-def _surface_activity(state: CellState, control_id: str) -> float:
-    value = float(state.model_controls.get(control_id, 1.0))
+def _surface_activity(state: CellState, control_id: str, gene_symbol: str) -> float:
+    expression_value = _expression_activity(state, gene_symbol)
+    control_value = state.model_controls.get(control_id)
+    if expression_value is not None and control_value is not None and not isclose(expression_value, float(control_value), rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError(f"{control_id} conflicts with {gene_symbol} expression activity")
+    value = float(control_value) if control_value is not None else (expression_value if expression_value is not None else 1.0)
+    if not isfinite(value) or value < 0:
+        raise ValueError(f"{control_id} must be finite and non-negative")
+    return value
+
+
+def _expression_activity(state: CellState, gene_symbol: str) -> float | None:
+    if state.gene_expression is None or gene_symbol not in state.gene_expression.genes:
+        return None
+    return state.gene_expression.genes[gene_symbol].functional_protein_scale
+
+
+def _optional_nonnegative_control(state: CellState, control_id: str) -> float | None:
+    if control_id not in state.model_controls:
+        return None
+    value = float(state.model_controls[control_id])
     if not isfinite(value) or value < 0:
         raise ValueError(f"{control_id} must be finite and non-negative")
     return value
