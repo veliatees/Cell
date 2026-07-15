@@ -342,6 +342,12 @@ const nutritionBadge = document.createElement("div");
 nutritionBadge.className = "nutrition-badge";
 nutritionBadge.style.display = "none";
 viewportElement.append(nutritionBadge);
+// Contact-event channel readout: the geometric layer's contact/exchange events —
+// the trigger inputs the engine will consume (currently fail-closed on kinetics).
+const contactBadge = document.createElement("div");
+contactBadge.className = "contact-badge";
+contactBadge.style.display = "none";
+viewportElement.append(contactBadge);
 const splitStateBadge = document.createElement("div");
 splitStateBadge.className = "split-state-badge";
 splitStateBadge.style.display = "none";
@@ -550,6 +556,39 @@ let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by c
 let membraneSim: MembraneSim | null = null;
 let membraneRestPos: Float32Array | null = null;
 let engineMembraneDeformationActive = false;
+
+// --- Contact-event channel -------------------------------------------------
+// The geometric layer emits contact/exchange events when an external body
+// physically reaches the membrane: proximity -> the nearest membrane receptor
+// senses it -> receptor-mediated transport (endocytosis) physically indents the
+// membrane and imports cargo -> a structured event is emitted. This is the
+// trigger channel the engine will consume; response KINETICS stay fail-closed
+// (no validated rate is applied), but the geometric/physical trigger is real.
+type ContactPartner = { kind: "virus" | "bacterium" | "cell"; label: string; receptorGene: string; receptorName: string; cargo: string; color: string; radiusWorld: number; magnified: boolean };
+type ContactPhase = "approach" | "sensing" | "internalizing" | "cooldown";
+type ContactExchangeEvent = { id: number; tSim: number; partnerLabel: string; receptor: string; direction: "import" | "signal"; cargo: string; gapUm: number; kind: string };
+type ContactChannel = {
+  body: THREE.Mesh;
+  vesicle: THREE.Mesh;
+  dir: THREE.Vector3;         // contact direction (basolateral surface)
+  partner: ContactPartner;
+  partnerIndex: number;
+  phase: ContactPhase;
+  phaseT: number;
+  gapUm: number;
+  receptorId: string | null;
+  indent: number;            // current membrane invagination depth (world units)
+  events: ContactExchangeEvent[];
+};
+let contactChannel: ContactChannel | null = null;
+let contactEventSeq = 0;
+const CONTACT_PARTNERS: ContactPartner[] = [
+  // NTCP / SLC10A1 is the real hepatitis B/D virus receptor (per the protein
+  // manifest), so a virus is imported through it - a source-grounded pairing.
+  { kind: "virus", label: "HBV-like virion", receptorGene: "SLC10A1", receptorName: "NTCP", cargo: "viral particle", color: "#d47b8e", radiusWorld: 0.9, magnified: true },
+  { kind: "bacterium", label: "bacterium", receptorGene: "SLC22A1", receptorName: "OCT1", cargo: "surface ligand", color: "#d8b45b", radiusWorld: 1.5, magnified: false },
+  { kind: "cell", label: "neighbour cell", receptorGene: "GCGR", receptorName: "GCGR", cargo: "paracrine signal", color: "#81a6b6", radiusWorld: 2.4, magnified: false }
+];
 let organelleInteractionLayer: THREE.Group | null = null;
 let organelleInteractionSummaryRef: EngineSnapshotSummary | null = null;
 let membraneFaceDirs: Float32Array | null = null;
@@ -2818,6 +2857,209 @@ function updateMembraneProteinAnchors(_t: number) {
   }
 }
 
+// ---- Contact-event channel -------------------------------------------------
+// Physically indent the membrane inward around a contact direction. The push is
+// added into the sim positions, so the membrane physics (edge + bending forces)
+// then propagates and relaxes it through the neighbouring vertices — the local
+// contact deformation spreads and heals exactly like the real elastic surface.
+function indentMembraneAt(dir: THREE.Vector3, deltaInward: number, cosWidth: number): void {
+  const sim = membraneSim;
+  if (!sim) return;
+  const { n, pos, restDir } = sim;
+  const dx = dir.x, dy = dir.y, dz = dir.z;
+  for (let v = 0; v < n; v += 1) {
+    const i = v * 3;
+    const d = restDir[i] * dx + restDir[i + 1] * dy + restDir[i + 2] * dz;
+    if (d <= cosWidth) continue;
+    // Smooth falloff from the contact centre to the patch edge.
+    const w = (d - cosWidth) / (1 - cosWidth);
+    const push = deltaInward * w * w;
+    pos[i] -= restDir[i] * push;
+    pos[i + 1] -= restDir[i + 1] * push;
+    pos[i + 2] -= restDir[i + 2] * push;
+  }
+}
+
+function pickContactReceptorDir(partner: ContactPartner, fallback: THREE.Vector3): { dir: THREE.Vector3; id: string | null } {
+  // Prefer the partner's real receptor if that structure is loaded on the
+  // basolateral face; otherwise the nearest basolateral protein; else fallback.
+  let exact: MembraneProteinAnchor | null = null;
+  let nearestBaso: MembraneProteinAnchor | null = null;
+  let bestDot = -2;
+  for (const a of membraneProteinAnchors) {
+    if (a.proteinId === partner.receptorGene) exact = a;
+    const dot = a.dir.dot(fallback);
+    if (a.dir.x < 0.1 && dot > bestDot) { bestDot = dot; nearestBaso = a; }
+  }
+  const chosen = exact ?? nearestBaso;
+  return chosen ? { dir: chosen.dir.clone(), id: chosen.proteinId } : { dir: fallback.clone(), id: null };
+}
+
+function buildContactChannel(group: THREE.Group): void {
+  const bodyGeo = new THREE.IcosahedronGeometry(1, 2);
+  const bodyMat = new THREE.MeshStandardMaterial({ color: "#d47b8e", emissive: "#d47b8e", emissiveIntensity: 0.18, roughness: 0.5, metalness: 0.02 });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.visible = false;
+  body.userData.hoverKind = "engine-spatial-body";
+  group.add(body);
+  const vesGeo = new THREE.IcosahedronGeometry(1, 2);
+  const vesMat = new THREE.MeshStandardMaterial({ color: "#9cc7d6", emissive: "#5d93a6", emissiveIntensity: 0.14, roughness: 0.5, transparent: true, opacity: 0.9 });
+  const vesicle = new THREE.Mesh(vesGeo, vesMat);
+  vesicle.visible = false;
+  group.add(vesicle);
+  contactChannel = {
+    body, vesicle,
+    dir: new THREE.Vector3(-0.86, 0.2, 0.35).normalize(),
+    partner: CONTACT_PARTNERS[0],
+    partnerIndex: 0,
+    phase: "cooldown",
+    phaseT: 1.5, // small delay before the first approach
+    gapUm: 0,
+    receptorId: null,
+    indent: 0,
+    events: []
+  };
+}
+
+function startContactApproach(cc: ContactChannel): void {
+  cc.partnerIndex = (cc.partnerIndex + 1) % CONTACT_PARTNERS.length;
+  cc.partner = CONTACT_PARTNERS[cc.partnerIndex];
+  const basolateral = new THREE.Vector3(-0.86, 0.2, 0.35).normalize();
+  const target = pickContactReceptorDir(cc.partner, basolateral);
+  cc.dir = target.dir;
+  cc.receptorId = target.id;
+  cc.phase = "approach";
+  cc.phaseT = 0;
+  cc.indent = 0;
+  const b = cc.body;
+  (b.material as THREE.MeshStandardMaterial).color.set(cc.partner.color);
+  (b.material as THREE.MeshStandardMaterial).emissive.set(cc.partner.color);
+  b.scale.setScalar(cc.partner.radiusWorld);
+  b.position.copy(cc.dir).multiplyScalar(CELL_R * 1.85);
+  b.visible = true;
+  cc.vesicle.visible = false;
+}
+
+const _ccPos = new THREE.Vector3();
+const _ccNorm = new THREE.Vector3();
+function emitContactEvent(cc: ContactChannel, direction: "import" | "signal", tSim: number): void {
+  contactEventSeq += 1;
+  cc.events.unshift({
+    id: contactEventSeq,
+    tSim,
+    partnerLabel: cc.partner.label,
+    receptor: cc.receptorId ? `${cc.partner.receptorName} (${cc.receptorId})` : cc.partner.receptorName,
+    direction,
+    cargo: cc.partner.cargo,
+    gapUm: cc.gapUm,
+    kind: cc.partner.kind
+  });
+  if (cc.events.length > 4) cc.events.length = 4;
+}
+
+// Highlight the receptor that senses the contact (its real hero structure pulses).
+function pulseContactReceptor(receptorId: string | null, on: boolean): void {
+  if (!receptorId) return;
+  for (const a of membraneProteinAnchors) {
+    if (a.proteinId !== receptorId) continue;
+    a.object.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      const mat = mesh.material as THREE.MeshStandardMaterial | undefined;
+      if (mat && "emissiveIntensity" in mat) mat.emissiveIntensity = on ? 0.9 : 0.12;
+    });
+  }
+}
+
+function updateContactChannel(dtSim: number, tSim: number): void {
+  const cc = contactChannel;
+  if (!cc || !membraneSim) return;
+  cc.phaseT += dtSim;
+  // Where the membrane surface currently is along the contact direction.
+  sampleMembraneSurface(cc.dir.x, cc.dir.y, cc.dir.z, 1.0, _ccPos, _ccNorm);
+  const surfaceR = _ccPos.length();
+  const bodyR = cc.partner.radiusWorld;
+
+  switch (cc.phase) {
+    case "approach": {
+      const startR = CELL_R * 1.85;
+      const contactR = surfaceR + bodyR * 0.6;
+      const speed = CELL_R * 0.9; // world units / sim-second
+      const r = Math.max(contactR, cc.body.position.length() - speed * dtSim);
+      cc.body.position.copy(cc.dir).multiplyScalar(r);
+      cc.gapUm = Math.max(0, (r - contactR)) * (CELL_RADIUS_UM / CELL_R);
+      cc.body.rotation.y += dtSim * 0.8;
+      if (r <= contactR + 1e-3) {
+        cc.phase = "sensing"; cc.phaseT = 0;
+        pulseContactReceptor(cc.receptorId, true);
+        emitContactEvent(cc, cc.partner.kind === "cell" ? "signal" : "import", tSim);
+      }
+      void startR;
+      break;
+    }
+    case "sensing": {
+      // The receptor has engaged; the membrane begins to invaginate around it.
+      cc.indent = Math.min(bodyR * 0.9, cc.indent + dtSim * bodyR * 0.6);
+      cc.body.position.copy(cc.dir).multiplyScalar(surfaceR - cc.indent + bodyR * 0.5);
+      if (cc.phaseT > 1.4) {
+        if (cc.partner.kind === "cell") { cc.phase = "cooldown"; cc.phaseT = 0; pulseContactReceptor(cc.receptorId, false); }
+        else { cc.phase = "internalizing"; cc.phaseT = 0; }
+      }
+      break;
+    }
+    case "internalizing": {
+      // Receptor-mediated endocytosis: the patch pinches in and the cargo is
+      // carried inward on a vesicle; the membrane then seals behind it.
+      cc.indent = Math.min(bodyR * 1.5, cc.indent + dtSim * bodyR * 0.9);
+      const depth = Math.min(1, cc.phaseT / 1.6);
+      cc.body.position.copy(cc.dir).multiplyScalar(surfaceR - cc.indent - depth * CELL_R * 0.2);
+      if (depth >= 1) {
+        // Vesicle buds off and travels into the cytoplasm.
+        cc.body.visible = false;
+        cc.vesicle.visible = true;
+        cc.vesicle.scale.setScalar(bodyR * 0.9);
+        (cc.vesicle.material as THREE.MeshStandardMaterial).opacity = 0.9;
+        cc.vesicle.position.copy(cc.body.position);
+        cc.phase = "cooldown"; cc.phaseT = 0;
+        pulseContactReceptor(cc.receptorId, false);
+      }
+      break;
+    }
+    case "cooldown": {
+      // Stop pushing: the membrane physics relaxes the indent back to rest,
+      // propagating the recovery through the neighbouring vertices.
+      cc.indent *= Math.max(0, 1 - dtSim * 1.5);
+      if (cc.vesicle.visible) {
+        cc.vesicle.position.addScaledVector(cc.dir, -dtSim * CELL_R * 0.25);
+        const m = cc.vesicle.material as THREE.MeshStandardMaterial;
+        m.opacity = Math.max(0, m.opacity - dtSim * 0.35);
+        if (m.opacity <= 0.02) cc.vesicle.visible = false;
+      }
+      if (cc.phaseT > 2.2) startContactApproach(cc);
+      break;
+    }
+  }
+  renderContactBadge(cc);
+}
+
+function renderContactBadge(cc: ContactChannel): void {
+  if (!cc.events.length) { contactBadge.style.display = "none"; return; }
+  contactBadge.style.display = "block";
+  const rows = cc.events.map((e, idx) => {
+    const arrow = e.direction === "import" ? "→ IMPORT" : "↔ SIGNAL";
+    const live = idx === 0 ? " is-live" : "";
+    return `<div class="contact-badge__row${live}"><span class="contact-badge__partner">${e.partnerLabel}</span> · ${e.receptor} · ${arrow} <b>${e.cargo}</b></div>`;
+  }).join("");
+  const phase = cc.phase === "approach"
+    ? `approaching · gap ${cc.gapUm.toFixed(2)} µm`
+    : cc.phase === "sensing" ? "receptor engaged"
+    : cc.phase === "internalizing" ? "receptor-mediated endocytosis"
+    : "membrane relaxing";
+  contactBadge.innerHTML =
+    `<div class="contact-badge__head"><span class="contact-badge__title">Contact channel</span><span class="contact-badge__phase">${phase}</span></div>` +
+    rows +
+    `<div class="contact-badge__note">Geometric contact → receptor → transport events: the engine's trigger inputs. Response kinetics remain fail-closed (no validated rate applied).</div>`;
+}
+
 // Per-frame bounded random motion of the instanced organelle display samples.
 // Each sample takes an independent step and stays inside its reserved cage, so
 // the renderer remains dynamic without interpenetration. This is visual motion,
@@ -3200,6 +3442,12 @@ function updateMembraneShape(dtReal: number) {
   } else if (engineMembraneDeformationActive) {
     restoreMembraneRestShape(sim);
     engineMembraneDeformationActive = false;
+  }
+  // Re-impose the current contact-endocytosis indent AFTER the physics step, so
+  // the next step's elastic forces see the dimple and propagate/heal it through
+  // the neighbouring vertices (real local deformation, not a painted-on dent).
+  if (contactChannel && contactChannel.indent > 0.01) {
+    indentMembraneAt(contactChannel.dir, contactChannel.indent, Math.cos(0.34));
   }
   const attr = organelleMembrane.geometry.getAttribute("position") as THREE.BufferAttribute;
   (attr.array as Float32Array).set(sim.pos);
@@ -4411,6 +4659,8 @@ function clearWaterVisuals() {
   }
   organelleInteractionLayer = null;
   organelleInteractionSummaryRef = null;
+  contactChannel = null;
+  contactBadge.style.display = "none";
   nucleusExpression = null;
 
   if (proteinFieldGroup) {
@@ -7824,6 +8074,7 @@ function buildOrganelleScene() {
     cytoskeleton: centroid("cytoskeleton")
   };
   buildCellFlowVisuals(group);
+  buildContactChannel(group);
   divisionOverlay = createDivisionOverlay();
   group.add(divisionOverlay.group);
 
@@ -8239,6 +8490,10 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     organelleFrameCount += 1;
     const heavyFrame = organelleFrameCount % 2 === 0;
     const colorFrame = organelleFrameCount % 8 === 0;
+    // Advance the contact-event channel first (external body approach, receptor
+    // sensing, endocytosis depth, exchange events) so the membrane step below
+    // applies the current invagination and propagates it through the surface.
+    updateContactChannel(Math.min(0.12, realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND), s.elapsedS);
     // Step the physics membrane FIRST so the deformation field is fresh for
     // everything that rides it (proteins, clouds, and the coupled organelles).
     // The membrane carries visible stochastic undulation; it is stepped on
