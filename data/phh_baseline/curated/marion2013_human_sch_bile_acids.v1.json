@@ -1,0 +1,127 @@
+{
+  "schema_version": "cell.human-sch-bile-acid-compartments.v1",
+  "status": "source_backed_day7_human_SCH_endpoint_reference",
+  "date_verified": "2026-07-14",
+  "source_artifact": {
+    "source_id": "marion2013_human_sch_bile_acids",
+    "title": "Endogenous Bile Acid Disposition in Rat and Human Sandwich-Cultured Hepatocytes",
+    "doi": "10.1016/j.taap.2012.02.002",
+    "pmcid": "PMC3679176",
+    "pmid": "22342602",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3679176/",
+    "source_location": "Table 4"
+  },
+  "donors": [
+    {"id": "HU0803", "age_years": 42, "sex": "male", "race_as_reported": "Caucasian", "smoking_status": "nonsmoker"},
+    {"id": "HU1067", "age_years": 61, "sex": "male", "race_as_reported": "Caucasian", "smoking_status": "nonsmoker"},
+    {"id": "HU1184", "age_years": 73, "sex": "female", "race_as_reported": "Caucasian", "smoking_status": "nonsmoker"},
+    {"id": "HU1191", "age_years": 19, "sex": "male", "race_as_reported": "Caucasian", "smoking_status": "nonsmoker"}
+  ],
+  "assay_contract": {
+    "species": "Homo sapiens",
+    "biological_system": "primary_human_sandwich_cultured_hepatocytes",
+    "plate_format": "collagen_I_coated_6_well_plate",
+    "overlay": "Matrigel",
+    "overlay_concentration_mg_per_mL": 0.25,
+    "treatment_day": 6,
+    "sampling_day": 7,
+    "treatment_duration_h": 24.0,
+    "medium_volume_mL_per_well": 1.5,
+    "representative_protein_mg_per_well": 0.9,
+    "estimated_intracellular_volume_uL_per_well": 6.79,
+    "instrument": "LC_MS_MS",
+    "donor_experiment_count": 4,
+    "uncertainty_type": "SD_across_four_experiments",
+    "cell_and_bile_replication": "single_or_duplicate_measurements_per_experiment",
+    "medium_replication": "two_to_six_measurements_per_experiment",
+    "below_quantification_policy_in_source": "assigned_proxy_zero",
+    "below_quantification_proxy_is_biological_zero": false
+  },
+  "measurement_contract": {
+    "concentration_unit": "uM",
+    "bei_unit": "percent",
+    "cells_plus_bile_definition": "accumulation_in_standard_calcium_containing_buffer",
+    "cells_definition": "accumulation_in_calcium_free_buffer",
+    "medium_definition": "extracellular_culture_medium",
+    "bei_formula_for_matched_raw_experiment": "BEI_percent=(accumulation_standard_buffer-accumulation_calcium_free_buffer)/accumulation_standard_buffer*100",
+    "published_bei_aggregation": "mean_and_SD_of_experiment_level_BEI_values",
+    "may_reconstruct_published_bei_from_group_mean_concentrations": false,
+    "cells_plus_bile_and_cells_normalization": "both_use_estimated_intracellular_volume_6.79_uL_per_well",
+    "difference_is_true_canalicular_concentration": false
+  },
+  "conditions": [
+    {
+      "id": "vehicle_control",
+      "treatment": "0.1_percent_DMSO",
+      "records": [
+        {"analyte": "TCA", "cells_plus_bile_mean_uM": 0.703, "cells_plus_bile_sd_uM": 0.408, "cells_mean_uM": 0.391, "cells_sd_uM": 0.189, "medium_mean_uM": 0.010, "medium_sd_uM": 0.010, "bei_mean_percent": 41.7, "bei_sd_percent": 16.2},
+        {"analyte": "GCA", "cells_plus_bile_mean_uM": 136.0, "cells_plus_bile_sd_uM": 112.0, "cells_mean_uM": 78.7, "cells_sd_uM": 64.1, "medium_mean_uM": 8.70, "medium_sd_uM": 12.7, "bei_mean_percent": 40.4, "bei_sd_percent": 11.9},
+        {"analyte": "TCDCA", "cells_plus_bile_mean_uM": 0.876, "cells_plus_bile_sd_uM": 0.249, "cells_mean_uM": 0.666, "cells_sd_uM": 0.151, "medium_mean_uM": 0.002, "medium_sd_uM": 0.003, "bei_mean_percent": 21.8, "bei_sd_percent": 14.3},
+        {"analyte": "GCDCA", "cells_plus_bile_mean_uM": 142.0, "cells_plus_bile_sd_uM": 130.0, "cells_mean_uM": 104.0, "cells_sd_uM": 91.0, "medium_mean_uM": 0.891, "medium_sd_uM": 1.23, "bei_mean_percent": 24.2, "bei_sd_percent": 8.81},
+        {"analyte": "Total", "cells_plus_bile_mean_uM": 281.0, "cells_plus_bile_sd_uM": 85.7, "cells_mean_uM": 183.0, "cells_sd_uM": 55.6, "medium_mean_uM": 9.61, "medium_sd_uM": 6.36, "bei_mean_percent": null, "bei_sd_percent": null}
+      ]
+    },
+    {
+      "id": "troglitazone_10_uM",
+      "treatment": "10_uM_troglitazone_in_0.1_percent_DMSO",
+      "records": [
+        {"analyte": "TCA", "cells_plus_bile_mean_uM": 0.334, "cells_plus_bile_sd_uM": 0.179, "cells_mean_uM": 0.187, "cells_sd_uM": 0.141, "medium_mean_uM": 0.008, "medium_sd_uM": 0.008, "bei_mean_percent": 45.6, "bei_sd_percent": 39.7},
+        {"analyte": "GCA", "cells_plus_bile_mean_uM": 59.0, "cells_plus_bile_sd_uM": 46.0, "cells_mean_uM": 32.4, "cells_sd_uM": 26.9, "medium_mean_uM": 6.59, "medium_sd_uM": 8.29, "bei_mean_percent": 38.5, "bei_sd_percent": 26.0},
+        {"analyte": "TCDCA", "cells_plus_bile_mean_uM": 0.469, "cells_plus_bile_sd_uM": 0.030, "cells_mean_uM": 0.432, "cells_sd_uM": 0.061, "medium_mean_uM": 0.003, "medium_sd_uM": 0.002, "bei_mean_percent": 9.45, "bei_sd_percent": 12.3},
+        {"analyte": "GCDCA", "cells_plus_bile_mean_uM": 73.8, "cells_plus_bile_sd_uM": 70.1, "cells_mean_uM": 63.4, "cells_sd_uM": 62.4, "medium_mean_uM": 0.706, "medium_sd_uM": 0.784, "bei_mean_percent": 17.4, "bei_sd_percent": 18.2},
+        {"analyte": "Total", "cells_plus_bile_mean_uM": 134.0, "cells_plus_bile_sd_uM": 41.9, "cells_mean_uM": 96.5, "cells_sd_uM": 34.0, "medium_mean_uM": 7.31, "medium_sd_uM": 4.17, "bei_mean_percent": null, "bei_sd_percent": null}
+      ]
+    }
+  ],
+  "source_consistency_notes": [
+    "Table 4 and the abstract report vehicle-control total cellular concentration as 183 +/- 55.6 uM.",
+    "The discussion prose reports 183 +/- 111 uM; this dataset retains Table 4 as the primary numeric record and flags the discrepancy rather than averaging the two values.",
+    "More than 99 percent of measured bile acids in this day-7 culture were glycine conjugated, but the authors identify culture-related taurine depletion as a possible explanation; this is not an in-vivo human conjugation ratio."
+  ],
+  "required_measurements": [
+    {
+      "id": "raw_donor_level_records_and_LLOQ",
+      "requirements": ["donor-level concentrations", "analyte-specific LLOQ", "censoring flags"],
+      "purpose": "model uncertainty and censoring without treating source proxy zeros as biological zeros"
+    },
+    {
+      "id": "true_canalicular_volume_and_content",
+      "requirements": ["canalicular network volume", "direct canalicular content", "junction integrity"],
+      "purpose": "separate canalicular concentration from paired-buffer accumulation"
+    },
+    {
+      "id": "matched_time_course_and_fluxes",
+      "requirements": ["multiple time points", "synthesis and uptake", "basolateral and canalicular export"],
+      "purpose": "identify dynamic bile-acid handling rather than a day-7 endpoint"
+    },
+    {
+      "id": "healthy_in_vivo_or_freshly_isolated_reference",
+      "requirements": ["human hepatocyte-resolved bile acids", "matched nutritional state", "minimal culture adaptation"],
+      "purpose": "distinguish sandwich-culture adaptation from healthy in-vivo hepatocyte physiology"
+    }
+  ],
+  "gates": {
+    "table4_numeric_records_loaded": true,
+    "aggregate_measurement_contract_ready": true,
+    "raw_donor_records_loaded": false,
+    "analyte_LLOQ_loaded": false,
+    "true_canalicular_concentration_ready": false,
+    "kinetic_parameter_fit_ready": false,
+    "healthy_in_vivo_initialization_ready": false,
+    "automatic_state_coupling": false,
+    "model_pass_threshold_defined": false,
+    "predictive_ready": false
+  },
+  "source_ids": [
+    "marion2013_human_sch_bile_acids"
+  ],
+  "limitations": [
+    "This is a four-donor day-7 sandwich-culture endpoint, not an in-vivo or freshly isolated healthy-hepatocyte baseline.",
+    "Both cells-plus-bile and cells concentrations use an estimated intracellular volume; their difference is not a measured canalicular concentration.",
+    "Published BEI is the aggregate of experiment-level ratios and cannot be reconstructed from the published group-mean concentrations.",
+    "Values below quantification were assigned proxy zero in the source; raw censoring status and analyte-specific LLOQ values are unavailable.",
+    "The representative 0.9 mg protein and 6.79 uL intracellular volume are per-well assay context, not universal per-cell constants.",
+    "Four donor experiments do not identify population distributions or transporter-specific kinetic parameters.",
+    "The troglitazone arm is a perturbation reference and must not initialize the healthy cell state."
+  ]
+}

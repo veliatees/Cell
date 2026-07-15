@@ -1,0 +1,112 @@
+{
+  "schema_version": "cell.external-evidence-review.v1",
+  "review_id": "claude_science_phh_signal_flux_2026_07_14",
+  "review_date": "2026-07-14",
+  "review_status": "primary_sources_reviewed_valid_subset_curated_conflicting_outputs_quarantined",
+  "contract_required_file_count": 9,
+  "contract_present_file_count": 7,
+  "missing_required_files": [
+    "human_phh_scale_bridge.csv",
+    "koenig_model_provenance_audit.md"
+  ],
+  "raw_artifacts_redistributed": false,
+  "raw_artifact_policy": "Record immutable fingerprints and review decisions. Do not redistribute the supplied article text or figures; curated facts are stored separately with primary-source provenance.",
+  "artifacts": [
+    {
+      "file": "integration_contract.json",
+      "delivery_wave": "2026-07-14",
+      "byte_size": 6522,
+      "sha256": "5d9e2132b14e6c4fb65148ee94cc2d6bf18e50a0aeab6f30f70c26418d0237c1",
+      "review_status": "quarantined_conflicts_with_reproduced_local_model_lineage",
+      "reason": "The claimed 1.2 mM lactate/default-250 mM protocol and universal 5/5 result conflict with the repository's four-way lineage audit. The current vendored executable remains 2/5; only the non-vendored legacy lineage reaches 5/5 under recovered 0.8 mM lactate and an actually selected 276.6667 mM glycogen grid point."
+    },
+    {
+      "file": "10.1096_fj.202001989RR.txt",
+      "delivery_wave": "2026-07-14",
+      "byte_size": 66522,
+      "sha256": "159fff2bd2de68ede6a163cabab8f0778ba0b09ddcd88d16f1708d8d77c36fd4",
+      "review_status": "primary_source_reviewed_not_redistributed_cc_by_nc",
+      "reason": "Primary Kemas 2021 article text was used to restore Table 1 time windows, SDs, exact media conditions and downstream insulin responses."
+    },
+    {
+      "file": "human_phh_glucose_fluxes.csv",
+      "delivery_wave": "2026-07-14",
+      "byte_size": 2588,
+      "sha256": "9f7e7ec0293d15bfc49eb65c00a7f01af336976326d37fe6076d5dc1291f2837",
+      "review_status": "corrected_then_curated_validation_only",
+      "reason": "The supplied 25 mM high-glucose label is wrong (primary source: 11 mM), low insulin is 0.1 nM rather than about 1 nM, low-insulin conditions also contain 100 nM glucagon, and the supplied rows omitted SD and 0-6 h window semantics."
+    },
+    {
+      "file": "human_endocrine_signal_chain.csv",
+      "delivery_wave": "2026-07-14",
+      "byte_size": 2503,
+      "sha256": "160ca8f2358f17ab56f43d6db660790870cf066b1a87ccdda553b013ed27d6d9",
+      "review_status": "partially_curated_mechanism_remains_fail_closed",
+      "reason": "The primary source supports a matched insulin exposure and pAKT/PCK1/G6PC responses, but no INSR surface abundance, receptor occupancy, EC50, Hill coefficient or complete kinetic trajectory."
+    },
+    {
+      "file": "human_oxygen_redox_zonation.csv",
+      "delivery_wave": "2026-07-14",
+      "byte_size": 2471,
+      "sha256": "e09f044041ca1109e6a23a64ac8d3805eb09b2929775edd93f83f6525279930a",
+      "review_status": "negative_and_qualitative_evidence_only",
+      "reason": "No numeric in-situ human sinusoidal pO2 or compartment-resolved human redox ratio is established. Human liver MPS data support directional zone functions under controlled 3-13% oxygen only."
+    },
+    {
+      "file": "heldout_validation_trajectories.csv",
+      "delivery_wave": "2026-07-14",
+      "byte_size": 3640,
+      "sha256": "cbdd4a1f90acc8fa2f646d4bdb421ac47f90399a242426e7961679848bf73783",
+      "review_status": "quarantined_model_predictions_not_heldout_validation",
+      "reason": "All numeric rows are model predictions or a model setpoint; the only requested human comparator is NULL. Exact model hash, complete boundaries and a reproduced generation protocol are also absent."
+    },
+    {
+      "file": "source_audit.md",
+      "delivery_wave": "2026-07-12",
+      "byte_size": 21288,
+      "sha256": "40897b642aa27fe175b4362eff430f020b5cb62c120eb889331ecac4c7a224ad",
+      "review_status": "previously_ingested_organ_scale_flux_audit",
+      "reason": "Retained in the existing hepatic-flux evidence layer with original organ, splanchnic and systemic denominators."
+    },
+    {
+      "file": "unidentifiable_parameters.md",
+      "delivery_wave": "2026-07-12",
+      "byte_size": 6638,
+      "sha256": "43a63e0c5536bbcedf6f82e1e03d2d196a385ee068944bf17c65c315d7daaa71",
+      "review_status": "retained_as_gap_register",
+      "reason": "Missing quantities remain explicit blockers and are not imputed."
+    },
+    {
+      "file": "wpDE_coverage.png",
+      "delivery_wave": "2026-07-14",
+      "byte_size": 56392,
+      "sha256": "69f531a82f7c3db0f4e2356e9c705f45734b9a8dda9bec5b4cd494deef0cdc10",
+      "review_status": "review_figure_not_numeric_source",
+      "reason": "Coverage visualization only; scientific records come from the primary sources and curated tables."
+    },
+    {
+      "file": "wpC_kemas.png",
+      "delivery_wave": "2026-07-14",
+      "byte_size": 41450,
+      "sha256": "c02b5b1684e990f34e881f401a1a4d76b8312c3a745865581da81affd1bcdf7f",
+      "review_status": "review_figure_not_numeric_source",
+      "reason": "Derived visualization; its labels are superseded by the primary-source condition audit."
+    },
+    {
+      "file": "wpF_validation.png",
+      "delivery_wave": "2026-07-14",
+      "byte_size": 98981,
+      "sha256": "a8618e49e326393e3236cb8db9cd5a37e5feb9a7c314797ba1c83bff78d13758",
+      "review_status": "quarantined_misleading_heldout_label",
+      "reason": "The plotted trajectories are model outputs without a human held-out comparator and cannot be called a held-out validation curve."
+    }
+  ],
+  "review_findings": [
+    "A delivered contract is not a source of truth when it conflicts with reproduced local artifacts.",
+    "The Kemas PHH spheroid observations are valid same-format validation targets, not fresh-suspension or in-vivo single-hepatocyte parameters.",
+    "Hormone-bundle contrasts in Kemas cannot be interpreted as pure insulin effects because glucagon supplementation changes at the same time.",
+    "Wilson hepatocellularity supports a human organ-to-cell denominator but does not establish single-hepatocyte geometry.",
+    "No delivered numeric trajectory qualifies as independent held-out human validation.",
+    "No human in-situ zonal oxygen value is promoted into the simulation."
+  ]
+}

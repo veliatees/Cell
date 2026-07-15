@@ -37,6 +37,14 @@ ZONATION_SOURCES: dict[str, SourceReference] = {
         date_verified=DATE_VERIFIED,
         notes="Human single-cell RNA-seq supports portal-central hepatocyte heterogeneity and canonical zonation markers.",
     ),
+    "human_liver_mps_oxygen_zonation_2017": SourceReference(
+        id="human_liver_mps_oxygen_zonation_2017",
+        title="Control of oxygen tension recapitulates zone-specific functions in human liver microphysiology systems",
+        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC5661766/",
+        source_type="primary_paper",
+        date_verified="2026-07-14",
+        notes="Human liver MPS under controlled approximately 3-13% oxygen; supports directional zone functions, not an in-situ human sinusoidal pO2 value.",
+    ),
 }
 
 
@@ -62,12 +70,26 @@ class ZoneContext:
 
 
 @dataclass(frozen=True)
+class HumanMpsOxygenContext:
+    model_system: str
+    controlled_oxygen_low_percent: float
+    controlled_oxygen_high_percent: float
+    zone1_supported_functions: tuple[str, ...]
+    zone3_supported_functions: tuple[str, ...]
+    is_human_in_situ_measurement: bool
+    may_initialize_sinusoid_pO2: bool
+    source_ids: tuple[str, ...]
+    limitations: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class HumanHepatocyteZonationState:
     species: str
     selected_zone: HepaticZone
     status: str
     coordinate_status: str
     zone: ZoneContext
+    experimental_oxygen_context: HumanMpsOxygenContext
     markers: tuple[ZonationMarker, ...]
     quantitative_effect_sizes_available: bool
     oxygen_partial_pressure_available: bool
@@ -136,20 +158,40 @@ def build_human_hepatocyte_zonation(zone: HepaticZone) -> HumanHepatocyteZonatio
     if zone not in _ZONE_CONTEXTS:
         raise ValueError(f"unsupported human hepatic zone: {zone}")
     context = _ZONE_CONTEXTS[zone]
+    oxygen_context = HumanMpsOxygenContext(
+        model_system="human_liver_acinus_microphysiology_system",
+        controlled_oxygen_low_percent=3.0,
+        controlled_oxygen_high_percent=13.0,
+        zone1_supported_functions=("oxidative_phosphorylation", "albumin_secretion", "urea_secretion"),
+        zone3_supported_functions=("glycolysis", "alpha1_antitrypsin_secretion", "CYP2E1_expression", "acetaminophen_toxicity"),
+        is_human_in_situ_measurement=False,
+        may_initialize_sinusoid_pO2=False,
+        source_ids=("human_liver_mps_oxygen_zonation_2017",),
+        limitations=(
+            "The 3-13% values are controlled MPS oxygen settings, not direct human sinusoidal measurements.",
+            "Flow, device material, cell composition and culture adaptation differ from an intact liver acinus.",
+            "The experiment supports functional direction and an assay design target, not a zone-specific reaction-rate multiplier.",
+        ),
+    )
     state = HumanHepatocyteZonationState(
         species="Homo sapiens",
         selected_zone=zone,
         status="source_backed_reference_context_not_donor_observation",
         coordinate_status="categorical_zone_not_measured_cell_coordinate",
         zone=context,
+        experimental_oxygen_context=oxygen_context,
         markers=tuple(item for item in _MARKERS if item.enriched_zone == zone),
         quantitative_effect_sizes_available=False,
         oxygen_partial_pressure_available=False,
         dynamic_flux_scaling_enabled=False,
-        source_ids=tuple(dict.fromkeys(source for item in _MARKERS for source in item.source_ids)),
+        source_ids=tuple(dict.fromkeys(
+            [source for item in _MARKERS for source in item.source_ids]
+            + list(oxygen_context.source_ids)
+        )),
         limitations=(
             "Marker direction is human-atlas evidence; no donor-specific expression value is inferred.",
             "Relative oxygen context is directional only; no human zonal pO2 value is assigned.",
+            "Controlled human-MPS oxygen settings are retained separately and cannot initialize sinusoidal oxygen.",
             "Zonation does not scale reaction rates until matched human quantitative effects are loaded.",
         ),
     )
@@ -164,6 +206,16 @@ def validate_human_hepatocyte_zonation(state: HumanHepatocyteZonationState) -> N
         raise ValueError("zonation effect sizes are unavailable and cannot drive flux")
     if state.oxygen_partial_pressure_available:
         raise ValueError("human zonal oxygen partial pressure is not available")
+    oxygen = state.experimental_oxygen_context
+    if (
+        oxygen.controlled_oxygen_low_percent != 3.0
+        or oxygen.controlled_oxygen_high_percent != 13.0
+        or oxygen.is_human_in_situ_measurement
+        or oxygen.may_initialize_sinusoid_pO2
+    ):
+        raise ValueError("human-MPS oxygen context changed or was promoted to in-situ pO2")
+    if not oxygen.source_ids or not set(oxygen.source_ids) <= set(ZONATION_SOURCES):
+        raise ValueError("human-MPS oxygen context lacks registered provenance")
     if not state.markers:
         raise ValueError("selected zone has no source-backed markers")
     source_ids = set(ZONATION_SOURCES)

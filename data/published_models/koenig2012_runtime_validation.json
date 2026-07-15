@@ -1,0 +1,125 @@
+{
+  "available": true,
+  "benchmark_pass_count": 2,
+  "benchmark_total_count": 5,
+  "benchmarks": [
+    {
+      "acceptance_basis": "reported as 94%; interval is rounding to the reported integer percent",
+      "acceptance_high": 0.945,
+      "acceptance_low": 0.935,
+      "id": "phosphorylation_at_2_mM",
+      "passed": true,
+      "predicted": 0.940877644659,
+      "reported_target": 0.94,
+      "source_ids": [
+        "koenig2012_hepatic_glucose_model"
+      ],
+      "unit": "fraction"
+    },
+    {
+      "acceptance_basis": "reported as 5%; interval is rounding to the reported integer percent",
+      "acceptance_high": 0.055,
+      "acceptance_low": 0.045,
+      "id": "phosphorylation_at_14_mM",
+      "passed": true,
+      "predicted": 0.050997010304,
+      "reported_target": 0.05,
+      "source_ids": [
+        "koenig2012_hepatic_glucose_model"
+      ],
+      "unit": "fraction"
+    },
+    {
+      "acceptance_basis": "reported as 6.6 mM; interval is rounding to one decimal place",
+      "acceptance_high": 6.65,
+      "acceptance_low": 6.55,
+      "id": "hgp_hgu_switch",
+      "passed": false,
+      "predicted": 7.143741299282,
+      "reported_target": 6.6,
+      "source_ids": [
+        "koenig2012_hepatic_glucose_model"
+      ],
+      "unit": "mM_glucose"
+    },
+    {
+      "acceptance_basis": "reported as 8.5 mM; interval is rounding to one decimal place",
+      "acceptance_high": 8.55,
+      "acceptance_low": 8.45,
+      "id": "gng_glycolysis_switch",
+      "passed": false,
+      "predicted": 8.304155655787,
+      "reported_target": 8.5,
+      "source_ids": [
+        "koenig2012_hepatic_glucose_model"
+      ],
+      "unit": "mM_glucose"
+    },
+    {
+      "acceptance_basis": "reported as 5.1 mM; interval is rounding to one decimal place",
+      "acceptance_high": 5.15,
+      "acceptance_low": 5.05,
+      "id": "glycogenolysis_glycogenesis_switch",
+      "passed": false,
+      "predicted": 5.433978295769,
+      "reported_target": 5.1,
+      "source_ids": [
+        "koenig2012_hepatic_glucose_model"
+      ],
+      "unit": "mM_glucose"
+    }
+  ],
+  "blockers": [
+    "Publication benchmark reproduction is incomplete; model output cannot drive authoritative state.",
+    "Per-kilogram-body-mass flux cannot be allocated to one hepatocyte without a validated scale bridge."
+  ],
+  "model": {
+    "author_repository_commit": "ad15fdd0eb30e96cba1cdfef9286627eb6d4709c",
+    "model_file_last_modified_commit": "3cf02e91fc6355bdb9971b137454250751e6f808",
+    "path": "models/sbml/koenig2012_hepatic_glucose_executable.xml",
+    "runtime": "libRoadRunner",
+    "runtime_version": "2.9.2",
+    "sha256": "5091963c02f39cf00ae02b4fca9362af5f43544851f75b7e17768c7fc56835a3"
+  },
+  "profile_predictions": {
+    "postabsorptive": {
+      "elapsed_s": 12000.0,
+      "evidence": "published_model_prediction_not_measurement_and_not_cell_state",
+      "gluconeogenesis_or_glycolysis_umol_per_min_kg": -6.819626873759,
+      "glucose_mM": 4.75,
+      "glycogen_mM": 229.0,
+      "glycogenolysis_or_glycogenesis_umol_per_min_kg": -3.203479319505,
+      "hepatic_glucose_production_or_utilization_umol_per_min_kg": -10.023106193264,
+      "phosphorylated_fraction": 0.452834018722,
+      "sign_convention": "negative HGP denotes net glucose production/export; positive HGP denotes net hepatic uptake/utilization",
+      "source_ids": [
+        "koenig2012_author_executable_reencoding"
+      ]
+    }
+  },
+  "protocol": {
+    "absolute_tolerance": 1e-09,
+    "basis": "vendored executable defaults with the author repository's 200-minute duration; not claimed as exact publication protocol",
+    "duration_min": 200.0,
+    "duration_s": 12000.0,
+    "external_lactate_mM": 1.2,
+    "fixed_glycogen_for_switches_mM": 250.0,
+    "integrator": "cvode",
+    "relative_tolerance": 1e-09,
+    "zero_crossing_iterations": 32
+  },
+  "publication_reproduction_passed": false,
+  "schema_version": "koenig2012.runtime-validation.v2",
+  "status": "executed_shadow_model_publication_reproduction_incomplete",
+  "technical_equation_parity": {
+    "absolute_errors": {
+      "epinephrine_absolute_error_pM": 0.0,
+      "glucagon_absolute_error_pM": 0.0,
+      "insulin_absolute_error_pM": 0.0,
+      "phosphorylation_absolute_error": 0.0
+    },
+    "passed": true,
+    "scope": "direct Python transcription versus SBML assignment rules; numerical implementation check only",
+    "tolerance": 1e-09
+  }
+}

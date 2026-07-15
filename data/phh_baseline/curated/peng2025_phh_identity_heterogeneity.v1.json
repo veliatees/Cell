@@ -1,0 +1,154 @@
+{
+  "schema_version": "cell.phh-identity-heterogeneity.v1",
+  "date_verified": "2026-07-14",
+  "status": "source_backed_batch_resolved_identity_and_composition_observations",
+  "source_artifact": {
+    "source_id": "peng2025_phh_quality_attributes",
+    "supplement_filename": "13619_2025_258_MOESM1_ESM.docx",
+    "supplement_md5": "cf6103b084c236f3fedf2f30e548559e",
+    "supplement_sha256": "deeb835fe82d7e0e883447268354b9abb8f3ca4950639be3b68b802d3c6183bf",
+    "source_locations": ["Table S2", "Figure S2B"],
+    "geo_accession": "GSE289636"
+  },
+  "facs_contract": {
+    "input_cells": "100000_to_300000_single_PHHs",
+    "fixation": "4_percent_paraformaldehyde",
+    "permeabilization": "Triton_X_100_buffer_15_min",
+    "instrument": "BD FACSCelesta",
+    "markers": [
+      {"marker": "ALB", "primary_antibody": "Bethyl A80-129A", "dilution": "1:200"},
+      {"marker": "HNF4A", "primary_antibody": "Cell Signaling Technology 3113S", "dilution": "1:100"}
+    ],
+    "reported_unit": "percent_marker_positive_cells"
+  },
+  "facs_records": [
+    {"batch_id": "PHH330", "alb_positive_percent": 72.2, "hnf4a_positive_percent": 49.4},
+    {"batch_id": "PHH409", "alb_positive_percent": 94.9, "hnf4a_positive_percent": 91.4},
+    {"batch_id": "PHH416", "alb_positive_percent": 95.4, "hnf4a_positive_percent": 90.9},
+    {"batch_id": "PHH211", "alb_positive_percent": 49.4, "hnf4a_positive_percent": 37.7},
+    {"batch_id": "PHH025", "alb_positive_percent": 98.0, "hnf4a_positive_percent": 78.5},
+    {"batch_id": "PHH789", "alb_positive_percent": 98.9, "hnf4a_positive_percent": 70.2}
+  ],
+  "scrna_contract": {
+    "platform": "10x_Genomics_Chromium_Single_Cell_3prime_v2",
+    "sequencer": "Illumina_NovaSeq6000",
+    "read_layout": "paired_end_150_bp",
+    "minimum_reads_per_cell": 100000,
+    "cells_loaded_per_channel": 8700,
+    "target_recovery_per_channel": 5000,
+    "reference_genome": "GRCh38",
+    "software": "Seurat_4.2.0",
+    "quality_filters": {"genes_greater_than": 500, "umis_greater_than": 600, "mitochondrial_percent_less_than": 20.0},
+    "batch_correction": "fastMNN_50_PCs_knn_20",
+    "clustering_resolution": 0.5,
+    "cell_type_markers": {
+      "hepatocyte": ["HNF4A", "HNF6", "CEBPA", "ATF5", "AAT", "ALB", "CYP3A4", "CYP3A7", "CYP1A2", "CYP2B6", "CYP2C9", "CYP2E1", "APOB", "ASGR1", "G6PC"],
+      "cholangiocyte": ["EPCAM", "KRT18", "KRT7", "KRT19", "SOX4", "SOX9", "CFTR", "AQP1", "MMP7"],
+      "lsec": ["CLEC14A", "CCL14", "MGP", "SPARCL1", "FCN2", "CLEC1B", "LYVE1"],
+      "stellate_cell": ["ACTA2", "COL1A1", "TAGLN", "RBP1"],
+      "lymphocyte": ["CD45"]
+    }
+  },
+  "scrna_records": [
+    {
+      "batch_id": "PHH330",
+      "cell_types": {
+        "hepatocyte": {"count": 12730, "percent": 94.87},
+        "lymphocyte": {"count": 537, "percent": 4.00},
+        "lsec": {"count": 103, "percent": 0.77},
+        "cholangiocyte": {"count": 49, "percent": 0.37},
+        "stellate_cell": {"count": 0, "percent": 0.00}
+      }
+    },
+    {
+      "batch_id": "PHH409",
+      "cell_types": {
+        "hepatocyte": {"count": 3640, "percent": 98.06},
+        "lymphocyte": {"count": 44, "percent": 1.19},
+        "lsec": {"count": 28, "percent": 0.75},
+        "cholangiocyte": {"count": 0, "percent": 0.00},
+        "stellate_cell": {"count": 0, "percent": 0.00}
+      }
+    },
+    {
+      "batch_id": "PHH416",
+      "cell_types": {
+        "hepatocyte": {"count": 19344, "percent": 98.91},
+        "lymphocyte": {"count": 168, "percent": 0.86},
+        "lsec": {"count": 36, "percent": 0.18},
+        "cholangiocyte": {"count": 7, "percent": 0.04},
+        "stellate_cell": {"count": 3, "percent": 0.02}
+      }
+    },
+    {
+      "batch_id": "PHH211",
+      "cell_types": {
+        "hepatocyte": {"count": 3198, "percent": 84.81},
+        "lymphocyte": {"count": 396, "percent": 10.50},
+        "lsec": {"count": 144, "percent": 3.82},
+        "cholangiocyte": {"count": 6, "percent": 0.16},
+        "stellate_cell": {"count": 27, "percent": 0.72}
+      }
+    },
+    {
+      "batch_id": "PHH025",
+      "cell_types": {
+        "hepatocyte": {"count": 5515, "percent": 73.84},
+        "lymphocyte": {"count": 1507, "percent": 20.18},
+        "lsec": {"count": 141, "percent": 1.89},
+        "cholangiocyte": {"count": 298, "percent": 3.99},
+        "stellate_cell": {"count": 8, "percent": 0.11}
+      }
+    },
+    {
+      "batch_id": "PHH789",
+      "cell_types": {
+        "hepatocyte": {"count": 4295, "percent": 69.22},
+        "lymphocyte": {"count": 1438, "percent": 23.17},
+        "lsec": {"count": 386, "percent": 6.22},
+        "cholangiocyte": {"count": 72, "percent": 1.16},
+        "stellate_cell": {"count": 14, "percent": 0.23}
+      }
+    }
+  ],
+  "product_quality_criterion": {
+    "authority": "T_CSCB_0008_2021_group_standard",
+    "source_id": "peng2022_phh_requirements_standard",
+    "markers": ["ALB", "HNF4A"],
+    "threshold_percent": 90.0,
+    "role": "source_reported_commercial_phh_product_quality_criterion",
+    "may_be_used_as_single_cell_state_threshold": false
+  },
+  "reported_associations": [
+    {"id": "facs_alb_vs_hnf4a", "correlation_r": 0.89, "p_value": null, "sample_size": 6, "statistically_significant_as_reported": null},
+    {"id": "scrna_hepatocyte_fraction_vs_facs_alb", "correlation_r": 0.16, "p_value": null, "sample_size": 6, "statistically_significant_as_reported": false},
+    {"id": "scrna_hepatocyte_fraction_vs_facs_hnf4a", "correlation_r": 0.20, "p_value": null, "sample_size": 6, "statistically_significant_as_reported": false}
+  ],
+  "hepatocyte_subsets": [
+    {"id": "cluster_a", "reported_enrichment": ["aerobic_respiration", "respiratory_electron_transport", "detoxification", "carbon_metabolism"]},
+    {"id": "cluster_b", "reported_enrichment": ["aerobic_respiration", "respiratory_electron_transport", "detoxification", "cholesterol_metabolism"]},
+    {"id": "cluster_c", "reported_enrichment": ["protein_modification", "TGF_beta_response", "growth_factor_response"]},
+    {"id": "cluster_d", "reported_enrichment": ["protein_modification", "phosphorylation", "organic_cyclic_compound_response", "EGF_response"]},
+    {"id": "cluster_e", "reported_enrichment": ["complement_system"]}
+  ],
+  "gates": {
+    "facs_batch_table_loaded": true,
+    "scrna_composition_table_loaded": true,
+    "raw_geo_accession_registered": true,
+    "hepatocyte_subset_count_loaded": true,
+    "hepatocyte_subset_batch_numeric_matrix_loaded": false,
+    "single_cell_state_initialization_ready": false,
+    "generative_training_ready": false,
+    "automatic_state_coupling": false,
+    "predictive_ready": false
+  },
+  "source_ids": ["peng2025_phh_quality_attributes", "peng2022_phh_requirements_standard", "geo_gse289636"],
+  "limitations": [
+    "Marker-positive FACS fractions and transcriptomic cell-type fractions are different measurement constructs and are not interchangeable purity estimates.",
+    "The six commercial PHH batches do not define a healthy in-vivo hepatocyte population distribution.",
+    "Non-hepatocyte fractions describe the composition of a PHH product; they are not organelles or state fractions inside one simulated hepatocyte.",
+    "Published cell-type percentages are rounded and may sum to 99.99 or 100.01 percent.",
+    "Five hepatocyte subsets were reported, but a machine-readable donor-by-subset numeric matrix is not curated here.",
+    "Six batches are insufficient for donor-disjoint generative-model training or causal donor-effect estimation."
+  ]
+}
