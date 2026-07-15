@@ -1823,3 +1823,57 @@ input[type="checkbox"] {
 
 /* Active state for the regeneration/division toggle */
 .icon-button.is-active { background: rgba(95, 208, 255, 0.22); box-shadow: 0 0 0 1px rgba(95,208,255,0.5) inset, 0 0 12px rgba(95,208,255,0.35); color: #bfefff; }
+
+/* Contact-event channel readout: the geometric layer's trigger inputs. */
+.contact-badge {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 8;
+  width: min(340px, calc(100% - 28px));
+  padding: 9px 12px 10px;
+  border-radius: 8px;
+  color: #f2e7ee;
+  border: 1px solid rgba(212, 123, 142, 0.32);
+  background: rgba(14, 9, 12, 0.78);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.contact-badge__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+}
+.contact-badge__title {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: #e79db0;
+}
+.contact-badge__phase {
+  font-size: 10px;
+  color: #cdb6c0;
+}
+.contact-badge__row {
+  opacity: 0.62;
+  padding: 1px 0;
+}
+.contact-badge__row.is-live {
+  opacity: 1;
+  color: #ffe3ec;
+}
+.contact-badge__partner {
+  font-weight: 600;
+}
+.contact-badge__note {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(212, 123, 142, 0.18);
+  font-size: 9.5px;
+  color: #b7a3ab;
+}
