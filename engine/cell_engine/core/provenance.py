@@ -4,7 +4,15 @@ from dataclasses import dataclass
 from typing import Literal
 
 AssumptionLevel = Literal["measured", "literature_derived", "fitted", "placeholder"]
-SourceType = Literal["primary_paper", "textbook", "review", "database", "tool_doc", "project_assumption"]
+SourceType = Literal[
+    "primary_paper",
+    "primary_model",
+    "textbook",
+    "review",
+    "database",
+    "tool_doc",
+    "project_assumption",
+]
 
 
 @dataclass(frozen=True)
@@ -26,4 +34,3 @@ class ParameterProvenance:
     assumption_level: AssumptionLevel
     confidence: float
     notes: str = ""
-

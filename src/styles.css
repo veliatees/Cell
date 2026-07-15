@@ -106,12 +106,13 @@ select {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  gap: 8px;
   margin-bottom: 5px;
 }
 
 .nutrition-badge__state {
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
 }
 
 .nutrition-badge.is-fed .nutrition-badge__state { color: #57d98a; }
@@ -258,12 +259,15 @@ select {
     font-size: 9.5px;
   }
   .nutrition-badge__head {
-    align-items: flex-start;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1px;
   }
   .nutrition-badge__clock {
+    display: block;
     font-size: 8.5px;
-    text-align: right;
+    line-height: 1.25;
+    text-align: left;
   }
   .split-state-badge__meta {
     display: none;
@@ -400,6 +404,13 @@ select {
   font-size: 12px;
 }
 
+.toolbar-nutrition {
+  width: 142px;
+  min-width: 142px;
+  height: 34px;
+  font-size: 12px;
+}
+
 .toolbar-status.is-locked {
   color: #ffcf6b;
   font-weight: 700;
@@ -503,7 +514,16 @@ select {
   border-top: 0;
 }
 
+.inspector--right .control-row {
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 8px;
+}
+
 .is-organelle-mode .micro-controls {
+  display: none;
+}
+
+.is-communication-mode .micro-controls {
   display: none;
 }
 
@@ -684,6 +704,158 @@ input[type="checkbox"] {
   margin-bottom: 6px;
 }
 
+.communication-panel {
+  gap: 8px;
+  overflow: visible;
+}
+
+.communication-empty {
+  color: #a9bad0;
+  line-height: 1.45;
+}
+
+.communication-summary,
+.communication-runtime,
+.communication-measurement__head {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border: 1px solid rgba(91, 197, 181, 0.28);
+  border-radius: 7px;
+  background: rgba(91, 197, 181, 0.08);
+}
+
+.communication-summary strong,
+.communication-runtime strong,
+.communication-measurement strong,
+.communication-response strong {
+  color: #e9f8f5;
+  font-size: 11.5px;
+}
+
+.communication-summary span,
+.communication-runtime span,
+.communication-measurement span,
+.communication-response span {
+  color: #b9d8d2;
+  font-size: 10.5px;
+}
+
+.communication-summary small,
+.communication-runtime small,
+.communication-contact small,
+.communication-deformation small,
+.communication-pathway small,
+.communication-measurement small,
+.communication-response small {
+  color: #899ab0;
+  font-size: 9.75px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.communication-section-title {
+  margin-top: 3px;
+  color: #94a6bc;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.communication-contacts,
+.communication-deformations,
+.communication-pathways,
+.communication-responses {
+  display: grid;
+  gap: 6px;
+}
+
+.communication-contact,
+.communication-deformation,
+.communication-pathway,
+.communication-response {
+  display: grid;
+  gap: 3px;
+  padding: 8px 9px;
+  border-left: 2px solid rgba(145, 162, 184, 0.45);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.communication-contact.is-touching {
+  border-left-color: #f0c75e;
+  background: rgba(240, 199, 94, 0.06);
+}
+
+.communication-deformation {
+  border-left-color: rgba(118, 203, 192, 0.72);
+  background: rgba(118, 203, 192, 0.055);
+}
+
+.communication-contact strong,
+.communication-deformation strong,
+.communication-pathway strong,
+.communication-response strong {
+  color: #e8eef9;
+  font-size: 10.5px;
+  overflow-wrap: anywhere;
+}
+
+.communication-contact span {
+  color: #c4cfdf;
+  font-size: 10px;
+}
+
+.communication-deformation span {
+  color: #bfe0db;
+  font-size: 10px;
+}
+
+.communication-measurement {
+  display: grid;
+  gap: 6px;
+}
+
+.communication-measurement__head {
+  border-color: rgba(112, 198, 160, 0.32);
+  background: rgba(112, 198, 160, 0.08);
+}
+
+.communication-response {
+  border-left-color: rgba(112, 198, 160, 0.65);
+}
+
+.communication-pathway__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: start;
+}
+
+.communication-pathway__head span {
+  color: #e6a085;
+  font-size: 9px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.communication-chain {
+  color: #b9c9dc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 9.5px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.communication-runtime {
+  border-color: rgba(142, 168, 232, 0.28);
+  background: rgba(142, 168, 232, 0.07);
+}
+
+.communication-runtime--generative {
+  border-color: rgba(230, 147, 117, 0.3);
+  background: rgba(230, 147, 117, 0.07);
+}
+
 .local-visual-panel__head {
   margin: 10px 0 5px;
   color: #8b96ad;
@@ -838,6 +1010,136 @@ input[type="checkbox"] {
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+.phh-profile--endocrine {
+  border-left-color: #e2a96b;
+  background: rgba(226, 169, 107, 0.07);
+}
+
+.phh-profile--endocrine .phh-profile__head span { color: #f0bc82; }
+
+.phh-profile--validation {
+  border-left-color: #67c7b0;
+  background: rgba(103, 199, 176, 0.07);
+}
+
+.phh-profile--validation .phh-profile__head span { color: #7ed8c2; }
+
+.phh-profile--phh-validation {
+  border-left-color: #79c893;
+  background: rgba(121, 200, 147, 0.08);
+}
+
+.phh-profile--phh-validation .phh-profile__head span { color: #8bdca6; }
+
+.phh-profile--phh-protocol {
+  border-left-color: #72add7;
+  background: rgba(114, 173, 215, 0.08);
+}
+
+.phh-profile--phh-protocol .phh-profile__head span { color: #91c8ee; }
+
+.phh-profile--phh-protocol .phh-profile__grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+.phh-profile--phh-observability {
+  border-left-color: #d58b80;
+  background: rgba(213, 139, 128, 0.07);
+}
+
+.phh-profile--phh-observability .phh-profile__head span { color: #e4a59b; }
+
+.phh-profile--phh-observability .phh-profile__grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+.phh-profile--albumin {
+  border-left-color: #b6c86c;
+  background: rgba(182, 200, 108, 0.07);
+}
+
+.phh-profile--albumin .phh-profile__head span { color: #cadb82; }
+
+.phh-profile--albumin .phh-profile__grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+.phh-profile--cyp {
+  border-left-color: #d89567;
+  background: rgba(216, 149, 103, 0.07);
+}
+
+.phh-profile--cyp .phh-profile__head span { color: #e7ad83; }
+
+.phh-profile--bei {
+  border-left-color: #6eb9c1;
+  background: rgba(110, 185, 193, 0.07);
+}
+
+.phh-profile--bei .phh-profile__head span { color: #8ed0d6; }
+
+.phh-profile--identity {
+  border-left-color: #cf8090;
+  background: rgba(207, 128, 144, 0.07);
+}
+
+.phh-profile--identity .phh-profile__head span { color: #e09baa; }
+
+.phh-profile--proteome {
+  border-left-color: #63aaa1;
+  background: rgba(99, 170, 161, 0.07);
+}
+
+.phh-profile--proteome .phh-profile__head span { color: #82c9c0; }
+
+.phh-profile--transporter-inventory {
+  border-left-color: #9cad62;
+  background: rgba(156, 173, 98, 0.07);
+}
+
+.phh-profile--transporter-inventory .phh-profile__head span { color: #bacb7a; }
+
+.phh-profile--sch-bile-acids {
+  border-left-color: #c57e65;
+  background: rgba(197, 126, 101, 0.07);
+}
+
+.phh-profile--sch-bile-acids .phh-profile__head span { color: #dda088; }
+
+.phh-profile--cyp .phh-profile__grid,
+.phh-profile--bei .phh-profile__grid,
+.phh-profile--identity .phh-profile__grid,
+.phh-profile--proteome .phh-profile__grid,
+.phh-profile--transporter-inventory .phh-profile__grid,
+.phh-profile--sch-bile-acids .phh-profile__grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+.phh-profile--intake {
+  border-left-color: #d6b45f;
+  background: rgba(214, 180, 95, 0.07);
+}
+
+.phh-profile--intake .phh-profile__head span { color: #e4c77f; }
+
+.phh-profile--published-model {
+  border-left-color: #72c6cf;
+  background: rgba(114, 198, 207, 0.07);
+}
+
+.phh-profile--published-model .phh-profile__head span { color: #91d8de; }
+
+.phh-profile--external-validation {
+  border-left-color: #d69278;
+  background: rgba(214, 146, 120, 0.07);
+}
+
+.phh-profile--external-validation .phh-profile__head span { color: #e6a990; }
 
 .history-head,
 .genome-head,
@@ -1431,15 +1733,23 @@ input[type="checkbox"] {
     max-width: 100%;
   }
 
+  .toolbar-experiment,
+  .toolbar-zone,
+  .toolbar-nutrition {
+    flex: 1 1 calc(50% - 3px);
+    width: auto;
+    min-width: 0;
+  }
+
   .icon-button {
     width: 36px;
     height: 36px;
   }
 
   .toolbar-status {
-    flex-basis: 100%;
-    max-width: 220px;
-    text-align: right;
+    flex: 1 1 100%;
+    max-width: none;
+    text-align: left;
   }
 
   .inspector {
@@ -1466,6 +1776,14 @@ input[type="checkbox"] {
 
   .time-readout {
     order: -1;
+  }
+}
+
+@media (max-width: 420px) {
+  .toolbar-experiment,
+  .toolbar-zone,
+  .toolbar-nutrition {
+    flex-basis: 100%;
   }
 }
 

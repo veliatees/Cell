@@ -1,0 +1,179 @@
+{
+  "schema_version": "cell.phh-cyp-function.v1",
+  "date_verified": "2026-07-14",
+  "status": "source_backed_batch_resolved_observations_identifiability_gated",
+  "source_artifact": {
+    "source_id": "peng2025_phh_quality_attributes",
+    "supplement_filename": "13619_2025_258_MOESM1_ESM.docx",
+    "supplement_locator": "Europe_PMC_PMC12532551_supplementaryFiles",
+    "supplement_md5": "cf6103b084c236f3fedf2f30e548559e",
+    "supplement_sha256": "deeb835fe82d7e0e883447268354b9abb8f3ca4950639be3b68b802d3c6183bf",
+    "source_tables": ["Table S4", "Table S5", "Table S6"]
+  },
+  "assay_contract": {
+    "species": "Homo sapiens",
+    "biological_system": "cryopreserved_commercial_primary_human_hepatocytes",
+    "culture_format": "collagen_I_coated_12_well_2d_culture",
+    "seeded_cells_per_well": 1000000,
+    "incubation_medium": "InVitroGRO Incubation Medium Rild-Biotech Z99009",
+    "temperature_c": 37.0,
+    "co2_percent": 5.0,
+    "instrument": "Shimadzu LCMS-8030",
+    "replicates_per_batch": 3,
+    "replicate_type": "not_specified_in_source_table",
+    "substrate_concentration_uM": 1.0,
+    "scr_unit": "uL_per_h_per_1e6_cells",
+    "mfr_unit": "pmol_per_h_per_1e6_cells",
+    "normalization_denominator": "reported_hepatocyte_number",
+    "raw_timepoint_matrix_published": false,
+    "lower_limits_of_quantification_published": false
+  },
+  "reported_formula_contract": {
+    "scr_formula_as_printed": "SCR=(0.693/T1_2)*(V/M); T1_2=0.693/K1",
+    "mfr_formula_as_printed": "MFR=(0.693/T1_2)*(V/M); T1_2=0.693/K2",
+    "regression_definition": "K1 is minus the slope of ln substrate amount versus time; K2 is the slope of ln product amount versus time.",
+    "v_over_m_definition_as_printed": "number of hepatocytes per incubation volume (1e6 cells/mL)",
+    "formula_audit": "The publication's printed MFR expression and V/M wording are retained verbatim in semantics; no hidden time course or kinetic constant is reconstructed from the endpoint tables."
+  },
+  "product_quality_criterion": {
+    "authority": "T_CSCB_0008_2021_group_standard",
+    "source_id": "peng2022_phh_requirements_standard",
+    "standard_scope": "representative_drug_metabolism_ability",
+    "explicit_example_enzyme": "CYP3A4",
+    "explicit_example_substrate": "testosterone",
+    "threshold": 100.0,
+    "unit": "uL_per_h_per_1e6_cells",
+    "role": "source_reported_commercial_phh_product_quality_criterion",
+    "may_be_used_as_model_pass_threshold": false
+  },
+  "enzymes": [
+    {
+      "enzyme": "CYP1A2",
+      "substrate": "phenacetin",
+      "metabolite": "4-acetamidophenol",
+      "records": [
+        {"batch_id": "PHH330", "scr_mean": 92.5, "scr_sd": 23.2, "mfr_mean": 74.2, "mfr_sd": 6.4},
+        {"batch_id": "PHH409", "scr_mean": 117.5, "scr_sd": 7.0, "mfr_mean": 353.0, "mfr_sd": 14.2},
+        {"batch_id": "PHH416", "scr_mean": 0.0, "scr_sd": null, "mfr_mean": 33.9, "mfr_sd": 5.6},
+        {"batch_id": "PHH211", "scr_mean": 208.8, "scr_sd": 14.1, "mfr_mean": 317.0, "mfr_sd": 41.8},
+        {"batch_id": "PHH025", "scr_mean": 72.4, "scr_sd": 26.0, "mfr_mean": 0.0, "mfr_sd": null},
+        {"batch_id": "PHH789", "scr_mean": 112.3, "scr_sd": 22.4, "mfr_mean": 152.2, "mfr_sd": 2.8}
+      ]
+    },
+    {
+      "enzyme": "CYP2B6",
+      "substrate": "bupropion",
+      "metabolite": "4-hydroxybupropion",
+      "records": [
+        {"batch_id": "PHH330", "scr_mean": 146.8, "scr_sd": 24.3, "mfr_mean": 769.5, "mfr_sd": 174.4},
+        {"batch_id": "PHH409", "scr_mean": 185.9, "scr_sd": 24.1, "mfr_mean": 370.7, "mfr_sd": 41.8},
+        {"batch_id": "PHH416", "scr_mean": 200.2, "scr_sd": 32.8, "mfr_mean": 236.4, "mfr_sd": 11.6},
+        {"batch_id": "PHH211", "scr_mean": 286.6, "scr_sd": 17.8, "mfr_mean": 431.4, "mfr_sd": 37.8},
+        {"batch_id": "PHH025", "scr_mean": 370.6, "scr_sd": 19.9, "mfr_mean": 26.7, "mfr_sd": 0.6},
+        {"batch_id": "PHH789", "scr_mean": 476.8, "scr_sd": 48.2, "mfr_mean": 485.2, "mfr_sd": 19.3}
+      ]
+    },
+    {
+      "enzyme": "CYP2C9",
+      "substrate": "diclofenac",
+      "metabolite": "4'-hydroxydiclofenac",
+      "records": [
+        {"batch_id": "PHH330", "scr_mean": 78.6, "scr_sd": 18.9, "mfr_mean": 102.7, "mfr_sd": 17.7},
+        {"batch_id": "PHH409", "scr_mean": 162.7, "scr_sd": 15.1, "mfr_mean": 433.2, "mfr_sd": 43.3},
+        {"batch_id": "PHH416", "scr_mean": 236.5, "scr_sd": 17.5, "mfr_mean": 129.9, "mfr_sd": 5.9},
+        {"batch_id": "PHH211", "scr_mean": 170.7, "scr_sd": 8.0, "mfr_mean": 137.0, "mfr_sd": 7.4},
+        {"batch_id": "PHH025", "scr_mean": 86.1, "scr_sd": 19.9, "mfr_mean": 0.0, "mfr_sd": null},
+        {"batch_id": "PHH789", "scr_mean": 246.7, "scr_sd": 10.4, "mfr_mean": 744.7, "mfr_sd": 50.4}
+      ]
+    },
+    {
+      "enzyme": "CYP2C19",
+      "substrate": "mephenytoin",
+      "metabolite": "4-hydroxymephenytoin",
+      "records": [
+        {"batch_id": "PHH330", "scr_mean": 0.0, "scr_sd": null, "mfr_mean": 0.0, "mfr_sd": null},
+        {"batch_id": "PHH409", "scr_mean": 0.0, "scr_sd": null, "mfr_mean": 0.0, "mfr_sd": null},
+        {"batch_id": "PHH416", "scr_mean": 0.0, "scr_sd": null, "mfr_mean": 15.2, "mfr_sd": 0.1},
+        {"batch_id": "PHH211", "scr_mean": 34.8, "scr_sd": 8.6, "mfr_mean": 32.7, "mfr_sd": 8.4},
+        {"batch_id": "PHH025", "scr_mean": 48.4, "scr_sd": 2.8, "mfr_mean": 0.0, "mfr_sd": null},
+        {"batch_id": "PHH789", "scr_mean": 255.1, "scr_sd": 64.6, "mfr_mean": 211.7, "mfr_sd": 16.4}
+      ]
+    },
+    {
+      "enzyme": "CYP2D6",
+      "substrate": "dextromethorphan",
+      "metabolite": "dextrorphan",
+      "records": [
+        {"batch_id": "PHH330", "scr_mean": 72.1, "scr_sd": 46.7, "mfr_mean": 67.7, "mfr_sd": 6.3},
+        {"batch_id": "PHH409", "scr_mean": 273.8, "scr_sd": 41.0, "mfr_mean": 398.2, "mfr_sd": 3.7},
+        {"batch_id": "PHH416", "scr_mean": 566.6, "scr_sd": 21.7, "mfr_mean": 849.9, "mfr_sd": 46.9},
+        {"batch_id": "PHH211", "scr_mean": 238.4, "scr_sd": 18.0, "mfr_mean": 478.2, "mfr_sd": 33.7},
+        {"batch_id": "PHH025", "scr_mean": 437.6, "scr_sd": 14.4, "mfr_mean": 197.8, "mfr_sd": 20.3},
+        {"batch_id": "PHH789", "scr_mean": 902.9, "scr_sd": 125.6, "mfr_mean": 330.0, "mfr_sd": 2.8}
+      ]
+    },
+    {
+      "enzyme": "CYP3A4",
+      "substrate": "testosterone",
+      "metabolite": "6beta-hydroxytestosterone",
+      "records": [
+        {"batch_id": "PHH330", "scr_mean": 970.6, "scr_sd": 134.4, "mfr_mean": 2008.6, "mfr_sd": 147.9},
+        {"batch_id": "PHH409", "scr_mean": 1377.8, "scr_sd": 58.4, "mfr_mean": 420.5, "mfr_sd": 45.6},
+        {"batch_id": "PHH416", "scr_mean": 1127.9, "scr_sd": 16.4, "mfr_mean": 234.8, "mfr_sd": 38.3},
+        {"batch_id": "PHH211", "scr_mean": 1354.0, "scr_sd": 67.0, "mfr_mean": 479.2, "mfr_sd": 54.1},
+        {"batch_id": "PHH025", "scr_mean": 802.7, "scr_sd": 70.8, "mfr_mean": 0.0, "mfr_sd": null},
+        {"batch_id": "PHH789", "scr_mean": 1981.0, "scr_sd": 314.7, "mfr_mean": 985.8, "mfr_sd": 21.3}
+      ]
+    }
+  ],
+  "reported_associations": [
+    {
+      "id": "cyp1a2_and_cyp3a4_activity_vs_matched_mrna",
+      "finding": "Both SCR and MFR were reported as highly correlated with matched CYP1A2 and CYP3A4 mRNA levels.",
+      "numeric_r_published_in_machine_readable_table": false,
+      "model_consequence": "Association does not identify an expression-to-activity rate law."
+    },
+    {
+      "id": "purity_and_albumin_vs_cyp_activity",
+      "finding": "No significant associations were reported between CYP activities and ALB-positive fraction, HNF4A-positive fraction, scRNA hepatocyte fraction, or secreted albumin.",
+      "numeric_r_published_in_machine_readable_table": false,
+      "model_consequence": "Do not use a purity marker or albumin secretion as a numeric CYP activity proxy."
+    }
+  ],
+  "required_measurements": [
+    {
+      "id": "raw_substrate_product_timecourses",
+      "requirements": ["all sampled times", "substrate and product concentrations", "LLOQ and censoring flags", "incubation volume and viable-cell denominator"],
+      "purpose": "Recompute SCR and MFR without reverse-engineering endpoint tables."
+    },
+    {
+      "id": "matched_donor_genotype_protein_activity",
+      "requirements": ["CYP genotype and copy number", "absolute CYP and POR protein abundance", "same-batch SCR and MFR"],
+      "purpose": "Explain donor variation without treating batch means as a universal hepatocyte."
+    },
+    {
+      "id": "matched_perturbation_timecourse",
+      "requirements": ["selective inhibition or induction", "vehicle control", "viability", "time-resolved substrate and product"],
+      "purpose": "Identify causal enzyme-specific response kinetics."
+    }
+  ],
+  "gates": {
+    "individual_batch_tables_loaded": true,
+    "same_format_comparison_ready": true,
+    "raw_timecourse_reconstruction_ready": false,
+    "kinetic_parameter_fit_ready": false,
+    "donor_causal_model_ready": false,
+    "automatic_state_coupling": false,
+    "model_pass_threshold_defined": false,
+    "predictive_ready": false
+  },
+  "source_ids": ["peng2025_phh_quality_attributes", "peng2022_phh_requirements_standard"],
+  "limitations": [
+    "The six batches are commercial cryopreserved PHHs, not a healthy in-vivo population reference interval.",
+    "Each endpoint is a mean plus SD for n=3 within-batch replicates; Table S4/S5 does not label the replicate type, and donor population variance is not estimated by those SD values.",
+    "Source-reported 0.0 values are interpreted as undetectable/censored, not as proof of zero enzyme activity.",
+    "Raw timepoints, LLOQs, covariance, viable-cell trajectories, donor genotypes and absolute CYP protein abundances are unavailable.",
+    "SCR and MFR are assay-level aggregate outputs and do not identify transport, binding, CYP turnover, POR coupling or metabolite-loss kinetics.",
+    "The CSCB criterion is stated for representative drug metabolism with CYP3A4/testosterone as the explicit example; it is not generalized here to every CYP and is not a physiological range or simulation pass threshold."
+  ]
+}

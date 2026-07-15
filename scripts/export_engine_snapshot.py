@@ -10,6 +10,18 @@ from cell_engine.core.expression import EXPRESSION_SOURCES
 from cell_engine.core.genomic_architecture import GENOMIC_ARCHITECTURE_SOURCES
 from cell_engine.core.serialization import to_plain
 from cell_engine.io.snapshots import snapshot_to_json
+from cell_engine.io.brian2 import BRIAN2_SOURCES, brian2_communication_snapshot
+from cell_engine.ml.generative import GENERATIVE_SOURCES, generative_modeling_snapshot
+from cell_engine.multicell.communication import (
+    COMMUNICATION_SOURCES,
+    hepatocyte_communication_snapshot,
+)
+from cell_engine.multicell.spatial_world import (
+    SPATIAL_WORLD_SOURCES,
+    apply_spatial_world_to_cell,
+    build_single_hepatocyte_world,
+    spatial_world_snapshot,
+)
 from cell_engine.stochastic.cell_cycle import CELL_CYCLE_TIMING_PROFILES, apply_timing_profile
 from cell_engine.stochastic.whole_cell import (
     WHOLE_CELL_CYCLE,
@@ -30,28 +42,99 @@ from cell_engine.validation.hmdb_ranges import score_compartment_concentrations
 from cell_engine.validation.experiments import CURATED_EXPERIMENTS, apply_scenario
 from cell_engine.validation.phh_baseline import load_phh_baseline, phh_baseline_snapshot
 from cell_engine.validation.scientific_release import assert_scientific_release, scientific_release_snapshot
-from cell_engine.quantitative.phh_profiles import phh_profiles_snapshot
+from cell_engine.quantitative.phh_profiles import PhhNutritionalState, phh_profiles_snapshot
 from cell_engine.quantitative.phh_profiles import phh_profile
 from cell_engine.quantitative.phh_state import quantitative_phh_state_snapshot, schematic_visual_state_snapshot
 from cell_engine.quantitative.zonation import ZONATION_SOURCES, human_hepatocyte_zonation_snapshot
 from cell_engine.quantitative.homeostasis_v3 import HOMEOSTASIS_V3_SOURCES, human_nutritional_homeostasis_v3_snapshot
+from cell_engine.quantitative.endocrine import ENDOCRINE_SOURCES, human_endocrine_context_snapshot
+from cell_engine.quantitative.published_glucose_model import (
+    PUBLISHED_GLUCOSE_MODEL_SOURCES,
+    published_hepatic_glucose_snapshot,
+)
+from cell_engine.quantitative.published_glucose_lineage import (
+    PUBLISHED_GLUCOSE_LINEAGE_SOURCES,
+    published_glucose_lineage_snapshot,
+)
+from cell_engine.quantitative.published_glucose_external_validation import (
+    PUBLISHED_GLUCOSE_EXTERNAL_VALIDATION_SOURCES,
+    published_glucose_external_validation_snapshot,
+)
+from cell_engine.quantitative.human_validation_protocol import human_mixed_meal_validation_protocol_snapshot
+from cell_engine.quantitative.phh_glucose_validation import (
+    PHH_GLUCOSE_VALIDATION_SOURCES,
+    healthy_phh_glucose_validation_snapshot,
+)
+from cell_engine.quantitative.phh_spheroid_protocol import phh_spheroid_validation_protocol_snapshot
+from cell_engine.quantitative.phh_glucose_observability import (
+    PHH_GLUCOSE_OBSERVABILITY_SOURCES,
+    phh_glucose_observability_snapshot,
+)
+from cell_engine.quantitative.phh_albumin_secretion import (
+    PHH_ALBUMIN_SECRETION_SOURCES,
+    phh_albumin_secretion_snapshot,
+)
+from cell_engine.quantitative.phh_cyp_function import (
+    PHH_CYP_FUNCTION_SOURCES,
+    phh_cyp_function_snapshot,
+)
+from cell_engine.quantitative.phh_biliary_excretion import (
+    PHH_BILIARY_EXCRETION_SOURCES,
+    phh_biliary_excretion_snapshot,
+)
+from cell_engine.quantitative.phh_identity_heterogeneity import (
+    PHH_IDENTITY_HETEROGENEITY_SOURCES,
+    phh_identity_heterogeneity_snapshot,
+)
+from cell_engine.quantitative.phh_proteome_budget import (
+    PHH_PROTEOME_BUDGET_SOURCES,
+    phh_proteome_budget_snapshot,
+)
+from cell_engine.quantitative.phh_transporter_inventory import (
+    PHH_TRANSPORTER_INVENTORY_SOURCES,
+    phh_transporter_inventory_snapshot,
+)
+from cell_engine.quantitative.human_sch_bile_acids import (
+    HUMAN_SCH_BILE_ACID_SOURCES,
+    human_sch_bile_acids_snapshot,
+)
+from cell_engine.stochastic.secretion import SECRETION_SOURCES
 from cell_engine.stochastic.sinusoid import sinusoid_boundary_snapshot, sinusoid_coupled_homeostasis_snapshot
 from cell_engine.validation.model_audit import scientific_model_audit_snapshot
-from cell_engine.validation.hepatic_flux import hepatic_flux_evidence_snapshot
+from cell_engine.validation.hepatic_flux import hepatic_flux_evidence_snapshot, unified_nutritional_context_snapshot
+from cell_engine.validation.evidence_intake import evidence_intake_snapshot
 from cell_engine.validation.reports import build_assumption_report
 from cell_engine.processes.cellular_memory import CELLULAR_MEMORY_SOURCES
 from cell_engine.processes.cellular_response import CELLULAR_RESPONSE_SOURCES
 
 
-def integrated_metabolism_snapshot() -> dict:
+def integrated_metabolism_snapshot(profile_id: PhhNutritionalState) -> dict:
     """Compartment-correct boundary validation, isolated from placeholder pathways."""
-    glucose_target = phh_profile("postabsorptive").pools["glucose_blood"].value_mM
+    profile = phh_profile(profile_id)
+    glucose_pool = profile.pools.get("glucose_blood")
+    if glucose_pool is None:
+        return {
+            "state": profile_id,
+            "validation_scope": "unavailable_no_profile_specific_blood_boundary",
+            "model_role": "missingness_visible_not_zero",
+            "n_in_range": 0,
+            "n_scored": 0,
+            "metabolites": [],
+            "unavailable": [{
+                "species": "glucose",
+                "required_compartment": "blood",
+                "hmdb_id": "HMDB0000122",
+                "reason": f"no source-backed blood glucose target registered for {profile_id}",
+            }],
+            "sinusoid_boundary": sinusoid_coupled_homeostasis_snapshot("midlobular", profile_id),
+        }
+    glucose_target = glucose_pool.value_mM
     scored, unavailable = score_compartment_concentrations(
         {"blood": {"glucose": glucose_target}, "intracellular": {}},
         only=("glucose",) + SCOREABLE_SPECIES,
     )
     return {
-        "state": "postabsorptive",
+        "state": profile_id,
         "validation_scope": "explicit_blood_boundary_only",
         "model_role": "source_boundary_validation_not_integrated_pathway_output",
         "n_in_range": sum(1 for s in scored if s.classification == "in_range"),
@@ -69,7 +152,7 @@ def integrated_metabolism_snapshot() -> dict:
             for s in scored
         ],
         "unavailable": unavailable,
-        "sinusoid_boundary": sinusoid_boundary_snapshot(),
+        "sinusoid_boundary": sinusoid_boundary_snapshot(profile_id),
     }
 
 
@@ -86,6 +169,7 @@ def main() -> None:
     parser.add_argument("--regeneration-species", choices=("rat", "mouse", "human", "unknown"), default="mouse")
     parser.add_argument("--experiment", choices=tuple(CURATED_EXPERIMENTS), default="baseline")
     parser.add_argument("--zone", choices=("periportal", "midlobular", "pericentral"), default="midlobular")
+    parser.add_argument("--nutrition-profile", choices=("fed_peak", "postabsorptive", "prolonged_fasted"), default="postabsorptive")
     parser.add_argument("--require-predictive-release", action="store_true")
     args = parser.parse_args()
 
@@ -95,7 +179,10 @@ def main() -> None:
     state = initial_hepatocyte_state(definition)
     experiment = CURATED_EXPERIMENTS[args.experiment]
     state = apply_scenario(state, experiment)
+    state = replace(state, model_controls={**state.model_controls, "nutrition_profile": args.nutrition_profile})
     state = run_cell(definition, state, dt_s=args.dt, steps=args.steps, rng=EngineRng(definition.stochastic_policy.seed))
+    spatial_world = build_single_hepatocyte_world(time_s=state.elapsed_s)
+    state = apply_spatial_world_to_cell(state, spatial_world, "hepatocyte_primary")
     if args.include_division_demo:
         regeneration_input = HepatocyteRegenerationInput(
             trigger="major_partial_hepatectomy",
@@ -126,7 +213,7 @@ def main() -> None:
     division_params = apply_timing_profile(division_params, division_timing_profile)
     timing = regeneration_timing_profile(species=args.regeneration_species, trigger=regeneration_input.trigger)
     population = run_whole_cell_population(
-        seed_whole_cell_population(definition, fed=True),
+        seed_whole_cell_population(definition, fed=args.nutrition_profile != "prolonged_fasted"),
         args.division_t_end,
         args.division_dt,
         EngineRng(args.division_seed),
@@ -148,11 +235,29 @@ def main() -> None:
                     **CELLULAR_RESPONSE_SOURCES,
                     **ZONATION_SOURCES,
                     **HOMEOSTASIS_V3_SOURCES,
+                    **ENDOCRINE_SOURCES,
+                    **PUBLISHED_GLUCOSE_MODEL_SOURCES,
+                    **PUBLISHED_GLUCOSE_LINEAGE_SOURCES,
+                    **PUBLISHED_GLUCOSE_EXTERNAL_VALIDATION_SOURCES,
+                    **PHH_GLUCOSE_VALIDATION_SOURCES,
+                    **PHH_GLUCOSE_OBSERVABILITY_SOURCES,
+                    **PHH_ALBUMIN_SECRETION_SOURCES,
+                    **PHH_CYP_FUNCTION_SOURCES,
+                    **PHH_BILIARY_EXCRETION_SOURCES,
+                    **PHH_IDENTITY_HETEROGENEITY_SOURCES,
+                    **PHH_PROTEOME_BUDGET_SOURCES,
+                    **PHH_TRANSPORTER_INVENTORY_SOURCES,
+                    **HUMAN_SCH_BILE_ACID_SOURCES,
+                    **SECRETION_SOURCES,
+                    **COMMUNICATION_SOURCES,
+                    **SPATIAL_WORLD_SOURCES,
+                    **BRIAN2_SOURCES,
+                    **GENERATIVE_SOURCES,
                     **phh_baseline.sources,
                 }),
                 "phh_baseline": {
                     **phh_baseline_snapshot(phh_baseline),
-                    **phh_profiles_snapshot(),
+                    **phh_profiles_snapshot(args.nutrition_profile),
                     "scientific_release": scientific_release_snapshot(),
                 },
                 "scientific_audit": scientific_model_audit_snapshot(),
@@ -161,17 +266,40 @@ def main() -> None:
                     "status": "mixed_authority_research_preview",
                     "primary_state_path": "quantitative_state",
                     "schematic_state_path": "pools",
-                    "authoritative_sections": ["quantitative_state", "zonation_state.reference_context", "sinusoid_homeostasis.perfusion_boundary", "nutritional_homeostasis_v3.organ_validation_trajectory", "phh_baseline", "integrated_metabolism", "genome.reference_assembly"],
-                    "schematic_sections": ["pools", "organelles", "stress", "metabolic_fluxes", "pathway_results", "signaling_results", "membrane_state"],
-                    "policy": "quantitative_state wins on overlapping species; relative 0-1 state may drive visualization but cannot support quantitative biological claims.",
+                    "authoritative_sections": ["quantitative_state", "nutritional_context", "endocrine_context.measured_observations", "endocrine_context.causal_glycogen_benchmark", "human_validation_protocol.observations", "healthy_phh_glucose_validation.glucose_consumption_observations", "healthy_phh_glucose_validation.insulin_response_observations", "healthy_phh_glucose_validation.human_scale_bridge", "phh_spheroid_validation_protocol.method_contract", "phh_spheroid_validation_protocol.window_targets", "phh_spheroid_validation_protocol.cumulative_target_trajectories", "phh_spheroid_validation_protocol.overlap_consistency_audits", "phh_glucose_observability.measurement_contract", "phh_glucose_observability.supplemental_constraints", "phh_glucose_observability.quantity_audit", "phh_albumin_secretion.assay_contract", "phh_albumin_secretion.observed_batch_span", "phh_albumin_secretion.measurement_contract", "phh_albumin_secretion.quantity_audit", "phh_cyp_function.assay_contract", "phh_cyp_function.enzymes", "phh_biliary_excretion.assay_contract", "phh_biliary_excretion.batch_records", "phh_biliary_excretion.measurement_contract", "phh_identity_heterogeneity.facs_records", "phh_identity_heterogeneity.scrna_records", "phh_proteome_budget.whole_cell_anchors", "phh_proteome_budget.compartment_protein_mass_fractions", "phh_proteome_budget.derived_compartment_mass_budget", "phh_transporter_inventory.transporters", "human_sch_bile_acids.assay_contract", "human_sch_bile_acids.measurement_contract", "human_sch_bile_acids.conditions", "zonation_state.reference_context", "zonation_state.experimental_oxygen_context", "sinusoid_homeostasis.perfusion_boundary", "nutritional_homeostasis_v3.organ_validation_trajectory", "phh_baseline", "integrated_metabolism", "genome.reference_assembly", "spatial_state", "spatial_world"],
+                    "runtime_authoritative_sections": ["spatial_state", "spatial_world"],
+                    "shadow_sections": ["healthy_phh_glucose_validation.contextual_organ_to_cell_conversion", "published_glucose_model.profile_projection", "published_glucose_model.shadow_flux_prediction", "published_glucose_lineage", "published_glucose_external_validation", "intercellular_communication", "brian2_communication", "generative_modeling"],
+                    "schematic_sections": ["pools", "organelles", "stress", "metabolic_fluxes", "pathway_results", "signaling_results", "membrane_state", "intercellular_communication.reference_cells"],
+                    "policy": "quantitative_state wins on overlapping species; spatial_world wins on runtime geometry; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
                 },
-                "quantitative_state": quantitative_phh_state_snapshot("postabsorptive"),
+                "quantitative_state": quantitative_phh_state_snapshot(args.nutrition_profile),
                 "zonation_state": human_hepatocyte_zonation_snapshot(args.zone),
-                "sinusoid_homeostasis": sinusoid_coupled_homeostasis_snapshot(args.zone),
+                "sinusoid_homeostasis": sinusoid_coupled_homeostasis_snapshot(args.zone, args.nutrition_profile),
                 "nutritional_homeostasis_v3": human_nutritional_homeostasis_v3_snapshot(args.zone),
                 "hepatic_flux_evidence": hepatic_flux_evidence_snapshot(),
+                "nutritional_context": unified_nutritional_context_snapshot(args.nutrition_profile),
+                "endocrine_context": human_endocrine_context_snapshot(args.nutrition_profile),
+                "human_validation_protocol": human_mixed_meal_validation_protocol_snapshot(),
+                "healthy_phh_glucose_validation": healthy_phh_glucose_validation_snapshot(),
+                "phh_spheroid_validation_protocol": phh_spheroid_validation_protocol_snapshot(),
+                "phh_glucose_observability": phh_glucose_observability_snapshot(),
+                "phh_albumin_secretion": phh_albumin_secretion_snapshot(),
+                "phh_cyp_function": phh_cyp_function_snapshot(),
+                "phh_biliary_excretion": phh_biliary_excretion_snapshot(),
+                "phh_identity_heterogeneity": phh_identity_heterogeneity_snapshot(),
+                "phh_proteome_budget": phh_proteome_budget_snapshot(),
+                "phh_transporter_inventory": phh_transporter_inventory_snapshot(),
+                "human_sch_bile_acids": human_sch_bile_acids_snapshot(),
+                "evidence_intake": evidence_intake_snapshot(),
+                "published_glucose_model": published_hepatic_glucose_snapshot(args.nutrition_profile),
+                "published_glucose_lineage": published_glucose_lineage_snapshot(),
+                "published_glucose_external_validation": published_glucose_external_validation_snapshot(),
+                "spatial_world": spatial_world_snapshot(spatial_world),
+                "intercellular_communication": hepatocyte_communication_snapshot(spatial_world),
+                "brian2_communication": brian2_communication_snapshot(),
+                "generative_modeling": generative_modeling_snapshot(),
                 "schematic_visual_state": schematic_visual_state_snapshot(tuple(sorted(definition.pool_ids))),
-                "integrated_metabolism": integrated_metabolism_snapshot(),
+                "integrated_metabolism": integrated_metabolism_snapshot(args.nutrition_profile),
                 "experiment": {
                     "id": experiment.id,
                     "description": experiment.description,

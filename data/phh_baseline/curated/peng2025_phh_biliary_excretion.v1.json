@@ -1,0 +1,96 @@
+{
+  "schema_version": "cell.phh-biliary-excretion.v1",
+  "date_verified": "2026-07-14",
+  "status": "source_backed_batch_resolved_measurement_operator_identifiability_gated",
+  "source_artifact": {
+    "source_id": "peng2025_phh_quality_attributes",
+    "supplement_filename": "13619_2025_258_MOESM1_ESM.docx",
+    "supplement_md5": "cf6103b084c236f3fedf2f30e548559e",
+    "supplement_sha256": "deeb835fe82d7e0e883447268354b9abb8f3ca4950639be3b68b802d3c6183bf",
+    "source_tables": ["Table S6", "Table S7"]
+  },
+  "assay_contract": {
+    "species": "Homo sapiens",
+    "biological_system": "cryopreserved_commercial_primary_human_hepatocytes",
+    "culture_format": "collagen_I_matrigel_sandwich_24_well",
+    "seeded_cells_per_well": 250000,
+    "culture_medium": "OptiCulture hepatocyte medium XenoTech K8300",
+    "matrigel_percent": 2.0,
+    "culture_duration_days": 5,
+    "temperature_c": 37.0,
+    "co2_percent": 5.0,
+    "preincubation_duration_min": 15.0,
+    "probe": "d8_taurocholate",
+    "probe_concentration_uM": 5.0,
+    "probe_incubation_duration_min": 15.0,
+    "paired_conditions": ["calcium_containing_HBSS", "calcium_free_HBSS"],
+    "instrument": "LC-MS",
+    "measured_quantity": "intracellular_assay_d8_TCA_concentration_under_each_condition",
+    "reported_unit": "percent"
+  },
+  "measurement_contract": {
+    "required_inputs": ["A_Ca", "A_CaFree"],
+    "input_unit_constraint": "same_nonnegative_concentration_unit",
+    "denominator_constraint": "A_Ca_must_be_positive",
+    "operator_formula": "BEI_percent=(A_Ca-A_CaFree)/A_Ca*100",
+    "output_quantity": "biliary_excretion_index",
+    "output_unit": "percent"
+  },
+  "batch_records": [
+    {"batch_id": "PHH393", "bei_percent": 27.2},
+    {"batch_id": "PHH396", "bei_percent": 27.5},
+    {"batch_id": "PHH416", "bei_percent": 25.7},
+    {"batch_id": "PHH005", "bei_percent": 62.0},
+    {"batch_id": "PHH910", "bei_percent": 59.0}
+  ],
+  "product_quality_criterion": {
+    "authority": "T_CSCB_0008_2021_group_standard",
+    "source_id": "peng2022_phh_requirements_standard",
+    "threshold_percent": 30.0,
+    "comparison": "greater_than_or_equal",
+    "role": "source_reported_commercial_phh_product_quality_criterion",
+    "may_be_used_as_model_pass_threshold": false
+  },
+  "quantity_audit": [
+    {"id": "paired_condition_BEI", "identified_from_current_assay": true, "mechanism_specific": false, "may_fit_kinetic_parameter": false},
+    {"id": "basolateral_d8_TCA_uptake_rate", "identified_from_current_assay": false, "mechanism_specific": true, "may_fit_kinetic_parameter": false},
+    {"id": "BSEP_canalicular_export_rate", "identified_from_current_assay": false, "mechanism_specific": true, "may_fit_kinetic_parameter": false},
+    {"id": "intracellular_d8_TCA_binding_or_loss_rate", "identified_from_current_assay": false, "mechanism_specific": true, "may_fit_kinetic_parameter": false},
+    {"id": "canalicular_network_volume_and_sealing", "identified_from_current_assay": false, "mechanism_specific": true, "may_fit_kinetic_parameter": false}
+  ],
+  "required_measurements": [
+    {
+      "id": "paired_raw_d8_TCA_records",
+      "requirements": ["A_Ca and A_CaFree values", "replicate-level values and replicate class", "LLOQ", "cell recovery and viability", "extraction volume"],
+      "purpose": "Audit the published ratio and uncertainty rather than retaining BEI alone."
+    },
+    {
+      "id": "transporter_resolved_flux",
+      "requirements": ["time-resolved extracellular and intracellular d8-TCA", "canalicular compartment readout", "selective uptake and BSEP perturbations", "surface transporter abundance"],
+      "purpose": "Separate uptake, intracellular handling and canalicular export."
+    },
+    {
+      "id": "canalicular_geometry_and_barrier",
+      "requirements": ["canalicular volume", "network connectivity", "junction integrity", "matched fluorescence or imaging time course"],
+      "purpose": "Distinguish transporter activity from sandwich-culture geometry and calcium-sensitive sealing."
+    }
+  ],
+  "gates": {
+    "individual_batch_table_loaded": true,
+    "measurement_operator_ready": true,
+    "raw_paired_condition_values_loaded": false,
+    "transporter_specific_rate_fit_ready": false,
+    "canalicular_geometry_coupling_ready": false,
+    "automatic_state_coupling": false,
+    "model_pass_threshold_defined": false,
+    "predictive_ready": false
+  },
+  "source_ids": ["peng2025_phh_quality_attributes", "peng2022_phh_requirements_standard"],
+  "limitations": [
+    "The five commercial PHH batches are not a healthy in-vivo population reference interval.",
+    "Only derived BEI percentages are published in Table S7; paired A_Ca and A_CaFree values and uncertainty are unavailable.",
+    "BEI combines uptake, intracellular retention, canalicular export, canalicular geometry and calcium-sensitive junction behavior.",
+    "The assay does not isolate a BSEP turnover rate or active surface copy number.",
+    "The CSCB 30 percent criterion is a PHH product-quality criterion, not a simulation pass threshold."
+  ]
+}

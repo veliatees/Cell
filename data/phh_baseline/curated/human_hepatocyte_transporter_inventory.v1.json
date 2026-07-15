@@ -1,0 +1,124 @@
+{
+  "schema_version": "cell.phh-transporter-inventory.v1",
+  "status": "one_same_cohort_total_copy_bridge_with_surface_localization_blocked",
+  "date_verified": "2026-07-14",
+  "source_artifacts": [
+    {
+      "source_id": "human_hepatocyte_proteome_2016",
+      "title": "In-depth quantitative analysis and comparison of the human hepatocyte and hepatoma cell line HepG2 proteomes",
+      "url": "https://doi.org/10.1016/j.jprot.2016.01.016",
+      "source_role": "same_cohort_BSEP_abundance_and_total_protein_mass"
+    },
+    {
+      "source_id": "human_mrp2_abundance_2012",
+      "title": "Interindividual variability in hepatic expression of the multidrug resistance-associated protein 2 (MRP2/ABCC2)",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3336801/",
+      "source_role": "human_liver_membrane_fraction_MRP2_abundance"
+    }
+  ],
+  "transporters": [
+    {
+      "id": "ABCB11_BSEP",
+      "gene": "ABCB11",
+      "protein": "BSEP",
+      "physiological_location": "canalicular_apical_plasma_membrane",
+      "abundance": {
+        "value": 1.4,
+        "sd": null,
+        "unit": "pmol_per_mg_total_protein",
+        "biological_system": "purified_primary_human_hepatocytes_from_seven_surgical_resection_donors",
+        "denominator": "total_cellular_protein",
+        "source_id": "human_hepatocyte_proteome_2016"
+      },
+      "matched_denominator_bridge": {
+        "total_protein_pg_per_cell": 600.0,
+        "total_protein_source_id": "human_hepatocyte_proteome_2016",
+        "avogadro_per_mol": 6.02214076e23,
+        "formula": "copies_per_cell=abundance_pmol_per_mg*(1e-12_mol_per_pmol)*total_protein_pg_per_cell*(1e-9_mg_per_pg)*avogadro_per_mol",
+        "derived_total_copies_per_cell": 505859.82384,
+        "display_precision_total_copies_per_cell": 510000,
+        "evidence_role": "same_cohort_arithmetic_derivation"
+      },
+      "canalicular_surface_copies_per_cell": null,
+      "transport_active_copies_per_cell": null,
+      "surface_density_copies_per_um2": null
+    },
+    {
+      "id": "ABCC2_MRP2",
+      "gene": "ABCC2",
+      "protein": "MRP2",
+      "physiological_location": "canalicular_apical_plasma_membrane",
+      "abundance": {
+        "value": 1.54,
+        "sd": 0.64,
+        "unit": "fmol_per_ug_liver_membrane_protein",
+        "biological_system": "human_liver_tissue_membrane_fraction_from_51_donors",
+        "denominator": "isolated_liver_membrane_fraction_protein",
+        "source_id": "human_mrp2_abundance_2012"
+      },
+      "exact_unit_equivalent": {
+        "value": 1.54,
+        "sd": 0.64,
+        "unit": "pmol_per_mg_liver_membrane_protein"
+      },
+      "matched_denominator_bridge": null,
+      "total_copies_per_hepatocyte": null,
+      "canalicular_surface_copies_per_cell": null,
+      "transport_active_copies_per_cell": null,
+      "surface_density_copies_per_um2": null
+    }
+  ],
+  "required_measurements": [
+    {
+      "id": "canalicular_surface_localized_transporter_copies",
+      "requirements": [
+        "hepatocyte-resolved BSEP and MRP2 surface abundance",
+        "canalicular versus intracellular fraction",
+        "matched donor, state, viability, and uncertainty"
+      ],
+      "purpose": "convert total protein abundance into surface-localized transporter inventory"
+    },
+    {
+      "id": "active_transporter_fraction",
+      "requirements": [
+        "transport-competent fraction",
+        "ATP and substrate context",
+        "matched time-resolved flux"
+      ],
+      "purpose": "separate protein presence from active transport capacity"
+    },
+    {
+      "id": "canalicular_area",
+      "requirements": [
+        "canalicular membrane area per hepatocyte",
+        "matched morphology and culture context",
+        "uncertainty"
+      ],
+      "purpose": "derive a surface density rather than a visually enlarged protein count"
+    }
+  ],
+  "gates": {
+    "bsep_total_copy_bridge_ready": true,
+    "bsep_surface_copy_bridge_ready": false,
+    "bsep_active_copy_bridge_ready": false,
+    "mrp2_total_copy_bridge_ready": false,
+    "mrp2_surface_copy_bridge_ready": false,
+    "surface_density_ready": false,
+    "flux_coupling_ready": false,
+    "individual_protein_rendering_permitted": false,
+    "automatic_state_coupling": false,
+    "predictive_ready": false
+  },
+  "source_ids": [
+    "human_hepatocyte_proteome_2016",
+    "human_mrp2_abundance_2012"
+  ],
+  "limitations": [
+    "The derived BSEP count is total cellular BSEP in an average seven-donor reference hepatocyte, not canalicular surface-localized or transport-active BSEP.",
+    "No uncertainty was published for the source headline BSEP abundance or total-protein-per-cell value, so the arithmetic result has no defensible propagated interval.",
+    "The MRP2 denominator is protein in an isolated human-liver membrane fraction, not total protein per purified hepatocyte.",
+    "The MRP2 tissue fraction can include multiple membrane pools and cell types; it cannot be multiplied by the PHH total-protein mass.",
+    "Neither source identifies canalicular membrane area, transporter surface density, active fraction, turnover, or whole-cell flux.",
+    "Individual BSEP and MRP2 molecules remain far below the scene scale and must not be represented as literal count-matched visible objects."
+  ]
+}

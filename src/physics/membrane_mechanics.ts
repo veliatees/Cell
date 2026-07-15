@@ -1,39 +1,28 @@
-// Source-bounded whole-cell plasma-membrane surface model.
+// Coarse whole-cell plasma-membrane geometry.
 //
-// The visible hepatocyte scene is a 10 um-scale surface, not a molecular bilayer
-// patch. At this scale, individual 100-200 nm endocytic pits are below render
-// resolution, and a real plasma membrane cannot elastically balloon by 10%+.
-// Therefore the production renderer treats the membrane as a radial graph over
-// the rest sphere and enforces source-backed geometric bounds:
-//   - lipid bilayers are nearly area-incompressible; micropipette aspiration
-//     measurements put elastic stretch before failure at only a few percent
-//     (Needham & Nunn, Biophys J 1990; Rawicz et al., Biophys J 2000),
-//   - local clathrin/caveolar buds are nanoscopic relative to a whole hepatocyte
-//     (~100-200 nm vs ~10 um radius), so whole-cell radial deviations are capped
-//     at the corresponding percent-scale depth.
+// This mesh is an Eulerian shape coordinate at micrometre scale, not a lattice
+// of lipid molecules and not a calibrated healthy-PHH rheology solver. Molecular
+// fluidity lives in the membrane material contract and in the nanometre membrane
+// scene. At whole-cell scale this module does only three auditable jobs:
+//   1. keep one closed, non-inverted render surface;
+//   2. preserve enclosed volume and cap direct resolved-area growth;
+//   3. consume engine-authoritative kinematic contact deformation.
 //
-// Dynamics are OVERDAMPED (the cell is deep in the low-Reynolds regime — inertia
-// is negligible), but the stiffness numbers below are dimensionless solver gains,
-// not measured physical constants. The measured constraints are the area/radial
-// bounds, and the code is careful not to present solver gains as biology.
-
-export type MembraneEventKind = "endocytosis" | "exocytosis";
-
-export type MembraneEvent = {
-  kind: MembraneEventKind;
-  dir: [number, number, number]; // unit direction of the patch centre
-  t: number; // 0..1 life progress
-  duration: number; // seconds (sim)
-  radius: number; // angular patch radius (cos threshold)
-  strength: number; // spontaneous-curvature drive magnitude
-  budded: boolean; // endocytosis: has the vesicle pinched off yet
-};
+// The 1% area cap below is an engineering guard derived from cross-system human
+// red-cell failure evidence. It is not a PHH stretch, rupture, tension, bending,
+// viscosity or time parameter. Local folds, buds, membrane reservoirs and
+// topology changes remain disabled until their inputs are identified.
 
 export type MembraneSim = {
   n: number; // vertex count
   radius: number;
   pos: Float32Array; // 3n current positions
-  restDir: Float32Array; // 3n immutable outward directions; prevents surface fold-over
+  restPos: Float32Array; // 3n immutable geometric reference; not lipid identities
+  // Eulerian surface-coordinate directions. Lipids/proteins are separate surface
+  // tracers, so keeping this parameterization stable does not make the material rigid.
+  restDir: Float32Array;
+  restRadius: Float32Array; // per-vertex radius of the closed rest surface
+  restShape: "sphere" | "canonical_hepatocyte_polyhedron";
   vel: Float32Array; // 3n (kept for optional light inertia / diagnostics)
   force: Float32Array; // 3n scratch
   faces: Int32Array; // 3f
@@ -50,26 +39,18 @@ export type MembraneSim = {
   vertFaceList: Int32Array;
   a0: number; // rest surface area
   v0: number; // rest enclosed volume
-  events: MembraneEvent[];
-  // Dimensionless numerical gains. These are not biological parameters.
+  // Dimensionless mesh-repair gains. These are not biological parameters.
   kStretch: number;
   kBend: number;
   kVolume: number;
-  kEvent: number;
   gamma: number;
 };
 
-// Lipid bilayers tolerate only a few percent elastic area dilation before failure.
-// We use 3% as a conservative visible-scene cap, sourced from micropipette
-// aspiration bilayer mechanics (Needham & Nunn 1990; Rawicz et al. 2000).
-export const MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT = 0.03;
+// Evans et al. reported 2-4% human red-cell membrane area expansion at lysis.
+// One percent is an explicit cross-system engineering cap, half the lower
+// failure bound. It is conservative, but it is not a PHH rheology measurement.
+export const MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT = 0.01;
 
-// 100-200 nm endocytic pits over a representative 10 um hepatocyte radius are
-// order 1-2% of radius. This cap keeps whole-cell deformations in that regime.
-export const MEMBRANE_WHOLE_CELL_RADIAL_DEVIATION_LIMIT = 0.015;
-
-const MEMBRANE_RADIAL_MAX = Math.sqrt(1 + MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT);
-const MEMBRANE_RADIAL_MIN = 1 - MEMBRANE_WHOLE_CELL_RADIAL_DEVIATION_LIMIT;
 const AREA_CORRECTION_ITERS = 9;
 
 // ---- Icosphere construction -------------------------------------------------
@@ -121,16 +102,43 @@ function buildIcosphere(radius: number, subdiv: number): { pos: number[]; faces:
 
 // ---- Topology: edges with opposite vertices, vertex→faces (CSR) --------------
 
-export function createMembraneSim(radius: number, subdiv = 3): MembraneSim {
+function canonicalHepatocyteRadius(radius: number, x: number, y: number, z: number): number {
+  // A regular truncated octahedron has volume 32*s^3 in the coordinate form
+  // |x|<=2s and |x|+|y|+|z|<=3s. Choose s so its volume equals the sphere
+  // represented by `radius`; no fitted shape coefficient is introduced.
+  const scale = Math.cbrt(((4 / 3) * Math.PI * radius ** 3) / 32);
+  const ax = Math.abs(x), ay = Math.abs(y), az = Math.abs(z);
+  return Math.min(
+    ax > 1e-12 ? (2 * scale) / ax : Infinity,
+    ay > 1e-12 ? (2 * scale) / ay : Infinity,
+    az > 1e-12 ? (2 * scale) / az : Infinity,
+    (3 * scale) / Math.max(ax + ay + az, 1e-12)
+  );
+}
+
+function createMembraneSimWithRestShape(
+  radius: number,
+  subdiv: number,
+  restShape: MembraneSim["restShape"]
+): MembraneSim {
   const ico = buildIcosphere(radius, subdiv);
   const n = ico.pos.length / 3;
   const pos = new Float32Array(ico.pos);
   const restDir = new Float32Array(pos.length);
+  const restRadius = new Float32Array(n);
   for (let i = 0; i < pos.length; i += 3) {
     const L = Math.hypot(pos[i], pos[i + 1], pos[i + 2]) || 1;
     restDir[i] = pos[i] / L;
     restDir[i + 1] = pos[i + 1] / L;
     restDir[i + 2] = pos[i + 2] / L;
+    const vertex = i / 3;
+    const localRadius = restShape === "canonical_hepatocyte_polyhedron"
+      ? canonicalHepatocyteRadius(radius, restDir[i], restDir[i + 1], restDir[i + 2])
+      : radius;
+    restRadius[vertex] = localRadius;
+    pos[i] = restDir[i] * localRadius;
+    pos[i + 1] = restDir[i + 1] * localRadius;
+    pos[i + 2] = restDir[i + 2] * localRadius;
   }
   const faces = new Int32Array(ico.faces);
   const nf = faces.length / 3;
@@ -185,7 +193,10 @@ export function createMembraneSim(radius: number, subdiv = 3): MembraneSim {
   const sim: MembraneSim = {
     n, radius,
     pos,
+    restPos: new Float32Array(pos),
     restDir,
+    restRadius,
+    restShape,
     vel: new Float32Array(n * 3),
     force: new Float32Array(n * 3),
     faces,
@@ -196,13 +207,11 @@ export function createMembraneSim(radius: number, subdiv = 3): MembraneSim {
     vertFaceStart, vertFaceList,
     a0: 0,
     v0: 0,
-    events: [],
-    // Dimensionless solver gains. Geometry is bounded by measured area/radius
-    // constraints below; these gains only control numerical relaxation.
+    // Dimensionless solver gains. They only repair mesh quality and do not
+    // represent membrane stiffness, bending modulus, pressure or viscosity.
     kStretch: 8.0,
     kBend: 6.0,
     kVolume: 8.0,
-    kEvent: 5.0,
     gamma: 1.0,
   };
   for (let e = 0; e < ne; e += 1) { sim.degree[edgeA[e]] += 1; sim.degree[edgeB[e]] += 1; }
@@ -211,6 +220,22 @@ export function createMembraneSim(radius: number, subdiv = 3): MembraneSim {
   computeLaplacian(sim, sim.restLap); // rest-shape reference (spontaneous curvature)
   computeNormals(sim);
   return sim;
+}
+
+export function createMembraneSim(radius: number, subdiv = 3): MembraneSim {
+  return createMembraneSimWithRestShape(radius, subdiv, "sphere");
+}
+
+export function createHepatocyteMembraneSim(radius: number, subdiv = 3): MembraneSim {
+  return createMembraneSimWithRestShape(radius, subdiv, "canonical_hepatocyte_polyhedron");
+}
+
+export function membraneRestRadiusAlongDirection(sim: MembraneSim, x: number, y: number, z: number): number {
+  const length = Math.hypot(x, y, z) || 1;
+  const nx = x / length, ny = y / length, nz = z / length;
+  return sim.restShape === "canonical_hepatocyte_polyhedron"
+    ? canonicalHepatocyteRadius(sim.radius, nx, ny, nz)
+    : sim.radius;
 }
 
 // ---- Geometry helpers -------------------------------------------------------
@@ -254,14 +279,21 @@ export function membraneGeometryMetrics(sim: MembraneSim): {
   volumeRatio: number;
   minRadius: number;
   maxRadius: number;
+  minRestRadiusRatio: number;
+  maxRestRadiusRatio: number;
   invertedFaces: number;
 } {
   let minRadius = Infinity;
   let maxRadius = 0;
+  let minRestRadiusRatio = Infinity;
+  let maxRestRadiusRatio = 0;
   for (let v = 0; v < sim.n; v += 1) {
     const r = Math.hypot(sim.pos[v * 3], sim.pos[v * 3 + 1], sim.pos[v * 3 + 2]);
     minRadius = Math.min(minRadius, r);
     maxRadius = Math.max(maxRadius, r);
+    const ratio = r / sim.restRadius[v];
+    minRestRadiusRatio = Math.min(minRestRadiusRatio, ratio);
+    maxRestRadiusRatio = Math.max(maxRestRadiusRatio, ratio);
   }
   let invertedFaces = 0;
   const { pos, faces } = sim;
@@ -284,8 +316,51 @@ export function membraneGeometryMetrics(sim: MembraneSim): {
     volumeRatio: volume / sim.v0,
     minRadius,
     maxRadius,
+    minRestRadiusRatio,
+    maxRestRadiusRatio,
     invertedFaces
   };
+}
+
+/**
+ * Apply an engine-authoritative, volume-preserving affine contact shape.
+ *
+ * This is a geometric mapping, not a force or relaxation-time law. The axial
+ * scale must come from an external contact solver whose evidence boundary is
+ * serialized with the engine snapshot. Every bound surface tracer follows the
+ * resulting triangles through barycentric coordinates.
+ */
+export function applyVolumePreservingAffineContactShape(
+  sim: MembraneSim,
+  normal: readonly [number, number, number],
+  axialScale: number
+): void {
+  if (!Number.isFinite(axialScale) || axialScale <= 0 || axialScale > 1) {
+    throw new Error("axialScale must be finite and in (0, 1]");
+  }
+  const length = Math.hypot(normal[0], normal[1], normal[2]);
+  if (!Number.isFinite(length) || length <= 1e-12) throw new Error("contact normal must be non-zero");
+  const nx = normal[0] / length;
+  const ny = normal[1] / length;
+  const nz = normal[2] / length;
+  const tangentialScale = 1 / Math.sqrt(axialScale);
+  for (let vertex = 0; vertex < sim.n; vertex += 1) {
+    const index = vertex * 3;
+    const rx = sim.restPos[index];
+    const ry = sim.restPos[index + 1];
+    const rz = sim.restPos[index + 2];
+    const parallel = rx * nx + ry * ny + rz * nz;
+    sim.pos[index] = tangentialScale * rx + (axialScale - tangentialScale) * parallel * nx;
+    sim.pos[index + 1] = tangentialScale * ry + (axialScale - tangentialScale) * parallel * ny;
+    sim.pos[index + 2] = tangentialScale * rz + (axialScale - tangentialScale) * parallel * nz;
+  }
+  computeNormals(sim);
+}
+
+export function restoreMembraneRestShape(sim: MembraneSim): void {
+  sim.pos.set(sim.restPos);
+  sim.vel.fill(0);
+  computeNormals(sim);
 }
 
 // Umbrella (uniform-weight) Laplacian: L_i = (1/deg_i) Σ_{j~i} (x_j − x_i). This
@@ -338,7 +413,8 @@ export function stepMembrane(sim: MembraneSim, dt: number): void {
   const { n, pos, force, edgeA, edgeB, restLen, restLap, normals } = sim;
   force.fill(0);
 
-  // 1) Stretch / area elasticity → membrane tension (stiff, near-inextensible).
+  // 1) Edge-length regularization keeps the Eulerian triangulation usable. It is
+  //    a mesh-quality term, not a lipid spring network or membrane shear modulus.
   for (let e = 0; e < edgeA.length; e += 1) {
     const a = edgeA[e], b = edgeB[e];
     const dx = pos[b * 3] - pos[a * 3];
@@ -350,8 +426,8 @@ export function stepMembrane(sim: MembraneSim, dt: number): void {
     force[b * 3] -= f * dx; force[b * 3 + 1] -= f * dy; force[b * 3 + 2] -= f * dz;
   }
 
-  // 2) Helfrich bending → penalise deviation of the mean-curvature vector from the
-  //    spontaneous-curvature reference (rest sphere, shifted locally by events).
+  // 2) Curvature regularization restores a numerically damaged rest mesh. The
+  //    gain is not the healthy-PHH Helfrich bending modulus, which remains null.
   if (_lap.arr.length !== n * 3) _lap.arr = new Float32Array(n * 3);
   const lap = _lap.arr;
   computeLaplacian(sim, lap);
@@ -359,27 +435,6 @@ export function stepMembrane(sim: MembraneSim, dt: number): void {
     force[i] -= sim.kBend * (lap[i] - restLap[i]);
   }
 
-  // 2b) Endo/exocytosis: a coat-driven bud on a patch. Modelled as a bounded spring
-  //     that pulls the patch toward a target radial offset (inward pit for endo,
-  //     outward bulge for exo) — SELF-LIMITING, so it forms a dimple of set depth
-  //     and heals, never collapsing to the centre.
-  for (const ev of sim.events) {
-    const [dx, dy, dz] = ev.dir;
-    const env = Math.sin(Math.PI * Math.min(1, ev.t)); // ramp up then heal
-    const sign = ev.kind === "endocytosis" ? -1 : 1; // inward vs outward
-    const targetOffset = sign * ev.strength * sim.radius * env; // world units
-    for (let v = 0; v < n; v += 1) {
-      const x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2];
-      const r = Math.hypot(x, y, z) || 1e-9;
-      const c = (x * dx + y * dy + z * dz) / r; // cosine to patch centre
-      if (c <= ev.radius) continue;
-      const w = (c - ev.radius) / (1 - ev.radius); // 0..1 across the patch
-      const want = sim.radius + targetOffset * w * w; // desired radius here
-      const f = sim.kEvent * (want - r); // spring toward the target radius
-      const nx = x / r, ny = y / r, nz = z / r;
-      force[v * 3] += f * nx; force[v * 3 + 1] += f * ny; force[v * 3 + 2] += f * nz;
-    }
-  }
   computeNormals(sim);
 
   // 3) Volume conservation → incompressible cytoplasm (nearly rigid pressure).
@@ -419,18 +474,32 @@ export function stepMembrane(sim: MembraneSim, dt: number): void {
 function enforceWholeCellMembraneGeometry(sim: MembraneSim): void {
   projectToRadialShell(sim);
   capElasticSurfaceArea(sim);
+  projectEnclosedVolume(sim);
+  capElasticSurfaceArea(sim);
+}
+
+function projectEnclosedVolume(sim: MembraneSim): void {
+  const volume = enclosedVolume(sim);
+  if (!Number.isFinite(volume) || volume <= 1e-12) {
+    sim.pos.set(sim.restPos);
+    return;
+  }
+  const scale = Math.cbrt(sim.v0 / volume);
+  if (!Number.isFinite(scale)) return;
+  for (let index = 0; index < sim.pos.length; index += 1) sim.pos[index] *= scale;
 }
 
 function projectToRadialShell(sim: MembraneSim): void {
-  const { n, pos, restDir, radius } = sim;
-  const minR = radius * MEMBRANE_RADIAL_MIN;
-  const maxR = radius * MEMBRANE_RADIAL_MAX;
+  const { n, pos, restDir, restRadius } = sim;
   for (let v = 0; v < n; v += 1) {
     const i = v * 3;
     const dx = restDir[i], dy = restDir[i + 1], dz = restDir[i + 2];
+    const localRest = restRadius[v];
     let r = pos[i] * dx + pos[i + 1] * dy + pos[i + 2] * dz;
-    if (!Number.isFinite(r)) r = radius;
-    r = Math.min(maxR, Math.max(minR, r));
+    if (!Number.isFinite(r)) r = localRest;
+    // Positive-radius projection is only a coarse-renderer non-inversion guard.
+    // It is not a biological lower or upper deformation limit.
+    r = Math.max(localRest * 1.0e-6, r);
     pos[i] = dx * r;
     pos[i + 1] = dy * r;
     pos[i + 2] = dz * r;
@@ -442,10 +511,10 @@ function capElasticSurfaceArea(sim: MembraneSim): void {
   if (membraneSurfaceArea(sim) <= maxArea) return;
 
   const deviations = sim.force; // scratch: first n entries store radial deviation
-  const { n, pos, restDir, radius } = sim;
+  const { n, pos, restDir, restRadius } = sim;
   for (let v = 0; v < n; v += 1) {
     const i = v * 3;
-    deviations[v] = Math.hypot(pos[i], pos[i + 1], pos[i + 2]) - radius;
+    deviations[v] = Math.hypot(pos[i], pos[i + 1], pos[i + 2]) - restRadius[v];
   }
 
   let lo = 0;
@@ -465,35 +534,12 @@ function capElasticSurfaceArea(sim: MembraneSim): void {
 }
 
 function writeRadialDeviationScale(sim: MembraneSim, deviations: Float32Array, scale: number): void {
-  const { n, pos, restDir, radius } = sim;
+  const { n, pos, restDir, restRadius } = sim;
   for (let v = 0; v < n; v += 1) {
     const i = v * 3;
-    const r = radius + deviations[v] * scale;
+    const r = restRadius[v] + deviations[v] * scale;
     pos[i] = restDir[i] * r;
     pos[i + 1] = restDir[i + 1] * r;
     pos[i + 2] = restDir[i + 2] * r;
   }
-}
-
-// ---- Events ------------------------------------------------------------------
-
-export function spawnMembraneEvent(sim: MembraneSim, kind: MembraneEventKind, rand: () => number): void {
-  // random unit direction
-  let x = rand() * 2 - 1, y = rand() * 2 - 1, z = rand() * 2 - 1;
-  const L = Math.hypot(x, y, z) || 1;
-  x /= L; y /= L; z /= L;
-  sim.events.push({
-    kind,
-    dir: [x, y, z],
-    t: 0,
-    duration: 2.2 + rand() * 1.8, // visual solver lifetime, not a biological rate
-    radius: Math.cos(MEMBRANE_WHOLE_CELL_RADIAL_DEVIATION_LIMIT),
-    strength: MEMBRANE_WHOLE_CELL_RADIAL_DEVIATION_LIMIT * (0.55 + rand() * 0.35),
-    budded: false,
-  });
-}
-
-export function advanceMembraneEvents(sim: MembraneSim, dt: number): void {
-  for (const ev of sim.events) ev.t += dt / ev.duration;
-  sim.events = sim.events.filter((ev) => ev.t < 1);
 }

@@ -7,6 +7,7 @@ from cell_engine.stochastic.sinusoid import (
     HUMAN_LIVER_MEAN_TRANSIT_TIME_S,
     build_sinusoid_coupled_homeostasis,
     glucose_boundary_concentration_mM,
+    sinusoid_coupled_homeostasis_snapshot,
 )
 
 
@@ -31,6 +32,13 @@ class SinusoidCoupledHomeostasisTests(unittest.TestCase):
             self.assertEqual(active, ["blood_perfusion_replacement"])
             self.assertIsNone(state.blood_to_cell_exchange_flux)
             self.assertIsNone(state.zonal_oxygen_partial_pressure)
+
+    def test_profiles_without_blood_target_are_explicitly_blocked(self) -> None:
+        for profile in ("fed_peak", "prolonged_fasted"):
+            snapshot = sinusoid_coupled_homeostasis_snapshot("midlobular", profile)
+            self.assertEqual(snapshot["status"], "blocked_no_profile_specific_blood_target")
+            self.assertIsNone(snapshot["target_glucose_mM"])
+            self.assertEqual(snapshot["boundary_recovery_trace"], ())
 
 
 if __name__ == "__main__":

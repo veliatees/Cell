@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  advanceMembraneEvents,
+  applyVolumePreservingAffineContactShape,
+  createHepatocyteMembraneSim,
   createMembraneSim,
   MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT,
-  MEMBRANE_WHOLE_CELL_RADIAL_DEVIATION_LIMIT,
   membraneGeometryMetrics,
-  spawnMembraneEvent,
   stepMembrane
 } from "./membrane_mechanics";
 
@@ -31,28 +30,59 @@ describe("whole-cell membrane mechanics", () => {
     const metrics = membraneGeometryMetrics(sim);
     expect(metrics.invertedFaces).toBe(0);
     expect(metrics.areaRatio).toBeLessThanOrEqual(1 + MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT + 1e-4);
-    expect(metrics.minRadius).toBeGreaterThanOrEqual(sim.radius * (1 - MEMBRANE_WHOLE_CELL_RADIAL_DEVIATION_LIMIT) - 1e-4);
-    expect(metrics.maxRadius).toBeLessThanOrEqual(sim.radius * Math.sqrt(1 + MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT) + 1e-4);
+    expect(metrics.volumeRatio).toBeCloseTo(1, 3);
   });
 
-  it("does not accumulate excess area or inverted faces over a long run", () => {
+  it("does not accumulate excess area or inverted faces under repeated numerical perturbation", () => {
     const sim = createMembraneSim(14, 3);
-    let seed = 17;
-    const rand = () => {
-      seed = (seed * 1664525 + 1013904223) >>> 0;
-      return seed / 0xffffffff;
-    };
 
     for (let i = 0; i < 900; i += 1) {
-      if (i % 90 === 0) spawnMembraneEvent(sim, i % 180 === 0 ? "endocytosis" : "exocytosis", rand);
+      if (i % 90 === 0) {
+        for (let vertex = 0; vertex < sim.n; vertex += 1) {
+          const index = vertex * 3;
+          const phase = Math.sin(vertex * 0.73 + i * 0.11);
+          const scale = 1 + phase * 0.006;
+          sim.pos[index] *= scale;
+          sim.pos[index + 1] *= scale;
+          sim.pos[index + 2] *= scale;
+        }
+      }
       stepMembrane(sim, 0.012);
-      advanceMembraneEvents(sim, 0.012);
     }
 
     const metrics = membraneGeometryMetrics(sim);
     expect(metrics.invertedFaces).toBe(0);
     expect(metrics.areaRatio).toBeLessThanOrEqual(1 + MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT + 1e-4);
-    expect(metrics.minRadius).toBeGreaterThanOrEqual(sim.radius * (1 - MEMBRANE_WHOLE_CELL_RADIAL_DEVIATION_LIMIT) - 1e-4);
-    expect(metrics.maxRadius).toBeLessThanOrEqual(sim.radius * Math.sqrt(1 + MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT) + 1e-4);
+    expect(metrics.volumeRatio).toBeCloseTo(1, 3);
+  });
+
+  it("keeps the canonical polyhedral hepatocyte surface closed and bounded", () => {
+    const sim = createHepatocyteMembraneSim(14, 3);
+    const initial = membraneGeometryMetrics(sim);
+
+    expect(sim.restShape).toBe("canonical_hepatocyte_polyhedron");
+    expect(initial.invertedFaces).toBe(0);
+    expect(initial.minRadius).toBeLessThan(initial.maxRadius);
+    expect(initial.minRestRadiusRatio).toBeCloseTo(1, 5);
+    expect(initial.maxRestRadiusRatio).toBeCloseTo(1, 5);
+
+    for (let i = 0; i < 360; i += 1) stepMembrane(sim, 0.012);
+    const settled = membraneGeometryMetrics(sim);
+    expect(settled.invertedFaces).toBe(0);
+    expect(settled.areaRatio).toBeLessThanOrEqual(1 + MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT + 1e-4);
+    expect(settled.volumeRatio).toBeCloseTo(1, 3);
+  });
+
+  it("maps an authoritative contact shape with exact affine volume preservation", () => {
+    const sim = createHepatocyteMembraneSim(14, 3);
+    const before = membraneGeometryMetrics(sim);
+
+    applyVolumePreservingAffineContactShape(sim, [0, 1, 0], 0.9);
+    const after = membraneGeometryMetrics(sim);
+
+    expect(after.volumeRatio).toBeCloseTo(before.volumeRatio, 5);
+    expect(after.invertedFaces).toBe(0);
+    expect(after.maxRadius - after.minRadius).toBeGreaterThan(before.maxRadius - before.minRadius);
+    expect(Array.from(sim.pos)).not.toEqual(Array.from(sim.restPos));
   });
 });
