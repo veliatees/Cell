@@ -21,12 +21,24 @@ class HumanHepatocyteZonationTests(unittest.TestCase):
             self.assertFalse(state.quantitative_effect_sizes_available)
             self.assertFalse(state.oxygen_partial_pressure_available)
             self.assertFalse(state.dynamic_flux_scaling_enabled)
+            self.assertEqual(state.experimental_oxygen_context.controlled_oxygen_low_percent, 3.0)
+            self.assertEqual(state.experimental_oxygen_context.controlled_oxygen_high_percent, 13.0)
+            self.assertFalse(state.experimental_oxygen_context.is_human_in_situ_measurement)
+            self.assertFalse(state.experimental_oxygen_context.may_initialize_sinusoid_pO2)
 
     def test_human_specific_patterns_are_preserved(self) -> None:
         central = build_human_hepatocyte_zonation("pericentral")
         hnf4a = next(marker for marker in central.markers if marker.gene == "HNF4A")
         self.assertIn("Human pattern", hnf4a.notes)
         self.assertTrue(all(marker.source_ids for marker in central.markers))
+
+    def test_human_mps_oxygen_supports_direction_without_in_situ_pO2(self) -> None:
+        state = build_human_hepatocyte_zonation("pericentral")
+        oxygen = state.experimental_oxygen_context
+        self.assertIn("glycolysis", oxygen.zone3_supported_functions)
+        self.assertIn("oxidative_phosphorylation", oxygen.zone1_supported_functions)
+        self.assertIn("human_liver_mps_oxygen_zonation_2017", oxygen.source_ids)
+        self.assertIn("not direct human sinusoidal measurements", oxygen.limitations[0])
 
 
 if __name__ == "__main__":

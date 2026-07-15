@@ -1,6 +1,18 @@
+"""Explicitly parameterized albumin pulse-chase transport network.
+
+This module does not synthesize albumin from an amino-acid pseudo-pool and it
+does not provide a default PHH secretion rate.  The available literature is
+sufficient to establish the ER -> Golgi -> extracellular route, but the legacy
+numeric transit defaults came from hepatoma systems and were not calibrated to
+primary human hepatocytes.  Callers must therefore provide the two transit
+half-times and label their evidence role.
+"""
+
 from __future__ import annotations
 
-from math import log
+from dataclasses import dataclass
+from math import isfinite, log
+from typing import Literal
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.random import EngineRng
@@ -8,54 +20,112 @@ from cell_engine.quantitative.geometry import AVOGADRO
 from cell_engine.stochastic.cell_model import CellReactionModel
 from cell_engine.stochastic.reactions import ReactionNetwork, mass_action
 
-DATE_VERIFIED = "2026-06-21"
+DATE_VERIFIED = "2026-07-14"
 
 SECRETION_SOURCES: dict[str, SourceReference] = {
-    "albumin_secretion": SourceReference(
-        id="albumin_secretion",
-        title="Hepatocyte secretory protein transport rates (pulse-chase) + constitutive albumin secretion",
-        url="https://pubmed.ncbi.nlm.nih.gov/6538481/",
+    "lodish1983_hepg2_secretory_transit": SourceReference(
+        id="lodish1983_hepg2_secretory_transit",
+        title=(
+            "Hepatoma secretory proteins migrate from rough endoplasmic "
+            "reticulum to Golgi at characteristic rates"
+        ),
+        url="https://doi.org/10.1038/304080a0",
         source_type="primary_paper",
         date_verified=DATE_VERIFIED,
-        notes="Secretory proteins move ER->Golgi at t1/2 = 14-137 min (selective); Golgi->medium t1/2 ~15 min; mean transit ~30 min. Albumin is secreted constitutively (proalbumin -> ER -> Golgi pro-peptide cleavage -> blood), not stored.",
+        notes=(
+            "Pulse-chase evidence for selective ER-to-Golgi transit in human HepG2 hepatoma cells. "
+            "It establishes pathway structure and system-dependent rates; it is not a numeric PHH calibration."
+        ),
     ),
 }
 
-SECRETION_VOLUME_L = 1.0 / AVOGADRO
+# All reactions below are unimolecular, so volume cancels from their mass-action
+# propensities.  This convention keeps ReactionNetwork's required positive volume
+# without implying a measured hepatocyte or assay volume.
+UNIMOLECULAR_REFERENCE_VOLUME_L = 1.0 / AVOGADRO
 
-# Grounded transit half-times (seconds).
-T_HALF_ER_GOLGI_S = 30.0 * 60.0   # ~30 min (within the measured 14-137 min range)
-T_HALF_GOLGI_BLOOD_S = 15.0 * 60.0  # ~15 min
+ParameterEvidenceRole = Literal["measured_external_system", "fitted_to_model", "software_fixture"]
+
+
+@dataclass(frozen=True)
+class AlbuminPulseChaseParameters:
+    er_to_golgi_half_time_s: float
+    golgi_to_medium_half_time_s: float
+    source_id: str
+    experimental_system: str
+    evidence_role: ParameterEvidenceRole
+
+
+def validate_albumin_pulse_chase_parameters(parameters: AlbuminPulseChaseParameters) -> None:
+    half_times = (parameters.er_to_golgi_half_time_s, parameters.golgi_to_medium_half_time_s)
+    if any(not isfinite(value) or value <= 0.0 for value in half_times):
+        raise ValueError("albumin pulse-chase half-times must be finite and positive")
+    if not parameters.source_id or not parameters.experimental_system:
+        raise ValueError("albumin pulse-chase parameters require source and experimental-system labels")
+    if parameters.evidence_role == "measured_external_system" and parameters.source_id not in SECRETION_SOURCES:
+        raise ValueError("measured external-system parameters require a registered primary source")
+    if parameters.evidence_role == "software_fixture" and parameters.experimental_system != "software_test_only":
+        raise ValueError("software-fixture parameters must be labelled software_test_only")
 
 
 def _rate_from_half_time(t_half_s: float) -> float:
     return log(2.0) / t_half_s
 
 
-def build_albumin_secretion_network(volume_l: float = SECRETION_VOLUME_L) -> ReactionNetwork:
-    """The constitutive albumin secretory pathway with literature transit rates.
+def build_albumin_pulse_chase_network(
+    parameters: AlbuminPulseChaseParameters,
+    volume_l: float = UNIMOLECULAR_REFERENCE_VOLUME_L,
+) -> ReactionNetwork:
+    """Build a tracer-transport network without claiming albumin production.
 
-    amino acids -> proalbumin (ER) -> albumin (Golgi, pro-peptide cleaved) -> blood.
-    Rates come from measured ER->Golgi and Golgi->medium half-times, so the
-    secretion timescale (~30 min transit) is grounded, not invented.
+    Species represent a pre-existing pulse-labelled albumin cohort.  Translation,
+    precursor processing stoichiometry, degradation and total secretion capacity
+    remain outside this network until PHH-specific measurements identify them.
     """
-    species = ("amino_acids", "proalbumin_ER", "albumin_golgi", "albumin_blood")
+    validate_albumin_pulse_chase_parameters(parameters)
+    species = (
+        "pulse_labeled_proalbumin_er",
+        "pulse_labeled_albumin_golgi",
+        "pulse_labeled_albumin_medium",
+    )
     reactions = (
-        mass_action("albumin_translation", {"amino_acids": 1}, {"proalbumin_ER": 1}, 0.01,
-                    source_id="albumin_secretion", notes="ER-targeted translation of proalbumin."),
-        mass_action("er_to_golgi", {"proalbumin_ER": 1}, {"albumin_golgi": 1},
-                    _rate_from_half_time(T_HALF_ER_GOLGI_S), source_id="albumin_secretion",
-                    notes="ER->Golgi export (t1/2 ~30 min); pro-peptide cleaved in Golgi."),
-        mass_action("golgi_to_blood", {"albumin_golgi": 1}, {"albumin_blood": 1},
-                    _rate_from_half_time(T_HALF_GOLGI_BLOOD_S), source_id="albumin_secretion",
-                    notes="Golgi->blood constitutive secretion (t1/2 ~15 min)."),
+        mass_action(
+            "pulse_albumin_er_to_golgi",
+            {"pulse_labeled_proalbumin_er": 1},
+            {"pulse_labeled_albumin_golgi": 1},
+            _rate_from_half_time(parameters.er_to_golgi_half_time_s),
+            source_id=parameters.source_id,
+            notes=f"Explicit {parameters.evidence_role} parameter; system={parameters.experimental_system}.",
+        ),
+        mass_action(
+            "pulse_albumin_golgi_to_medium",
+            {"pulse_labeled_albumin_golgi": 1},
+            {"pulse_labeled_albumin_medium": 1},
+            _rate_from_half_time(parameters.golgi_to_medium_half_time_s),
+            source_id=parameters.source_id,
+            notes=f"Explicit {parameters.evidence_role} parameter; system={parameters.experimental_system}.",
+        ),
     )
     return ReactionNetwork(species=species, reactions=reactions, volume_l=volume_l)
 
 
-def run_secretion(t_end_s: float, rng: EngineRng, *, amino_acids: float = 10000.0,
-                  dt_s: float = 1.0) -> dict[str, float]:
-    network = build_albumin_secretion_network()
-    counts = {s: 0.0 for s in network.species}
-    counts["amino_acids"] = amino_acids
-    return CellReactionModel(network=network, counts=counts).advance(t_end_s, rng, mode="cle", dt_s=dt_s).counts
+def run_albumin_pulse_chase(
+    t_end_s: float,
+    rng: EngineRng,
+    *,
+    parameters: AlbuminPulseChaseParameters,
+    initial_labeled_proalbumin: float,
+    dt_s: float = 1.0,
+) -> dict[str, float]:
+    """Advance one explicitly parameterized labelled-albumin cohort."""
+    if not isfinite(initial_labeled_proalbumin) or initial_labeled_proalbumin < 0.0:
+        raise ValueError("initial labelled proalbumin count must be finite and non-negative")
+    network = build_albumin_pulse_chase_network(parameters)
+    counts = {species: 0.0 for species in network.species}
+    counts["pulse_labeled_proalbumin_er"] = initial_labeled_proalbumin
+    return CellReactionModel(network=network, counts=counts).advance(
+        t_end_s,
+        rng,
+        mode="cle",
+        dt_s=dt_s,
+    ).counts

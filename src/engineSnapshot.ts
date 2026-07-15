@@ -456,6 +456,349 @@ export type EngineCellHistory = {
   notes?: string;
 };
 
+export type EngineCommunicationStep = {
+  upstream: string;
+  downstream: string;
+  relation: string;
+  upstream_location: string;
+  downstream_location: string;
+  source_ids: string[];
+};
+
+export type EngineCommunicationPathway = {
+  id: string;
+  label: string;
+  mode: "endocrine" | "paracrine" | "juxtacrine" | "gap_junction";
+  sender_context: string;
+  receiver_cell_type: string;
+  ligand_or_contact_molecule: string;
+  receptor_or_channel: string;
+  steps: EngineCommunicationStep[];
+  biological_output: string;
+  evidence_scope: string;
+  contact_required: boolean;
+  extracellular_exposure_required: boolean;
+  quantitative_kinetics_available: boolean;
+  automatic_state_coupling: boolean;
+  source_ids: string[];
+};
+
+export type EngineReferenceCellGeometry = {
+  id: string;
+  cell_type: string;
+  center_um: [number, number, number];
+  radius_um: number;
+  shape_kind: string;
+  geometry_status: string;
+};
+
+export type EngineReferenceContactGeometry = {
+  id: string;
+  cell_a: string;
+  cell_b: string;
+  center_distance_um: number;
+  summed_radii_um: number;
+  surface_gap_um: number;
+  overlap_depth_um: number;
+  geometric_contact: boolean;
+  contact_event: "none" | "enter" | "stay" | "exit";
+  contact_input_active: boolean;
+  contact_face_a_id: string | null;
+  contact_face_b_id: string | null;
+  membrane_domain_a: string | null;
+  membrane_domain_b: string | null;
+  contact_patch_polygon_um: [number, number, number][];
+  contact_patch_area_um2: number | null;
+  contact_patch_status: string;
+  candidate_pathway_ids: string[];
+  closest_point_a_um?: [number, number, number] | null;
+  closest_point_b_um?: [number, number, number] | null;
+  normal_a_to_b?: [number, number, number] | null;
+  relative_normal_velocity_um_s?: number | null;
+  normal_load_nN?: number | null;
+  force_status?: string;
+};
+
+export type EngineSignalChainEvaluation = {
+  exposure_id: string;
+  pathway_id: string;
+  status: string;
+  mechanism_supported: boolean;
+  geometry_gate_passed: boolean | null;
+  local_surface_gate_passed: boolean | null;
+  local_surface_gate_status: string;
+  ligand_measurement_available: boolean;
+  receptor_measurement_available: boolean;
+  matched_response_available: boolean;
+  predicted_receptor_activation: number | null;
+  predicted_downstream_response: number | null;
+  may_drive_cell_state: boolean;
+  matched_response_ids: string[];
+  source_ids: string[];
+  blockers: string[];
+};
+
+export type EngineIntercellularCommunication = {
+  version: string;
+  species: string;
+  cell_type: string;
+  status: string;
+  pathways: EngineCommunicationPathway[];
+  reference_cells: EngineReferenceCellGeometry[];
+  reference_contacts: EngineReferenceContactGeometry[];
+  evaluated_exposures: EngineSignalChainEvaluation[];
+  quantitative_pathway_count: number;
+  active_signal_count: number;
+  measured_exposure_count: number;
+  matched_response_evidence_count: number;
+  automatic_state_coupling: boolean;
+  reference_geometry_is_biological_observation: boolean;
+  limitations: string[];
+};
+
+export type EngineSpatialFace = {
+  id: string;
+  vertex_indices: number[];
+  membrane_domain: "apical" | "lateral" | "basolateral" | "unknown";
+  topology_evidence: string;
+};
+
+export type EngineSurfaceDeformationState = {
+  model: "volume_preserving_affine_contact_v1";
+  active: boolean;
+  rest_vertices_local_um: [number, number, number][];
+  normal_local: [number, number, number];
+  requested_axial_scale: number;
+  axial_scale: number;
+  tangential_scale: number;
+  volume_ratio: number;
+  surface_area_ratio: number;
+  elastic_area_strain: number;
+  elastic_area_strain_cap: number;
+  cap_basis: string;
+  status: string;
+  source_ids: string[];
+};
+
+export type EngineMembraneReferenceMeasurement = {
+  id: string;
+  observable: string;
+  value: number | null;
+  lower: number | null;
+  upper: number | null;
+  unit: string;
+  experimental_system: string;
+  conditions: string;
+  evidence_role: string;
+  may_parameterize_healthy_phh: false;
+  source_ids: string[];
+};
+
+export type EngineMembraneMaterialProfile = {
+  version: "intrinsic_fluid_bilayer_v1";
+  architecture: string;
+  intrinsic_fluidity_enabled: true;
+  surface_representation: string;
+  area_constraint: string;
+  volume_constraint: string;
+  biologically_admissible_shape_modes: string[];
+  implemented_geometry_modes: string[];
+  unresolved_geometry_modes: string[];
+  surface_tracer_advection_enabled: true;
+  active_lateral_diffusion_enabled: false;
+  lateral_transport_contract: string;
+  local_contact_gate_model: string;
+  engineering_area_strain_cap: number;
+  engineering_cap_is_phh_measurement: false;
+  bilayer_thickness_nm: number | null;
+  area_compressibility_mN_per_m: number | null;
+  bending_rigidity_J: number | null;
+  membrane_tension_N_per_m: number | null;
+  cortex_adhesion_J_per_m2: number | null;
+  surface_viscosity_Pa_s_m: number | null;
+  lipid_lateral_diffusion_um2_s: number | null;
+  protein_lateral_diffusion_um2_s: number | null;
+  rupture_area_strain: number | null;
+  quantitative_phh_mechanics_enabled: false;
+  reference_measurements: EngineMembraneReferenceMeasurement[];
+  blockers: string[];
+  source_ids: string[];
+};
+
+export type EngineSpatialShape =
+  | { kind: "sphere"; radius_um: number }
+  | { kind: "capsule"; radius_um: number; half_segment_length_um: number; axis: [number, number, number] }
+  | {
+      kind: "convex_polyhedron";
+      vertices_local_um: [number, number, number][];
+      faces: EngineSpatialFace[];
+      equivalent_sphere_radius_um: number;
+      geometry_status: string;
+      deformation: EngineSurfaceDeformationState | null;
+    };
+
+export type EngineSpatialBody = {
+  id: string;
+  biological_kind: "hepatocyte" | "cell" | "bacterium" | "virus" | "other";
+  center_um: [number, number, number];
+  shape: EngineSpatialShape;
+  velocity_um_s: [number, number, number];
+  orientation_xyzw: [number, number, number, number];
+  state_ref: string | null;
+  pose_authority: string;
+  geometry_evidence: string;
+  visual_profile: string;
+  membrane_material: EngineMembraneMaterialProfile | null;
+  source_ids: string[];
+};
+
+export type EngineSpatialPairRelation = {
+  id: string;
+  body_a: string;
+  body_b: string;
+  body_a_kind: string;
+  body_b_kind: string;
+  world_time_s: number;
+  center_distance_um: number;
+  surface_gap_um: number;
+  overlap_depth_um: number;
+  relation: "separated" | "touching" | "overlapping";
+  geometric_contact: boolean;
+  contact_event: "none" | "enter" | "stay" | "exit";
+  contact_input_active: boolean;
+  closest_point_a_um: [number, number, number];
+  closest_point_b_um: [number, number, number];
+  normal_a_to_b: [number, number, number];
+  relative_normal_velocity_um_s: number;
+  contact_face_a_id: string | null;
+  contact_face_b_id: string | null;
+  membrane_domain_a: string | null;
+  membrane_domain_b: string | null;
+  contact_patch_polygon_um: [number, number, number][];
+  contact_patch_area_um2: number | null;
+  normal_load_nN: number | null;
+  contact_patch_status: string;
+  force_status: string;
+  quantitative_biological_effects_enabled: boolean;
+  blockers: string[];
+};
+
+export type EngineSpatialWorld = {
+  version: "geometry_authoritative_deformable_spatial_world_v3";
+  id: string;
+  scenario_kind: string;
+  time_s: number;
+  length_unit: "um";
+  bodies: EngineSpatialBody[];
+  pair_relations: EngineSpatialPairRelation[];
+  geometry_authority: string;
+  contact_event_semantics: string;
+  surface_deformation_model: "volume_preserving_affine_contact_v1";
+  conservative_elastic_area_strain_cap: number;
+  surface_deformation_scope: string;
+  evidence_status: string;
+  geometry_drives_runtime_state: boolean;
+  quantitative_biological_effects_enabled: boolean;
+  source_ids: string[];
+  limitations: string[];
+};
+
+export type EngineCellSpatialContactState = {
+  other_body_id: string;
+  other_biological_kind: string;
+  relation: string;
+  contact_event: "none" | "enter" | "stay" | "exit";
+  contact_input_active: boolean;
+  surface_gap_um: number;
+  overlap_depth_um: number;
+  closest_point_self_um: [number, number, number];
+  closest_point_other_um: [number, number, number];
+  outward_normal_to_other: [number, number, number];
+  membrane_domain_self: string | null;
+  membrane_domain_other: string | null;
+  contact_patch_polygon_um: [number, number, number][];
+  contact_patch_area_um2: number | null;
+  normal_load_nN: number | null;
+  quantitative_effect_enabled: boolean;
+  blockers: string[];
+};
+
+export type EngineCellSpatialContactEvent = {
+  other_body_id: string;
+  event: "none" | "enter" | "stay" | "exit";
+  t_s: number;
+  contact_input_active: boolean;
+  membrane_domain_self: string | null;
+  membrane_domain_other: string | null;
+};
+
+export type EngineCellSpatialState = {
+  world_id: string;
+  body_id: string;
+  world_time_s: number;
+  center_um: [number, number, number];
+  collision_shape: string;
+  nearest_body_id: string | null;
+  nearest_surface_gap_um: number | null;
+  active_contact_count: number;
+  maximum_overlap_depth_um: number;
+  contacts: EngineCellSpatialContactState[];
+  contact_events: EngineCellSpatialContactEvent[];
+  geometry_coupling_status: string;
+  mechanical_coupling_status: string;
+  biochemical_coupling_status: string;
+  geometry_drives_runtime_state: boolean;
+  quantitative_biological_effects_enabled: boolean;
+  source_ids: string[];
+  limitations: string[];
+};
+
+export type EngineBrian2Communication = {
+  adapter: {
+    available: boolean;
+    error: string;
+    module_name: string;
+    package_version: string | null;
+    supported_role: string;
+  };
+  gate: {
+    backend_available: boolean;
+    package_version: string | null;
+    version_matches_project_pin: boolean;
+    model_attached: boolean;
+    execution_ready: boolean;
+    blockers: string[];
+  };
+  pinned_version: string;
+  role: string;
+  automatic_state_coupling: boolean;
+  source_ids: string[];
+};
+
+export type EngineGenerativeModelingBoundary = {
+  version: string;
+  status: string;
+  target_species: string;
+  target_cell_type: string;
+  allowed_input_modalities: string[];
+  required_metadata: string[];
+  prohibited_training_inputs: string[];
+  split_policy: string;
+  candidate_model_families: string[];
+  backends: {
+    module_name: string;
+    available: boolean;
+    package_version: string | null;
+    role: string;
+    error: string;
+  }[];
+  training_ready: boolean;
+  inference_ready: boolean;
+  automatic_state_coupling: boolean;
+  blockers: string[];
+  source_ids: string[];
+};
+
 export type EngineSnapshot = {
   schema_version: string;
   definition: {
@@ -487,6 +830,28 @@ export type EngineSnapshot = {
     sinusoid_homeostasis?: EngineSinusoidHomeostasisState;
     nutritional_homeostasis_v3?: EngineNutritionalHomeostasisV3;
     hepatic_flux_evidence?: EngineHepaticFluxEvidence;
+    nutritional_context?: EngineUnifiedNutritionalContext;
+    endocrine_context?: EngineHumanEndocrineContext;
+    human_validation_protocol?: EngineHumanValidationProtocol;
+    healthy_phh_glucose_validation?: EngineHealthyPhhGlucoseValidation;
+    phh_spheroid_validation_protocol?: EnginePhhSpheroidValidationProtocol;
+    phh_glucose_observability?: EnginePhhGlucoseObservability;
+    phh_albumin_secretion?: EnginePhhAlbuminSecretion;
+    phh_cyp_function?: EnginePhhCypFunction;
+    phh_biliary_excretion?: EnginePhhBiliaryExcretion;
+    phh_identity_heterogeneity?: EnginePhhIdentityHeterogeneity;
+    phh_proteome_budget?: EnginePhhProteomeBudget;
+    phh_transporter_inventory?: EnginePhhTransporterInventory;
+    human_sch_bile_acids?: EngineHumanSchBileAcids;
+    evidence_intake?: EnginePhhEvidenceIntake;
+    published_glucose_model?: EnginePublishedGlucoseModelContext;
+    published_glucose_lineage?: EnginePublishedGlucoseLineage;
+    published_glucose_external_validation?: EnginePublishedGlucoseExternalValidation;
+    intercellular_communication?: EngineIntercellularCommunication;
+    spatial_world?: EngineSpatialWorld;
+    spatial_state?: EngineCellSpatialState | null;
+    brian2_communication?: EngineBrian2Communication;
+    generative_modeling?: EngineGenerativeModelingBoundary;
     schematic_visual_state?: EngineSchematicVisualState;
     phh_baseline?: EnginePhhBaseline;
     cellular_response?: EngineCellularResponse;
@@ -543,6 +908,8 @@ export type EngineModelAuthority = {
   primary_state_path?: string;
   schematic_state_path?: string;
   authoritative_sections: string[];
+  runtime_authoritative_sections?: string[];
+  shadow_sections?: string[];
   schematic_sections: string[];
   policy: string;
 };
@@ -606,6 +973,17 @@ export type EngineHumanZonationState = {
     source_ids: string[];
   };
   markers: EngineZonationMarker[];
+  experimental_oxygen_context: {
+    model_system: string;
+    controlled_oxygen_low_percent: number;
+    controlled_oxygen_high_percent: number;
+    zone1_supported_functions: string[];
+    zone3_supported_functions: string[];
+    is_human_in_situ_measurement: false;
+    may_initialize_sinusoid_pO2: false;
+    source_ids: string[];
+    limitations: string[];
+  };
   quantitative_effect_sizes_available: false;
   oxygen_partial_pressure_available: false;
   dynamic_flux_scaling_enabled: false;
@@ -629,10 +1007,10 @@ export type EngineSinusoidHomeostasisState = {
   selected_zone: "periportal" | "midlobular" | "pericentral";
   nutritional_profile: string;
   status: string;
-  target_glucose_mM: number;
-  reference_low_mM: number;
-  reference_high_mM: number;
-  replacement_rate_per_s: number;
+  target_glucose_mM: number | null;
+  reference_low_mM: number | null;
+  reference_high_mM: number | null;
+  replacement_rate_per_s: number | null;
   mean_transit_time_s: number;
   boundary_recovery_trace: { t_s: number; glucose_mM: number }[];
   porto_central_path: ("periportal" | "midlobular" | "pericentral")[];
@@ -713,6 +1091,1259 @@ export type EngineHepaticFluxEvidence = {
   policy: string;
   raw_paths: string[];
   audit_paths: string[];
+};
+
+export type EngineNutritionalFluxObservation = {
+  pmid: string;
+  metabolite: string;
+  nutritional_state: string;
+  site: string;
+  measure_type: string;
+  value: number;
+  unit: string;
+  dispersion: string | null;
+  sample_size: number | null;
+  bed_scope: string;
+  source_locator: string;
+};
+
+export type EngineUnifiedNutritionalContext = {
+  profile_id: "fed_peak" | "postabsorptive" | "prolonged_fasted";
+  profile_label: string;
+  status: string;
+  glycogen_value: number;
+  glycogen_unit: string;
+  glycogen_low: number | null;
+  glycogen_high: number | null;
+  energy_charge: number;
+  blood_glucose_boundary_status: string;
+  blood_glucose_target_mM: number | null;
+  hormone_concentrations_status: string;
+  ketone_concentration_status: string;
+  organ_flux_observations: EngineNutritionalFluxObservation[];
+  observation_units: string[];
+  flux_consolidation_status: string;
+  per_cell_flux_ready: false;
+  limitations: string[];
+};
+
+export type EngineEndocrineObservation = {
+  id: string;
+  phase: string;
+  time_min: number;
+  quantity: string;
+  value: number;
+  sem: number;
+  unit: string;
+  specimen_or_scale: string;
+  evidence: string;
+  source_ids: string[];
+};
+
+export type EngineGlycogenClampCondition = {
+  id: string;
+  label: string;
+  cohort_n: number;
+  plasma_glucose_mM: number;
+  plasma_glucose_sem_mM: number;
+  plasma_insulin_pM: number;
+  plasma_insulin_sem_pM: number;
+  plasma_glucagon_pg_per_ml: number;
+  plasma_glucagon_sem_pg_per_ml: number;
+  glycogen_accumulation_mmol_per_l_min: number;
+  glycogen_accumulation_sem_mmol_per_l_min: number;
+  glycogen_turnover_percent: number;
+  glycogen_turnover_sem_percent: number;
+  indirect_pathway_fraction: number;
+  indirect_pathway_sem: number;
+  insulin_context: string;
+  source_ids: string[];
+};
+
+export type EngineHumanEndocrineContext = {
+  version: "human_endocrine_glycogen_coupling_v1";
+  selected_profile: "fed_peak" | "postabsorptive" | "prolonged_fasted";
+  profile_status: string;
+  profile_observation_ids: string[];
+  mixed_meal_trajectory: {
+    biological_system: string;
+    study_arm: string;
+    cohort_n: number;
+    meal_energy_kcal: number;
+    carbohydrate_energy_fraction: number;
+    fat_energy_fraction: number;
+    protein_energy_fraction: number;
+    carbohydrate_form: string;
+    observations: EngineEndocrineObservation[];
+    paired_ratio_points: {
+      time_min: number;
+      glucagon_per_insulin: number;
+      unit: string;
+      derivation: string;
+      evidence: string;
+      source_ids: string[];
+    }[];
+    source_ids: string[];
+    limitations: string[];
+  };
+  causal_glycogen_benchmark: {
+    biological_system: string;
+    intervention: string;
+    lower_glucagon: EngineGlycogenClampCondition;
+    basal_glucagon: EngineGlycogenClampCondition;
+    glucagon_reduction_fraction: number;
+    glycogen_accumulation_fold_change: number;
+    turnover_reduction_fraction: number;
+    direct_pathway_change_percentage_points: number;
+    status: string;
+    model_prediction: null;
+    source_ids: string[];
+    limitations: string[];
+  };
+  mechanistic_gate: {
+    status: string;
+    portal_insulin_pM: null;
+    portal_glucagon_pg_per_ml: null;
+    insulin_receptor_occupancy: null;
+    glucagon_receptor_occupancy: null;
+    akt_activity: null;
+    camp_pka_activity: null;
+    reaction_rate_multipliers: null;
+    legacy_normalized_hormone_drive_enabled: false;
+    mechanistic_rate_coupling_enabled: false;
+    blockers: string[];
+  };
+  predictive_ready: false;
+  source_ids: string[];
+  limitations: string[];
+};
+
+export type EngineHumanValidationProtocol = {
+  version: "human_mixed_meal_validation_protocol_v1";
+  protocol_id: string;
+  intervention: string;
+  study_arms: {
+    id: string;
+    role: string;
+    cohort_n: number | null;
+    biological_system: string;
+    donor_linkage: string;
+    source_ids: string[];
+  }[];
+  observations: {
+    id: string;
+    source_observation_id: string;
+    study_arm_id: string;
+    quantity: string;
+    time_kind: "point" | "window" | "summary_parameter";
+    time_start_min: number | null;
+    time_end_min: number | null;
+    value: number;
+    uncertainty: number | null;
+    uncertainty_type: string | null;
+    unit: string;
+    specimen_or_scale: string;
+    evidence: string;
+    source_ids: string[];
+    may_drive_mechanistic_boundary: false;
+    may_validate_same_scale_output: boolean;
+    limitations: string;
+  }[];
+  constraints: {
+    id: string;
+    statement: string;
+    time_upper_bound_min: number | null;
+    numeric_flux_assigned: false;
+    source_ids: string[];
+  }[];
+  interpolation_policy: string;
+  cross_arm_pairing_enabled: false;
+  mechanistic_boundary_activation_enabled: false;
+  acceptance_threshold: null;
+  comparison_policy: string;
+  source_ids: string[];
+  limitations: string[];
+  summary: {
+    study_arm_count: number;
+    observation_count: number;
+    point_observation_count: number;
+    window_observation_count: number;
+    summary_parameter_count: number;
+    observed_point_time_min: number;
+    observed_point_time_max: number;
+    interpolated_value_count: 0;
+    mechanistic_input_count: 0;
+  };
+};
+
+export type EnginePhhEvidenceIntake = {
+  version: "human_phh_evidence_intake_v1";
+  contract_id: string;
+  status: string;
+  delivery_path: string | null;
+  required_file_count: number;
+  present_file_count: number;
+  work_packages: { id: string; file: string; unlocks: string }[];
+  tables: {
+    file: string;
+    record_count: number;
+    numeric_record_count: number;
+    missing_value_record_count: number;
+    human_target_record_count: number;
+    curation_candidate_count: number;
+    model_output_record_count: number;
+    column_mapping: Record<string, string>;
+  }[];
+  curation_candidate_count: number;
+  manual_primary_source_review_required: true;
+  automatic_parameter_activation: false;
+  authoritative_coupling_enabled: false;
+  blockers: string[];
+  sha256_by_file?: Record<string, string>;
+};
+
+export type EngineSbmlDocumentManifest = {
+  model_id: string;
+  model_name: string | null;
+  sbml_level: number;
+  sbml_version: number;
+  time_unit: string | null;
+  substance_unit: string | null;
+  sha256: string;
+  byte_size: number;
+  element_counts: Record<string, number>;
+  compartment_ids: string[];
+  species_ids: string[];
+  reaction_ids: string[];
+  reactions_with_kinetic_law: string[];
+  reactions_without_kinetic_law: string[];
+  kinetic_reaction_coverage: number;
+  path: string;
+};
+
+export type EnginePublishedModelBenchmark = {
+  id: string;
+  predicted: number;
+  reported_target: number;
+  acceptance_low: number;
+  acceptance_high: number;
+  unit: string;
+  passed: boolean;
+  acceptance_basis: string;
+  source_ids: string[];
+};
+
+export type EnginePublishedGlucoseModelContext = {
+  version: "published_hepatic_glucose_shadow_v1";
+  selected_profile: "fed_peak" | "postabsorptive" | "prolonged_fasted";
+  model_role: "non_authoritative_shadow_prediction";
+  biological_scope: string;
+  official_supplement: EngineSbmlDocumentManifest;
+  executable_reencoding: EngineSbmlDocumentManifest;
+  profile_projection: {
+    glucose_mM: number;
+    insulin_pM: number;
+    glucagon_pM: number;
+    epinephrine_pM: number;
+    phosphorylated_fraction: number;
+    dephosphorylated_fraction: number;
+    regulated_enzymes: string[];
+    evidence: string;
+    source_ids: string[];
+    limitations: string[];
+  } | null;
+  shadow_flux_prediction: {
+    glucose_mM: number;
+    glycogen_mM: number;
+    elapsed_s: number;
+    hepatic_glucose_production_or_utilization_umol_per_min_kg: number;
+    gluconeogenesis_or_glycolysis_umol_per_min_kg: number;
+    glycogenolysis_or_glycogenesis_umol_per_min_kg: number;
+    phosphorylated_fraction: number;
+    sign_convention: string;
+    evidence: string;
+    source_ids: string[];
+  } | null;
+  runtime_validation: {
+    schema_version: string;
+    available: boolean;
+    status: string;
+    model?: { path: string; sha256: string; author_repository_commit: string; model_file_last_modified_commit: string; runtime: string; runtime_version: string };
+    protocol?: Record<string, number | string>;
+    benchmarks: EnginePublishedModelBenchmark[];
+    benchmark_pass_count?: number;
+    benchmark_total_count?: number;
+    publication_reproduction_passed: boolean;
+    technical_equation_parity?: {
+      passed: boolean;
+      absolute_errors: Record<string, number>;
+      tolerance: number;
+      scope: string;
+    };
+    profile_predictions: Record<string, unknown>;
+    blockers: string[];
+  };
+  gate: {
+    status: string;
+    official_supplement_executable: false;
+    executable_reencoding_available: boolean;
+    publication_reproduction_passed: boolean;
+    shadow_execution_enabled: boolean;
+    authoritative_rate_coupling_enabled: false;
+    predictive_ready: false;
+    blockers: string[];
+  };
+  source_ids: string[];
+  limitations: string[];
+};
+
+export type EnginePublishedGlucoseLineage = {
+  schema_version: "koenig2012.lineage-reproduction.v1";
+  version: "koenig2012_model_lineage_audit_v1";
+  available: boolean;
+  status: string;
+  source_repository: {
+    url: string;
+    commit: string;
+    protocol_script_sha256: string;
+    figure_analysis_script_sha256: string;
+  };
+  models: {
+    legacy_2014_author_sbml: {
+      sha256: string;
+      species_count: number;
+      parameter_count: number;
+      reaction_count: number;
+      kinetic_law_count: number;
+      vendored: false;
+      detected_license: null;
+      redistribution_authorized: false;
+      reason_not_vendored: string;
+    };
+    current_author_reencoding: {
+      sha256: string;
+      species_count: number;
+      parameter_count: number;
+      reaction_count: number;
+      kinetic_law_count: number;
+      vendored: true;
+      redistribution_authorized: true;
+    };
+  };
+  recovered_author_repository_protocol: {
+    external_lactate_mM: number;
+    simulation_duration_min: number;
+    simulation_script_glucose_step_mM: number;
+    simulation_script_glucose_range_mM: number[];
+    simulation_script_glycogen_grid: string;
+    requested_trace_label_glycogen_mM: number;
+    selection_rule: string;
+    actual_selected_glycogen_mM: number;
+    selection_offset_mM: number;
+    figure_analysis_time_min: number;
+    steady_state_duration_check: string;
+    paper_figure_legend_glucose_step_mM: number;
+    paper_figure_legend_glycogen_step_mM: number;
+    protocol_conflict_present: boolean;
+  };
+  protocol_runs: {
+    id: string;
+    model_id: string;
+    inputs: Record<string, number | string>;
+    benchmarks: EnginePublishedModelBenchmark[];
+    benchmark_pass_count: number;
+    benchmark_total_count: number;
+    all_benchmarks_passed: boolean;
+  }[];
+  tracked_result_technical_parity: {
+    passed: boolean;
+    tracked_result_sha256: string;
+    sample_count: number;
+    conversion_factor: number;
+    conversion_factor_basis: string;
+    maximum_absolute_error: number;
+    tolerance: number;
+    samples: unknown[];
+    scope: string;
+  };
+  gates: {
+    legacy_author_repository_lineage_reproduction_passed: boolean;
+    vendored_current_executable_reproduction_passed: boolean;
+    official_publication_artifact_reproduction_passed: boolean;
+    official_publication_artifact_executable: boolean;
+    legacy_runtime_vendored: boolean;
+    authoritative_rate_coupling_enabled: false;
+    predictive_ready: false;
+  };
+  blockers: string[];
+  source_ids: string[];
+};
+
+export type EnginePublishedGlucoseExternalValidation = {
+  version: "published_glucose_external_human_validation_v1";
+  status: string;
+  contextual_comparison: {
+    id: string;
+    status: string;
+    measurement_observation_id: string;
+    measurement_evidence: string;
+    observed_original_value_mg_per_kg_min: number;
+    observed_original_sem_mg_per_kg_min: number;
+    observed_production_umol_per_kg_min: number;
+    observed_sem_umol_per_kg_min: number;
+    model_raw_signed_hgp_umol_per_kg_min: number;
+    model_production_magnitude_umol_per_kg_min: number;
+    predicted_minus_observed_umol_per_kg_min: number;
+    relative_residual: number;
+    sem_standardized_residual: number;
+    sem_interpretation: string;
+    acceptance_threshold: null;
+    pass_fail_assigned: false;
+    may_drive_cell_state: false;
+    conversion: {
+      id: string;
+      input_unit: string;
+      output_unit: string;
+      glucose_molar_mass_g_per_mol: number;
+      factor_umol_per_mg: number;
+      formula: string;
+      source_ids: string[];
+    };
+    context_match: {
+      normalization_basis_match: boolean;
+      flux_direction_match_after_sign_normalization: boolean;
+      time_semantics_match: boolean;
+      glucose_boundary_match: boolean;
+      glycogen_boundary_match: boolean;
+      lactate_boundary_match: boolean;
+      donor_match: boolean;
+      model_development_independence_established: boolean;
+      exact_protocol_match: boolean;
+      details: string[];
+    };
+    model_conditions: Record<string, number | string>;
+    measurement_context: Record<string, number | string | null>;
+    source_ids: string[];
+    limitations: string[];
+  };
+  blocked_targets: {
+    id: string;
+    target_observation_ids: string[];
+    status: string;
+    model_prediction: null;
+    blocker: string;
+    required_evidence: string[];
+  }[];
+  contextual_comparison_count: number;
+  curated_external_phh_observation_count: number;
+  same_format_phh_prediction_count: number;
+  exact_protocol_comparison_count: number;
+  independent_heldout_result_count: number;
+  passed_validation_count: number;
+  authoritative_rate_coupling_enabled: false;
+  predictive_ready: false;
+  source_ids: string[];
+  blockers: string[];
+};
+
+export type EngineHealthyPhhGlucoseValidation = {
+  version: "healthy_phh_spheroid_glucose_validation_v1";
+  status: string;
+  policy: string;
+  study_context: {
+    species: "Homo sapiens";
+    cell_format: string;
+    health_context: string;
+    provider: string;
+    conditioning: string;
+    measurement: string;
+    seeded_viable_cells_per_spheroid: number;
+    study_wide_donor_count: number;
+    table_replicate_n: number;
+    table_replicate_semantics: string;
+    source_ids: string[];
+  };
+  conditions: {
+    id: string;
+    label: string;
+    glucose_mM: number;
+    insulin_pM: number;
+    glucagon_nM: number | null;
+    glucagon_status: string;
+  }[];
+  glucose_consumption_observations: {
+    id: string;
+    condition_id: string;
+    time_start_h: number;
+    time_end_h: number;
+    mean_fmol_per_cell_h: number;
+    sd_fmol_per_cell_h: number;
+    replicate_n: number;
+    uncertainty_type: string;
+    unit: string;
+    evidence: string;
+    overlaps_subwindows: boolean;
+    may_validate_same_format_output: boolean;
+    may_parameterize_fresh_phh_or_in_vivo_single_cell: boolean;
+    source_locator: string;
+    source_ids: string[];
+  }[];
+  insulin_response_observations: {
+    id: string;
+    pathway_id: string;
+    response: string;
+    direction: "increase" | "decrease";
+    duration_min: number;
+    insulin_challenge_pM: number;
+    reported_fold_change: number;
+    reported_n_results: number | null;
+    reported_n_figure_caption: number | null;
+    reported_n_range: [number, number] | null;
+    uncertainty_value: number | null;
+    may_fit_quantitative_kinetics: boolean;
+    source_locator: string;
+    source_ids: string[];
+  }[];
+  human_scale_bridge: {
+    hepatocytes_per_g_liver: {
+      geometric_mean: number;
+      low: number;
+      high: number;
+      sample_size: number;
+      unit: string;
+    };
+    microsomal_protein_per_g_liver: {
+      geometric_mean: number;
+      low: number;
+      high: number;
+      sample_size: number;
+      unit: string;
+    };
+    supports_direct_cell_state_initialization: boolean;
+    supports_single_hepatocyte_geometry: boolean;
+    source_ids: string[];
+  };
+  in_vivo_liver_uptake_context: {
+    mean_umol_per_kg_liver_min: number;
+    sd_umol_per_kg_liver_min: number;
+    sample_size: number;
+    population: string;
+    protocol: string;
+    direct_per_cell_measurement: boolean;
+    may_parameterize_single_cell: boolean;
+    source_reported_derived_per_cell_mean_fmol_h: number;
+    source_reported_derived_per_cell_low_fmol_h: number;
+    source_reported_derived_per_cell_high_fmol_h: number;
+    source_reported_conversion_source_ids: string[];
+    source_ids: string[];
+  };
+  contextual_organ_to_cell_conversion: {
+    mean_fmol_per_cell_h: number;
+    low_sensitivity_fmol_per_cell_h: number;
+    high_sensitivity_fmol_per_cell_h: number;
+    sensitivity_definition: string;
+    formula: string;
+    direct_measurement: boolean;
+    may_drive_cell_state: boolean;
+    source_ids: string[];
+  };
+  evidence_review: {
+    review_id: string;
+    contract_required_file_count: number;
+    contract_present_file_count: number;
+    missing_required_files: string[];
+    raw_artifacts_redistributed: boolean;
+    artifacts: unknown[];
+    review_findings: string[];
+  };
+  summary: {
+    measured_glucose_window_count: number;
+    nonoverlapping_glucose_window_count: number;
+    measured_insulin_response_count: number;
+    same_format_validation_target_count: number;
+    exact_protocol_model_prediction_count: number;
+    independent_heldout_human_result_count: number;
+    reviewed_contract_files: number;
+    required_contract_files: number;
+    quarantined_artifact_count: number;
+    correction_count: number;
+  };
+  observation_limitations: string[];
+  corrections_to_supplied_tables: string[];
+  automatic_state_coupling: false;
+  endocrine_kinetic_fit_ready: false;
+  exact_published_model_protocol_match: false;
+  fresh_phh_parameterization_ready: false;
+  independent_heldout_human_result_count: number;
+  predictive_ready: false;
+  primary_source_review_complete: boolean;
+  same_format_validation_ready: boolean;
+  source_ids: string[];
+  limitations: string[];
+};
+
+export type EnginePhhSpheroidValidationProtocol = {
+  version: "phh_spheroid_glucose_validation_protocol_v1";
+  protocol_id: string;
+  status: string;
+  method_contract: {
+    species: "Homo sapiens";
+    cell_format: string;
+    plate_format: string;
+    seeded_viable_cells_per_well: number;
+    single_spheroid_observed_per_well_after_aggregation: boolean;
+    culture_seeding_medium_volume_uL: number;
+    glucose_challenge_initial_medium_volume_uL: number | null;
+    assay_sample_supernatant_volume_uL: number;
+    assay_replication: string;
+    assay_replication_count: number;
+    remaining_medium_volume_schedule_uL: number[] | null;
+    volumetric_factor_VF: number | null;
+    viable_cell_count_at_each_observation_window: number[] | null;
+    reported_calculation: string;
+    reported_symbol_semantics: Record<string, string>;
+  };
+  output_contract: {
+    quantity: string;
+    positive_direction: string;
+    rate_unit: string;
+    cumulative_unit: string;
+    denominator: string;
+    uncertainty_type: string;
+    nonoverlapping_windows_h: [number, number][];
+    overlapping_audit_window_h: [number, number];
+  };
+  conditions: {
+    id: string;
+    label: string;
+    glucose_mM: number;
+    insulin_pM: number;
+    glucagon_nM: number | null;
+    glucagon_status: string;
+  }[];
+  window_targets: {
+    observation_id: string;
+    condition_id: string;
+    time_start_h: number;
+    time_end_h: number;
+    duration_h: number;
+    observed_mean_fmol_per_cell_h: number;
+    observed_sd_fmol_per_cell_h: number;
+    cumulative_mean_increment_fmol_per_seeded_cell: number;
+    cumulative_sd_increment_fmol_per_seeded_cell: number;
+    overlaps_subwindows: boolean;
+    independent_trajectory_target: boolean;
+    source_ids: string[];
+  }[];
+  cumulative_target_trajectories: {
+    condition_id: string;
+    points: {
+      time_h: number;
+      cumulative_mean_fmol_per_seeded_cell: number;
+      cumulative_sd_fmol_per_seeded_cell: null;
+      source_window_ids: string[];
+      origin_is_mathematical_definition: boolean;
+    }[];
+    combined_cumulative_uncertainty_available: boolean;
+    uncertainty_limitation: string;
+  }[];
+  overlap_consistency_audits: {
+    condition_id: string;
+    subwindow_observation_ids: string[];
+    reported_overlap_observation_id: string;
+    derived_subwindow_cumulative_mean_fmol_per_seeded_cell: number;
+    reported_overlap_cumulative_mean_fmol_per_seeded_cell: number;
+    cumulative_residual_reported_minus_derived_fmol_per_seeded_cell: number;
+    derived_time_weighted_mean_fmol_per_cell_h: number;
+    reported_overlap_mean_fmol_per_cell_h: number;
+    rate_residual_reported_minus_derived_fmol_per_cell_h: number;
+    acceptance_threshold: null;
+    pass_fail_assigned: false;
+  }[];
+  medium_concentration_trajectory_reconstruction_ready: false;
+  cumulative_mean_trajectory_ready: true;
+  combined_cumulative_uncertainty_ready: false;
+  vectorial_flux_decomposition_ready: false;
+  exact_protocol_prediction_loaded: false;
+  acceptance_threshold: null;
+  automatic_state_coupling: false;
+  predictive_ready: false;
+  source_ids: string[];
+  source_locators: string[];
+  limitations: string[];
+  summary: {
+    exposure_bundle_count: number;
+    measured_window_count: number;
+    independent_trajectory_target_count: number;
+    overlap_consistency_audit_count: number;
+    cumulative_trajectory_count: number;
+    cumulative_target_point_count: number;
+    submitted_model_prediction_count: number;
+    exact_protocol_model_prediction_count: number;
+    exact_protocol_comparison_count: number;
+    pass_fail_count: number;
+    medium_concentration_trajectory_count: number;
+  };
+};
+
+export type EnginePhhGlucoseObservability = {
+  version: "phh_glucose_observability_v1";
+  status: string;
+  protocol_version: "phh_spheroid_glucose_validation_protocol_v1";
+  measurement_contract: {
+    input_quantity: string;
+    input_unit: string;
+    input_positive_direction: string;
+    required_timepoints_h: number[];
+    required_condition_ids: string[];
+    output_quantity: string;
+    output_unit: string;
+    output_denominator: string;
+    operator_formula: string;
+  };
+  supplemental_constraints: {
+    id: string;
+    source_locator: string;
+    finding: string;
+    reported_n: number | null;
+    numeric_trajectory_available: boolean;
+    model_consequence: string;
+  }[];
+  quantity_audit: {
+    id: string;
+    quantity_class: "aggregate_output" | "mechanistic_flux" | "donor_effect" | "causal_effect" | "normalization";
+    identified_from_current_protocol: boolean;
+    numeric_value_available: boolean;
+    may_fit_kinetic_parameter: boolean;
+    reason: string;
+    required_measurement_ids: string[];
+    source_ids: string[];
+  }[];
+  required_measurements: {
+    id: string;
+    label: string;
+    requirements: string[];
+    purpose: string;
+  }[];
+  cumulative_measurement_operator_ready: true;
+  signed_output_required: true;
+  donor_specific_numeric_trajectory_ready: false;
+  mechanistic_flux_decomposition_ready: false;
+  kinetic_parameter_fit_ready: false;
+  exact_protocol_model_trajectory_loaded: false;
+  automatic_state_coupling: false;
+  predictive_ready: false;
+  source_ids: string[];
+  limitations: string[];
+  summary: {
+    operator_expected_input_point_count: number;
+    operator_projected_window_count: number;
+    aggregate_observable_count: number;
+    mechanism_specific_quantity_count: number;
+    mechanism_specific_quantity_identified_count: number;
+    kinetic_parameter_identified_count: number;
+    source_backed_supplemental_constraint_count: number;
+    required_measurement_class_count: number;
+    donor_specific_numeric_trajectory_count: number;
+    exact_protocol_model_trajectory_count: number;
+    pass_fail_count: number;
+  };
+};
+
+export type EnginePhhAlbuminSecretion = {
+  version: "phh_albumin_secretion_v1";
+  status: string;
+  date_verified: string;
+  assay_contract: {
+    source_id: string;
+    species: "Homo sapiens";
+    biological_system: string;
+    culture_format: "regular_2d_culture";
+    culture_duration_h: number;
+    measured_compartment: "culture_supernatant";
+    analyte: "secreted_human_albumin";
+    assay: "ELISA";
+    assay_kit: string;
+    normalization_denominator: "reported_phh_cell_number";
+    reported_unit: "ng_per_24h_per_1e6_cells";
+    source_formula: string;
+    denominator_caveat: string;
+  };
+  observed_batch_span: {
+    measured_batch_count: number;
+    individual_batch_table_loaded: true;
+    low_batch_mean: number;
+    low_batch_sd: number;
+    high_batch_mean: number;
+    high_batch_sd: number;
+    unit: "ng_per_24h_per_1e6_cells";
+    scope: string;
+  };
+  batch_records: {
+    batch_id: string;
+    mean: number;
+    sd: number;
+  }[];
+  quality_criterion: {
+    authority: string;
+    source_id: string;
+    threshold: number;
+    unit: "ng_per_24h_per_1e6_cells";
+    role: string;
+    may_be_used_as_model_pass_threshold: false;
+  };
+  molecular_entity: {
+    gene: "ALB";
+    uniprot_accession: "P02768";
+    canonical_precursor_length_aa: number;
+    mature_chain_length_aa: number;
+    mature_albumin_molar_mass_g_per_mol: number;
+    sequence_source_id: string;
+    mass_source_id: string;
+  };
+  proteome_context: {
+    baseline_anchor_id: string;
+    expected_value: number;
+    unit: "copies_per_cell";
+    sample_size: number;
+    source_id: string;
+    cohort_matched_to_secretion_assay: false;
+    is_secretion_rate: false;
+  };
+  reported_associations: {
+    id: string;
+    variables: string;
+    correlation_r: number | null;
+    p_value: number | null;
+    sample_size: number;
+    statistically_significant_as_reported: boolean;
+    model_consequence: string;
+  }[];
+  measurement_contract: {
+    input_quantity: string;
+    input_unit: "molecules_per_cell";
+    required_timepoints_h: number[];
+    input_constraints: string[];
+    output_quantity: string;
+    output_unit: "ng_per_24h_per_1e6_cells";
+    operator_formula: string;
+  };
+  quantity_audit: {
+    id: string;
+    quantity_class: "aggregate_output" | "mechanistic_rate";
+    identified_from_current_assay: boolean;
+    may_fit_kinetic_parameter: boolean;
+    reason: string;
+    required_measurement_ids: string[];
+  }[];
+  required_measurements: {
+    id: string;
+    label: string;
+    requirements: string[];
+    purpose: string;
+  }[];
+  measurement_operator_ready: true;
+  individual_batch_table_loaded: true;
+  exact_model_trajectory_loaded: false;
+  mechanistic_rate_fit_ready: false;
+  automatic_state_coupling: false;
+  model_pass_threshold_defined: false;
+  predictive_ready: false;
+  source_ids: string[];
+  limitations: string[];
+  summary: {
+    measured_batch_count: number;
+    published_numeric_endpoint_count: number;
+    low_batch_mean_ng_per_24h_per_1e6_cells: number;
+    low_batch_sd_ng_per_24h_per_1e6_cells: number;
+    high_batch_mean_ng_per_24h_per_1e6_cells: number;
+    high_batch_sd_ng_per_24h_per_1e6_cells: number;
+    low_batch_mean_molecules_per_cell_24h: number;
+    high_batch_mean_molecules_per_cell_24h: number;
+    low_batch_mean_molecules_per_cell_s: number;
+    high_batch_mean_molecules_per_cell_s: number;
+    contextual_albumin_pool_copies_per_cell: number;
+    mechanism_specific_rate_count: number;
+    mechanism_specific_rate_identified_count: number;
+    required_measurement_class_count: number;
+    individual_batch_numeric_record_count: number;
+    exact_model_trajectory_count: number;
+    pass_fail_count: number;
+  };
+};
+
+export type EnginePhhCypFunction = {
+  version: "phh_cyp_function_v1";
+  status: string;
+  date_verified: string;
+  source_artifact: {
+    source_id: string;
+    supplement_filename: string;
+    supplement_md5: string;
+    supplement_sha256: string;
+    source_tables: string[];
+  };
+  assay_contract: {
+    species: "Homo sapiens";
+    biological_system: string;
+    culture_format: string;
+    seeded_cells_per_well: number;
+    replicates_per_batch: number;
+    replicate_type: "not_specified_in_source_table";
+    substrate_concentration_uM: number;
+    scr_unit: "uL_per_h_per_1e6_cells";
+    mfr_unit: "pmol_per_h_per_1e6_cells";
+    normalization_denominator: string;
+    raw_timepoint_matrix_published: false;
+    lower_limits_of_quantification_published: false;
+  };
+  product_quality_criterion: {
+    authority: string;
+    source_id: string;
+    standard_scope: string;
+    explicit_example_enzyme: "CYP3A4";
+    explicit_example_substrate: "testosterone";
+    threshold: number;
+    unit: "uL_per_h_per_1e6_cells";
+    may_be_used_as_model_pass_threshold: false;
+  };
+  enzymes: {
+    enzyme: string;
+    substrate: string;
+    metabolite: string;
+    records: {
+      batch_id: string;
+      scr_mean: number;
+      scr_sd: number | null;
+      mfr_mean: number;
+      mfr_sd: number | null;
+      scr_status: "quantified" | "source_reported_undetectable";
+      mfr_status: "quantified" | "source_reported_undetectable";
+    }[];
+  }[];
+  individual_batch_tables_loaded: true;
+  same_format_comparison_ready: true;
+  raw_timecourse_reconstruction_ready: false;
+  kinetic_parameter_fit_ready: false;
+  donor_causal_model_ready: false;
+  automatic_state_coupling: false;
+  model_pass_threshold_defined: false;
+  predictive_ready: false;
+  source_ids: string[];
+  limitations: string[];
+  summary: {
+    enzyme_count: number;
+    batch_count: number;
+    assay_mean_record_count: number;
+    quantified_mean_record_count: number;
+    source_reported_undetectable_record_count: number;
+    replicates_per_batch: number;
+    replicate_type: "not_specified_in_source_table";
+    cyp3a4_scr_low: number;
+    cyp3a4_scr_high: number;
+    exact_model_prediction_count: number;
+    fitted_parameter_count: number;
+    pass_fail_count: number;
+  };
+};
+
+export type EnginePhhBiliaryExcretion = {
+  version: "phh_biliary_excretion_v1";
+  status: string;
+  date_verified: string;
+  assay_contract: {
+    species: "Homo sapiens";
+    biological_system: string;
+    culture_format: string;
+    seeded_cells_per_well: number;
+    matrigel_percent: number;
+    culture_duration_days: number;
+    probe: "d8_taurocholate";
+    probe_concentration_uM: number;
+    probe_incubation_duration_min: number;
+    paired_conditions: string[];
+    reported_unit: "percent";
+  };
+  measurement_contract: {
+    required_inputs: string[];
+    operator_formula: string;
+    output_quantity: "biliary_excretion_index";
+    output_unit: "percent";
+  };
+  batch_records: { batch_id: string; bei_percent: number }[];
+  product_quality_criterion: {
+    source_id: string;
+    threshold_percent: number;
+    may_be_used_as_model_pass_threshold: false;
+  };
+  quantity_audit: {
+    id: string;
+    identified_from_current_assay: boolean;
+    mechanism_specific: boolean;
+    may_fit_kinetic_parameter: boolean;
+  }[];
+  individual_batch_table_loaded: true;
+  measurement_operator_ready: true;
+  raw_paired_condition_values_loaded: false;
+  transporter_specific_rate_fit_ready: false;
+  canalicular_geometry_coupling_ready: false;
+  automatic_state_coupling: false;
+  model_pass_threshold_defined: false;
+  predictive_ready: false;
+  source_ids: string[];
+  limitations: string[];
+  summary: {
+    batch_count: number;
+    published_numeric_endpoint_count: number;
+    bei_low_percent: number;
+    bei_high_percent: number;
+    source_product_criterion_percent: number;
+    batch_count_at_or_above_source_criterion: number;
+    mechanism_specific_quantity_count: number;
+    mechanism_specific_quantity_identified_count: number;
+    raw_paired_condition_record_count: number;
+    exact_model_prediction_count: number;
+    pass_fail_count: number;
+  };
+};
+
+export type EnginePhhIdentityHeterogeneity = {
+  version: "phh_identity_heterogeneity_v1";
+  status: string;
+  date_verified: string;
+  source_artifact: {
+    supplement_md5: string;
+    supplement_sha256: string;
+    geo_accession: "GSE289636";
+  };
+  facs_records: {
+    batch_id: string;
+    alb_positive_percent: number;
+    hnf4a_positive_percent: number;
+  }[];
+  scrna_records: {
+    batch_id: string;
+    cell_types: { cell_type: string; count: number; percent: number }[];
+  }[];
+  product_quality_criterion: {
+    source_id: string;
+    threshold_percent: number;
+    may_be_used_as_single_cell_state_threshold: false;
+  };
+  reported_associations: {
+    id: string;
+    correlation_r: number;
+    p_value: number | null;
+    sample_size: number;
+    statistically_significant_as_reported: boolean | null;
+  }[];
+  hepatocyte_subsets: { id: string; reported_enrichment: string[] }[];
+  facs_batch_table_loaded: true;
+  scrna_composition_table_loaded: true;
+  raw_geo_accession_registered: true;
+  hepatocyte_subset_count_loaded: true;
+  hepatocyte_subset_batch_numeric_matrix_loaded: false;
+  single_cell_state_initialization_ready: false;
+  generative_training_ready: false;
+  automatic_state_coupling: false;
+  predictive_ready: false;
+  source_ids: string[];
+  limitations: string[];
+  summary: {
+    facs_batch_count: number;
+    scrna_batch_count: number;
+    filtered_single_cell_count: number;
+    cell_type_count: number;
+    facs_alb_low_percent: number;
+    facs_alb_high_percent: number;
+    facs_hnf4a_low_percent: number;
+    facs_hnf4a_high_percent: number;
+    scrna_hepatocyte_low_percent: number;
+    scrna_hepatocyte_high_percent: number;
+    batches_with_both_facs_markers_at_or_above_source_criterion: number;
+    batches_with_more_than_10_percent_non_hepatocytes: number;
+    hepatocyte_subset_count: number;
+    numeric_subset_distribution_count: number;
+    generative_training_dataset_count: number;
+    single_cell_state_initialization_count: number;
+    pass_fail_count: number;
+  };
+};
+
+export type EnginePhhProteomeBudget = {
+  version: "phh_proteome_budget_v1";
+  status: string;
+  date_verified: string;
+  cohort: {
+    species: "Homo sapiens";
+    biological_system: string;
+    donor_count: number;
+    assay: string;
+  };
+  whole_cell_anchors: {
+    total_protein_pg_per_cell: { value: number; uncertainty: null; evidence_role: string };
+    total_protein_molecules_per_cell: { value: number; uncertainty: null; evidence_role: string };
+    estimated_cell_volume_um3: { value: number; uncertainty: null; evidence_role: string };
+  };
+  compartment_protein_mass_fractions: {
+    id: string;
+    fraction_of_total_cellular_protein: number;
+    evidence_role: string;
+  }[];
+  derived_compartment_mass_budget: {
+    id: string;
+    fraction_of_total_cellular_protein: number;
+    derived_protein_mass_pg_per_cell: number;
+    evidence_role: string;
+  }[];
+  whole_cell_protein_reference_ready: true;
+  arithmetic_compartment_mass_budget_ready: true;
+  donor_specific_initialization_ready: false;
+  dynamic_proteostasis_ready: false;
+  macromolecular_crowding_ready: false;
+  geometry_coupling_ready: false;
+  automatic_state_coupling: false;
+  predictive_ready: false;
+  source_ids: string[];
+  limitations: string[];
+  summary: {
+    donor_count: number;
+    total_protein_pg_per_cell: number;
+    total_protein_molecules_per_cell: number;
+    estimated_cell_volume_um3: number;
+    compartment_fraction_count: number;
+    mitochondrial_protein_mass_pg_per_cell: number;
+    integral_plasma_membrane_protein_mass_pg_per_cell: number;
+    dynamic_parameter_count: number;
+    geometry_parameter_count: number;
+  };
+};
+
+export type EnginePhhTransporterInventory = {
+  version: "phh_transporter_inventory_v1";
+  status: string;
+  date_verified: string;
+  transporters: {
+    id: "ABCB11_BSEP" | "ABCC2_MRP2";
+    gene: string;
+    protein: string;
+    physiological_location: string;
+    abundance: {
+      value: number;
+      sd: number | null;
+      unit: string;
+      biological_system: string;
+      denominator: string;
+      source_id: string;
+    };
+    exact_unit_equivalent: { value: number; sd: number | null; unit: string } | null;
+    matched_denominator_bridge: {
+      total_protein_pg_per_cell: number;
+      total_protein_source_id: string;
+      avogadro_per_mol: number;
+      formula: string;
+      derived_total_copies_per_cell: number;
+      display_precision_total_copies_per_cell: number;
+      evidence_role: string;
+    } | null;
+    total_copies_per_hepatocyte: number | null;
+    canalicular_surface_copies_per_cell: null;
+    transport_active_copies_per_cell: null;
+    surface_density_copies_per_um2: null;
+  }[];
+  bsep_total_copy_bridge_ready: true;
+  bsep_surface_copy_bridge_ready: false;
+  bsep_active_copy_bridge_ready: false;
+  mrp2_total_copy_bridge_ready: false;
+  mrp2_surface_copy_bridge_ready: false;
+  surface_density_ready: false;
+  flux_coupling_ready: false;
+  individual_protein_rendering_permitted: false;
+  automatic_state_coupling: false;
+  predictive_ready: false;
+  source_ids: string[];
+  limitations: string[];
+  summary: {
+    transporter_count: number;
+    same_cohort_total_copy_bridge_count: number;
+    bsep_total_copies_per_cell: number;
+    bsep_display_precision_copies_per_cell: number;
+    mrp2_mean_fmol_per_ug_liver_membrane_protein: number;
+    mrp2_sd_fmol_per_ug_liver_membrane_protein: number;
+    surface_localized_copy_count_record_count: number;
+    active_copy_count_record_count: number;
+    surface_density_record_count: number;
+    flux_parameter_count: number;
+  };
+};
+
+export type EngineHumanSchBileAcids = {
+  version: "human_sch_bile_acids_v1";
+  status: string;
+  date_verified: string;
+  source_artifact: { source_id: string; doi: string; pmcid: "PMC3679176"; source_location: "Table 4" };
+  donors: { id: string; age_years: number; sex: string; race_as_reported: string; smoking_status: string }[];
+  assay_contract: {
+    species: "Homo sapiens";
+    biological_system: string;
+    overlay_concentration_mg_per_mL: number;
+    treatment_day: number;
+    sampling_day: number;
+    treatment_duration_h: number;
+    donor_experiment_count: number;
+    estimated_intracellular_volume_uL_per_well: number;
+    below_quantification_policy_in_source: "assigned_proxy_zero";
+    below_quantification_proxy_is_biological_zero: false;
+  };
+  measurement_contract: {
+    concentration_unit: "uM";
+    bei_unit: "percent";
+    published_bei_aggregation: "mean_and_SD_of_experiment_level_BEI_values";
+    may_reconstruct_published_bei_from_group_mean_concentrations: false;
+    difference_is_true_canalicular_concentration: false;
+  };
+  conditions: {
+    id: "vehicle_control" | "troglitazone_10_uM";
+    treatment: string;
+    records: {
+      analyte: "TCA" | "GCA" | "TCDCA" | "GCDCA" | "Total";
+      cells_plus_bile_mean_uM: number;
+      cells_plus_bile_sd_uM: number;
+      cells_mean_uM: number;
+      cells_sd_uM: number;
+      medium_mean_uM: number;
+      medium_sd_uM: number;
+      bei_mean_percent: number | null;
+      bei_sd_percent: number | null;
+    }[];
+  }[];
+  table4_numeric_records_loaded: true;
+  aggregate_measurement_contract_ready: true;
+  raw_donor_records_loaded: false;
+  analyte_LLOQ_loaded: false;
+  true_canalicular_concentration_ready: false;
+  kinetic_parameter_fit_ready: false;
+  healthy_in_vivo_initialization_ready: false;
+  automatic_state_coupling: false;
+  model_pass_threshold_defined: false;
+  predictive_ready: false;
+  source_ids: string[];
+  limitations: string[];
+  summary: {
+    donor_count: number;
+    condition_count: number;
+    named_analyte_count: number;
+    table_record_count: number;
+    published_mean_endpoint_count: number;
+    vehicle_total_cells_plus_bile_mean_uM: number;
+    vehicle_total_cells_mean_uM: number;
+    vehicle_total_medium_mean_uM: number;
+    raw_donor_record_count: number;
+    analyte_LLOQ_record_count: number;
+    exact_model_prediction_count: number;
+    fitted_parameter_count: number;
+    pass_fail_count: number;
+  };
 };
 
 export type EngineScientificAudit = {
@@ -801,6 +2432,28 @@ export type EngineSnapshotSummary = {
   sinusoidHomeostasis: EngineSinusoidHomeostasisState | null;
   nutritionalHomeostasisV3: EngineNutritionalHomeostasisV3 | null;
   hepaticFluxEvidence: EngineHepaticFluxEvidence | null;
+  nutritionalContext: EngineUnifiedNutritionalContext | null;
+  endocrineContext: EngineHumanEndocrineContext | null;
+  humanValidationProtocol: EngineHumanValidationProtocol | null;
+  healthyPhhGlucoseValidation: EngineHealthyPhhGlucoseValidation | null;
+  phhSpheroidValidationProtocol: EnginePhhSpheroidValidationProtocol | null;
+  phhGlucoseObservability: EnginePhhGlucoseObservability | null;
+  phhAlbuminSecretion: EnginePhhAlbuminSecretion | null;
+  phhCypFunction: EnginePhhCypFunction | null;
+  phhBiliaryExcretion: EnginePhhBiliaryExcretion | null;
+  phhIdentityHeterogeneity: EnginePhhIdentityHeterogeneity | null;
+  phhProteomeBudget: EnginePhhProteomeBudget | null;
+  phhTransporterInventory: EnginePhhTransporterInventory | null;
+  humanSchBileAcids: EngineHumanSchBileAcids | null;
+  evidenceIntake: EnginePhhEvidenceIntake | null;
+  publishedGlucoseModel: EnginePublishedGlucoseModelContext | null;
+  publishedGlucoseLineage: EnginePublishedGlucoseLineage | null;
+  publishedGlucoseExternalValidation: EnginePublishedGlucoseExternalValidation | null;
+  intercellularCommunication: EngineIntercellularCommunication | null;
+  spatialWorld: EngineSpatialWorld | null;
+  spatialState: EngineCellSpatialState | null;
+  brian2Communication: EngineBrian2Communication | null;
+  generativeModeling: EngineGenerativeModelingBoundary | null;
   schematicVisualState: EngineSchematicVisualState | null;
   phhBaseline: EnginePhhBaseline | null;
   modelAuthority: EngineModelAuthority | null;
@@ -936,6 +2589,28 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     sinusoidHomeostasis: snapshot.state.sinusoid_homeostasis ?? null,
     nutritionalHomeostasisV3: snapshot.state.nutritional_homeostasis_v3 ?? null,
     hepaticFluxEvidence: snapshot.state.hepatic_flux_evidence ?? null,
+    nutritionalContext: snapshot.state.nutritional_context ?? null,
+    endocrineContext: snapshot.state.endocrine_context ?? null,
+    humanValidationProtocol: snapshot.state.human_validation_protocol ?? null,
+    healthyPhhGlucoseValidation: snapshot.state.healthy_phh_glucose_validation ?? null,
+    phhSpheroidValidationProtocol: snapshot.state.phh_spheroid_validation_protocol ?? null,
+    phhGlucoseObservability: snapshot.state.phh_glucose_observability ?? null,
+    phhAlbuminSecretion: snapshot.state.phh_albumin_secretion ?? null,
+    phhCypFunction: snapshot.state.phh_cyp_function ?? null,
+    phhBiliaryExcretion: snapshot.state.phh_biliary_excretion ?? null,
+    phhIdentityHeterogeneity: snapshot.state.phh_identity_heterogeneity ?? null,
+    phhProteomeBudget: snapshot.state.phh_proteome_budget ?? null,
+    phhTransporterInventory: snapshot.state.phh_transporter_inventory ?? null,
+    humanSchBileAcids: snapshot.state.human_sch_bile_acids ?? null,
+    evidenceIntake: snapshot.state.evidence_intake ?? null,
+    publishedGlucoseModel: snapshot.state.published_glucose_model ?? null,
+    publishedGlucoseLineage: snapshot.state.published_glucose_lineage ?? null,
+    publishedGlucoseExternalValidation: snapshot.state.published_glucose_external_validation ?? null,
+    intercellularCommunication: snapshot.state.intercellular_communication ?? null,
+    spatialWorld: snapshot.state.spatial_world ?? null,
+    spatialState: snapshot.state.spatial_state ?? null,
+    brian2Communication: snapshot.state.brian2_communication ?? null,
+    generativeModeling: snapshot.state.generative_modeling ?? null,
     schematicVisualState: snapshot.state.schematic_visual_state ?? null,
     phhBaseline: snapshot.state.phh_baseline ?? null,
     modelAuthority: snapshot.state.model_authority ?? null,
@@ -1280,6 +2955,14 @@ function isNumberTuple3(value: unknown): value is [number, number, number] {
   return Array.isArray(value) && value.length === 3 && value.every(isFiniteNumber);
 }
 
+function isNumberTuple4(value: unknown): value is [number, number, number, number] {
+  return Array.isArray(value) && value.length === 4 && value.every(isFiniteNumber);
+}
+
+function isContactEvent(value: unknown): value is "none" | "enter" | "stay" | "exit" {
+  return value === "none" || value === "enter" || value === "stay" || value === "exit";
+}
+
 function isNumberRecord(value: unknown): value is Record<string, number> {
   return isRecord(value) && Object.values(value).every(isFiniteNumber);
 }
@@ -1306,6 +2989,1135 @@ function optionalNumberRangeOrNull(value: unknown): boolean {
 
 function isNumberTuple2(value: unknown): value is [number, number] {
   return Array.isArray(value) && value.length === 2 && value.every(isFiniteNumber);
+}
+
+function isEngineSurfaceDeformationState(value: unknown): value is EngineSurfaceDeformationState {
+  if (!isRecord(value)) return false;
+  const axialScale = value.axial_scale;
+  const tangentialScale = value.tangential_scale;
+  const volumeRatio = value.volume_ratio;
+  const surfaceAreaRatio = value.surface_area_ratio;
+  const elasticAreaStrain = value.elastic_area_strain;
+  const elasticAreaStrainCap = value.elastic_area_strain_cap;
+  return (
+    value.model === "volume_preserving_affine_contact_v1" &&
+    value.active === true &&
+    Array.isArray(value.rest_vertices_local_um) &&
+    value.rest_vertices_local_um.length >= 4 &&
+    value.rest_vertices_local_um.every(isNumberTuple3) &&
+    isNumberTuple3(value.normal_local) &&
+    Math.abs(Math.hypot(...value.normal_local) - 1) <= 1e-6 &&
+    isFiniteNumber(value.requested_axial_scale) &&
+    value.requested_axial_scale > 0 && value.requested_axial_scale <= 1 &&
+    isFiniteNumber(axialScale) && axialScale > 0 && axialScale < 1 &&
+    axialScale + 1e-9 >= value.requested_axial_scale &&
+    isFiniteNumber(tangentialScale) && tangentialScale >= 1 &&
+    Math.abs(tangentialScale - 1 / Math.sqrt(axialScale)) <= 1e-6 &&
+    isFiniteNumber(volumeRatio) && Math.abs(volumeRatio - 1) <= 1e-6 &&
+    isFiniteNumber(surfaceAreaRatio) && surfaceAreaRatio > 0 &&
+    isFiniteNumber(elasticAreaStrain) &&
+    Math.abs(elasticAreaStrain - (surfaceAreaRatio - 1)) <= 1e-6 &&
+    isFiniteNumber(elasticAreaStrainCap) && elasticAreaStrainCap > 0 &&
+    elasticAreaStrain <= elasticAreaStrainCap + 1e-6 &&
+    isString(value.cap_basis) &&
+    isString(value.status) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString)
+  );
+}
+
+function spatialDeformationMatchesVertices(
+  currentVertices: [number, number, number][],
+  deformation: EngineSurfaceDeformationState
+): boolean {
+  if (currentVertices.length !== deformation.rest_vertices_local_um.length) return false;
+  const center = deformation.rest_vertices_local_um.reduce(
+    (sum, vertex) => [sum[0] + vertex[0], sum[1] + vertex[1], sum[2] + vertex[2]] as [number, number, number],
+    [0, 0, 0] as [number, number, number]
+  ).map((value) => value / deformation.rest_vertices_local_um.length) as [number, number, number];
+  const normal = deformation.normal_local;
+  const axial = deformation.axial_scale;
+  const tangential = deformation.tangential_scale;
+  return currentVertices.every((current, index) => {
+    const rest = deformation.rest_vertices_local_um[index];
+    const relative: [number, number, number] = [
+      rest[0] - center[0],
+      rest[1] - center[1],
+      rest[2] - center[2]
+    ];
+    const projection = relative[0] * normal[0] + relative[1] * normal[1] + relative[2] * normal[2];
+    const expected: [number, number, number] = [0, 1, 2].map((axis) =>
+      center[axis] + tangential * relative[axis] + (axial - tangential) * projection * normal[axis]
+    ) as [number, number, number];
+    return current.every((coordinate, axis) => Math.abs(coordinate - expected[axis]) <= 1e-6);
+  });
+}
+
+function isEngineMembraneMaterialProfile(value: unknown): value is EngineMembraneMaterialProfile {
+  if (!isRecord(value)) return false;
+  const nullablePhhParameters = [
+    value.bilayer_thickness_nm,
+    value.area_compressibility_mN_per_m,
+    value.bending_rigidity_J,
+    value.membrane_tension_N_per_m,
+    value.cortex_adhesion_J_per_m2,
+    value.surface_viscosity_Pa_s_m,
+    value.lipid_lateral_diffusion_um2_s,
+    value.protein_lateral_diffusion_um2_s,
+    value.rupture_area_strain
+  ];
+  return (
+    value.version === "intrinsic_fluid_bilayer_v1" &&
+    isString(value.architecture) &&
+    value.intrinsic_fluidity_enabled === true &&
+    isString(value.surface_representation) &&
+    isString(value.area_constraint) &&
+    isString(value.volume_constraint) &&
+    Array.isArray(value.biologically_admissible_shape_modes) &&
+    value.biologically_admissible_shape_modes.length > 0 &&
+    value.biologically_admissible_shape_modes.every(isString) &&
+    Array.isArray(value.implemented_geometry_modes) &&
+    value.implemented_geometry_modes.length > 0 &&
+    value.implemented_geometry_modes.every(isString) &&
+    Array.isArray(value.unresolved_geometry_modes) &&
+    value.unresolved_geometry_modes.length > 0 &&
+    value.unresolved_geometry_modes.every(isString) &&
+    value.surface_tracer_advection_enabled === true &&
+    value.active_lateral_diffusion_enabled === false &&
+    isString(value.lateral_transport_contract) &&
+    isString(value.local_contact_gate_model) &&
+    isFiniteNumber(value.engineering_area_strain_cap) && value.engineering_area_strain_cap > 0 &&
+    value.engineering_cap_is_phh_measurement === false &&
+    nullablePhhParameters.every((parameter) => parameter === null) &&
+    value.quantitative_phh_mechanics_enabled === false &&
+    Array.isArray(value.reference_measurements) &&
+    value.reference_measurements.length > 0 &&
+    value.reference_measurements.every((measurement) => {
+      if (!isRecord(measurement)) return false;
+      const numericEvidence = [measurement.value, measurement.lower, measurement.upper]
+        .filter((item) => item !== null);
+      return (
+        isString(measurement.id) &&
+        isString(measurement.observable) &&
+        numericEvidence.length > 0 && numericEvidence.every((item) => isFiniteNumber(item) && item >= 0) &&
+        (measurement.value === null || isFiniteNumber(measurement.value)) &&
+        (measurement.lower === null || isFiniteNumber(measurement.lower)) &&
+        (measurement.upper === null || isFiniteNumber(measurement.upper)) &&
+        (measurement.lower === null || measurement.upper === null || measurement.lower <= measurement.upper) &&
+        isString(measurement.unit) &&
+        isString(measurement.experimental_system) &&
+        isString(measurement.conditions) &&
+        isString(measurement.evidence_role) &&
+        measurement.may_parameterize_healthy_phh === false &&
+        Array.isArray(measurement.source_ids) && measurement.source_ids.length > 0 && measurement.source_ids.every(isString)
+      );
+    }) &&
+    Array.isArray(value.blockers) && value.blockers.length > 0 && value.blockers.every(isString) &&
+    Array.isArray(value.source_ids) && value.source_ids.length > 0 && value.source_ids.every(isString)
+  );
+}
+
+function isEngineSpatialShape(value: unknown): value is EngineSpatialShape {
+  if (!isRecord(value) || !isString(value.kind)) return false;
+  if (value.kind === "sphere") return isFiniteNumber(value.radius_um) && value.radius_um > 0;
+  if (value.kind === "capsule") {
+    return (
+      isFiniteNumber(value.radius_um) && value.radius_um > 0 &&
+      isFiniteNumber(value.half_segment_length_um) &&
+      value.half_segment_length_um >= 0 &&
+      isNumberTuple3(value.axis)
+    );
+  }
+  return (
+    value.kind === "convex_polyhedron" &&
+    Array.isArray(value.vertices_local_um) &&
+    value.vertices_local_um.length >= 4 &&
+    value.vertices_local_um.every(isNumberTuple3) &&
+    Array.isArray(value.faces) &&
+    value.faces.length >= 4 &&
+    value.faces.every((face) =>
+      isRecord(face) &&
+      isString(face.id) &&
+      Array.isArray(face.vertex_indices) &&
+      face.vertex_indices.length >= 3 &&
+      face.vertex_indices.every((index) => Number.isInteger(index) && index >= 0) &&
+      isString(face.membrane_domain) &&
+      isString(face.topology_evidence)
+    ) &&
+    isFiniteNumber(value.equivalent_sphere_radius_um) &&
+    value.equivalent_sphere_radius_um > 0 &&
+    isString(value.geometry_status) &&
+    (value.deformation === null || (
+      isEngineSurfaceDeformationState(value.deformation) &&
+      spatialDeformationMatchesVertices(value.vertices_local_um, value.deformation)
+    ))
+  );
+}
+
+function isEngineSpatialWorld(value: unknown): value is EngineSpatialWorld {
+  if (!isRecord(value)) return false;
+  return (
+    value.version === "geometry_authoritative_deformable_spatial_world_v3" &&
+    isString(value.id) &&
+    isString(value.scenario_kind) &&
+    isFiniteNumber(value.time_s) &&
+    value.length_unit === "um" &&
+    Array.isArray(value.bodies) &&
+    value.bodies.every((body) =>
+      isRecord(body) &&
+      isString(body.id) &&
+      isString(body.biological_kind) &&
+      isNumberTuple3(body.center_um) &&
+      isEngineSpatialShape(body.shape) &&
+      isNumberTuple3(body.velocity_um_s) &&
+      isNumberTuple4(body.orientation_xyzw) &&
+      (body.state_ref === null || isString(body.state_ref)) &&
+      isString(body.pose_authority) &&
+      isString(body.geometry_evidence) &&
+      isString(body.visual_profile) &&
+      (body.membrane_material === null || isEngineMembraneMaterialProfile(body.membrane_material)) &&
+      (body.biological_kind !== "hepatocyte" || body.membrane_material !== null) &&
+      Array.isArray(body.source_ids) && body.source_ids.every(isString)
+    ) &&
+    Array.isArray(value.pair_relations) &&
+    value.pair_relations.every((relation) =>
+      isRecord(relation) &&
+      isString(relation.id) &&
+      isString(relation.body_a) &&
+      isString(relation.body_b) &&
+      isFiniteNumber(relation.world_time_s) &&
+      isFiniteNumber(relation.center_distance_um) &&
+      isFiniteNumber(relation.surface_gap_um) &&
+      isFiniteNumber(relation.overlap_depth_um) &&
+      isString(relation.relation) &&
+      typeof relation.geometric_contact === "boolean" &&
+      isContactEvent(relation.contact_event) &&
+      typeof relation.contact_input_active === "boolean" &&
+      isNumberTuple3(relation.closest_point_a_um) &&
+      isNumberTuple3(relation.closest_point_b_um) &&
+      isNumberTuple3(relation.normal_a_to_b) &&
+      isFiniteNumber(relation.relative_normal_velocity_um_s) &&
+      (relation.contact_face_a_id === null || isString(relation.contact_face_a_id)) &&
+      (relation.contact_face_b_id === null || isString(relation.contact_face_b_id)) &&
+      (relation.membrane_domain_a === null || isString(relation.membrane_domain_a)) &&
+      (relation.membrane_domain_b === null || isString(relation.membrane_domain_b)) &&
+      Array.isArray(relation.contact_patch_polygon_um) && relation.contact_patch_polygon_um.every(isNumberTuple3) &&
+      (relation.contact_patch_area_um2 === null || isFiniteNumber(relation.contact_patch_area_um2)) &&
+      (relation.normal_load_nN === null || isFiniteNumber(relation.normal_load_nN)) &&
+      isString(relation.contact_patch_status) &&
+      isString(relation.force_status) &&
+      typeof relation.quantitative_biological_effects_enabled === "boolean" &&
+      Array.isArray(relation.blockers) && relation.blockers.every(isString)
+    ) &&
+    isString(value.geometry_authority) &&
+    isString(value.contact_event_semantics) &&
+    value.surface_deformation_model === "volume_preserving_affine_contact_v1" &&
+    isFiniteNumber(value.conservative_elastic_area_strain_cap) &&
+    value.conservative_elastic_area_strain_cap > 0 &&
+    isString(value.surface_deformation_scope) &&
+    isString(value.evidence_status) &&
+    typeof value.geometry_drives_runtime_state === "boolean" &&
+    typeof value.quantitative_biological_effects_enabled === "boolean" &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEngineCellSpatialState(value: unknown): value is EngineCellSpatialState {
+  if (!isRecord(value)) return false;
+  return (
+    isString(value.world_id) &&
+    isString(value.body_id) &&
+    isFiniteNumber(value.world_time_s) &&
+    isNumberTuple3(value.center_um) &&
+    isString(value.collision_shape) &&
+    (value.nearest_body_id === null || isString(value.nearest_body_id)) &&
+    (value.nearest_surface_gap_um === null || isFiniteNumber(value.nearest_surface_gap_um)) &&
+    isFiniteNumber(value.active_contact_count) &&
+    isFiniteNumber(value.maximum_overlap_depth_um) &&
+    Array.isArray(value.contacts) &&
+    value.contacts.every((contact) =>
+      isRecord(contact) &&
+      isString(contact.other_body_id) &&
+      isString(contact.other_biological_kind) &&
+      isString(contact.relation) &&
+      isContactEvent(contact.contact_event) &&
+      typeof contact.contact_input_active === "boolean" &&
+      isFiniteNumber(contact.surface_gap_um) &&
+      isFiniteNumber(contact.overlap_depth_um) &&
+      isNumberTuple3(contact.closest_point_self_um) &&
+      isNumberTuple3(contact.closest_point_other_um) &&
+      isNumberTuple3(contact.outward_normal_to_other) &&
+      (contact.membrane_domain_self === null || isString(contact.membrane_domain_self)) &&
+      (contact.membrane_domain_other === null || isString(contact.membrane_domain_other)) &&
+      Array.isArray(contact.contact_patch_polygon_um) && contact.contact_patch_polygon_um.every(isNumberTuple3) &&
+      (contact.contact_patch_area_um2 === null || isFiniteNumber(contact.contact_patch_area_um2)) &&
+      (contact.normal_load_nN === null || isFiniteNumber(contact.normal_load_nN)) &&
+      typeof contact.quantitative_effect_enabled === "boolean" &&
+      Array.isArray(contact.blockers) && contact.blockers.every(isString)
+    ) &&
+    Array.isArray(value.contact_events) &&
+    value.contact_events.every((event) =>
+      isRecord(event) &&
+      isString(event.other_body_id) &&
+      isContactEvent(event.event) &&
+      isFiniteNumber(event.t_s) &&
+      typeof event.contact_input_active === "boolean" &&
+      (event.membrane_domain_self === null || isString(event.membrane_domain_self)) &&
+      (event.membrane_domain_other === null || isString(event.membrane_domain_other))
+    ) &&
+    isString(value.geometry_coupling_status) &&
+    isString(value.mechanical_coupling_status) &&
+    isString(value.biochemical_coupling_status) &&
+    typeof value.geometry_drives_runtime_state === "boolean" &&
+    typeof value.quantitative_biological_effects_enabled === "boolean" &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEngineIntercellularCommunication(value: unknown): value is EngineIntercellularCommunication {
+  if (!isRecord(value)) return false;
+  return (
+    isString(value.version) &&
+    isString(value.species) &&
+    isString(value.cell_type) &&
+    isString(value.status) &&
+    Array.isArray(value.pathways) &&
+    value.pathways.every((pathway) =>
+      isRecord(pathway) &&
+      isString(pathway.id) &&
+      isString(pathway.label) &&
+      isString(pathway.mode) &&
+      isString(pathway.ligand_or_contact_molecule) &&
+      isString(pathway.receptor_or_channel) &&
+      Array.isArray(pathway.steps) &&
+      pathway.steps.every((step) =>
+        isRecord(step) &&
+        isString(step.upstream) &&
+        isString(step.downstream) &&
+        isString(step.relation) &&
+        isString(step.upstream_location) &&
+        isString(step.downstream_location) &&
+        Array.isArray(step.source_ids) && step.source_ids.every(isString)
+      ) &&
+      typeof pathway.contact_required === "boolean" &&
+      typeof pathway.extracellular_exposure_required === "boolean" &&
+      typeof pathway.quantitative_kinetics_available === "boolean" &&
+      typeof pathway.automatic_state_coupling === "boolean" &&
+      Array.isArray(pathway.source_ids) && pathway.source_ids.every(isString)
+    ) &&
+    Array.isArray(value.reference_cells) &&
+    value.reference_cells.every((cell) =>
+      isRecord(cell) &&
+      isString(cell.id) &&
+      isString(cell.cell_type) &&
+      isNumberTuple3(cell.center_um) &&
+      isFiniteNumber(cell.radius_um) &&
+      isString(cell.shape_kind) &&
+      isString(cell.geometry_status)
+    ) &&
+    Array.isArray(value.reference_contacts) &&
+    value.reference_contacts.every((contact) =>
+      isRecord(contact) &&
+      isString(contact.id) &&
+      isString(contact.cell_a) &&
+      isString(contact.cell_b) &&
+      isFiniteNumber(contact.center_distance_um) &&
+      isFiniteNumber(contact.summed_radii_um) &&
+      isFiniteNumber(contact.surface_gap_um) &&
+      isFiniteNumber(contact.overlap_depth_um) &&
+      typeof contact.geometric_contact === "boolean" &&
+      isContactEvent(contact.contact_event) &&
+      typeof contact.contact_input_active === "boolean" &&
+      (contact.contact_face_a_id === null || isString(contact.contact_face_a_id)) &&
+      (contact.contact_face_b_id === null || isString(contact.contact_face_b_id)) &&
+      (contact.membrane_domain_a === null || isString(contact.membrane_domain_a)) &&
+      (contact.membrane_domain_b === null || isString(contact.membrane_domain_b)) &&
+      Array.isArray(contact.contact_patch_polygon_um) && contact.contact_patch_polygon_um.every(isNumberTuple3) &&
+      (contact.contact_patch_area_um2 === null || isFiniteNumber(contact.contact_patch_area_um2)) &&
+      isString(contact.contact_patch_status) &&
+      Array.isArray(contact.candidate_pathway_ids) && contact.candidate_pathway_ids.every(isString) &&
+      (contact.closest_point_a_um === undefined || contact.closest_point_a_um === null || isNumberTuple3(contact.closest_point_a_um)) &&
+      (contact.closest_point_b_um === undefined || contact.closest_point_b_um === null || isNumberTuple3(contact.closest_point_b_um)) &&
+      (contact.normal_a_to_b === undefined || contact.normal_a_to_b === null || isNumberTuple3(contact.normal_a_to_b)) &&
+      (contact.relative_normal_velocity_um_s === undefined || contact.relative_normal_velocity_um_s === null || isFiniteNumber(contact.relative_normal_velocity_um_s)) &&
+      (contact.normal_load_nN === undefined || contact.normal_load_nN === null || isFiniteNumber(contact.normal_load_nN)) &&
+      (contact.force_status === undefined || isString(contact.force_status))
+    ) &&
+    Array.isArray(value.evaluated_exposures) &&
+    value.evaluated_exposures.every((evaluation) =>
+      isRecord(evaluation) &&
+      isString(evaluation.exposure_id) &&
+      isString(evaluation.pathway_id) &&
+      isString(evaluation.status) &&
+      typeof evaluation.mechanism_supported === "boolean" &&
+      (evaluation.geometry_gate_passed === null || typeof evaluation.geometry_gate_passed === "boolean") &&
+      (evaluation.local_surface_gate_passed === null || typeof evaluation.local_surface_gate_passed === "boolean") &&
+      isString(evaluation.local_surface_gate_status) &&
+      typeof evaluation.ligand_measurement_available === "boolean" &&
+      typeof evaluation.receptor_measurement_available === "boolean" &&
+      typeof evaluation.matched_response_available === "boolean" &&
+      (evaluation.predicted_receptor_activation === null || isFiniteNumber(evaluation.predicted_receptor_activation)) &&
+      (evaluation.predicted_downstream_response === null || isFiniteNumber(evaluation.predicted_downstream_response)) &&
+      typeof evaluation.may_drive_cell_state === "boolean" &&
+      Array.isArray(evaluation.matched_response_ids) && evaluation.matched_response_ids.every(isString) &&
+      Array.isArray(evaluation.source_ids) && evaluation.source_ids.every(isString) &&
+      Array.isArray(evaluation.blockers) && evaluation.blockers.every(isString)
+    ) &&
+    isFiniteNumber(value.quantitative_pathway_count) &&
+    isFiniteNumber(value.active_signal_count) &&
+    isFiniteNumber(value.measured_exposure_count) &&
+    isFiniteNumber(value.matched_response_evidence_count) &&
+    typeof value.automatic_state_coupling === "boolean" &&
+    typeof value.reference_geometry_is_biological_observation === "boolean" &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEngineHealthyPhhGlucoseValidation(value: unknown): value is EngineHealthyPhhGlucoseValidation {
+  if (!isRecord(value) || !isRecord(value.study_context) || !isRecord(value.summary) || !isRecord(value.evidence_review)) {
+    return false;
+  }
+  return (
+    value.version === "healthy_phh_spheroid_glucose_validation_v1" &&
+    isString(value.status) &&
+    isString(value.policy) &&
+    value.study_context.species === "Homo sapiens" &&
+    isString(value.study_context.cell_format) &&
+    isFiniteNumber(value.study_context.study_wide_donor_count) &&
+    isFiniteNumber(value.study_context.table_replicate_n) &&
+    Array.isArray(value.conditions) &&
+    value.conditions.every((condition) =>
+      isRecord(condition) &&
+      isString(condition.id) &&
+      isString(condition.label) &&
+      isFiniteNumber(condition.glucose_mM) &&
+      isFiniteNumber(condition.insulin_pM) &&
+      (condition.glucagon_nM === null || isFiniteNumber(condition.glucagon_nM))
+    ) &&
+    Array.isArray(value.glucose_consumption_observations) &&
+    value.glucose_consumption_observations.every((observation) =>
+      isRecord(observation) &&
+      isString(observation.id) &&
+      isString(observation.condition_id) &&
+      isFiniteNumber(observation.time_start_h) &&
+      isFiniteNumber(observation.time_end_h) &&
+      isFiniteNumber(observation.mean_fmol_per_cell_h) &&
+      isFiniteNumber(observation.sd_fmol_per_cell_h) &&
+      isFiniteNumber(observation.replicate_n) &&
+      typeof observation.may_validate_same_format_output === "boolean" &&
+      typeof observation.may_parameterize_fresh_phh_or_in_vivo_single_cell === "boolean"
+    ) &&
+    Array.isArray(value.insulin_response_observations) &&
+    value.insulin_response_observations.every((observation) =>
+      isRecord(observation) &&
+      isString(observation.id) &&
+      isString(observation.pathway_id) &&
+      isString(observation.response) &&
+      (observation.direction === "increase" || observation.direction === "decrease") &&
+      isFiniteNumber(observation.duration_min) &&
+      isFiniteNumber(observation.reported_fold_change) &&
+      typeof observation.may_fit_quantitative_kinetics === "boolean"
+    ) &&
+    isFiniteNumber(value.summary.measured_glucose_window_count) &&
+    isFiniteNumber(value.summary.measured_insulin_response_count) &&
+    isFiniteNumber(value.summary.exact_protocol_model_prediction_count) &&
+    isFiniteNumber(value.summary.independent_heldout_human_result_count) &&
+    isFiniteNumber(value.evidence_review.contract_required_file_count) &&
+    isFiniteNumber(value.evidence_review.contract_present_file_count) &&
+    typeof value.automatic_state_coupling === "boolean" &&
+    typeof value.predictive_ready === "boolean" &&
+    typeof value.primary_source_review_complete === "boolean" &&
+    typeof value.same_format_validation_ready === "boolean" &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEnginePhhSpheroidValidationProtocol(value: unknown): value is EnginePhhSpheroidValidationProtocol {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.method_contract) ||
+    !isRecord(value.output_contract) ||
+    !isRecord(value.summary)
+  ) {
+    return false;
+  }
+  return (
+    value.version === "phh_spheroid_glucose_validation_protocol_v1" &&
+    isString(value.protocol_id) &&
+    isString(value.status) &&
+    value.method_contract.species === "Homo sapiens" &&
+    isString(value.method_contract.cell_format) &&
+    isFiniteNumber(value.method_contract.seeded_viable_cells_per_well) &&
+    isFiniteNumber(value.method_contract.culture_seeding_medium_volume_uL) &&
+    value.method_contract.glucose_challenge_initial_medium_volume_uL === null &&
+    isFiniteNumber(value.method_contract.assay_sample_supernatant_volume_uL) &&
+    value.method_contract.remaining_medium_volume_schedule_uL === null &&
+    value.method_contract.volumetric_factor_VF === null &&
+    value.method_contract.viable_cell_count_at_each_observation_window === null &&
+    isString(value.output_contract.quantity) &&
+    isString(value.output_contract.denominator) &&
+    Array.isArray(value.conditions) &&
+    value.conditions.every((condition) =>
+      isRecord(condition) &&
+      isString(condition.id) &&
+      isFiniteNumber(condition.glucose_mM) &&
+      isFiniteNumber(condition.insulin_pM) &&
+      (condition.glucagon_nM === null || isFiniteNumber(condition.glucagon_nM))
+    ) &&
+    Array.isArray(value.window_targets) &&
+    value.window_targets.every((target) =>
+      isRecord(target) &&
+      isString(target.observation_id) &&
+      isString(target.condition_id) &&
+      isFiniteNumber(target.time_start_h) &&
+      isFiniteNumber(target.time_end_h) &&
+      isFiniteNumber(target.observed_mean_fmol_per_cell_h) &&
+      isFiniteNumber(target.cumulative_mean_increment_fmol_per_seeded_cell) &&
+      typeof target.independent_trajectory_target === "boolean"
+    ) &&
+    Array.isArray(value.cumulative_target_trajectories) &&
+    Array.isArray(value.overlap_consistency_audits) &&
+    value.overlap_consistency_audits.every((audit) =>
+      isRecord(audit) &&
+      isString(audit.condition_id) &&
+      audit.acceptance_threshold === null &&
+      audit.pass_fail_assigned === false
+    ) &&
+    value.medium_concentration_trajectory_reconstruction_ready === false &&
+    value.cumulative_mean_trajectory_ready === true &&
+    value.combined_cumulative_uncertainty_ready === false &&
+    value.vectorial_flux_decomposition_ready === false &&
+    value.exact_protocol_prediction_loaded === false &&
+    value.acceptance_threshold === null &&
+    value.automatic_state_coupling === false &&
+    value.predictive_ready === false &&
+    isFiniteNumber(value.summary.independent_trajectory_target_count) &&
+    isFiniteNumber(value.summary.overlap_consistency_audit_count) &&
+    isFiniteNumber(value.summary.exact_protocol_model_prediction_count) &&
+    isFiniteNumber(value.summary.pass_fail_count) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEnginePhhGlucoseObservability(value: unknown): value is EnginePhhGlucoseObservability {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.measurement_contract) ||
+    !isRecord(value.summary)
+  ) {
+    return false;
+  }
+  return (
+    value.version === "phh_glucose_observability_v1" &&
+    value.protocol_version === "phh_spheroid_glucose_validation_protocol_v1" &&
+    isString(value.status) &&
+    isString(value.measurement_contract.input_quantity) &&
+    isString(value.measurement_contract.input_unit) &&
+    isString(value.measurement_contract.input_positive_direction) &&
+    Array.isArray(value.measurement_contract.required_timepoints_h) &&
+    value.measurement_contract.required_timepoints_h.every(isFiniteNumber) &&
+    Array.isArray(value.measurement_contract.required_condition_ids) &&
+    value.measurement_contract.required_condition_ids.every(isString) &&
+    isString(value.measurement_contract.operator_formula) &&
+    Array.isArray(value.supplemental_constraints) &&
+    value.supplemental_constraints.every((constraint) =>
+      isRecord(constraint) &&
+      isString(constraint.id) &&
+      isString(constraint.source_locator) &&
+      isString(constraint.finding) &&
+      (constraint.reported_n === null || isFiniteNumber(constraint.reported_n)) &&
+      typeof constraint.numeric_trajectory_available === "boolean" &&
+      isString(constraint.model_consequence)
+    ) &&
+    Array.isArray(value.quantity_audit) &&
+    value.quantity_audit.every((audit) =>
+      isRecord(audit) &&
+      isString(audit.id) &&
+      isString(audit.quantity_class) &&
+      typeof audit.identified_from_current_protocol === "boolean" &&
+      typeof audit.numeric_value_available === "boolean" &&
+      typeof audit.may_fit_kinetic_parameter === "boolean" &&
+      isString(audit.reason) &&
+      Array.isArray(audit.required_measurement_ids) && audit.required_measurement_ids.every(isString) &&
+      Array.isArray(audit.source_ids) && audit.source_ids.every(isString)
+    ) &&
+    Array.isArray(value.required_measurements) &&
+    value.required_measurements.every((measurement) =>
+      isRecord(measurement) &&
+      isString(measurement.id) &&
+      isString(measurement.label) &&
+      Array.isArray(measurement.requirements) && measurement.requirements.every(isString) &&
+      isString(measurement.purpose)
+    ) &&
+    value.cumulative_measurement_operator_ready === true &&
+    value.signed_output_required === true &&
+    value.donor_specific_numeric_trajectory_ready === false &&
+    value.mechanistic_flux_decomposition_ready === false &&
+    value.kinetic_parameter_fit_ready === false &&
+    value.exact_protocol_model_trajectory_loaded === false &&
+    value.automatic_state_coupling === false &&
+    value.predictive_ready === false &&
+    isFiniteNumber(value.summary.operator_expected_input_point_count) &&
+    isFiniteNumber(value.summary.operator_projected_window_count) &&
+    isFiniteNumber(value.summary.aggregate_observable_count) &&
+    isFiniteNumber(value.summary.mechanism_specific_quantity_count) &&
+    isFiniteNumber(value.summary.mechanism_specific_quantity_identified_count) &&
+    isFiniteNumber(value.summary.kinetic_parameter_identified_count) &&
+    isFiniteNumber(value.summary.exact_protocol_model_trajectory_count) &&
+    isFiniteNumber(value.summary.pass_fail_count) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEnginePhhAlbuminSecretion(value: unknown): value is EnginePhhAlbuminSecretion {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.assay_contract) ||
+    !isRecord(value.observed_batch_span) ||
+    !isRecord(value.quality_criterion) ||
+    !isRecord(value.molecular_entity) ||
+    !isRecord(value.proteome_context) ||
+    !isRecord(value.measurement_contract) ||
+    !isRecord(value.summary)
+  ) {
+    return false;
+  }
+  return (
+    value.version === "phh_albumin_secretion_v1" &&
+    isString(value.status) &&
+    isString(value.date_verified) &&
+    value.assay_contract.species === "Homo sapiens" &&
+    value.assay_contract.culture_format === "regular_2d_culture" &&
+    isFiniteNumber(value.assay_contract.culture_duration_h) &&
+    value.assay_contract.measured_compartment === "culture_supernatant" &&
+    value.assay_contract.analyte === "secreted_human_albumin" &&
+    value.assay_contract.assay === "ELISA" &&
+    isString(value.assay_contract.assay_kit) &&
+    value.assay_contract.normalization_denominator === "reported_phh_cell_number" &&
+    value.assay_contract.reported_unit === "ng_per_24h_per_1e6_cells" &&
+    isFiniteNumber(value.observed_batch_span.measured_batch_count) &&
+    value.observed_batch_span.individual_batch_table_loaded === true &&
+    isFiniteNumber(value.observed_batch_span.low_batch_mean) &&
+    isFiniteNumber(value.observed_batch_span.low_batch_sd) &&
+    isFiniteNumber(value.observed_batch_span.high_batch_mean) &&
+    isFiniteNumber(value.observed_batch_span.high_batch_sd) &&
+    value.observed_batch_span.unit === "ng_per_24h_per_1e6_cells" &&
+    Array.isArray(value.batch_records) &&
+    value.batch_records.every((record) =>
+      isRecord(record) &&
+      isString(record.batch_id) &&
+      isFiniteNumber(record.mean) &&
+      isFiniteNumber(record.sd)
+    ) &&
+    isFiniteNumber(value.quality_criterion.threshold) &&
+    isString(value.quality_criterion.source_id) &&
+    value.quality_criterion.may_be_used_as_model_pass_threshold === false &&
+    value.molecular_entity.gene === "ALB" &&
+    value.molecular_entity.uniprot_accession === "P02768" &&
+    isFiniteNumber(value.molecular_entity.canonical_precursor_length_aa) &&
+    isFiniteNumber(value.molecular_entity.mature_chain_length_aa) &&
+    isFiniteNumber(value.molecular_entity.mature_albumin_molar_mass_g_per_mol) &&
+    isFiniteNumber(value.proteome_context.expected_value) &&
+    value.proteome_context.unit === "copies_per_cell" &&
+    value.proteome_context.cohort_matched_to_secretion_assay === false &&
+    value.proteome_context.is_secretion_rate === false &&
+    Array.isArray(value.reported_associations) &&
+    value.reported_associations.every((association) =>
+      isRecord(association) &&
+      isString(association.id) &&
+      (association.correlation_r === null || isFiniteNumber(association.correlation_r)) &&
+      (association.p_value === null || isFiniteNumber(association.p_value)) &&
+      isFiniteNumber(association.sample_size) &&
+      typeof association.statistically_significant_as_reported === "boolean" &&
+      isString(association.model_consequence)
+    ) &&
+    value.measurement_contract.input_unit === "molecules_per_cell" &&
+    Array.isArray(value.measurement_contract.required_timepoints_h) &&
+    value.measurement_contract.required_timepoints_h.every(isFiniteNumber) &&
+    Array.isArray(value.measurement_contract.input_constraints) &&
+    value.measurement_contract.input_constraints.every(isString) &&
+    value.measurement_contract.output_unit === "ng_per_24h_per_1e6_cells" &&
+    isString(value.measurement_contract.operator_formula) &&
+    Array.isArray(value.quantity_audit) &&
+    value.quantity_audit.every((audit) =>
+      isRecord(audit) &&
+      isString(audit.id) &&
+      (audit.quantity_class === "aggregate_output" || audit.quantity_class === "mechanistic_rate") &&
+      typeof audit.identified_from_current_assay === "boolean" &&
+      typeof audit.may_fit_kinetic_parameter === "boolean" &&
+      isString(audit.reason) &&
+      Array.isArray(audit.required_measurement_ids) && audit.required_measurement_ids.every(isString)
+    ) &&
+    Array.isArray(value.required_measurements) &&
+    value.required_measurements.every((measurement) =>
+      isRecord(measurement) &&
+      isString(measurement.id) &&
+      isString(measurement.label) &&
+      Array.isArray(measurement.requirements) && measurement.requirements.every(isString) &&
+      isString(measurement.purpose)
+    ) &&
+    value.measurement_operator_ready === true &&
+    value.individual_batch_table_loaded === true &&
+    value.exact_model_trajectory_loaded === false &&
+    value.mechanistic_rate_fit_ready === false &&
+    value.automatic_state_coupling === false &&
+    value.model_pass_threshold_defined === false &&
+    value.predictive_ready === false &&
+    isFiniteNumber(value.summary.measured_batch_count) &&
+    isFiniteNumber(value.summary.published_numeric_endpoint_count) &&
+    isFiniteNumber(value.summary.low_batch_mean_molecules_per_cell_s) &&
+    isFiniteNumber(value.summary.high_batch_mean_molecules_per_cell_s) &&
+    isFiniteNumber(value.summary.contextual_albumin_pool_copies_per_cell) &&
+    isFiniteNumber(value.summary.mechanism_specific_rate_count) &&
+    isFiniteNumber(value.summary.mechanism_specific_rate_identified_count) &&
+    isFiniteNumber(value.summary.individual_batch_numeric_record_count) &&
+    isFiniteNumber(value.summary.exact_model_trajectory_count) &&
+    isFiniteNumber(value.summary.pass_fail_count) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEnginePhhCypFunction(value: unknown): value is EnginePhhCypFunction {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.source_artifact) ||
+    !isRecord(value.assay_contract) ||
+    !isRecord(value.product_quality_criterion) ||
+    !isRecord(value.summary)
+  ) return false;
+  return (
+    value.version === "phh_cyp_function_v1" &&
+    isString(value.status) &&
+    isString(value.date_verified) &&
+    isString(value.source_artifact.supplement_md5) &&
+    isString(value.source_artifact.supplement_sha256) &&
+    value.assay_contract.species === "Homo sapiens" &&
+    isFiniteNumber(value.assay_contract.seeded_cells_per_well) &&
+    isFiniteNumber(value.assay_contract.replicates_per_batch) &&
+    value.assay_contract.replicate_type === "not_specified_in_source_table" &&
+    isFiniteNumber(value.assay_contract.substrate_concentration_uM) &&
+    value.assay_contract.scr_unit === "uL_per_h_per_1e6_cells" &&
+    value.assay_contract.mfr_unit === "pmol_per_h_per_1e6_cells" &&
+    value.assay_contract.raw_timepoint_matrix_published === false &&
+    value.assay_contract.lower_limits_of_quantification_published === false &&
+    isFiniteNumber(value.product_quality_criterion.threshold) &&
+    isString(value.product_quality_criterion.source_id) &&
+    value.product_quality_criterion.standard_scope === "representative_drug_metabolism_ability" &&
+    value.product_quality_criterion.explicit_example_enzyme === "CYP3A4" &&
+    value.product_quality_criterion.explicit_example_substrate === "testosterone" &&
+    value.product_quality_criterion.may_be_used_as_model_pass_threshold === false &&
+    Array.isArray(value.enzymes) &&
+    value.enzymes.every((panel) =>
+      isRecord(panel) &&
+      isString(panel.enzyme) &&
+      isString(panel.substrate) &&
+      isString(panel.metabolite) &&
+      Array.isArray(panel.records) &&
+      panel.records.every((record) =>
+        isRecord(record) &&
+        isString(record.batch_id) &&
+        isFiniteNumber(record.scr_mean) &&
+        (record.scr_sd === null || isFiniteNumber(record.scr_sd)) &&
+        isFiniteNumber(record.mfr_mean) &&
+        (record.mfr_sd === null || isFiniteNumber(record.mfr_sd)) &&
+        (record.scr_status === "quantified" || record.scr_status === "source_reported_undetectable") &&
+        (record.mfr_status === "quantified" || record.mfr_status === "source_reported_undetectable")
+      )
+    ) &&
+    value.individual_batch_tables_loaded === true &&
+    value.same_format_comparison_ready === true &&
+    value.raw_timecourse_reconstruction_ready === false &&
+    value.kinetic_parameter_fit_ready === false &&
+    value.donor_causal_model_ready === false &&
+    value.automatic_state_coupling === false &&
+    value.model_pass_threshold_defined === false &&
+    value.predictive_ready === false &&
+    isFiniteNumber(value.summary.replicates_per_batch) &&
+    value.summary.replicate_type === "not_specified_in_source_table" &&
+    isFiniteNumber(value.summary.enzyme_count) &&
+    isFiniteNumber(value.summary.batch_count) &&
+    isFiniteNumber(value.summary.assay_mean_record_count) &&
+    isFiniteNumber(value.summary.quantified_mean_record_count) &&
+    isFiniteNumber(value.summary.source_reported_undetectable_record_count) &&
+    isFiniteNumber(value.summary.cyp3a4_scr_low) &&
+    isFiniteNumber(value.summary.cyp3a4_scr_high) &&
+    isFiniteNumber(value.summary.pass_fail_count) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEnginePhhBiliaryExcretion(value: unknown): value is EnginePhhBiliaryExcretion {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.assay_contract) ||
+    !isRecord(value.measurement_contract) ||
+    !isRecord(value.product_quality_criterion) ||
+    !isRecord(value.summary)
+  ) return false;
+  return (
+    value.version === "phh_biliary_excretion_v1" &&
+    isString(value.status) &&
+    isString(value.date_verified) &&
+    value.assay_contract.species === "Homo sapiens" &&
+    isFiniteNumber(value.assay_contract.seeded_cells_per_well) &&
+    isFiniteNumber(value.assay_contract.matrigel_percent) &&
+    isFiniteNumber(value.assay_contract.culture_duration_days) &&
+    value.assay_contract.probe === "d8_taurocholate" &&
+    isFiniteNumber(value.assay_contract.probe_concentration_uM) &&
+    isFiniteNumber(value.assay_contract.probe_incubation_duration_min) &&
+    value.assay_contract.reported_unit === "percent" &&
+    value.measurement_contract.output_quantity === "biliary_excretion_index" &&
+    value.measurement_contract.output_unit === "percent" &&
+    isString(value.measurement_contract.operator_formula) &&
+    Array.isArray(value.batch_records) &&
+    value.batch_records.every((record) =>
+      isRecord(record) && isString(record.batch_id) && isFiniteNumber(record.bei_percent)
+    ) &&
+    isFiniteNumber(value.product_quality_criterion.threshold_percent) &&
+    isString(value.product_quality_criterion.source_id) &&
+    value.product_quality_criterion.may_be_used_as_model_pass_threshold === false &&
+    Array.isArray(value.quantity_audit) &&
+    value.quantity_audit.every((audit) =>
+      isRecord(audit) &&
+      isString(audit.id) &&
+      typeof audit.identified_from_current_assay === "boolean" &&
+      typeof audit.mechanism_specific === "boolean" &&
+      typeof audit.may_fit_kinetic_parameter === "boolean"
+    ) &&
+    value.individual_batch_table_loaded === true &&
+    value.measurement_operator_ready === true &&
+    value.raw_paired_condition_values_loaded === false &&
+    value.transporter_specific_rate_fit_ready === false &&
+    value.canalicular_geometry_coupling_ready === false &&
+    value.automatic_state_coupling === false &&
+    value.model_pass_threshold_defined === false &&
+    value.predictive_ready === false &&
+    isFiniteNumber(value.summary.batch_count) &&
+    isFiniteNumber(value.summary.bei_low_percent) &&
+    isFiniteNumber(value.summary.bei_high_percent) &&
+    isFiniteNumber(value.summary.batch_count_at_or_above_source_criterion) &&
+    isFiniteNumber(value.summary.mechanism_specific_quantity_identified_count) &&
+    isFiniteNumber(value.summary.pass_fail_count) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEnginePhhIdentityHeterogeneity(value: unknown): value is EnginePhhIdentityHeterogeneity {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.source_artifact) ||
+    !isRecord(value.product_quality_criterion) ||
+    !isRecord(value.summary)
+  ) return false;
+  return (
+    value.version === "phh_identity_heterogeneity_v1" &&
+    isString(value.status) &&
+    isString(value.date_verified) &&
+    value.source_artifact.geo_accession === "GSE289636" &&
+    isString(value.source_artifact.supplement_md5) &&
+    isString(value.source_artifact.supplement_sha256) &&
+    Array.isArray(value.facs_records) &&
+    value.facs_records.every((record) =>
+      isRecord(record) &&
+      isString(record.batch_id) &&
+      isFiniteNumber(record.alb_positive_percent) &&
+      isFiniteNumber(record.hnf4a_positive_percent)
+    ) &&
+    Array.isArray(value.scrna_records) &&
+    value.scrna_records.every((record) =>
+      isRecord(record) &&
+      isString(record.batch_id) &&
+      Array.isArray(record.cell_types) &&
+      record.cell_types.every((cellType) =>
+        isRecord(cellType) &&
+        isString(cellType.cell_type) &&
+        isFiniteNumber(cellType.count) &&
+        isFiniteNumber(cellType.percent)
+      )
+    ) &&
+    isFiniteNumber(value.product_quality_criterion.threshold_percent) &&
+    isString(value.product_quality_criterion.source_id) &&
+    value.product_quality_criterion.may_be_used_as_single_cell_state_threshold === false &&
+    Array.isArray(value.reported_associations) &&
+    value.reported_associations.every((association) =>
+      isRecord(association) &&
+      isString(association.id) &&
+      isFiniteNumber(association.correlation_r) &&
+      (association.p_value === null || isFiniteNumber(association.p_value)) &&
+      isFiniteNumber(association.sample_size) &&
+      (association.statistically_significant_as_reported === null || typeof association.statistically_significant_as_reported === "boolean")
+    ) &&
+    Array.isArray(value.hepatocyte_subsets) &&
+    value.hepatocyte_subsets.every((subset) =>
+      isRecord(subset) &&
+      isString(subset.id) &&
+      Array.isArray(subset.reported_enrichment) && subset.reported_enrichment.every(isString)
+    ) &&
+    value.facs_batch_table_loaded === true &&
+    value.scrna_composition_table_loaded === true &&
+    value.raw_geo_accession_registered === true &&
+    value.hepatocyte_subset_count_loaded === true &&
+    value.hepatocyte_subset_batch_numeric_matrix_loaded === false &&
+    value.single_cell_state_initialization_ready === false &&
+    value.generative_training_ready === false &&
+    value.automatic_state_coupling === false &&
+    value.predictive_ready === false &&
+    isFiniteNumber(value.summary.facs_batch_count) &&
+    isFiniteNumber(value.summary.scrna_batch_count) &&
+    isFiniteNumber(value.summary.filtered_single_cell_count) &&
+    isFiniteNumber(value.summary.cell_type_count) &&
+    isFiniteNumber(value.summary.scrna_hepatocyte_low_percent) &&
+    isFiniteNumber(value.summary.scrna_hepatocyte_high_percent) &&
+    isFiniteNumber(value.summary.hepatocyte_subset_count) &&
+    isFiniteNumber(value.summary.pass_fail_count) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEnginePhhProteomeBudget(value: unknown): value is EnginePhhProteomeBudget {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.cohort) ||
+    !isRecord(value.whole_cell_anchors) ||
+    !isRecord(value.whole_cell_anchors.total_protein_pg_per_cell) ||
+    !isRecord(value.whole_cell_anchors.total_protein_molecules_per_cell) ||
+    !isRecord(value.whole_cell_anchors.estimated_cell_volume_um3) ||
+    !isRecord(value.summary)
+  ) return false;
+  return (
+    value.version === "phh_proteome_budget_v1" &&
+    isString(value.status) &&
+    isString(value.date_verified) &&
+    value.cohort.species === "Homo sapiens" &&
+    isFiniteNumber(value.cohort.donor_count) &&
+    isFiniteNumber(value.whole_cell_anchors.total_protein_pg_per_cell.value) &&
+    value.whole_cell_anchors.total_protein_pg_per_cell.uncertainty === null &&
+    isFiniteNumber(value.whole_cell_anchors.total_protein_molecules_per_cell.value) &&
+    value.whole_cell_anchors.total_protein_molecules_per_cell.uncertainty === null &&
+    isFiniteNumber(value.whole_cell_anchors.estimated_cell_volume_um3.value) &&
+    value.whole_cell_anchors.estimated_cell_volume_um3.uncertainty === null &&
+    Array.isArray(value.compartment_protein_mass_fractions) &&
+    value.compartment_protein_mass_fractions.every((item) =>
+      isRecord(item) &&
+      isString(item.id) &&
+      isFiniteNumber(item.fraction_of_total_cellular_protein) &&
+      isString(item.evidence_role)
+    ) &&
+    Array.isArray(value.derived_compartment_mass_budget) &&
+    value.derived_compartment_mass_budget.every((item) =>
+      isRecord(item) &&
+      isString(item.id) &&
+      isFiniteNumber(item.fraction_of_total_cellular_protein) &&
+      isFiniteNumber(item.derived_protein_mass_pg_per_cell)
+    ) &&
+    value.whole_cell_protein_reference_ready === true &&
+    value.arithmetic_compartment_mass_budget_ready === true &&
+    value.donor_specific_initialization_ready === false &&
+    value.dynamic_proteostasis_ready === false &&
+    value.macromolecular_crowding_ready === false &&
+    value.geometry_coupling_ready === false &&
+    value.automatic_state_coupling === false &&
+    value.predictive_ready === false &&
+    isFiniteNumber(value.summary.total_protein_pg_per_cell) &&
+    isFiniteNumber(value.summary.total_protein_molecules_per_cell) &&
+    isFiniteNumber(value.summary.mitochondrial_protein_mass_pg_per_cell) &&
+    isFiniteNumber(value.summary.integral_plasma_membrane_protein_mass_pg_per_cell) &&
+    isFiniteNumber(value.summary.dynamic_parameter_count) &&
+    isFiniteNumber(value.summary.geometry_parameter_count) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEnginePhhTransporterInventory(value: unknown): value is EnginePhhTransporterInventory {
+  if (!isRecord(value) || !isRecord(value.summary)) return false;
+  return (
+    value.version === "phh_transporter_inventory_v1" &&
+    isString(value.status) &&
+    isString(value.date_verified) &&
+    Array.isArray(value.transporters) &&
+    value.transporters.length === 2 &&
+    value.transporters.every((item) => {
+      if (!isRecord(item) || !isRecord(item.abundance)) return false;
+      const bridge = item.matched_denominator_bridge;
+      const equivalent = item.exact_unit_equivalent;
+      return (
+        (item.id === "ABCB11_BSEP" || item.id === "ABCC2_MRP2") &&
+        isString(item.gene) &&
+        isString(item.protein) &&
+        isFiniteNumber(item.abundance.value) &&
+        (item.abundance.sd === null || isFiniteNumber(item.abundance.sd)) &&
+        isString(item.abundance.unit) &&
+        (equivalent === null || (
+          isRecord(equivalent) &&
+          isFiniteNumber(equivalent.value) &&
+          (equivalent.sd === null || isFiniteNumber(equivalent.sd)) &&
+          isString(equivalent.unit)
+        )) &&
+        (bridge === null || (
+          isRecord(bridge) &&
+          isFiniteNumber(bridge.total_protein_pg_per_cell) &&
+          isFiniteNumber(bridge.avogadro_per_mol) &&
+          isFiniteNumber(bridge.derived_total_copies_per_cell) &&
+          isFiniteNumber(bridge.display_precision_total_copies_per_cell) &&
+          isString(bridge.formula)
+        )) &&
+        (item.total_copies_per_hepatocyte === null || isFiniteNumber(item.total_copies_per_hepatocyte)) &&
+        item.canalicular_surface_copies_per_cell === null &&
+        item.transport_active_copies_per_cell === null &&
+        item.surface_density_copies_per_um2 === null
+      );
+    }) &&
+    value.bsep_total_copy_bridge_ready === true &&
+    value.bsep_surface_copy_bridge_ready === false &&
+    value.bsep_active_copy_bridge_ready === false &&
+    value.mrp2_total_copy_bridge_ready === false &&
+    value.mrp2_surface_copy_bridge_ready === false &&
+    value.surface_density_ready === false &&
+    value.flux_coupling_ready === false &&
+    value.individual_protein_rendering_permitted === false &&
+    value.automatic_state_coupling === false &&
+    value.predictive_ready === false &&
+    isFiniteNumber(value.summary.bsep_total_copies_per_cell) &&
+    isFiniteNumber(value.summary.same_cohort_total_copy_bridge_count) &&
+    isFiniteNumber(value.summary.mrp2_mean_fmol_per_ug_liver_membrane_protein) &&
+    isFiniteNumber(value.summary.surface_localized_copy_count_record_count) &&
+    isFiniteNumber(value.summary.flux_parameter_count) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEngineHumanSchBileAcids(value: unknown): value is EngineHumanSchBileAcids {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.source_artifact) ||
+    !isRecord(value.assay_contract) ||
+    !isRecord(value.measurement_contract) ||
+    !isRecord(value.summary)
+  ) return false;
+  return (
+    value.version === "human_sch_bile_acids_v1" &&
+    isString(value.status) &&
+    isString(value.date_verified) &&
+    value.source_artifact.pmcid === "PMC3679176" &&
+    value.source_artifact.source_location === "Table 4" &&
+    Array.isArray(value.donors) &&
+    value.donors.length === 4 &&
+    value.donors.every((donor) =>
+      isRecord(donor) &&
+      isString(donor.id) &&
+      isFiniteNumber(donor.age_years) &&
+      isString(donor.sex)
+    ) &&
+    value.assay_contract.species === "Homo sapiens" &&
+    isFiniteNumber(value.assay_contract.sampling_day) &&
+    isFiniteNumber(value.assay_contract.donor_experiment_count) &&
+    isFiniteNumber(value.assay_contract.estimated_intracellular_volume_uL_per_well) &&
+    value.assay_contract.below_quantification_policy_in_source === "assigned_proxy_zero" &&
+    value.assay_contract.below_quantification_proxy_is_biological_zero === false &&
+    value.measurement_contract.concentration_unit === "uM" &&
+    value.measurement_contract.bei_unit === "percent" &&
+    value.measurement_contract.published_bei_aggregation === "mean_and_SD_of_experiment_level_BEI_values" &&
+    value.measurement_contract.may_reconstruct_published_bei_from_group_mean_concentrations === false &&
+    value.measurement_contract.difference_is_true_canalicular_concentration === false &&
+    Array.isArray(value.conditions) &&
+    value.conditions.length === 2 &&
+    value.conditions.every((condition) =>
+      isRecord(condition) &&
+      (condition.id === "vehicle_control" || condition.id === "troglitazone_10_uM") &&
+      Array.isArray(condition.records) &&
+      condition.records.length === 5 &&
+      condition.records.every((record) =>
+        isRecord(record) &&
+        isString(record.analyte) &&
+        isFiniteNumber(record.cells_plus_bile_mean_uM) &&
+        isFiniteNumber(record.cells_plus_bile_sd_uM) &&
+        isFiniteNumber(record.cells_mean_uM) &&
+        isFiniteNumber(record.cells_sd_uM) &&
+        isFiniteNumber(record.medium_mean_uM) &&
+        isFiniteNumber(record.medium_sd_uM) &&
+        (record.bei_mean_percent === null || isFiniteNumber(record.bei_mean_percent)) &&
+        (record.bei_sd_percent === null || isFiniteNumber(record.bei_sd_percent))
+      )
+    ) &&
+    value.table4_numeric_records_loaded === true &&
+    value.aggregate_measurement_contract_ready === true &&
+    value.raw_donor_records_loaded === false &&
+    value.analyte_LLOQ_loaded === false &&
+    value.true_canalicular_concentration_ready === false &&
+    value.kinetic_parameter_fit_ready === false &&
+    value.healthy_in_vivo_initialization_ready === false &&
+    value.automatic_state_coupling === false &&
+    value.model_pass_threshold_defined === false &&
+    value.predictive_ready === false &&
+    isFiniteNumber(value.summary.donor_count) &&
+    isFiniteNumber(value.summary.table_record_count) &&
+    isFiniteNumber(value.summary.published_mean_endpoint_count) &&
+    isFiniteNumber(value.summary.vehicle_total_cells_mean_uM) &&
+    isFiniteNumber(value.summary.raw_donor_record_count) &&
+    isFiniteNumber(value.summary.pass_fail_count) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEngineBrian2Communication(value: unknown): value is EngineBrian2Communication {
+  if (!isRecord(value) || !isRecord(value.adapter) || !isRecord(value.gate)) return false;
+  return (
+    typeof value.adapter.available === "boolean" &&
+    isString(value.adapter.error) &&
+    isString(value.adapter.module_name) &&
+    (value.adapter.package_version === null || isString(value.adapter.package_version)) &&
+    isString(value.adapter.supported_role) &&
+    typeof value.gate.backend_available === "boolean" &&
+    (value.gate.package_version === null || isString(value.gate.package_version)) &&
+    typeof value.gate.version_matches_project_pin === "boolean" &&
+    typeof value.gate.model_attached === "boolean" &&
+    typeof value.gate.execution_ready === "boolean" &&
+    Array.isArray(value.gate.blockers) && value.gate.blockers.every(isString) &&
+    isString(value.pinned_version) &&
+    isString(value.role) &&
+    typeof value.automatic_state_coupling === "boolean" &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString)
+  );
+}
+
+function isEngineGenerativeModelingBoundary(value: unknown): value is EngineGenerativeModelingBoundary {
+  if (!isRecord(value)) return false;
+  return (
+    isString(value.version) &&
+    isString(value.status) &&
+    isString(value.target_species) &&
+    isString(value.target_cell_type) &&
+    Array.isArray(value.allowed_input_modalities) && value.allowed_input_modalities.every(isString) &&
+    Array.isArray(value.required_metadata) && value.required_metadata.every(isString) &&
+    Array.isArray(value.prohibited_training_inputs) && value.prohibited_training_inputs.every(isString) &&
+    isString(value.split_policy) &&
+    Array.isArray(value.candidate_model_families) && value.candidate_model_families.every(isString) &&
+    Array.isArray(value.backends) &&
+    value.backends.every((backend) =>
+      isRecord(backend) &&
+      isString(backend.module_name) &&
+      typeof backend.available === "boolean" &&
+      (backend.package_version === null || isString(backend.package_version)) &&
+      isString(backend.role) &&
+      isString(backend.error)
+    ) &&
+    typeof value.training_ready === "boolean" &&
+    typeof value.inference_ready === "boolean" &&
+    typeof value.automatic_state_coupling === "boolean" &&
+    Array.isArray(value.blockers) && value.blockers.every(isString) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString)
+  );
 }
 
 export type EngineSnapshotStream = {
@@ -1347,6 +4159,21 @@ function isEngineSnapshot(value: unknown): value is EngineSnapshot {
     !!candidate.state &&
     typeof candidate.state.elapsed_s === "number" &&
     typeof candidate.state.status === "string" &&
-    !!candidate.state.pools
+    !!candidate.state.pools &&
+    (candidate.state.healthy_phh_glucose_validation === undefined || isEngineHealthyPhhGlucoseValidation(candidate.state.healthy_phh_glucose_validation)) &&
+    (candidate.state.phh_spheroid_validation_protocol === undefined || isEnginePhhSpheroidValidationProtocol(candidate.state.phh_spheroid_validation_protocol)) &&
+    (candidate.state.phh_glucose_observability === undefined || isEnginePhhGlucoseObservability(candidate.state.phh_glucose_observability)) &&
+    (candidate.state.phh_albumin_secretion === undefined || isEnginePhhAlbuminSecretion(candidate.state.phh_albumin_secretion)) &&
+    (candidate.state.phh_cyp_function === undefined || isEnginePhhCypFunction(candidate.state.phh_cyp_function)) &&
+    (candidate.state.phh_biliary_excretion === undefined || isEnginePhhBiliaryExcretion(candidate.state.phh_biliary_excretion)) &&
+    (candidate.state.phh_identity_heterogeneity === undefined || isEnginePhhIdentityHeterogeneity(candidate.state.phh_identity_heterogeneity)) &&
+    (candidate.state.phh_proteome_budget === undefined || isEnginePhhProteomeBudget(candidate.state.phh_proteome_budget)) &&
+    (candidate.state.phh_transporter_inventory === undefined || isEnginePhhTransporterInventory(candidate.state.phh_transporter_inventory)) &&
+    (candidate.state.human_sch_bile_acids === undefined || isEngineHumanSchBileAcids(candidate.state.human_sch_bile_acids)) &&
+    (candidate.state.intercellular_communication === undefined || isEngineIntercellularCommunication(candidate.state.intercellular_communication)) &&
+    (candidate.state.spatial_world === undefined || isEngineSpatialWorld(candidate.state.spatial_world)) &&
+    (candidate.state.spatial_state === undefined || candidate.state.spatial_state === null || isEngineCellSpatialState(candidate.state.spatial_state)) &&
+    (candidate.state.brian2_communication === undefined || isEngineBrian2Communication(candidate.state.brian2_communication)) &&
+    (candidate.state.generative_modeling === undefined || isEngineGenerativeModelingBoundary(candidate.state.generative_modeling))
   );
 }

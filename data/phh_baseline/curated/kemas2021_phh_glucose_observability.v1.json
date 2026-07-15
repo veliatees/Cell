@@ -1,0 +1,247 @@
+{
+  "schema_version": "cell.phh-glucose-observability.v1",
+  "date_verified": "2026-07-14",
+  "status": "measurement_operator_ready_mechanistic_identifiability_blocked",
+  "protocol_version": "phh_spheroid_glucose_validation_protocol_v1",
+  "measurement_contract": {
+    "input_quantity": "cumulative_net_medium_glucose_disappearance",
+    "input_unit": "fmol_per_seeded_cell",
+    "input_positive_direction": "positive_is_net_disappearance_negative_is_net_production",
+    "required_timepoints_h": [0.0, 6.0, 24.0, 72.0],
+    "required_condition_ids": ["hi_hg", "li_hg", "hi_lg", "li_lg"],
+    "output_quantity": "net_medium_glucose_disappearance",
+    "output_unit": "fmol_per_cell_per_h",
+    "output_denominator": "seeded_cells_per_spheroid",
+    "operator_formula": "(cumulative_end - cumulative_start) / (time_end_h - time_start_h)"
+  },
+  "supplemental_constraints": [
+    {
+      "id": "donor_resolved_signed_net_flux",
+      "source_locator": "Supplementary Figure 2",
+      "finding": "Donor 1 showed net glucose production at 6 h in every tested condition except HI+HG; donor 2 showed no net glucose production at any studied time point.",
+      "reported_n": null,
+      "numeric_trajectory_available": false,
+      "model_consequence": "Model output must remain signed; a non-negative consumption clamp is prohibited, but no donor-specific numeric trajectory may be reconstructed from the figure caption."
+    },
+    {
+      "id": "short_term_challenge_viability",
+      "source_locator": "Supplementary Figure 1",
+      "finding": "ATP-assay viability before and after the 72 h glucose and hormone challenge was reported as not significantly different.",
+      "reported_n": 8,
+      "numeric_trajectory_available": false,
+      "model_consequence": "The qualitative viability result cannot replace viable-cell counts at 0, 6, 24 and 72 h and cannot change the seeded-cell denominator."
+    }
+  ],
+  "quantity_audit": [
+    {
+      "id": "net_medium_glucose_disappearance_window",
+      "quantity_class": "aggregate_output",
+      "identified_from_current_protocol": true,
+      "numeric_value_available": true,
+      "may_fit_kinetic_parameter": false,
+      "reason": "The assay directly constrains signed net glucose amount lost from the medium per seeded cell over each reported time window.",
+      "required_measurement_ids": [],
+      "source_ids": ["kemas2021_phh_glucose"]
+    },
+    {
+      "id": "glucose_transport_influx",
+      "quantity_class": "mechanistic_flux",
+      "identified_from_current_protocol": false,
+      "numeric_value_available": false,
+      "may_fit_kinetic_parameter": false,
+      "reason": "Net medium disappearance does not separate inward from outward glucose transport.",
+      "required_measurement_ids": ["signed_donor_resolved_medium_mass_balance", "isotope_resolved_fluxomics", "transporter_and_enzyme_abundance"],
+      "source_ids": ["kemas2021_phh_glucose", "koenig2012_hepatic_glucose_model"]
+    },
+    {
+      "id": "glucose_transport_efflux",
+      "quantity_class": "mechanistic_flux",
+      "identified_from_current_protocol": false,
+      "numeric_value_available": false,
+      "may_fit_kinetic_parameter": false,
+      "reason": "Donor-level net production proves that outward glucose flux can contribute, but the pooled medium endpoint does not quantify it separately.",
+      "required_measurement_ids": ["signed_donor_resolved_medium_mass_balance", "isotope_resolved_fluxomics", "transporter_and_enzyme_abundance"],
+      "source_ids": ["kemas2021_phh_glucose", "koenig2012_hepatic_glucose_model"]
+    },
+    {
+      "id": "glucokinase_flux",
+      "quantity_class": "mechanistic_flux",
+      "identified_from_current_protocol": false,
+      "numeric_value_available": false,
+      "may_fit_kinetic_parameter": false,
+      "reason": "Extracellular net glucose change does not measure intracellular glucose phosphorylation.",
+      "required_measurement_ids": ["isotope_resolved_fluxomics", "intracellular_metabolite_timecourse", "transporter_and_enzyme_abundance"],
+      "source_ids": ["koenig2012_hepatic_glucose_model"]
+    },
+    {
+      "id": "glucose_6_phosphatase_flux",
+      "quantity_class": "mechanistic_flux",
+      "identified_from_current_protocol": false,
+      "numeric_value_available": false,
+      "may_fit_kinetic_parameter": false,
+      "reason": "Medium glucose alone cannot resolve glucose-6-phosphate dephosphorylation from transport or other glucose-producing routes.",
+      "required_measurement_ids": ["isotope_resolved_fluxomics", "intracellular_metabolite_timecourse", "transporter_and_enzyme_abundance"],
+      "source_ids": ["koenig2012_hepatic_glucose_model"]
+    },
+    {
+      "id": "glycogen_synthesis_flux",
+      "quantity_class": "mechanistic_flux",
+      "identified_from_current_protocol": false,
+      "numeric_value_available": false,
+      "may_fit_kinetic_parameter": false,
+      "reason": "Net glucose disappearance does not report what fraction enters glycogen.",
+      "required_measurement_ids": ["isotope_resolved_fluxomics", "intracellular_metabolite_timecourse"],
+      "source_ids": ["koenig2012_hepatic_glucose_model", "grankvist2024_human_liver_fluxomics"]
+    },
+    {
+      "id": "glycogenolysis_flux",
+      "quantity_class": "mechanistic_flux",
+      "identified_from_current_protocol": false,
+      "numeric_value_available": false,
+      "may_fit_kinetic_parameter": false,
+      "reason": "Net production can arise from glycogenolysis or gluconeogenesis and the current endpoint does not distinguish them.",
+      "required_measurement_ids": ["isotope_resolved_fluxomics", "intracellular_metabolite_timecourse"],
+      "source_ids": ["koenig2012_hepatic_glucose_model", "grankvist2024_human_liver_fluxomics"]
+    },
+    {
+      "id": "glycolysis_flux",
+      "quantity_class": "mechanistic_flux",
+      "identified_from_current_protocol": false,
+      "numeric_value_available": false,
+      "may_fit_kinetic_parameter": false,
+      "reason": "Medium disappearance does not distinguish glycolysis from glycogen synthesis, pentose-phosphate flux or intracellular accumulation.",
+      "required_measurement_ids": ["isotope_resolved_fluxomics", "intracellular_metabolite_timecourse"],
+      "source_ids": ["koenig2012_hepatic_glucose_model", "grankvist2024_human_liver_fluxomics"]
+    },
+    {
+      "id": "gluconeogenesis_flux",
+      "quantity_class": "mechanistic_flux",
+      "identified_from_current_protocol": false,
+      "numeric_value_available": false,
+      "may_fit_kinetic_parameter": false,
+      "reason": "A signed net endpoint cannot allocate glucose production between gluconeogenesis and glycogenolysis.",
+      "required_measurement_ids": ["isotope_resolved_fluxomics", "intracellular_metabolite_timecourse"],
+      "source_ids": ["koenig2012_hepatic_glucose_model", "grankvist2024_human_liver_fluxomics"]
+    },
+    {
+      "id": "pentose_phosphate_pathway_flux",
+      "quantity_class": "mechanistic_flux",
+      "identified_from_current_protocol": false,
+      "numeric_value_available": false,
+      "may_fit_kinetic_parameter": false,
+      "reason": "No isotopologue or intracellular product measurement separates pentose-phosphate use from other glucose fates.",
+      "required_measurement_ids": ["isotope_resolved_fluxomics", "intracellular_metabolite_timecourse"],
+      "source_ids": ["grankvist2024_human_liver_fluxomics"]
+    },
+    {
+      "id": "donor_specific_signed_net_flux",
+      "quantity_class": "donor_effect",
+      "identified_from_current_protocol": false,
+      "numeric_value_available": false,
+      "may_fit_kinetic_parameter": false,
+      "reason": "The supplement establishes a donor-dependent sign difference qualitatively, while Table 1 pools the healthy insulin-sensitive records and does not expose a numeric donor trajectory.",
+      "required_measurement_ids": ["signed_donor_resolved_medium_mass_balance"],
+      "source_ids": ["kemas2021_phh_glucose"]
+    },
+    {
+      "id": "pure_insulin_causal_effect",
+      "quantity_class": "causal_effect",
+      "identified_from_current_protocol": false,
+      "numeric_value_available": false,
+      "may_fit_kinetic_parameter": false,
+      "reason": "Low-insulin media also contain 100 nM glucagon, whereas glucagon in high-insulin media is not reported as a measured zero.",
+      "required_measurement_ids": ["orthogonal_hormone_perturbation_timecourse"],
+      "source_ids": ["kemas2021_phh_glucose"]
+    },
+    {
+      "id": "viable_cell_normalized_flux",
+      "quantity_class": "normalization",
+      "identified_from_current_protocol": false,
+      "numeric_value_available": false,
+      "may_fit_kinetic_parameter": false,
+      "reason": "The reported denominator is seeded cells; window-specific viable-cell counts are unavailable.",
+      "required_measurement_ids": ["signed_donor_resolved_medium_mass_balance"],
+      "source_ids": ["kemas2021_phh_glucose"]
+    }
+  ],
+  "required_measurements": [
+    {
+      "id": "signed_donor_resolved_medium_mass_balance",
+      "label": "Signed donor-resolved medium mass balance",
+      "requirements": [
+        "Donor identity and biological replicate identity",
+        "Glucose concentration at every challenge time point",
+        "Initial and remaining medium volume after every sample",
+        "Numeric volumetric factor used by the assay",
+        "Seeded and viable cell count at every window"
+      ],
+      "purpose": "Resolve donor trajectories and an exact amount balance without inventing a volume or cell-count correction."
+    },
+    {
+      "id": "isotope_resolved_fluxomics",
+      "label": "Isotope-resolved fluxomics",
+      "requirements": [
+        "13C-glucose and gluconeogenic-substrate tracer design",
+        "Extracellular uptake and release rates",
+        "Intracellular and secreted isotopologue fractions",
+        "A declared atom-mapped metabolic network and flux-identifiability analysis"
+      ],
+      "purpose": "Separate glucose uptake, production, recycling and pathway allocation."
+    },
+    {
+      "id": "intracellular_metabolite_timecourse",
+      "label": "Intracellular metabolite time course",
+      "requirements": [
+        "Glucose and glucose-6-phosphate",
+        "Glycogen",
+        "Lactate and pyruvate",
+        "Selected pentose-phosphate and energy/redox intermediates",
+        "Matched 0, 6, 24 and 72 h sampling"
+      ],
+      "purpose": "Constrain intracellular storage and competing glucose fates."
+    },
+    {
+      "id": "transporter_and_enzyme_abundance",
+      "label": "Transporter and enzyme abundance",
+      "requirements": [
+        "Surface-accessible GLUT2 abundance",
+        "GCK and G6PC abundance or activity",
+        "Condition- and donor-matched measurements",
+        "Assay-specific uncertainty and units"
+      ],
+      "purpose": "Convert flux observations into identifiable capacity parameters instead of assumed enzyme concentrations."
+    },
+    {
+      "id": "orthogonal_hormone_perturbation_timecourse",
+      "label": "Orthogonal hormone perturbation time course",
+      "requirements": [
+        "Insulin varied while glucagon and glucose are held fixed",
+        "Glucagon varied while insulin and glucose are held fixed",
+        "Multiple physiological doses and times",
+        "INSR-AKT and cAMP-PKA response readouts with glucose flux"
+      ],
+      "purpose": "Estimate insulin- and glucagon-specific causal responses without exposure-bundle confounding."
+    }
+  ],
+  "gates": {
+    "cumulative_measurement_operator_ready": true,
+    "signed_output_required": true,
+    "donor_specific_numeric_trajectory_ready": false,
+    "mechanistic_flux_decomposition_ready": false,
+    "kinetic_parameter_fit_ready": false,
+    "exact_protocol_model_trajectory_loaded": false,
+    "automatic_state_coupling": false,
+    "predictive_ready": false
+  },
+  "source_ids": [
+    "kemas2021_phh_glucose",
+    "koenig2012_hepatic_glucose_model",
+    "grankvist2024_human_liver_fluxomics"
+  ],
+  "limitations": [
+    "The measurement operator transforms a model output into the published observation space; it is not a biological rate law and supplies no parameter values.",
+    "The Kemas aggregate endpoint is a signed net medium balance and cannot identify bidirectional transport or intracellular pathway fluxes by itself.",
+    "The Grankvist isotope-tracing study demonstrates a measurement strategy in intact human liver tissue, not a transferable numeric calibration for PHH spheroids.",
+    "No synthetic trajectory, fitted parameter, acceptance threshold or model-state coupling is exported."
+  ]
+}

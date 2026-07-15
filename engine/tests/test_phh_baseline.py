@@ -61,6 +61,7 @@ class PhhBaselineTests(unittest.TestCase):
         predictive = evaluate_scientific_release("predictive")
         self.assertFalse(predictive.passed)
         self.assertIn("NADH and GSH/GSSG are not compartment resolved", predictive.blockers)
+        self.assertIn("published hepatic glucose shadow model reproduces only 2 of 5 publication benchmarks", predictive.blockers)
 
 
 if __name__ == "__main__":

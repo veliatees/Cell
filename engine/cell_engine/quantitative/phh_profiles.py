@@ -105,8 +105,10 @@ def phh_profile(profile_id: PhhNutritionalState = DEFAULT_PHH_PROFILE_ID) -> Phh
     return PHH_NUTRITIONAL_PROFILES[profile_id]
 
 
-def phh_profiles_snapshot() -> dict[str, object]:
-    selected = phh_profile()
+def phh_profiles_snapshot(
+    selected_profile_id: PhhNutritionalState = DEFAULT_PHH_PROFILE_ID,
+) -> dict[str, object]:
+    selected = phh_profile(selected_profile_id)
     return {
         "selected_profile": selected.id,
         "profiles": {
