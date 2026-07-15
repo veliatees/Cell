@@ -663,6 +663,10 @@ let resolvedDivisionVisual: ResolvedDivisionVisual | null = null;
 // Each organelle pulses with its OWN activity (its own loop in the cell model).
 type GlowGroup = { kind: keyof OrganelleActivity; mats: THREE.MeshStandardMaterial[]; base: number; gain: number };
 let organelleGlow: GlowGroup[] = [];
+// Instanced-population materials whose emissive tracks real organelle activity
+// with a gentle mapping (mitochondria/peroxisomes/lysosomes) — kept separate from
+// the discrete-organelle glow so a dense population does not bloom to white.
+let popGlowMats: { mat: THREE.MeshStandardMaterial; kind: keyof OrganelleActivity }[] = [];
 let ribosomeMat: THREE.PointsMaterial | null = null; // ribosomes brighten with translation
 type FlowPacket = {
   curve: THREE.CatmullRomCurve3;
@@ -4463,6 +4467,7 @@ function clearWaterVisuals() {
   membraneField = null;
   diseaseSceneVisuals = null;
   organelleGlow = [];
+  popGlowMats = [];
   ribosomeMat = null;
   glycogenInstanced = null;
   glycogenTotal = 0;
@@ -6256,6 +6261,7 @@ function buildOrganelleScene() {
   membraneFaceDirs = null;
   membraneField = null;
   organelleGlow = [];
+  popGlowMats = [];
   ribosomeMat = null;
   glycogenInstanced = null;
   glycogenTotal = 0;
@@ -6388,7 +6394,7 @@ function buildOrganelleScene() {
     }
     return null;
   };
-  const HGRID = 2.5; // grid cell >= largest instanced exclusion diameter (real-size mitochondria)
+  const HGRID = 1.9; // grid cell >= largest instanced exclusion diameter (round-ovoid mitochondria ≈ 1.72)
   const hashCells = new Map<number, { x: number; y: number; z: number; r: number }[]>();
   const hkey = (ix: number, iy: number, iz: number) => (ix + 512) * 1_048_576 + (iy + 512) * 1024 + (iz + 512);
   const gi = (v: number) => Math.floor(v / HGRID);
@@ -6470,7 +6476,7 @@ function buildOrganelleScene() {
     const placed: THREE.Vector3[] = [];
     for (let i = 0; i < count; i += 1) {
       let found: THREE.Vector3 | null = null;
-      for (let t = 0; t < 90; t += 1) {
+      for (let t = 0; t < 130; t += 1) {
         const cand = interiorPoint(rMax);
         if (cand.length() + exclR > rMax) continue;
         if (organelleCollides(cand.x, cand.y, cand.z, exclR)) continue;
@@ -6495,6 +6501,13 @@ function buildOrganelleScene() {
       opacity,
       depthWrite: opacity >= 0.6
     });
+    // Function: couple this population's glow to its real engine activity × health
+    // (mitochondria brighten with how hard they are making ATP, peroxisomes with
+    // β-oxidation, lysosomes with degradative load). These use a GENTLE mapping
+    // (not the discrete organelles' aggressive one) because a dense instanced
+    // population would otherwise bloom to white; per-instance colour heterogeneity
+    // keeps the shared activity level from reading as a unison strobe.
+    if (kind) popGlowMats.push({ mat, kind });
     const inst = new THREE.InstancedMesh(geo, mat, actual);
     const m4 = new THREE.Matrix4();
     const q = new THREE.Quaternion();
@@ -7253,12 +7266,14 @@ function buildOrganelleScene() {
   // budgets only; they are not counts, densities, or volume-fraction estimates.
   // Real-size, real-density crowding targets. Mitochondria occupy ~18-20% of
   // hepatocyte volume (Blouin, Bolender & Weibel, J Cell Biol 1977, 72:441 -
-  // rat parenchyma stereology; human hepatocyte is the same order). At true
-  // ~0.6-1 µm mitochondrial size the excluded-volume packer jams before it
-  // reaches the full literature fraction, so the count below is set high and
-  // the renderer keeps whatever fits without interpenetration - the cytoplasm
-  // reads as densely packed rather than a few floating capsules.
-  const MITO_DISPLAY_SAMPLES = 1150;
+  // rat parenchyma stereology; human hepatocyte is the same order, ~1000-2000
+  // mitochondria per cell). The key to reaching the true fraction WITHOUT any
+  // interpenetration is shape: real hepatocyte mitochondria are round-ish ovoids
+  // (~0.6-1 µm), not thin rods. A near-spherical ovoid fills ~58% of its bounding
+  // sphere, and random non-overlap packing of those spheres reaches ~34%, so the
+  // achievable mitochondrial volume fraction is ~0.58×0.34 ≈ 18-20% - the
+  // measured value - reached purely by excluded-volume placement.
+  const MITO_DISPLAY_SAMPLES = 3000;
   const PEROX_DISPLAY_SAMPLES = 300;
   const LYSO_DISPLAY_SAMPLES = 200;
   const LIPID_DROPLET_DISPLAY_SAMPLES = 130;
@@ -7285,23 +7300,24 @@ function buildOrganelleScene() {
       crista.scale.set(1, 0.55, 1);
     }
   }
-  // One elongated-ovoid display population; geometry is not human morphometry.
+  // One round-ovoid display population. A ~0.66 µm-wide, ~0.92 µm-long ovoid
+  // (CELL_R ≈ 9.2 µm, so 1 µm ≈ 1.52 world) — real hepatocyte mitochondrial
+  // shape, near-spherical so bounding-sphere packing is efficient and the
+  // measured ~18-20% volume fraction is reached without interpenetration.
   addOrganellePopulation(
     "mitochondria",
     MITO_DISPLAY_SAMPLES - HERO_MITO,
-    // ~0.6 µm-wide, ~1.2 µm-long ovoid mitochondrion (CELL_R world units ≈ 9.2 µm
-    // radius, so 1 µm ≈ 1.52 world). Real hepatocyte-scale, not a tiny marker.
-    new THREE.CapsuleGeometry(0.44, 0.9, 6, 12),
+    new THREE.CapsuleGeometry(0.5, 0.4, 8, 14),
     "#ff8a5c",
     {
-      opacity: 0.92,
+      opacity: 0.94,
       emissive: 0.14,
-      jitterScale: 0.15,
-      // Tight collision radius ≈ the capsule's true bounding radius (0.9/2 + 0.44)
-      // so drawn size ≈ reserved space and the packing reads as dense, not gappy.
-      collisionRadius: 0.9,
-      cage: 0.07,
-      step: 0.04,
+      jitterScale: 0.16,
+      // Collision radius = the ovoid's true bounding radius (0.4/2 + 0.5 = 0.7)
+      // so reserved space ≈ drawn size and the packing is dense but never overlaps.
+      collisionRadius: 0.7,
+      cage: 0.05,
+      step: 0.035,
       label: `Mitochondria - real hepatocyte-scale ovoids (~0.6×1.2 µm) packed by excluded volume toward the ~18-20% volume fraction reported for hepatocyte cytoplasm (Blouin, Bolender & Weibel 1977, rat parenchyma stereology; human is the same order). The packer keeps whatever fits without overlap; exact per-cell count and donor morphometry are not claimed.`
     }
   );
@@ -8266,6 +8282,15 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     for (const g of organelleGlow) {
       const e = glowOf(g.kind, g.gain);
       for (const mat of g.mats) mat.emissiveIntensity = e;
+    }
+    // Dense instanced populations (mitochondria/peroxisomes/lysosomes): a gentle
+    // activity-driven brightening (0.1..~0.42) so they visibly respond to real
+    // ATP / β-oxidation / degradative activity without blooming to white. Each is
+    // normalised to its own typical activity so they pulse on their own level.
+    const POP_GLOW_REF: Partial<Record<OrganelleId, number>> = { mitochondria: 0.95, peroxisome: 0.35, lysosome: 0.5 };
+    for (const p of popGlowMats) {
+      const norm = Math.min(1, activityOf(p.kind) / (POP_GLOW_REF[p.kind] ?? 1));
+      p.mat.emissiveIntensity = (0.1 + 0.32 * norm) * (0.4 + 0.6 * healthOf(p.kind));
     }
     // --- Local cinematic dynamics ---
     // Schematic pulses make the renderer legible; they are not a Python-engine
