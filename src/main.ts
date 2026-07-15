@@ -558,36 +558,57 @@ let membraneRestPos: Float32Array | null = null;
 let engineMembraneDeformationActive = false;
 
 // --- Contact-event channel -------------------------------------------------
-// The geometric layer emits contact/exchange events when an external body
-// physically reaches the membrane: proximity -> the nearest membrane receptor
-// senses it -> receptor-mediated transport (endocytosis) physically indents the
-// membrane and imports cargo -> a structured event is emitted. This is the
-// trigger channel the engine will consume; response KINETICS stay fail-closed
-// (no validated rate is applied), but the geometric/physical trigger is real.
-type ContactPartner = { kind: "virus" | "bacterium" | "cell"; label: string; receptorGene: string; receptorName: string; cargo: string; color: string; radiusWorld: number; magnified: boolean };
-type ContactPhase = "approach" | "sensing" | "internalizing" | "cooldown";
-type ContactExchangeEvent = { id: number; tSim: number; partnerLabel: string; receptor: string; direction: "import" | "signal"; cargo: string; gapUm: number; kind: string };
+// When an external body physically reaches the membrane, the cell does NOT
+// simply eat it. It DECIDES by molecular recognition, and — following the
+// engine's own source-backed communication atlas — the dominant outcome is
+// SIGNALLING, not import: a ligand binds its receptor and a signal cascade
+// propagates INWARD while the ligand stays outside. Neighbour cells form
+// junctions (no import). A hepatocyte does not phagocytose bacteria (that is the
+// Kupffer cell's role), so an unrecognised body is NOT taken in. Receptor-
+// mediated ENTRY (membrane invagination) is the rare, specific case — here a
+// virus hijacking a real receptor. Each outcome emits a structured event: the
+// engine's trigger input, with response kinetics still fail-closed.
+type ContactResponse = "signal" | "junction" | "entry_hijack" | "no_uptake";
+type ContactPartner = {
+  kind: "ligand" | "cell" | "virus" | "bacterium";
+  label: string;
+  molecule: string;          // what it presents to the surface
+  receptorGene: string;      // "" when there is no recognising receptor
+  receptorName: string;
+  response: ContactResponse;
+  pathway: string;           // transduction summary / outcome
+  color: string;
+  radiusWorld: number;
+};
+type ContactPhase = "approach" | "decide" | "respond" | "depart" | "cooldown";
+type ContactExchangeEvent = { id: number; tSim: number; partnerLabel: string; receptor: string; response: ContactResponse; pathway: string; gapUm: number };
 type ContactChannel = {
   body: THREE.Mesh;
-  vesicle: THREE.Mesh;
-  dir: THREE.Vector3;         // contact direction (basolateral surface)
+  signalPulse: THREE.Mesh;   // second-messenger cascade travelling inward
+  nucleus: THREE.Vector3;
+  dir: THREE.Vector3;
   partner: ContactPartner;
   partnerIndex: number;
   phase: ContactPhase;
   phaseT: number;
   gapUm: number;
   receptorId: string | null;
-  indent: number;            // current membrane invagination depth (world units)
+  indent: number;            // invagination depth — only for entry_hijack
   events: ContactExchangeEvent[];
 };
 let contactChannel: ContactChannel | null = null;
 let contactEventSeq = 0;
 const CONTACT_PARTNERS: ContactPartner[] = [
-  // NTCP / SLC10A1 is the real hepatitis B/D virus receptor (per the protein
-  // manifest), so a virus is imported through it - a source-grounded pairing.
-  { kind: "virus", label: "HBV-like virion", receptorGene: "SLC10A1", receptorName: "NTCP", cargo: "viral particle", color: "#d47b8e", radiusWorld: 0.9, magnified: true },
-  { kind: "bacterium", label: "bacterium", receptorGene: "SLC22A1", receptorName: "OCT1", cargo: "surface ligand", color: "#d8b45b", radiusWorld: 1.5, magnified: false },
-  { kind: "cell", label: "neighbour cell", receptorGene: "GCGR", receptorName: "GCGR", cargo: "paracrine signal", color: "#81a6b6", radiusWorld: 2.4, magnified: false }
+  // Endocrine ligand: glucagon binds GCGR → Gs/cAMP/PKA/CREB. Ligand is NOT
+  // internalised; the SIGNAL propagates inward. (Engine atlas: glucagon_gcgr_...)
+  { kind: "ligand", label: "glucagon", molecule: "glucagon hormone", receptorGene: "GCGR", receptorName: "GCGR", response: "signal", pathway: "Gs → cAMP → PKA → CREB · glycogen mobilisation (ligand stays outside)", color: "#f2c45b", radiusWorld: 0.34 },
+  // Neighbour hepatocyte: E-cadherin adherens + Cx32 gap junction. No import.
+  { kind: "cell", label: "neighbour hepatocyte", molecule: "E-cadherin + Cx32", receptorGene: "", receptorName: "CDH1 / GJB1(Cx32)", response: "junction", pathway: "adherens junction + gap-junction coupling · small-molecule exchange (no import)", color: "#81a6b6", radiusWorld: 3.0 },
+  // Bacterium: hepatocytes do NOT phagocytose — Kupffer cells do. Not taken in.
+  { kind: "bacterium", label: "bacterium", molecule: "surface PAMPs", receptorGene: "", receptorName: "— (no uptake receptor)", response: "no_uptake", pathway: "not internalised by the hepatocyte · cleared by Kupffer cells", color: "#d8b45b", radiusWorld: 1.4 },
+  // Virus: HBV hijacks NTCP/SLC10A1 (the real HBV/HDV receptor) to ENTER — the
+  // rare, specific, pathological import case (Yan et al. 2012).
+  { kind: "virus", label: "HBV virion", molecule: "preS1 envelope", receptorGene: "SLC10A1", receptorName: "NTCP", response: "entry_hijack", pathway: "preS1 → NTCP hijack → receptor-mediated ENTRY (pathological exception)", color: "#d47b8e", radiusWorld: 0.8 }
 ];
 let organelleInteractionLayer: THREE.Group | null = null;
 let organelleInteractionSummaryRef: EngineSnapshotSummary | null = null;
@@ -2895,25 +2916,27 @@ function pickContactReceptorDir(partner: ContactPartner, fallback: THREE.Vector3
   return chosen ? { dir: chosen.dir.clone(), id: chosen.proteinId } : { dir: fallback.clone(), id: null };
 }
 
-function buildContactChannel(group: THREE.Group): void {
+function buildContactChannel(group: THREE.Group, nucleus: THREE.Vector3): void {
   const bodyGeo = new THREE.IcosahedronGeometry(1, 2);
-  const bodyMat = new THREE.MeshStandardMaterial({ color: "#d47b8e", emissive: "#d47b8e", emissiveIntensity: 0.18, roughness: 0.5, metalness: 0.02 });
+  const bodyMat = new THREE.MeshStandardMaterial({ color: "#f2c45b", emissive: "#f2c45b", emissiveIntensity: 0.2, roughness: 0.5, metalness: 0.02 });
   const body = new THREE.Mesh(bodyGeo, bodyMat);
   body.visible = false;
   body.userData.hoverKind = "engine-spatial-body";
   group.add(body);
-  const vesGeo = new THREE.IcosahedronGeometry(1, 2);
-  const vesMat = new THREE.MeshStandardMaterial({ color: "#9cc7d6", emissive: "#5d93a6", emissiveIntensity: 0.14, roughness: 0.5, transparent: true, opacity: 0.9 });
-  const vesicle = new THREE.Mesh(vesGeo, vesMat);
-  vesicle.visible = false;
-  group.add(vesicle);
+  // The second-messenger signal that travels INWARD from an engaged receptor
+  // toward the nucleus (the ligand itself never enters).
+  const pulseMat = new THREE.MeshStandardMaterial({ color: "#8fe3ff", emissive: "#8fe3ff", emissiveIntensity: 0.9, roughness: 0.4, transparent: true, opacity: 0.95 });
+  const signalPulse = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 2), pulseMat);
+  signalPulse.visible = false;
+  group.add(signalPulse);
   contactChannel = {
-    body, vesicle,
+    body, signalPulse,
+    nucleus: nucleus.clone(),
     dir: new THREE.Vector3(-0.86, 0.2, 0.35).normalize(),
     partner: CONTACT_PARTNERS[0],
     partnerIndex: 0,
     phase: "cooldown",
-    phaseT: 1.5, // small delay before the first approach
+    phaseT: 1.2, // small delay before the first approach
     gapUm: 0,
     receptorId: null,
     indent: 0,
@@ -2925,9 +2948,16 @@ function startContactApproach(cc: ContactChannel): void {
   cc.partnerIndex = (cc.partnerIndex + 1) % CONTACT_PARTNERS.length;
   cc.partner = CONTACT_PARTNERS[cc.partnerIndex];
   const basolateral = new THREE.Vector3(-0.86, 0.2, 0.35).normalize();
-  const target = pickContactReceptorDir(cc.partner, basolateral);
-  cc.dir = target.dir;
-  cc.receptorId = target.id;
+  // Only signalling/entry partners engage a specific receptor; a junction or an
+  // unrecognised body just meets the surface at a basolateral point.
+  if (cc.partner.receptorGene) {
+    const target = pickContactReceptorDir(cc.partner, basolateral);
+    cc.dir = target.dir;
+    cc.receptorId = target.id;
+  } else {
+    cc.dir = basolateral.clone();
+    cc.receptorId = null;
+  }
   cc.phase = "approach";
   cc.phaseT = 0;
   cc.indent = 0;
@@ -2937,22 +2967,21 @@ function startContactApproach(cc: ContactChannel): void {
   b.scale.setScalar(cc.partner.radiusWorld);
   b.position.copy(cc.dir).multiplyScalar(CELL_R * 1.85);
   b.visible = true;
-  cc.vesicle.visible = false;
+  cc.signalPulse.visible = false;
 }
 
 const _ccPos = new THREE.Vector3();
 const _ccNorm = new THREE.Vector3();
-function emitContactEvent(cc: ContactChannel, direction: "import" | "signal", tSim: number): void {
+function emitContactEvent(cc: ContactChannel, tSim: number): void {
   contactEventSeq += 1;
   cc.events.unshift({
     id: contactEventSeq,
     tSim,
     partnerLabel: cc.partner.label,
     receptor: cc.receptorId ? `${cc.partner.receptorName} (${cc.receptorId})` : cc.partner.receptorName,
-    direction,
-    cargo: cc.partner.cargo,
-    gapUm: cc.gapUm,
-    kind: cc.partner.kind
+    response: cc.partner.response,
+    pathway: cc.partner.pathway,
+    gapUm: cc.gapUm
   });
   if (cc.events.length > 4) cc.events.length = 4;
 }
@@ -2974,90 +3003,102 @@ function updateContactChannel(dtSim: number, tSim: number): void {
   const cc = contactChannel;
   if (!cc || !membraneSim) return;
   cc.phaseT += dtSim;
-  // Where the membrane surface currently is along the contact direction.
   sampleMembraneSurface(cc.dir.x, cc.dir.y, cc.dir.z, 1.0, _ccPos, _ccNorm);
   const surfaceR = _ccPos.length();
   const bodyR = cc.partner.radiusWorld;
+  const contactR = surfaceR + bodyR * 0.55;
 
   switch (cc.phase) {
     case "approach": {
-      const startR = CELL_R * 1.85;
-      const contactR = surfaceR + bodyR * 0.6;
-      const speed = CELL_R * 0.9; // world units / sim-second
+      const speed = CELL_R * 0.9;
       const r = Math.max(contactR, cc.body.position.length() - speed * dtSim);
       cc.body.position.copy(cc.dir).multiplyScalar(r);
-      cc.gapUm = Math.max(0, (r - contactR)) * (CELL_RADIUS_UM / CELL_R);
-      cc.body.rotation.y += dtSim * 0.8;
+      cc.gapUm = Math.max(0, r - contactR) * (CELL_RADIUS_UM / CELL_R);
+      cc.body.rotation.y += dtSim * 0.6;
       if (r <= contactR + 1e-3) {
-        cc.phase = "sensing"; cc.phaseT = 0;
-        pulseContactReceptor(cc.receptorId, true);
-        emitContactEvent(cc, cc.partner.kind === "cell" ? "signal" : "import", tSim);
-      }
-      void startR;
-      break;
-    }
-    case "sensing": {
-      // The receptor has engaged; the membrane begins to invaginate around it.
-      cc.indent = Math.min(bodyR * 0.9, cc.indent + dtSim * bodyR * 0.6);
-      cc.body.position.copy(cc.dir).multiplyScalar(surfaceR - cc.indent + bodyR * 0.5);
-      if (cc.phaseT > 1.4) {
-        if (cc.partner.kind === "cell") { cc.phase = "cooldown"; cc.phaseT = 0; pulseContactReceptor(cc.receptorId, false); }
-        else { cc.phase = "internalizing"; cc.phaseT = 0; }
+        // The body has reached the surface. The cell now DECIDES by recognition.
+        cc.phase = "decide"; cc.phaseT = 0;
+        cc.gapUm = 0;
+        if (cc.receptorId) pulseContactReceptor(cc.receptorId, true);
+        emitContactEvent(cc, tSim);
       }
       break;
     }
-    case "internalizing": {
-      // Receptor-mediated endocytosis: the patch pinches in and the cargo is
-      // carried inward on a vesicle; the membrane then seals behind it.
-      cc.indent = Math.min(bodyR * 1.5, cc.indent + dtSim * bodyR * 0.9);
-      const depth = Math.min(1, cc.phaseT / 1.6);
-      cc.body.position.copy(cc.dir).multiplyScalar(surfaceR - cc.indent - depth * CELL_R * 0.2);
-      if (depth >= 1) {
-        // Vesicle buds off and travels into the cytoplasm.
-        cc.body.visible = false;
-        cc.vesicle.visible = true;
-        cc.vesicle.scale.setScalar(bodyR * 0.9);
-        (cc.vesicle.material as THREE.MeshStandardMaterial).opacity = 0.9;
-        cc.vesicle.position.copy(cc.body.position);
-        cc.phase = "cooldown"; cc.phaseT = 0;
-        pulseContactReceptor(cc.receptorId, false);
+    case "decide": {
+      // Brief recognition dwell, then act on the decided response.
+      cc.body.position.copy(cc.dir).multiplyScalar(contactR);
+      if (cc.phaseT > 0.7) { cc.phase = "respond"; cc.phaseT = 0; }
+      break;
+    }
+    case "respond": {
+      cc.body.position.copy(cc.dir).multiplyScalar(contactR);
+      if (cc.partner.response === "signal") {
+        // Ligand stays docked; a second-messenger pulse travels to the nucleus.
+        const t = Math.min(1, cc.phaseT / 1.6);
+        cc.signalPulse.visible = true;
+        cc.signalPulse.position.lerpVectors(_ccPos, cc.nucleus, t);
+        (cc.signalPulse.material as THREE.MeshStandardMaterial).opacity = 0.95 * (1 - t * 0.5);
+        if (t >= 1) { cc.signalPulse.visible = false; cc.phase = "depart"; cc.phaseT = 0; pulseContactReceptor(cc.receptorId, false); }
+      } else if (cc.partner.response === "entry_hijack") {
+        // The rare specific IMPORT: the receptor is hijacked and the membrane
+        // invaginates, carrying the virion inward; then the patch seals.
+        cc.indent = Math.min(bodyR * 1.6, cc.indent + dtSim * bodyR);
+        const depth = Math.min(1, cc.phaseT / 1.8);
+        cc.body.position.copy(cc.dir).multiplyScalar(contactR - cc.indent - depth * CELL_R * 0.22);
+        if (depth >= 1) { cc.body.visible = false; cc.phase = "cooldown"; cc.phaseT = 0; pulseContactReceptor(cc.receptorId, false); }
+      } else {
+        // junction (neighbour cell) or no_uptake (bacterium): the body is NOT
+        // internalised. It simply rests at the surface for a moment.
+        if (cc.phaseT > 1.4) { cc.phase = "depart"; cc.phaseT = 0; }
       }
+      break;
+    }
+    case "depart": {
+      // The partner leaves the way it came — nothing was taken into the cell
+      // (this is the common, correct outcome).
+      const r = cc.body.position.length() + CELL_R * 0.7 * dtSim;
+      cc.body.position.copy(cc.dir).multiplyScalar(r);
+      cc.body.rotation.y += dtSim * 0.6;
+      if (r > CELL_R * 1.7) { cc.body.visible = false; cc.phase = "cooldown"; cc.phaseT = 0; }
       break;
     }
     case "cooldown": {
-      // Stop pushing: the membrane physics relaxes the indent back to rest,
-      // propagating the recovery through the neighbouring vertices.
-      cc.indent *= Math.max(0, 1 - dtSim * 1.5);
-      if (cc.vesicle.visible) {
-        cc.vesicle.position.addScaledVector(cc.dir, -dtSim * CELL_R * 0.25);
-        const m = cc.vesicle.material as THREE.MeshStandardMaterial;
-        m.opacity = Math.max(0, m.opacity - dtSim * 0.35);
-        if (m.opacity <= 0.02) cc.vesicle.visible = false;
-      }
-      if (cc.phaseT > 2.2) startContactApproach(cc);
+      // Any transient invagination (entry case) relaxes via the membrane physics.
+      cc.indent *= Math.max(0, 1 - dtSim * 1.6);
+      if (cc.phaseT > 1.8) startContactApproach(cc);
       break;
     }
   }
   renderContactBadge(cc);
 }
 
+function contactResponseTag(r: ContactResponse): { arrow: string; cls: string } {
+  switch (r) {
+    case "signal": return { arrow: "→ SIGNAL IN (ligand stays out)", cls: "is-signal" };
+    case "junction": return { arrow: "↔ JUNCTION (no import)", cls: "is-junction" };
+    case "entry_hijack": return { arrow: "⇢ RECEPTOR-MEDIATED ENTRY (pathological)", cls: "is-entry" };
+    case "no_uptake": return { arrow: "✕ NOT TAKEN IN (Kupffer-cell role)", cls: "is-none" };
+  }
+}
+
 function renderContactBadge(cc: ContactChannel): void {
   if (!cc.events.length) { contactBadge.style.display = "none"; return; }
   contactBadge.style.display = "block";
   const rows = cc.events.map((e, idx) => {
-    const arrow = e.direction === "import" ? "→ IMPORT" : "↔ SIGNAL";
+    const tag = contactResponseTag(e.response);
     const live = idx === 0 ? " is-live" : "";
-    return `<div class="contact-badge__row${live}"><span class="contact-badge__partner">${e.partnerLabel}</span> · ${e.receptor} · ${arrow} <b>${e.cargo}</b></div>`;
+    return `<div class="contact-badge__row${live} ${tag.cls}"><span class="contact-badge__partner">${e.partnerLabel}</span> · ${e.receptor} <span class="contact-badge__resp">${tag.arrow}</span><br><small>${e.pathway}</small></div>`;
   }).join("");
   const phase = cc.phase === "approach"
     ? `approaching · gap ${cc.gapUm.toFixed(2)} µm`
-    : cc.phase === "sensing" ? "receptor engaged"
-    : cc.phase === "internalizing" ? "receptor-mediated endocytosis"
-    : "membrane relaxing";
+    : cc.phase === "decide" ? "cell deciding (molecular recognition)"
+    : cc.phase === "respond" ? (cc.partner.response === "signal" ? "signal cascade → nucleus" : cc.partner.response === "entry_hijack" ? "receptor-mediated entry" : cc.partner.response === "junction" ? "junction engaged" : "not internalised")
+    : cc.phase === "depart" ? "partner leaving (nothing imported)"
+    : "resetting";
   contactBadge.innerHTML =
     `<div class="contact-badge__head"><span class="contact-badge__title">Contact channel</span><span class="contact-badge__phase">${phase}</span></div>` +
     rows +
-    `<div class="contact-badge__note">Geometric contact → receptor → transport events: the engine's trigger inputs. Response kinetics remain fail-closed (no validated rate applied).</div>`;
+    `<div class="contact-badge__note">The cell DECIDES by molecular recognition — most contact is signalling, not import. Geometric contact + the decided response are the engine's trigger inputs; response kinetics remain fail-closed.</div>`;
 }
 
 // Per-frame bounded random motion of the instanced organelle display samples.
@@ -8074,7 +8115,7 @@ function buildOrganelleScene() {
     cytoskeleton: centroid("cytoskeleton")
   };
   buildCellFlowVisuals(group);
-  buildContactChannel(group);
+  buildContactChannel(group, nuc);
   divisionOverlay = createDivisionOverlay();
   group.add(divisionOverlay.group);
 

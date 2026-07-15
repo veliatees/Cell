@@ -1877,3 +1877,10 @@ input[type="checkbox"] {
   font-size: 9.5px;
   color: #b7a3ab;
 }
+
+.contact-badge__resp { font-weight: 700; letter-spacing: 0.01em; }
+.contact-badge__row small { opacity: 0.82; font-size: 9.5px; }
+.contact-badge__row.is-signal .contact-badge__resp { color: #8fe3ff; }
+.contact-badge__row.is-junction .contact-badge__resp { color: #9be0a8; }
+.contact-badge__row.is-entry .contact-badge__resp { color: #ff9a9a; }
+.contact-badge__row.is-none .contact-badge__resp { color: #c7b48a; }
