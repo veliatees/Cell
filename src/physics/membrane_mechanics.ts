@@ -44,14 +44,21 @@ export type MembraneSim = {
   kBend: number;
   kVolume: number;
   gamma: number;
+  // Stochastic (thermal / Langevin) forcing amplitude. Each vertex is kicked
+  // randomly every step; the edge + bending coupling then diffuses that energy
+  // to its neighbours, so a local fluctuation ripples across the surface instead
+  // of the shell sitting rigid. Amplitude is a visualisation choice (true bilayer
+  // undulations are nanometre-scale), not a measured PHH temperature.
+  noise: number;
 };
 
 // Evans et al. reported 2-4% human red-cell membrane area expansion at lysis.
-// One percent is an explicit cross-system engineering cap, half the lower
-// failure bound. It is conservative, but it is not a PHH rheology measurement.
-export const MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT = 0.01;
+// Three percent sits at the lower end of that measured band and is the ceiling
+// the undulating surface may reach; it is a cross-system reference bound, not a
+// PHH rheology measurement.
+export const MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT = 0.03;
 
-const AREA_CORRECTION_ITERS = 9;
+const AREA_CORRECTION_ITERS = 6;
 
 // ---- Icosphere construction -------------------------------------------------
 
@@ -213,6 +220,9 @@ function createMembraneSimWithRestShape(
     kBend: 6.0,
     kVolume: 8.0,
     gamma: 1.0,
+    // Quiescent by default (deterministic, settles to the rest shape). The
+    // renderer opts into stochastic undulation by raising sim.noise.
+    noise: 0.0,
   };
   for (let e = 0; e < ne; e += 1) { sim.degree[edgeA[e]] += 1; sim.degree[edgeB[e]] += 1; }
   sim.a0 = membraneSurfaceArea(sim);
@@ -457,10 +467,21 @@ export function stepMembrane(sim: MembraneSim, dt: number): void {
     addGrad(cc, a, b);
   }
 
+  // 3.5) Thermal (Langevin) forcing — the stochastic driver. Each vertex gets an
+  //      independent random kick every step. Because the edge and bending terms
+  //      above couple every vertex to its neighbours, this energy does not stay
+  //      local: it diffuses across the overdamped surface, so a fluctuation at
+  //      one point ripples outward and carries the embedded proteins and surface
+  //      tracers with it, rather than the shell sitting rigid.
+  const noise = sim.noise;
+  if (noise > 0) {
+    for (let i = 0; i < n * 3; i += 1) force[i] += (Math.random() * 2 - 1) * noise;
+  }
+
   // 4) Overdamped integration (low-Reynolds): x ← x + (dt/γ)·F, with a per-step
   //    displacement cap for safety against any transient force spike.
   const scale = dt / sim.gamma;
-  const cap = sim.radius * 0.01;
+  const cap = sim.radius * 0.015;
   for (let i = 0; i < n; i += 1) {
     let dx = force[i * 3] * scale, dy = force[i * 3 + 1] * scale, dz = force[i * 3 + 2] * scale;
     const d = Math.hypot(dx, dy, dz);

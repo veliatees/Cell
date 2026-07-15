@@ -3184,8 +3184,7 @@ function updateMembraneShape(dtReal: number) {
   if (!sim || !organelleMembrane) return;
   // These substeps repair mesh quality only; they are not biological time.
   const simDt = clamp(dtReal, 0.004, 0.024);
-  const sub = 2;
-  for (let i = 0; i < sub; i += 1) stepMembrane(sim, simDt / sub);
+  stepMembrane(sim, simDt);
   const spatialWorld = externalEngineSummary?.spatialWorld;
   const bodyId = externalEngineSummary?.spatialState?.body_id;
   const body = spatialWorld?.bodies.find((candidate) => candidate.id === bodyId)
@@ -6441,7 +6440,7 @@ function buildOrganelleScene() {
       // A NARROW disclosed cutaway keeps the nucleus/endomembrane system readable
       // while leaving the cytoplasm crowded (a real hepatocyte is packed, not
       // hollow). Only a small front wedge is thinned.
-      if (radialFraction > 0.5 && cutawayAlignment > 0.62) continue;
+      if (radialFraction > 0.58 && cutawayAlignment > 0.7) continue;
       if (p.length() + 0.4 < rMax) return p;
     }
     return randDir().multiplyScalar(0.5 * rMax);
@@ -6454,7 +6453,7 @@ function buildOrganelleScene() {
     opts: { opacity?: number; emissive?: number; rMax?: number; label: string; jitterScale?: number; collisionRadius: number; cage?: number; step?: number }
   ): THREE.InstancedMesh | null => {
     if (count <= 0) return null;
-    const rMax = opts.rMax ?? CELL_R * 0.86;
+    const rMax = opts.rMax ?? CELL_R * 0.9;
     const jitter = opts.jitterScale ?? 0.2;
     // Cage radius is a renderer stability parameter. It is not a measured PHH
     // diffusion coefficient, confinement length or organelle trajectory.
@@ -6569,6 +6568,14 @@ function buildOrganelleScene() {
   // subdiv 4 (2562 vertices) gives a smooth cell silhouette instead of a coarse
   // facetted shell; the rest shape and bounded physics are unchanged.
   membraneSim = createHepatocyteMembraneSim(CELL_R, 4);
+  // Opt into stochastic thermal undulation: each vertex is kicked randomly and
+  // the edge + bending coupling diffuses that energy to its neighbours, so the
+  // living membrane ripples and carries its embedded proteins / surface tracers,
+  // instead of sitting as a rigid shell. Bounded by the same area/volume caps.
+  // A modest kick with strong curvature coupling gives smooth, low-frequency
+  // undulation (not per-vertex jitter): bending damps the high-frequency modes.
+  membraneSim.noise = 3.2;
+  membraneSim.kBend = 11.0;
   membraneRestPos = new Float32Array(membraneSim.pos);
   rebuildMembraneSurfaceIndex();
   membraneField = null;
@@ -7251,9 +7258,9 @@ function buildOrganelleScene() {
   // reaches the full literature fraction, so the count below is set high and
   // the renderer keeps whatever fits without interpenetration - the cytoplasm
   // reads as densely packed rather than a few floating capsules.
-  const MITO_DISPLAY_SAMPLES = 900;
-  const PEROX_DISPLAY_SAMPLES = 220;
-  const LYSO_DISPLAY_SAMPLES = 150;
+  const MITO_DISPLAY_SAMPLES = 1150;
+  const PEROX_DISPLAY_SAMPLES = 300;
+  const LYSO_DISPLAY_SAMPLES = 200;
   const LIPID_DROPLET_DISPLAY_SAMPLES = 130;
   const HERO_MITO = 0;
   for (let i = 0; i < HERO_MITO; i += 1) {
@@ -7292,9 +7299,9 @@ function buildOrganelleScene() {
       jitterScale: 0.15,
       // Tight collision radius ≈ the capsule's true bounding radius (0.9/2 + 0.44)
       // so drawn size ≈ reserved space and the packing reads as dense, not gappy.
-      collisionRadius: 0.92,
-      cage: 0.12,
-      step: 0.045,
+      collisionRadius: 0.9,
+      cage: 0.07,
+      step: 0.04,
       label: `Mitochondria - real hepatocyte-scale ovoids (~0.6×1.2 µm) packed by excluded volume toward the ~18-20% volume fraction reported for hepatocyte cytoplasm (Blouin, Bolender & Weibel 1977, rat parenchyma stereology; human is the same order). The packer keeps whatever fits without overlap; exact per-cell count and donor morphometry are not claimed.`
     }
   );
@@ -8218,6 +8225,9 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     const colorFrame = organelleFrameCount % 8 === 0;
     // Step the physics membrane FIRST so the deformation field is fresh for
     // everything that rides it (proteins, clouds, and the coupled organelles).
+    // The membrane carries visible stochastic undulation; it is stepped on
+    // alternating frames (its area/volume projections are the costliest part of
+    // the scene), which stays smooth enough while keeping the main thread free.
     if (heavyFrame) updateMembraneShape(realDeltaS * 2);
     syncOrganelleInteractionGeometry(externalEngineSummary);
     updateVisualAnatomyLod();
