@@ -56,11 +56,19 @@ class WholeCellStructureTests(unittest.TestCase):
         self.assertIn("gene", network.species)
         self.assertIn("transcription", {reaction.id for reaction in network.reactions})
 
-    def test_glut2_capacity_uses_protein_inventory_effect_layer(self):
+    def test_total_protein_inventory_cannot_drive_glut2_activity(self):
         inventory = protein_inventory_counts()
         inventory["protein:SLC2A2"] *= 0.25
+        with self.assertRaisesRegex(ValueError, "cannot drive transport activity"):
+            seed_whole_cell(build_hepatocyte_definition(), protein_inventory=inventory)
+
+    def test_explicit_glut2_scenario_intervention_scales_capacity(self):
         reference = build_whole_cell_network(1.0e-12)
-        depleted = seed_whole_cell(build_hepatocyte_definition(), protein_inventory=inventory).network
+        depleted = build_whole_cell_network(
+            1.0e-12,
+            transporter_activity={"glut2": 0.25},
+            activity_basis="scenario_intervention",
+        )
         counts = {"glucose_blood": 1.0e6, "glucose": 0.0, "ATP": 1.0e6, "ADP": 0.0}
         baseline_flux = next(r for r in reference.reactions if r.id == "glut2_uptake").propensity(counts, 1.0e-12)
         depleted_flux = next(r for r in depleted.reactions if r.id == "glut2_uptake").propensity(counts, 1.0e-12)

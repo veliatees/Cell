@@ -5,31 +5,69 @@ import unittest
 from cell_engine.core.random import EngineRng
 from cell_engine.stochastic.secretion import (
     SECRETION_SOURCES,
-    T_HALF_ER_GOLGI_S,
-    run_secretion,
+    AlbuminPulseChaseParameters,
+    build_albumin_pulse_chase_network,
+    run_albumin_pulse_chase,
+)
+
+
+SOFTWARE_FIXTURE = AlbuminPulseChaseParameters(
+    er_to_golgi_half_time_s=60.0,
+    golgi_to_medium_half_time_s=120.0,
+    source_id="software_fixture",
+    experimental_system="software_test_only",
+    evidence_role="software_fixture",
 )
 
 
 class SecretionTests(unittest.TestCase):
-    def test_transit_delay(self):
-        # Almost nothing reaches blood in the first 5 min (the ~30 min transit).
-        early = run_secretion(300.0, EngineRng(1))
-        self.assertLess(early["albumin_blood"], 500.0)
-        self.assertGreater(early["proalbumin_ER"] + early["albumin_golgi"], 5000.0)
-        self.assertIn("albumin_secretion", SECRETION_SOURCES)
+    def test_network_contains_transport_only(self):
+        network = build_albumin_pulse_chase_network(SOFTWARE_FIXTURE)
+        self.assertEqual(len(network.reactions), 2)
+        self.assertNotIn("amino_acids", network.species)
+        self.assertNotIn("albumin_translation", {reaction.id for reaction in network.reactions})
+        self.assertEqual(
+            network.species,
+            (
+                "pulse_labeled_proalbumin_er",
+                "pulse_labeled_albumin_golgi",
+                "pulse_labeled_albumin_medium",
+            ),
+        )
 
-    def test_albumin_is_secreted_not_stored(self):
-        late = run_secretion(7200.0, EngineRng(1))  # 2 hours
-        secreted = late["albumin_blood"]
-        intracellular = late["proalbumin_ER"] + late["albumin_golgi"]
-        self.assertGreater(secreted, 7000.0)            # most albumin in blood
-        self.assertLess(intracellular, secreted)         # not accumulated/stored
+    def test_software_fixture_is_mass_conserving_and_reaches_medium(self):
+        initial = 10_000.0
+        counts = run_albumin_pulse_chase(
+            1_800.0,
+            EngineRng(1),
+            parameters=SOFTWARE_FIXTURE,
+            initial_labeled_proalbumin=initial,
+        )
+        self.assertAlmostEqual(sum(counts.values()), initial, delta=0.1)
+        self.assertGreater(counts["pulse_labeled_albumin_medium"], 0.0)
 
-    def test_secretion_is_monotonic(self):
-        t1 = run_secretion(900.0, EngineRng(2))["albumin_blood"]
-        t2 = run_secretion(3600.0, EngineRng(2))["albumin_blood"]
-        self.assertGreater(t2, t1)
-        self.assertEqual(T_HALF_ER_GOLGI_S, 1800.0)      # grounded ~30 min transit
+    def test_parameters_are_mandatory_and_provenance_gated(self):
+        with self.assertRaises(ValueError):
+            build_albumin_pulse_chase_network(
+                AlbuminPulseChaseParameters(
+                    er_to_golgi_half_time_s=0.0,
+                    golgi_to_medium_half_time_s=1.0,
+                    source_id="software_fixture",
+                    experimental_system="software_test_only",
+                    evidence_role="software_fixture",
+                )
+            )
+        with self.assertRaises(ValueError):
+            build_albumin_pulse_chase_network(
+                AlbuminPulseChaseParameters(
+                    er_to_golgi_half_time_s=1.0,
+                    golgi_to_medium_half_time_s=1.0,
+                    source_id="unregistered",
+                    experimental_system="human_hepatoma",
+                    evidence_role="measured_external_system",
+                )
+            )
+        self.assertIn("lodish1983_hepg2_secretory_transit", SECRETION_SOURCES)
 
 
 if __name__ == "__main__":

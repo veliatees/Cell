@@ -1,5 +1,9 @@
 # Milestone 030 — Real-units / copy-number foundation
 
+> Historical scale note: Milestone 080 promotes the direct normal-control human
+> 3D median `5657.07116 um3`. Duarte's `2850 um3` stereology result and
+> Olander's `18.4 um` isolated-PHH median remain separate cross-checks.
+
 ## Why
 
 Every prior pool lived on a normalized `[0, 1]` scale. That is adequate for
@@ -18,7 +22,11 @@ stochastic engine will seed from.
 ## What was added
 
 - `quantitative/geometry.py`
-  - `HEPATOCYTE_CELL_VOLUME_L = 3.4 pL` — source-anchored hepatocyte volume.
+  - `ISOLATED_PHH_MEDIAN_DIAMETER_UM = 18.4` — measured isolated-PHH median
+    from Olander et al. 2021.
+  - `HEPATOCYTE_CELL_VOLUME_L = 3.261760666984704 pL` — exact
+    equivalent-sphere derivation from that diameter, not a separate volume
+    measurement.
   - `build_hepatocyte_geometry(definition)` — turns each compartment's
     `volume_fraction` into an absolute volume (L), so the model definition stays
     the single source of truth for cell layout.

@@ -153,7 +153,46 @@ def sinusoid_coupled_homeostasis_snapshot(
     zone: HepaticZone,
     profile_id: PhhNutritionalState = "postabsorptive",
 ) -> dict[str, object]:
-    return build_sinusoid_coupled_homeostasis(zone, profile_id).to_dict()
+    if "glucose_blood" in phh_profile(profile_id).pools:
+        return build_sinusoid_coupled_homeostasis(zone, profile_id).to_dict()
+    return {
+        "version": "sinusoid_coupled_homeostasis_v2",
+        "selected_zone": zone,
+        "nutritional_profile": profile_id,
+        "status": "blocked_no_profile_specific_blood_target",
+        "target_glucose_mM": None,
+        "reference_low_mM": None,
+        "reference_high_mM": None,
+        "replacement_rate_per_s": None,
+        "mean_transit_time_s": HUMAN_LIVER_MEAN_TRANSIT_TIME_S,
+        "boundary_recovery_trace": (),
+        "porto_central_path": ("periportal", "midlobular", "pericentral"),
+        "coupling_edges": (
+            SinusoidCouplingEdge(
+                "blood_perfusion_replacement", "systemic_blood", "sinusoid_boundary",
+                "blocked_missing_profile_specific_target", None, None, (),
+                f"No source-backed blood glucose target is registered for {profile_id}.",
+            ),
+            SinusoidCouplingEdge(
+                "glut2_bidirectional_exchange", "sinusoid_boundary", "hepatocyte_cytosol",
+                "blocked_missing_human_calibration", None, None, (),
+                "Requires matched human PHH GLUT2 surface abundance and bidirectional transport capacity.",
+            ),
+            SinusoidCouplingEdge(
+                "zone_specific_glucose_consumption", "hepatocyte_cytosol", zone,
+                "blocked_missing_human_calibration", None, None, (),
+                "Requires human zone-resolved glucose uptake/release flux.",
+            ),
+        ),
+        "anatomical_sinusoid_volume_l": None,
+        "blood_to_cell_exchange_flux": None,
+        "zonal_oxygen_partial_pressure": None,
+        "source_ids": ("human_hepatic_transit_1996",),
+        "limitations": (
+            "Whole-liver transit is retained, but no concentration boundary is advanced without a profile-specific target.",
+            "No blood-to-cell or zone-specific flux is inferred.",
+        ),
+    }
 
 
 def build_sinusoid_boundary_network(

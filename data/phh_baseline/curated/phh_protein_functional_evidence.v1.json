@@ -1,0 +1,341 @@
+{
+  "schema_version": "cell.phh-protein-functional-evidence.v1",
+  "version": "phh_protein_functional_evidence_v1",
+  "date_verified": "2026-07-17",
+  "status": "donor_abundance_and_assay_evidence_with_whole_cell_activity_blocked",
+  "policy": "Total abundance, surface identity, membrane domain, active fraction, assay kinetics, whole-cell flux and downstream response are distinct measurements. No layer may be inferred from another without a matched observation.",
+  "source_artifacts": [
+    {
+      "source_id": "human_hepatocyte_proteome_2016",
+      "title": "In-depth quantitative analysis and comparison of the human hepatocyte and hepatoma cell line HepG2 proteomes",
+      "url": "https://doi.org/10.1016/j.jprot.2016.01.016",
+      "source_role": "seven_donor_total_protein_group_abundance_per_nucleus"
+    },
+    {
+      "source_id": "mallanna2016_phh_surfaceome",
+      "title": "Mapping the Cell-Surface N-Glycoproteome of Human Hepatocytes Reveals Markers for Selecting a Homogeneous Population of iPSC-Derived Hepatocytes",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5032032/",
+      "source_role": "primary_human_hepatocyte_surface_identity_without_density_or_domain"
+    },
+    {
+      "source_id": "human_bsep_taurocholate_2002",
+      "title": "The human bile salt export pump: characterization of substrate specificity and identification of inhibitors",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/12404239/",
+      "source_role": "recombinant_human_BSEP_taurocholate_michaelis_menten_assay"
+    },
+    {
+      "source_id": "human_bsep_taurocholate_2013",
+      "title": "Early identification of clinically relevant drug interactions with the human bile salt export pump",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3858191/",
+      "source_role": "independent_recombinant_human_BSEP_taurocholate_michaelis_menten_assay"
+    },
+    {
+      "source_id": "human_mrp2_bilirubin_glucuronides_1999",
+      "title": "Transport of monoglucuronosyl and bisglucuronosyl bilirubin by recombinant human and rat multidrug resistance protein 2",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/10421658/",
+      "source_role": "recombinant_human_MRP2_km_and_rate_at_reported_substrate_concentration"
+    },
+    {
+      "source_id": "human_ntcp_uptake_2003",
+      "title": "Function of uptake transporters for taurocholate and estradiol 17beta-D-glucuronide in cryopreserved human hepatocytes",
+      "url": "https://doi.org/10.2133/dmpk.18.33",
+      "source_role": "whole_human_hepatocyte_taurocholate_uptake_affinity_range"
+    },
+    {
+      "source_id": "bi2006_human_schh_taurocholate_transport",
+      "title": "Use of cryopreserved human hepatocytes in sandwich culture to measure hepatobiliary transport",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/16782767/",
+      "source_role": "five_lot_coupled_human_hepatocyte_taurocholate_transport_validation_ranges"
+    },
+    {
+      "source_id": "kemas2021_phh_glucose",
+      "title": "Primary human hepatocytes in 3D spheroid culture display insulin-sensitive glucose metabolism",
+      "url": "https://doi.org/10.1016/j.abb.2021.108854",
+      "source_role": "defined_insulin_exposure_with_PHH_downstream_response_observations"
+    }
+  ],
+  "proteins": [
+    {
+      "id": "ABCB11_BSEP",
+      "gene": "ABCB11",
+      "protein_id": "bsep",
+      "uniprot_accession": "O95342",
+      "functional_role": "ATP-dependent bile-salt export",
+      "physiological_compartment": "plasma_membrane",
+      "physiological_domain": "canalicular_apical",
+      "domain_source_id": "human_bsep_taurocholate_2002",
+      "surface_capture_expected": true,
+      "kinetic_observation_ids": ["bsep_taurocholate_2002", "bsep_taurocholate_2013"],
+      "functional_response_ids": []
+    },
+    {
+      "id": "ABCC2_MRP2",
+      "gene": "ABCC2",
+      "protein_id": "mrp2",
+      "uniprot_accession": "Q92887",
+      "functional_role": "ATP-dependent canalicular conjugate export",
+      "physiological_compartment": "plasma_membrane",
+      "physiological_domain": "canalicular_apical",
+      "domain_source_id": "human_mrp2_bilirubin_glucuronides_1999",
+      "surface_capture_expected": true,
+      "kinetic_observation_ids": ["mrp2_monoglucuronosyl_bilirubin_1999", "mrp2_bisglucuronosyl_bilirubin_1999"],
+      "functional_response_ids": []
+    },
+    {
+      "id": "SLC10A1_NTCP",
+      "gene": "SLC10A1",
+      "protein_id": "ntcp",
+      "uniprot_accession": "Q14973",
+      "functional_role": "sodium-dependent bile-salt uptake",
+      "physiological_compartment": "plasma_membrane",
+      "physiological_domain": "sinusoidal_basolateral",
+      "domain_source_id": "human_ntcp_uptake_2003",
+      "surface_capture_expected": true,
+      "kinetic_observation_ids": ["ntcp_dominated_taurocholate_uptake_2003"],
+      "functional_response_ids": []
+    },
+    {
+      "id": "INSR",
+      "gene": "INSR",
+      "protein_id": "insr",
+      "uniprot_accession": "P06213",
+      "functional_role": "insulin sensing and receptor-kinase signaling",
+      "physiological_compartment": "plasma_membrane",
+      "physiological_domain": null,
+      "domain_source_id": null,
+      "surface_capture_expected": true,
+      "kinetic_observation_ids": [],
+      "functional_response_ids": ["kemas_insulin_pakt_ser473_7min", "kemas_insulin_pck1_6h", "kemas_insulin_g6pc_6h"]
+    },
+    {
+      "id": "MET",
+      "gene": "MET",
+      "protein_id": "met",
+      "uniprot_accession": "P08581",
+      "functional_role": "hepatocyte growth-factor sensing",
+      "physiological_compartment": "plasma_membrane",
+      "physiological_domain": null,
+      "domain_source_id": null,
+      "surface_capture_expected": true,
+      "kinetic_observation_ids": [],
+      "functional_response_ids": []
+    },
+    {
+      "id": "EGFR",
+      "gene": "EGFR",
+      "protein_id": "egfr",
+      "uniprot_accession": "P00533",
+      "functional_role": "epidermal growth-factor sensing and co-receptor activity",
+      "physiological_compartment": "plasma_membrane",
+      "physiological_domain": null,
+      "domain_source_id": null,
+      "surface_capture_expected": true,
+      "kinetic_observation_ids": [],
+      "functional_response_ids": []
+    },
+    {
+      "id": "SLC2A2_GLUT2",
+      "gene": "SLC2A2",
+      "protein_id": "glut2",
+      "uniprot_accession": "P11168",
+      "functional_role": "facilitated bidirectional glucose transport",
+      "physiological_compartment": "plasma_membrane",
+      "physiological_domain": null,
+      "domain_source_id": null,
+      "surface_capture_expected": false,
+      "kinetic_observation_ids": [],
+      "functional_response_ids": []
+    },
+    {
+      "id": "GCK",
+      "gene": "GCK",
+      "protein_id": "glucokinase",
+      "uniprot_accession": "P35557",
+      "functional_role": "hepatic glucose phosphorylation",
+      "physiological_compartment": null,
+      "physiological_domain": null,
+      "domain_source_id": null,
+      "surface_capture_expected": false,
+      "kinetic_observation_ids": [],
+      "functional_response_ids": []
+    }
+  ],
+  "kinetic_observations": [
+    {
+      "id": "bsep_taurocholate_2002",
+      "gene": "ABCB11",
+      "protein_id": "bsep",
+      "interaction_type": "protein_substrate_transport",
+      "substrate": "taurocholate",
+      "kinetic_model": "michaelis_menten",
+      "biological_system": "recombinant_human_BSEP_in_insect_cell_membrane_vesicles",
+      "km": {"kind": "point", "value": 4.25, "low": null, "high": null, "sd": null, "unit": "uM"},
+      "velocity": {"kind": "vmax", "value": 200.0, "sd": null, "unit": "pmol_per_mg_assay_protein_per_min", "substrate_concentration_uM": null},
+      "source_id": "human_bsep_taurocholate_2002",
+      "source_locator": "abstract results",
+      "may_evaluate_assay_curve": true,
+      "may_scale_whole_cell_flux": false
+    },
+    {
+      "id": "bsep_taurocholate_2013",
+      "gene": "ABCB11",
+      "protein_id": "bsep",
+      "interaction_type": "protein_substrate_transport",
+      "substrate": "taurocholate",
+      "kinetic_model": "michaelis_menten",
+      "biological_system": "recombinant_human_BSEP_in_inverted_Sf9_membrane_vesicles",
+      "km": {"kind": "point", "value": 17.8, "low": null, "high": null, "sd": 5.0, "unit": "uM"},
+      "velocity": {"kind": "vmax", "value": 286.2, "sd": 28.2, "unit": "pmol_per_mg_assay_protein_per_min", "substrate_concentration_uM": null},
+      "source_id": "human_bsep_taurocholate_2013",
+      "source_locator": "Figure 1 and Results",
+      "may_evaluate_assay_curve": true,
+      "may_scale_whole_cell_flux": false
+    },
+    {
+      "id": "mrp2_monoglucuronosyl_bilirubin_1999",
+      "gene": "ABCC2",
+      "protein_id": "mrp2",
+      "interaction_type": "protein_substrate_transport",
+      "substrate": "monoglucuronosyl_bilirubin",
+      "kinetic_model": "michaelis_menten_affinity_with_reported_rate_point",
+      "biological_system": "recombinant_human_MRP2_in_HEK_membrane_vesicles",
+      "km": {"kind": "point", "value": 0.7, "low": null, "high": null, "sd": null, "unit": "uM"},
+      "velocity": {"kind": "rate_at_substrate_concentration", "value": 183.0, "sd": null, "unit": "pmol_per_mg_assay_protein_per_min", "substrate_concentration_uM": 0.5},
+      "source_id": "human_mrp2_bilirubin_glucuronides_1999",
+      "source_locator": "abstract results",
+      "may_evaluate_assay_curve": false,
+      "may_scale_whole_cell_flux": false
+    },
+    {
+      "id": "mrp2_bisglucuronosyl_bilirubin_1999",
+      "gene": "ABCC2",
+      "protein_id": "mrp2",
+      "interaction_type": "protein_substrate_transport",
+      "substrate": "bisglucuronosyl_bilirubin",
+      "kinetic_model": "michaelis_menten_affinity_with_reported_rate_point",
+      "biological_system": "recombinant_human_MRP2_in_HEK_membrane_vesicles",
+      "km": {"kind": "point", "value": 0.9, "low": null, "high": null, "sd": null, "unit": "uM"},
+      "velocity": {"kind": "rate_at_substrate_concentration", "value": 104.0, "sd": null, "unit": "pmol_per_mg_assay_protein_per_min", "substrate_concentration_uM": 0.5},
+      "source_id": "human_mrp2_bilirubin_glucuronides_1999",
+      "source_locator": "abstract results",
+      "may_evaluate_assay_curve": false,
+      "may_scale_whole_cell_flux": false
+    },
+    {
+      "id": "ntcp_dominated_taurocholate_uptake_2003",
+      "gene": "SLC10A1",
+      "protein_id": "ntcp",
+      "interaction_type": "whole_cell_transporter_dominated_uptake",
+      "substrate": "taurocholate",
+      "kinetic_model": "reported_michaelis_constant_range",
+      "biological_system": "cryopreserved_primary_human_hepatocytes",
+      "km": {"kind": "range", "value": null, "low": 2.0, "high": 8.0, "sd": null, "unit": "uM"},
+      "velocity": null,
+      "relative_activity_context": {"reference": "freshly_isolated_same_source_hepatocytes", "low": 0.1, "high": 2.0, "unit": "fraction_of_fresh_uptake_activity"},
+      "source_id": "human_ntcp_uptake_2003",
+      "source_locator": "abstract and full-text kinetic analysis",
+      "may_evaluate_assay_curve": false,
+      "may_scale_whole_cell_flux": false
+    }
+  ],
+  "whole_cell_transport_validations": [
+    {
+      "id": "bi2006_schh_taurocholate_coupled_transport",
+      "species": "Homo sapiens",
+      "biological_system": "cryopreserved_primary_human_hepatocytes",
+      "culture_format": "BioCoat_24_well_Matrigel_sandwich_culture",
+      "culture_medium": "InVitroGRO_media",
+      "seeded_cells_per_well": 350000,
+      "medium_volume_uL_per_well": 500.0,
+      "lot_count": 5,
+      "substrate": "taurocholate",
+      "coupled_components": [
+        "SLC10A1_NTCP",
+        "organic_anion_transporting_polypeptides",
+        "ABCB11_BSEP",
+        "intracellular_handling",
+        "canalicular_network_and_junctions"
+      ],
+      "metric_ranges": [
+        {
+          "id": "apparent_uptake",
+          "low": 11.0,
+          "high": 17.0,
+          "unit": "pmol_per_min_per_mg_cell_protein"
+        },
+        {
+          "id": "apparent_intrinsic_biliary_clearance",
+          "low": 5.8,
+          "high": 10.0,
+          "unit": "uL_per_min_per_mg_cell_protein"
+        },
+        {
+          "id": "biliary_excretion_index",
+          "low": 41.0,
+          "high": 63.0,
+          "unit": "percent"
+        }
+      ],
+      "range_semantics": "reported_range_among_five_cryopreserved_hepatocyte_lots",
+      "individual_lot_values_loaded": false,
+      "uncertainty_statistics_loaded": false,
+      "exact_probe_protocol_loaded": false,
+      "may_identify_individual_transporter_rate": false,
+      "may_initialize_healthy_in_vivo_cell": false,
+      "may_drive_cell_state": false,
+      "source_id": "bi2006_human_schh_taurocholate_transport",
+      "source_locator": "abstract results and recommended culture conditions"
+    }
+  ],
+  "functional_response_links": [
+    {
+      "id": "kemas_insulin_pakt_ser473_7min",
+      "protein_id": "insr",
+      "source_module": "healthy_phh_glucose_validation",
+      "source_id": "kemas2021_phh_glucose",
+      "role": "measured_downstream_response_not_receptor_kinetics"
+    },
+    {
+      "id": "kemas_insulin_pck1_6h",
+      "protein_id": "insr",
+      "source_module": "healthy_phh_glucose_validation",
+      "source_id": "kemas2021_phh_glucose",
+      "role": "measured_downstream_response_not_receptor_kinetics"
+    },
+    {
+      "id": "kemas_insulin_g6pc_6h",
+      "protein_id": "insr",
+      "source_module": "healthy_phh_glucose_validation",
+      "source_id": "kemas2021_phh_glucose",
+      "role": "measured_downstream_response_not_receptor_kinetics"
+    }
+  ],
+  "integration_gates": {
+    "donor_resolved_total_abundance_ready": true,
+    "surface_identity_observation_ready": true,
+    "physiological_domain_identity_ready": true,
+    "quantitative_surface_localization_ready": false,
+    "active_fraction_ready": false,
+    "assay_kinetic_observation_ready": true,
+    "same_assay_parameter_comparison_ready": true,
+    "whole_cell_transport_validation_observation_ready": true,
+    "exact_whole_cell_transport_comparison_ready": false,
+    "receptor_binding_kinetics_ready": false,
+    "donor_activity_distribution_ready": false,
+    "whole_cell_flux_coupling_ready": false,
+    "automatic_state_coupling": false,
+    "predictive_ready": false
+  },
+  "limitations": [
+    "The seven-donor proteome reports total protein-group copies per nucleus, not copies per cell or active molecules.",
+    "Cell-surface capture establishes identity but not membrane domain, orientation, density or active fraction.",
+    "BSEP and MRP2 kinetic records are recombinant vesicle assays with assay-protein denominators.",
+    "The two BSEP assays are independent contexts and must not be averaged into one pseudo-parameter.",
+    "The MRP2 values 183 and 104 are measured rates at 0.5 uM substrate, not reported Vmax values.",
+    "The NTCP-associated whole-hepatocyte uptake range is not an isolated-transporter Vmax and cryopreservation changes activity strongly.",
+    "The Bi 2006 taurocholate ranges are coupled sandwich-culture system outputs and cannot identify separate NTCP, OATP or BSEP rates.",
+    "The curated Bi 2006 record does not include individual-lot values, uncertainty statistics or the complete probe protocol needed for an exact model residual.",
+    "The INSR response observations do not identify receptor occupancy, binding kinetics or a dose-response law.",
+    "Cross-donor abundance variation is descriptive for seven surgical-resection donors and is not a healthy-population activity distribution."
+  ]
+}

@@ -1,0 +1,543 @@
+{
+  "available": true,
+  "blockers": [
+    "The official PLOS SBML contains no kinetic laws, so exact publication-artifact execution remains impossible.",
+    "The paper Figure 5 grid description conflicts with the later author-repository MATLAB grid.",
+    "The legacy 2014 executable has no explicit reusable license and is not vendored.",
+    "The permissively licensed current executable re-encoding does not reproduce all reported switch values.",
+    "Neither executable has a validated organ-to-single-hepatocyte rate scale bridge."
+  ],
+  "gates": {
+    "authoritative_rate_coupling_enabled": false,
+    "legacy_author_repository_lineage_reproduction_passed": true,
+    "legacy_runtime_vendored": false,
+    "official_publication_artifact_executable": false,
+    "official_publication_artifact_reproduction_passed": false,
+    "predictive_ready": false,
+    "vendored_current_executable_reproduction_passed": false
+  },
+  "models": {
+    "current_author_reencoding": {
+      "kinetic_law_count": 36,
+      "parameter_count": 258,
+      "reaction_count": 36,
+      "redistribution_authorized": true,
+      "sha256": "5091963c02f39cf00ae02b4fca9362af5f43544851f75b7e17768c7fc56835a3",
+      "species_count": 49,
+      "vendored": true
+    },
+    "legacy_2014_author_sbml": {
+      "detected_license": null,
+      "kinetic_law_count": 36,
+      "model_file_last_modified_commit": "b602c16594af97329058d532a6b9515688e49e1e",
+      "parameter_count": 256,
+      "reaction_count": 36,
+      "reason_not_vendored": "No explicit reusable license was found in the author repository or legacy SBML file.",
+      "redistribution_authorized": false,
+      "sbml_level": 3,
+      "sbml_version": 1,
+      "sha256": "2ffa7c7d21c60067b6f7abb559aafb4ee0b29f1bc79567de827dca5ba1192327",
+      "species_count": 49,
+      "vendored": false
+    }
+  },
+  "protocol_runs": [
+    {
+      "all_benchmarks_passed": false,
+      "benchmark_pass_count": 2,
+      "benchmark_total_count": 5,
+      "benchmarks": [
+        {
+          "acceptance_basis": "reported as 94%; interval is rounding to the reported integer percent",
+          "acceptance_high": 0.945,
+          "acceptance_low": 0.935,
+          "id": "phosphorylation_at_2_mM",
+          "passed": true,
+          "predicted": 0.940877644659,
+          "reported_target": 0.94,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "fraction"
+        },
+        {
+          "acceptance_basis": "reported as 5%; interval is rounding to the reported integer percent",
+          "acceptance_high": 0.055,
+          "acceptance_low": 0.045,
+          "id": "phosphorylation_at_14_mM",
+          "passed": true,
+          "predicted": 0.050997010304,
+          "reported_target": 0.05,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "fraction"
+        },
+        {
+          "acceptance_basis": "reported as 6.6 mM; interval is rounding to one decimal place",
+          "acceptance_high": 6.65,
+          "acceptance_low": 6.55,
+          "id": "hgp_hgu_switch",
+          "passed": false,
+          "predicted": 7.143741299282,
+          "reported_target": 6.6,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "mM_glucose"
+        },
+        {
+          "acceptance_basis": "reported as 8.5 mM; interval is rounding to one decimal place",
+          "acceptance_high": 8.55,
+          "acceptance_low": 8.45,
+          "id": "gng_glycolysis_switch",
+          "passed": false,
+          "predicted": 8.304155655787,
+          "reported_target": 8.5,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "mM_glucose"
+        },
+        {
+          "acceptance_basis": "reported as 5.1 mM; interval is rounding to one decimal place",
+          "acceptance_high": 5.15,
+          "acceptance_low": 5.05,
+          "id": "glycogenolysis_glycogenesis_switch",
+          "passed": false,
+          "predicted": 5.433978295769,
+          "reported_target": 5.1,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "mM_glucose"
+        }
+      ],
+      "id": "current_reencoding_default_boundaries",
+      "inputs": {
+        "absolute_tolerance": 1e-09,
+        "duration_min": 200.0,
+        "duration_s": 12000.0,
+        "external_lactate_mM": 1.2,
+        "fixed_glycogen_mM": 250.0,
+        "integrator": "cvode",
+        "relative_tolerance": 1e-09,
+        "zero_crossing_iterations": 32
+      },
+      "model_id": "current_author_reencoding"
+    },
+    {
+      "all_benchmarks_passed": false,
+      "benchmark_pass_count": 2,
+      "benchmark_total_count": 5,
+      "benchmarks": [
+        {
+          "acceptance_basis": "reported as 94%; interval is rounding to the reported integer percent",
+          "acceptance_high": 0.945,
+          "acceptance_low": 0.935,
+          "id": "phosphorylation_at_2_mM",
+          "passed": true,
+          "predicted": 0.940877644659,
+          "reported_target": 0.94,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "fraction"
+        },
+        {
+          "acceptance_basis": "reported as 5%; interval is rounding to the reported integer percent",
+          "acceptance_high": 0.055,
+          "acceptance_low": 0.045,
+          "id": "phosphorylation_at_14_mM",
+          "passed": true,
+          "predicted": 0.050997010304,
+          "reported_target": 0.05,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "fraction"
+        },
+        {
+          "acceptance_basis": "reported as 6.6 mM; interval is rounding to one decimal place",
+          "acceptance_high": 6.65,
+          "acceptance_low": 6.55,
+          "id": "hgp_hgu_switch",
+          "passed": false,
+          "predicted": 7.052509431844,
+          "reported_target": 6.6,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "mM_glucose"
+        },
+        {
+          "acceptance_basis": "reported as 8.5 mM; interval is rounding to one decimal place",
+          "acceptance_high": 8.55,
+          "acceptance_low": 8.45,
+          "id": "gng_glycolysis_switch",
+          "passed": false,
+          "predicted": 8.275612274767,
+          "reported_target": 8.5,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "mM_glucose"
+        },
+        {
+          "acceptance_basis": "reported as 5.1 mM; interval is rounding to one decimal place",
+          "acceptance_high": 5.15,
+          "acceptance_low": 5.05,
+          "id": "glycogenolysis_glycogenesis_switch",
+          "passed": false,
+          "predicted": 5.569103266927,
+          "reported_target": 5.1,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "mM_glucose"
+        }
+      ],
+      "id": "current_reencoding_recovered_author_repository_conditions",
+      "inputs": {
+        "absolute_tolerance": 1e-09,
+        "duration_min": 200.0,
+        "duration_s": 12000.0,
+        "external_lactate_mM": 0.8,
+        "fixed_glycogen_mM": 276.6666666666667,
+        "integrator": "cvode",
+        "relative_tolerance": 1e-09,
+        "zero_crossing_iterations": 32
+      },
+      "model_id": "current_author_reencoding"
+    },
+    {
+      "all_benchmarks_passed": false,
+      "benchmark_pass_count": 4,
+      "benchmark_total_count": 5,
+      "benchmarks": [
+        {
+          "acceptance_basis": "reported as 94%; interval is rounding to the reported integer percent",
+          "acceptance_high": 0.945,
+          "acceptance_low": 0.935,
+          "id": "phosphorylation_at_2_mM",
+          "passed": true,
+          "predicted": 0.940877644659,
+          "reported_target": 0.94,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "fraction"
+        },
+        {
+          "acceptance_basis": "reported as 5%; interval is rounding to the reported integer percent",
+          "acceptance_high": 0.055,
+          "acceptance_low": 0.045,
+          "id": "phosphorylation_at_14_mM",
+          "passed": true,
+          "predicted": 0.050997010304,
+          "reported_target": 0.05,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "fraction"
+        },
+        {
+          "acceptance_basis": "reported as 6.6 mM; interval is rounding to one decimal place",
+          "acceptance_high": 6.65,
+          "acceptance_low": 6.55,
+          "id": "hgp_hgu_switch",
+          "passed": true,
+          "predicted": 6.586014356581,
+          "reported_target": 6.6,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "mM_glucose"
+        },
+        {
+          "acceptance_basis": "reported as 8.5 mM; interval is rounding to one decimal place",
+          "acceptance_high": 8.55,
+          "acceptance_low": 8.45,
+          "id": "gng_glycolysis_switch",
+          "passed": true,
+          "predicted": 8.480404094211,
+          "reported_target": 8.5,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "mM_glucose"
+        },
+        {
+          "acceptance_basis": "reported as 5.1 mM; interval is rounding to one decimal place",
+          "acceptance_high": 5.15,
+          "acceptance_low": 5.05,
+          "id": "glycogenolysis_glycogenesis_switch",
+          "passed": false,
+          "predicted": 5.033645445597,
+          "reported_target": 5.1,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "mM_glucose"
+        }
+      ],
+      "id": "legacy_2014_literal_paper_label_conditions",
+      "inputs": {
+        "absolute_tolerance": 1e-09,
+        "duration_min": 200.0,
+        "duration_s": 12000.0,
+        "external_lactate_mM": 0.8,
+        "fixed_glycogen_mM": 250.0,
+        "integrator": "cvode",
+        "relative_tolerance": 1e-09,
+        "zero_crossing_iterations": 32
+      },
+      "model_id": "legacy_2014_author_sbml"
+    },
+    {
+      "all_benchmarks_passed": true,
+      "benchmark_pass_count": 5,
+      "benchmark_total_count": 5,
+      "benchmarks": [
+        {
+          "acceptance_basis": "reported as 94%; interval is rounding to the reported integer percent",
+          "acceptance_high": 0.945,
+          "acceptance_low": 0.935,
+          "id": "phosphorylation_at_2_mM",
+          "passed": true,
+          "predicted": 0.940877644659,
+          "reported_target": 0.94,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "fraction"
+        },
+        {
+          "acceptance_basis": "reported as 5%; interval is rounding to the reported integer percent",
+          "acceptance_high": 0.055,
+          "acceptance_low": 0.045,
+          "id": "phosphorylation_at_14_mM",
+          "passed": true,
+          "predicted": 0.050997010304,
+          "reported_target": 0.05,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "fraction"
+        },
+        {
+          "acceptance_basis": "reported as 6.6 mM; interval is rounding to one decimal place",
+          "acceptance_high": 6.65,
+          "acceptance_low": 6.55,
+          "id": "hgp_hgu_switch",
+          "passed": true,
+          "predicted": 6.629541892675,
+          "reported_target": 6.6,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "mM_glucose"
+        },
+        {
+          "acceptance_basis": "reported as 8.5 mM; interval is rounding to one decimal place",
+          "acceptance_high": 8.55,
+          "acceptance_low": 8.45,
+          "id": "gng_glycolysis_switch",
+          "passed": true,
+          "predicted": 8.459088030155,
+          "reported_target": 8.5,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "mM_glucose"
+        },
+        {
+          "acceptance_basis": "reported as 5.1 mM; interval is rounding to one decimal place",
+          "acceptance_high": 5.15,
+          "acceptance_low": 5.05,
+          "id": "glycogenolysis_glycogenesis_switch",
+          "passed": true,
+          "predicted": 5.080094187404,
+          "reported_target": 5.1,
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model"
+          ],
+          "unit": "mM_glucose"
+        }
+      ],
+      "id": "legacy_2014_recovered_author_repository_conditions",
+      "inputs": {
+        "absolute_tolerance": 1e-09,
+        "duration_min": 200.0,
+        "duration_s": 12000.0,
+        "external_lactate_mM": 0.8,
+        "fixed_glycogen_mM": 276.6666666666667,
+        "integrator": "cvode",
+        "relative_tolerance": 1e-09,
+        "zero_crossing_iterations": 32
+      },
+      "model_id": "legacy_2014_author_sbml"
+    }
+  ],
+  "recovered_author_repository_protocol": {
+    "actual_selected_glycogen_mM": 276.6666666666667,
+    "external_lactate_mM": 0.8,
+    "figure_analysis_time_min": 100.0,
+    "paper_figure_legend_glucose_step_mM": 0.05,
+    "paper_figure_legend_glycogen_step_mM": 5.0,
+    "protocol_conflict_present": true,
+    "requested_trace_label_glycogen_mM": 250.0,
+    "selection_offset_mM": 26.666666666666686,
+    "selection_rule": "first glycogen grid value greater than or equal to 250 mM",
+    "simulation_duration_min": 200.0,
+    "simulation_script_glucose_range_mM": [
+      2.0,
+      20.0
+    ],
+    "simulation_script_glucose_step_mM": 0.5,
+    "simulation_script_glycogen_grid": "logspace tails plus linspace(10, 490, 40)",
+    "steady_state_duration_check": "100-minute and 200-minute switch roots agree within numerical precision"
+  },
+  "schema_version": "koenig2012.lineage-reproduction.v1",
+  "source_ids": [
+    "koenig2012_hepatic_glucose_model",
+    "koenig2012_plos_dataset_s2",
+    "koenig_glucose_model_author_repository",
+    "koenig_glucose_glycogen_protocol_script",
+    "koenig_glucose_glycogen_figure_script"
+  ],
+  "source_repository": {
+    "commit": "747ff4ef1f3b0159f968165bb16de022c5dc5799",
+    "figure_analysis_script_sha256": "9a497822d306fd71439b8f969aa1d2fa3ab7d5987722e1366bc4f51be27af218",
+    "protocol_script_sha256": "9432e8363136c7fc08a74e89b4168254c934c449b91f9cb5013b87e0f125e053",
+    "url": "https://github.com/matthiaskoenig/glucose-model"
+  },
+  "status": "legacy_author_lineage_reproduced_current_reencoding_diverges_publication_equivalence_unresolved",
+  "tracked_result_technical_parity": {
+    "conversion_factor": 750.0,
+    "conversion_factor_basis": "author figure script: 12.5 * 60, mmol/s to umol/min/kg body mass",
+    "maximum_absolute_error": 1.377e-09,
+    "passed": true,
+    "sample_count": 6,
+    "samples": [
+      {
+        "absolute_error": {
+          "GLY": 1e-12,
+          "GNG": 1e-12,
+          "HGP": 3e-12
+        },
+        "glucose_mM": 2.0,
+        "glycogen_mM": 0.0,
+        "legacy_sbml_umol_per_min_kg": {
+          "GLY": 3.137931453402,
+          "GNG": -11.63909265405,
+          "HGP": -8.501161200647
+        },
+        "matlab_result_umol_per_min_kg": {
+          "GLY": 3.137931453401,
+          "GNG": -11.639092654051,
+          "HGP": -8.501161200649
+        }
+      },
+      {
+        "absolute_error": {
+          "GLY": 0.0,
+          "GNG": 0.0,
+          "HGP": 0.0
+        },
+        "glucose_mM": 4.5,
+        "glycogen_mM": 116.66666666666667,
+        "legacy_sbml_umol_per_min_kg": {
+          "GLY": -0.256149764095,
+          "GNG": -7.225466944509,
+          "HGP": -7.481616708604
+        },
+        "matlab_result_umol_per_min_kg": {
+          "GLY": -0.256149764095,
+          "GNG": -7.225466944509,
+          "HGP": -7.481616708604
+        }
+      },
+      {
+        "absolute_error": {
+          "GLY": 4.63e-10,
+          "GNG": 1.377e-09,
+          "HGP": 1.032e-09
+        },
+        "glucose_mM": 7.0,
+        "glycogen_mM": 223.33333333333334,
+        "legacy_sbml_umol_per_min_kg": {
+          "GLY": 5.737712477692,
+          "GNG": -5.333891170864,
+          "HGP": 0.40382130671
+        },
+        "matlab_result_umol_per_min_kg": {
+          "GLY": 5.737712477229,
+          "GNG": -5.333891169486,
+          "HGP": 0.403821307743
+        }
+      },
+      {
+        "absolute_error": {
+          "GLY": 0.0,
+          "GNG": 1e-12,
+          "HGP": 0.0
+        },
+        "glucose_mM": 12.0,
+        "glycogen_mM": 276.6666666666667,
+        "legacy_sbml_umol_per_min_kg": {
+          "GLY": 7.669405988451,
+          "GNG": 12.726865495137,
+          "HGP": 20.396271483588
+        },
+        "matlab_result_umol_per_min_kg": {
+          "GLY": 7.669405988452,
+          "GNG": 12.726865495136,
+          "HGP": 20.396271483588
+        }
+      },
+      {
+        "absolute_error": {
+          "GLY": 0.0,
+          "GNG": 1e-12,
+          "HGP": 1e-12
+        },
+        "glucose_mM": 14.0,
+        "glycogen_mM": 383.3333333333333,
+        "legacy_sbml_umol_per_min_kg": {
+          "GLY": 7.748745992359,
+          "GNG": 19.074684262225,
+          "HGP": 26.823430254584
+        },
+        "matlab_result_umol_per_min_kg": {
+          "GLY": 7.748745992359,
+          "GNG": 19.074684262225,
+          "HGP": 26.823430254583
+        }
+      },
+      {
+        "absolute_error": {
+          "GLY": 0.0,
+          "GNG": 0.0,
+          "HGP": 0.0
+        },
+        "glucose_mM": 20.0,
+        "glycogen_mM": 500.0,
+        "legacy_sbml_umol_per_min_kg": {
+          "GLY": -0.222236695968,
+          "GNG": 38.103942774084,
+          "HGP": 37.881706081774
+        },
+        "matlab_result_umol_per_min_kg": {
+          "GLY": -0.222236695968,
+          "GNG": 38.103942774085,
+          "HGP": 37.881706081774
+        }
+      }
+    ],
+    "scope": "technical parity between the tracked 2014 MATLAB result and legacy SBML; not publication or biological validation",
+    "tolerance": 1e-08,
+    "tracked_result_sha256": "5873baf7ce0eda7530d64c14531d47a8595eca2ec8ddf0d41dee19a6b9857858"
+  },
+  "version": "koenig2012_model_lineage_audit_v1"
+}
