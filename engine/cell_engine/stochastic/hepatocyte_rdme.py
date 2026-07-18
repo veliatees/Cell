@@ -1,19 +1,21 @@
-"""Wire the RDME voxel engine to real hepatocyte geometry and seed each protein
-at its true per-cell copy number, in the correct compartment.
+"""Wire the RDME voxel engine to hepatocyte geometry and measured abundance.
+
+Each selected protein group is seeded at the seven-donor median copies per
+reference nucleus in its annotated coarse compartment.
 
 This is the spatial realisation of "put the real number of proteins in the right
 place": a cubic lattice is carved into a hepatocyte (an exterior, a thin plasma-
 membrane shell split into basolateral/canalicular domains, a cytosol interior,
 and a dispersed mitochondrial fraction), and every protein from the grounded
-quantitative dataset is distributed across only the voxels of its compartment,
-summing to its real copy number. Counts are populations (integers per voxel),
-never molecule objects, so even ~5x10^7 CPS1 copies cost nothing to store.
+quantitative dataset is distributed across only the voxels of its compartment.
+Counts are populations (integers per voxel), never molecule objects, so even
+~1.1x10^8 CPS1 copies cost little to store.
 
 Geometry is deliberately coarse and is flagged as such: the membrane split by
 x-sign and the hash-based ~20% mitochondrial fraction are schematic stand-ins
 for true organelle masks, chosen to match the renderer's domain convention
-(basolateral = blood/-x, canalicular = bile/+x). The copy numbers and
-compartment assignments are the grounded, honest part.
+(basolateral = blood/-x, canalicular = bile/+x). Total abundance is measured;
+surface fraction, active fraction and exact geometry remain unknown.
 """
 
 from __future__ import annotations
@@ -92,7 +94,7 @@ def seed_proteins(
     scale: float = 1.0,
     proteins: tuple[ProteinAbundance, ...] = PROTEINS,
 ) -> RdmeState:
-    """Distribute each protein's true copy number across its compartment voxels.
+    """Distribute each reference-nucleus protein count across compartment voxels.
 
     Population is conserved exactly: every voxel of the compartment gets the even
     share, and the remainder is scattered one-per-random-voxel. ``scale`` lets a

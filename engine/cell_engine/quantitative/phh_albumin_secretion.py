@@ -502,7 +502,8 @@ def validate_phh_albumin_secretion(state: PhhAlbuminSecretionState) -> None:
         or anchor.measurement.unit != state.proteome_context.unit
         or anchor.sample_size != state.proteome_context.sample_size
         or anchor.source_id != state.proteome_context.source_id
-        or state.proteome_context.expected_value != 20_000_000.0
+        or state.proteome_context.expected_value != 19_332_782.426021077
+        or state.proteome_context.unit != "copies_per_nucleus"
         or state.proteome_context.cohort_matched_to_secretion_assay
         or state.proteome_context.is_secretion_rate
     ):
@@ -736,7 +737,7 @@ def phh_albumin_secretion_snapshot() -> dict[str, object]:
         "high_batch_mean_molecules_per_cell_24h": high_molecules,
         "low_batch_mean_molecules_per_cell_s": low_molecules / (24.0 * 60.0 * 60.0),
         "high_batch_mean_molecules_per_cell_s": high_molecules / (24.0 * 60.0 * 60.0),
-        "contextual_albumin_pool_copies_per_cell": state.proteome_context.expected_value,
+        "contextual_albumin_pool_copies_per_nucleus": state.proteome_context.expected_value,
         "mechanism_specific_rate_count": len(mechanistic),
         "mechanism_specific_rate_identified_count": sum(
             item.identified_from_current_assay for item in mechanistic

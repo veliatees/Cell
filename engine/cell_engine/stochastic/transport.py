@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from math import isfinite
-from typing import Mapping
+from typing import Literal, Mapping
 
 from cell_engine.core.provenance import ParameterProvenance, SourceReference
 from cell_engine.core.random import EngineRng
@@ -27,11 +27,11 @@ TRANSPORT_SOURCES: dict[str, SourceReference] = {
     ),
     "transporter_copy_numbers": SourceReference(
         id="transporter_copy_numbers",
-        title="Human hepatocyte transporter abundance anchors",
-        url="docs/12-hepatocyte-quantitative.md",
+        title="Seven-donor absolute primary-human-hepatocyte proteome",
+        url="https://doi.org/10.1016/j.jprot.2016.01.016",
         source_type="primary_paper",
         date_verified=DATE_VERIFIED,
-        notes="Ohtsuki 2012 and Wisniewski 2016-derived hepatocyte copy-number anchors. Values are explicitly order-of-magnitude, not exact per-cell measurements.",
+        notes="Wisniewski 2016 Supplementary Table 2 medians; total protein-group copies per nucleus, not surface-localized or transport-active copies.",
     ),
     "transport_rate_placeholder": SourceReference(
         id="transport_rate_placeholder",
@@ -48,45 +48,45 @@ TRANSPORT_VOLUME_L = 1.0 / AVOGADRO
 
 TRANSPORTER_PROTEIN_IDS = ("glut2", "ntcp", "naka", "bsep", "mrp2")
 TRANSPORTER_ACTIVITY_IDS = TRANSPORTER_PROTEIN_IDS + ("oatp",)
+TransportActivityBasis = Literal[
+    "normalized_schematic_reference",
+    "scenario_intervention",
+    "measured_surface_activity",
+]
 
 
 def reference_transporter_copy_numbers() -> dict[str, float]:
-    """Typical hepatocyte copy-number anchors for curated transport proteins.
+    """Seven-donor median copies/nucleus for curated transport protein groups.
 
-    These are abundance anchors, not individually rendered molecules. A caller
-    can divide measured/desired copies by these references and use the ratio as
-    a transport-capacity multiplier.
+    These are descriptive abundance anchors, not active transport capacities.
     """
     return {pid: PROTEIN_BY_ID[pid].copies_typical for pid in TRANSPORTER_PROTEIN_IDS}
 
 
-def transporter_activity_from_copy_numbers(copy_numbers: Mapping[str, float]) -> dict[str, float]:
-    """Convert per-cell transporter copies into relative activity multipliers.
-
-    ``1.0`` means the reference healthy hepatocyte abundance in
-    :mod:`quantitative.hepatocyte_counts`; ``0.5`` halves the corresponding
-    transport capacity; ``0`` silences it. OATP is intentionally absent because
-    this project has not yet curated an OATP copy-number anchor.
-    """
-    activity: dict[str, float] = {}
+def transporter_abundance_ratios_from_copy_numbers(
+    copy_numbers: Mapping[str, float],
+) -> dict[str, float]:
+    """Describe total-abundance ratios without assigning functional activity."""
+    ratios: dict[str, float] = {}
     for pid, reference in reference_transporter_copy_numbers().items():
         copies = float(copy_numbers.get(pid, reference))
         if not isfinite(copies):
             raise ValueError(f"{pid} copy number must be finite")
-        activity[pid] = max(copies, 0.0) / reference
-    return activity
+        if copies < 0.0:
+            raise ValueError(f"{pid} copy number must be non-negative")
+        ratios[pid] = copies / reference
+    return ratios
 
 
-def transporter_activity_from_inventory_counts(
+def transporter_abundance_ratios_from_inventory_counts(
     inventory_counts: Mapping[str, float], *, protein_prefix: str = "protein:"
 ) -> dict[str, float]:
-    """Read transporter capacity from the shared hepatocyte protein inventory.
+    """Read descriptive transporter abundance ratios from the protein inventory.
 
     The quantitative inventory is keyed by gene (for example
     ``protein:SLC2A2``), while reaction networks use curated protein ids such
-    as ``glut2``. This adapter is the intentional bridge between the two. A
-    missing inventory entry means "reference healthy abundance", not zero;
-    zero is reserved for an explicit knockout/depletion.
+    as ``glut2``. A missing entry means reference abundance. The result is
+    deliberately not accepted as transport activity.
     """
     copy_numbers = {
         protein_id: float(
@@ -97,7 +97,27 @@ def transporter_activity_from_inventory_counts(
         )
         for protein_id in TRANSPORTER_PROTEIN_IDS
     }
-    return transporter_activity_from_copy_numbers(copy_numbers)
+    return transporter_abundance_ratios_from_copy_numbers(copy_numbers)
+
+
+def transporter_activity_from_copy_numbers(copy_numbers: Mapping[str, float]) -> dict[str, float]:
+    """Reject the scientifically unidentified total-abundance-to-activity bridge."""
+    del copy_numbers
+    raise ValueError(
+        "total protein abundance cannot identify active surface-transporter capacity; "
+        "use descriptive abundance ratios or a measured surface-activity input"
+    )
+
+
+def transporter_activity_from_inventory_counts(
+    inventory_counts: Mapping[str, float], *, protein_prefix: str = "protein:"
+) -> dict[str, float]:
+    """Reject automatic activity inference from the shared total proteome."""
+    del inventory_counts, protein_prefix
+    raise ValueError(
+        "the total protein inventory cannot drive transporter activity without "
+        "matched surface localization and active-fraction measurements"
+    )
 
 
 def transporter_activity_scale(transporter_activity: Mapping[str, float] | None, protein_id: str) -> float:
@@ -106,7 +126,9 @@ def transporter_activity_scale(transporter_activity: Mapping[str, float] | None,
     raw = float(transporter_activity.get(protein_id, 1.0))
     if not isfinite(raw):
         raise ValueError(f"{protein_id} transporter activity must be finite")
-    return max(raw, 0.0)
+    if raw < 0.0:
+        raise ValueError(f"{protein_id} transporter activity must be non-negative")
+    return raw
 
 
 def transport_rate_parameter_provenance(
@@ -114,12 +136,14 @@ def transport_rate_parameter_provenance(
     base_rate_per_s: float,
     protein_id: str,
     activity_scale: float,
+    activity_basis: TransportActivityBasis = "normalized_schematic_reference",
+    activity_source_id: str | None = None,
 ) -> tuple[ParameterProvenance, ParameterProvenance]:
     """Expose the two distinct assumptions behind an effective transport rate.
 
-    The abundance-derived multiplier is traceable to the protein inventory. The
-    absolute rate is deliberately marked placeholder: copy number alone cannot
-    establish turnover, membrane area, substrate gradient, or polarization.
+    The absolute rate remains a placeholder. The multiplier is tagged as either
+    schematic, an explicit intervention, or derived from measured localized
+    surface copies; total abundance is never accepted as its basis.
     """
     return (
         ParameterProvenance(
@@ -132,15 +156,73 @@ def transport_rate_parameter_provenance(
             notes="Normalized coarse transport rate; not a measured transporter turnover or flux.",
         ),
         ParameterProvenance(
-            name=f"{protein_id}_abundance_activity_scale",
+            name=f"{protein_id}_functional_activity_scale",
             value=activity_scale,
-            unit="relative_to_reference_hepatocyte",
-            source_id="transporter_copy_numbers",
-            assumption_level="literature_derived",
-            confidence=0.2,
-            notes="Relative capacity from an order-of-magnitude transporter copy-number anchor.",
+            unit="relative_functional_capacity",
+            source_id=activity_source_id or "transport_rate_placeholder",
+            assumption_level=(
+                "literature_derived"
+                if activity_basis == "measured_surface_activity"
+                else "placeholder"
+            ),
+            confidence=0.8 if activity_basis == "measured_surface_activity" else 0.0,
+            notes={
+                "normalized_schematic_reference": (
+                    "Unit model reference; no measured active-transporter denominator."
+                ),
+                "scenario_intervention": (
+                    "Caller-specified perturbation for scenario analysis; not a measured activity."
+                ),
+                "measured_surface_activity": (
+                    "Ratio derived from measured copies at the correct membrane domain "
+                    "and a matched measured reference."
+                ),
+            }[activity_basis],
         ),
     )
+
+
+def validate_transporter_activity_contract(
+    transporter_activity: Mapping[str, float] | None,
+    activity_basis: TransportActivityBasis | None,
+    activity_source_ids: Mapping[str, str] | None,
+) -> TransportActivityBasis:
+    """Require the caller to identify what a functional multiplier represents."""
+    allowed_bases = {
+        "normalized_schematic_reference",
+        "scenario_intervention",
+        "measured_surface_activity",
+    }
+    if activity_basis is not None and activity_basis not in allowed_bases:
+        raise ValueError(f"unknown transporter activity basis: {activity_basis}")
+    if transporter_activity is None:
+        if activity_basis not in (None, "normalized_schematic_reference"):
+            raise ValueError("an activity basis requires an explicit transporter_activity map")
+        return "normalized_schematic_reference"
+    if activity_basis in (None, "normalized_schematic_reference"):
+        raise ValueError(
+            "explicit transporter_activity requires activity_basis='scenario_intervention' "
+            "or 'measured_surface_activity'"
+        )
+    unknown = set(transporter_activity) - set(TRANSPORTER_ACTIVITY_IDS)
+    if unknown:
+        raise ValueError(f"unknown transporter activity ids: {sorted(unknown)}")
+    if activity_basis == "measured_surface_activity":
+        missing = set(transporter_activity) - set(activity_source_ids or {})
+        if missing:
+            raise ValueError(
+                f"measured surface activity requires source ids for {sorted(missing)}"
+            )
+        blank = {
+            protein_id
+            for protein_id in transporter_activity
+            if not str((activity_source_ids or {})[protein_id]).strip()
+        }
+        if blank:
+            raise ValueError(
+                f"measured surface activity requires non-empty source ids for {sorted(blank)}"
+            )
+    return activity_basis
 
 
 def build_transport_network(
@@ -148,6 +230,8 @@ def build_transport_network(
     *,
     bsep_active: bool = True,
     transporter_activity: Mapping[str, float] | None = None,
+    activity_basis: TransportActivityBasis | None = None,
+    activity_source_ids: Mapping[str, str] | None = None,
     transporter_lifecycle: Mapping[str, TransporterLifecycleState] | None = None,
     reference_surface_copies: Mapping[str, float] | None = None,
 ) -> ReactionNetwork:
@@ -157,10 +241,8 @@ def build_transport_network(
     ATP-dependent pumps export to bile. Setting ``bsep_active=False`` models a
     BSEP defect -> bile salts accumulate in the cell (cholestasis).
 
-    ``transporter_activity`` is the protein-effect layer: a relative multiplier
-    per transporter family, usually derived from copy numbers. This lets the
-    simulation represent tens of thousands of BSEP/MRP2 molecules as functional
-    capacity instead of trying to draw every molecule.
+    ``transporter_activity`` is an explicit functional-capacity multiplier. It
+    requires a declared basis and is never inferred from total protein copies.
 
     ``transporter_lifecycle`` is stricter: it uses only measured copies at the
     correct membrane domain (canalicular for BSEP/MRP2, basolateral for GLUT2,
@@ -176,13 +258,34 @@ def build_transport_network(
             transporter_lifecycle,
             reference_surface_copies,
         )
+        activity_basis = "measured_surface_activity"
+        activity_source_ids = {
+            protein_id: state.evidence_source_id
+            for protein_id, state in transporter_lifecycle.items()
+        }
+    resolved_basis = validate_transporter_activity_contract(
+        transporter_activity,
+        activity_basis,
+        activity_source_ids,
+    )
     activity = {pid: transporter_activity_scale(transporter_activity, pid) for pid in TRANSPORTER_ACTIVITY_IDS}
+
+    def basis_for(protein_id: str) -> TransportActivityBasis:
+        if transporter_activity is not None and protein_id in transporter_activity:
+            return resolved_basis
+        return "normalized_schematic_reference"
+
+    def source_for(protein_id: str) -> str | None:
+        return (activity_source_ids or {}).get(protein_id)
 
     def k(base: float, protein_id: str) -> float:
         return base * activity[protein_id]
 
     def scaled_note(text: str, protein_id: str) -> str:
-        return f"{text} Activity scale={activity[protein_id]:.3g} from transporter abundance/function."
+        return (
+            f"{text} Activity scale={activity[protein_id]:.3g}; "
+            f"basis={basis_for(protein_id)}."
+        )
 
     species = (
         "glucose_blood", "glucose_cyto",
@@ -194,30 +297,51 @@ def build_transport_network(
         # Sinusoidal uptake.
         mass_action("glut2_uptake", {"glucose_blood": 1}, {"glucose_cyto": 1}, k(0.4, "glut2"),
                     source_id="bile_formation", notes=scaled_note("GLUT2 facilitated glucose uptake.", "glut2"),
-                    parameter_provenance=transport_rate_parameter_provenance("glut2_uptake", 0.4, "glut2", activity["glut2"])),
+                    parameter_provenance=transport_rate_parameter_provenance(
+                        "glut2_uptake", 0.4, "glut2", activity["glut2"],
+                        basis_for("glut2"), source_for("glut2"),
+                    )),
         mass_action("glut2_efflux", {"glucose_cyto": 1}, {"glucose_blood": 1}, k(0.1, "glut2"),
                     source_id="bile_formation", notes=scaled_note("GLUT2 is bidirectional (smaller efflux).", "glut2"),
-                    parameter_provenance=transport_rate_parameter_provenance("glut2_efflux", 0.1, "glut2", activity["glut2"])),
+                    parameter_provenance=transport_rate_parameter_provenance(
+                        "glut2_efflux", 0.1, "glut2", activity["glut2"],
+                        basis_for("glut2"), source_for("glut2"),
+                    )),
         mass_action("ntcp_uptake", {"bile_blood": 1}, {"bile_cyto": 1}, k(0.5, "ntcp"),
                     source_id="bile_formation", notes=scaled_note("NTCP Na-dependent bile salt uptake (Na gradient from Na/K-ATPase).", "ntcp"),
-                    parameter_provenance=transport_rate_parameter_provenance("ntcp_uptake", 0.5, "ntcp", activity["ntcp"])),
+                    parameter_provenance=transport_rate_parameter_provenance(
+                        "ntcp_uptake", 0.5, "ntcp", activity["ntcp"],
+                        basis_for("ntcp"), source_for("ntcp"),
+                    )),
         mass_action("oatp_uptake", {"bilirubin_blood": 1}, {"bilirubin_cyto": 1}, k(0.4, "oatp"),
                     source_id="bile_formation", notes=scaled_note("OATP1B1/1B3 organic-anion (bilirubin) uptake.", "oatp"),
-                    parameter_provenance=transport_rate_parameter_provenance("oatp_uptake", 0.4, "oatp", activity["oatp"])),
+                    parameter_provenance=transport_rate_parameter_provenance(
+                        "oatp_uptake", 0.4, "oatp", activity["oatp"],
+                        basis_for("oatp"), source_for("oatp"),
+                    )),
         # Na/K-ATPase maintains the Na gradient at an ATP cost.
         mass_action("na_k_atpase", {"ATP": 1}, {"ADP": 1}, k(0.05, "naka"),
                     source_id="bile_formation", notes=scaled_note("Na/K-ATPase sets the Na gradient (ATP cost).", "naka"),
-                    parameter_provenance=transport_rate_parameter_provenance("na_k_atpase", 0.05, "naka", activity["naka"])),
+                    parameter_provenance=transport_rate_parameter_provenance(
+                        "na_k_atpase", 0.05, "naka", activity["naka"],
+                        basis_for("naka"), source_for("naka"),
+                    )),
         # Canalicular ATP-dependent export.
         mass_action("mrp2_export", {"bilirubin_cyto": 1, "ATP": 1}, {"bilirubin_canaliculus": 1, "ADP": 1}, k(0.3, "mrp2"),
                     source_id="bile_formation", notes=scaled_note("MRP2 ATP-dependent bilirubin-conjugate export to bile.", "mrp2"),
-                    parameter_provenance=transport_rate_parameter_provenance("mrp2_export", 0.3, "mrp2", activity["mrp2"])),
+                    parameter_provenance=transport_rate_parameter_provenance(
+                        "mrp2_export", 0.3, "mrp2", activity["mrp2"],
+                        basis_for("mrp2"), source_for("mrp2"),
+                    )),
     ]
     if bsep_active:
         reactions.append(
             mass_action("bsep_export", {"bile_cyto": 1, "ATP": 1}, {"bile_canaliculus": 1, "ADP": 1}, k(0.3, "bsep"),
                         source_id="bile_formation", notes=scaled_note("BSEP ATP-dependent bile-salt export to canaliculus.", "bsep"),
-                        parameter_provenance=transport_rate_parameter_provenance("bsep_export", 0.3, "bsep", activity["bsep"]))
+                        parameter_provenance=transport_rate_parameter_provenance(
+                            "bsep_export", 0.3, "bsep", activity["bsep"],
+                            basis_for("bsep"), source_for("bsep"),
+                        ))
         )
     return ReactionNetwork(species=species, reactions=tuple(reactions), volume_l=volume_l)
 
@@ -233,12 +357,16 @@ def seed_transport(bile: float = 5000.0, glucose: float = 5000.0, bilirubin: flo
 def run_transport(t_end_s: float, rng: EngineRng, *, bsep_active: bool = True, dt_s: float = 0.02,
                   bile: float = 5000.0,
                   transporter_activity: Mapping[str, float] | None = None,
+                  activity_basis: TransportActivityBasis | None = None,
+                  activity_source_ids: Mapping[str, str] | None = None,
                   transporter_lifecycle: Mapping[str, TransporterLifecycleState] | None = None,
                   reference_surface_copies: Mapping[str, float] | None = None) -> dict[str, float]:
     network = build_transport_network(
         TRANSPORT_VOLUME_L,
         bsep_active=bsep_active,
         transporter_activity=transporter_activity,
+        activity_basis=activity_basis,
+        activity_source_ids=activity_source_ids,
         transporter_lifecycle=transporter_lifecycle,
         reference_surface_copies=reference_surface_copies,
     )

@@ -18,6 +18,7 @@ class HepatocyteDefinitionTests(unittest.TestCase):
         self.assertEqual(self.definition.cell_type, "hepatocyte")
         self.assertIn("sinusoidal", self.definition.geometry.membrane_regions)
         self.assertIn("canalicular", self.definition.geometry.membrane_regions)
+        self.assertEqual(self.definition.geometry.polarity_axis, (1.0, 0.0, 0.0))
 
     def test_hepatocyte_scope_is_present(self) -> None:
         self.assertIn("urea_cycle", self.definition.processes)

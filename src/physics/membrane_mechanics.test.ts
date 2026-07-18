@@ -5,7 +5,9 @@ import {
   createMembraneSim,
   MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT,
   membraneGeometryMetrics,
-  stepMembrane
+  stepMembrane,
+  writeBarycentricMembranePoint,
+  writePrevalidatedBarycentricMembranePoint
 } from "./membrane_mechanics";
 
 describe("whole-cell membrane mechanics", () => {
@@ -84,5 +86,28 @@ describe("whole-cell membrane mechanics", () => {
     expect(after.invertedFaces).toBe(0);
     expect(after.maxRadius - after.minRadius).toBeGreaterThan(before.maxRadius - before.minRadius);
     expect(Array.from(sim.pos)).not.toEqual(Array.from(sim.restPos));
+  });
+
+  it("advects a surface tracer with its saved face and barycentric coordinates", () => {
+    const sim = createHepatocyteMembraneSim(14, 2);
+    const before = new Float32Array(3);
+    const after = new Float32Array(3);
+    writeBarycentricMembranePoint(sim, 0, 0.2, 0.3, 0.5, before);
+
+    applyVolumePreservingAffineContactShape(sim, [1, 0, 0], 0.9);
+    writeBarycentricMembranePoint(sim, 0, 0.2, 0.3, 0.5, after);
+
+    expect(Array.from(after)).not.toEqual(Array.from(before));
+    expect(Array.from(after).every(Number.isFinite)).toBe(true);
+    expect(() => writeBarycentricMembranePoint(sim, 0, 0.2, 0.3, 0.4, after)).toThrow(/sum to one/);
+
+    const hotPath = new Float32Array(3);
+    writePrevalidatedBarycentricMembranePoint(sim, 0, 0.2, 0.3, 0.5, hotPath);
+    expect(Array.from(hotPath)).toEqual(Array.from(after));
+  });
+
+  it("does not expose uncalibrated whole-cell thermal forcing", () => {
+    const sim = createHepatocyteMembraneSim(14, 2);
+    expect("noise" in sim).toBe(false);
   });
 });

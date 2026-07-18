@@ -1,5 +1,10 @@
 # Milestone 066 - Absolute PHH proteome budget v1
 
+> Denominator clarification (Milestone 077): the article uses rounded
+> reference-cell headlines, while Supplementary Table 2 explicitly labels
+> proteomic-ruler abundance per nucleus. Current runtime protein populations use
+> the supplement denominator and do not equate one nucleus with one hepatocyte.
+
 ## Question
 
 How much protein does a human hepatocyte contain, and which parts of that

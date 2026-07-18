@@ -802,12 +802,32 @@ engine already models, so rendered atoms and simulated flux describe the same pr
 
 ## Geometry-Authoritative Spatial World
 
+- Segovia-Miranda et al., "Three-dimensional spatially resolved geometrical and
+  functional models of human liver tissue reveal new aspects of NAFLD
+  progression": https://doi.org/10.1038/s41591-019-0660-7. Approximately
+  `100 um` human-liver sections were imaged at `0.3 x 0.3 x 0.3 um` per voxel.
+  Supplementary Table 3 Figure 3c reports a normal-control overall hepatocyte
+  volume median of `5657.07116 um3`, MAD `744.875484 um3`, across five
+  reconstructions. Figure 3i reports a normal-control lipid-droplet fraction
+  median of `0.507807%` of cell volume, MAD `0.403178` percentage points. The
+  official workbook is retained by URL, byte count, MD5, SHA-256, sheet and
+  cell-range locator in the curated data contract. These aggregate values do
+  not supply individual-cell meshes, a healthy shape distribution, membrane-
+  domain surface areas or contact-interface ground truth.
+- Duarte et al., "Baseline volume data of human liver parenchymal cell":
+  https://pubmed.ncbi.nlm.nih.gov/2752360/. Intra-surgical needle biopsies from
+  five selected normal-human cases report mean hepatocyte volume
+  `2850 +/- 99.9 um3` in the intermediate lobular zone. The accessible abstract
+  does not identify the uncertainty statistic, so the engine preserves it as
+  reported and does not relabel it SD or SEM. This measurement remains a
+  conflicting historical stereology cross-check and is not averaged with the
+  active direct 3D normal-control median.
 - Olander et al., "Hepatocyte size fractionation allows dissection of human
   liver zonation": https://doi.org/10.1002/jcp.30273. Direct measurements from
   54 cryopreserved isolated-human-hepatocyte batches report a median diameter
-  of `18.4 um`, with 88% of cells between 12 and 26 um. The engine uses the
-  median only as the equivalent-volume scale of its canonical hepatocyte
-  surface. It does not infer an in-situ diameter distribution or mechanics.
+  of `18.4 um`, with 88% of cells between 12 and 26 um. The engine retains this
+  as an isolated-cell cross-check. It does not infer an in-situ diameter
+  distribution or mechanics from these data.
 - Fabyan et al., "3D reconstruction of human liver tissue at cellular
   resolution": https://doi.org/10.1126/sciadv.adz2299. Human cleared-tissue
   reconstruction supports explicit tissue-scale spatial architecture. It does
@@ -841,6 +861,13 @@ state, not observed human contact morphometry.
   `2.5e-9 cm2/s` (`0.25 um2/s`) and a mean for unselected labelled proteins of
   `6.4e-10 cm2/s` (`0.064 um2/s`). Probe choice, temperature and species are
   retained; neither value is a healthy-PHH default.
+- Mitra et al., "A comparison of the membrane organization of apical and
+  basolateral plasma membranes of rat hepatocytes":
+  https://doi.org/10.1073/pnas.0307332101. X-ray diffraction reports
+  basolateral `35.6 +/- 0.6 A` (`3.56 +/- 0.06 nm`) and apical
+  `42.5 +/- 0.3 A` (`4.25 +/- 0.03 nm`) bilayer thickness. Species and domain
+  are retained; these measurements are cross-species references and do not
+  fill the healthy-human-PHH thickness field.
 
 The current evidence bundle does not contain a direct healthy-adult-PHH plasma-
 membrane thickness measurement. A generic `4-5 nm` statement is therefore not
@@ -871,3 +898,94 @@ the simulated human hepatocyte.
 The runtime's affine contact response is a volume-preserving kinematic geometry
 model. It carries no inferred PHH force, stiffness, adhesion, viscoelasticity,
 or biological relaxation-time parameter.
+
+## Human Liver Open-Data Atlas V1
+
+- Fabyan et al., "3D reconstruction of human liver tissue at cellular resolution":
+  https://doi.org/10.1126/sciadv.adz2299. The open Zenodo source archive is
+  checksum locked (`MD5 f32c852d6f5bc87ca2b8e239f6f5b436`, CC BY 4.0).
+  The atlas retains healthy lobule and central-vein tissue morphometry. It does
+  not treat tissue-scale values or cirrhotic rows as healthy single-cell shape.
+- Watson et al., "Spatial transcriptomics of healthy and fibrotic human liver at single-cell resolution":
+  https://www.nature.com/articles/s41467-024-55325-4. Figure 4 source data
+  contribute two-dimensional segmented area and nucleus-attribution categories
+  for 56,055 healthy hepatocytes. CellPhoneDB supplementary data contribute 209
+  hepatocyte-containing interaction hypotheses and 1,806 nonzero ordered edges.
+  The paper's Hep_1/Hep_2/Hep_3 to zone 1/2/3 mapping is retained as a
+  cohort-specific selector. The source score is not a probability or kinetic
+  rate.
+- Mallanna et al., primary-human-hepatocyte cell-surface capture:
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC5032032/. Table S1 contributes 300
+  observed surface N-glycoprotein identities. It supplies no surface density,
+  membrane domain, orientation, active fraction, or binding kinetics; assay
+  non-detection is not proof of biological absence.
+- Weiss et al., "Single-cell spatial proteomics maps human liver zonation
+  patterns and their vulnerability to disruption in tissue architecture":
+  https://www.nature.com/articles/s42255-026-01459-2. Supplementary Table 3
+  contributes 1,736 machine-readable healthy-human protein records across 20
+  portal-central bins. The article reports 1,741 at the same completeness
+  threshold; the unresolved five-record difference is retained in the audit.
+  The table includes the source-classified 102 strong periportal and 69 strong
+  pericentral proteins. Normalized expression and coefficients can display
+  zonation but cannot scale reaction or transport flux.
+
+Every source artifact records byte size, MD5, SHA-256, license, download URL,
+paper URL, and verification date in
+`data/phh_baseline/curated/human_liver_open_atlas.v1.json`. The five assays are
+kept as separate evidence layers rather than fused into a synthetic donor.
+
+## Donor-resolved Absolute PHH Proteome V1
+
+- Wiśniewski et al., "In-depth quantitative analysis and comparison of the
+  human hepatocyte and hepatoma cell line HepG2 proteomes":
+  https://doi.org/10.1016/j.jprot.2016.01.016 (PMID `26825538`). This is the
+  primary paper for seven-donor Total Protein Approach and proteomic-ruler
+  measurements.
+- Official Supplementary Table 1:
+  https://ars.els-cdn.com/content/image/1-s2.0-S1874391916300197-mmc1.xlsx.
+  Expected size `10,366` bytes; SHA-256
+  `9bbc90323a184d8224388b927d720343e6222b5f58b4eba8355a64e4b918f17a`.
+- Official Supplementary Table 2:
+  https://ars.els-cdn.com/content/image/1-s2.0-S1874391916300197-mmc2.xlsx.
+  Expected size `15,457,204` bytes; SHA-256
+  `f84b9c2a4af4cac3ba6394907e50786485c789ab5ed6421de76bf0d52ebb46d0`.
+- MassIVE `MSV000079562` / ProteomeXchange `PXD001874`:
+  https://massive.ucsd.edu/ProteoSAFe/dataset.jsp?task=2ed487a661bf401caae8285acc1cd507.
+  The raw proteomics repository identifies its dataset license as CC0 1.0.
+
+The project does not redistribute the raw Elsevier workbooks. The curation
+script validates their hashes and stores factual donor measurements with source
+row identifiers. Source zeros/blanks become non-quantified `null` values; no
+imputation is performed. The workbook's `copies per nucleus` denominator is
+preserved and is never relabeled as copies per hepatocyte.
+
+## PHH Protein Location and Functional Evidence V1
+
+- Noe et al., recombinant human BSEP taurocholate transport:
+  https://pubmed.ncbi.nlm.nih.gov/12404239/. The source reports Km `4.25 uM`
+  and Vmax `200 pmol/min/mg protein` in its insect-cell assay context.
+- Morgan et al., independent inverted-Sf9 BSEP assay:
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC3858191/. The source reports
+  taurocholate Km `17.8 +/- 5.0 uM` and Vmax
+  `286.2 +/- 28.2 pmol/min/mg protein`. It remains a separate assay.
+- Jedlitschky et al., recombinant human MRP2 bilirubin-glucuronide transport:
+  https://pubmed.ncbi.nlm.nih.gov/10421658/. Km values are `0.7` and `0.9 uM`;
+  the `183` and `104 pmol/min/mg protein` observations were measured at
+  `0.5 uM` substrate and are not Vmax values.
+- Jigorel et al., taurocholate uptake in cryopreserved primary human
+  hepatocytes: https://doi.org/10.2133/dmpk.18.33. The reported Km range is
+  `2-8 uM`; cryopreserved uptake activity spans `10-200%` of fresh cells. This
+  is whole-hepatocyte, NTCP-dominated uptake rather than isolated-NTCP Vmax.
+- Kemas et al., insulin-sensitive glucose metabolism in PHH spheroids:
+  https://doi.org/10.1016/j.abb.2021.108854. The retained pAKT and PCK1/G6PC
+  timepoints are downstream responses, not INSR binding kinetics.
+- Bi et al., taurocholate transport in sandwich-cultured cryopreserved human
+  hepatocytes: https://pubmed.ncbi.nlm.nih.gov/16782767/. Five lots provide
+  coupled whole-cell ranges for apparent uptake (`11-17 pmol/min/mg cell
+  protein`), apparent intrinsic biliary clearance (`5.8-10 uL/min/mg cell
+  protein`), and biliary excretion index (`41-63%`). These values are not
+  decomposed into individual transporter rate constants.
+
+The functional-evidence registry cross-links these sources with the Wiśniewski
+seven-donor total proteome and Mallanna PHH surfaceome. No total abundance is
+converted automatically into surface abundance, active copies or cell flux.

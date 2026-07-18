@@ -1,14 +1,14 @@
 {
   "_note": "Human hepatocyte quantitative reference. Every value is measured+cited, an explicitly flagged order-of-magnitude estimate, or null. NOT fabricated. Honesty flags and rat-vs-human provenance are preserved from the source research pass; see docs/12-hepatocyte-quantitative.md for full citations and caveats. Sizes are NOT stored here when not directly measured; characteristic diameters are derived at consumption from volumeFractionPct + countTypical (see engine quantitative/hepatocyte_counts.py).",
-  "generated": "2026-06-30",
+  "generated": "2026-07-17",
   "cell": {
     "organism": "human",
-    "diameterUm": { "typical": 25, "range": [20, 30], "quality": "measured", "source": "consensus" },
-    "volumeUm3": { "typical": 3400, "range": [3000, 11000], "quality": "order-of-magnitude", "organism": "human", "source": "bionumbers/consensus", "note": "Wide due to ploidy/zonation; 3400 commonly cited, not consensus." },
+    "diameterUm": { "typical": 22.107060841416555, "range": null, "quality": "derived_exact_geometry", "source": "segovia_miranda2019+equivalent_sphere", "note": "Volume-equivalent sphere diameter derived from the normal-control human 3D median 5657.07116 um3; not a directly measured diameter or a spherical-shape claim. Historical Duarte stereology and isolated-PHH Olander measurements remain separate cross-checks." },
+    "volumeUm3": { "typical": 5657.07116, "mad": 744.875484, "reconstructionCount": 5, "voxelSizeUm": [0.3, 0.3, 0.3], "range": null, "quality": "measured_aggregate_3d_normal_control", "organism": "human", "source": "segovia_miranda2019_supplementary_table_3_fig3c", "note": "Normal-control overall median and MAD across five 3D human-liver reconstructions. Individual-cell raw distribution and boundary meshes are unavailable. Duarte 2850 +/- 99.9 um3 is retained separately and not averaged." },
     "volumeUm3Rat": { "typical": 5000, "range": [4900, 5100], "quality": "measured", "organism": "rat", "source": "weibel1969" },
-    "totalProteinPerCellPg": { "typical": 464, "range": [150, 700], "quality": "measured", "organism": "human", "source": "wisniewski2014/niu2022" },
-    "totalProteinMoleculesPerCell": { "typical": 5.0e9, "range": [2.0e9, 8.0e9], "quality": "measured", "organism": "human", "source": "niu2022" },
-    "binucleateFraction": { "typical": 0.20, "range": [0.15, 0.25], "quality": "order-of-magnitude", "organism": "human", "source": "consensus", "note": "Polyploidy (4n,8n) common; per-cell copy numbers likely underestimated for polyploid cells." },
+    "totalProteinPerReferenceNucleusPg": { "typical": 604.8924593749878, "range": [481.96030859538496, 818.0983929331513], "quality": "measured_donor_resolved", "organism": "human", "source": "wisniewski2016_supplemental_table_2", "note": "Donor-weighted mean of histone-ruler values; the paper rounds this to 600 pg per reference cell. Workbook denominator is per nucleus." },
+    "totalProteinMoleculesPerReferenceNucleus": { "typical": 8.75932246482535e9, "range": [6.920440499223304e9, 1.1841437869058931e10], "quality": "measured_donor_resolved_arithmetic_sum", "organism": "human", "source": "wisniewski2016_supplemental_table_2", "note": "Sum of quantified target protein-group copies per nucleus; the paper rounds the donor mean to 8.7 billion." },
+    "binucleateFraction": { "typical": 0.20, "range": [0.15, 0.25], "quality": "order-of-magnitude", "organism": "human", "source": "consensus", "note": "Polyploidy and binucleation make per-nucleus proteomic-ruler values non-equivalent to per-hepatocyte counts; no automatic multiplier is applied." },
     "membraneDomainSplitPct": { "sinusoidal": 37, "lateral": 50, "canalicular": 13, "quality": "order-of-magnitude", "organism": "rat", "source": "weibel1969/blouin1977", "note": "Sinusoidal (blood/basolateral) ~37%, lateral (cell-cell) ~50%, canalicular (bile/apical) ~13% of hepatocyte plasma-membrane area." }
   },
   "organelles": [
@@ -87,98 +87,100 @@
     },
     {
       "id": "lipid_droplets", "name": "Lipid droplets",
-      "countTypical": 100, "countRange": [10, 500],
-      "volumeFractionPct": 1, "volumeFractionRangePct": [0.5, 2],
+      "countTypical": null, "countRange": null,
+      "volumeFractionPct": 0.507807, "volumeFractionMadPercentagePoints": 0.403178,
       "location": "cytosol (ER-derived)", "renderable": true,
-      "organism": "human/rat", "quality": "order-of-magnitude", "source": "fujimoto2011/ohsaki2014",
-      "note": "ER-derived neutral-lipid stores; highly state-dependent (few when lean/fed, dominating in steatosis). ~1% volume + ~100 count are order-of-magnitude for a normal hepatocyte."
+      "organism": "human", "quality": "measured_aggregate_3d", "source": "segovia_miranda2019_supplementary_table_3_fig3i",
+      "note": "Normal-control median fraction of cell volume across five 3D reconstructions. Count, individual size distribution and nutritional dynamics are unavailable."
     }
   ],
   "proteins": [
     {
       "id": "glut2", "gene": "SLC2A2", "uniprot": "P11168",
       "location": "membrane-basolateral",
-      "copiesPerCellTypical": 79057, "copiesPerCellRange": [25000, 250000],
+      "copiesPerReferenceNucleusTypical": 2292293.9385983595, "copiesPerReferenceNucleusRange": [1993986.5955753713, 2979126.882833621],
       "footprintNm": 7, "densityPerUm2": null,
-      "quality": "order-of-magnitude",
-      "derivation": "fraction-of-total-molecules; absolute values exist (Ohtsuki 2012 / Wisniewski 2016) but behind paywall, not transcribed.",
+      "quality": "measured_donor_resolved",
+      "derivation": "median and observed range across seven quantified PHH donors; no imputation.",
       "mrnaLiverNtpmHpa": 781.9,
-      "organism": "human", "source": "ohtsuki2012/wisniewski2016/hpa"
+      "organism": "human", "source": "wisniewski2016_supplemental_table_2", "copyNumberDenominator": "per_nucleus"
     },
     {
       "id": "naka", "gene": "ATP1A1", "uniprot": "P05023",
       "location": "membrane-basolateral",
-      "copiesPerCellTypical": 158114, "copiesPerCellRange": [50000, 500000],
+      "copiesPerReferenceNucleusTypical": 1885866.8831780714, "copiesPerReferenceNucleusRange": [1351591.1777054567, 2610427.504201504],
       "footprintNm": 10, "densityPerUm2": null,
-      "quality": "order-of-magnitude",
-      "derivation": "fraction-of-total-molecules; absolute values exist (Ohtsuki 2012) but not transcribed.",
+      "quality": "measured_donor_resolved",
+      "derivation": "median and observed range across seven quantified PHH donors; no imputation.",
       "mrnaLiverNtpmHpa": null,
-      "organism": "human", "source": "ohtsuki2012"
+      "organism": "human", "source": "wisniewski2016_supplemental_table_2", "copyNumberDenominator": "per_nucleus"
     },
     {
       "id": "ntcp", "gene": "SLC10A1", "uniprot": "Q14973",
       "location": "membrane-basolateral",
-      "copiesPerCellTypical": 316228, "copiesPerCellRange": [100000, 1000000],
+      "copiesPerReferenceNucleusTypical": 58314.23480211046, "copiesPerReferenceNucleusRange": [7553.715419588296, 126650.17981276379],
       "footprintNm": 6, "densityPerUm2": null,
-      "quality": "order-of-magnitude",
-      "derivation": "fraction-of-total-molecules; absolute values exist (Ohtsuki 2012 / Qiu 2013 / Wisniewski 2016) but not transcribed.",
+      "quality": "measured_donor_resolved",
+      "derivation": "median and observed range across seven quantified PHH donors; no imputation.",
       "mrnaLiverNtpmHpa": 399.1,
-      "organism": "human", "source": "ohtsuki2012/qiu2013/wisniewski2016"
+      "organism": "human", "source": "wisniewski2016_supplemental_table_2", "copyNumberDenominator": "per_nucleus"
     },
     {
       "id": "bsep", "gene": "ABCB11", "uniprot": "O95342",
       "location": "membrane-canalicular",
-      "copiesPerCellTypical": 15811, "copiesPerCellRange": [5000, 50000],
+      "copiesPerReferenceNucleusTypical": 419353.48438855633, "copiesPerReferenceNucleusRange": [354513.4563163131, 750964.5402311614],
       "footprintNm": 10, "densityPerUm2": null,
-      "quality": "order-of-magnitude",
-      "derivation": "fraction-of-total-molecules; absolute values exist (Ohtsuki 2012 / Wisniewski 2016) but not transcribed.",
+      "quality": "measured_donor_resolved",
+      "derivation": "median and observed range across seven quantified PHH donors; no imputation.",
       "mrnaLiverNtpmHpa": 75.3,
-      "organism": "human", "source": "ohtsuki2012/wisniewski2016"
+      "organism": "human", "source": "wisniewski2016_supplemental_table_2", "copyNumberDenominator": "per_nucleus"
     },
     {
       "id": "mrp2", "gene": "ABCC2", "uniprot": "Q92887",
       "location": "membrane-canalicular",
-      "copiesPerCellTypical": 31623, "copiesPerCellRange": [10000, 100000],
+      "copiesPerReferenceNucleusTypical": 129918.86133753612, "copiesPerReferenceNucleusRange": [82390.50953923541, 193434.30622771796],
       "footprintNm": 10, "densityPerUm2": null,
-      "quality": "order-of-magnitude",
-      "derivation": "fraction-of-total-molecules; absolute values exist (Ohtsuki 2012 / Wisniewski 2016) but not transcribed.",
+      "quality": "measured_donor_resolved",
+      "derivation": "median and observed range across seven quantified PHH donors; no imputation.",
       "mrnaLiverNtpmHpa": 113.8,
-      "organism": "human", "source": "ohtsuki2012/wisniewski2016"
+      "organism": "human", "source": "wisniewski2016_supplemental_table_2", "copyNumberDenominator": "per_nucleus"
     },
     {
       "id": "glucokinase", "gene": "GCK", "uniprot": "P35557",
       "location": "cytosol",
-      "copiesPerCellTypical": 61237, "copiesPerCellRange": [25000, 150000],
+      "copiesPerReferenceNucleusTypical": 124706.44986354568, "copiesPerReferenceNucleusRange": [34223.91149931442, 242073.79451675434],
       "footprintNm": 7, "densityPerUm2": null,
-      "quality": "order-of-magnitude",
-      "derivation": "fraction-of-total-molecules (low-abundance regulatory enzyme; HPA nTPM 16.7).",
+      "quality": "measured_donor_resolved",
+      "derivation": "median and observed range across seven quantified PHH donors; no imputation.",
       "mrnaLiverNtpmHpa": 16.7,
-      "organism": "human", "source": "hpa/uniprot"
+      "organism": "human", "source": "wisniewski2016_supplemental_table_2", "copyNumberDenominator": "per_nucleus"
     },
     {
       "id": "cps1", "gene": "CPS1", "uniprot": "P31327",
       "location": "mitochondria",
-      "copiesPerCellTypical": 53571693, "copiesPerCellRange": [33881714, 84704285],
+      "copiesPerReferenceNucleusTypical": 113111633.744982, "copiesPerReferenceNucleusRange": [92380628.95760891, 122281097.47892416],
       "footprintNm": 14, "densityPerUm2": null,
-      "quality": "order-of-magnitude",
-      "derivation": "mass-fraction; CPS1 in top-10 most abundant hepatocyte proteins (28 most-abundant = 25% mass; Niu 2022). Best-anchored of the seven (~half an order of magnitude).",
+      "quality": "measured_donor_resolved",
+      "derivation": "median and observed range across seven quantified PHH donors; no imputation.",
       "mrnaLiverNtpmHpa": 994.6,
-      "organism": "human", "source": "niu2022/wisniewski2016"
+      "organism": "human", "source": "wisniewski2016_supplemental_table_2", "copyNumberDenominator": "per_nucleus"
     }
   ],
   "derivation": {
-    "copiesPerCellFormula": "copies = (fmol/ug membrane protein) * (ug membrane protein per cell) * 1e-15 mol/fmol * 6.022e23",
-    "ugMembraneProteinPerCell": { "rangePg": [9.28, 23.2], "basis": "464 pg total protein/cell (Wisniewski 2014) x 2-5% plasma-membrane fraction (ASSUMPTION, flagged)" },
-    "note": "The fmol/ug -> copies/cell conversion is exact; the membrane-fraction factor is the assumption. Drop measured Ohtsuki 2012 / Wisniewski 2016 fmol/ug values into the formula to upgrade order-of-magnitude transporter estimates to measured.",
-    "polyploidyCaveat": "Proteomic-ruler copy numbers assume diploidy; hepatocytes are often 4n/8n and 15-25% binucleate, so per-cell copy numbers are likely UNDERESTIMATED (Niu 2022)."
+    "proteinEntity": "MaxQuant protein group",
+    "copyNumberDenominator": "per nucleus",
+    "aggregation": "median of positive donor-average source values",
+    "missingness": "source zero or blank is nonquantified null; no imputation",
+    "boundary": "Total abundance is not surface-localized abundance, active fraction, density, turnover, or flux.",
+    "binucleateCaveat": "Per-nucleus values are not per-hepatocyte values for binucleate cells; no automatic scaling is permitted."
   },
   "citations": {
     "weibel1969": "Weibel ER, Staubli W, Gnagi HR, Hess FA. Correlated morphometric and biochemical studies on the liver cell. I. Morphometric model, stereologic methods, and normal morphometric data for RAT liver. J Cell Biol. 1969;42(1):68-91. PMID 4891915.",
     "blouin1977": "Blouin A, Bolender RP, Weibel ER. Distribution of organelles and membranes between hepatocytes and nonhepatocytes in the rat liver parenchyma. A stereological study. J Cell Biol. 1977;72(2):441-455. PMID 833203.",
     "loud1968": "Loud AV. A quantitative stereological description of the ultrastructure of normal rat liver parenchymal cells. J Cell Biol. 1968;37(1):27-46. PMID 5645844.",
     "niu2022": "Niu L, et al. Dynamic human liver proteome atlas reveals functional insights into disease pathways. Mol Syst Biol. 2022;18(5):e10947. (human liver proteome).",
-    "wisniewski2014": "Wisniewski JR, et al. Total-protein-approach quantitative proteomics (proteomic ruler); ~464 pg protein per average liver cell. (Verify exact ref/DOI against source.)",
-    "wisniewski2016": "Wisniewski JR, et al. Absolute proteome quantification of human hepatocytes (~9400-protein, copies/cell). 2016. (Per-protein tables paywalled; not transcribed.)",
+    "wisniewski2014": "Historical total-protein-approach context; not used for the current selected protein counts.",
+    "wisniewski2016": "Wisniewski JR et al. In-depth quantitative analysis and comparison of the human hepatocyte and hepatoma cell line HepG2 proteomes. J Proteomics. 2016. DOI 10.1016/j.jprot.2016.01.016; official donor-resolved supplements curated with checksums.",
     "ohtsuki2012": "Ohtsuki S, et al. Simultaneous absolute protein quantification of transporters, cytochromes P450, and UGTs in human liver (fmol/ug membrane protein). Drug Metab Dispos. 2012;40(1):83-92. PMID 21994434.",
     "qiu2013": "Qiu X, et al. Absolute quantification of hepatic transporters including NTCP. 2013. (Verify exact ref against source.)",
     "hpa": "Human Protein Atlas, proteinatlas.org (liver, nTPM mRNA + immunofluorescence localization).",

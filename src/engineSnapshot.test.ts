@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import publicEngineSnapshot from "../public/engine-snapshot.json";
 import {
   connectEngineSnapshotStream,
   engineSnapshotEndpointFromLocation,
@@ -9,6 +10,8 @@ import {
   type EngineDivisionCell,
   type EngineDivisionOrganelleInventory,
   type EngineMembraneMaterialProfile,
+  type EnginePhysicalValidation,
+  type EnginePhysicalVerificationLayer,
   type EngineSnapshot
 } from "./engineSnapshot";
 
@@ -53,6 +56,42 @@ const intrinsicMembraneMaterial: EngineMembraneMaterialProfile = {
   }],
   blockers: ["healthy-PHH membrane mechanics are not calibrated"],
   source_ids: ["rawicz2000_bilayer_elasticity"]
+};
+
+const physicalLayer = (
+  id: EnginePhysicalVerificationLayer["id"],
+  title: string
+): EnginePhysicalVerificationLayer => {
+  const criteria = Array.from({ length: 20 }, (_, index) => ({
+    id: `${id}-${index + 1}`,
+    description: index === 19 ? "Matched healthy-human validation" : "Executable verification contract",
+    status: index === 19 ? "blocked" as const : "verified" as const,
+    evidence_scope: index === 19 ? "healthy_human_required" : "runtime_contract",
+    verification_contract: index === 19 ? "blocked pending matched data" : "automated test or runtime guard",
+    source_ids: []
+  }));
+  return {
+    id,
+    title,
+    verified_count: 19,
+    criterion_count: 20,
+    verification_coverage_pct: 95,
+    predictive_accuracy_pct: null,
+    human_calibration_status: "matched_human_validation_incomplete",
+    criteria,
+    blockers: ["matched healthy-human validation unavailable"]
+  };
+};
+
+const physicalValidation: EnginePhysicalValidation = {
+  version: "physical_integrity_verification_v1",
+  score_semantics: "verification_coverage_pct is not predictive accuracy",
+  layers: [
+    physicalLayer("scale_geometry", "Scale and base geometry"),
+    physicalLayer("membrane_physics", "Membrane numerical and evidence integrity"),
+    physicalLayer("contact_domain", "Contact surface and membrane-domain detection")
+  ],
+  source_ids: []
 };
 
 const baseOrganelles: EngineDivisionOrganelleInventory = {
@@ -189,8 +228,8 @@ const snapshot: EngineSnapshot = {
       profile_label: "Postabsorptive / overnight fast",
       status: "source_backed_baseline_not_dynamic",
       authority: "authoritative_research_preview",
-      cell_volume_l: 3.4e-12,
-      effective_cytosol_volume_l: 1.768e-12,
+      cell_volume_l: 3.261760666984704e-12,
+      effective_cytosol_volume_l: 1.696115546832046e-12,
       energy_charge: 0.721245,
       pools: {
         ATP: {
@@ -215,6 +254,9 @@ const snapshot: EngineSnapshot = {
         source_ids: ["human_liver_spatial_atlas_2026"]
       },
       markers: [{ gene: "HSD17B13", enriched_zone: "midlobular", observed_layer: "transcript", source_ids: ["human_liver_spatial_atlas_2026"], notes: "" }],
+      spatial_protein_markers: [],
+      spatial_proteome_measurements_available: true,
+      spatial_proteome_may_scale_flux: false,
       experimental_oxygen_context: {
         model_system: "human_liver_acinus_microphysiology_system",
         controlled_oxygen_low_percent: 3,
@@ -665,8 +707,8 @@ const snapshot: EngineSnapshot = {
       },
       proteome_context: {
         baseline_anchor_id: "human_hepatocyte_albumin_copies",
-        expected_value: 20000000,
-        unit: "copies_per_cell",
+        expected_value: 19332782.426021077,
+        unit: "copies_per_nucleus",
         sample_size: 7,
         source_id: "human_hepatocyte_proteome_2016",
         cohort_matched_to_secretion_assay: false,
@@ -731,7 +773,7 @@ const snapshot: EngineSnapshot = {
         high_batch_mean_molecules_per_cell_24h: 63066691.90200186,
         low_batch_mean_molecules_per_cell_s: 80.0155428545606,
         high_batch_mean_molecules_per_cell_s: 729.9385636805771,
-        contextual_albumin_pool_copies_per_cell: 20000000,
+        contextual_albumin_pool_copies_per_nucleus: 19332782.426021077,
         mechanism_specific_rate_count: 5,
         mechanism_specific_rate_identified_count: 0,
         required_measurement_class_count: 5,
@@ -939,6 +981,62 @@ const snapshot: EngineSnapshot = {
         contact_patch_status: "unknown_requires_deformable_cell_and_adhesion_model",
         candidate_pathway_ids: ["gjb1_connexin32_gap_junction"]
       }],
+      body_surface_profiles: [{
+        body_id: "reference_hepatocyte_A",
+        profile_id: "adult_human_hepatocyte_surface_v1",
+        evidence_scope: "body-level capability only",
+        molecules: [{
+          id: "GJB1_Cx32",
+          display_name: "Connexin 32 connexon",
+          role: "channel",
+          compatible_partner_ids: ["GJB1_Cx32"],
+          membrane_domains: ["lateral"],
+          required_cofactor_ids: [],
+          transport_program: "gap_junction_small_solute_exchange",
+          surface_abundance_per_um2: null,
+          kon_2d_um2_per_molecule_s: null,
+          koff_s: null,
+          patch_distribution_available: false,
+          orientation_model_available: false,
+          evidence_scope: "mechanism only",
+          source_ids: ["hepatocyte_connexin32_signal_propagation"]
+        }]
+      }],
+      contact_event_chains: [{
+        contact_id: "reference_hepatocyte_A__reference_hepatocyte_B",
+        contact_event: "enter",
+        body_a: "reference_hepatocyte_A",
+        body_b: "reference_hepatocyte_B",
+        body_a_kind: "hepatocyte",
+        body_b_kind: "hepatocyte",
+        geometric_contact: true,
+        geometry_gate_status: "open_engine_contact_patch_input",
+        membrane_domain_a: "lateral",
+        membrane_domain_b: "lateral",
+        contact_patch_area_available: false,
+        molecular_matches: [{
+          molecule_a_id: "GJB1_Cx32",
+          molecule_b_id: "GJB1_Cx32",
+          pathway_ids: ["gjb1_connexin32_gap_junction"],
+          transport_programs: ["gap_junction_small_solute_exchange"],
+          required_cofactor_ids: [],
+          domain_compatible: true,
+          local_patch_presence_observed: null,
+          orientation_compatible: null,
+          source_ids: ["hepatocyte_connexin32_signal_propagation"]
+        }],
+        candidate_pathway_ids: ["gjb1_connexin32_gap_junction"],
+        receptor_ligand_density_available: false,
+        two_dimensional_kinetics_available: false,
+        molecular_recognition_status: "candidate_pair_domain_compatible_patch_occupancy_and_orientation_unresolved",
+        signaling_status: "blocked_until_bound_complex_and_pathway_kinetics_are_resolved",
+        transport_status: "blocked_until_recognition_cofactors_and_membrane_transport_program_are_resolved",
+        transport_programs: ["gap_junction_small_solute_exchange"],
+        emitted_events: ["geometry_contact_enter", "molecular_match_candidate"],
+        may_drive_cell_state: false,
+        blockers: ["two-dimensional on/off kinetics are unavailable"],
+        source_ids: ["hepatocyte_connexin32_signal_propagation"]
+      }],
       evaluated_exposures: [{
         exposure_id: "kemas_insulin_sensitive_phh_spheroid_challenge",
         pathway_id: "insulin_insr_pi3k_akt",
@@ -959,9 +1057,12 @@ const snapshot: EngineSnapshot = {
       }],
       quantitative_pathway_count: 0,
       active_signal_count: 0,
+      recognition_candidate_count: 1,
+      active_transport_count: 0,
       measured_exposure_count: 1,
       matched_response_evidence_count: 3,
       automatic_state_coupling: false,
+      event_chain_contract: "geometry -> molecular match -> signal -> transport; unknown gates block",
       reference_geometry_is_biological_observation: false,
       limitations: ["Geometric contact is necessary but not sufficient for gap-junction activation."]
     },
@@ -983,6 +1084,7 @@ const snapshot: EngineSnapshot = {
           pose_authority: "engine_runtime",
           geometry_evidence: "measured_isolated_phh_diameter_spherical_collision_proxy",
           visual_profile: "source_backed_hepatocyte_cutaway",
+          molecular_profile_id: "adult_human_hepatocyte_surface_v1",
           membrane_material: intrinsicMembraneMaterial,
           source_ids: ["olander2021_human_hepatocyte_size"]
         },
@@ -997,6 +1099,7 @@ const snapshot: EngineSnapshot = {
           pose_authority: "engine_runtime",
           geometry_evidence: "measured_isolated_phh_diameter_exact_tangent_fixture",
           visual_profile: "source_backed_hepatocyte_cutaway",
+          molecular_profile_id: "adult_human_hepatocyte_surface_v1",
           membrane_material: intrinsicMembraneMaterial,
           source_ids: ["olander2021_human_hepatocyte_size"]
         }
@@ -1021,8 +1124,14 @@ const snapshot: EngineSnapshot = {
         relative_normal_velocity_um_s: 0,
         contact_face_a_id: null,
         contact_face_b_id: null,
+        contact_face_candidates_a: [],
+        contact_face_candidates_b: [],
         membrane_domain_a: null,
         membrane_domain_b: null,
+        membrane_domain_candidates_a: [],
+        membrane_domain_candidates_b: [],
+        domain_assignment_status_a: "not_applicable_or_unresolved",
+        domain_assignment_status_b: "not_applicable_or_unresolved",
         contact_patch_polygon_um: [],
         contact_patch_area_um2: null,
         normal_load_nN: null,
@@ -1063,8 +1172,14 @@ const snapshot: EngineSnapshot = {
         closest_point_self_um: [9.2, 0, 0],
         closest_point_other_um: [9.2, 0, 0],
         outward_normal_to_other: [1, 0, 0],
+        contact_face_candidates_self: [],
+        contact_face_candidates_other: [],
         membrane_domain_self: null,
         membrane_domain_other: null,
+        membrane_domain_candidates_self: [],
+        membrane_domain_candidates_other: [],
+        domain_assignment_status_self: "not_applicable_or_unresolved",
+        domain_assignment_status_other: "not_applicable_or_unresolved",
         contact_patch_polygon_um: [],
         contact_patch_area_um2: null,
         normal_load_nN: null,
@@ -1077,7 +1192,11 @@ const snapshot: EngineSnapshot = {
         t_s: 120,
         contact_input_active: true,
         membrane_domain_self: null,
-        membrane_domain_other: null
+        membrane_domain_other: null,
+        membrane_domain_candidates_self: [],
+        membrane_domain_candidates_other: [],
+        domain_assignment_status_self: "not_applicable_or_unresolved",
+        domain_assignment_status_other: "not_applicable_or_unresolved"
       }],
       geometry_coupling_status: "authoritative_runtime_geometry",
       mechanical_coupling_status: "blocked_missing_material_law",
@@ -1087,6 +1206,7 @@ const snapshot: EngineSnapshot = {
       source_ids: ["olander2021_human_hepatocyte_size"],
       limitations: ["biochemistry is unchanged"]
     },
+    physical_validation: physicalValidation,
     brian2_communication: {
       adapter: { available: false, error: "module_not_installed", module_name: "brian2", package_version: null, supported_role: "optional equation/event backend; never the biological authority" },
       gate: { backend_available: false, package_version: null, version_matches_project_pin: false, model_attached: false, execution_ready: false, blockers: ["Brian2 backend is not installed"] },
@@ -1545,6 +1665,9 @@ describe("engine snapshot client", () => {
     expect(summary.spatialWorld?.bodies[0].membrane_material?.bending_rigidity_J).toBeNull();
     expect(summary.spatialState?.active_contact_count).toBe(1);
     expect(summary.spatialState?.quantitative_biological_effects_enabled).toBe(false);
+    expect(summary.physicalValidation?.layers).toHaveLength(3);
+    expect(summary.physicalValidation?.layers[0].verification_coverage_pct).toBe(95);
+    expect(summary.physicalValidation?.layers[0].predictive_accuracy_pct).toBeNull();
     expect(summary.brian2Communication?.gate.execution_ready).toBe(false);
     expect(summary.generativeModeling?.training_ready).toBe(false);
     expect(summary.generativeModeling?.automatic_state_coupling).toBe(false);
@@ -1975,6 +2098,49 @@ describe("engine snapshot client", () => {
     expect(result.status).toBe("loaded");
     if (result.status === "loaded") {
       expect(result.summary.status).toBe("healthy");
+    }
+  });
+
+  it("accepts the generated checksum-verified human-liver atlas snapshot", async () => {
+    const result = await loadEngineSnapshot("/engine-snapshot.json", async () => ({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => publicEngineSnapshot
+    }));
+
+    expect(result.status).toBe("loaded");
+    if (result.status === "loaded") {
+      expect(result.summary.humanLiverOpenAtlas?.morphometry_2d.cell_count).toBe(56_055);
+      expect(result.summary.humanLiverOpenAtlas?.surfaceome.observed_protein_count).toBe(300);
+      expect(result.summary.humanLiverOpenAtlas?.spatial_proteome.strong_zonated_count).toBe(171);
+      expect(result.summary.humanLiverOpenAtlas?.spatial_proteome.article_minus_supplement_record_count).toBe(5);
+      expect(result.summary.humanLiverOpenAtlas?.morphometry_2d.selected_zone_cluster).toBe("Hep_2");
+      expect(result.summary.humanLiverOpenAtlas?.interaction_hypotheses.selected_zone_interaction_count).toBe(173);
+      expect(result.summary.humanLiverOpenAtlas?.interaction_hypotheses.may_activate_contact_chain).toBe(false);
+      expect(result.summary.quantitativeState?.geometry_reference?.canonical_reference.cell_volume_um3).toBe(5657.07116);
+      expect(result.summary.quantitativeState?.geometry_reference?.canonical_reference.equivalent_sphere_diameter_um)
+        .toBeCloseTo(22.107060841416555, 12);
+      expect(result.summary.quantitativeState?.geometry_reference?.three_dimensional_evidence.donor_resolved_single_hepatocyte_boundary_mesh_available)
+        .toBe(false);
+      expect(result.summary.humanHepatocyte3dMorphometry?.source_artifact.downloaded_bytes).toBe(104382);
+      expect(result.summary.humanHepatocyte3dMorphometry?.study_context.all_group_analyzed_cell_count).toBe(11278);
+      expect(result.summary.humanHepatocyte3dMorphometry?.normal_control_lipid_droplet_volume_percent.overall)
+        .toBe(0.507807);
+      expect(result.summary.humanHepatocyte3dMorphometry?.integration_gates.individual_cell_boundary_mesh_available)
+        .toBe(false);
+      expect(result.summary.phhProteinFunctionalEvidence?.summary.protein_count).toBe(8);
+      expect(result.summary.phhProteinFunctionalEvidence?.summary.all_seven_donor_abundance_profile_count).toBe(8);
+      expect(result.summary.phhProteinFunctionalEvidence?.summary.surface_identity_observation_count).toBe(6);
+      expect(result.summary.phhProteinFunctionalEvidence?.summary.assay_kinetic_observation_count).toBe(5);
+      expect(result.summary.phhProteinFunctionalEvidence?.summary.whole_cell_transport_validation_observation_count).toBe(1);
+      expect(result.summary.phhProteinFunctionalEvidence?.summary.whole_cell_transport_lot_count).toBe(5);
+      expect(result.summary.phhProteinFunctionalEvidence?.whole_cell_transport_validations[0].metric_ranges)
+        .toContainEqual(expect.objectContaining({ id: "biliary_excretion_index", low: 41, high: 63 }));
+      expect(result.summary.phhProteinFunctionalEvidence?.summary.whole_cell_rate_ready_count).toBe(0);
+      expect(result.summary.phhProteinFunctionalEvidence?.integration_gates.automatic_state_coupling).toBe(false);
+      expect(result.summary.intercellularCommunication?.body_surface_profiles[0].molecules)
+        .toContainEqual(expect.objectContaining({ id: "ABCB11_BSEP", role: "transporter" }));
     }
   });
 

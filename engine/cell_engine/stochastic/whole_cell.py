@@ -27,9 +27,10 @@ from cell_engine.stochastic.integrators import simulate_hybrid
 from cell_engine.stochastic.reactions import ReactionNetwork, compose_networks, mass_action
 from cell_engine.stochastic.redox import build_redox_network
 from cell_engine.stochastic.transport import (
+    TransportActivityBasis,
     transport_rate_parameter_provenance,
-    transporter_activity_from_inventory_counts,
     transporter_activity_scale,
+    validate_transporter_activity_contract,
 )
 from cell_engine.stochastic.urea_cycle import build_urea_cycle_network
 
@@ -271,6 +272,8 @@ def build_whole_cell_network(
     volume_l: float,
     *,
     transporter_activity: Mapping[str, float] | None = None,
+    activity_basis: TransportActivityBasis | None = None,
+    activity_source_ids: Mapping[str, str] | None = None,
     include_synthetic_expression_benchmark: bool = False,
 ) -> ReactionNetwork:
     """Compose the subsystems into one network, plus energy/glucose homeostasis.
@@ -282,18 +285,35 @@ def build_whole_cell_network(
     Equal forward/back rates make the cell glucose track the blood pool, so supply
     is bounded by what's actually in the sinusoid (``glucose_blood``), not infinite.
     """
+    resolved_basis = validate_transporter_activity_contract(
+        transporter_activity,
+        activity_basis,
+        activity_source_ids,
+    )
     glut2_activity = transporter_activity_scale(transporter_activity, "glut2")
+    glut2_basis: TransportActivityBasis = (
+        resolved_basis
+        if transporter_activity is not None and "glut2" in transporter_activity
+        else "normalized_schematic_reference"
+    )
+    glut2_source_id = (activity_source_ids or {}).get("glut2")
     homeostasis = ReactionNetwork(
         species=("glucose", "glucose_blood"),
         reactions=(
             mass_action("glut2_uptake", {"glucose_blood": 1}, {"glucose": 1}, 0.4 * glut2_activity,
                         source_id="bile_formation",
-                        notes=f"GLUT2 facilitated uptake (down-gradient from blood). Activity scale={glut2_activity:.3g} from transporter abundance/function.",
-                        parameter_provenance=transport_rate_parameter_provenance("whole_cell_glut2_uptake", 0.4, "glut2", glut2_activity)),
+                        notes=f"GLUT2 facilitated uptake (down-gradient from blood). Activity scale={glut2_activity:.3g}; basis={glut2_basis}.",
+                        parameter_provenance=transport_rate_parameter_provenance(
+                            "whole_cell_glut2_uptake", 0.4, "glut2", glut2_activity,
+                            glut2_basis, glut2_source_id,
+                        )),
             mass_action("glut2_release", {"glucose": 1}, {"glucose_blood": 1}, 0.4 * glut2_activity,
                         source_id="bile_formation",
-                        notes=f"GLUT2 is bidirectional: glucose flows back to blood when cell glucose is high (fasting output). Activity scale={glut2_activity:.3g} from transporter abundance/function.",
-                        parameter_provenance=transport_rate_parameter_provenance("whole_cell_glut2_release", 0.4, "glut2", glut2_activity)),
+                        notes=f"GLUT2 is bidirectional: glucose flows back to blood when cell glucose is high (fasting output). Activity scale={glut2_activity:.3g}; basis={glut2_basis}.",
+                        parameter_provenance=transport_rate_parameter_provenance(
+                            "whole_cell_glut2_release", 0.4, "glut2", glut2_activity,
+                            glut2_basis, glut2_source_id,
+                        )),
         ),
         volume_l=volume_l,
     )
@@ -315,6 +335,8 @@ def seed_whole_cell(
     fed: bool = True,
     protein_inventory: Mapping[str, float] | None = None,
     transporter_activity: Mapping[str, float] | None = None,
+    activity_basis: TransportActivityBasis | None = None,
+    activity_source_ids: Mapping[str, str] | None = None,
     include_synthetic_expression_benchmark: bool = False,
 ) -> WholeCell:
     """Seed every subsystem from the M030 grounded concentrations.
@@ -324,16 +346,19 @@ def seed_whole_cell(
     When fed, ``glucose_blood`` is a buffered sinusoidal reservoir the cell
     exchanges with through GLUT2 (bidirectional), not an infinite one-way feed.
     """
-    if protein_inventory is not None and transporter_activity is not None:
-        raise ValueError("provide protein_inventory or transporter_activity, not both")
     if protein_inventory is not None:
-        transporter_activity = transporter_activity_from_inventory_counts(protein_inventory)
+        raise ValueError(
+            "total protein_inventory cannot drive transport activity; provide measured "
+            "surface activity or an explicit scenario intervention"
+        )
 
     geometry = build_hepatocyte_geometry(definition)
     volume = geometry.volume_of(CYTOSOL)
     network = build_whole_cell_network(
         volume,
         transporter_activity=transporter_activity,
+        activity_basis=activity_basis,
+        activity_source_ids=activity_source_ids,
         include_synthetic_expression_benchmark=include_synthetic_expression_benchmark,
     )
 
@@ -362,6 +387,8 @@ def seed_whole_cell_population(
     fed: bool = True,
     protein_inventory: Mapping[str, float] | None = None,
     transporter_activity: Mapping[str, float] | None = None,
+    activity_basis: TransportActivityBasis | None = None,
+    activity_source_ids: Mapping[str, str] | None = None,
     include_synthetic_expression_benchmark: bool = False,
 ) -> WholeCellPopulation:
     """Seed a population with one real hepatocyte."""
@@ -371,6 +398,8 @@ def seed_whole_cell_population(
             fed=fed,
             protein_inventory=protein_inventory,
             transporter_activity=transporter_activity,
+            activity_basis=activity_basis,
+            activity_source_ids=activity_source_ids,
             include_synthetic_expression_benchmark=include_synthetic_expression_benchmark,
         ),),
     )

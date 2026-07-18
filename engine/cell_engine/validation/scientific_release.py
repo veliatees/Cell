@@ -63,6 +63,10 @@ from cell_engine.quantitative.phh_transporter_inventory import (
     build_phh_transporter_inventory,
     validate_phh_transporter_inventory,
 )
+from cell_engine.quantitative.phh_protein_functional_evidence import (
+    build_phh_protein_functional_evidence,
+    validate_phh_protein_functional_evidence,
+)
 from cell_engine.quantitative.human_sch_bile_acids import (
     build_human_sch_bile_acids,
     validate_human_sch_bile_acids,
@@ -124,6 +128,7 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
     phh_identity_heterogeneity = None
     phh_proteome_budget = None
     phh_transporter_inventory = None
+    phh_protein_functional_evidence = None
     human_sch_bile_acids = None
 
     if registry.metabolic_pool_initialization_ready:
@@ -278,6 +283,16 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid PHH transporter inventory: {exc}")
+
+    try:
+        phh_protein_functional_evidence = build_phh_protein_functional_evidence()
+        validate_phh_protein_functional_evidence(phh_protein_functional_evidence)
+        checks.append(
+            "eight PHH proteins retain seven-donor total abundance, localization identity, "
+            "assay kinetics and response timepoints while active copies and whole-cell rates fail closed"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid PHH protein-functional evidence: {exc}")
 
     try:
         human_sch_bile_acids = build_human_sch_bile_acids()
@@ -480,12 +495,23 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         if phh_transporter_inventory is None:
             blockers.append("PHH transporter inventory is unavailable")
         else:
-            if not phh_transporter_inventory.bsep_surface_copy_bridge_ready:
+            if not phh_transporter_inventory.bsep_surface_copy_observation_ready:
                 blockers.append("BSEP total copies do not identify canalicular surface-localized copies")
-            if not phh_transporter_inventory.mrp2_total_copy_bridge_ready:
-                blockers.append("MRP2 tissue membrane-protein abundance lacks a per-hepatocyte denominator bridge")
+            if not phh_transporter_inventory.mrp2_surface_copy_observation_ready:
+                blockers.append("MRP2 total copies per nucleus do not identify canalicular surface-localized copies")
             if not phh_transporter_inventory.flux_coupling_ready:
                 blockers.append("BSEP and MRP2 abundance do not identify whole-cell transport flux")
+        if phh_protein_functional_evidence is None:
+            blockers.append("PHH protein-functional evidence is unavailable")
+        else:
+            if not phh_protein_functional_evidence.integration_gates["active_fraction_ready"]:
+                blockers.append("selected PHH proteins lack measured active fractions")
+            if not phh_protein_functional_evidence.integration_gates["receptor_binding_kinetics_ready"]:
+                blockers.append("INSR, MET and EGFR lack matched PHH receptor-binding kinetics")
+            if not phh_protein_functional_evidence.integration_gates["donor_activity_distribution_ready"]:
+                blockers.append("seven-donor total abundance does not identify donor activity distributions")
+            if not phh_protein_functional_evidence.integration_gates["whole_cell_flux_coupling_ready"]:
+                blockers.append("assay kinetics lack active-surface and whole-cell flux calibration")
         if human_sch_bile_acids is None:
             blockers.append("human SCH endogenous bile-acid reference is unavailable")
         else:

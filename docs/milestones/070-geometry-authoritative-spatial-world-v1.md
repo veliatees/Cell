@@ -1,5 +1,9 @@
 # Milestone 070 - Geometry-authoritative spatial world v1
 
+> Historical scale note: Milestone 079 replaces this milestone's isolated-cell
+> diameter anchor with a measured in-situ human volume anchor. The spatial-world
+> architecture remains active.
+
 ## Question
 
 Can physical proximity become engine state, rather than a browser-only visual,

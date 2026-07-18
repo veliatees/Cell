@@ -1,5 +1,11 @@
 # Milestone 067 - BSEP/MRP2 transporter inventory and denominator bridge v1
 
+> Historical milestone, superseded by
+> `077-donor-resolved-absolute-phh-proteome-v1.md`. The text below records the
+> earlier evidence boundary. It is not the current runtime contract: official
+> Supplementary Table 2 now supplies direct BSEP and MRP2 totals per nucleus,
+> while surface-localized and active copies remain blocked.
+
 ## Question
 
 Can measured transporter abundance become a copy number, surface density, or

@@ -98,14 +98,14 @@
     {
       "id": "human_hepatocyte_albumin_copies",
       "target": "ALB protein abundance",
-      "measurement": {"value": 20000000, "low": null, "high": null, "uncertainty_type": null, "uncertainty_value": null, "unit": "copies_per_cell"},
+      "measurement": {"value": 19332782.426021077, "low": 11197811.546553062, "high": 30670847.435900893, "uncertainty_type": "observed_seven_donor_range", "uncertainty_value": null, "unit": "copies_per_nucleus"},
       "biological_system": "purified primary human hepatocytes from surgical liver resections",
       "assay": "LC-MS/MS with Total Protein Approach and Proteomic Ruler",
       "sample_size": 7,
       "source_id": "human_hepatocyte_proteome_2016",
       "model_use": "validation_target",
-      "applicability": "Checks the order of magnitude of the hepatocyte albumin protein pool.",
-      "limitations": "Average across donors; does not separate intracellular, secretory-pathway and newly secreted albumin, and is not a synthesis rate."
+      "applicability": "Donor-median total ALB protein-group abundance for a reference nucleus.",
+      "limitations": "Does not separate intracellular, secretory-pathway and newly secreted albumin, is not a synthesis rate, and is not a per-hepatocyte value for binucleate cells."
     },
     {
       "id": "human_hepatocyte_bsep_total_protein",

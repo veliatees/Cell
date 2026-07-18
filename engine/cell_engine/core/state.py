@@ -132,8 +132,14 @@ class CellSpatialContactState:
     closest_point_self_um: Vector3
     closest_point_other_um: Vector3
     outward_normal_to_other: Vector3
+    contact_face_candidates_self: tuple[str, ...]
+    contact_face_candidates_other: tuple[str, ...]
     membrane_domain_self: str | None
     membrane_domain_other: str | None
+    membrane_domain_candidates_self: tuple[str, ...]
+    membrane_domain_candidates_other: tuple[str, ...]
+    domain_assignment_status_self: str
+    domain_assignment_status_other: str
     contact_patch_polygon_um: tuple[Vector3, ...]
     contact_patch_area_um2: float | None
     normal_load_nN: float | None
@@ -156,6 +162,10 @@ class CellSpatialContactEvent:
     contact_input_active: bool
     membrane_domain_self: str | None
     membrane_domain_other: str | None
+    membrane_domain_candidates_self: tuple[str, ...]
+    membrane_domain_candidates_other: tuple[str, ...]
+    domain_assignment_status_self: str
+    domain_assignment_status_other: str
 
 
 @dataclass(frozen=True)

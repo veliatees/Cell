@@ -46,7 +46,8 @@ class HepatocyteExpressionTests(unittest.TestCase):
         bsep = program.genes["ABCB11"]
         self.assertGreater(bsep.total_protein_count or 0.0, 0.0)
         self.assertEqual(bsep.functional_protein_scale, 1.0)
-        self.assertIn("not a measured surface fraction", bsep.notes)
+        self.assertIn("not a measured surface or active fraction", bsep.notes)
+        self.assertIn("per nucleus", bsep.notes)
 
     def test_observed_updates_can_follow_dna_rna_protein_stages(self) -> None:
         program = build_initial_hepatocyte_expression(build_reference_hepatocyte_genome())

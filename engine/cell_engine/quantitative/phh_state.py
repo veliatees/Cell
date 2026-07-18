@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from cell_engine.quantitative.geometry import HEPATOCYTE_CELL_VOLUME_L, molecules_from_concentration_mM
+from cell_engine.quantitative.geometry import (
+    HEPATOCYTE_CELL_VOLUME_L,
+    hepatocyte_geometry_reference_snapshot,
+    molecules_from_concentration_mM,
+    validate_hepatocyte_geometry_reference,
+)
 from cell_engine.quantitative.phh_profiles import DEFAULT_PHH_PROFILE_ID, PhhNutritionalState, phh_profile
 
 
@@ -37,6 +42,7 @@ class QuantitativePhhState:
     authority: str
     cell_volume_l: float
     effective_cytosol_volume_l: float
+    geometry_reference: dict[str, object]
     energy_charge: float
     pools: dict[str, QuantitativePoolState]
     limitations: tuple[str, ...]
@@ -57,6 +63,8 @@ def build_quantitative_phh_state(
 ) -> QuantitativePhhState:
     profile = phh_profile(profile_id)
     cytosol_volume_l = HEPATOCYTE_CELL_VOLUME_L * EFFECTIVE_CYTOSOL_VOLUME_FRACTION
+    geometry_reference = hepatocyte_geometry_reference_snapshot()
+    validate_hepatocyte_geometry_reference(geometry_reference)
     pools: dict[str, QuantitativePoolState] = {}
     for pool_id, pool in profile.pools.items():
         is_blood = pool_id.endswith("_blood")
@@ -87,6 +95,7 @@ def build_quantitative_phh_state(
         authority="authoritative_research_preview",
         cell_volume_l=HEPATOCYTE_CELL_VOLUME_L,
         effective_cytosol_volume_l=cytosol_volume_l,
+        geometry_reference=geometry_reference,
         energy_charge=profile.energy_charge(),
         pools=pools,
         limitations=(
@@ -104,6 +113,10 @@ def validate_quantitative_phh_state(state: QuantitativePhhState) -> None:
         raise ValueError("quantitative PHH state must declare its authority")
     if not 0.0 <= state.energy_charge <= 1.0:
         raise ValueError("energy charge must be in [0, 1]")
+    validate_hepatocyte_geometry_reference(state.geometry_reference)
+    canonical = state.geometry_reference["canonical_reference"]
+    if not isinstance(canonical, dict) or state.cell_volume_l != float(canonical["cell_volume_um3"]) * 1.0e-15:
+        raise ValueError("quantitative PHH volume diverged from its geometry reference")
     required = {"ATP", "ADP", "AMP", "NAD_plus", "glycogen"}
     if not required <= set(state.pools):
         raise ValueError("quantitative PHH state is missing required pools")
@@ -127,6 +140,7 @@ def quantitative_phh_state_snapshot(
         "authority": state.authority,
         "cell_volume_l": state.cell_volume_l,
         "effective_cytosol_volume_l": state.effective_cytosol_volume_l,
+        "geometry_reference": state.geometry_reference,
         "energy_charge": state.energy_charge,
         "pools": state.pools,
         "limitations": state.limitations,
