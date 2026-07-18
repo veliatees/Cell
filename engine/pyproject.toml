@@ -5,7 +5,10 @@ description = "Authoritative scientific engine boundary for the Cell project."
 requires-python = ">=3.11"
 dependencies = []
 
+[project.optional-dependencies]
+published-models = ["libroadrunner==2.9.2", "h5py==3.16.0"]
+intercellular-events = ["Brian2==2.10.1"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-

@@ -1,0 +1,97 @@
+{
+  "schema_version": "cell.phh-evidence-bundle-contract.v1",
+  "contract_id": "healthy_adult_human_phh_scale_bridge_v1",
+  "target": "healthy adult human primary hepatocyte and scale-matched in-vivo liver validation",
+  "required_files": [
+    "koenig_model_provenance_audit.md",
+    "human_phh_scale_bridge.csv",
+    "human_phh_glucose_fluxes.csv",
+    "human_endocrine_signal_chain.csv",
+    "human_oxygen_redox_zonation.csv",
+    "heldout_validation_trajectories.csv",
+    "integration_contract.json",
+    "source_audit.md",
+    "unidentifiable_parameters.md"
+  ],
+  "csv_files": [
+    "human_phh_scale_bridge.csv",
+    "human_phh_glucose_fluxes.csv",
+    "human_endocrine_signal_chain.csv",
+    "human_oxygen_redox_zonation.csv",
+    "heldout_validation_trajectories.csv"
+  ],
+  "markdown_files": [
+    "koenig_model_provenance_audit.md",
+    "source_audit.md",
+    "unidentifiable_parameters.md"
+  ],
+  "work_packages": [
+    {
+      "id": "published_model_provenance",
+      "file": "koenig_model_provenance_audit.md",
+      "unlocks": "equation and protocol provenance; never single-cell coupling by itself"
+    },
+    {
+      "id": "organ_to_cell_scale_bridge",
+      "file": "human_phh_scale_bridge.csv",
+      "unlocks": "reviewable denominator evidence for organ-to-cell conversion"
+    },
+    {
+      "id": "human_phh_glucose_flux",
+      "file": "human_phh_glucose_fluxes.csv",
+      "unlocks": "scale-matched glucose pathway calibration candidates"
+    },
+    {
+      "id": "endocrine_signal_chain",
+      "file": "human_endocrine_signal_chain.csv",
+      "unlocks": "portal exposure and receptor-to-rate coupling candidates"
+    },
+    {
+      "id": "oxygen_redox_zonation",
+      "file": "human_oxygen_redox_zonation.csv",
+      "unlocks": "compartment and zone-resolved oxygen/redox constraints"
+    },
+    {
+      "id": "heldout_validation",
+      "file": "heldout_validation_trajectories.csv",
+      "unlocks": "independent trajectory comparison without fitting"
+    }
+  ],
+  "semantic_column_aliases": {
+    "record_id": ["record_id", "id"],
+    "parameter": ["parameter", "quantity", "target", "endpoint", "variable", "node", "flux_name"],
+    "value": ["value", "mean", "estimate"],
+    "unit": ["unit", "units"],
+    "biological_system": ["biological_system", "system", "biological_context"],
+    "species": ["species", "organism"],
+    "model_system": ["model_system", "cell_model", "model", "sample_type"],
+    "record_type": ["record_type", "evidence_type", "evidence_class"],
+    "directness": ["directness", "measurement_type", "measurement_or_model_output"],
+    "source_title": ["source_title", "publication_title", "title"],
+    "source_kind": ["source_kind", "source_type", "publication_type"],
+    "doi": ["doi"],
+    "source_locator": ["source_locator", "figure_table", "figure_or_table", "location_in_source"],
+    "applicability": ["model_use", "applicability", "integration_use"],
+    "limitations": ["limitations", "limitation", "notes"]
+  },
+  "null_tokens": ["", "null"],
+  "forbidden_missing_tokens": ["na", "n/a", "nr", "not reported", "not_reported", "unknown", "tbd", "?"],
+  "eligible_target_species": ["homo sapiens", "human"],
+  "eligible_target_systems": [
+    "healthy_adult_human_in_vivo",
+    "healthy_adult_primary_human_hepatocyte",
+    "adult_human_liver_ex_vivo"
+  ],
+  "eligible_directness": ["direct_measurement", "derived_from_direct_measurement"],
+  "eligible_record_types": ["measured", "derived_from_measurement"],
+  "eligible_source_kinds": ["primary_research", "primary_dataset"],
+  "policy": {
+    "missing_values_must_remain_null": true,
+    "model_output_is_not_measurement": true,
+    "cross_species_pooling_for_human_calibration": false,
+    "cross_model_pooling_for_phh_calibration": false,
+    "automatic_parameter_activation": false,
+    "manual_primary_source_review_required": true,
+    "authoritative_coupling_enabled": false
+  }
+}

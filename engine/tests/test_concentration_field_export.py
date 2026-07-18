@@ -18,6 +18,7 @@ from cell_engine.stochastic.hepatocyte_rdme import (
     MITOCHONDRIA,
     build_hepatocyte_lattice,
 )
+from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_EQUIVALENT_SPHERE_DIAMETER_UM
 
 _ROOT = Path(__file__).resolve().parents[2]
 _PUBLIC_JSON = _ROOT / "public" / "cell_concentration_field.json"
@@ -70,6 +71,10 @@ class ConcentrationFieldPhysics(unittest.TestCase):
 class CommittedArtifact(unittest.TestCase):
     def test_public_json_structure_and_gradient(self) -> None:
         data = json.loads(_PUBLIC_JSON.read_text())
+        self.assertAlmostEqual(
+            data["lattice"]["dxUm"],
+            HEPATOCYTE_REFERENCE_EQUIVALENT_SPHERE_DIAMETER_UM / data["lattice"]["n"],
+        )
         self.assertIn("voxels", data)
         self.assertEqual(set(data["species"]), {"g", "a"})
         voxels = data["voxels"]

@@ -76,15 +76,32 @@ Correction:
 
 ### 6. Hepatocyte radius and volume were inconsistent
 
-The definition used a 12 um radius while quantitative conversion used a 3400
-um3 volume. A 12 um sphere is approximately 7240 um3.
+The definition once used a 12 um radius while quantitative conversion used a
+separate 3400 um3 volume. Later renderer and collision paths also carried a
+25 um diameter. These independent anchors could not all describe one cell.
 
 Correction:
 
-- the reference volume remains 3400 um3;
-- equivalent-sphere radius is derived as approximately 9.33 um;
+- the active scale anchor is the direct normal-control human 3D median volume
+  `5657.07116 um3` (MAD `744.875484 um3`, `n=5` reconstructions) from
+  Segovia-Miranda et al. 2019 Supplementary Table 3;
+- imaging used approximately `100 um` sections and `0.3 x 0.3 x 0.3 um`
+  voxels;
+- equivalent-sphere diameter (`22.107060841416555 um`), radius
+  (`11.053530420708277 um`) and area (`1535.3658816738957 um2`) are exact
+  derivations, not additional observations;
+- Duarte et al. 1989's `2850 +/- 99.9 um3` five-case stereology result is
+  preserved as a conflicting historical cross-check. It is not averaged with
+  the 3D median, and the unidentified `+/-` statistic is not relabelled;
+- Olander et al. 2021's `18.4 um` isolated-PHH median across 54 batches remains
+  an independent isolated-cell cross-check rather than an in-situ shape claim;
+- the engine definition, quantitative conversion, RDME lattice, renderer and
+  generated browser artifacts consume this shared scale;
 - the model states that this is a conversion geometry, not actual polarized
-  hepatocyte morphology.
+  hepatocyte morphology or a donor-specific mesh;
+- the measured normal-control lipid-droplet volume fraction (`0.507807%`
+  median, MAD `0.403178` percentage points) calibrates only aggregate display
+  volume. Count, size distribution and nutritional dynamics remain blocked.
 
 ### 7. Transporter abundance was being overinterpreted
 
@@ -94,10 +111,26 @@ denominators. Culture state can also change membrane abundance.
 
 Correction:
 
-- BSEP/MRP2/NTCP abundance remains useful as an abundance anchor;
+- BSEP, MRP2, NTCP, GLUT2, ATP1A1, GCK and CPS1 estimates were replaced by
+  official seven-donor Supplementary Table 2 medians and ranges;
+- all 8,689 quantified target groups are queryable without imputation;
+- copy-number denominator is `per_nucleus`, never silently `per_cell`;
+- BSEP and MRP2 total copies per nucleus are available, while canalicular
+  surface and transport-active copies remain absent;
 - absolute transport flux stays blocked;
 - legacy first-order transport rates are explicitly placeholder and excluded
   from predictive release.
+
+Additional correction in Milestone 078:
+
+- total-copy ratios are descriptive and can no longer drive transporter rates;
+- an explicit activity multiplier must declare either a scenario-intervention
+  or measured-surface-activity basis;
+- measured-surface activity requires source-tagged, correctly localized copies;
+- MRP2 rates `183` and `104 pmol/min/mg assay protein` are retained as
+  observations at `0.5 uM` substrate, not mislabeled as Vmax;
+- the two BSEP Km/Vmax datasets remain independent assay contexts;
+- receptor response timepoints cannot substitute for binding kinetics.
 
 ### 8. In-vivo liver and isolated PHH were treated too closely
 
@@ -110,6 +143,27 @@ Correction:
 - profiles say `whole_tissue_equivalent`;
 - isolated/cultured PHH prediction remains blocked;
 - redox conversion and kinetics remain data-gated.
+
+### 9. Contact markers were being overinterpreted as contact surfaces
+
+A fixed glowing point or a radius guessed by the renderer can look like a
+measured receptor-active interface even when the engine does not know the
+external object's size or a finite contact area.
+
+Correction:
+
+- stochastic approach direction is sampled only by an explicit seeded
+  scenario, never by per-frame visual flicker;
+- the supplied sphere, capsule, or convex-polyhedron support geometry sets the
+  placement, so object size and orientation change the first-contact location;
+- missing or invalid object dimensions fail closed;
+- contact patch position and area are geometry outputs, not random UI values;
+- the renderer draws a patch only for an active engine-supplied finite polygon
+  with positive area;
+- mixed-shape point contacts with unresolved area no longer receive a fallback
+  ring or glow;
+- the normal one-hepatocyte runtime contains no external body and therefore no
+  contact marker.
 
 ## Current Authority Surface
 

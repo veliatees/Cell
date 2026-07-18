@@ -1,0 +1,113 @@
+{
+  "schema_version": "cell.phh-proteome-budget.v1",
+  "status": "source_backed_reference_with_arithmetic_mass_budget",
+  "date_verified": "2026-07-14",
+  "source_artifact": {
+    "source_id": "human_hepatocyte_proteome_2016",
+    "doi": "10.1016/j.jprot.2016.01.016",
+    "repository_url": "https://pure.mpg.de/pubman/item/item_2286852_3",
+    "pdf_filename": "1-s2.0-S1874391916300197-main.pdf",
+    "repository_md5": "5cd1a046891b8bc4b3819e443da006ec",
+    "source_locations": [
+      "Abstract",
+      "Results section 3.3",
+      "Results section 3.4",
+      "Figure 4"
+    ]
+  },
+  "cohort": {
+    "species": "Homo sapiens",
+    "biological_system": "purified_primary_human_hepatocytes_from_surgical_liver_resections",
+    "donor_count": 7,
+    "assay": "quantitative_LC_MS_MS_total_protein_approach_and_proteomic_ruler"
+  },
+  "whole_cell_anchors": {
+    "total_protein_pg_per_cell": {
+      "value": 600.0,
+      "uncertainty": null,
+      "evidence_role": "source_reported_average"
+    },
+    "total_protein_molecules_per_cell": {
+      "value": 8700000000.0,
+      "uncertainty": null,
+      "evidence_role": "source_reported_average"
+    },
+    "estimated_cell_volume_um3": {
+      "value": 3000.0,
+      "uncertainty": null,
+      "evidence_role": "source_model_derived_from_assumed_200_g_per_L_average_cellular_protein_concentration"
+    }
+  },
+  "compartment_protein_mass_fractions": [
+    {
+      "id": "mitochondria",
+      "fraction_of_total_cellular_protein": 0.25,
+      "evidence_role": "source_reported_protein_mass_fraction"
+    },
+    {
+      "id": "endoplasmic_reticulum_and_golgi",
+      "fraction_of_total_cellular_protein": 0.12,
+      "evidence_role": "source_reported_protein_mass_fraction"
+    },
+    {
+      "id": "nucleus",
+      "fraction_of_total_cellular_protein": 0.10,
+      "evidence_role": "source_reported_protein_mass_fraction"
+    },
+    {
+      "id": "integral_plasma_membrane_proteins",
+      "fraction_of_total_cellular_protein": 0.012,
+      "evidence_role": "source_reported_protein_mass_fraction"
+    }
+  ],
+  "required_measurements": [
+    {
+      "id": "matched_single_cell_total_protein",
+      "requirements": [
+        "same modeled donor and nutritional state",
+        "viable hepatocyte-resolved protein mass",
+        "uncertainty and cell-counting method"
+      ],
+      "purpose": "initialize a donor-specific whole-cell protein budget"
+    },
+    {
+      "id": "dynamic_protein_turnover",
+      "requirements": [
+        "protein-class synthesis and degradation rates",
+        "matched time course",
+        "subcellular localization"
+      ],
+      "purpose": "turn a static abundance reference into proteostasis dynamics"
+    },
+    {
+      "id": "geometry_resolved_compartment_measurements",
+      "requirements": [
+        "organelle volumes or membrane areas",
+        "matched microscopy or stereology",
+        "donor and culture context"
+      ],
+      "purpose": "map protein mass fractions to geometry without confusing mass with volume"
+    }
+  ],
+  "gates": {
+    "whole_cell_protein_reference_ready": true,
+    "arithmetic_compartment_mass_budget_ready": true,
+    "donor_specific_initialization_ready": false,
+    "dynamic_proteostasis_ready": false,
+    "macromolecular_crowding_ready": false,
+    "geometry_coupling_ready": false,
+    "automatic_state_coupling": false,
+    "predictive_ready": false
+  },
+  "source_ids": [
+    "human_hepatocyte_proteome_2016"
+  ],
+  "limitations": [
+    "The 600 pg value is a seven-donor cohort average; the paper does not publish an uncertainty for this headline value.",
+    "The 3000 um3 cell volume is model-derived from an assumed average cellular protein concentration of 200 g/L, not a direct morphometric measurement.",
+    "Compartment percentages are protein-mass fractions, not organelle volume fractions, membrane areas, or renderer geometry targets.",
+    "The reported 8.7 billion molecules is an aggregate protein-molecule estimate and does not define a complete molecule-by-molecule inventory.",
+    "The combined 9400-protein study dataset must not be interpreted as exactly 9400 proteins present in every hepatocyte.",
+    "Static average abundance does not identify synthesis, degradation, trafficking, crowding, or donor-specific dynamics."
+  ]
+}

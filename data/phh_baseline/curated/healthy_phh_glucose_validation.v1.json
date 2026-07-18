@@ -1,0 +1,203 @@
+{
+  "schema_version": "cell.healthy-phh-glucose-validation.v1",
+  "date_verified": "2026-07-14",
+  "status": "primary_source_curated_same_format_validation_only",
+  "policy": "Preserve measured cell format, exposure bundle, time window, denominator and uncertainty. Do not convert a 3D spheroid net-consumption observation into a fresh-PHH production parameter or a receptor kinetic law.",
+  "sources": {
+    "kemas2021_phh_glucose": {
+      "title": "Insulin-dependent glucose consumption dynamics in 3D primary human liver cultures measured by a sensitive and specific glucose sensor with nanoliter input volume",
+      "url": "https://faseb.onlinelibrary.wiley.com/doi/10.1096/fj.202001989RR",
+      "source_type": "primary_paper",
+      "notes": "Primary human hepatocyte 3D spheroids from two BioIVT donors. Table 1 supplies mean plus/minus SD net glucose-consumption rates and Methods supplies exact glucose, insulin and glucagon conditions."
+    },
+    "honka2018_human_liver_glucose_uptake": {
+      "title": "Insulin-stimulated glucose uptake in skeletal muscle, adipose tissue and liver: a positron emission tomography study",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5920018/",
+      "source_type": "primary_paper",
+      "notes": "Human in-vivo liver glucose uptake during euglycemic-hyperinsulinemic clamp in 326 participants without diabetes."
+    },
+    "wilson2003_human_hepatocellularity": {
+      "title": "Inter-individual variability in levels of human microsomal protein and hepatocellularity per gram of liver",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC1884378/",
+      "source_type": "primary_paper",
+      "notes": "Measured human hepatocellularity and microsomal protein per gram of liver after correction for processing loss."
+    }
+  },
+  "study_context": {
+    "species": "Homo sapiens",
+    "cell_format": "primary_human_hepatocyte_3d_spheroid",
+    "health_context": "insulin_sensitive_non_steatotic_culture_group",
+    "provider": "BioIVT",
+    "study_wide_donor_count": 2,
+    "seeded_viable_cells_per_spheroid": 1500,
+    "table_replicate_n": 6,
+    "table_replicate_semantics": "reported n for the insulin-sensitive group; not six independent donors",
+    "conditioning": "1-2 weeks in physiological low-insulin medium before acute challenge",
+    "measurement": "net medium glucose disappearance normalized per seeded cell and time",
+    "source_ids": ["kemas2021_phh_glucose"]
+  },
+  "conditions": [
+    {
+      "id": "hi_hg",
+      "label": "high insulin, high glucose",
+      "glucose_mM": 11.0,
+      "insulin_pM": 1700000.0,
+      "glucagon_nM": null,
+      "glucagon_status": "not_listed_as_supplemented_actual_concentration_unmeasured"
+    },
+    {
+      "id": "li_hg",
+      "label": "low insulin, high glucose",
+      "glucose_mM": 11.0,
+      "insulin_pM": 100.0,
+      "glucagon_nM": 100.0,
+      "glucagon_status": "supplemented"
+    },
+    {
+      "id": "hi_lg",
+      "label": "high insulin, low glucose",
+      "glucose_mM": 5.5,
+      "insulin_pM": 1700000.0,
+      "glucagon_nM": null,
+      "glucagon_status": "not_listed_as_supplemented_actual_concentration_unmeasured"
+    },
+    {
+      "id": "li_lg",
+      "label": "low insulin, low glucose",
+      "glucose_mM": 5.5,
+      "insulin_pM": 100.0,
+      "glucagon_nM": 100.0,
+      "glucagon_status": "supplemented"
+    }
+  ],
+  "glucose_consumption_observations": [
+    {"id": "kemas_is_hi_hg_0_6h", "condition_id": "hi_hg", "time_start_h": 0.0, "time_end_h": 6.0, "mean_fmol_per_cell_h": 10.0, "sd_fmol_per_cell_h": 2.4, "overlaps_subwindows": false},
+    {"id": "kemas_is_li_hg_0_6h", "condition_id": "li_hg", "time_start_h": 0.0, "time_end_h": 6.0, "mean_fmol_per_cell_h": 9.9, "sd_fmol_per_cell_h": 2.5, "overlaps_subwindows": false},
+    {"id": "kemas_is_hi_lg_0_6h", "condition_id": "hi_lg", "time_start_h": 0.0, "time_end_h": 6.0, "mean_fmol_per_cell_h": 6.1, "sd_fmol_per_cell_h": 1.7, "overlaps_subwindows": false},
+    {"id": "kemas_is_li_lg_0_6h", "condition_id": "li_lg", "time_start_h": 0.0, "time_end_h": 6.0, "mean_fmol_per_cell_h": 3.0, "sd_fmol_per_cell_h": 0.8, "overlaps_subwindows": false},
+    {"id": "kemas_is_hi_hg_6_24h", "condition_id": "hi_hg", "time_start_h": 6.0, "time_end_h": 24.0, "mean_fmol_per_cell_h": 3.5, "sd_fmol_per_cell_h": 0.7, "overlaps_subwindows": false},
+    {"id": "kemas_is_li_hg_6_24h", "condition_id": "li_hg", "time_start_h": 6.0, "time_end_h": 24.0, "mean_fmol_per_cell_h": 3.5, "sd_fmol_per_cell_h": 0.8, "overlaps_subwindows": false},
+    {"id": "kemas_is_hi_lg_6_24h", "condition_id": "hi_lg", "time_start_h": 6.0, "time_end_h": 24.0, "mean_fmol_per_cell_h": 2.4, "sd_fmol_per_cell_h": 1.1, "overlaps_subwindows": false},
+    {"id": "kemas_is_li_lg_6_24h", "condition_id": "li_lg", "time_start_h": 6.0, "time_end_h": 24.0, "mean_fmol_per_cell_h": 1.2, "sd_fmol_per_cell_h": 0.3, "overlaps_subwindows": false},
+    {"id": "kemas_is_hi_hg_24_72h", "condition_id": "hi_hg", "time_start_h": 24.0, "time_end_h": 72.0, "mean_fmol_per_cell_h": 1.4, "sd_fmol_per_cell_h": 0.4, "overlaps_subwindows": false},
+    {"id": "kemas_is_li_hg_24_72h", "condition_id": "li_hg", "time_start_h": 24.0, "time_end_h": 72.0, "mean_fmol_per_cell_h": 1.3, "sd_fmol_per_cell_h": 0.3, "overlaps_subwindows": false},
+    {"id": "kemas_is_hi_lg_24_72h", "condition_id": "hi_lg", "time_start_h": 24.0, "time_end_h": 72.0, "mean_fmol_per_cell_h": 0.9, "sd_fmol_per_cell_h": 0.4, "overlaps_subwindows": false},
+    {"id": "kemas_is_li_lg_24_72h", "condition_id": "li_lg", "time_start_h": 24.0, "time_end_h": 72.0, "mean_fmol_per_cell_h": 0.4, "sd_fmol_per_cell_h": 0.1, "overlaps_subwindows": false},
+    {"id": "kemas_is_hi_hg_0_72h", "condition_id": "hi_hg", "time_start_h": 0.0, "time_end_h": 72.0, "mean_fmol_per_cell_h": 2.6, "sd_fmol_per_cell_h": 0.6, "overlaps_subwindows": true},
+    {"id": "kemas_is_li_hg_0_72h", "condition_id": "li_hg", "time_start_h": 0.0, "time_end_h": 72.0, "mean_fmol_per_cell_h": 2.6, "sd_fmol_per_cell_h": 0.6, "overlaps_subwindows": true},
+    {"id": "kemas_is_hi_lg_0_72h", "condition_id": "hi_lg", "time_start_h": 0.0, "time_end_h": 72.0, "mean_fmol_per_cell_h": 1.7, "sd_fmol_per_cell_h": 0.6, "overlaps_subwindows": true},
+    {"id": "kemas_is_li_lg_0_72h", "condition_id": "li_lg", "time_start_h": 0.0, "time_end_h": 72.0, "mean_fmol_per_cell_h": 0.8, "sd_fmol_per_cell_h": 0.2, "overlaps_subwindows": true}
+  ],
+  "observation_contract": {
+    "unit": "fmol_per_cell_per_h",
+    "uncertainty_type": "SD",
+    "source_locator": "Table 1",
+    "evidence": "measured_mean_plus_minus_sd",
+    "may_validate_same_format_output": true,
+    "may_parameterize_fresh_phh_or_in_vivo_single_cell": false,
+    "limitations": [
+      "Net medium glucose disappearance is not a direct GLUT2 transport measurement and may combine uptake, utilization and production.",
+      "The denominator is seeded cells per 3D spheroid; viability and cell-number change are not a matched fresh-cell count at every interval.",
+      "The 0-72 h records overlap the three shorter windows and are not independent observations.",
+      "Only two source donors were used; table n=6 must not be interpreted as six donors."
+    ]
+  },
+  "insulin_response_observations": [
+    {
+      "id": "kemas_insulin_pakt_ser473_7min",
+      "pathway_id": "insulin_insr_pi3k_akt",
+      "response": "pAKT_Ser473",
+      "direction": "increase",
+      "reported_fold_change": 3.5,
+      "duration_min": 7.0,
+      "insulin_challenge_pM": 1700000.0,
+      "reported_n_results": 4,
+      "reported_n_figure_caption": 3,
+      "uncertainty_value": null,
+      "source_locator": "Figure 4E and Results section 3.5",
+      "may_fit_quantitative_kinetics": false
+    },
+    {
+      "id": "kemas_insulin_pck1_6h",
+      "pathway_id": "insulin_insr_pi3k_akt",
+      "response": "PCK1_expression",
+      "direction": "decrease",
+      "reported_fold_change": 4.1,
+      "duration_min": 360.0,
+      "insulin_challenge_pM": 1700000.0,
+      "reported_n_results": null,
+      "reported_n_figure_caption": null,
+      "reported_n_range": [3, 6],
+      "uncertainty_value": null,
+      "source_locator": "Figure 4F and Results section 3.5",
+      "may_fit_quantitative_kinetics": false
+    },
+    {
+      "id": "kemas_insulin_g6pc_6h",
+      "pathway_id": "insulin_insr_pi3k_akt",
+      "response": "G6PC_expression",
+      "direction": "decrease",
+      "reported_fold_change": 3.9,
+      "duration_min": 360.0,
+      "insulin_challenge_pM": 1700000.0,
+      "reported_n_results": null,
+      "reported_n_figure_caption": null,
+      "reported_n_range": [3, 6],
+      "uncertainty_value": null,
+      "source_locator": "Figure 4F and Results section 3.5",
+      "may_fit_quantitative_kinetics": false
+    }
+  ],
+  "human_scale_bridge": {
+    "hepatocytes_per_g_liver": {
+      "geometric_mean": 107000000.0,
+      "low": 65000000.0,
+      "high": 185000000.0,
+      "sample_size": 7,
+      "unit": "cells_per_g_liver"
+    },
+    "microsomal_protein_per_g_liver": {
+      "geometric_mean": 33.0,
+      "low": 26.0,
+      "high": 54.0,
+      "sample_size": 20,
+      "unit": "mg_microsomal_protein_per_g_liver"
+    },
+    "source_ids": ["wilson2003_human_hepatocellularity"],
+    "supports_single_hepatocyte_geometry": false,
+    "supports_direct_cell_state_initialization": false
+  },
+  "in_vivo_liver_uptake_context": {
+    "mean_umol_per_kg_liver_min": 22.4,
+    "sd_umol_per_kg_liver_min": 9.2,
+    "sample_size": 326,
+    "population": "participants_without_diabetes",
+    "protocol": "euglycemic_hyperinsulinemic_clamp_with_18F_FDG_PET",
+    "source_ids": ["honka2018_human_liver_glucose_uptake"],
+    "source_reported_derived_per_cell_mean_fmol_h": 12.0,
+    "source_reported_derived_per_cell_low_fmol_h": 4.2,
+    "source_reported_derived_per_cell_high_fmol_h": 31.8,
+    "source_reported_conversion_source_ids": ["kemas2021_phh_glucose", "wilson2003_human_hepatocellularity"],
+    "direct_per_cell_measurement": false,
+    "may_parameterize_single_cell": false
+  },
+  "corrections_to_supplied_tables": [
+    "High glucose is 11 mM, not 25 mM.",
+    "Low insulin is 0.1 nM (100 pM), not approximately 1 nM.",
+    "Low-insulin conditions contain 100 nM supplemented glucagon and are not no-hormone basal conditions.",
+    "The four highlighted uptake values are 0-6 h means with reported SD, not context-free point estimates.",
+    "High- versus low-insulin condition contrasts also change glucagon supplementation and cannot identify a pure insulin causal effect.",
+    "The delivered heldout-validation CSV contains model predictions and no numeric human held-out comparator.",
+    "The Wilson human scale bridge supports cells per gram of liver, not human single-hepatocyte volume or membrane geometry."
+  ],
+  "gates": {
+    "primary_source_review_complete": true,
+    "same_format_validation_ready": true,
+    "fresh_phh_parameterization_ready": false,
+    "endocrine_kinetic_fit_ready": false,
+    "exact_published_model_protocol_match": false,
+    "independent_heldout_human_result_count": 0,
+    "automatic_state_coupling": false,
+    "predictive_ready": false
+  }
+}

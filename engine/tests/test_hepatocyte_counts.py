@@ -5,13 +5,19 @@ import unittest
 from pathlib import Path
 
 from cell_engine.quantitative.hepatocyte_counts import (
+    CELL_DIAMETER_UM,
+    CELL_VOLUME_UM3,
     ION_CONCENTRATIONS_mM,
     MACROMOLECULE_VOLUME_OCCUPANCY_PCT,
-    MOST_ABUNDANT_CYTOSOLIC_PROTEINS,
+    MOST_ABUNDANT_REFERENCE_PROTEINS,
     NUCLEOTIDE_CONCENTRATIONS_mM,
     ORGANELLE_BY_ID,
     PROTEIN_BY_ID,
     PROTEINS,
+)
+from cell_engine.quantitative.phh_proteome_atlas import (
+    detected_donor_copy_summary,
+    protein_group_for_accession,
 )
 
 _PUBLIC_JSON = Path(__file__).resolve().parents[2] / "public" / "cell_quantitative.json"
@@ -19,7 +25,7 @@ _PUBLIC_JSON = Path(__file__).resolve().parents[2] / "public" / "cell_quantitati
 
 class CharacteristicSizeTest(unittest.TestCase):
     def test_derived_sizes_are_physically_sane(self) -> None:
-        # Mitochondria: ~20% of 3400 um^3 over ~1000 -> ~1 um equivalent sphere.
+        # Mitochondria: ~20% of the PHH reference volume over ~1000 -> ~1 um equivalent sphere.
         mito = ORGANELLE_BY_ID["mitochondria"].characteristic_diameter_um()
         self.assertTrue(0.7 < mito < 1.5, mito)
         # Peroxisomes: ~1.5% over ~500 -> ~0.5-0.6 um.
@@ -36,19 +42,40 @@ class CharacteristicSizeTest(unittest.TestCase):
 
 
 class CopyNumberRankingTest(unittest.TestCase):
-    def test_relative_ranking_holds(self) -> None:
-        # The caveats say to trust the ranking: CPS1 >> the transporters >> GCK/BSEP.
+    def test_measured_reference_ranking_holds(self) -> None:
         c = {p.id: p.copies_typical for p in PROTEINS}
-        self.assertGreater(c["cps1"], 100 * c["ntcp"])  # CPS1 dominates
-        self.assertGreater(c["ntcp"], c["naka"])
-        self.assertGreater(c["naka"], c["glut2"])
-        self.assertGreater(c["glut2"], c["bsep"])
+        self.assertGreater(c["cps1"], 40 * c["glut2"])
+        self.assertGreater(c["glut2"], c["naka"])
+        self.assertGreater(c["naka"], c["bsep"])
+        self.assertGreater(c["bsep"], c["mrp2"])
+        self.assertGreater(c["mrp2"], c["ntcp"])
 
     def test_every_copy_number_within_its_range(self) -> None:
         for p in PROTEINS:
             lo, hi = p.copies_range
             self.assertLessEqual(lo, p.copies_typical)
             self.assertLessEqual(p.copies_typical, hi)
+            self.assertEqual(p.copy_number_denominator, "per_nucleus")
+            self.assertEqual(p.detected_donor_count, 7)
+
+    def test_selected_counts_are_exact_atlas_medians(self) -> None:
+        for protein in PROTEINS:
+            summary = detected_donor_copy_summary(
+                protein_group_for_accession(protein.uniprot)
+            )
+            self.assertEqual(
+                protein.copies_typical,
+                summary["median_copies_per_nucleus"],
+                protein.id,
+            )
+            self.assertEqual(
+                protein.copies_range,
+                (
+                    summary["minimum_copies_per_nucleus"],
+                    summary["maximum_copies_per_nucleus"],
+                ),
+                protein.id,
+            )
 
 
 class JsonMirrorTest(unittest.TestCase):
@@ -56,10 +83,13 @@ class JsonMirrorTest(unittest.TestCase):
 
     def test_public_json_matches_engine_constants(self) -> None:
         data = json.loads(_PUBLIC_JSON.read_text())
+        self.assertEqual(data["cell"]["diameterUm"]["typical"], CELL_DIAMETER_UM)
+        self.assertEqual(data["cell"]["volumeUm3"]["typical"], CELL_VOLUME_UM3)
         json_proteins = {p["id"]: p for p in data["proteins"]}
         self.assertEqual(set(json_proteins), set(PROTEIN_BY_ID))
         for pid, p in PROTEIN_BY_ID.items():
-            self.assertEqual(json_proteins[pid]["copiesPerCellTypical"], p.copies_typical, pid)
+            self.assertEqual(json_proteins[pid]["copiesPerReferenceNucleusTypical"], p.copies_typical, pid)
+            self.assertEqual(json_proteins[pid]["copyNumberDenominator"], "per_nucleus", pid)
             self.assertEqual(json_proteins[pid]["gene"], p.gene, pid)
             self.assertEqual(json_proteins[pid]["location"], p.location, pid)
 
@@ -79,9 +109,9 @@ class CytoplasmInventoryTest(unittest.TestCase):
         # ATP is the largest free nucleotide pool.
         self.assertEqual(max(NUCLEOTIDE_CONCENTRATIONS_mM, key=NUCLEOTIDE_CONCENTRATIONS_mM.get), "ATP")
 
-    def test_albumin_is_the_top_crowder(self) -> None:
-        top = max(MOST_ABUNDANT_CYTOSOLIC_PROTEINS, key=lambda p: p.copies_typical)
-        self.assertEqual(top.gene, "ALB")
+    def test_fabp1_is_the_top_selected_abundant_reference(self) -> None:
+        top = max(MOST_ABUNDANT_REFERENCE_PROTEINS, key=lambda p: p.copies_typical)
+        self.assertEqual(top.gene, "FABP1")
         self.assertGreater(top.copies_typical, 1e8)
 
 

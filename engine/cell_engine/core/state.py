@@ -115,6 +115,89 @@ class MembraneElectrochemicalState:
 
 
 @dataclass(frozen=True)
+class CellSpatialContactState:
+    """One geometry-derived relation viewed from this cell.
+
+    These values are physical geometry state.  They do not imply receptor
+    binding, adhesion, force, mechanotransduction, or biochemical activation.
+    """
+
+    other_body_id: str
+    other_biological_kind: str
+    relation: str
+    contact_event: str
+    contact_input_active: bool
+    surface_gap_um: float
+    overlap_depth_um: float
+    closest_point_self_um: Vector3
+    closest_point_other_um: Vector3
+    outward_normal_to_other: Vector3
+    contact_face_candidates_self: tuple[str, ...]
+    contact_face_candidates_other: tuple[str, ...]
+    membrane_domain_self: str | None
+    membrane_domain_other: str | None
+    membrane_domain_candidates_self: tuple[str, ...]
+    membrane_domain_candidates_other: tuple[str, ...]
+    domain_assignment_status_self: str
+    domain_assignment_status_other: str
+    contact_patch_polygon_um: tuple[Vector3, ...]
+    contact_patch_area_um2: float | None
+    normal_load_nN: float | None
+    quantitative_effect_enabled: bool
+    blockers: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class CellSpatialContactEvent:
+    """One edge-triggered geometry event for a cell pair.
+
+    ``enter`` and ``stay`` mean that the geometry input is on; ``exit`` means
+    that it has just switched off. Downstream persistence belongs to the
+    pathway model and is deliberately not inferred from elapsed contact time.
+    """
+
+    other_body_id: str
+    event: str
+    t_s: float
+    contact_input_active: bool
+    membrane_domain_self: str | None
+    membrane_domain_other: str | None
+    membrane_domain_candidates_self: tuple[str, ...]
+    membrane_domain_candidates_other: tuple[str, ...]
+    domain_assignment_status_self: str
+    domain_assignment_status_other: str
+
+
+@dataclass(frozen=True)
+class CellSpatialState:
+    """Authoritative runtime geometry attached to a :class:`CellState`.
+
+    Geometry is causal engine state here rather than browser decoration.  The
+    biochemical gate remains closed until a source-backed interaction law is
+    attached to a contact.
+    """
+
+    world_id: str
+    body_id: str
+    world_time_s: float
+    center_um: Vector3
+    collision_shape: str
+    nearest_body_id: str | None
+    nearest_surface_gap_um: float | None
+    active_contact_count: int
+    maximum_overlap_depth_um: float
+    contacts: tuple[CellSpatialContactState, ...]
+    contact_events: tuple[CellSpatialContactEvent, ...]
+    geometry_coupling_status: str
+    mechanical_coupling_status: str
+    biochemical_coupling_status: str
+    geometry_drives_runtime_state: bool
+    quantitative_biological_effects_enabled: bool
+    source_ids: tuple[str, ...]
+    limitations: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class CellularResponseState:
     """Evidence-bound disease-response readout for one engine step.
 
@@ -165,6 +248,7 @@ class CellState:
     pathway_results: tuple[PathwayResult, ...] = field(default_factory=tuple)
     signaling_results: tuple[SignalingResult, ...] = field(default_factory=tuple)
     membrane_state: MembraneElectrochemicalState | None = None
+    spatial_state: CellSpatialState | None = None
     model_controls: dict[str, float | str] = field(default_factory=dict)
     cellular_response: CellularResponseState | None = None
     genome: HepatocyteGenomeState | None = None

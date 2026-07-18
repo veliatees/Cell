@@ -1,9 +1,8 @@
-"""Measured transporter kinetics, kept separate from whole-cell placeholders.
+"""Transporter kinetics retained in their original experimental contexts.
 
-These values come from recombinant membrane-vesicle assays. They are useful
-calibration anchors, but they are *not* silently converted into a hepatocyte
-flux: that conversion needs a matched membrane-protein mass or measured surface
-copy number in the same experimental context.
+The records in this module are assay anchors, not hepatocyte flux constants.
+A reported rate at one substrate concentration is not promoted to ``Vmax``,
+and total cellular abundance is not used to infer active surface transporters.
 """
 
 from __future__ import annotations
@@ -11,89 +10,105 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping
 
-from cell_engine.core.provenance import SourceReference
+from cell_engine.quantitative.phh_protein_functional_evidence import (
+    PHH_PROTEIN_FUNCTIONAL_EVIDENCE_SOURCES,
+    build_phh_protein_functional_evidence,
+)
 
-DATE_VERIFIED = "2026-07-09"
 
-
-TRANSPORTER_KINETICS_SOURCES: dict[str, SourceReference] = {
-    "human_bsep_taurocholate": SourceReference(
-        id="human_bsep_taurocholate",
-        title="The human bile salt export pump: characterization of substrate specificity and identification of inhibitors",
-        url="https://pubmed.ncbi.nlm.nih.gov/12404239/",
-        source_type="primary_paper",
-        date_verified=DATE_VERIFIED,
-        notes="Recombinant human BSEP expressed in insect cells. Taurocholate Km=4.25 uM; Vmax=200 pmol/min/mg protein. Assay-specific membrane-vesicle value, not an in-vivo hepatocyte flux.",
-    ),
-    "human_mrp2_bilirubin_glucuronides": SourceReference(
-        id="human_mrp2_bilirubin_glucuronides",
-        title="Transport of monoglucuronosyl and bisglucuronosyl bilirubin by recombinant human and rat MRP2",
-        url="https://pubmed.ncbi.nlm.nih.gov/10421658/",
-        source_type="primary_paper",
-        date_verified=DATE_VERIFIED,
-        notes="Recombinant human MRP2 membrane assay. Monoglucuronosyl bilirubin Km=0.7 uM, Vmax=183 pmol/min/mg protein; bisglucuronosyl bilirubin Km=0.9 uM, Vmax=104 pmol/min/mg protein.",
-    ),
+DATE_VERIFIED = "2026-07-17"
+_KINETIC_SOURCE_IDS = {
+    "human_bsep_taurocholate_2002",
+    "human_bsep_taurocholate_2013",
+    "human_mrp2_bilirubin_glucuronides_1999",
+    "human_ntcp_uptake_2003",
+}
+TRANSPORTER_KINETICS_SOURCES = {
+    source_id: source
+    for source_id, source in PHH_PROTEIN_FUNCTIONAL_EVIDENCE_SOURCES.items()
+    if source_id in _KINETIC_SOURCE_IDS
 }
 
 
 @dataclass(frozen=True)
 class AssayTransportKinetics:
-    """A measured Michaelis-Menten record in its original assay units."""
+    """One published observation with its denominator and assay semantics."""
 
     id: str
     protein_id: str
     substrate: str
-    km_M: float
-    vmax_pmol_per_mg_protein_per_min: float
+    km_kind: str
+    km_M: float | None
+    km_low_M: float | None
+    km_high_M: float | None
+    km_sd_M: float | None
+    velocity_kind: str | None
+    velocity_value_pmol_per_mg_assay_protein_per_min: float | None
+    velocity_sd_pmol_per_mg_assay_protein_per_min: float | None
+    measured_substrate_M: float | None
+    may_evaluate_assay_curve: bool
+    may_scale_whole_cell_flux: bool
     experimental_system: str
     source_id: str
     notes: str
 
+    @property
+    def vmax_pmol_per_mg_protein_per_min(self) -> float | None:
+        """Return Vmax only when the source actually reports Vmax."""
+        if self.velocity_kind != "vmax":
+            return None
+        return self.velocity_value_pmol_per_mg_assay_protein_per_min
 
-MEASURED_TRANSPORTER_KINETICS: tuple[AssayTransportKinetics, ...] = (
-    AssayTransportKinetics(
-        id="bsep_taurocholate",
-        protein_id="bsep",
-        substrate="taurocholate",
-        km_M=4.25e-6,
-        vmax_pmol_per_mg_protein_per_min=200.0,
-        experimental_system="recombinant human BSEP in insect-cell membrane vesicles",
-        source_id="human_bsep_taurocholate",
-        notes="Do not use as a whole-cell Vmax without a matched surface-protein mass or surface-copy-number calibration.",
-    ),
-    AssayTransportKinetics(
-        id="mrp2_monoglucuronosyl_bilirubin",
-        protein_id="mrp2",
-        substrate="monoglucuronosyl_bilirubin",
-        km_M=0.7e-6,
-        vmax_pmol_per_mg_protein_per_min=183.0,
-        experimental_system="recombinant human MRP2 membrane vesicles",
-        source_id="human_mrp2_bilirubin_glucuronides",
-        notes="Do not use as a whole-cell Vmax without a matched surface-protein mass or surface-copy-number calibration.",
-    ),
-    AssayTransportKinetics(
-        id="mrp2_bisglucuronosyl_bilirubin",
-        protein_id="mrp2",
-        substrate="bisglucuronosyl_bilirubin",
-        km_M=0.9e-6,
-        vmax_pmol_per_mg_protein_per_min=104.0,
-        experimental_system="recombinant human MRP2 membrane vesicles",
-        source_id="human_mrp2_bilirubin_glucuronides",
-        notes="Do not use as a whole-cell Vmax without a matched surface-protein mass or surface-copy-number calibration.",
-    ),
-)
 
+def _build_assay_records() -> tuple[AssayTransportKinetics, ...]:
+    evidence = build_phh_protein_functional_evidence()
+    records: list[AssayTransportKinetics] = []
+    for observation in evidence.kinetic_observations:
+        velocity = observation.velocity
+        records.append(
+            AssayTransportKinetics(
+                id=observation.id,
+                protein_id=observation.protein_id,
+                substrate=observation.substrate,
+                km_kind=observation.km.kind,
+                km_M=(None if observation.km.value is None else observation.km.value * 1.0e-6),
+                km_low_M=(None if observation.km.low is None else observation.km.low * 1.0e-6),
+                km_high_M=(None if observation.km.high is None else observation.km.high * 1.0e-6),
+                km_sd_M=(None if observation.km.sd is None else observation.km.sd * 1.0e-6),
+                velocity_kind=None if velocity is None else velocity.kind,
+                velocity_value_pmol_per_mg_assay_protein_per_min=(
+                    None if velocity is None else velocity.value
+                ),
+                velocity_sd_pmol_per_mg_assay_protein_per_min=(
+                    None if velocity is None else velocity.sd
+                ),
+                measured_substrate_M=(
+                    None
+                    if velocity is None or velocity.substrate_concentration_uM is None
+                    else velocity.substrate_concentration_uM * 1.0e-6
+                ),
+                may_evaluate_assay_curve=observation.may_evaluate_assay_curve,
+                may_scale_whole_cell_flux=observation.may_scale_whole_cell_flux,
+                experimental_system=observation.biological_system,
+                source_id=observation.source_id,
+                notes=(
+                    "Assay-context observation only; matched active surface abundance and "
+                    "whole-cell validation are required before cell-flux coupling."
+                ),
+            )
+        )
+    return tuple(records)
+
+
+MEASURED_TRANSPORTER_KINETICS = _build_assay_records()
 KINETICS_BY_ID = {record.id: record for record in MEASURED_TRANSPORTER_KINETICS}
+# Compatibility alias predating the explicit separation of two BSEP assays.
+KINETICS_BY_ID["bsep_taurocholate"] = KINETICS_BY_ID["bsep_taurocholate_2002"]
 
 
 @dataclass(frozen=True)
 class SurfaceAbundanceMeasurement:
-    """Measured total and correctly localized membrane copies for one protein.
-
-    ``surface_copies`` must be a measured value from the caller's experimental
-    context. It is intentionally required: defaulting a surface fraction would
-    turn an unknown trafficking state into a fabricated functional capacity.
-    """
+    """Measured total and correctly localized membrane copies for one protein."""
 
     protein_id: str
     total_copies: float
@@ -116,22 +131,23 @@ def assay_rate_pmol_per_mg_protein_per_min(
     kinetics: AssayTransportKinetics,
     substrate_M: float,
 ) -> float:
-    """Evaluate a published assay curve without changing its measurement units."""
+    """Evaluate a published Michaelis-Menten curve in original assay units."""
     if substrate_M < 0:
         raise ValueError("substrate_M must be non-negative")
-    return kinetics.vmax_pmol_per_mg_protein_per_min * substrate_M / (kinetics.km_M + substrate_M)
+    vmax = kinetics.vmax_pmol_per_mg_protein_per_min
+    if not kinetics.may_evaluate_assay_curve or kinetics.km_M is None or vmax is None:
+        raise ValueError(
+            f"{kinetics.id} does not report a curve-evaluable Km/Vmax pair; "
+            "a rate point must not be treated as Vmax"
+        )
+    return vmax * substrate_M / (kinetics.km_M + substrate_M)
 
 
 def relative_surface_activity(
     measurements: Mapping[str, SurfaceAbundanceMeasurement],
     reference_surface_copies: Mapping[str, float],
 ) -> dict[str, float]:
-    """Return capacity multipliers from measured, correctly localized copies.
-
-    The reference surface copies must come from a matched healthy experimental
-    context. This function deliberately does not substitute total copies or an
-    assumed surface fraction when that measurement is absent.
-    """
+    """Return activity ratios from measured, correctly localized copy numbers."""
     activity: dict[str, float] = {}
     for protein_id, measurement in measurements.items():
         reference = reference_surface_copies.get(protein_id)

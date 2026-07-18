@@ -6,6 +6,12 @@ from cell_engine.processes.hepatocyte import build_hepatocyte_definition
 from cell_engine.quantitative import (
     AVOGADRO,
     HEPATOCYTE_CELL_VOLUME_L,
+    HEPATOCYTE_REFERENCE_EQUIVALENT_SPHERE_DIAMETER_UM,
+    HEPATOCYTE_REFERENCE_VOLUME_UM3,
+    HUMAN_NC_3D_HEPATOCYTE_VOLUME_MAD_UM3,
+    ISOLATED_PHH_EQUIVALENT_SPHERE_SURFACE_AREA_UM2,
+    ISOLATED_PHH_EQUIVALENT_SPHERE_VOLUME_UM3,
+    ISOLATED_PHH_MEDIAN_DIAMETER_UM,
     HEPATOCYTE_SPECIES,
     QUANTITATIVE_SOURCES,
     build_hepatocyte_geometry,
@@ -14,6 +20,7 @@ from cell_engine.quantitative import (
     molecules_from_concentration_mM,
     relative_membrane_area_from_biomass,
     relative_radius_from_biomass,
+    hepatocyte_geometry_reference_snapshot,
     species_copy_numbers,
 )
 
@@ -75,6 +82,29 @@ class GeometryTests(unittest.TestCase):
     def test_equivalent_sphere_geometry_is_positive(self):
         self.assertGreater(self.geometry.equivalent_sphere_radius_um, 0.0)
         self.assertGreater(self.geometry.equivalent_sphere_surface_area_um2, 0.0)
+
+    def test_3d_reference_and_historical_and_isolated_cross_checks_remain_separate(self):
+        self.assertEqual(ISOLATED_PHH_MEDIAN_DIAMETER_UM, 18.4)
+        self.assertAlmostEqual(ISOLATED_PHH_EQUIVALENT_SPHERE_VOLUME_UM3, 3261.760666984704)
+        self.assertAlmostEqual(ISOLATED_PHH_EQUIVALENT_SPHERE_SURFACE_AREA_UM2, 1063.6176087993601)
+        self.assertEqual(HEPATOCYTE_REFERENCE_VOLUME_UM3, 5657.07116)
+        self.assertEqual(HUMAN_NC_3D_HEPATOCYTE_VOLUME_MAD_UM3, 744.875484)
+        self.assertAlmostEqual(HEPATOCYTE_CELL_VOLUME_L * 1.0e15, HEPATOCYTE_REFERENCE_VOLUME_UM3)
+        self.assertAlmostEqual(
+            self.geometry.equivalent_sphere_radius_um * 2.0,
+            HEPATOCYTE_REFERENCE_EQUIVALENT_SPHERE_DIAMETER_UM,
+        )
+        reference = hepatocyte_geometry_reference_snapshot()
+        self.assertEqual(reference["canonical_reference"]["reconstruction_count"], 5)
+        self.assertEqual(
+            reference["historical_in_situ_stereology_cross_check"]["mean_cell_volume_um3"],
+            2850.0,
+        )
+        self.assertFalse(
+            reference["three_dimensional_evidence"][
+                "donor_resolved_single_hepatocyte_boundary_mesh_available"
+            ]
+        )
 
 
 class SpeciesRegistryTests(unittest.TestCase):

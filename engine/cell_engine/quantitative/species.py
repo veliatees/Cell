@@ -21,7 +21,10 @@ QUANTITATIVE_SOURCES: dict[str, SourceReference] = {
         url="https://bionumbers.hms.harvard.edu/",
         source_type="database",
         date_verified=DATE_VERIFIED,
-        notes="Hepatocyte cell volume ~3.4 pL; organelle volume fractions; metabolite order-of-magnitude.",
+        notes=(
+            "Order-of-magnitude metabolite and organelle context only; no longer used "
+            "as the whole-cell PHH scale authority."
+        ),
     ),
     "hepatocyte_wikipedia": SourceReference(
         id="hepatocyte_wikipedia",
@@ -29,7 +32,10 @@ QUANTITATIVE_SOURCES: dict[str, SourceReference] = {
         url="https://en.wikipedia.org/wiki/Hepatocyte",
         source_type="review",
         date_verified=DATE_VERIFIED,
-        notes="Cubical cell ~20-30 um sides, volume ~3.4 pL.",
+        notes=(
+            "Secondary orientation source retained for audit history; not used to "
+            "parameterize hepatocyte diameter or volume."
+        ),
     ),
     "gsh_nafld_review": SourceReference(
         id="gsh_nafld_review",

@@ -41,6 +41,22 @@ from cell_engine.validation.scientific_release import (
     scientific_release_snapshot,
 )
 from cell_engine.validation.model_audit import MODEL_SURFACE_AUDIT, ModelSurfaceAudit, scientific_model_audit_snapshot
+from cell_engine.validation.evidence_intake import (
+    EvidenceBundleAudit,
+    EvidenceIntakeError,
+    EvidenceTableAudit,
+    evidence_intake_snapshot,
+    validate_evidence_bundle,
+)
+from cell_engine.validation.physical_validation import (
+    PHYSICAL_VALIDATION_SOURCES,
+    PhysicalValidationReport,
+    PhysicalVerificationCriterion,
+    PhysicalVerificationLayer,
+    build_physical_validation_report,
+    physical_validation_snapshot,
+    validate_physical_validation_report,
+)
 
 __all__ = [
     "BASELINE_SCENARIO",
@@ -84,4 +100,16 @@ __all__ = [
     "validate_definition",
     "validate_panel_bundle",
     "validate_state",
+    "EvidenceBundleAudit",
+    "EvidenceIntakeError",
+    "EvidenceTableAudit",
+    "evidence_intake_snapshot",
+    "validate_evidence_bundle",
+    "PHYSICAL_VALIDATION_SOURCES",
+    "PhysicalValidationReport",
+    "PhysicalVerificationCriterion",
+    "PhysicalVerificationLayer",
+    "build_physical_validation_report",
+    "physical_validation_snapshot",
+    "validate_physical_validation_report",
 ]

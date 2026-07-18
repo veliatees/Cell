@@ -1,5 +1,8 @@
 # Milestone 048 - Unified PHH State v1
 
+> Historical scale note: Milestone 079 replaces the original `3.2617607 pL`
+> conversion volume with the directly measured in-situ human mean of `2.85 pL`.
+
 This milestone establishes one typed, source-traceable quantitative state for
 the healthy primary-human-hepatocyte research-preview surface.
 
@@ -10,9 +13,10 @@ the healthy primary-human-hepatocyte research-preview surface.
   evidence classes and source IDs.
 - Energy charge is derived from all three adenylates:
   `(ATP + 0.5 ADP) / (ATP + ADP + AMP)`.
-- Concentration-to-count conversions use the 3.4 pL model cell and its 52%
-  effective cytosol fraction. These values are explicitly labelled effective
-  lumped-model counts, not measured per-cell copy numbers.
+- Concentration-to-count conversions use the 3.261760666984704 pL
+  equivalent-sphere cell derived from the measured 18.4 um isolated-PHH median
+  diameter and its 52% effective cytosol fraction. These values are explicitly
+  labelled effective lumped-model counts, not measured per-cell copy numbers.
 - Blood glucose has no molecule count because the model has no anatomical
   sinusoid control volume.
 - The legacy relative `pools` state is exported separately as

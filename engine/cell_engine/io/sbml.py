@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 from pathlib import Path
 import re
+import xml.etree.ElementTree as ET
 
 
 @dataclass(frozen=True)
@@ -42,18 +44,118 @@ class SbmlSimulationResult:
 
 
 @dataclass(frozen=True)
+class SbmlDocumentManifest:
+    model_id: str
+    model_name: str | None
+    sbml_level: int
+    sbml_version: int
+    time_unit: str | None
+    substance_unit: str | None
+    sha256: str
+    byte_size: int
+    element_counts: dict[str, int]
+    compartment_ids: tuple[str, ...]
+    species_ids: tuple[str, ...]
+    reaction_ids: tuple[str, ...]
+    reactions_with_kinetic_law: tuple[str, ...]
+    reactions_without_kinetic_law: tuple[str, ...]
+    path: str
+
+    @property
+    def kinetic_reaction_coverage(self) -> float:
+        if not self.reaction_ids:
+            return 0.0
+        return len(self.reactions_with_kinetic_law) / len(self.reaction_ids)
+
+
+@dataclass(frozen=True)
 class RoadRunnerAdapter:
     available: bool
     error: str = ""
     module_name: str = "roadrunner"
+    version: str | None = None
 
     @classmethod
     def detect(cls) -> "RoadRunnerAdapter":
         try:
-            __import__("roadrunner")
+            module = __import__("roadrunner")
         except Exception as exc:  # pragma: no cover - depends on local install
             return cls(available=False, error=str(exc))
-        return cls(available=True)
+        return cls(available=True, version=str(getattr(module, "__version__", "unknown")))
+
+
+def inspect_sbml_document(path: str | Path) -> SbmlDocumentManifest:
+    """Inspect an SBML document without pretending to execute its MathML."""
+    model_path = Path(path)
+    payload = model_path.read_bytes()
+    root = ET.fromstring(payload)
+    if _local_name(root.tag) != "sbml":
+        raise ValueError(f"SBML file {model_path} has unexpected root element {root.tag}")
+    model = next((element for element in root if _local_name(element.tag) == "model"), None)
+    if model is None:
+        raise ValueError(f"SBML file {model_path} does not contain a model")
+
+    elements = tuple(root.iter())
+    count_tags = (
+        "unitDefinition",
+        "compartment",
+        "species",
+        "parameter",
+        "initialAssignment",
+        "assignmentRule",
+        "rateRule",
+        "algebraicRule",
+        "reaction",
+        "kineticLaw",
+        "event",
+        "functionDefinition",
+        "constraint",
+    )
+    counts = {
+        tag: sum(1 for element in elements if _local_name(element.tag) == tag)
+        for tag in count_tags
+    }
+    compartments = tuple(
+        element.attrib["id"]
+        for element in elements
+        if _local_name(element.tag) == "compartment" and "id" in element.attrib
+    )
+    species = tuple(
+        element.attrib["id"]
+        for element in elements
+        if _local_name(element.tag) == "species" and "id" in element.attrib
+    )
+    reactions = tuple(
+        element for element in elements
+        if _local_name(element.tag) == "reaction" and "id" in element.attrib
+    )
+    reaction_ids = tuple(element.attrib["id"] for element in reactions)
+    reactions_with_kinetics = tuple(
+        element.attrib["id"]
+        for element in reactions
+        if any(_local_name(child.tag) == "kineticLaw" for child in element)
+    )
+    kinetic_ids = set(reactions_with_kinetics)
+
+    return SbmlDocumentManifest(
+        model_id=_required(model.attrib, "id"),
+        model_name=model.attrib.get("name"),
+        sbml_level=int(_required(root.attrib, "level")),
+        sbml_version=int(_required(root.attrib, "version")),
+        time_unit=model.attrib.get("timeUnits"),
+        substance_unit=model.attrib.get("substanceUnits"),
+        sha256=sha256(payload).hexdigest(),
+        byte_size=len(payload),
+        element_counts=counts,
+        compartment_ids=compartments,
+        species_ids=species,
+        reaction_ids=reaction_ids,
+        reactions_with_kinetic_law=reactions_with_kinetics,
+        reactions_without_kinetic_law=tuple(
+            reaction_id for reaction_id in reaction_ids if reaction_id not in kinetic_ids
+        ),
+        path=str(model_path),
+    )
 
 
 def load_sbml_subset(path: str | Path) -> SbmlSubsetModel:
@@ -144,6 +246,10 @@ def simulate_sbml_subset(
 
 def _attrs(text: str) -> dict[str, str]:
     return {match.group("key"): match.group("value") for match in re.finditer(r"(?P<key>[\w:.-]+)\s*=\s*\"(?P<value>[^\"]*)\"", text)}
+
+
+def _local_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1]
 
 
 def _required(attrs: dict[str, str], key: str) -> str:
