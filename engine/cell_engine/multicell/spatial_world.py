@@ -11,10 +11,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from itertools import combinations, permutations, product
-from math import atan2, isfinite, pi, sqrt
+from math import atan2, cos, isfinite, pi, sin, sqrt
 from typing import Literal
 
 from cell_engine.core.provenance import SourceReference
+from cell_engine.core.random import EngineRng
 from cell_engine.core.serialization import to_plain
 from cell_engine.core.state import (
     CellSpatialContactEvent,
@@ -22,12 +23,17 @@ from cell_engine.core.state import (
     CellSpatialState,
     CellState,
 )
+from cell_engine.quantitative.geometry import (
+    HEPATOCYTE_CANONICAL_CANALICULAR_DIRECTION,
+    HEPATOCYTE_CANONICAL_SINUSOIDAL_DIRECTION,
+    HEPATOCYTE_REFERENCE_EQUIVALENT_SPHERE_DIAMETER_UM,
+)
 
 
 DATE_VERIFIED = "2026-07-14"
 NUMERIC_CONTACT_TOLERANCE_UM = 1.0e-8
 NUMERIC_AXIS_TOLERANCE = 1.0e-10
-ISOLATED_PHH_MEDIAN_DIAMETER_UM = 18.4
+HBV_CRYO_EM_OUTER_DIAMETER_UM = 0.045
 # Evans et al. observed 2-4% lytic area expansion in intact human red-cell
 # membranes.  One percent is an explicit engineering safety cap: half the lower
 # reported lysis bound, not a measured hepatocyte failure threshold.
@@ -40,6 +46,12 @@ BiologicalKind = Literal["hepatocyte", "cell", "bacterium", "virus", "other"]
 MembraneDomain = Literal["apical", "lateral", "basolateral", "unknown"]
 ShapeKind = Literal["sphere", "capsule", "convex_polyhedron"]
 ContactEventKind = Literal["none", "enter", "stay", "exit"]
+DomainAssignmentStatus = Literal[
+    "resolved_unique_face",
+    "resolved_shared_feature_same_domain",
+    "ambiguous_shared_feature_multiple_domains",
+    "not_applicable_or_unresolved",
+]
 
 
 SPATIAL_WORLD_SOURCES: dict[str, SourceReference] = {
@@ -77,6 +89,32 @@ SPATIAL_WORLD_SOURCES: dict[str, SourceReference] = {
             "Direct isolated-human-hepatocyte measurements: median diameter 18.4 um "
             "across 54 cryopreserved batches; 88% of cells were 12-26 um. The value "
             "does not establish in-situ liver-plate geometry."
+        ),
+    ),
+    "duarte1989_human_hepatocyte_volume": SourceReference(
+        id="duarte1989_human_hepatocyte_volume",
+        title="Baseline volume data of human liver parenchymal cell",
+        url="https://pubmed.ncbi.nlm.nih.gov/2752360/",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes=(
+            "Normal-human in-situ intermediate-zone stereology reports mean "
+            "hepatocyte volume 2850 +/- 99.9 um3 across five selected cases."
+        ),
+    ),
+    "segovia_miranda2019_human_liver_3d_morphometry": SourceReference(
+        id="segovia_miranda2019_human_liver_3d_morphometry",
+        title=(
+            "Three-dimensional spatially resolved geometrical and functional "
+            "models of human liver tissue reveal new aspects of NAFLD progression"
+        ),
+        url="https://doi.org/10.1038/s41591-019-0660-7",
+        source_type="primary_paper",
+        date_verified="2026-07-17",
+        notes=(
+            "Normal-control human liver 3D reconstructions report median "
+            "hepatocyte volume 5657.07116 um3 across five reconstructions. The "
+            "runtime preserves this volume but does not claim a measured mesh."
         ),
     ),
     "fabyan2026_human_liver_3d": SourceReference(
@@ -143,6 +181,19 @@ SPATIAL_WORLD_SOURCES: dict[str, SourceReference] = {
             "move laterally; it is not a healthy-human parameter."
         ),
     ),
+    "mitra2004_rat_hepatocyte_bilayer_thickness": SourceReference(
+        id="mitra2004_rat_hepatocyte_bilayer_thickness",
+        title="A comparison of the membrane organization of apical and basolateral plasma membranes of rat hepatocytes",
+        url="https://doi.org/10.1073/pnas.0307332101",
+        source_type="primary_paper",
+        date_verified="2026-07-15",
+        notes=(
+            "X-ray diffraction of purified rat-hepatocyte membranes reported "
+            "domain-specific bilayer thicknesses: 35.6 +/- 0.6 A basolateral "
+            "and 42.5 +/- 0.3 A apical. These are cross-species references and "
+            "cannot parameterize a healthy adult human PHH."
+        ),
+    ),
     "guillou2016_membrane_surface_reservoirs": SourceReference(
         id="guillou2016_membrane_surface_reservoirs",
         title="T-lymphocyte passive deformation is controlled by unfolding of membrane surface reservoirs",
@@ -154,6 +205,18 @@ SPATIAL_WORLD_SOURCES: dict[str, SourceReference] = {
             "constant volume while apparent surface area increases through "
             "membrane-reservoir unfolding. This supports only the kinematic "
             "constant-volume principle; no T-cell parameter is transferred to PHH."
+        ),
+    ),
+    "seitz2007_hbv_cryo_em": SourceReference(
+        id="seitz2007_hbv_cryo_em",
+        title="Cryo-electron microscopy of hepatitis B virions reveals variability in envelope capsid interactions",
+        url="https://doi.org/10.1038/sj.emboj.7601841",
+        source_type="primary_paper",
+        date_verified="2026-07-15",
+        notes=(
+            "Cryo-EM reports an approximately 45 nm outer diameter for complete "
+            "HBV virions. The value may define an explicit HBV collision body; it "
+            "does not authorize viral entry or a magnified collision radius."
         ),
     ),
 }
@@ -297,6 +360,32 @@ def build_intrinsic_hepatocyte_membrane_profile() -> MembraneMaterialProfile:
             may_parameterize_healthy_phh=False,
             source_ids=("stuschke_bojar1985_rat_hepatocyte_membrane_diffusion",),
         ),
+        MembraneReferenceMeasurement(
+            id="rat_hepatocyte_basolateral_bilayer_thickness",
+            observable="basolateral_bilayer_thickness",
+            value=3.56,
+            lower=3.50,
+            upper=3.62,
+            unit="nm",
+            experimental_system="purified basolateral plasma membranes from rat hepatocytes",
+            conditions="X-ray diffraction; reported 35.6 +/- 0.6 A",
+            evidence_role="cross_species_hepatocyte_domain_reference",
+            may_parameterize_healthy_phh=False,
+            source_ids=("mitra2004_rat_hepatocyte_bilayer_thickness",),
+        ),
+        MembraneReferenceMeasurement(
+            id="rat_hepatocyte_apical_bilayer_thickness",
+            observable="apical_bilayer_thickness",
+            value=4.25,
+            lower=4.22,
+            upper=4.28,
+            unit="nm",
+            experimental_system="purified apical plasma membranes from rat hepatocytes",
+            conditions="X-ray diffraction; reported 42.5 +/- 0.3 A",
+            evidence_role="cross_species_hepatocyte_domain_reference",
+            may_parameterize_healthy_phh=False,
+            source_ids=("mitra2004_rat_hepatocyte_bilayer_thickness",),
+        ),
     )
     source_ids = tuple(dict.fromkeys(
         source_id
@@ -357,7 +446,7 @@ def build_intrinsic_hepatocyte_membrane_profile() -> MembraneMaterialProfile:
         quantitative_phh_mechanics_enabled=False,
         reference_measurements=references,
         blockers=(
-            "healthy adult human hepatocyte bilayer thickness is not directly measured in the loaded evidence",
+            "healthy adult human hepatocyte bilayer thickness is not directly measured in the loaded evidence; rat domain-specific measurements remain cross-species references only",
             "healthy adult human hepatocyte area-compressibility and bending moduli are not identified",
             "healthy adult human hepatocyte membrane tension and membrane-cortex adhesion are not identified",
             "healthy adult human hepatocyte lipid and protein lateral-diffusion distributions are not identified",
@@ -443,8 +532,25 @@ class SpatialBody:
     pose_authority: str = "engine_runtime"
     geometry_evidence: str = "unspecified"
     visual_profile: str = "generic"
+    molecular_profile_id: str | None = None
     membrane_material: MembraneMaterialProfile | None = None
     source_ids: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ContactApproachPlacement:
+    """Auditable stochastic placement for one explicitly supplied body.
+
+    Randomness selects only an incoming direction. The caller must provide the
+    body's measured or otherwise disclosed collision shape; no radius, contact
+    area, adhesion state, or biological response is sampled here.
+    """
+
+    body: SpatialBody
+    outward_direction: Vector3
+    requested_surface_gap_um: float
+    random_seed: int
+    sampling_distribution: Literal["isotropic_solid_angle"] = "isotropic_solid_angle"
 
 
 @dataclass(frozen=True)
@@ -468,8 +574,14 @@ class SpatialPairRelation:
     relative_normal_velocity_um_s: float
     contact_face_a_id: str | None
     contact_face_b_id: str | None
+    contact_face_candidates_a: tuple[str, ...]
+    contact_face_candidates_b: tuple[str, ...]
     membrane_domain_a: MembraneDomain | None
     membrane_domain_b: MembraneDomain | None
+    membrane_domain_candidates_a: tuple[MembraneDomain, ...]
+    membrane_domain_candidates_b: tuple[MembraneDomain, ...]
+    domain_assignment_status_a: DomainAssignmentStatus
+    domain_assignment_status_b: DomainAssignmentStatus
     contact_patch_polygon_um: tuple[Vector3, ...]
     contact_patch_area_um2: float | None
     normal_load_nN: float | None
@@ -817,6 +929,8 @@ def _validate_body(body: SpatialBody) -> None:
         raise ValueError(f"{body.id} orientation must contain finite values")
     if abs(sqrt(sum(value * value for value in body.orientation_xyzw)) - 1.0) > 1.0e-6:
         raise ValueError(f"{body.id} orientation must be a unit quaternion")
+    if body.molecular_profile_id is not None and not body.molecular_profile_id:
+        raise ValueError(f"{body.id} molecular_profile_id cannot be empty")
     if body.biological_kind == "hepatocyte":
         if body.membrane_material is None:
             raise ValueError(f"{body.id} hepatocyte requires an intrinsic membrane material")
@@ -1011,6 +1125,73 @@ def _segment_triangle_intersection(
     if t < -NUMERIC_AXIS_TOLERANCE or t > 1.0 + NUMERIC_AXIS_TOLERANCE:
         return None
     return _add(start, _scale(direction, _clamp(t, 0.0, 1.0)))
+
+
+def _closest_segment_to_face(
+    segment_start: Vector3,
+    segment_end: Vector3,
+    face: ConvexFace,
+    vertices: tuple[Vector3, ...],
+) -> tuple[Vector3, Vector3, float]:
+    """Closest axis/surface points for one convex polygonal face."""
+
+    best_axis = segment_start
+    best_surface = vertices[face.vertex_indices[0]]
+    best_distance = float("inf")
+    anchor = face.vertex_indices[0]
+    for index in range(1, len(face.vertex_indices) - 1):
+        ia, ib, ic = anchor, face.vertex_indices[index], face.vertex_indices[index + 1]
+        a, b, c = vertices[ia], vertices[ib], vertices[ic]
+        intersection = _segment_triangle_intersection(segment_start, segment_end, a, b, c)
+        if intersection is not None:
+            return intersection, intersection, 0.0
+        for point in (segment_start, segment_end):
+            surface = _closest_point_on_triangle(point, a, b, c)
+            distance = _norm(_sub(point, surface))
+            if distance < best_distance:
+                best_axis, best_surface, best_distance = point, surface, distance
+        for edge_start, edge_end in ((a, b), (b, c), (c, a)):
+            axis_point, surface = _closest_points_on_segments(
+                segment_start, segment_end, edge_start, edge_end
+            )
+            distance = _norm(_sub(axis_point, surface))
+            if distance < best_distance:
+                best_axis, best_surface, best_distance = axis_point, surface, distance
+    return best_axis, best_surface, best_distance
+
+
+def _closest_point_to_face(
+    point: Vector3,
+    face: ConvexFace,
+    vertices: tuple[Vector3, ...],
+) -> tuple[Vector3, float]:
+    best_surface = vertices[face.vertex_indices[0]]
+    best_distance = float("inf")
+    anchor = face.vertex_indices[0]
+    for index in range(1, len(face.vertex_indices) - 1):
+        surface = _closest_point_on_triangle(
+            point,
+            vertices[anchor],
+            vertices[face.vertex_indices[index]],
+            vertices[face.vertex_indices[index + 1]],
+        )
+        distance = _norm(_sub(point, surface))
+        if distance < best_distance:
+            best_surface, best_distance = surface, distance
+    return best_surface, best_distance
+
+
+def _faces_at_surface_point(
+    shape: ConvexPolyhedronShape,
+    vertices: tuple[Vector3, ...],
+    point: Vector3,
+) -> tuple[ConvexFace, ...]:
+    candidates = []
+    for face in shape.faces:
+        _, distance = _closest_point_to_face(point, face, vertices)
+        if distance <= NUMERIC_CONTACT_TOLERANCE_UM:
+            candidates.append(face)
+    return tuple(candidates)
 
 
 def _closest_polyhedron_points(
@@ -1212,11 +1393,45 @@ class _GeometryResult:
     normal_a_to_b: Vector3
     contact_face_a_id: str | None = None
     contact_face_b_id: str | None = None
+    contact_face_candidates_a: tuple[str, ...] = ()
+    contact_face_candidates_b: tuple[str, ...] = ()
     membrane_domain_a: MembraneDomain | None = None
     membrane_domain_b: MembraneDomain | None = None
+    membrane_domain_candidates_a: tuple[MembraneDomain, ...] = ()
+    membrane_domain_candidates_b: tuple[MembraneDomain, ...] = ()
+    domain_assignment_status_a: DomainAssignmentStatus = "not_applicable_or_unresolved"
+    domain_assignment_status_b: DomainAssignmentStatus = "not_applicable_or_unresolved"
     contact_patch_polygon_um: tuple[Vector3, ...] = ()
     contact_patch_area_um2: float | None = None
     contact_patch_status: str = "unknown_requires_resolved_surface_contact"
+
+
+@dataclass(frozen=True)
+class _SurfaceFeatureResolution:
+    face_id: str | None
+    membrane_domain: MembraneDomain | None
+    face_candidates: tuple[str, ...]
+    membrane_domain_candidates: tuple[MembraneDomain, ...]
+    status: DomainAssignmentStatus
+
+
+def _resolve_surface_feature(faces: tuple[ConvexFace, ...] | list[ConvexFace]) -> _SurfaceFeatureResolution:
+    unique_faces = tuple(dict.fromkeys(face.id for face in faces))
+    if not unique_faces:
+        return _SurfaceFeatureResolution(None, None, (), (), "not_applicable_or_unresolved")
+    face_by_id = {face.id: face for face in faces}
+    domains = tuple(dict.fromkeys(face_by_id[face_id].membrane_domain for face_id in unique_faces))
+    if len(unique_faces) == 1 and len(domains) == 1 and domains[0] != "unknown":
+        return _SurfaceFeatureResolution(
+            unique_faces[0], domains[0], unique_faces, domains, "resolved_unique_face"
+        )
+    if len(domains) == 1 and domains[0] != "unknown":
+        return _SurfaceFeatureResolution(
+            None, domains[0], unique_faces, domains, "resolved_shared_feature_same_domain"
+        )
+    return _SurfaceFeatureResolution(
+        None, None, unique_faces, domains, "ambiguous_shared_feature_multiple_domains"
+    )
 
 
 def _polyhedron_pair_geometry(body_a: SpatialBody, body_b: SpatialBody) -> _GeometryResult:
@@ -1265,6 +1480,8 @@ def _polyhedron_pair_geometry(body_a: SpatialBody, body_b: SpatialBody) -> _Geom
     relation = "touching" if touching else "overlapping"
     overlap = 0.0 if touching else minimum_overlap
     if patch is not None:
+        feature_a = _resolve_surface_feature((patch.face_a,))
+        feature_b = _resolve_surface_feature((patch.face_b,))
         return _GeometryResult(
             surface_gap_um=0.0 if touching else -overlap,
             overlap_depth_um=overlap,
@@ -1273,16 +1490,24 @@ def _polyhedron_pair_geometry(body_a: SpatialBody, body_b: SpatialBody) -> _Geom
             closest_point_a_um=patch.centroid,
             closest_point_b_um=patch.centroid,
             normal_a_to_b=patch.normal_a_to_b,
-            contact_face_a_id=patch.face_a.id,
-            contact_face_b_id=patch.face_b.id,
-            membrane_domain_a=patch.face_a.membrane_domain,
-            membrane_domain_b=patch.face_b.membrane_domain,
+            contact_face_a_id=feature_a.face_id,
+            contact_face_b_id=feature_b.face_id,
+            contact_face_candidates_a=feature_a.face_candidates,
+            contact_face_candidates_b=feature_b.face_candidates,
+            membrane_domain_a=feature_a.membrane_domain,
+            membrane_domain_b=feature_b.membrane_domain,
+            membrane_domain_candidates_a=feature_a.membrane_domain_candidates,
+            membrane_domain_candidates_b=feature_b.membrane_domain_candidates,
+            domain_assignment_status_a=feature_a.status,
+            domain_assignment_status_b=feature_b.status,
             contact_patch_polygon_um=patch.polygon,
             contact_patch_area_um2=patch.area_um2,
             contact_patch_status="derived_from_coplanar_convex_face_intersection_geometry_only",
         )
     support_a = max(vertices_a, key=lambda vertex: _dot(vertex, minimum_axis))
     support_b = min(vertices_b, key=lambda vertex: _dot(vertex, minimum_axis))
+    feature_a = _resolve_surface_feature(_faces_at_surface_point(body_a.shape, vertices_a, support_a))
+    feature_b = _resolve_surface_feature(_faces_at_surface_point(body_b.shape, vertices_b, support_b))
     return _GeometryResult(
         surface_gap_um=0.0 if touching else -overlap,
         overlap_depth_um=overlap,
@@ -1291,6 +1516,16 @@ def _polyhedron_pair_geometry(body_a: SpatialBody, body_b: SpatialBody) -> _Geom
         closest_point_a_um=support_a,
         closest_point_b_um=support_b,
         normal_a_to_b=minimum_axis,
+        contact_face_a_id=feature_a.face_id,
+        contact_face_b_id=feature_b.face_id,
+        contact_face_candidates_a=feature_a.face_candidates,
+        contact_face_candidates_b=feature_b.face_candidates,
+        membrane_domain_a=feature_a.membrane_domain,
+        membrane_domain_b=feature_b.membrane_domain,
+        membrane_domain_candidates_a=feature_a.membrane_domain_candidates,
+        membrane_domain_candidates_b=feature_b.membrane_domain_candidates,
+        domain_assignment_status_a=feature_a.status,
+        domain_assignment_status_b=feature_b.status,
         contact_patch_status="unknown_non_coplanar_or_edge_contact",
     )
 
@@ -1338,13 +1573,16 @@ def _polyhedron_round_geometry(poly_body: SpatialBody, round_body: SpatialBody) 
     sample_points = (segment_start, segment_end, _scale(_add(segment_start, segment_end), 0.5))
     inside_point = next((point for point in sample_points if _point_inside_polyhedron(point, poly_body, vertices, normals)), None)
     if inside_point is not None:
-        nearest_distance = float("inf")
-        nearest_boundary = vertices[0]
-        for ia, ib, ic in _triangle_faces(poly_body.shape):
-            boundary = _closest_point_on_triangle(inside_point, vertices[ia], vertices[ib], vertices[ic])
-            distance = _norm(_sub(boundary, inside_point))
-            if distance < nearest_distance:
-                nearest_distance, nearest_boundary = distance, boundary
+        face_results = tuple(
+            (face, *_closest_point_to_face(inside_point, face, vertices))
+            for face in poly_body.shape.faces
+        )
+        nearest_face, nearest_boundary, nearest_distance = min(face_results, key=lambda item: item[2])
+        candidate_faces = tuple(
+            face for face, _, distance in face_results
+            if distance <= nearest_distance + NUMERIC_CONTACT_TOLERANCE_UM
+        )
+        feature = _resolve_surface_feature(candidate_faces)
         normal_poly_to_round = _unit(_sub(inside_point, nearest_boundary), _unit(_sub(round_body.center_um, poly_body.center_um)))
         return _GeometryResult(
             surface_gap_um=-(radius + nearest_distance),
@@ -1354,31 +1592,24 @@ def _polyhedron_round_geometry(poly_body: SpatialBody, round_body: SpatialBody) 
             closest_point_a_um=nearest_boundary,
             closest_point_b_um=_sub(inside_point, _scale(normal_poly_to_round, radius)),
             normal_a_to_b=normal_poly_to_round,
+            contact_face_a_id=feature.face_id,
+            contact_face_candidates_a=feature.face_candidates,
+            membrane_domain_a=feature.membrane_domain,
+            membrane_domain_candidates_a=feature.membrane_domain_candidates,
+            domain_assignment_status_a=feature.status,
             contact_patch_status="unknown_mixed_shape_penetration",
         )
 
-    best_axis = segment_start
-    best_surface = vertices[0]
-    best_distance = float("inf")
-    for ia, ib, ic in _triangle_faces(poly_body.shape):
-        a, b, c = vertices[ia], vertices[ib], vertices[ic]
-        intersection = _segment_triangle_intersection(segment_start, segment_end, a, b, c)
-        if intersection is not None:
-            best_axis = best_surface = intersection
-            best_distance = 0.0
-            break
-        for point in (segment_start, segment_end):
-            surface = _closest_point_on_triangle(point, a, b, c)
-            distance = _norm(_sub(point, surface))
-            if distance < best_distance:
-                best_axis, best_surface, best_distance = point, surface, distance
-        for edge_start, edge_end in ((a, b), (b, c), (c, a)):
-            axis_point, surface = _closest_points_on_segments(segment_start, segment_end, edge_start, edge_end)
-            distance = _norm(_sub(axis_point, surface))
-            if distance < best_distance:
-                best_axis, best_surface, best_distance = axis_point, surface, distance
-        if best_distance == 0.0:
-            break
+    face_results = tuple(
+        (face, *_closest_segment_to_face(segment_start, segment_end, face, vertices))
+        for face in poly_body.shape.faces
+    )
+    best_face, best_axis, best_surface, best_distance = min(face_results, key=lambda item: item[3])
+    candidate_faces = tuple(
+        face for face, _, _, distance in face_results
+        if distance <= best_distance + NUMERIC_CONTACT_TOLERANCE_UM
+    )
+    feature = _resolve_surface_feature(candidate_faces)
     normal = _unit(_sub(best_axis, best_surface), _unit(_sub(round_body.center_um, poly_body.center_um)))
     gap = best_distance - radius
     overlap = max(0.0, -gap)
@@ -1393,6 +1624,11 @@ def _polyhedron_round_geometry(poly_body: SpatialBody, round_body: SpatialBody) 
         closest_point_a_um=best_surface,
         closest_point_b_um=_sub(best_axis, _scale(normal, radius)),
         normal_a_to_b=normal,
+        contact_face_a_id=feature.face_id,
+        contact_face_candidates_a=feature.face_candidates,
+        membrane_domain_a=feature.membrane_domain,
+        membrane_domain_candidates_a=feature.membrane_domain_candidates,
+        domain_assignment_status_a=feature.status,
         contact_patch_status="unknown_mixed_shape_contact_requires_deformable_surface",
     )
 
@@ -1414,8 +1650,14 @@ def _compute_geometry(body_a: SpatialBody, body_b: SpatialBody) -> _GeometryResu
         normal_a_to_b=_scale(result.normal_a_to_b, -1.0),
         contact_face_a_id=result.contact_face_b_id,
         contact_face_b_id=result.contact_face_a_id,
+        contact_face_candidates_a=result.contact_face_candidates_b,
+        contact_face_candidates_b=result.contact_face_candidates_a,
         membrane_domain_a=result.membrane_domain_b,
         membrane_domain_b=result.membrane_domain_a,
+        membrane_domain_candidates_a=result.membrane_domain_candidates_b,
+        membrane_domain_candidates_b=result.membrane_domain_candidates_a,
+        domain_assignment_status_a=result.domain_assignment_status_b,
+        domain_assignment_status_b=result.domain_assignment_status_a,
     )
 
 
@@ -1467,8 +1709,26 @@ def compute_pair_relation(
         relative_normal_velocity_um_s=_dot(relative_velocity, geometry.normal_a_to_b),
         contact_face_a_id=previous.contact_face_a_id if carry_previous_domains else geometry.contact_face_a_id,
         contact_face_b_id=previous.contact_face_b_id if carry_previous_domains else geometry.contact_face_b_id,
+        contact_face_candidates_a=(
+            previous.contact_face_candidates_a if carry_previous_domains else geometry.contact_face_candidates_a
+        ),
+        contact_face_candidates_b=(
+            previous.contact_face_candidates_b if carry_previous_domains else geometry.contact_face_candidates_b
+        ),
         membrane_domain_a=previous.membrane_domain_a if carry_previous_domains else geometry.membrane_domain_a,
         membrane_domain_b=previous.membrane_domain_b if carry_previous_domains else geometry.membrane_domain_b,
+        membrane_domain_candidates_a=(
+            previous.membrane_domain_candidates_a if carry_previous_domains else geometry.membrane_domain_candidates_a
+        ),
+        membrane_domain_candidates_b=(
+            previous.membrane_domain_candidates_b if carry_previous_domains else geometry.membrane_domain_candidates_b
+        ),
+        domain_assignment_status_a=(
+            previous.domain_assignment_status_a if carry_previous_domains else geometry.domain_assignment_status_a
+        ),
+        domain_assignment_status_b=(
+            previous.domain_assignment_status_b if carry_previous_domains else geometry.domain_assignment_status_b
+        ),
         contact_patch_polygon_um=geometry.contact_patch_polygon_um,
         contact_patch_area_um2=geometry.contact_patch_area_um2,
         normal_load_nN=None,
@@ -1691,6 +1951,112 @@ def move_body(
     return moved
 
 
+def sample_isotropic_approach_direction(rng: EngineRng) -> Vector3:
+    """Sample an incoming direction uniformly over solid angle.
+
+    This optional sampler is suitable for an explicitly isotropic diagnostic
+    environment. Tissue, sinusoidal-flow, chemotactic, or attachment-biased
+    scenarios must supply their own trajectories instead of using this helper.
+    """
+
+    z = 2.0 * rng.random() - 1.0
+    azimuth = 2.0 * pi * rng.random()
+    radial = sqrt(max(0.0, 1.0 - z * z))
+    return (radial * cos(azimuth), radial * sin(azimuth), z)
+
+
+def body_support_distance_um(body: SpatialBody, outward_direction: Vector3) -> float:
+    """Return the body's directional extent from its declared center in um."""
+
+    direction, offset = _body_support_offset_um(body, outward_direction)
+    return _dot(offset, direction)
+
+
+def _body_support_offset_um(body: SpatialBody, outward_direction: Vector3) -> tuple[Vector3, Vector3]:
+    """Return a normalized direction and its support-point center offset."""
+
+    _validate_body(body)
+    if any(not isfinite(component) for component in outward_direction):
+        raise ValueError("support direction must be finite")
+    length = _norm(outward_direction)
+    if length <= NUMERIC_AXIS_TOLERANCE:
+        raise ValueError("support direction must be non-zero")
+    direction = _scale(outward_direction, 1.0 / length)
+    if isinstance(body.shape, SphereShape):
+        return direction, _scale(direction, body.shape.radius_um)
+    if isinstance(body.shape, CapsuleShape):
+        axis_world = _unit(_rotate(body.shape.axis, body.orientation_xyzw))
+        endpoint_sign = 1.0 if _dot(axis_world, direction) >= 0.0 else -1.0
+        endpoint = _scale(axis_world, endpoint_sign * body.shape.half_segment_length_um)
+        return direction, _add(endpoint, _scale(direction, body.shape.radius_um))
+    offsets = tuple(_rotate(vertex, body.orientation_xyzw) for vertex in body.shape.vertices_local_um)
+    maximum = max(_dot(offset, direction) for offset in offsets)
+    support_offsets = tuple(
+        offset
+        for offset in offsets
+        if maximum - _dot(offset, direction) <= NUMERIC_AXIS_TOLERANCE
+    )
+    return direction, _mean(support_offsets)
+
+
+def place_external_body_at_surface_gap(
+    primary: SpatialBody,
+    external: SpatialBody,
+    outward_direction: Vector3,
+    *,
+    surface_gap_um: float = 0.0,
+) -> SpatialBody:
+    """Place a supplied external body at a requested directional surface gap.
+
+    The placement uses support distances from both declared collision shapes, so
+    a virus, bacterium, capsule, or cell changes the center position according to
+    its own dimensions. A missing or invalid size fails validation; the engine
+    never substitutes a generic contact radius.
+    """
+
+    if primary.id == external.id:
+        raise ValueError("external contact body must have a distinct id")
+    if not isfinite(surface_gap_um) or surface_gap_um < 0.0:
+        raise ValueError("surface_gap_um must be finite and non-negative")
+    if any(not isfinite(component) for component in outward_direction):
+        raise ValueError("approach direction must be finite")
+    length = _norm(outward_direction)
+    if length <= NUMERIC_AXIS_TOLERANCE:
+        raise ValueError("approach direction must be non-zero")
+    direction = _scale(outward_direction, 1.0 / length)
+    _, primary_support = _body_support_offset_um(primary, direction)
+    _, external_support = _body_support_offset_um(external, _scale(direction, -1.0))
+    contact_point = _add(primary.center_um, primary_support)
+    center = _add(_sub(contact_point, external_support), _scale(direction, surface_gap_um))
+    return move_body(external, center)
+
+
+def place_external_body_at_isotropic_approach(
+    primary: SpatialBody,
+    external: SpatialBody,
+    *,
+    random_seed: int,
+    surface_gap_um: float = 0.0,
+) -> ContactApproachPlacement:
+    """Place one explicit body using a reproducible isotropic approach draw."""
+
+    if isinstance(random_seed, bool) or not isinstance(random_seed, int):
+        raise ValueError("random_seed must be an integer")
+    direction = sample_isotropic_approach_direction(EngineRng(random_seed))
+    placed = place_external_body_at_surface_gap(
+        primary,
+        external,
+        direction,
+        surface_gap_um=surface_gap_um,
+    )
+    return ContactApproachPlacement(
+        body=placed,
+        outward_direction=direction,
+        requested_surface_gap_um=surface_gap_um,
+        random_seed=random_seed,
+    )
+
+
 def validate_spatial_world(world: SpatialWorldState) -> None:
     """Fail closed if serialized geometry diverges from the body definitions."""
 
@@ -1739,6 +2105,20 @@ def validate_spatial_world(world: SpatialWorldState) -> None:
                 raise ValueError(f"{relation_id}.{field_name} diverges from authoritative body geometry")
         if relation.relation != expected.relation or relation.geometric_contact != expected.geometric_contact:
             raise ValueError(f"{relation_id} contact classification diverges from authoritative body geometry")
+        for field_name in (
+            "contact_face_a_id",
+            "contact_face_b_id",
+            "contact_face_candidates_a",
+            "contact_face_candidates_b",
+            "membrane_domain_a",
+            "membrane_domain_b",
+            "membrane_domain_candidates_a",
+            "membrane_domain_candidates_b",
+            "domain_assignment_status_a",
+            "domain_assignment_status_b",
+        ):
+            if getattr(relation, field_name) != getattr(expected, field_name):
+                raise ValueError(f"{relation_id}.{field_name} diverges from authoritative surface geometry")
         if relation.contact_input_active != relation.geometric_contact:
             raise ValueError(f"{relation_id} contact input must mirror current geometry")
         valid_event = relation.contact_event in (("enter", "stay") if relation.geometric_contact else ("none", "exit"))
@@ -1769,6 +2149,12 @@ def cell_spatial_state_from_world(world: SpatialWorldState, body_id: str) -> Cel
         other_id = relation.body_b if is_a else relation.body_a
         domain_self = relation.membrane_domain_a if is_a else relation.membrane_domain_b
         domain_other = relation.membrane_domain_b if is_a else relation.membrane_domain_a
+        face_candidates_self = relation.contact_face_candidates_a if is_a else relation.contact_face_candidates_b
+        face_candidates_other = relation.contact_face_candidates_b if is_a else relation.contact_face_candidates_a
+        domain_candidates_self = relation.membrane_domain_candidates_a if is_a else relation.membrane_domain_candidates_b
+        domain_candidates_other = relation.membrane_domain_candidates_b if is_a else relation.membrane_domain_candidates_a
+        domain_status_self = relation.domain_assignment_status_a if is_a else relation.domain_assignment_status_b
+        domain_status_other = relation.domain_assignment_status_b if is_a else relation.domain_assignment_status_a
         if relation.contact_event != "none":
             events.append(CellSpatialContactEvent(
                 other_body_id=other_id,
@@ -1777,6 +2163,10 @@ def cell_spatial_state_from_world(world: SpatialWorldState, body_id: str) -> Cel
                 contact_input_active=relation.contact_input_active,
                 membrane_domain_self=domain_self,
                 membrane_domain_other=domain_other,
+                membrane_domain_candidates_self=domain_candidates_self,
+                membrane_domain_candidates_other=domain_candidates_other,
+                domain_assignment_status_self=domain_status_self,
+                domain_assignment_status_other=domain_status_other,
             ))
         if not relation.geometric_contact:
             continue
@@ -1791,8 +2181,14 @@ def cell_spatial_state_from_world(world: SpatialWorldState, body_id: str) -> Cel
             closest_point_self_um=relation.closest_point_a_um if is_a else relation.closest_point_b_um,
             closest_point_other_um=relation.closest_point_b_um if is_a else relation.closest_point_a_um,
             outward_normal_to_other=relation.normal_a_to_b if is_a else _scale(relation.normal_a_to_b, -1.0),
+            contact_face_candidates_self=face_candidates_self,
+            contact_face_candidates_other=face_candidates_other,
             membrane_domain_self=domain_self,
             membrane_domain_other=domain_other,
+            membrane_domain_candidates_self=domain_candidates_self,
+            membrane_domain_candidates_other=domain_candidates_other,
+            domain_assignment_status_self=domain_status_self,
+            domain_assignment_status_other=domain_status_other,
             contact_patch_polygon_um=relation.contact_patch_polygon_um,
             contact_patch_area_um2=relation.contact_patch_area_um2,
             normal_load_nN=relation.normal_load_nN,
@@ -1850,14 +2246,14 @@ def _ordered_face_indices(vertices: tuple[Vector3, ...], indices: list[int], nor
 
 
 def build_canonical_hepatocyte_shape(
-    *, equivalent_sphere_diameter_um: float = ISOLATED_PHH_MEDIAN_DIAMETER_UM,
+    *, equivalent_sphere_diameter_um: float = HEPATOCYTE_REFERENCE_EQUIVALENT_SPHERE_DIAMETER_UM,
 ) -> ConvexPolyhedronShape:
     """Return a volume-equivalent regular truncated-octahedron proxy.
 
     The truncated octahedron is a parameter-free, space-filling mathematical
     proxy once scale is chosen. It is not asserted to be a reconstructed human
-    hepatocyte. The isolated-PHH median diameter sets only the equivalent-sphere
-    volume scale.
+    hepatocyte. The measured in-situ midlobular human hepatocyte volume sets
+    the equivalent-sphere scale; the resulting diameter is derived.
     """
 
     if not isfinite(equivalent_sphere_diameter_um) or equivalent_sphere_diameter_um <= 0.0:
@@ -1875,8 +2271,18 @@ def build_canonical_hepatocyte_shape(
             raw_vertices.add((vertex[0] * scale, vertex[1] * scale, vertex[2] * scale))
     vertices = tuple(sorted(raw_vertices))
     constraints: list[tuple[str, Vector3, float, MembraneDomain]] = [
-        ("sinusoidal_neg_x", (-1.0, 0.0, 0.0), 2.0 * scale, "basolateral"),
-        ("sinusoidal_pos_x", (1.0, 0.0, 0.0), 2.0 * scale, "basolateral"),
+        (
+            "sinusoidal_neg_x",
+            HEPATOCYTE_CANONICAL_SINUSOIDAL_DIRECTION,
+            2.0 * scale,
+            "basolateral",
+        ),
+        (
+            "canalicular_pos_x",
+            HEPATOCYTE_CANONICAL_CANALICULAR_DIRECTION,
+            2.0 * scale,
+            "apical",
+        ),
         ("lateral_neg_y", (0.0, -1.0, 0.0), 2.0 * scale, "lateral"),
         ("lateral_pos_y", (0.0, 1.0, 0.0), 2.0 * scale, "lateral"),
         ("lateral_neg_z", (0.0, 0.0, -1.0), 2.0 * scale, "lateral"),
@@ -1912,6 +2318,7 @@ def build_canonical_hepatocyte_shape(
 def _primary_hepatocyte_body() -> SpatialBody:
     membrane_material = build_intrinsic_hepatocyte_membrane_profile()
     source_ids = tuple(dict.fromkeys((
+        "duarte1989_human_hepatocyte_volume",
         "olander2021_human_hepatocyte_size",
         "fabyan2026_human_liver_3d",
         *membrane_material.source_ids,
@@ -1925,8 +2332,9 @@ def _primary_hepatocyte_body() -> SpatialBody:
         center_um=(0.0, 0.0, 0.0),
         shape=build_canonical_hepatocyte_shape(),
         state_ref="adult_human_hepatocyte",
-        geometry_evidence="measured_isolated_phh_equivalent_size_canonical_polyhedral_proxy",
+        geometry_evidence="measured_in_situ_human_volume_equivalent_canonical_polyhedral_proxy",
         visual_profile="source_backed_hepatocyte_cutaway_polyhedral",
+        molecular_profile_id="adult_human_hepatocyte_surface_v1",
         membrane_material=membrane_material,
         source_ids=source_ids,
     )
@@ -1940,7 +2348,7 @@ def build_single_hepatocyte_world(*, time_s: float = 0.0) -> SpatialWorldState:
         world_id="single_hepatocyte_runtime",
         scenario_kind="single_hepatocyte",
         time_s=time_s,
-        evidence_status="measured_isolated_phh_size_canonical_polyhedral_proxy_no_external_body",
+        evidence_status="measured_in_situ_human_volume_canonical_polyhedral_proxy_no_external_body",
     )
 
 
@@ -1971,6 +2379,39 @@ def build_hepatocyte_contact_diagnostic_world(*, time_s: float = 0.0) -> Spatial
         scenario_kind="geometry_diagnostic_pair_contact",
         time_s=time_s,
         evidence_status="measured_size_deformable_polyhedral_contact_fixture_not_tissue_observation",
+    )
+
+
+def build_hbv_contact_diagnostic_world(*, time_s: float = 0.0) -> SpatialWorldState:
+    """Exact-scale tangent HBV fixture for molecular-gate tests only.
+
+    The virion is present because this explicit diagnostic requests it. The
+    normal production world remains a single hepatocyte. Tangency opens only
+    the geometry gate; receptor binding and entry remain independently gated.
+    """
+
+    primary = _primary_hepatocyte_body()
+    assert isinstance(primary.shape, ConvexPolyhedronShape)
+    outward = (-1.0, 0.0, 0.0)
+    support = _support_from_center(primary.shape, outward)
+    radius_um = HBV_CRYO_EM_OUTER_DIAMETER_UM / 2.0
+    virion = SpatialBody(
+        id="hbv_virion_reference",
+        biological_kind="virus",
+        center_um=(-(support + radius_um), 0.0, 0.0),
+        shape=SphereShape(radius_um=radius_um),
+        state_ref="complete_hbv_virion_geometry_diagnostic",
+        geometry_evidence="human_serum_hbv_cryo_em_outer_diameter_tangent_fixture",
+        visual_profile="exact_scale_hbv_virion",
+        molecular_profile_id="hbv_virion_surface_v1",
+        source_ids=("seitz2007_hbv_cryo_em",),
+    )
+    return initialize_spatial_world(
+        (primary, virion),
+        world_id="hepatocyte_hbv_contact_diagnostic",
+        scenario_kind="geometry_molecular_gate_diagnostic_hbv",
+        time_s=time_s,
+        evidence_status="exact_scale_hbv_tangent_fixture_not_infection_observation",
     )
 
 

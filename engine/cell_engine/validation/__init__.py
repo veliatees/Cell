@@ -48,6 +48,15 @@ from cell_engine.validation.evidence_intake import (
     evidence_intake_snapshot,
     validate_evidence_bundle,
 )
+from cell_engine.validation.physical_validation import (
+    PHYSICAL_VALIDATION_SOURCES,
+    PhysicalValidationReport,
+    PhysicalVerificationCriterion,
+    PhysicalVerificationLayer,
+    build_physical_validation_report,
+    physical_validation_snapshot,
+    validate_physical_validation_report,
+)
 
 __all__ = [
     "BASELINE_SCENARIO",
@@ -96,4 +105,11 @@ __all__ = [
     "EvidenceTableAudit",
     "evidence_intake_snapshot",
     "validate_evidence_bundle",
+    "PHYSICAL_VALIDATION_SOURCES",
+    "PhysicalValidationReport",
+    "PhysicalVerificationCriterion",
+    "PhysicalVerificationLayer",
+    "build_physical_validation_report",
+    "physical_validation_snapshot",
+    "validate_physical_validation_report",
 ]

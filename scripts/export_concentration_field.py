@@ -184,7 +184,7 @@ def build_payload(n: int, iterations: int) -> dict:
         "consumption rates are effective crowded-cytosol, order-of-magnitude; the "
         "glucose scale is pinned to physiological blood glucose. Positions are "
         "normalised cell coordinates in [-1,1].",
-        "lattice": {"n": lattice.nx, "dxUm": lattice.dx_um},
+        "lattice": {"n": lattice.nx, "dxUm": round(lattice.dx_um, 12)},
         "params": {
             "glucose": {
                 "diffusionUm2PerS": D_GLUCOSE,

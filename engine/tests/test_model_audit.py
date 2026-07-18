@@ -48,6 +48,7 @@ class ScientificModelAuditTests(unittest.TestCase):
         self.assertFalse(by_id["published_hepatic_glucose_shadow_model"].drives_scientific_validation)
         self.assertEqual(by_id["cell_contact_geometry"].default_snapshot_role, "geometry_authoritative_runtime_spatial_state")
         self.assertIn("olander2021_human_hepatocyte_size", by_id["cell_contact_geometry"].source_ids)
+        self.assertIn("duarte1989_human_hepatocyte_volume", by_id["cell_contact_geometry"].source_ids)
         self.assertIn("evans1976_human_membrane_area_lysis", by_id["cell_contact_geometry"].source_ids)
         self.assertIn("rawicz2000_bilayer_elasticity", by_id["cell_contact_geometry"].source_ids)
         self.assertIn("guillou2016_membrane_surface_reservoirs", by_id["cell_contact_geometry"].source_ids)

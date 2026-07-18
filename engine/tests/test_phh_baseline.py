@@ -17,7 +17,14 @@ class PhhBaselineTests(unittest.TestCase):
         self.assertEqual(len(anchors), 19)
         self.assertEqual(anchors["human_hepatocyte_bsep_total_protein"].measurement.unit, "pmol_per_mg_total_protein")
         self.assertEqual(anchors["human_liver_mrp2_total_membrane_protein"].measurement.unit, "fmol_per_ug_liver_membrane_protein")
-        self.assertEqual(anchors["human_hepatocyte_albumin_copies"].measurement.value, 20_000_000)
+        self.assertEqual(
+            anchors["human_hepatocyte_albumin_copies"].measurement.value,
+            19_332_782.426021077,
+        )
+        self.assertEqual(
+            anchors["human_hepatocyte_albumin_copies"].measurement.unit,
+            "copies_per_nucleus",
+        )
         self.assertEqual(anchors["human_liver_glycogen_in_vivo"].sample_size, 25)
         self.assertEqual(anchors["human_liver_atp_control"].measurement.unit, "umol_per_g_wet_liver")
         self.assertEqual(anchors["human_liver_apparent_atp_synthesis"].measurement.value, 29.5)

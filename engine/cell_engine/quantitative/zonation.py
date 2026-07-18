@@ -7,10 +7,15 @@ from typing import Literal
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.serialization import to_plain
+from cell_engine.quantitative.human_liver_open_atlas import (
+    HUMAN_LIVER_OPEN_ATLAS_SOURCES,
+    SpatialProteinObservation,
+    spatial_protein_observations,
+)
 
 
 HepaticZone = Literal["periportal", "midlobular", "pericentral"]
-DATE_VERIFIED = "2026-07-11"
+DATE_VERIFIED = "2026-07-15"
 
 ZONATION_SOURCES: dict[str, SourceReference] = {
     "human_liver_spatial_atlas_2026": SourceReference(
@@ -45,6 +50,9 @@ ZONATION_SOURCES: dict[str, SourceReference] = {
         date_verified="2026-07-14",
         notes="Human liver MPS under controlled approximately 3-13% oxygen; supports directional zone functions, not an in-situ human sinusoidal pO2 value.",
     ),
+    "weiss2026_spatial_proteome": HUMAN_LIVER_OPEN_ATLAS_SOURCES[
+        "weiss2026_spatial_proteome"
+    ],
 }
 
 
@@ -91,6 +99,9 @@ class HumanHepatocyteZonationState:
     zone: ZoneContext
     experimental_oxygen_context: HumanMpsOxygenContext
     markers: tuple[ZonationMarker, ...]
+    spatial_protein_markers: tuple[SpatialProteinObservation, ...]
+    spatial_proteome_measurements_available: bool
+    spatial_proteome_may_scale_flux: bool
     quantitative_effect_sizes_available: bool
     oxygen_partial_pressure_available: bool
     dynamic_flux_scaling_enabled: bool
@@ -109,7 +120,7 @@ _MARKERS: tuple[ZonationMarker, ...] = (
     ZonationMarker("ALB", "periportal", "transcript_and_protein", ("human_liver_spatial_atlas_2026", "human_liver_cell_atlas_2019")),
     ZonationMarker("GLS2", "periportal", "transcript", ("human_liver_spatial_atlas_2026",)),
     ZonationMarker("LDHB", "periportal", "transcript", ("human_liver_spatial_atlas_2026",)),
-    ZonationMarker("SUCLG2", "periportal", "protein", ("human_liver_single_cell_proteomics_2025",)),
+    ZonationMarker("SUCLG2", "periportal", "protein", ("weiss2026_spatial_proteome",)),
     ZonationMarker("HSD17B13", "midlobular", "transcript", ("human_liver_spatial_atlas_2026",)),
     ZonationMarker("C6", "midlobular", "transcript", ("human_liver_spatial_atlas_2026",)),
     ZonationMarker("KLKB1", "midlobular", "transcript", ("human_liver_spatial_atlas_2026",)),
@@ -125,7 +136,7 @@ _MARKERS: tuple[ZonationMarker, ...] = (
     ZonationMarker("GLUL", "pericentral", "transcript", ("human_liver_spatial_atlas_2026", "human_liver_cell_atlas_2019")),
     ZonationMarker("ADH4", "pericentral", "transcript", ("human_liver_spatial_atlas_2026",)),
     ZonationMarker("HNF4A", "pericentral", "transcript", ("human_liver_spatial_atlas_2026",), "Human pattern; do not substitute the mouse periportal pattern."),
-    ZonationMarker("ACSL5", "pericentral", "protein", ("human_liver_single_cell_proteomics_2025",)),
+    ZonationMarker("ACSL5", "pericentral", "protein", ("weiss2026_spatial_proteome",)),
 )
 
 
@@ -135,7 +146,7 @@ _ZONE_CONTEXTS: dict[HepaticZone, ZoneContext] = {
         tuple(item.gene for item in _MARKERS if item.enriched_zone == "periportal"),
         ("portal-biased gluconeogenic program", "oxidative phosphorylation and ribosomal enrichment", "glutamine breakdown and nitrogen handling"),
         ("periportal Notch ligand/receptor context",),
-        ("human_liver_spatial_atlas_2026", "human_liver_single_cell_proteomics_2025"),
+        ("human_liver_spatial_atlas_2026", "weiss2026_spatial_proteome"),
     ),
     "midlobular": ZoneContext(
         "midlobular", "Zone 2 / midlobular", "intermediate_porto_central", "intermediate",
@@ -149,7 +160,7 @@ _ZONE_CONTEXTS: dict[HepaticZone, ZoneContext] = {
         tuple(item.gene for item in _MARKERS if item.enriched_zone == "pericentral"),
         ("xenobiotic metabolism", "bile-acid and lipid biosynthesis", "fatty-acid and peroxisomal programs", "glutamine synthesis"),
         ("pericentral WNT2-RSPO3-LGR5 context",),
-        ("human_liver_spatial_atlas_2026", "human_liver_single_cell_proteomics_2025"),
+        ("human_liver_spatial_atlas_2026", "weiss2026_spatial_proteome"),
     ),
 }
 
@@ -181,17 +192,23 @@ def build_human_hepatocyte_zonation(zone: HepaticZone) -> HumanHepatocyteZonatio
         zone=context,
         experimental_oxygen_context=oxygen_context,
         markers=tuple(item for item in _MARKERS if item.enriched_zone == zone),
+        spatial_protein_markers=spatial_protein_observations(zone),
+        spatial_proteome_measurements_available=True,
+        spatial_proteome_may_scale_flux=False,
         quantitative_effect_sizes_available=False,
         oxygen_partial_pressure_available=False,
         dynamic_flux_scaling_enabled=False,
         source_ids=tuple(dict.fromkeys(
             [source for item in _MARKERS for source in item.source_ids]
             + list(oxygen_context.source_ids)
+            + ["weiss2026_spatial_proteome"]
         )),
         limitations=(
             "Marker direction is human-atlas evidence; no donor-specific expression value is inferred.",
             "Relative oxygen context is directional only; no human zonal pO2 value is assigned.",
             "Controlled human-MPS oxygen settings are retained separately and cannot initialize sinusoidal oxygen.",
+            "Normalized spatial-proteome gradients identify protein zonation but cannot scale reaction or transport rates.",
+            "The source analysis does not define a separate midlobular protein-maximum class.",
             "Zonation does not scale reaction rates until matched human quantitative effects are loaded.",
         ),
     )
@@ -204,6 +221,10 @@ def validate_human_hepatocyte_zonation(state: HumanHepatocyteZonationState) -> N
         raise ValueError("human zonation state cannot silently use another species")
     if state.dynamic_flux_scaling_enabled or state.quantitative_effect_sizes_available:
         raise ValueError("zonation effect sizes are unavailable and cannot drive flux")
+    if not state.spatial_proteome_measurements_available:
+        raise ValueError("published human spatial-proteome measurements are missing")
+    if state.spatial_proteome_may_scale_flux:
+        raise ValueError("normalized spatial-proteome gradients cannot drive flux")
     if state.oxygen_partial_pressure_available:
         raise ValueError("human zonal oxygen partial pressure is not available")
     oxygen = state.experimental_oxygen_context
@@ -224,6 +245,20 @@ def validate_human_hepatocyte_zonation(state: HumanHepatocyteZonationState) -> N
             raise ValueError(f"marker {marker.gene} conflicts with selected zone")
         if not marker.source_ids or not set(marker.source_ids) <= source_ids:
             raise ValueError(f"marker {marker.gene} lacks registered human provenance")
+    expected_spatial_count = {
+        "periportal": 102,
+        "midlobular": 0,
+        "pericentral": 69,
+    }[state.selected_zone]
+    if len(state.spatial_protein_markers) != expected_spatial_count:
+        raise ValueError("published strong protein-zonation count changed")
+    if any(
+        marker.enriched_region != state.selected_zone
+        or not marker.strong_zonated
+        or marker.source_id != "weiss2026_spatial_proteome"
+        for marker in state.spatial_protein_markers
+    ):
+        raise ValueError("spatial protein marker conflicts with selected zone")
 
 
 def human_hepatocyte_zonation_snapshot(zone: HepaticZone) -> dict[str, object]:

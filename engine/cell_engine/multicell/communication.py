@@ -2,13 +2,15 @@
 
 This module separates three questions that are often collapsed into one:
 
-1. Is a ligand/receptor or junction mechanism documented?
-2. Are two modeled cell surfaces geometrically able to interact?
-3. Are the matched exposure, receptor and response measurements sufficient to
-   calculate activation?
+1. Are two engine-owned surfaces geometrically in contact?
+2. Do both bodies explicitly present a complementary molecular pair in the
+   contacting membrane domains?
+3. Are local patch presence, orientation, surface density, two-dimensional
+   binding kinetics, pathway response and membrane-transport inputs complete?
 
-Only the first two are available in the current project.  The third therefore
-fails closed and cannot alter ``CellState``.
+The first gate is authoritative. The second can identify a qualitative candidate
+for explicitly profiled bodies. The remaining gates fail closed and cannot alter
+``CellState``.
 """
 
 from __future__ import annotations
@@ -20,11 +22,20 @@ from typing import Literal
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.serialization import to_plain
 from cell_engine.quantitative.hepatocyte_counts import CELL_DIAMETER_UM
+from cell_engine.quantitative.human_liver_open_atlas import (
+    HUMAN_LIVER_OPEN_ATLAS_SOURCES,
+    surface_protein_observation,
+)
 from cell_engine.quantitative.phh_glucose_validation import (
     PHH_GLUCOSE_VALIDATION_SOURCES,
     load_healthy_phh_glucose_validation,
 )
-from cell_engine.multicell.spatial_world import SpatialWorldState, build_single_hepatocyte_world
+from cell_engine.multicell.spatial_world import (
+    SpatialBody,
+    SpatialPairRelation,
+    SpatialWorldState,
+    build_single_hepatocyte_world,
+)
 
 
 DATE_VERIFIED = "2026-07-14"
@@ -34,6 +45,7 @@ CommunicationMode = Literal[
     "paracrine",
     "juxtacrine",
     "gap_junction",
+    "host_entry",
 ]
 SignalLocation = Literal[
     "extracellular",
@@ -101,7 +113,55 @@ COMMUNICATION_SOURCES: dict[str, SourceReference] = {
         date_verified=DATE_VERIFIED,
         notes="Mouse in-vivo evidence that hepatocyte Cx32 gap junctions support intercellular propagation of a glycogen-mobilizing signal.",
     ),
+    "huang2010_two_dimensional_binding": SourceReference(
+        id="huang2010_two_dimensional_binding",
+        title="The kinetics of two-dimensional TCR and pMHC interactions determine T-cell responsiveness",
+        url="https://doi.org/10.1038/nature08944",
+        source_type="primary_paper",
+        date_verified="2026-07-15",
+        notes=(
+            "Directly demonstrates that membrane-anchored molecular recognition is "
+            "governed by two-dimensional contact kinetics. The T-cell parameters "
+            "are not transferred to hepatocytes; the study supports the required "
+            "inputs of contact area, receptor/ligand density and 2D on/off rates."
+        ),
+    ),
+    "yan2012_hbv_ntcp": SourceReference(
+        id="yan2012_hbv_ntcp",
+        title="Sodium taurocholate cotransporting polypeptide is a functional receptor for human hepatitis B and D virus",
+        url="https://doi.org/10.7554/eLife.00049",
+        source_type="primary_paper",
+        date_verified="2026-07-15",
+        notes="Supports the HBV preS1-NTCP attachment mechanism; it does not supply a complete entry-rate law.",
+    ),
+    "iwamoto2019_hbv_egfr": SourceReference(
+        id="iwamoto2019_hbv_egfr",
+        title="Epidermal growth factor receptor is a host-entry cofactor triggering hepatitis B virus internalization",
+        url="https://doi.org/10.1073/pnas.1811064116",
+        source_type="primary_paper",
+        date_verified="2026-07-15",
+        notes=(
+            "Shows that HBV can attach through NTCP while internalization remains "
+            "attenuated without functional EGFR; attachment and entry are therefore "
+            "separate gates."
+        ),
+    ),
+    "cajulao2022_gcgr_endocytosis": SourceReference(
+        id="cajulao2022_gcgr_endocytosis",
+        title="Glucagon receptor-mediated regulation of gluconeogenic gene transcription is endocytosis-dependent in primary hepatocytes",
+        url="https://doi.org/10.1091/mbc.E21-09-0430",
+        source_type="primary_paper",
+        date_verified="2026-07-15",
+        notes=(
+            "Supports agonist-dependent clathrin/dynamin GCGR internalization and "
+            "endosomal signaling. Glucagon is modeled as extracellular exposure, "
+            "not as a cell-scale projectile."
+        ),
+    ),
     "kemas2021_phh_glucose": PHH_GLUCOSE_VALIDATION_SOURCES["kemas2021_phh_glucose"],
+    "mallanna2016_phh_surfaceome": HUMAN_LIVER_OPEN_ATLAS_SOURCES[
+        "mallanna2016_phh_surfaceome"
+    ],
 }
 
 
@@ -131,6 +191,86 @@ class CommunicationPathway:
     extracellular_exposure_required: bool
     quantitative_kinetics_available: bool
     automatic_state_coupling: bool
+    source_ids: tuple[str, ...]
+
+
+SurfaceMoleculeRole = Literal[
+    "receptor",
+    "ligand",
+    "adhesion",
+    "channel",
+    "cofactor",
+    "transporter",
+]
+
+
+@dataclass(frozen=True)
+class SurfaceMoleculeSpec:
+    """Body-level molecular capability without invented patch occupancy."""
+
+    id: str
+    display_name: str
+    role: SurfaceMoleculeRole
+    compatible_partner_ids: tuple[str, ...]
+    membrane_domains: tuple[str, ...]
+    required_cofactor_ids: tuple[str, ...]
+    transport_program: str | None
+    surface_abundance_per_um2: float | None
+    kon_2d_um2_per_molecule_s: float | None
+    koff_s: float | None
+    patch_distribution_available: bool
+    orientation_model_available: bool
+    evidence_scope: str
+    source_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class BodySurfaceProfile:
+    body_id: str
+    profile_id: str
+    evidence_scope: str
+    molecules: tuple[SurfaceMoleculeSpec, ...]
+
+
+@dataclass(frozen=True)
+class MolecularPairMatch:
+    molecule_a_id: str
+    molecule_b_id: str
+    pathway_ids: tuple[str, ...]
+    transport_programs: tuple[str, ...]
+    required_cofactor_ids: tuple[str, ...]
+    domain_compatible: bool
+    local_patch_presence_observed: bool | None
+    orientation_compatible: bool | None
+    source_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ContactEventChain:
+    """Geometry-to-transport gate audit for one engine-owned body pair."""
+
+    contact_id: str
+    contact_event: str
+    body_a: str
+    body_b: str
+    body_a_kind: str
+    body_b_kind: str
+    geometric_contact: bool
+    geometry_gate_status: str
+    membrane_domain_a: str | None
+    membrane_domain_b: str | None
+    contact_patch_area_available: bool
+    molecular_matches: tuple[MolecularPairMatch, ...]
+    candidate_pathway_ids: tuple[str, ...]
+    receptor_ligand_density_available: bool
+    two_dimensional_kinetics_available: bool
+    molecular_recognition_status: str
+    signaling_status: str
+    transport_status: str
+    transport_programs: tuple[str, ...]
+    emitted_events: tuple[str, ...]
+    may_drive_cell_state: bool
+    blockers: tuple[str, ...]
     source_ids: tuple[str, ...]
 
 
@@ -220,12 +360,17 @@ class HepatocyteCommunicationSystem:
     pathways: tuple[CommunicationPathway, ...]
     reference_cells: tuple[CellGeometry, ...]
     reference_contacts: tuple[ContactGeometry, ...]
+    body_surface_profiles: tuple[BodySurfaceProfile, ...]
+    contact_event_chains: tuple[ContactEventChain, ...]
     evaluated_exposures: tuple[SignalChainEvaluation, ...]
     measured_exposure_count: int
     matched_response_evidence_count: int
     quantitative_pathway_count: int
     active_signal_count: int
+    recognition_candidate_count: int
+    active_transport_count: int
     automatic_state_coupling: bool
+    event_chain_contract: str
     reference_geometry_is_biological_observation: bool
     limitations: tuple[str, ...]
 
@@ -287,15 +432,17 @@ def build_hepatocyte_communication_atlas() -> tuple[CommunicationPathway, ...]:
             steps=(
                 _step("glucagon", "GCGR_Gs", "binds_and_activates", "extracellular", "plasma_membrane", "glucagon_creb_hepatic_control"),
                 _step("GCGR_Gs", "adenylyl_cyclase_cAMP_PKA", "activates", "plasma_membrane", "cytosol", "glucagon_creb_hepatic_control"),
+                _step("activated_GCGR", "GCGR_early_endosome", "clathrin_and_dynamin_dependent_internalization", "plasma_membrane", "cytosol", "cajulao2022_gcgr_endocytosis"),
+                _step("GCGR_early_endosome", "endosomal_cAMP", "supports", "cytosol", "cytosol", "cajulao2022_gcgr_endocytosis"),
                 _step("PKA", "CREB_PGC1A_program", "activates", "cytosol", "nucleus", "glucagon_creb_hepatic_control"),
             ),
             biological_output="glycogen mobilization and gluconeogenic gene program",
-            evidence_scope="hepatic mechanism supported; current project lacks matched portal exposure and PHH phospho-response kinetics",
+            evidence_scope="hepatic mechanism and receptor internalization supported; current project lacks matched portal exposure, human-PHH surface abundance and kinetic trajectories",
             contact_required=False,
             extracellular_exposure_required=True,
             quantitative_kinetics_available=False,
             automatic_state_coupling=False,
-            source_ids=("glucagon_creb_hepatic_control",),
+            source_ids=("glucagon_creb_hepatic_control", "cajulao2022_gcgr_endocytosis"),
         ),
         CommunicationPathway(
             id="hgf_met_regeneration",
@@ -362,6 +509,27 @@ def build_hepatocyte_communication_atlas() -> tuple[CommunicationPathway, ...]:
             source_ids=("wnt_beta_catenin_liver_regeneration",),
         ),
         CommunicationPathway(
+            id="hbv_pres1_ntcp_egfr_entry",
+            label="HBV preS1 -> NTCP/EGFR -> internalization",
+            mode="host_entry",
+            sender_context="explicit_complete_hbv_virion",
+            receiver_cell_type="susceptible_human_hepatocyte",
+            ligand_or_contact_molecule="HBV_preS1",
+            receptor_or_channel="SLC10A1_NTCP_with_EGFR",
+            steps=(
+                _step("HBV_preS1", "SLC10A1_NTCP", "attaches", "cell_cell_interface", "plasma_membrane", "yan2012_hbv_ntcp"),
+                _step("HBV_preS1_NTCP", "NTCP_EGFR_complex", "requires_functional_host_cofactor", "plasma_membrane", "plasma_membrane", "iwamoto2019_hbv_egfr"),
+                _step("HBV_NTCP_EGFR_complex", "endocytic_vesicle", "internalizes", "plasma_membrane", "cytosol", "iwamoto2019_hbv_egfr"),
+            ),
+            biological_output="viral attachment candidate followed by separately gated host-cell entry",
+            evidence_scope="human-virus receptor and host-cofactor mechanism supported; local abundance, 2D binding kinetics, entry probability and PHH trajectory are not loaded",
+            contact_required=True,
+            extracellular_exposure_required=False,
+            quantitative_kinetics_available=False,
+            automatic_state_coupling=False,
+            source_ids=("yan2012_hbv_ntcp", "iwamoto2019_hbv_egfr"),
+        ),
+        CommunicationPathway(
             id="cdh1_adherens_contact",
             label="E-cadherin trans-contact -> adherens junction",
             mode="juxtacrine",
@@ -402,6 +570,352 @@ def build_hepatocyte_communication_atlas() -> tuple[CommunicationPathway, ...]:
             source_ids=("hepatocyte_connexin32_signal_propagation",),
         ),
     )
+
+
+def _surface_molecule(
+    molecule_id: str,
+    display_name: str,
+    role: SurfaceMoleculeRole,
+    *,
+    partners: tuple[str, ...] = (),
+    domains: tuple[str, ...] = ("unknown",),
+    cofactors: tuple[str, ...] = (),
+    transport_program: str | None = None,
+    surfaceome_gene: str | None = None,
+    evidence_scope: str,
+    source_ids: tuple[str, ...],
+) -> SurfaceMoleculeSpec:
+    observation = (
+        surface_protein_observation(surfaceome_gene)
+        if surfaceome_gene is not None
+        else None
+    )
+    if observation is not None:
+        evidence_scope = (
+            f"{evidence_scope}; identity observed by primary-human-hepatocyte "
+            "cell-surface capture, without density, membrane domain or orientation"
+        )
+        source_ids = tuple(
+            dict.fromkeys((*source_ids, "mallanna2016_phh_surfaceome"))
+        )
+    elif surfaceome_gene is not None:
+        evidence_scope = (
+            f"{evidence_scope}; not detected in the 2016 PHH surface-capture assay, "
+            "which is not evidence of biological absence"
+        )
+    return SurfaceMoleculeSpec(
+        id=molecule_id,
+        display_name=display_name,
+        role=role,
+        compatible_partner_ids=partners,
+        membrane_domains=domains,
+        required_cofactor_ids=cofactors,
+        transport_program=transport_program,
+        surface_abundance_per_um2=None,
+        kon_2d_um2_per_molecule_s=None,
+        koff_s=None,
+        patch_distribution_available=False,
+        orientation_model_available=False,
+        evidence_scope=evidence_scope,
+        source_ids=source_ids,
+    )
+
+
+def _surface_profile_templates() -> dict[str, tuple[str, tuple[SurfaceMoleculeSpec, ...]]]:
+    """Return qualitative identities; every quantitative binding field is null."""
+
+    hepatocyte = (
+        _surface_molecule(
+            "CDH1",
+            "E-cadherin",
+            "adhesion",
+            partners=("CDH1",),
+            domains=("lateral",),
+            cofactors=("extracellular_Ca2+",),
+            surfaceome_gene="CDH1",
+            evidence_scope="human cadherin trans-contact topology; no healthy-PHH patch density or bond mechanics",
+            source_ids=("reactome_adherens_junctions",),
+        ),
+        _surface_molecule(
+            "GJB1_Cx32",
+            "Connexin 32 connexon",
+            "channel",
+            partners=("GJB1_Cx32",),
+            domains=("lateral",),
+            transport_program="gap_junction_small_solute_exchange",
+            surfaceome_gene="GJB1",
+            evidence_scope="hepatocyte gap-junction mechanism; human permeability and gating unavailable",
+            source_ids=("hepatocyte_connexin32_signal_propagation",),
+        ),
+        _surface_molecule(
+            "SLC10A1_NTCP",
+            "NTCP",
+            "receptor",
+            partners=("HBV_preS1",),
+            domains=("basolateral",),
+            cofactors=("EGFR",),
+            transport_program="hbv_receptor_cofactor_endocytic_entry",
+            surfaceome_gene="SLC10A1",
+            evidence_scope="human HBV attachment receptor with separately required EGFR-mediated internalization",
+            source_ids=("yan2012_hbv_ntcp", "iwamoto2019_hbv_egfr"),
+        ),
+        _surface_molecule(
+            "EGFR",
+            "Epidermal growth factor receptor",
+            "cofactor",
+            domains=("basolateral",),
+            surfaceome_gene="EGFR",
+            evidence_scope="host-entry cofactor identity only; local NTCP-EGFR complex abundance unavailable",
+            source_ids=("iwamoto2019_hbv_egfr",),
+        ),
+        _surface_molecule(
+            "GCGR",
+            "Glucagon receptor",
+            "receptor",
+            partners=("glucagon",),
+            domains=("basolateral",),
+            transport_program="gcgr_clathrin_dynamin_endocytosis",
+            surfaceome_gene="GCGR",
+            evidence_scope="surface and endosomal signaling topology; soluble exposure is not a collision body",
+            source_ids=("glucagon_creb_hepatic_control", "cajulao2022_gcgr_endocytosis"),
+        ),
+        _surface_molecule(
+            "INSR",
+            "Insulin receptor",
+            "receptor",
+            partners=("insulin",),
+            surfaceome_gene="INSR",
+            evidence_scope="human pathway receptor identity; local exposure and receptor occupancy unavailable",
+            source_ids=("reactome_insulin_receptor",),
+        ),
+        _surface_molecule(
+            "MET",
+            "Hepatocyte growth factor receptor",
+            "receptor",
+            partners=("HGF",),
+            surfaceome_gene="MET",
+            evidence_scope="human pathway receptor identity; local HGF dose-time response unavailable",
+            source_ids=("reactome_hgf_met",),
+        ),
+        _surface_molecule(
+            "IL6ST_gp130",
+            "Interleukin-6 receptor subunit beta / gp130",
+            "cofactor",
+            partners=("IL6_IL6R_complex",),
+            surfaceome_gene="IL6ST",
+            evidence_scope="human IL-6 signaling coreceptor identity; complete local receptor complex unavailable",
+            source_ids=("reactome_il6_signaling",),
+        ),
+        _surface_molecule(
+            "ABCB11_BSEP",
+            "Bile salt export pump",
+            "transporter",
+            surfaceome_gene="ABCB11",
+            evidence_scope="primary-hepatocyte surface identity only; active surface density and transport law unavailable",
+            source_ids=(),
+        ),
+        _surface_molecule(
+            "ABCC2_MRP2",
+            "Multidrug resistance-associated protein 2",
+            "transporter",
+            surfaceome_gene="ABCC2",
+            evidence_scope="primary-hepatocyte surface identity only; active surface density and transport law unavailable",
+            source_ids=(),
+        ),
+        _surface_molecule(
+            "ABCB1_MDR1",
+            "Multidrug resistance protein 1",
+            "transporter",
+            surfaceome_gene="ABCB1",
+            evidence_scope="primary-hepatocyte surface identity only; active surface density and transport law unavailable",
+            source_ids=(),
+        ),
+    )
+    hbv = (
+        _surface_molecule(
+            "HBV_preS1",
+            "HBV large-envelope preS1 domain",
+            "ligand",
+            partners=("SLC10A1_NTCP",),
+            transport_program="hbv_receptor_cofactor_endocytic_entry",
+            evidence_scope="complete-HBV attachment ligand identity; virion-level site count and 2D kinetics unavailable",
+            source_ids=("yan2012_hbv_ntcp", "iwamoto2019_hbv_egfr"),
+        ),
+    )
+    return {
+        "adult_human_hepatocyte_surface_v1": (
+            "qualitative adult-human-hepatocyte surface capability; body-level presence is not patch occupancy",
+            hepatocyte,
+        ),
+        "hbv_virion_surface_v1": (
+            "qualitative complete-HBV attachment capability; no infection probability",
+            hbv,
+        ),
+    }
+
+
+def build_body_surface_profiles(world: SpatialWorldState) -> tuple[BodySurfaceProfile, ...]:
+    templates = _surface_profile_templates()
+    profiles: list[BodySurfaceProfile] = []
+    for body in world.bodies:
+        if body.molecular_profile_id is None:
+            continue
+        if body.molecular_profile_id not in templates:
+            raise ValueError(f"unknown molecular surface profile: {body.molecular_profile_id}")
+        evidence_scope, molecules = templates[body.molecular_profile_id]
+        profiles.append(BodySurfaceProfile(
+            body_id=body.id,
+            profile_id=body.molecular_profile_id,
+            evidence_scope=evidence_scope,
+            molecules=molecules,
+        ))
+    return tuple(profiles)
+
+
+_MOLECULAR_PAIR_PATHWAYS: dict[frozenset[str], tuple[str, ...]] = {
+    frozenset(("CDH1",)): ("cdh1_adherens_contact",),
+    frozenset(("GJB1_Cx32",)): ("gjb1_connexin32_gap_junction",),
+    frozenset(("HBV_preS1", "SLC10A1_NTCP")): ("hbv_pres1_ntcp_egfr_entry",),
+}
+
+
+def _site_supports_domain(site: SurfaceMoleculeSpec, domain: str | None) -> bool:
+    if domain is None:
+        return "unknown" in site.membrane_domains
+    if "all" in site.membrane_domains:
+        return True
+    if domain == "unknown":
+        return "unknown" in site.membrane_domains
+    return domain in site.membrane_domains
+
+
+def _pair_matches(
+    relation: SpatialPairRelation,
+    profile_a: BodySurfaceProfile,
+    profile_b: BodySurfaceProfile,
+) -> tuple[MolecularPairMatch, ...]:
+    matches: list[MolecularPairMatch] = []
+    for site_a in profile_a.molecules:
+        for site_b in profile_b.molecules:
+            if (
+                site_b.id not in site_a.compatible_partner_ids
+                or site_a.id not in site_b.compatible_partner_ids
+            ):
+                continue
+            domain_compatible = (
+                _site_supports_domain(site_a, relation.membrane_domain_a)
+                and _site_supports_domain(site_b, relation.membrane_domain_b)
+            )
+            pair_key = frozenset((site_a.id, site_b.id))
+            matches.append(MolecularPairMatch(
+                molecule_a_id=site_a.id,
+                molecule_b_id=site_b.id,
+                pathway_ids=_MOLECULAR_PAIR_PATHWAYS.get(pair_key, ()),
+                transport_programs=tuple(dict.fromkeys(
+                    program
+                    for program in (site_a.transport_program, site_b.transport_program)
+                    if program is not None
+                )),
+                required_cofactor_ids=tuple(dict.fromkeys((*site_a.required_cofactor_ids, *site_b.required_cofactor_ids))),
+                domain_compatible=domain_compatible,
+                local_patch_presence_observed=None,
+                orientation_compatible=None,
+                source_ids=tuple(dict.fromkeys((*site_a.source_ids, *site_b.source_ids, "huang2010_two_dimensional_binding"))),
+            ))
+    return tuple(matches)
+
+
+def evaluate_contact_event_chains(
+    world: SpatialWorldState,
+    profiles: tuple[BodySurfaceProfile, ...],
+) -> tuple[ContactEventChain, ...]:
+    """Evaluate deterministic gates without creating binding or transport rates."""
+
+    profile_by_body = {profile.body_id: profile for profile in profiles}
+    chains: list[ContactEventChain] = []
+    for relation in world.pair_relations:
+        blockers: list[str] = []
+        profile_a = profile_by_body.get(relation.body_a)
+        profile_b = profile_by_body.get(relation.body_b)
+        matches = () if profile_a is None or profile_b is None else _pair_matches(relation, profile_a, profile_b)
+        domain_matches = tuple(match for match in matches if match.domain_compatible)
+        candidate_pathways = tuple(dict.fromkeys(
+            pathway_id for match in domain_matches for pathway_id in match.pathway_ids
+        )) if relation.geometric_contact else ()
+        transport_programs = tuple(dict.fromkeys(
+            program for match in domain_matches for program in match.transport_programs
+        )) if relation.geometric_contact else ()
+        emitted_events: list[str] = []
+        if relation.contact_event != "none":
+            emitted_events.append(f"geometry_contact_{relation.contact_event}")
+
+        if not relation.geometric_contact:
+            geometry_status = "closed_surfaces_separated"
+            recognition_status = "inactive_without_geometric_contact"
+            signaling_status = "inactive_without_molecular_binding"
+            transport_status = "inactive_without_molecular_binding"
+            blockers.append("surfaces are not in geometric contact")
+        else:
+            geometry_status = "open_engine_contact_patch_input"
+            if profile_a is None:
+                blockers.append(f"{relation.body_a} has no explicit molecular surface profile")
+            if profile_b is None:
+                blockers.append(f"{relation.body_b} has no explicit molecular surface profile")
+            if profile_a is None or profile_b is None:
+                recognition_status = "blocked_surface_profile_missing"
+            elif not matches:
+                recognition_status = "closed_no_documented_complementary_molecular_pair"
+                blockers.append("no documented complementary receptor-ligand, adhesion, or channel pair")
+            elif not domain_matches:
+                recognition_status = "closed_molecules_outside_contacting_membrane_domains"
+                blockers.append("documented molecular pair is not assigned to the contacting membrane domains")
+            else:
+                recognition_status = "candidate_pair_domain_compatible_patch_occupancy_and_orientation_unresolved"
+                emitted_events.append("molecular_match_candidate")
+                blockers.extend((
+                    "local contact-patch molecule presence is not measured",
+                    "molecular orientation and steric compatibility at the patch are not modeled",
+                    "receptor and ligand surface densities are unavailable",
+                    "two-dimensional on/off kinetics are unavailable",
+                ))
+            signaling_status = "blocked_until_bound_complex_and_pathway_kinetics_are_resolved"
+            transport_status = "blocked_until_recognition_cofactors_and_membrane_transport_program_are_resolved"
+            blockers.extend((
+                "no validated bound-complex-to-signal execution law is attached",
+                "no validated membrane topology-change or cargo-flux execution law is attached",
+            ))
+
+        source_ids = tuple(dict.fromkeys(
+            source_id
+            for match in matches
+            for source_id in match.source_ids
+        ))
+        chains.append(ContactEventChain(
+            contact_id=relation.id,
+            contact_event=relation.contact_event,
+            body_a=relation.body_a,
+            body_b=relation.body_b,
+            body_a_kind=relation.body_a_kind,
+            body_b_kind=relation.body_b_kind,
+            geometric_contact=relation.geometric_contact,
+            geometry_gate_status=geometry_status,
+            membrane_domain_a=relation.membrane_domain_a,
+            membrane_domain_b=relation.membrane_domain_b,
+            contact_patch_area_available=relation.contact_patch_area_um2 is not None,
+            molecular_matches=matches,
+            candidate_pathway_ids=candidate_pathways,
+            receptor_ligand_density_available=False,
+            two_dimensional_kinetics_available=False,
+            molecular_recognition_status=recognition_status,
+            signaling_status=signaling_status,
+            transport_status=transport_status,
+            transport_programs=transport_programs,
+            emitted_events=tuple(emitted_events),
+            may_drive_cell_state=False,
+            blockers=tuple(dict.fromkeys(blockers)),
+            source_ids=source_ids,
+        ))
+    return tuple(chains)
 
 
 def compute_contact_geometry(
@@ -470,19 +984,18 @@ def build_reference_contact_geometry() -> tuple[tuple[CellGeometry, ...], tuple[
 def contact_geometry_from_spatial_world(
     world: SpatialWorldState,
     *,
-    candidate_pathway_ids: tuple[str, ...] = (),
+    candidate_pathways_by_contact: dict[str, tuple[str, ...]] | None = None,
 ) -> tuple[tuple[CellGeometry, ...], tuple[ContactGeometry, ...]]:
-    """Adapt the authoritative spatial world to the communication gate.
+    """Adapt every authoritative body pair to the communication gate.
 
     ``radius_um`` is retained as an equivalent-size display field for convex
-    cells; contact classification and patch geometry always come from the
-    authoritative spatial relation rather than this radius.
+    bodies; contact classification and patch geometry always come from the
+    authoritative spatial relation rather than this display radius.
     """
 
+    pathway_map = candidate_pathways_by_contact or {}
     cells: list[CellGeometry] = []
     for body in world.bodies:
-        if body.biological_kind != "hepatocyte":
-            continue
         if body.shape.kind == "convex_polyhedron":
             radius_um = body.shape.equivalent_sphere_radius_um
         elif body.shape.kind == "capsule":
@@ -504,10 +1017,6 @@ def contact_geometry_from_spatial_world(
     for relation in world.pair_relations:
         if relation.body_a not in cell_ids or relation.body_b not in cell_ids:
             continue
-        domain_compatible = (
-            relation.membrane_domain_a == "lateral"
-            and relation.membrane_domain_b == "lateral"
-        )
         contacts.append(ContactGeometry(
             id=relation.id,
             cell_a=relation.body_a,
@@ -529,7 +1038,7 @@ def contact_geometry_from_spatial_world(
             contact_patch_polygon_um=relation.contact_patch_polygon_um,
             contact_patch_area_um2=relation.contact_patch_area_um2,
             contact_patch_status=relation.contact_patch_status,
-            candidate_pathway_ids=candidate_pathway_ids if domain_compatible else (),
+            candidate_pathway_ids=pathway_map.get(relation.id, ()),
             closest_point_a_um=relation.closest_point_a_um,
             closest_point_b_um=relation.closest_point_b_um,
             normal_a_to_b=relation.normal_a_to_b,
@@ -643,10 +1152,14 @@ def build_hepatocyte_communication_system(
 ) -> HepatocyteCommunicationSystem:
     pathways = build_hepatocyte_communication_atlas()
     active_world = spatial_world or build_single_hepatocyte_world()
-    direct = tuple(pathway.id for pathway in pathways if pathway.contact_required)
+    surface_profiles = build_body_surface_profiles(active_world)
+    contact_chains = evaluate_contact_event_chains(active_world, surface_profiles)
     cells, contacts = contact_geometry_from_spatial_world(
         active_world,
-        candidate_pathway_ids=direct,
+        candidate_pathways_by_contact={
+            chain.contact_id: chain.candidate_pathway_ids
+            for chain in contact_chains
+        },
     )
     phh_validation = load_healthy_phh_glucose_validation()
     measured_response_ids = tuple(item.id for item in phh_validation.insulin_response_observations)
@@ -667,25 +1180,40 @@ def build_hepatocyte_communication_system(
         pathways=pathways,
     )
     system = HepatocyteCommunicationSystem(
-        version="hepatocyte_intercellular_communication_v3",
+        version="hepatocyte_intercellular_communication_v4",
         species="Homo sapiens",
         cell_type="adult hepatocyte reference",
-        status="mechanism_atlas_event_driven_surface_geometry_no_unvalidated_activation",
+        status="engine_geometry_molecular_match_signal_transport_fail_closed",
         pathways=pathways,
         reference_cells=cells,
         reference_contacts=contacts,
+        body_surface_profiles=surface_profiles,
+        contact_event_chains=contact_chains,
         evaluated_exposures=(insulin_evaluation,),
         measured_exposure_count=1,
         matched_response_evidence_count=len(measured_response_ids),
         quantitative_pathway_count=sum(pathway.quantitative_kinetics_available for pathway in pathways),
         active_signal_count=0,
+        recognition_candidate_count=sum(
+            chain.molecular_recognition_status.startswith("candidate_")
+            for chain in contact_chains
+        ),
+        active_transport_count=0,
         automatic_state_coupling=False,
+        event_chain_contract=(
+            "engine geometry enter/stay/exit -> explicit complementary surface molecules and membrane domains -> "
+            "local patch presence plus orientation plus 2D density/kinetics -> pathway activation -> separately "
+            "validated membrane transport; any unknown gate blocks downstream state changes"
+        ),
         reference_geometry_is_biological_observation=False,
         limitations=(
             "The pathway graph records supported mechanism direction, not a measured state of the simulated cell.",
             "The normal scenario contains one hepatocyte; additional bodies must be supplied by an explicit interaction scenario.",
             "Contact enter/stay switches geometry input on and exit switches it off; downstream persistence requires its own pathway kinetics.",
+            "Soluble hormones are concentration/exposure fields, never cell-scale collision projectiles.",
+            "A body-level receptor or ligand identity creates only a molecular match candidate; local patch occupancy and orientation remain separate gates.",
             "Lateral-lateral geometric contact is necessary but not sufficient for cadherin or gap-junction activation.",
+            "HBV uses its measured-scale collision body only in explicit scenarios; NTCP attachment cannot trigger entry without an independently resolved EGFR/endocytosis gate.",
             "One defined PHH-spheroid insulin exposure has measured pAKT and gene-expression responses, but INSR surface abundance and quantitative kinetics remain unavailable.",
             "Ligand exposure, surface abundance, receptor occupancy, junction permeability and matched downstream trajectories remain required for every simulated context.",
         ),
@@ -698,7 +1226,7 @@ def validate_hepatocyte_communication_system(system: HepatocyteCommunicationSyst
     source_ids = set(COMMUNICATION_SOURCES)
     if system.species != "Homo sapiens":
         raise ValueError("communication atlas must retain its human target species")
-    if system.automatic_state_coupling or system.active_signal_count:
+    if system.automatic_state_coupling or system.active_signal_count or system.active_transport_count:
         raise ValueError("uncalibrated communication atlas cannot activate cell state")
     if system.quantitative_pathway_count:
         raise ValueError("no communication pathway currently has complete quantitative kinetics")
@@ -722,7 +1250,7 @@ def validate_hepatocyte_communication_system(system: HepatocyteCommunicationSyst
         raise ValueError("measured PHH insulin response exceeded or lost its evidence boundary")
     if system.reference_geometry_is_biological_observation:
         raise ValueError("mathematical reference geometry cannot be labeled as an observation")
-    if len(system.pathways) != 7:
+    if len(system.pathways) != 8:
         raise ValueError("hepatocyte communication atlas is incomplete")
     for pathway in system.pathways:
         if pathway.automatic_state_coupling or pathway.quantitative_kinetics_available:
@@ -735,6 +1263,45 @@ def validate_hepatocyte_communication_system(system: HepatocyteCommunicationSyst
             if not step.source_ids or not set(step.source_ids) <= source_ids:
                 raise ValueError(f"pathway step {step.upstream}->{step.downstream} lacks provenance")
     cell_ids = {cell.id for cell in system.reference_cells}
+    profile_ids = {profile.body_id for profile in system.body_surface_profiles}
+    if not profile_ids <= cell_ids:
+        raise ValueError("surface profile references an unknown spatial body")
+    for profile in system.body_surface_profiles:
+        if not profile.molecules:
+            raise ValueError(f"surface profile {profile.profile_id} has no molecules")
+        for molecule in profile.molecules:
+            if (
+                molecule.surface_abundance_per_um2 is not None
+                or molecule.kon_2d_um2_per_molecule_s is not None
+                or molecule.koff_s is not None
+                or molecule.patch_distribution_available
+                or molecule.orientation_model_available
+            ):
+                raise ValueError(f"surface molecule {molecule.id} exceeds current quantitative evidence")
+            if not molecule.source_ids or not set(molecule.source_ids) <= source_ids:
+                raise ValueError(f"surface molecule {molecule.id} lacks registered provenance")
+
+    chain_by_contact = {chain.contact_id: chain for chain in system.contact_event_chains}
+    if len(chain_by_contact) != len(system.contact_event_chains):
+        raise ValueError("contact event-chain ids must be unique")
+    expected_candidates = sum(
+        chain.molecular_recognition_status.startswith("candidate_")
+        for chain in system.contact_event_chains
+    )
+    if system.recognition_candidate_count != expected_candidates:
+        raise ValueError("molecular recognition candidate count is inconsistent")
+    if system.active_transport_count != 0:
+        raise ValueError("unvalidated membrane transport cannot be active")
+    for chain in system.contact_event_chains:
+        if chain.may_drive_cell_state:
+            raise ValueError("contact gate audit cannot drive cell state")
+        if chain.geometric_contact and chain.geometry_gate_status != "open_engine_contact_patch_input":
+            raise ValueError("geometric contact must open exactly the geometry gate")
+        if not chain.geometric_contact and chain.candidate_pathway_ids:
+            raise ValueError("separated bodies cannot expose contact-pathway candidates")
+        if chain.two_dimensional_kinetics_available or chain.receptor_ligand_density_available:
+            raise ValueError("contact binding inputs are not identified for this release")
+
     for contact in system.reference_contacts:
         if contact.cell_a not in cell_ids or contact.cell_b not in cell_ids:
             raise ValueError("contact references an unknown cell")
@@ -742,10 +1309,19 @@ def validate_hepatocyte_communication_system(system: HepatocyteCommunicationSyst
             raise ValueError("communication contact input must mirror spatial geometry")
         if contact.contact_patch_area_um2 is not None and len(contact.contact_patch_polygon_um) < 3:
             raise ValueError("resolved contact area requires a polygonal patch")
-        if contact.candidate_pathway_ids and (
+        chain = chain_by_contact.get(contact.id)
+        if chain is None or chain.candidate_pathway_ids != contact.candidate_pathway_ids:
+            raise ValueError("contact pathway candidates must come from the molecular event chain")
+        direct_cell_pathways = {"cdh1_adherens_contact", "gjb1_connexin32_gap_junction"}
+        if direct_cell_pathways.intersection(contact.candidate_pathway_ids) and (
             contact.membrane_domain_a != "lateral" or contact.membrane_domain_b != "lateral"
         ):
             raise ValueError("direct hepatocyte pathways require a lateral-lateral interface")
+        if "hbv_pres1_ntcp_egfr_entry" in contact.candidate_pathway_ids and "basolateral" not in (
+            contact.membrane_domain_a,
+            contact.membrane_domain_b,
+        ):
+            raise ValueError("HBV-NTCP candidate requires a basolateral hepatocyte interface")
 
 
 def hepatocyte_communication_snapshot(

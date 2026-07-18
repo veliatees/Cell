@@ -46,6 +46,14 @@ from cell_engine.quantitative.phh_profiles import PhhNutritionalState, phh_profi
 from cell_engine.quantitative.phh_profiles import phh_profile
 from cell_engine.quantitative.phh_state import quantitative_phh_state_snapshot, schematic_visual_state_snapshot
 from cell_engine.quantitative.zonation import ZONATION_SOURCES, human_hepatocyte_zonation_snapshot
+from cell_engine.quantitative.human_liver_open_atlas import (
+    HUMAN_LIVER_OPEN_ATLAS_SOURCES,
+    human_liver_open_atlas_snapshot,
+)
+from cell_engine.quantitative.human_hepatocyte_3d_morphometry import (
+    HUMAN_HEPATOCYTE_3D_MORPHOMETRY_SOURCES,
+    human_hepatocyte_3d_morphometry_snapshot,
+)
 from cell_engine.quantitative.homeostasis_v3 import HOMEOSTASIS_V3_SOURCES, human_nutritional_homeostasis_v3_snapshot
 from cell_engine.quantitative.endocrine import ENDOCRINE_SOURCES, human_endocrine_context_snapshot
 from cell_engine.quantitative.published_glucose_model import (
@@ -90,9 +98,17 @@ from cell_engine.quantitative.phh_proteome_budget import (
     PHH_PROTEOME_BUDGET_SOURCES,
     phh_proteome_budget_snapshot,
 )
+from cell_engine.quantitative.phh_proteome_atlas import (
+    PHH_PROTEOME_ATLAS_SOURCES,
+    phh_proteome_atlas_snapshot,
+)
 from cell_engine.quantitative.phh_transporter_inventory import (
     PHH_TRANSPORTER_INVENTORY_SOURCES,
     phh_transporter_inventory_snapshot,
+)
+from cell_engine.quantitative.phh_protein_functional_evidence import (
+    PHH_PROTEIN_FUNCTIONAL_EVIDENCE_SOURCES,
+    phh_protein_functional_evidence_snapshot,
 )
 from cell_engine.quantitative.human_sch_bile_acids import (
     HUMAN_SCH_BILE_ACID_SOURCES,
@@ -103,6 +119,10 @@ from cell_engine.stochastic.sinusoid import sinusoid_boundary_snapshot, sinusoid
 from cell_engine.validation.model_audit import scientific_model_audit_snapshot
 from cell_engine.validation.hepatic_flux import hepatic_flux_evidence_snapshot, unified_nutritional_context_snapshot
 from cell_engine.validation.evidence_intake import evidence_intake_snapshot
+from cell_engine.validation.physical_validation import (
+    PHYSICAL_VALIDATION_SOURCES,
+    physical_validation_snapshot,
+)
 from cell_engine.validation.reports import build_assumption_report
 from cell_engine.processes.cellular_memory import CELLULAR_MEMORY_SOURCES
 from cell_engine.processes.cellular_response import CELLULAR_RESPONSE_SOURCES
@@ -234,6 +254,8 @@ def main() -> None:
                     **CELLULAR_MEMORY_SOURCES,
                     **CELLULAR_RESPONSE_SOURCES,
                     **ZONATION_SOURCES,
+                    **HUMAN_HEPATOCYTE_3D_MORPHOMETRY_SOURCES,
+                    **HUMAN_LIVER_OPEN_ATLAS_SOURCES,
                     **HOMEOSTASIS_V3_SOURCES,
                     **ENDOCRINE_SOURCES,
                     **PUBLISHED_GLUCOSE_MODEL_SOURCES,
@@ -246,13 +268,16 @@ def main() -> None:
                     **PHH_BILIARY_EXCRETION_SOURCES,
                     **PHH_IDENTITY_HETEROGENEITY_SOURCES,
                     **PHH_PROTEOME_BUDGET_SOURCES,
+                    **PHH_PROTEOME_ATLAS_SOURCES,
                     **PHH_TRANSPORTER_INVENTORY_SOURCES,
+                    **PHH_PROTEIN_FUNCTIONAL_EVIDENCE_SOURCES,
                     **HUMAN_SCH_BILE_ACID_SOURCES,
                     **SECRETION_SOURCES,
                     **COMMUNICATION_SOURCES,
                     **SPATIAL_WORLD_SOURCES,
                     **BRIAN2_SOURCES,
                     **GENERATIVE_SOURCES,
+                    **PHYSICAL_VALIDATION_SOURCES,
                     **phh_baseline.sources,
                 }),
                 "phh_baseline": {
@@ -266,14 +291,16 @@ def main() -> None:
                     "status": "mixed_authority_research_preview",
                     "primary_state_path": "quantitative_state",
                     "schematic_state_path": "pools",
-                    "authoritative_sections": ["quantitative_state", "nutritional_context", "endocrine_context.measured_observations", "endocrine_context.causal_glycogen_benchmark", "human_validation_protocol.observations", "healthy_phh_glucose_validation.glucose_consumption_observations", "healthy_phh_glucose_validation.insulin_response_observations", "healthy_phh_glucose_validation.human_scale_bridge", "phh_spheroid_validation_protocol.method_contract", "phh_spheroid_validation_protocol.window_targets", "phh_spheroid_validation_protocol.cumulative_target_trajectories", "phh_spheroid_validation_protocol.overlap_consistency_audits", "phh_glucose_observability.measurement_contract", "phh_glucose_observability.supplemental_constraints", "phh_glucose_observability.quantity_audit", "phh_albumin_secretion.assay_contract", "phh_albumin_secretion.observed_batch_span", "phh_albumin_secretion.measurement_contract", "phh_albumin_secretion.quantity_audit", "phh_cyp_function.assay_contract", "phh_cyp_function.enzymes", "phh_biliary_excretion.assay_contract", "phh_biliary_excretion.batch_records", "phh_biliary_excretion.measurement_contract", "phh_identity_heterogeneity.facs_records", "phh_identity_heterogeneity.scrna_records", "phh_proteome_budget.whole_cell_anchors", "phh_proteome_budget.compartment_protein_mass_fractions", "phh_proteome_budget.derived_compartment_mass_budget", "phh_transporter_inventory.transporters", "human_sch_bile_acids.assay_contract", "human_sch_bile_acids.measurement_contract", "human_sch_bile_acids.conditions", "zonation_state.reference_context", "zonation_state.experimental_oxygen_context", "sinusoid_homeostasis.perfusion_boundary", "nutritional_homeostasis_v3.organ_validation_trajectory", "phh_baseline", "integrated_metabolism", "genome.reference_assembly", "spatial_state", "spatial_world"],
+                    "authoritative_sections": ["quantitative_state", "quantitative_state.geometry_reference", "human_hepatocyte_3d_morphometry.normal_control_cell_volume_um3", "human_hepatocyte_3d_morphometry.normal_control_lipid_droplet_volume_percent", "nutritional_context", "endocrine_context.measured_observations", "endocrine_context.causal_glycogen_benchmark", "human_validation_protocol.observations", "healthy_phh_glucose_validation.glucose_consumption_observations", "healthy_phh_glucose_validation.insulin_response_observations", "healthy_phh_glucose_validation.human_scale_bridge", "phh_spheroid_validation_protocol.method_contract", "phh_spheroid_validation_protocol.window_targets", "phh_spheroid_validation_protocol.cumulative_target_trajectories", "phh_spheroid_validation_protocol.overlap_consistency_audits", "phh_glucose_observability.measurement_contract", "phh_glucose_observability.supplemental_constraints", "phh_glucose_observability.quantity_audit", "phh_albumin_secretion.assay_contract", "phh_albumin_secretion.observed_batch_span", "phh_albumin_secretion.measurement_contract", "phh_albumin_secretion.quantity_audit", "phh_cyp_function.assay_contract", "phh_cyp_function.enzymes", "phh_biliary_excretion.assay_contract", "phh_biliary_excretion.batch_records", "phh_biliary_excretion.measurement_contract", "phh_identity_heterogeneity.facs_records", "phh_identity_heterogeneity.scrna_records", "phh_proteome_budget.whole_cell_anchors", "phh_proteome_budget.compartment_protein_mass_fractions", "phh_proteome_budget.derived_compartment_mass_budget", "phh_absolute_proteome_atlas.selected_canonical_gene_panel", "phh_absolute_proteome_atlas.cohort", "phh_transporter_inventory.transporters", "phh_protein_functional_evidence.proteins", "phh_protein_functional_evidence.kinetic_observations", "phh_protein_functional_evidence.whole_cell_transport_validations", "phh_protein_functional_evidence.functional_responses", "human_sch_bile_acids.assay_contract", "human_sch_bile_acids.measurement_contract", "human_sch_bile_acids.conditions", "human_liver_open_atlas.morphometry_2d", "human_liver_open_atlas.surfaceome", "human_liver_open_atlas.spatial_proteome", "human_liver_open_atlas.interaction_hypotheses", "zonation_state.reference_context", "zonation_state.experimental_oxygen_context", "sinusoid_homeostasis.perfusion_boundary", "nutritional_homeostasis_v3.organ_validation_trajectory", "phh_baseline", "integrated_metabolism", "genome.reference_assembly", "spatial_state", "spatial_world", "physical_validation"],
                     "runtime_authoritative_sections": ["spatial_state", "spatial_world"],
                     "shadow_sections": ["healthy_phh_glucose_validation.contextual_organ_to_cell_conversion", "published_glucose_model.profile_projection", "published_glucose_model.shadow_flux_prediction", "published_glucose_lineage", "published_glucose_external_validation", "intercellular_communication", "brian2_communication", "generative_modeling"],
                     "schematic_sections": ["pools", "organelles", "stress", "metabolic_fluxes", "pathway_results", "signaling_results", "membrane_state", "intercellular_communication.reference_cells"],
                     "policy": "quantitative_state wins on overlapping species; spatial_world wins on runtime geometry; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
                 },
                 "quantitative_state": quantitative_phh_state_snapshot(args.nutrition_profile),
+                "human_hepatocyte_3d_morphometry": human_hepatocyte_3d_morphometry_snapshot(),
                 "zonation_state": human_hepatocyte_zonation_snapshot(args.zone),
+                "human_liver_open_atlas": human_liver_open_atlas_snapshot(args.zone),
                 "sinusoid_homeostasis": sinusoid_coupled_homeostasis_snapshot(args.zone, args.nutrition_profile),
                 "nutritional_homeostasis_v3": human_nutritional_homeostasis_v3_snapshot(args.zone),
                 "hepatic_flux_evidence": hepatic_flux_evidence_snapshot(),
@@ -288,13 +315,16 @@ def main() -> None:
                 "phh_biliary_excretion": phh_biliary_excretion_snapshot(),
                 "phh_identity_heterogeneity": phh_identity_heterogeneity_snapshot(),
                 "phh_proteome_budget": phh_proteome_budget_snapshot(),
+                "phh_absolute_proteome_atlas": phh_proteome_atlas_snapshot(),
                 "phh_transporter_inventory": phh_transporter_inventory_snapshot(),
+                "phh_protein_functional_evidence": phh_protein_functional_evidence_snapshot(),
                 "human_sch_bile_acids": human_sch_bile_acids_snapshot(),
                 "evidence_intake": evidence_intake_snapshot(),
                 "published_glucose_model": published_hepatic_glucose_snapshot(args.nutrition_profile),
                 "published_glucose_lineage": published_glucose_lineage_snapshot(),
                 "published_glucose_external_validation": published_glucose_external_validation_snapshot(),
                 "spatial_world": spatial_world_snapshot(spatial_world),
+                "physical_validation": physical_validation_snapshot(),
                 "intercellular_communication": hepatocyte_communication_snapshot(spatial_world),
                 "brian2_communication": brian2_communication_snapshot(),
                 "generative_modeling": generative_modeling_snapshot(),

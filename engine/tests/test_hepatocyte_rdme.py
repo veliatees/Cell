@@ -4,6 +4,7 @@ import unittest
 
 from cell_engine.core.random import EngineRng
 from cell_engine.quantitative.hepatocyte_counts import PROTEIN_BY_ID
+from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_EQUIVALENT_SPHERE_DIAMETER_UM
 from cell_engine.stochastic.hepatocyte_rdme import (
     CYTOSOL,
     MEMBRANE_BASOLATERAL,
@@ -16,6 +17,13 @@ from cell_engine.stochastic.hepatocyte_rdme import (
 
 
 class HepatocyteLatticeTest(unittest.TestCase):
+    def test_default_lattice_uses_shared_phh_diameter(self) -> None:
+        lattice = build_hepatocyte_lattice(n=20)
+        self.assertAlmostEqual(
+            lattice.dx_um * lattice.nx,
+            HEPATOCYTE_REFERENCE_EQUIVALENT_SPHERE_DIAMETER_UM,
+        )
+
     def test_has_all_compartments(self) -> None:
         lattice = build_hepatocyte_lattice(n=20)
         comps = {lattice.compartment_of(i) for i in range(lattice.size)}
@@ -63,8 +71,10 @@ class SeedingTest(unittest.TestCase):
 
     def test_relative_abundance_preserved(self) -> None:
         # CPS1 still dominates after spatial seeding.
-        self.assertGreater(self.state.total("cps1"), self.state.total("ntcp"))
-        self.assertGreater(self.state.total("ntcp"), self.state.total("naka"))
+        self.assertGreater(self.state.total("cps1"), self.state.total("glut2"))
+        self.assertGreater(self.state.total("glut2"), self.state.total("naka"))
+        self.assertGreater(self.state.total("naka"), self.state.total("bsep"))
+        self.assertGreater(self.state.total("bsep"), self.state.total("ntcp"))
 
     def test_voxel_field_is_sparse_and_normalised(self) -> None:
         field = voxel_field(self.lattice, self.state)

@@ -468,7 +468,7 @@ export type EngineCommunicationStep = {
 export type EngineCommunicationPathway = {
   id: string;
   label: string;
-  mode: "endocrine" | "paracrine" | "juxtacrine" | "gap_junction";
+  mode: "endocrine" | "paracrine" | "juxtacrine" | "gap_junction" | "host_entry";
   sender_context: string;
   receiver_cell_type: string;
   ligand_or_contact_molecule: string;
@@ -480,6 +480,68 @@ export type EngineCommunicationPathway = {
   extracellular_exposure_required: boolean;
   quantitative_kinetics_available: boolean;
   automatic_state_coupling: boolean;
+  source_ids: string[];
+};
+
+export type EngineSurfaceMoleculeSpec = {
+  id: string;
+  display_name: string;
+  role: "receptor" | "ligand" | "adhesion" | "channel" | "cofactor" | "transporter";
+  compatible_partner_ids: string[];
+  membrane_domains: string[];
+  required_cofactor_ids: string[];
+  transport_program: string | null;
+  surface_abundance_per_um2: number | null;
+  kon_2d_um2_per_molecule_s: number | null;
+  koff_s: number | null;
+  patch_distribution_available: boolean;
+  orientation_model_available: boolean;
+  evidence_scope: string;
+  source_ids: string[];
+};
+
+export type EngineBodySurfaceProfile = {
+  body_id: string;
+  profile_id: string;
+  evidence_scope: string;
+  molecules: EngineSurfaceMoleculeSpec[];
+};
+
+export type EngineMolecularPairMatch = {
+  molecule_a_id: string;
+  molecule_b_id: string;
+  pathway_ids: string[];
+  transport_programs: string[];
+  required_cofactor_ids: string[];
+  domain_compatible: boolean;
+  local_patch_presence_observed: boolean | null;
+  orientation_compatible: boolean | null;
+  source_ids: string[];
+};
+
+export type EngineContactEventChain = {
+  contact_id: string;
+  contact_event: "none" | "enter" | "stay" | "exit";
+  body_a: string;
+  body_b: string;
+  body_a_kind: string;
+  body_b_kind: string;
+  geometric_contact: boolean;
+  geometry_gate_status: string;
+  membrane_domain_a: string | null;
+  membrane_domain_b: string | null;
+  contact_patch_area_available: boolean;
+  molecular_matches: EngineMolecularPairMatch[];
+  candidate_pathway_ids: string[];
+  receptor_ligand_density_available: boolean;
+  two_dimensional_kinetics_available: boolean;
+  molecular_recognition_status: string;
+  signaling_status: string;
+  transport_status: string;
+  transport_programs: string[];
+  emitted_events: string[];
+  may_drive_cell_state: boolean;
+  blockers: string[];
   source_ids: string[];
 };
 
@@ -546,12 +608,17 @@ export type EngineIntercellularCommunication = {
   pathways: EngineCommunicationPathway[];
   reference_cells: EngineReferenceCellGeometry[];
   reference_contacts: EngineReferenceContactGeometry[];
+  body_surface_profiles: EngineBodySurfaceProfile[];
+  contact_event_chains: EngineContactEventChain[];
   evaluated_exposures: EngineSignalChainEvaluation[];
   quantitative_pathway_count: number;
   active_signal_count: number;
+  recognition_candidate_count: number;
+  active_transport_count: number;
   measured_exposure_count: number;
   matched_response_evidence_count: number;
   automatic_state_coupling: boolean;
+  event_chain_contract: string;
   reference_geometry_is_biological_observation: boolean;
   limitations: string[];
 };
@@ -648,6 +715,7 @@ export type EngineSpatialBody = {
   pose_authority: string;
   geometry_evidence: string;
   visual_profile: string;
+  molecular_profile_id: string | null;
   membrane_material: EngineMembraneMaterialProfile | null;
   source_ids: string[];
 };
@@ -672,8 +740,14 @@ export type EngineSpatialPairRelation = {
   relative_normal_velocity_um_s: number;
   contact_face_a_id: string | null;
   contact_face_b_id: string | null;
+  contact_face_candidates_a: string[];
+  contact_face_candidates_b: string[];
   membrane_domain_a: string | null;
   membrane_domain_b: string | null;
+  membrane_domain_candidates_a: string[];
+  membrane_domain_candidates_b: string[];
+  domain_assignment_status_a: string;
+  domain_assignment_status_b: string;
   contact_patch_polygon_um: [number, number, number][];
   contact_patch_area_um2: number | null;
   normal_load_nN: number | null;
@@ -714,8 +788,14 @@ export type EngineCellSpatialContactState = {
   closest_point_self_um: [number, number, number];
   closest_point_other_um: [number, number, number];
   outward_normal_to_other: [number, number, number];
+  contact_face_candidates_self: string[];
+  contact_face_candidates_other: string[];
   membrane_domain_self: string | null;
   membrane_domain_other: string | null;
+  membrane_domain_candidates_self: string[];
+  membrane_domain_candidates_other: string[];
+  domain_assignment_status_self: string;
+  domain_assignment_status_other: string;
   contact_patch_polygon_um: [number, number, number][];
   contact_patch_area_um2: number | null;
   normal_load_nN: number | null;
@@ -730,6 +810,38 @@ export type EngineCellSpatialContactEvent = {
   contact_input_active: boolean;
   membrane_domain_self: string | null;
   membrane_domain_other: string | null;
+  membrane_domain_candidates_self: string[];
+  membrane_domain_candidates_other: string[];
+  domain_assignment_status_self: string;
+  domain_assignment_status_other: string;
+};
+
+export type EnginePhysicalVerificationCriterion = {
+  id: string;
+  description: string;
+  status: "verified" | "blocked";
+  evidence_scope: string;
+  verification_contract: string;
+  source_ids: string[];
+};
+
+export type EnginePhysicalVerificationLayer = {
+  id: "scale_geometry" | "membrane_physics" | "contact_domain";
+  title: string;
+  verified_count: number;
+  criterion_count: number;
+  verification_coverage_pct: number;
+  predictive_accuracy_pct: number | null;
+  human_calibration_status: string;
+  criteria: EnginePhysicalVerificationCriterion[];
+  blockers: string[];
+};
+
+export type EnginePhysicalValidation = {
+  version: "physical_integrity_verification_v1";
+  score_semantics: string;
+  layers: EnginePhysicalVerificationLayer[];
+  source_ids: string[];
 };
 
 export type EngineCellSpatialState = {
@@ -826,7 +938,9 @@ export type EngineSnapshot = {
     regeneration_context?: EngineRegenerationContext;
     integrated_metabolism?: EngineIntegratedMetabolism;
     quantitative_state?: EngineQuantitativePhhState;
+    human_hepatocyte_3d_morphometry?: EngineHumanHepatocyte3dMorphometry;
     zonation_state?: EngineHumanZonationState;
+    human_liver_open_atlas?: EngineHumanLiverOpenAtlas;
     sinusoid_homeostasis?: EngineSinusoidHomeostasisState;
     nutritional_homeostasis_v3?: EngineNutritionalHomeostasisV3;
     hepatic_flux_evidence?: EngineHepaticFluxEvidence;
@@ -841,7 +955,9 @@ export type EngineSnapshot = {
     phh_biliary_excretion?: EnginePhhBiliaryExcretion;
     phh_identity_heterogeneity?: EnginePhhIdentityHeterogeneity;
     phh_proteome_budget?: EnginePhhProteomeBudget;
+    phh_absolute_proteome_atlas?: EnginePhhAbsoluteProteomeAtlas;
     phh_transporter_inventory?: EnginePhhTransporterInventory;
+    phh_protein_functional_evidence?: EnginePhhProteinFunctionalEvidence;
     human_sch_bile_acids?: EngineHumanSchBileAcids;
     evidence_intake?: EnginePhhEvidenceIntake;
     published_glucose_model?: EnginePublishedGlucoseModelContext;
@@ -850,6 +966,7 @@ export type EngineSnapshot = {
     intercellular_communication?: EngineIntercellularCommunication;
     spatial_world?: EngineSpatialWorld;
     spatial_state?: EngineCellSpatialState | null;
+    physical_validation?: EnginePhysicalValidation;
     brian2_communication?: EngineBrian2Communication;
     generative_modeling?: EngineGenerativeModelingBoundary;
     schematic_visual_state?: EngineSchematicVisualState;
@@ -936,8 +1053,173 @@ export type EngineQuantitativePhhState = {
   authority: "authoritative_research_preview";
   cell_volume_l: number;
   effective_cytosol_volume_l: number;
+  geometry_reference?: {
+    version: "human_hepatocyte_geometry_reference_v2";
+    status: string;
+    canonical_reference: {
+      biological_context: "normal_control_human_liver_tissue_3d_reconstruction";
+      summary_statistic: "source_reported_median";
+      cell_volume_um3: 5657.07116;
+      cell_volume_mad_um3: 744.875484;
+      reconstruction_count: 5;
+      voxel_size_um: [0.3, 0.3, 0.3];
+      equivalent_sphere_diameter_um: number;
+      equivalent_sphere_surface_area_um2: number;
+      diameter_and_area_are_derived_not_measured: true;
+      source_id: "segovia_miranda2019_human_liver_3d_morphometry";
+    };
+    aggregate_lipid_droplet_reference: {
+      fraction_of_cell_volume: 0.00507807;
+      median_percent: 0.507807;
+      mad_percentage_points: 0.403178;
+      reconstruction_count: 5;
+      may_define_count_or_size_distribution: false;
+      may_define_dynamic_nutritional_response: false;
+      source_id: "segovia_miranda2019_human_liver_3d_morphometry";
+    };
+    historical_in_situ_stereology_cross_check: {
+      biological_context: "normal_human_intermediate_lobular_zone_in_situ";
+      mean_cell_volume_um3: 2850;
+      reported_plus_minus_um3: 99.9;
+      reported_uncertainty_semantics: "as_reported_statistic_not_identified_in_abstract";
+      case_count: 5;
+      active_reference_to_historical_ratio: number;
+      resolution_policy: "not_averaged_direct_3d_NC_median_is_active";
+      source_id: "duarte1989_human_hepatocyte_volume";
+    };
+    isolated_phh_cross_check: {
+      median_diameter_um: 18.4;
+      observed_interval_um: [12, 26];
+      interval_fraction: 0.88;
+      cryopreserved_batch_count: 54;
+      equivalent_sphere_volume_um3: number;
+      role: "independent_isolated_cell_context_not_canonical_in_situ_volume";
+      source_id: "olander2021_human_hepatocyte_size";
+    };
+    three_dimensional_evidence: {
+      human_tissue_architecture_available: true;
+      aggregate_normal_control_cell_volume_available: true;
+      aggregate_normal_control_lipid_fraction_available: true;
+      donor_resolved_single_hepatocyte_boundary_mesh_available: false;
+      healthy_population_cell_shape_distribution_available: false;
+      quantitative_membrane_domain_surface_area_available: false;
+      organelle_resolved_human_volume_em_parameterization_available: false;
+      matched_human_contact_interface_mesh_available: false;
+      three_d_required_for: string[];
+      three_d_not_required_for: string[];
+      source_ids: string[];
+    };
+    integration_gates: {
+      may_initialize_cell_volume: true;
+      may_initialize_equivalent_scale: true;
+      may_initialize_aggregate_lipid_droplet_fraction: true;
+      may_replace_canonical_surface_with_measured_mesh: false;
+      may_parameterize_organelle_shapes_from_human_3d: false;
+      may_validate_contact_patch_against_human_ground_truth: false;
+    };
+    source_ids: string[];
+    limitations: string[];
+  };
   energy_charge: number;
   pools: Record<string, EngineQuantitativePool>;
+  limitations: string[];
+};
+
+export type EngineHumanHepatocyte3dMorphometry = {
+  version: "human_hepatocyte_3d_morphometry_v1";
+  status: string;
+  date_verified: string;
+  policy: string;
+  source_artifact: {
+    source_id: "segovia_miranda2019_human_liver_3d_morphometry";
+    title: string;
+    doi: "10.1038/s41591-019-0660-7";
+    pmid: "31792455";
+    pmcid: "PMC6899159";
+    article_url: string;
+    supplement_url: string;
+    retrieved_filename: string;
+    downloaded_bytes: 104382;
+    md5: string;
+    sha256: string;
+    workbook_sheet: "Supplementary Table 3";
+    cell_volume_locator: string;
+    lipid_droplet_locator: string;
+    license_status: string;
+  };
+  study_context: {
+    species: "Homo sapiens";
+    tissue_context: string;
+    normal_control_abbreviation: "NC";
+    normal_control_reconstruction_count: 5;
+    all_group_reconstruction_count: 16;
+    all_group_analyzed_cell_count: 11278;
+    all_group_counts: Record<string, number>;
+    section_thickness_um: { value: 100; qualifier: "approximately" };
+    voxel_size_um: [0.3, 0.3, 0.3];
+    imaging: string;
+    segmented_structures: string[];
+    lobular_region_order: string;
+    scope_note: string;
+  };
+  normal_control_cell_volume_um3: {
+    statistic: "source_reported_median";
+    overall: 5657.07116;
+    overall_mad: 744.875484;
+    n_reconstructions: 5;
+    regional_medians: number[];
+    regional_mads: number[];
+    regional_n_reconstructions: number[];
+    derived_equivalent_sphere_diameter_um: number;
+    derived_equivalent_sphere_surface_area_um2: number;
+    diameter_and_area_are_derived_not_measured: true;
+    may_initialize_reference_cell_volume: true;
+    may_define_single_cell_shape_distribution: false;
+  };
+  normal_control_lipid_droplet_volume_percent: {
+    statistic: "source_reported_median";
+    overall: 0.507807;
+    overall_mad_percentage_points: 0.403178;
+    n_reconstructions: 5;
+    regional_medians: number[];
+    regional_mads_percentage_points: number[];
+    regional_n_reconstructions: number[];
+    fraction_of_cell_volume: 0.00507807;
+    may_initialize_aggregate_healthy_display_fraction: true;
+    may_define_droplet_count_or_size_distribution: false;
+    may_define_dynamic_nutritional_response: false;
+  };
+  pooled_all_group_cell_volume_classes_um3: {
+    small_upper_exclusive: 5800;
+    medium_lower_inclusive: 5800;
+    medium_upper_inclusive: 11000;
+    large_lower_exclusive: 11000;
+    scope: string;
+    may_initialize_healthy_population_mixture: false;
+  };
+  historical_stereology_conflict: {
+    source_id: "duarte1989_human_hepatocyte_volume";
+    historical_mean_volume_um3: 2850;
+    historical_reported_plus_minus_um3: 99.9;
+    historical_case_count: 5;
+    new_to_historical_ratio: number;
+    percent_difference_relative_to_historical: number;
+    resolution_policy: string;
+  };
+  integration_gates: {
+    aggregate_3d_normal_control_volume_available: true;
+    aggregate_3d_normal_control_lipid_fraction_available: true;
+    individual_cell_boundary_mesh_available: false;
+    healthy_population_shape_distribution_available: false;
+    quantitative_apical_basal_lateral_surface_area_available: false;
+    organelle_resolved_human_mesh_available: false;
+    matched_contact_interface_mesh_available: false;
+    may_initialize_reference_volume: true;
+    may_initialize_aggregate_lipid_fraction: true;
+    may_replace_runtime_polyhedron_with_measured_mesh: false;
+    may_calibrate_contact_patch_ground_truth: false;
+  };
+  source_ids: string[];
   limitations: string[];
 };
 
@@ -957,6 +1239,18 @@ export type EngineZonationMarker = {
   notes: string;
 };
 
+export type EngineSpatialProteinObservation = {
+  protein: string;
+  binned_expression_percent: number[];
+  coefficient: number;
+  p_value: number;
+  q_value: number;
+  enriched_region: "periportal" | "pericentral" | "flat";
+  zonated: boolean;
+  strong_zonated: boolean;
+  source_id: string;
+};
+
 export type EngineHumanZonationState = {
   species: "Homo sapiens";
   selected_zone: "periportal" | "midlobular" | "pericentral";
@@ -973,6 +1267,9 @@ export type EngineHumanZonationState = {
     source_ids: string[];
   };
   markers: EngineZonationMarker[];
+  spatial_protein_markers: EngineSpatialProteinObservation[];
+  spatial_proteome_measurements_available: true;
+  spatial_proteome_may_scale_flux: false;
   experimental_oxygen_context: {
     model_system: string;
     controlled_oxygen_low_percent: number;
@@ -987,6 +1284,139 @@ export type EngineHumanZonationState = {
   quantitative_effect_sizes_available: false;
   oxygen_partial_pressure_available: false;
   dynamic_flux_scaling_enabled: false;
+  source_ids: string[];
+  limitations: string[];
+};
+
+export type EngineAtlasDistribution = {
+  count: number;
+  mean: number;
+  sample_sd: number;
+  p05: number;
+  p25: number;
+  median: number;
+  p75: number;
+  p95: number;
+  minimum: number;
+  maximum: number;
+};
+
+export type EngineHumanLiverOpenAtlas = {
+  version: "human_liver_open_atlas_v1";
+  status: string;
+  date_verified: string;
+  selected_zone: "periportal" | "midlobular" | "pericentral";
+  source_artifacts: {
+    id: string;
+    title: string;
+    paper_url: string;
+    artifact_url: string;
+    license: string;
+    md5: string;
+    sha256: string;
+  }[];
+  tissue_architecture: {
+    reconstructed_tissue_extent_um: [number, number, number];
+    healthy_lobule_polygonal_radius_um: {
+      count: number;
+      median: number;
+      minimum: number;
+      maximum: number;
+      value_status: string;
+    };
+    independent_2d_histology_lobule_radius_um: {
+      measurement_count: number;
+      sample_count: number;
+      mean: number;
+      sample_sd: number;
+      value_status: string;
+    };
+    healthy_initialization_may_use_cirrhotic_rows: false;
+    limitations: string[];
+  };
+  morphometry_2d: {
+    cell_count: number;
+    segmented_area_um2: {
+      all: EngineAtlasDistribution;
+      by_cluster: Record<string, EngineAtlasDistribution>;
+      by_detected_nuclei: Record<string, EngineAtlasDistribution>;
+    };
+    selected_zone_cluster: "Hep_1" | "Hep_2" | "Hep_3";
+    selected_zone_segmented_area_um2: EngineAtlasDistribution;
+    cluster_zone_mapping_status: string;
+    detected_nuclei_count: {
+      counts: Record<string, number>;
+      fractions: Record<string, number>;
+      zero_is_segmentation_nonassignment_not_biological_anucleation: true;
+    };
+    canonical_geometry_context_check: {
+      active_3d_normal_control_median_volume_um3: number;
+      volume_equivalent_sphere_diameter_um: number;
+      isolated_phh_median_diameter_cross_check_um: number;
+      equivalent_sphere_great_circle_area_um2: number;
+      within_in_situ_segmented_area_p05_p95: boolean;
+      comparison_role: "contextual_range_check_only";
+      may_calibrate_3d_geometry: false;
+    };
+    may_replace_3d_cell_geometry: false;
+  };
+  surfaceome: {
+    observed_protein_count: number;
+    reported_cd_molecule_count: number;
+    reported_transmembrane_count: number;
+    pathway_relevant_gene_observation: Record<string, string>;
+    density_available: false;
+    membrane_domain_available: false;
+    orientation_available: false;
+    full_record_count_in_curated_bundle: number;
+  };
+  spatial_proteome: {
+    protein_count: number;
+    article_reported_protein_count_at_70pct_completeness: number;
+    supplement_table_record_count: number;
+    article_minus_supplement_record_count: number;
+    strong_zonated_count: number;
+    strong_periportal_count: number;
+    strong_pericentral_count: number;
+    selected_zone_strong_count: number;
+    selected_zone_top_proteins: EngineSpatialProteinObservation[];
+    midlobular_specific_class_available: false;
+    may_scale_metabolic_flux: false;
+  };
+  interaction_hypotheses: {
+    source_interaction_count: number;
+    retained_hepatocyte_interaction_count: number;
+    nonzero_hepatocyte_edge_count: number;
+    selected_zone_cluster: "Hep_1" | "Hep_2" | "Hep_3";
+    selected_zone_interaction_count: number;
+    selected_zone_nonzero_edge_count: number;
+    top_ranked_candidates: {
+      id: string;
+      interacting_pair: string;
+      gene_a: string | null;
+      gene_b: string | null;
+      directionality: string;
+      classification: string;
+      maximum_source_score: number;
+      hepatocyte_edges: { sender: string; receiver: string; score: number }[];
+    }[];
+    score_is_binding_probability: false;
+    score_is_kinetic_rate: false;
+    may_activate_contact_chain: false;
+  };
+  integration_gates: {
+    may_sample_2d_renderer_area_distribution: boolean;
+    may_replace_3d_cell_geometry: false;
+    may_use_surface_protein_identity: boolean;
+    surface_density_available: false;
+    membrane_domain_available: false;
+    surface_orientation_available: false;
+    may_display_spatial_protein_gradient: boolean;
+    may_scale_flux_from_spatial_proteome: false;
+    may_rank_interaction_hypotheses: boolean;
+    may_activate_interaction_from_score: false;
+    binding_kinetics_available: false;
+  };
   source_ids: string[];
   limitations: string[];
 };
@@ -1904,7 +2334,7 @@ export type EnginePhhAlbuminSecretion = {
   proteome_context: {
     baseline_anchor_id: string;
     expected_value: number;
-    unit: "copies_per_cell";
+    unit: "copies_per_nucleus";
     sample_size: number;
     source_id: string;
     cohort_matched_to_secretion_assay: false;
@@ -1962,7 +2392,7 @@ export type EnginePhhAlbuminSecretion = {
     high_batch_mean_molecules_per_cell_24h: number;
     low_batch_mean_molecules_per_cell_s: number;
     high_batch_mean_molecules_per_cell_s: number;
-    contextual_albumin_pool_copies_per_cell: number;
+    contextual_albumin_pool_copies_per_nucleus: number;
     mechanism_specific_rate_count: number;
     mechanism_specific_rate_identified_count: number;
     required_measurement_class_count: number;
@@ -2219,8 +2649,111 @@ export type EnginePhhProteomeBudget = {
   };
 };
 
+export type EnginePhhProteinGroupReference = {
+  group_id: string;
+  gene_names: string[];
+  protein_names: string[];
+  protein_ids: string[];
+  detected_donor_count: number;
+  mean_copies_per_nucleus: number;
+  median_copies_per_nucleus: number;
+  minimum_copies_per_nucleus: number;
+  maximum_copies_per_nucleus: number;
+  donor_copies_per_nucleus: Record<string, number | null>;
+};
+
+export type EnginePhhAbsoluteProteomeAtlas = {
+  version: "phh_absolute_proteome_atlas_v1";
+  status: string;
+  date_verified: string;
+  cohort: {
+    species: "Homo sapiens";
+    biological_system: string;
+    donor_count: 7;
+    not_healthy_volunteers: true;
+    donors: {
+      id: string;
+      age_years: number;
+      sex_as_reported: string;
+      diagnosis_as_reported: string;
+      tissue_context: string;
+      total_protein_measurement: {
+        replicate_values_pg_per_nucleus: number[];
+        replicate_count: number;
+        mean_pg_per_nucleus: number;
+        minimum_pg_per_nucleus: number;
+        maximum_pg_per_nucleus: number;
+      };
+      quantified_target_group_count: number;
+      sum_of_quantified_target_group_copies_per_nucleus: number;
+    }[];
+  };
+  measurement_contract: {
+    assay: string;
+    protein_entity: "maxquant_protein_group";
+    copy_number_denominator: "per_nucleus";
+    concentration_unit: "pmol_per_mg_total_protein";
+    dna_mass_assumption_pg_per_diploid_nucleus: 6.5;
+    source_zero_or_blank_policy: "nonquantified_null_no_imputation";
+    distinct_groups_may_not_be_collapsed_by_gene: true;
+    copy_number_is_not_surface_abundance: true;
+    copy_number_is_not_active_protein_count: true;
+  };
+  source_audit: {
+    source_rows: 9565;
+    target_rows: 9386;
+    contaminant_only_rows: 179;
+    quantified_target_rows: 8689;
+    target_rows_without_positive_phh_value: 697;
+    article_reported_whole_cell_lysate_protein_count: 8705;
+    article_reported_combined_dataset_protein_count: 9400;
+    detected_donor_coverage_histogram: Record<string, number>;
+  };
+  cohort_arithmetic_audit: {
+    donor_weighted_mean_total_protein_pg_per_nucleus: number;
+    paper_rounded_total_protein_pg_per_reference_cell: 600;
+    donor_weighted_mean_sum_of_quantified_group_copies_per_nucleus: number;
+    paper_rounded_protein_molecules_per_reference_cell: 8700000000;
+    article_cell_label_and_supplement_nucleus_denominator_are_not_equivalent_for_binucleate_cells: true;
+  };
+  selected_canonical_gene_panel: (EnginePhhProteinGroupReference & { gene: string })[];
+  top_protein_groups_by_detected_donor_median: EnginePhhProteinGroupReference[];
+  integration_gates: {
+    static_donor_abundance_query_ready: true;
+    reference_nucleus_population_initialization_ready: true;
+    donor_specific_cell_initialization_ready: false;
+    binucleate_cell_scaling_ready: false;
+    surface_localized_copy_number_ready: false;
+    transport_active_copy_number_ready: false;
+    protein_turnover_dynamics_ready: false;
+    automatic_flux_coupling: false;
+    literal_molecule_rendering_permitted: false;
+    predictive_ready: false;
+  };
+  source_ids: string[];
+  limitations: string[];
+  summary: {
+    donor_count: 7;
+    source_protein_group_row_count: 9565;
+    quantified_target_protein_group_count: 8689;
+    quantified_in_all_seven_donors_count: 5110;
+    canonical_gene_panel_count: 28;
+    donor_mean_total_protein_pg_per_nucleus: number;
+    donor_minimum_total_protein_pg_per_nucleus: number;
+    donor_maximum_total_protein_pg_per_nucleus: number;
+    donor_mean_quantified_group_copy_sum_per_nucleus: number;
+    donor_minimum_quantified_group_copy_sum_per_nucleus: number;
+    donor_maximum_quantified_group_copy_sum_per_nucleus: number;
+    imputed_value_count: 0;
+    surface_localized_copy_count_record_count: 0;
+    active_copy_count_record_count: 0;
+    turnover_parameter_count: 0;
+    flux_parameter_count: 0;
+  };
+};
+
 export type EnginePhhTransporterInventory = {
-  version: "phh_transporter_inventory_v1";
+  version: "phh_transporter_inventory_v2";
   status: string;
   date_verified: string;
   transporters: {
@@ -2228,34 +2761,47 @@ export type EnginePhhTransporterInventory = {
     gene: string;
     protein: string;
     physiological_location: string;
-    abundance: {
+    uniprot_accession: string;
+    direct_total_abundance: {
+      donor_id: string;
+      concentration_pmol_per_mg_total_protein: number;
+      copies_per_nucleus: number;
+    }[];
+    direct_total_summary: {
+      detected_donor_count: 7;
+      mean_copies_per_nucleus: number;
+      median_copies_per_nucleus: number;
+      minimum_copies_per_nucleus: number;
+      maximum_copies_per_nucleus: number;
+      copy_number_denominator: "per_nucleus";
+      aggregation: "positive_source_donor_values_no_imputation";
+    };
+    rounded_headline_arithmetic_cross_check: {
+      abundance_pmol_per_mg_total_protein: number;
+      total_protein_pg_per_reference_nucleus: number;
+      avogadro_per_mol: number;
+      formula: string;
+      derived_copies_per_reference_nucleus: number;
+      display_precision_copies_per_reference_nucleus: number;
+      evidence_role: string;
+    } | null;
+    independent_membrane_fraction_abundance: {
       value: number;
-      sd: number | null;
+      sd: number;
       unit: string;
       biological_system: string;
       denominator: string;
       source_id: string;
-    };
-    exact_unit_equivalent: { value: number; sd: number | null; unit: string } | null;
-    matched_denominator_bridge: {
-      total_protein_pg_per_cell: number;
-      total_protein_source_id: string;
-      avogadro_per_mol: number;
-      formula: string;
-      derived_total_copies_per_cell: number;
-      display_precision_total_copies_per_cell: number;
-      evidence_role: string;
     } | null;
-    total_copies_per_hepatocyte: number | null;
-    canalicular_surface_copies_per_cell: null;
-    transport_active_copies_per_cell: null;
+    canalicular_surface_copies_per_hepatocyte: null;
+    transport_active_copies_per_hepatocyte: null;
     surface_density_copies_per_um2: null;
   }[];
-  bsep_total_copy_bridge_ready: true;
-  bsep_surface_copy_bridge_ready: false;
-  bsep_active_copy_bridge_ready: false;
-  mrp2_total_copy_bridge_ready: false;
-  mrp2_surface_copy_bridge_ready: false;
+  bsep_total_per_nucleus_observation_ready: true;
+  mrp2_total_per_nucleus_observation_ready: true;
+  bsep_surface_copy_observation_ready: false;
+  mrp2_surface_copy_observation_ready: false;
+  active_copy_observation_ready: false;
   surface_density_ready: false;
   flux_coupling_ready: false;
   individual_protein_rendering_permitted: false;
@@ -2265,15 +2811,182 @@ export type EnginePhhTransporterInventory = {
   limitations: string[];
   summary: {
     transporter_count: number;
-    same_cohort_total_copy_bridge_count: number;
-    bsep_total_copies_per_cell: number;
-    bsep_display_precision_copies_per_cell: number;
+    direct_total_per_nucleus_observation_count: 2;
+    bsep_median_copies_per_nucleus: number;
+    bsep_minimum_copies_per_nucleus: number;
+    bsep_maximum_copies_per_nucleus: number;
+    mrp2_median_copies_per_nucleus: number;
+    mrp2_minimum_copies_per_nucleus: number;
+    mrp2_maximum_copies_per_nucleus: number;
+    bsep_rounded_arithmetic_cross_check_copies_per_nucleus: number;
     mrp2_mean_fmol_per_ug_liver_membrane_protein: number;
     mrp2_sd_fmol_per_ug_liver_membrane_protein: number;
     surface_localized_copy_count_record_count: number;
     active_copy_count_record_count: number;
     surface_density_record_count: number;
     flux_parameter_count: number;
+  };
+};
+
+export type EngineProteinKineticObservation = {
+  id: string;
+  gene: string;
+  protein_id: string;
+  interaction_type: string;
+  substrate: string;
+  kinetic_model: string;
+  biological_system: string;
+  km: {
+    kind: "point" | "range";
+    value: number | null;
+    low: number | null;
+    high: number | null;
+    sd: number | null;
+    unit: "uM";
+  };
+  velocity: {
+    kind: "vmax" | "rate_at_substrate_concentration";
+    value: number;
+    sd: number | null;
+    unit: "pmol_per_mg_assay_protein_per_min";
+    substrate_concentration_uM: number | null;
+  } | null;
+  relative_activity_context: {
+    reference: string;
+    low: number;
+    high: number;
+    unit: string;
+  } | null;
+  source_id: string;
+  source_locator: string;
+  may_evaluate_assay_curve: boolean;
+  may_scale_whole_cell_flux: false;
+};
+
+export type EngineProteinFunctionalResponse = {
+  id: string;
+  protein_id: string;
+  response: string;
+  direction: string;
+  reported_fold_change: number;
+  duration_min: number;
+  ligand_challenge_pM: number;
+  uncertainty_value: number | null;
+  may_fit_quantitative_kinetics: false;
+  source_id: string;
+  source_locator: string;
+};
+
+export type EngineWholeCellTransportValidation = {
+  id: "bi2006_schh_taurocholate_coupled_transport";
+  species: "Homo sapiens";
+  biological_system: "cryopreserved_primary_human_hepatocytes";
+  culture_format: "BioCoat_24_well_Matrigel_sandwich_culture";
+  culture_medium: "InVitroGRO_media";
+  seeded_cells_per_well: 350000;
+  medium_volume_uL_per_well: 500;
+  lot_count: 5;
+  substrate: "taurocholate";
+  coupled_components: string[];
+  metric_ranges: {
+    id: "apparent_uptake" | "apparent_intrinsic_biliary_clearance" | "biliary_excretion_index";
+    low: number;
+    high: number;
+    unit: string;
+  }[];
+  range_semantics: "reported_range_among_five_cryopreserved_hepatocyte_lots";
+  individual_lot_values_loaded: false;
+  uncertainty_statistics_loaded: false;
+  exact_probe_protocol_loaded: false;
+  may_identify_individual_transporter_rate: false;
+  may_initialize_healthy_in_vivo_cell: false;
+  may_drive_cell_state: false;
+  source_id: "bi2006_human_schh_taurocholate_transport";
+  source_locator: string;
+};
+
+export type EnginePhhProteinFunctionalEvidence = {
+  version: "phh_protein_functional_evidence_v1";
+  status: string;
+  date_verified: string;
+  policy: string;
+  proteins: {
+    id: string;
+    gene: string;
+    protein_id: string;
+    uniprot_accession: string;
+    functional_role: string;
+    physiological_compartment: string | null;
+    physiological_domain: string | null;
+    domain_source_id: string | null;
+    abundance: {
+      gene: string;
+      protein_group_id: string;
+      copy_number_denominator: "per_nucleus";
+      donor_copies_per_nucleus: Record<string, number>;
+      detected_donor_count: 7;
+      missing_donor_count: 0;
+      mean_copies_per_nucleus: number;
+      median_copies_per_nucleus: number;
+      minimum_copies_per_nucleus: number;
+      maximum_copies_per_nucleus: number;
+      sample_sd_copies_per_nucleus: number;
+      sample_cv: number;
+      maximum_to_minimum_fold: number;
+      interpretation: string;
+    };
+    surface_capture_observed: boolean;
+    surface_capture_source_id: string | null;
+    surface_localized_copies_per_hepatocyte: null;
+    active_fraction: null;
+    active_copies_per_hepatocyte: null;
+    kinetic_observations: EngineProteinKineticObservation[];
+    functional_responses: EngineProteinFunctionalResponse[];
+    receptor_binding_kinetics_ready: false;
+    whole_cell_rate_ready: false;
+  }[];
+  kinetic_observations: EngineProteinKineticObservation[];
+  whole_cell_transport_validations: EngineWholeCellTransportValidation[];
+  functional_responses: EngineProteinFunctionalResponse[];
+  integration_gates: {
+    donor_resolved_total_abundance_ready: true;
+    surface_identity_observation_ready: true;
+    physiological_domain_identity_ready: true;
+    quantitative_surface_localization_ready: false;
+    active_fraction_ready: false;
+    assay_kinetic_observation_ready: true;
+    same_assay_parameter_comparison_ready: true;
+    whole_cell_transport_validation_observation_ready: true;
+    exact_whole_cell_transport_comparison_ready: false;
+    receptor_binding_kinetics_ready: false;
+    donor_activity_distribution_ready: false;
+    whole_cell_flux_coupling_ready: false;
+    automatic_state_coupling: false;
+    predictive_ready: false;
+  };
+  source_ids: string[];
+  limitations: string[];
+  summary: {
+    protein_count: 8;
+    donor_abundance_profile_count: 8;
+    all_seven_donor_abundance_profile_count: 8;
+    surface_identity_observation_count: 6;
+    physiological_domain_identity_count: 3;
+    quantitative_surface_localization_count: 0;
+    active_fraction_observation_count: 0;
+    assay_kinetic_observation_count: 5;
+    assay_curve_evaluable_count: 2;
+    receptor_binding_kinetic_observation_count: 0;
+    functional_response_observation_count: 3;
+    whole_cell_transport_validation_observation_count: 1;
+    whole_cell_transport_metric_range_count: 3;
+    whole_cell_transport_lot_count: 5;
+    exact_whole_cell_transport_prediction_count: 0;
+    same_assay_model_prediction_count: 0;
+    donor_activity_distribution_count: 0;
+    whole_cell_rate_ready_count: 0;
+    highest_selected_abundance_cv_gene: string;
+    highest_selected_abundance_cv: number;
   };
 };
 
@@ -2428,7 +3141,9 @@ export type EngineSnapshotSummary = {
   regenerationContext: EngineRegenerationContext | null;
   integratedMetabolism: EngineIntegratedMetabolism | null;
   quantitativeState: EngineQuantitativePhhState | null;
+  humanHepatocyte3dMorphometry: EngineHumanHepatocyte3dMorphometry | null;
   zonationState: EngineHumanZonationState | null;
+  humanLiverOpenAtlas: EngineHumanLiverOpenAtlas | null;
   sinusoidHomeostasis: EngineSinusoidHomeostasisState | null;
   nutritionalHomeostasisV3: EngineNutritionalHomeostasisV3 | null;
   hepaticFluxEvidence: EngineHepaticFluxEvidence | null;
@@ -2443,7 +3158,9 @@ export type EngineSnapshotSummary = {
   phhBiliaryExcretion: EnginePhhBiliaryExcretion | null;
   phhIdentityHeterogeneity: EnginePhhIdentityHeterogeneity | null;
   phhProteomeBudget: EnginePhhProteomeBudget | null;
+  phhAbsoluteProteomeAtlas: EnginePhhAbsoluteProteomeAtlas | null;
   phhTransporterInventory: EnginePhhTransporterInventory | null;
+  phhProteinFunctionalEvidence: EnginePhhProteinFunctionalEvidence | null;
   humanSchBileAcids: EngineHumanSchBileAcids | null;
   evidenceIntake: EnginePhhEvidenceIntake | null;
   publishedGlucoseModel: EnginePublishedGlucoseModelContext | null;
@@ -2452,6 +3169,7 @@ export type EngineSnapshotSummary = {
   intercellularCommunication: EngineIntercellularCommunication | null;
   spatialWorld: EngineSpatialWorld | null;
   spatialState: EngineCellSpatialState | null;
+  physicalValidation: EnginePhysicalValidation | null;
   brian2Communication: EngineBrian2Communication | null;
   generativeModeling: EngineGenerativeModelingBoundary | null;
   schematicVisualState: EngineSchematicVisualState | null;
@@ -2585,7 +3303,9 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     regenerationContext: isEngineRegenerationContext(snapshot.state.regeneration_context) ? snapshot.state.regeneration_context : null,
     integratedMetabolism: snapshot.state.integrated_metabolism ?? null,
     quantitativeState: snapshot.state.quantitative_state ?? null,
+    humanHepatocyte3dMorphometry: snapshot.state.human_hepatocyte_3d_morphometry ?? null,
     zonationState: snapshot.state.zonation_state ?? null,
+    humanLiverOpenAtlas: snapshot.state.human_liver_open_atlas ?? null,
     sinusoidHomeostasis: snapshot.state.sinusoid_homeostasis ?? null,
     nutritionalHomeostasisV3: snapshot.state.nutritional_homeostasis_v3 ?? null,
     hepaticFluxEvidence: snapshot.state.hepatic_flux_evidence ?? null,
@@ -2600,7 +3320,9 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     phhBiliaryExcretion: snapshot.state.phh_biliary_excretion ?? null,
     phhIdentityHeterogeneity: snapshot.state.phh_identity_heterogeneity ?? null,
     phhProteomeBudget: snapshot.state.phh_proteome_budget ?? null,
+    phhAbsoluteProteomeAtlas: snapshot.state.phh_absolute_proteome_atlas ?? null,
     phhTransporterInventory: snapshot.state.phh_transporter_inventory ?? null,
+    phhProteinFunctionalEvidence: snapshot.state.phh_protein_functional_evidence ?? null,
     humanSchBileAcids: snapshot.state.human_sch_bile_acids ?? null,
     evidenceIntake: snapshot.state.evidence_intake ?? null,
     publishedGlucoseModel: snapshot.state.published_glucose_model ?? null,
@@ -2609,6 +3331,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     intercellularCommunication: snapshot.state.intercellular_communication ?? null,
     spatialWorld: snapshot.state.spatial_world ?? null,
     spatialState: snapshot.state.spatial_state ?? null,
+    physicalValidation: snapshot.state.physical_validation ?? null,
     brian2Communication: snapshot.state.brian2_communication ?? null,
     generativeModeling: snapshot.state.generative_modeling ?? null,
     schematicVisualState: snapshot.state.schematic_visual_state ?? null,
@@ -3174,6 +3897,7 @@ function isEngineSpatialWorld(value: unknown): value is EngineSpatialWorld {
       isString(body.pose_authority) &&
       isString(body.geometry_evidence) &&
       isString(body.visual_profile) &&
+      (body.molecular_profile_id === null || isString(body.molecular_profile_id)) &&
       (body.membrane_material === null || isEngineMembraneMaterialProfile(body.membrane_material)) &&
       (body.biological_kind !== "hepatocyte" || body.membrane_material !== null) &&
       Array.isArray(body.source_ids) && body.source_ids.every(isString)
@@ -3198,8 +3922,14 @@ function isEngineSpatialWorld(value: unknown): value is EngineSpatialWorld {
       isFiniteNumber(relation.relative_normal_velocity_um_s) &&
       (relation.contact_face_a_id === null || isString(relation.contact_face_a_id)) &&
       (relation.contact_face_b_id === null || isString(relation.contact_face_b_id)) &&
+      Array.isArray(relation.contact_face_candidates_a) && relation.contact_face_candidates_a.every(isString) &&
+      Array.isArray(relation.contact_face_candidates_b) && relation.contact_face_candidates_b.every(isString) &&
       (relation.membrane_domain_a === null || isString(relation.membrane_domain_a)) &&
       (relation.membrane_domain_b === null || isString(relation.membrane_domain_b)) &&
+      Array.isArray(relation.membrane_domain_candidates_a) && relation.membrane_domain_candidates_a.every(isString) &&
+      Array.isArray(relation.membrane_domain_candidates_b) && relation.membrane_domain_candidates_b.every(isString) &&
+      isString(relation.domain_assignment_status_a) &&
+      isString(relation.domain_assignment_status_b) &&
       Array.isArray(relation.contact_patch_polygon_um) && relation.contact_patch_polygon_um.every(isNumberTuple3) &&
       (relation.contact_patch_area_um2 === null || isFiniteNumber(relation.contact_patch_area_um2)) &&
       (relation.normal_load_nN === null || isFiniteNumber(relation.normal_load_nN)) &&
@@ -3247,8 +3977,14 @@ function isEngineCellSpatialState(value: unknown): value is EngineCellSpatialSta
       isNumberTuple3(contact.closest_point_self_um) &&
       isNumberTuple3(contact.closest_point_other_um) &&
       isNumberTuple3(contact.outward_normal_to_other) &&
+      Array.isArray(contact.contact_face_candidates_self) && contact.contact_face_candidates_self.every(isString) &&
+      Array.isArray(contact.contact_face_candidates_other) && contact.contact_face_candidates_other.every(isString) &&
       (contact.membrane_domain_self === null || isString(contact.membrane_domain_self)) &&
       (contact.membrane_domain_other === null || isString(contact.membrane_domain_other)) &&
+      Array.isArray(contact.membrane_domain_candidates_self) && contact.membrane_domain_candidates_self.every(isString) &&
+      Array.isArray(contact.membrane_domain_candidates_other) && contact.membrane_domain_candidates_other.every(isString) &&
+      isString(contact.domain_assignment_status_self) &&
+      isString(contact.domain_assignment_status_other) &&
       Array.isArray(contact.contact_patch_polygon_um) && contact.contact_patch_polygon_um.every(isNumberTuple3) &&
       (contact.contact_patch_area_um2 === null || isFiniteNumber(contact.contact_patch_area_um2)) &&
       (contact.normal_load_nN === null || isFiniteNumber(contact.normal_load_nN)) &&
@@ -3263,7 +3999,11 @@ function isEngineCellSpatialState(value: unknown): value is EngineCellSpatialSta
       isFiniteNumber(event.t_s) &&
       typeof event.contact_input_active === "boolean" &&
       (event.membrane_domain_self === null || isString(event.membrane_domain_self)) &&
-      (event.membrane_domain_other === null || isString(event.membrane_domain_other))
+      (event.membrane_domain_other === null || isString(event.membrane_domain_other)) &&
+      Array.isArray(event.membrane_domain_candidates_self) && event.membrane_domain_candidates_self.every(isString) &&
+      Array.isArray(event.membrane_domain_candidates_other) && event.membrane_domain_candidates_other.every(isString) &&
+      isString(event.domain_assignment_status_self) &&
+      isString(event.domain_assignment_status_other)
     ) &&
     isString(value.geometry_coupling_status) &&
     isString(value.mechanical_coupling_status) &&
@@ -3272,6 +4012,82 @@ function isEngineCellSpatialState(value: unknown): value is EngineCellSpatialSta
     typeof value.quantitative_biological_effects_enabled === "boolean" &&
     Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
     Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEngineSurfaceMoleculeSpec(value: unknown): value is EngineSurfaceMoleculeSpec {
+  if (!isRecord(value)) return false;
+  return (
+    isString(value.id) &&
+    isString(value.display_name) &&
+    ["receptor", "ligand", "adhesion", "channel", "cofactor", "transporter"].includes(String(value.role)) &&
+    Array.isArray(value.compatible_partner_ids) && value.compatible_partner_ids.every(isString) &&
+    Array.isArray(value.membrane_domains) && value.membrane_domains.every(isString) &&
+    Array.isArray(value.required_cofactor_ids) && value.required_cofactor_ids.every(isString) &&
+    (value.transport_program === null || isString(value.transport_program)) &&
+    (value.surface_abundance_per_um2 === null || isFiniteNumber(value.surface_abundance_per_um2)) &&
+    (value.kon_2d_um2_per_molecule_s === null || isFiniteNumber(value.kon_2d_um2_per_molecule_s)) &&
+    (value.koff_s === null || isFiniteNumber(value.koff_s)) &&
+    typeof value.patch_distribution_available === "boolean" &&
+    typeof value.orientation_model_available === "boolean" &&
+    isString(value.evidence_scope) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString)
+  );
+}
+
+function isEngineBodySurfaceProfile(value: unknown): value is EngineBodySurfaceProfile {
+  return (
+    isRecord(value) &&
+    isString(value.body_id) &&
+    isString(value.profile_id) &&
+    isString(value.evidence_scope) &&
+    Array.isArray(value.molecules) &&
+    value.molecules.length > 0 &&
+    value.molecules.every(isEngineSurfaceMoleculeSpec)
+  );
+}
+
+function isEngineMolecularPairMatch(value: unknown): value is EngineMolecularPairMatch {
+  return (
+    isRecord(value) &&
+    isString(value.molecule_a_id) &&
+    isString(value.molecule_b_id) &&
+    Array.isArray(value.pathway_ids) && value.pathway_ids.every(isString) &&
+    Array.isArray(value.transport_programs) && value.transport_programs.every(isString) &&
+    Array.isArray(value.required_cofactor_ids) && value.required_cofactor_ids.every(isString) &&
+    typeof value.domain_compatible === "boolean" &&
+    (value.local_patch_presence_observed === null || typeof value.local_patch_presence_observed === "boolean") &&
+    (value.orientation_compatible === null || typeof value.orientation_compatible === "boolean") &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString)
+  );
+}
+
+function isEngineContactEventChain(value: unknown): value is EngineContactEventChain {
+  return (
+    isRecord(value) &&
+    isString(value.contact_id) &&
+    isContactEvent(value.contact_event) &&
+    isString(value.body_a) &&
+    isString(value.body_b) &&
+    isString(value.body_a_kind) &&
+    isString(value.body_b_kind) &&
+    typeof value.geometric_contact === "boolean" &&
+    isString(value.geometry_gate_status) &&
+    (value.membrane_domain_a === null || isString(value.membrane_domain_a)) &&
+    (value.membrane_domain_b === null || isString(value.membrane_domain_b)) &&
+    typeof value.contact_patch_area_available === "boolean" &&
+    Array.isArray(value.molecular_matches) && value.molecular_matches.every(isEngineMolecularPairMatch) &&
+    Array.isArray(value.candidate_pathway_ids) && value.candidate_pathway_ids.every(isString) &&
+    typeof value.receptor_ligand_density_available === "boolean" &&
+    typeof value.two_dimensional_kinetics_available === "boolean" &&
+    isString(value.molecular_recognition_status) &&
+    isString(value.signaling_status) &&
+    isString(value.transport_status) &&
+    Array.isArray(value.transport_programs) && value.transport_programs.every(isString) &&
+    Array.isArray(value.emitted_events) && value.emitted_events.every(isString) &&
+    typeof value.may_drive_cell_state === "boolean" &&
+    Array.isArray(value.blockers) && value.blockers.every(isString) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString)
   );
 }
 
@@ -3344,6 +4160,10 @@ function isEngineIntercellularCommunication(value: unknown): value is EngineInte
       (contact.normal_load_nN === undefined || contact.normal_load_nN === null || isFiniteNumber(contact.normal_load_nN)) &&
       (contact.force_status === undefined || isString(contact.force_status))
     ) &&
+    Array.isArray(value.body_surface_profiles) &&
+    value.body_surface_profiles.every(isEngineBodySurfaceProfile) &&
+    Array.isArray(value.contact_event_chains) &&
+    value.contact_event_chains.every(isEngineContactEventChain) &&
     Array.isArray(value.evaluated_exposures) &&
     value.evaluated_exposures.every((evaluation) =>
       isRecord(evaluation) &&
@@ -3366,9 +4186,12 @@ function isEngineIntercellularCommunication(value: unknown): value is EngineInte
     ) &&
     isFiniteNumber(value.quantitative_pathway_count) &&
     isFiniteNumber(value.active_signal_count) &&
+    isFiniteNumber(value.recognition_candidate_count) &&
+    isFiniteNumber(value.active_transport_count) &&
     isFiniteNumber(value.measured_exposure_count) &&
     isFiniteNumber(value.matched_response_evidence_count) &&
     typeof value.automatic_state_coupling === "boolean" &&
+    isString(value.event_chain_contract) &&
     typeof value.reference_geometry_is_biological_observation === "boolean" &&
     Array.isArray(value.limitations) && value.limitations.every(isString)
   );
@@ -3622,7 +4445,7 @@ function isEnginePhhAlbuminSecretion(value: unknown): value is EnginePhhAlbuminS
     isFiniteNumber(value.molecular_entity.mature_chain_length_aa) &&
     isFiniteNumber(value.molecular_entity.mature_albumin_molar_mass_g_per_mol) &&
     isFiniteNumber(value.proteome_context.expected_value) &&
-    value.proteome_context.unit === "copies_per_cell" &&
+    value.proteome_context.unit === "copies_per_nucleus" &&
     value.proteome_context.cohort_matched_to_secretion_assay === false &&
     value.proteome_context.is_secretion_rate === false &&
     Array.isArray(value.reported_associations) &&
@@ -3671,7 +4494,7 @@ function isEnginePhhAlbuminSecretion(value: unknown): value is EnginePhhAlbuminS
     isFiniteNumber(value.summary.published_numeric_endpoint_count) &&
     isFiniteNumber(value.summary.low_batch_mean_molecules_per_cell_s) &&
     isFiniteNumber(value.summary.high_batch_mean_molecules_per_cell_s) &&
-    isFiniteNumber(value.summary.contextual_albumin_pool_copies_per_cell) &&
+    isFiniteNumber(value.summary.contextual_albumin_pool_copies_per_nucleus) &&
     isFiniteNumber(value.summary.mechanism_specific_rate_count) &&
     isFiniteNumber(value.summary.mechanism_specific_rate_identified_count) &&
     isFiniteNumber(value.summary.individual_batch_numeric_record_count) &&
@@ -3937,60 +4760,351 @@ function isEnginePhhProteomeBudget(value: unknown): value is EnginePhhProteomeBu
   );
 }
 
+function isEnginePhhProteinGroupReference(value: unknown): value is EnginePhhProteinGroupReference {
+  return (
+    isRecord(value) &&
+    isString(value.group_id) &&
+    Array.isArray(value.gene_names) && value.gene_names.every(isString) &&
+    Array.isArray(value.protein_names) && value.protein_names.every(isString) &&
+    Array.isArray(value.protein_ids) && value.protein_ids.every(isString) &&
+    isFiniteNumber(value.detected_donor_count) &&
+    isFiniteNumber(value.mean_copies_per_nucleus) &&
+    isFiniteNumber(value.median_copies_per_nucleus) &&
+    isFiniteNumber(value.minimum_copies_per_nucleus) &&
+    isFiniteNumber(value.maximum_copies_per_nucleus) &&
+    isRecord(value.donor_copies_per_nucleus) &&
+    Object.values(value.donor_copies_per_nucleus).every(
+      (copies) => copies === null || isFiniteNumber(copies),
+    )
+  );
+}
+
+function isEnginePhhAbsoluteProteomeAtlas(value: unknown): value is EnginePhhAbsoluteProteomeAtlas {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.cohort) ||
+    !isRecord(value.measurement_contract) ||
+    !isRecord(value.source_audit) ||
+    !isRecord(value.cohort_arithmetic_audit) ||
+    !isRecord(value.integration_gates) ||
+    !isRecord(value.summary)
+  ) return false;
+  return (
+    value.version === "phh_absolute_proteome_atlas_v1" &&
+    isString(value.status) &&
+    isString(value.date_verified) &&
+    value.cohort.species === "Homo sapiens" &&
+    value.cohort.donor_count === 7 &&
+    value.cohort.not_healthy_volunteers === true &&
+    Array.isArray(value.cohort.donors) &&
+    value.cohort.donors.length === 7 &&
+    value.cohort.donors.every((donor) =>
+      isRecord(donor) &&
+      isString(donor.id) &&
+      isFiniteNumber(donor.age_years) &&
+      isString(donor.sex_as_reported) &&
+      isString(donor.diagnosis_as_reported) &&
+      isRecord(donor.total_protein_measurement) &&
+      isFiniteNumber(donor.total_protein_measurement.mean_pg_per_nucleus) &&
+      isFiniteNumber(donor.quantified_target_group_count) &&
+      isFiniteNumber(donor.sum_of_quantified_target_group_copies_per_nucleus)
+    ) &&
+    value.measurement_contract.protein_entity === "maxquant_protein_group" &&
+    value.measurement_contract.copy_number_denominator === "per_nucleus" &&
+    value.measurement_contract.source_zero_or_blank_policy === "nonquantified_null_no_imputation" &&
+    value.measurement_contract.distinct_groups_may_not_be_collapsed_by_gene === true &&
+    value.source_audit.source_rows === 9565 &&
+    value.source_audit.target_rows === 9386 &&
+    value.source_audit.contaminant_only_rows === 179 &&
+    value.source_audit.quantified_target_rows === 8689 &&
+    value.source_audit.article_reported_whole_cell_lysate_protein_count === 8705 &&
+    Array.isArray(value.selected_canonical_gene_panel) &&
+    value.selected_canonical_gene_panel.length === 28 &&
+    value.selected_canonical_gene_panel.every(
+      (record) => isRecord(record) && isString(record.gene) && isEnginePhhProteinGroupReference(record),
+    ) &&
+    Array.isArray(value.top_protein_groups_by_detected_donor_median) &&
+    value.top_protein_groups_by_detected_donor_median.length === 20 &&
+    value.top_protein_groups_by_detected_donor_median.every(isEnginePhhProteinGroupReference) &&
+    value.integration_gates.static_donor_abundance_query_ready === true &&
+    value.integration_gates.reference_nucleus_population_initialization_ready === true &&
+    value.integration_gates.donor_specific_cell_initialization_ready === false &&
+    value.integration_gates.binucleate_cell_scaling_ready === false &&
+    value.integration_gates.surface_localized_copy_number_ready === false &&
+    value.integration_gates.transport_active_copy_number_ready === false &&
+    value.integration_gates.protein_turnover_dynamics_ready === false &&
+    value.integration_gates.automatic_flux_coupling === false &&
+    value.integration_gates.literal_molecule_rendering_permitted === false &&
+    value.integration_gates.predictive_ready === false &&
+    value.summary.donor_count === 7 &&
+    value.summary.source_protein_group_row_count === 9565 &&
+    value.summary.quantified_target_protein_group_count === 8689 &&
+    value.summary.quantified_in_all_seven_donors_count === 5110 &&
+    value.summary.canonical_gene_panel_count === 28 &&
+    isFiniteNumber(value.summary.donor_mean_total_protein_pg_per_nucleus) &&
+    isFiniteNumber(value.summary.donor_mean_quantified_group_copy_sum_per_nucleus) &&
+    value.summary.imputed_value_count === 0 &&
+    value.summary.surface_localized_copy_count_record_count === 0 &&
+    value.summary.turnover_parameter_count === 0 &&
+    value.summary.flux_parameter_count === 0 &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
 function isEnginePhhTransporterInventory(value: unknown): value is EnginePhhTransporterInventory {
   if (!isRecord(value) || !isRecord(value.summary)) return false;
   return (
-    value.version === "phh_transporter_inventory_v1" &&
+    value.version === "phh_transporter_inventory_v2" &&
     isString(value.status) &&
     isString(value.date_verified) &&
     Array.isArray(value.transporters) &&
     value.transporters.length === 2 &&
     value.transporters.every((item) => {
-      if (!isRecord(item) || !isRecord(item.abundance)) return false;
-      const bridge = item.matched_denominator_bridge;
-      const equivalent = item.exact_unit_equivalent;
+      if (!isRecord(item) || !isRecord(item.direct_total_summary)) return false;
+      const crossCheck = item.rounded_headline_arithmetic_cross_check;
+      const external = item.independent_membrane_fraction_abundance;
       return (
         (item.id === "ABCB11_BSEP" || item.id === "ABCC2_MRP2") &&
         isString(item.gene) &&
         isString(item.protein) &&
-        isFiniteNumber(item.abundance.value) &&
-        (item.abundance.sd === null || isFiniteNumber(item.abundance.sd)) &&
-        isString(item.abundance.unit) &&
-        (equivalent === null || (
-          isRecord(equivalent) &&
-          isFiniteNumber(equivalent.value) &&
-          (equivalent.sd === null || isFiniteNumber(equivalent.sd)) &&
-          isString(equivalent.unit)
+        isString(item.uniprot_accession) &&
+        Array.isArray(item.direct_total_abundance) &&
+        item.direct_total_abundance.length === 7 &&
+        item.direct_total_abundance.every((observation) =>
+          isRecord(observation) &&
+          isString(observation.donor_id) &&
+          isFiniteNumber(observation.concentration_pmol_per_mg_total_protein) &&
+          isFiniteNumber(observation.copies_per_nucleus)
+        ) &&
+        item.direct_total_summary.detected_donor_count === 7 &&
+        item.direct_total_summary.copy_number_denominator === "per_nucleus" &&
+        item.direct_total_summary.aggregation === "positive_source_donor_values_no_imputation" &&
+        isFiniteNumber(item.direct_total_summary.median_copies_per_nucleus) &&
+        isFiniteNumber(item.direct_total_summary.minimum_copies_per_nucleus) &&
+        isFiniteNumber(item.direct_total_summary.maximum_copies_per_nucleus) &&
+        (crossCheck === null || (
+          isRecord(crossCheck) &&
+          isFiniteNumber(crossCheck.total_protein_pg_per_reference_nucleus) &&
+          isFiniteNumber(crossCheck.avogadro_per_mol) &&
+          isFiniteNumber(crossCheck.derived_copies_per_reference_nucleus) &&
+          isFiniteNumber(crossCheck.display_precision_copies_per_reference_nucleus) &&
+          isString(crossCheck.formula)
         )) &&
-        (bridge === null || (
-          isRecord(bridge) &&
-          isFiniteNumber(bridge.total_protein_pg_per_cell) &&
-          isFiniteNumber(bridge.avogadro_per_mol) &&
-          isFiniteNumber(bridge.derived_total_copies_per_cell) &&
-          isFiniteNumber(bridge.display_precision_total_copies_per_cell) &&
-          isString(bridge.formula)
+        (external === null || (
+          isRecord(external) &&
+          isFiniteNumber(external.value) &&
+          isFiniteNumber(external.sd) &&
+          isString(external.unit) &&
+          isString(external.denominator)
         )) &&
-        (item.total_copies_per_hepatocyte === null || isFiniteNumber(item.total_copies_per_hepatocyte)) &&
-        item.canalicular_surface_copies_per_cell === null &&
-        item.transport_active_copies_per_cell === null &&
+        item.canalicular_surface_copies_per_hepatocyte === null &&
+        item.transport_active_copies_per_hepatocyte === null &&
         item.surface_density_copies_per_um2 === null
       );
     }) &&
-    value.bsep_total_copy_bridge_ready === true &&
-    value.bsep_surface_copy_bridge_ready === false &&
-    value.bsep_active_copy_bridge_ready === false &&
-    value.mrp2_total_copy_bridge_ready === false &&
-    value.mrp2_surface_copy_bridge_ready === false &&
+    value.bsep_total_per_nucleus_observation_ready === true &&
+    value.mrp2_total_per_nucleus_observation_ready === true &&
+    value.bsep_surface_copy_observation_ready === false &&
+    value.mrp2_surface_copy_observation_ready === false &&
+    value.active_copy_observation_ready === false &&
     value.surface_density_ready === false &&
     value.flux_coupling_ready === false &&
     value.individual_protein_rendering_permitted === false &&
     value.automatic_state_coupling === false &&
     value.predictive_ready === false &&
-    isFiniteNumber(value.summary.bsep_total_copies_per_cell) &&
-    isFiniteNumber(value.summary.same_cohort_total_copy_bridge_count) &&
+    value.summary.direct_total_per_nucleus_observation_count === 2 &&
+    isFiniteNumber(value.summary.bsep_median_copies_per_nucleus) &&
+    isFiniteNumber(value.summary.mrp2_median_copies_per_nucleus) &&
     isFiniteNumber(value.summary.mrp2_mean_fmol_per_ug_liver_membrane_protein) &&
     isFiniteNumber(value.summary.surface_localized_copy_count_record_count) &&
     isFiniteNumber(value.summary.flux_parameter_count) &&
+    Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
+    Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEngineProteinKineticObservation(value: unknown): value is EngineProteinKineticObservation {
+  if (!isRecord(value) || !isRecord(value.km)) return false;
+  const velocity = value.velocity;
+  const relative = value.relative_activity_context;
+  return (
+    isString(value.id) &&
+    isString(value.gene) &&
+    isString(value.protein_id) &&
+    isString(value.substrate) &&
+    isString(value.kinetic_model) &&
+    isString(value.biological_system) &&
+    (value.km.kind === "point" || value.km.kind === "range") &&
+    (value.km.value === null || isFiniteNumber(value.km.value)) &&
+    (value.km.low === null || isFiniteNumber(value.km.low)) &&
+    (value.km.high === null || isFiniteNumber(value.km.high)) &&
+    (value.km.sd === null || isFiniteNumber(value.km.sd)) &&
+    value.km.unit === "uM" &&
+    (velocity === null || (
+      isRecord(velocity) &&
+      (velocity.kind === "vmax" || velocity.kind === "rate_at_substrate_concentration") &&
+      isFiniteNumber(velocity.value) &&
+      (velocity.sd === null || isFiniteNumber(velocity.sd)) &&
+      velocity.unit === "pmol_per_mg_assay_protein_per_min" &&
+      (velocity.substrate_concentration_uM === null || isFiniteNumber(velocity.substrate_concentration_uM))
+    )) &&
+    (relative === null || (
+      isRecord(relative) &&
+      isString(relative.reference) &&
+      isFiniteNumber(relative.low) &&
+      isFiniteNumber(relative.high) &&
+      isString(relative.unit)
+    )) &&
+    isString(value.source_id) &&
+    isString(value.source_locator) &&
+    typeof value.may_evaluate_assay_curve === "boolean" &&
+    value.may_scale_whole_cell_flux === false
+  );
+}
+
+function isEngineProteinFunctionalResponse(value: unknown): value is EngineProteinFunctionalResponse {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.protein_id) &&
+    isString(value.response) &&
+    isString(value.direction) &&
+    isFiniteNumber(value.reported_fold_change) &&
+    isFiniteNumber(value.duration_min) &&
+    isFiniteNumber(value.ligand_challenge_pM) &&
+    (value.uncertainty_value === null || isFiniteNumber(value.uncertainty_value)) &&
+    value.may_fit_quantitative_kinetics === false &&
+    isString(value.source_id) &&
+    isString(value.source_locator)
+  );
+}
+
+function isEngineWholeCellTransportValidation(
+  value: unknown,
+): value is EngineWholeCellTransportValidation {
+  if (!isRecord(value) || !Array.isArray(value.metric_ranges)) return false;
+  const metrics = new Map(
+    value.metric_ranges
+      .filter(isRecord)
+      .map((metric) => [String(metric.id), metric]),
+  );
+  const matchesRange = (id: string, low: number, high: number, unit: string) => {
+    const metric = metrics.get(id);
+    return !!metric && metric.low === low && metric.high === high && metric.unit === unit;
+  };
+  return (
+    value.id === "bi2006_schh_taurocholate_coupled_transport" &&
+    value.species === "Homo sapiens" &&
+    value.biological_system === "cryopreserved_primary_human_hepatocytes" &&
+    value.culture_format === "BioCoat_24_well_Matrigel_sandwich_culture" &&
+    value.culture_medium === "InVitroGRO_media" &&
+    value.seeded_cells_per_well === 350000 &&
+    value.medium_volume_uL_per_well === 500 &&
+    value.lot_count === 5 &&
+    value.substrate === "taurocholate" &&
+    Array.isArray(value.coupled_components) && value.coupled_components.every(isString) &&
+    value.metric_ranges.length === 3 && metrics.size === 3 &&
+    matchesRange("apparent_uptake", 11, 17, "pmol_per_min_per_mg_cell_protein") &&
+    matchesRange("apparent_intrinsic_biliary_clearance", 5.8, 10, "uL_per_min_per_mg_cell_protein") &&
+    matchesRange("biliary_excretion_index", 41, 63, "percent") &&
+    value.range_semantics === "reported_range_among_five_cryopreserved_hepatocyte_lots" &&
+    value.individual_lot_values_loaded === false &&
+    value.uncertainty_statistics_loaded === false &&
+    value.exact_probe_protocol_loaded === false &&
+    value.may_identify_individual_transporter_rate === false &&
+    value.may_initialize_healthy_in_vivo_cell === false &&
+    value.may_drive_cell_state === false &&
+    value.source_id === "bi2006_human_schh_taurocholate_transport" &&
+    isString(value.source_locator)
+  );
+}
+
+function isEnginePhhProteinFunctionalEvidence(
+  value: unknown,
+): value is EnginePhhProteinFunctionalEvidence {
+  if (!isRecord(value) || !isRecord(value.integration_gates) || !isRecord(value.summary)) {
+    return false;
+  }
+  const gates = value.integration_gates;
+  const summary = value.summary;
+  return (
+    value.version === "phh_protein_functional_evidence_v1" &&
+    isString(value.status) &&
+    isString(value.date_verified) &&
+    isString(value.policy) &&
+    Array.isArray(value.proteins) &&
+    value.proteins.length === 8 &&
+    value.proteins.every((protein) =>
+      isRecord(protein) &&
+      isString(protein.id) &&
+      isString(protein.gene) &&
+      isString(protein.protein_id) &&
+      isString(protein.uniprot_accession) &&
+      isRecord(protein.abundance) &&
+      protein.abundance.copy_number_denominator === "per_nucleus" &&
+      isRecord(protein.abundance.donor_copies_per_nucleus) &&
+      Object.keys(protein.abundance.donor_copies_per_nucleus).length === 7 &&
+      Object.values(protein.abundance.donor_copies_per_nucleus).every(isFiniteNumber) &&
+      protein.abundance.detected_donor_count === 7 &&
+      protein.abundance.missing_donor_count === 0 &&
+      isFiniteNumber(protein.abundance.median_copies_per_nucleus) &&
+      isFiniteNumber(protein.abundance.sample_cv) &&
+      typeof protein.surface_capture_observed === "boolean" &&
+      protein.surface_localized_copies_per_hepatocyte === null &&
+      protein.active_fraction === null &&
+      protein.active_copies_per_hepatocyte === null &&
+      Array.isArray(protein.kinetic_observations) &&
+      protein.kinetic_observations.every(isEngineProteinKineticObservation) &&
+      Array.isArray(protein.functional_responses) &&
+      protein.functional_responses.every(isEngineProteinFunctionalResponse) &&
+      protein.receptor_binding_kinetics_ready === false &&
+      protein.whole_cell_rate_ready === false
+    ) &&
+    Array.isArray(value.kinetic_observations) &&
+    value.kinetic_observations.length === 5 &&
+    value.kinetic_observations.every(isEngineProteinKineticObservation) &&
+    value.kinetic_observations.filter((item) => item.may_evaluate_assay_curve).length === 2 &&
+    value.kinetic_observations.filter(
+      (item) => item.velocity?.kind === "rate_at_substrate_concentration",
+    ).length === 2 &&
+    Array.isArray(value.whole_cell_transport_validations) &&
+    value.whole_cell_transport_validations.length === 1 &&
+    value.whole_cell_transport_validations.every(isEngineWholeCellTransportValidation) &&
+    Array.isArray(value.functional_responses) &&
+    value.functional_responses.length === 3 &&
+    value.functional_responses.every(isEngineProteinFunctionalResponse) &&
+    gates.donor_resolved_total_abundance_ready === true &&
+    gates.surface_identity_observation_ready === true &&
+    gates.physiological_domain_identity_ready === true &&
+    gates.quantitative_surface_localization_ready === false &&
+    gates.active_fraction_ready === false &&
+    gates.assay_kinetic_observation_ready === true &&
+    gates.same_assay_parameter_comparison_ready === true &&
+    gates.whole_cell_transport_validation_observation_ready === true &&
+    gates.exact_whole_cell_transport_comparison_ready === false &&
+    gates.receptor_binding_kinetics_ready === false &&
+    gates.donor_activity_distribution_ready === false &&
+    gates.whole_cell_flux_coupling_ready === false &&
+    gates.automatic_state_coupling === false &&
+    gates.predictive_ready === false &&
+    summary.protein_count === 8 &&
+    summary.all_seven_donor_abundance_profile_count === 8 &&
+    summary.surface_identity_observation_count === 6 &&
+    summary.physiological_domain_identity_count === 3 &&
+    summary.quantitative_surface_localization_count === 0 &&
+    summary.active_fraction_observation_count === 0 &&
+    summary.assay_kinetic_observation_count === 5 &&
+    summary.assay_curve_evaluable_count === 2 &&
+    summary.receptor_binding_kinetic_observation_count === 0 &&
+    summary.functional_response_observation_count === 3 &&
+    summary.whole_cell_transport_validation_observation_count === 1 &&
+    summary.whole_cell_transport_metric_range_count === 3 &&
+    summary.whole_cell_transport_lot_count === 5 &&
+    summary.exact_whole_cell_transport_prediction_count === 0 &&
+    summary.whole_cell_rate_ready_count === 0 &&
+    isString(summary.highest_selected_abundance_cv_gene) &&
+    isFiniteNumber(summary.highest_selected_abundance_cv) &&
     Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
     Array.isArray(value.limitations) && value.limitations.every(isString)
   );
@@ -4120,6 +5234,188 @@ function isEngineGenerativeModelingBoundary(value: unknown): value is EngineGene
   );
 }
 
+function isEngineAtlasDistribution(value: unknown): value is EngineAtlasDistribution {
+  if (!isRecord(value)) return false;
+  return (
+    Number.isInteger(value.count) && Number(value.count) > 0 &&
+    ["mean", "sample_sd", "p05", "p25", "median", "p75", "p95", "minimum", "maximum"]
+      .every((key) => isFiniteNumber(value[key]))
+  );
+}
+
+function isEngineSpatialProteinObservation(value: unknown): value is EngineSpatialProteinObservation {
+  if (!isRecord(value)) return false;
+  return (
+    isString(value.protein) &&
+    Array.isArray(value.binned_expression_percent) &&
+    value.binned_expression_percent.length === 20 &&
+    value.binned_expression_percent.every(isFiniteNumber) &&
+    isFiniteNumber(value.coefficient) &&
+    isFiniteNumber(value.p_value) &&
+    isFiniteNumber(value.q_value) &&
+    ["periportal", "pericentral", "flat"].includes(String(value.enriched_region)) &&
+    typeof value.zonated === "boolean" &&
+    typeof value.strong_zonated === "boolean" &&
+    isString(value.source_id)
+  );
+}
+
+function isEngineHumanHepatocyte3dMorphometry(
+  value: unknown
+): value is EngineHumanHepatocyte3dMorphometry {
+  if (!isRecord(value)) return false;
+  const artifact = value.source_artifact;
+  const study = value.study_context;
+  const volume = value.normal_control_cell_volume_um3;
+  const lipid = value.normal_control_lipid_droplet_volume_percent;
+  const pooled = value.pooled_all_group_cell_volume_classes_um3;
+  const conflict = value.historical_stereology_conflict;
+  const gates = value.integration_gates;
+  if (
+    value.version !== "human_hepatocyte_3d_morphometry_v1" ||
+    !isString(value.status) || !isString(value.date_verified) || !isString(value.policy) ||
+    !isRecord(artifact) ||
+    artifact.source_id !== "segovia_miranda2019_human_liver_3d_morphometry" ||
+    artifact.doi !== "10.1038/s41591-019-0660-7" ||
+    artifact.downloaded_bytes !== 104382 ||
+    !isString(artifact.md5) || artifact.md5.length !== 32 ||
+    !isString(artifact.sha256) || artifact.sha256.length !== 64 ||
+    !isRecord(study) || study.species !== "Homo sapiens" ||
+    study.normal_control_reconstruction_count !== 5 ||
+    study.all_group_reconstruction_count !== 16 ||
+    study.all_group_analyzed_cell_count !== 11278 ||
+    !isNumberTuple3(study.voxel_size_um) ||
+    !isRecord(volume) || volume.overall !== 5657.07116 ||
+    volume.overall_mad !== 744.875484 || volume.n_reconstructions !== 5 ||
+    !Array.isArray(volume.regional_medians) || volume.regional_medians.length !== 10 ||
+    !volume.regional_medians.every(isFiniteNumber) ||
+    !Array.isArray(volume.regional_mads) || volume.regional_mads.length !== 10 ||
+    !volume.regional_mads.every(isFiniteNumber) ||
+    volume.diameter_and_area_are_derived_not_measured !== true ||
+    volume.may_define_single_cell_shape_distribution !== false ||
+    !isRecord(lipid) || lipid.overall !== 0.507807 ||
+    lipid.overall_mad_percentage_points !== 0.403178 ||
+    lipid.fraction_of_cell_volume !== 0.00507807 ||
+    lipid.n_reconstructions !== 5 ||
+    lipid.may_define_droplet_count_or_size_distribution !== false ||
+    lipid.may_define_dynamic_nutritional_response !== false ||
+    !isRecord(pooled) || pooled.small_upper_exclusive !== 5800 ||
+    pooled.medium_lower_inclusive !== 5800 || pooled.medium_upper_inclusive !== 11000 ||
+    pooled.large_lower_exclusive !== 11000 ||
+    pooled.may_initialize_healthy_population_mixture !== false ||
+    !isRecord(conflict) || conflict.historical_mean_volume_um3 !== 2850 ||
+    !isString(conflict.resolution_policy) || !conflict.resolution_policy.startsWith("do_not_average") ||
+    !isRecord(gates) ||
+    gates.aggregate_3d_normal_control_volume_available !== true ||
+    gates.aggregate_3d_normal_control_lipid_fraction_available !== true ||
+    gates.individual_cell_boundary_mesh_available !== false ||
+    gates.healthy_population_shape_distribution_available !== false ||
+    gates.quantitative_apical_basal_lateral_surface_area_available !== false ||
+    gates.organelle_resolved_human_mesh_available !== false ||
+    gates.matched_contact_interface_mesh_available !== false ||
+    gates.may_initialize_reference_volume !== true ||
+    gates.may_initialize_aggregate_lipid_fraction !== true ||
+    gates.may_replace_runtime_polyhedron_with_measured_mesh !== false ||
+    gates.may_calibrate_contact_patch_ground_truth !== false ||
+    !Array.isArray(value.source_ids) || !value.source_ids.every(isString) ||
+    !Array.isArray(value.limitations) || !value.limitations.every(isString)
+  ) return false;
+  const derivedDiameter = Number(volume.derived_equivalent_sphere_diameter_um);
+  return isFiniteNumber(derivedDiameter) &&
+    Math.abs((Math.PI / 6) * derivedDiameter ** 3 - 5657.07116) <= 1e-8;
+}
+
+function isEngineHumanLiverOpenAtlas(value: unknown): value is EngineHumanLiverOpenAtlas {
+  if (!isRecord(value)) return false;
+  if (
+    value.version !== "human_liver_open_atlas_v1" ||
+    !isString(value.status) ||
+    !isString(value.date_verified) ||
+    !["periportal", "midlobular", "pericentral"].includes(String(value.selected_zone)) ||
+    !Array.isArray(value.source_artifacts) ||
+    value.source_artifacts.length !== 5 ||
+    !value.source_artifacts.every((artifact) =>
+      isRecord(artifact) &&
+      isString(artifact.id) &&
+      isString(artifact.title) &&
+      isString(artifact.paper_url) &&
+      isString(artifact.artifact_url) &&
+      artifact.license === "CC-BY-4.0" &&
+      isString(artifact.md5) && artifact.md5.length === 32 &&
+      isString(artifact.sha256) && artifact.sha256.length === 64
+    ) ||
+    !Array.isArray(value.source_ids) || !value.source_ids.every(isString) ||
+    !Array.isArray(value.limitations) || !value.limitations.every(isString)
+  ) return false;
+
+  const tissue = value.tissue_architecture;
+  const morphometry = value.morphometry_2d;
+  const surfaceome = value.surfaceome;
+  const proteome = value.spatial_proteome;
+  const interactions = value.interaction_hypotheses;
+  const gates = value.integration_gates;
+  if (
+    !isRecord(tissue) ||
+    !isNumberTuple3(tissue.reconstructed_tissue_extent_um) ||
+    tissue.healthy_initialization_may_use_cirrhotic_rows !== false ||
+    !isRecord(morphometry) ||
+    morphometry.cell_count !== 56055 ||
+    morphometry.may_replace_3d_cell_geometry !== false ||
+    !isRecord(morphometry.segmented_area_um2) ||
+    !isEngineAtlasDistribution(morphometry.segmented_area_um2.all) ||
+    !["Hep_1", "Hep_2", "Hep_3"].includes(String(morphometry.selected_zone_cluster)) ||
+    !isEngineAtlasDistribution(morphometry.selected_zone_segmented_area_um2) ||
+    !isString(morphometry.cluster_zone_mapping_status) ||
+    !isRecord(morphometry.canonical_geometry_context_check) ||
+    morphometry.canonical_geometry_context_check.comparison_role !== "contextual_range_check_only" ||
+    morphometry.canonical_geometry_context_check.may_calibrate_3d_geometry !== false ||
+    !isRecord(surfaceome) ||
+    surfaceome.observed_protein_count !== 300 ||
+    surfaceome.reported_cd_molecule_count !== 66 ||
+    surfaceome.reported_transmembrane_count !== 228 ||
+    surfaceome.full_record_count_in_curated_bundle !== 300 ||
+    surfaceome.density_available !== false ||
+    surfaceome.membrane_domain_available !== false ||
+    surfaceome.orientation_available !== false ||
+    !isRecord(surfaceome.pathway_relevant_gene_observation) ||
+    !Object.values(surfaceome.pathway_relevant_gene_observation).every(isString) ||
+    !isRecord(proteome) ||
+    proteome.protein_count !== 1736 ||
+    proteome.article_reported_protein_count_at_70pct_completeness !== 1741 ||
+    proteome.supplement_table_record_count !== 1736 ||
+    proteome.article_minus_supplement_record_count !== 5 ||
+    proteome.strong_zonated_count !== 171 ||
+    proteome.strong_periportal_count !== 102 ||
+    proteome.strong_pericentral_count !== 69 ||
+    proteome.midlobular_specific_class_available !== false ||
+    proteome.may_scale_metabolic_flux !== false ||
+    !Array.isArray(proteome.selected_zone_top_proteins) ||
+    !proteome.selected_zone_top_proteins.every(isEngineSpatialProteinObservation) ||
+    !isRecord(interactions) ||
+    interactions.source_interaction_count !== 1679 ||
+    interactions.retained_hepatocyte_interaction_count !== 209 ||
+    interactions.nonzero_hepatocyte_edge_count !== 1806 ||
+    !["Hep_1", "Hep_2", "Hep_3"].includes(String(interactions.selected_zone_cluster)) ||
+    !Number.isInteger(interactions.selected_zone_interaction_count) ||
+    !Number.isInteger(interactions.selected_zone_nonzero_edge_count) ||
+    interactions.score_is_binding_probability !== false ||
+    interactions.score_is_kinetic_rate !== false ||
+    interactions.may_activate_contact_chain !== false ||
+    !Array.isArray(interactions.top_ranked_candidates) ||
+    !isRecord(gates)
+  ) return false;
+
+  return (
+    gates.may_replace_3d_cell_geometry === false &&
+    gates.surface_density_available === false &&
+    gates.membrane_domain_available === false &&
+    gates.surface_orientation_available === false &&
+    gates.may_scale_flux_from_spatial_proteome === false &&
+    gates.may_activate_interaction_from_score === false &&
+    gates.binding_kinetics_available === false
+  );
+}
+
 export type EngineSnapshotStream = {
   mode: "websocket";
   status: "connected" | "unavailable";
@@ -4150,6 +5446,54 @@ export function connectEngineSnapshotStream(
   return { mode: "websocket", status: "connected", close: () => socket.close() };
 }
 
+function isEnginePhysicalValidation(value: unknown): value is EnginePhysicalValidation {
+  if (!isRecord(value)) return false;
+  if (
+    value.version !== "physical_integrity_verification_v1" ||
+    !isString(value.score_semantics) ||
+    !Array.isArray(value.layers) ||
+    value.layers.length !== 3 ||
+    !Array.isArray(value.source_ids) ||
+    !value.source_ids.every(isString)
+  ) return false;
+  const ids = new Set<string>();
+  for (const layer of value.layers) {
+    if (
+      !isRecord(layer) ||
+      !["scale_geometry", "membrane_physics", "contact_domain"].includes(String(layer.id)) ||
+      !isString(layer.title) ||
+      !Number.isInteger(layer.verified_count) ||
+      !Number.isInteger(layer.criterion_count) ||
+      !isFiniteNumber(layer.verification_coverage_pct) ||
+      layer.predictive_accuracy_pct !== null ||
+      !isString(layer.human_calibration_status) ||
+      !Array.isArray(layer.criteria) ||
+      !Array.isArray(layer.blockers) ||
+      layer.blockers.length === 0 ||
+      !layer.blockers.every(isString)
+    ) return false;
+    ids.add(String(layer.id));
+    const criteria = layer.criteria;
+    if (criteria.length === 0) return false;
+    if (!criteria.every((criterion) =>
+      isRecord(criterion) &&
+      isString(criterion.id) &&
+      isString(criterion.description) &&
+      (criterion.status === "verified" || criterion.status === "blocked") &&
+      isString(criterion.evidence_scope) &&
+      isString(criterion.verification_contract) &&
+      Array.isArray(criterion.source_ids) && criterion.source_ids.every(isString)
+    )) return false;
+    const verified = criteria.filter((criterion) => isRecord(criterion) && criterion.status === "verified").length;
+    if (
+      layer.criterion_count !== criteria.length ||
+      layer.verified_count !== verified ||
+      Math.abs(layer.verification_coverage_pct - (100 * verified) / criteria.length) > 1e-9
+    ) return false;
+  }
+  return ids.size === 3;
+}
+
 function isEngineSnapshot(value: unknown): value is EngineSnapshot {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<EngineSnapshot>;
@@ -4168,11 +5512,16 @@ function isEngineSnapshot(value: unknown): value is EngineSnapshot {
     (candidate.state.phh_biliary_excretion === undefined || isEnginePhhBiliaryExcretion(candidate.state.phh_biliary_excretion)) &&
     (candidate.state.phh_identity_heterogeneity === undefined || isEnginePhhIdentityHeterogeneity(candidate.state.phh_identity_heterogeneity)) &&
     (candidate.state.phh_proteome_budget === undefined || isEnginePhhProteomeBudget(candidate.state.phh_proteome_budget)) &&
+    (candidate.state.phh_absolute_proteome_atlas === undefined || isEnginePhhAbsoluteProteomeAtlas(candidate.state.phh_absolute_proteome_atlas)) &&
     (candidate.state.phh_transporter_inventory === undefined || isEnginePhhTransporterInventory(candidate.state.phh_transporter_inventory)) &&
+    (candidate.state.phh_protein_functional_evidence === undefined || isEnginePhhProteinFunctionalEvidence(candidate.state.phh_protein_functional_evidence)) &&
     (candidate.state.human_sch_bile_acids === undefined || isEngineHumanSchBileAcids(candidate.state.human_sch_bile_acids)) &&
+    (candidate.state.human_hepatocyte_3d_morphometry === undefined || isEngineHumanHepatocyte3dMorphometry(candidate.state.human_hepatocyte_3d_morphometry)) &&
+    (candidate.state.human_liver_open_atlas === undefined || isEngineHumanLiverOpenAtlas(candidate.state.human_liver_open_atlas)) &&
     (candidate.state.intercellular_communication === undefined || isEngineIntercellularCommunication(candidate.state.intercellular_communication)) &&
     (candidate.state.spatial_world === undefined || isEngineSpatialWorld(candidate.state.spatial_world)) &&
     (candidate.state.spatial_state === undefined || candidate.state.spatial_state === null || isEngineCellSpatialState(candidate.state.spatial_state)) &&
+    (candidate.state.physical_validation === undefined || isEnginePhysicalValidation(candidate.state.physical_validation)) &&
     (candidate.state.brian2_communication === undefined || isEngineBrian2Communication(candidate.state.brian2_communication)) &&
     (candidate.state.generative_modeling === undefined || isEngineGenerativeModelingBoundary(candidate.state.generative_modeling))
   );
