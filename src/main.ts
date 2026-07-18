@@ -5,10 +5,14 @@ import {
   createElement,
   Gauge,
   GitFork,
+  Grid3X3,
+  Layers3,
   type IconNode,
   Pause,
   Play,
   RefreshCcw,
+  Ruler,
+  ScanSearch,
   SkipForward,
   Thermometer,
   Waves
@@ -71,6 +75,7 @@ import {
   stepMembrane,
   computeNormals as computeMembraneNormals,
   restoreMembraneRestShape,
+  writePrevalidatedBarycentricMembranePoint,
   type MembraneSim
 } from "./physics/membrane_mechanics";
 import {
@@ -84,13 +89,18 @@ import {
   type EngineSnapshotSummary
 } from "./engineSnapshot";
 import {
+  HEPATOCYTE_RENDER_RADIUS_WORLD,
+  HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT,
+  HUMAN_NC_3D_LIPID_DROPLET_VOLUME_FRACTION,
   HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM,
   VISUAL_ANATOMY_REQUIREMENTS,
   membraneDomainForDirection,
+  normalizeDisplaySphereScalesToVolumeFraction,
   visualAnatomyCoverage,
   visualAnatomyLod,
   type VisualAnatomyLod
 } from "./visualAnatomy";
+import { contactPatchDecision } from "./contactVisualization";
 import { perspectiveFrameScale } from "./visualFraming";
 import "./styles.css";
 
@@ -245,6 +255,24 @@ app.innerHTML = `
 
       <p class="scene-note" data-role="scene-note"></p>
 
+      <div class="scientific-overlay-toolbar" aria-label="Scientific overlays">
+        <span class="scientific-overlay-toolbar__label">Scientific view</span>
+        <div class="scientific-overlay-toolbar__buttons" role="group" aria-label="Scientific overlay layers">
+          <button class="overlay-button" type="button" data-scientific-overlay="scale" title="Physical scale" aria-label="Toggle physical scale" aria-pressed="true">
+            <i data-lucide="ruler"></i>
+          </button>
+          <button class="overlay-button" type="button" data-scientific-overlay="domains" title="Membrane domains" aria-label="Toggle membrane domains" aria-pressed="true">
+            <i data-lucide="layers-3"></i>
+          </button>
+          <button class="overlay-button" type="button" data-scientific-overlay="voxels" title="RDME voxel slices" aria-label="Toggle RDME voxel slices" aria-pressed="false">
+            <i data-lucide="grid-3-x-3"></i>
+          </button>
+          <button class="overlay-button" type="button" data-scientific-overlay="contacts" title="Engine contact geometry" aria-label="Toggle engine contact geometry" aria-pressed="true">
+            <i data-lucide="scan-search"></i>
+          </button>
+        </div>
+      </div>
+
       <div class="micro-controls">
         <label class="control-row">
           <span>Medium</span>
@@ -308,9 +336,13 @@ const icons = {
   Cloud,
   Gauge,
   GitFork,
+  Grid3X3,
+  Layers3,
   Pause,
   Play,
   RefreshCcw,
+  Ruler,
+  ScanSearch,
   SkipForward,
   Thermometer,
   Waves
@@ -342,17 +374,24 @@ const nutritionBadge = document.createElement("div");
 nutritionBadge.className = "nutrition-badge";
 nutritionBadge.style.display = "none";
 viewportElement.append(nutritionBadge);
-// Contact-event channel readout: the geometric layer's contact/exchange events —
-// the trigger inputs the engine will consume (currently fail-closed on kinetics).
-const contactBadge = document.createElement("div");
-contactBadge.className = "contact-badge";
-contactBadge.style.display = "none";
-viewportElement.append(contactBadge);
 const splitStateBadge = document.createElement("div");
 splitStateBadge.className = "split-state-badge";
 splitStateBadge.style.display = "none";
 splitStateBadge.setAttribute("aria-label", "Split state");
 viewportElement.append(splitStateBadge);
+const scientificScaleBadge = document.createElement("div");
+scientificScaleBadge.className = "scientific-scale-badge";
+scientificScaleBadge.style.display = "none";
+scientificScaleBadge.innerHTML = '<span class="scientific-scale-badge__bar"></span><b>10 µm</b><small data-role="voxel-scale"></small>';
+viewportElement.append(scientificScaleBadge);
+const membraneDomainLegend = document.createElement("div");
+membraneDomainLegend.className = "membrane-domain-legend";
+membraneDomainLegend.style.display = "none";
+membraneDomainLegend.innerHTML =
+  '<span><i style="--domain-color:#49a9c5"></i>blood-facing</span>' +
+  '<span><i style="--domain-color:#8797bf"></i>lateral</span>' +
+  '<span><i style="--domain-color:#d9e778"></i>bile-facing</span>';
+viewportElement.append(membraneDomainLegend);
 
 // After a real division the viewport splits into one card per daughter cell —
 // each showing that daughter's own state and (inheritance-derived) activity.
@@ -557,66 +596,128 @@ let membraneSim: MembraneSim | null = null;
 let membraneRestPos: Float32Array | null = null;
 let engineMembraneDeformationActive = false;
 
-// --- Contact-event channel -------------------------------------------------
-// When an external body physically reaches the membrane, the cell does NOT
-// simply eat it. It DECIDES by molecular recognition, and — following the
-// engine's own source-backed communication atlas — the dominant outcome is
-// SIGNALLING, not import: a ligand binds its receptor and a signal cascade
-// propagates INWARD while the ligand stays outside. Neighbour cells form
-// junctions (no import). A hepatocyte does not phagocytose bacteria (that is the
-// Kupffer cell's role), so an unrecognised body is NOT taken in. Receptor-
-// mediated ENTRY (membrane invagination) is the rare, specific case — here a
-// virus hijacking a real receptor. Each outcome emits a structured event: the
-// engine's trigger input, with response kinetics still fail-closed.
-type ContactResponse = "signal" | "junction" | "entry_hijack" | "no_uptake";
-type ContactPartner = {
-  kind: "ligand" | "cell" | "virus" | "bacterium";
-  label: string;
-  molecule: string;          // what it presents to the surface
-  receptorGene: string;      // "" when there is no recognising receptor
-  receptorName: string;
-  response: ContactResponse;
-  pathway: string;           // transduction summary / outcome
-  color: string;
-  radiusWorld: number;
-};
-type ContactPhase = "approach" | "decide" | "respond" | "depart" | "cooldown";
-type ContactExchangeEvent = { id: number; tSim: number; partnerLabel: string; receptor: string; response: ContactResponse; pathway: string; gapUm: number };
-type ContactChannel = {
-  body: THREE.Mesh;
-  signalPulse: THREE.Mesh;   // second-messenger cascade travelling inward
-  nucleus: THREE.Vector3;
-  dir: THREE.Vector3;
-  partner: ContactPartner;
-  partnerIndex: number;
-  phase: ContactPhase;
-  phaseT: number;
-  gapUm: number;
-  receptorId: string | null;
-  indent: number;            // invagination depth — only for entry_hijack
-  events: ContactExchangeEvent[];
-};
-let contactChannel: ContactChannel | null = null;
-let contactEventSeq = 0;
-const CONTACT_PARTNERS: ContactPartner[] = [
-  // Endocrine ligand: glucagon binds GCGR → Gs/cAMP/PKA/CREB. Ligand is NOT
-  // internalised; the SIGNAL propagates inward. (Engine atlas: glucagon_gcgr_...)
-  { kind: "ligand", label: "glucagon", molecule: "glucagon hormone", receptorGene: "GCGR", receptorName: "GCGR", response: "signal", pathway: "Gs → cAMP → PKA → CREB · glycogen mobilisation (ligand stays outside)", color: "#f2c45b", radiusWorld: 0.34 },
-  // Neighbour hepatocyte: E-cadherin adherens + Cx32 gap junction. No import.
-  { kind: "cell", label: "neighbour hepatocyte", molecule: "E-cadherin + Cx32", receptorGene: "", receptorName: "CDH1 / GJB1(Cx32)", response: "junction", pathway: "adherens junction + gap-junction coupling · small-molecule exchange (no import)", color: "#81a6b6", radiusWorld: 3.0 },
-  // Bacterium: hepatocytes do NOT phagocytose — Kupffer cells do. Not taken in.
-  { kind: "bacterium", label: "bacterium", molecule: "surface PAMPs", receptorGene: "", receptorName: "— (no uptake receptor)", response: "no_uptake", pathway: "not internalised by the hepatocyte · cleared by Kupffer cells", color: "#d8b45b", radiusWorld: 1.4 },
-  // Virus: HBV hijacks NTCP/SLC10A1 (the real HBV/HDV receptor) to ENTER — the
-  // rare, specific, pathological import case (Yan et al. 2012).
-  { kind: "virus", label: "HBV virion", molecule: "preS1 envelope", receptorGene: "SLC10A1", receptorName: "NTCP", response: "entry_hijack", pathway: "preS1 → NTCP hijack → receptor-mediated ENTRY (pathological exception)", color: "#d47b8e", radiusWorld: 0.8 }
-];
 let organelleInteractionLayer: THREE.Group | null = null;
 let organelleInteractionSummaryRef: EngineSnapshotSummary | null = null;
+let organelleVoxelOverlay: THREE.Group | null = null;
+type ScientificOverlayKey = "scale" | "domains" | "voxels" | "contacts";
+const scientificOverlayState: Record<ScientificOverlayKey, boolean> = {
+  scale: true,
+  domains: true,
+  voxels: false,
+  contacts: true
+};
+const SCIENTIFIC_SCALE_LENGTH_UM = 10;
+let voxelOverlayDxUm: number | null = null;
+let voxelOverlayLoadFailed = false;
+const scientificScaleCenterWorld = new THREE.Vector3();
+const scientificScaleRootScale = new THREE.Vector3();
+const scientificScaleCameraRight = new THREE.Vector3();
+const scientificScaleStartWorld = new THREE.Vector3();
+const scientificScaleEndWorld = new THREE.Vector3();
+const scientificScaleCameraQuaternion = new THREE.Quaternion();
 let membraneFaceDirs: Float32Array | null = null;
 const MF_LON = 32;
 const MF_LAT = 16;
 let membraneField: Float32Array | null = null;
 const _mfCount = new Float32Array(MF_LON * MF_LAT);
+
+function updateScientificScaleBar(): void {
+  if (mode !== "organelles" || !scientificOverlayState.scale || !organelleGroup) return;
+  root.updateMatrixWorld(true);
+  camera.updateMatrixWorld(true);
+  organelleGroup.getWorldPosition(scientificScaleCenterWorld);
+  root.getWorldScale(scientificScaleRootScale);
+  camera.getWorldQuaternion(scientificScaleCameraQuaternion);
+  scientificScaleCameraRight
+    .set(1, 0, 0)
+    .applyQuaternion(scientificScaleCameraQuaternion)
+    .normalize();
+
+  // Root scaling is camera framing only. The cell group's biomass scale is a
+  // physical size change, so it must not alter this fixed 10-um reference.
+  const halfLengthWorld =
+    (SCIENTIFIC_SCALE_LENGTH_UM / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT)
+    * Math.abs(scientificScaleRootScale.x)
+    * 0.5;
+  scientificScaleStartWorld
+    .copy(scientificScaleCenterWorld)
+    .addScaledVector(scientificScaleCameraRight, -halfLengthWorld)
+    .project(camera);
+  scientificScaleEndWorld
+    .copy(scientificScaleCenterWorld)
+    .addScaledVector(scientificScaleCameraRight, halfLengthWorld)
+    .project(camera);
+
+  const pixelWidth = Math.abs(scientificScaleEndWorld.x - scientificScaleStartWorld.x)
+    * viewportElement.clientWidth
+    * 0.5;
+  const valid = Number.isFinite(pixelWidth) && pixelWidth >= 8 && pixelWidth <= viewportElement.clientWidth * 0.9;
+  scientificScaleBadge.style.visibility = valid ? "visible" : "hidden";
+  if (valid) scientificScaleBadge.style.setProperty("--scientific-scale-width", `${pixelWidth.toFixed(1)}px`);
+}
+
+function hasEngineExternalBody(summary: EngineSnapshotSummary | null): boolean {
+  const world = summary?.spatialWorld;
+  if (!world) return false;
+  const primaryId = summary?.spatialState?.body_id
+    ?? world.bodies.find((body) => body.biological_kind === "hepatocyte")?.id;
+  return world.bodies.some((body) => body.id !== primaryId);
+}
+
+function updateScientificOverlayControls(): void {
+  const isCell = mode === "organelles";
+  const externalBodyAvailable = hasEngineExternalBody(externalEngineSummary);
+  for (const button of app?.querySelectorAll<HTMLButtonElement>("[data-scientific-overlay]") ?? []) {
+    const key = button.dataset.scientificOverlay as ScientificOverlayKey | undefined;
+    if (!key || !(key in scientificOverlayState)) continue;
+    const unavailable = (key === "contacts" && !externalBodyAvailable) || (key === "voxels" && voxelOverlayLoadFailed);
+    button.disabled = unavailable;
+    button.classList.toggle("is-active", scientificOverlayState[key] && !unavailable);
+    button.setAttribute("aria-pressed", String(scientificOverlayState[key] && !unavailable));
+    if (key === "contacts") {
+      button.title = externalBodyAvailable
+        ? "Engine contact geometry"
+        : "No external engine body; no contact surface is drawn";
+    } else if (key === "voxels" && voxelOverlayLoadFailed) {
+      button.title = "RDME voxel artifact unavailable";
+    }
+  }
+
+  scientificScaleBadge.style.display = isCell && scientificOverlayState.scale ? "flex" : "none";
+  membraneDomainLegend.style.display = isCell && scientificOverlayState.domains ? "flex" : "none";
+  const voxelScale = scientificScaleBadge.querySelector<HTMLElement>("[data-role='voxel-scale']");
+  if (voxelScale) {
+    voxelScale.textContent = isCell && scientificOverlayState.voxels && voxelOverlayDxUm !== null
+      ? `voxel ${voxelOverlayDxUm.toFixed(3)} µm`
+      : "";
+  }
+  if (organelleInteractionLayer) {
+    organelleInteractionLayer.visible = isCell && scientificOverlayState.contacts && externalBodyAvailable;
+  }
+  if (organelleVoxelOverlay) {
+    organelleVoxelOverlay.visible = isCell && scientificOverlayState.voxels;
+  }
+  if (organelleMembrane) {
+    const material = organelleMembrane.material as THREE.MeshStandardMaterial;
+    const nextVertexColors = isCell && scientificOverlayState.domains;
+    if (material.vertexColors !== nextVertexColors) {
+      material.vertexColors = nextVertexColors;
+      material.needsUpdate = true;
+    }
+    material.opacity = nextVertexColors ? 0.18 : 0.12;
+  }
+}
+
+for (const button of app.querySelectorAll<HTMLButtonElement>("[data-scientific-overlay]")) {
+  button.addEventListener("click", () => {
+    const key = button.dataset.scientificOverlay as ScientificOverlayKey | undefined;
+    if (!key || button.disabled) return;
+    scientificOverlayState[key] = !scientificOverlayState[key];
+    if (key === "voxels" && scientificOverlayState.voxels) void ensureOrganelleVoxelOverlay();
+    updateScientificOverlayControls();
+  });
+}
+
 type DiseaseSceneVisuals = {
   canaliculusMaterial: THREE.MeshStandardMaterial;
   bsepMaterials: THREE.MeshStandardMaterial[];
@@ -655,7 +756,6 @@ type OrganelleInventoryVisual = {
   mitochondrialFragments: number;
   lysosomes: number;
   peroxisomes: number;
-  lipidDroplets: number;
   ribosomes: number;
   centrosomes: number;
   golgiFragments: number;
@@ -783,9 +883,9 @@ const organelleMotions: MotionTarget[] = [];
 // count is driven by the real engine glycogen store (fills fed, mobilises fasted).
 let glycogenInstanced: THREE.InstancedMesh | null = null;
 let glycogenTotal = 0;
-// Lipid droplets: one instanced population whose visible count tracks nutritional
-// state (lowest post-absorptive, higher fed, highest in prolonged fasting as
-// adipose FFA influx drives hepatic neutral-lipid accumulation).
+// Lipid droplets are renderer samples. Their combined rest volume is normalized
+// to the measured healthy-human NC aggregate fraction; count and size variation
+// are not interpreted as a biological distribution.
 let lipidInstanced: THREE.InstancedMesh | null = null;
 let lipidTotal = 0;
 // Instanced organelle display populations. Proxy-derived sample counts remain
@@ -874,8 +974,7 @@ let mode: Mode = "ions";
 // updates (membrane physics, crowded organelle motion, instance-colour uploads).
 let organelleFrameCount = 0;
 const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
-const CELL_R = 14; // whole-cell schematic radius (world units)
-const CELL_RADIUS_UM = 9.2; // half of the loaded 18.4 um isolated-PHH median diameter
+const CELL_R = HEPATOCYTE_RENDER_RADIUS_WORLD;
 const CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND = 5;
 const CELL_VISUAL_STEP_ITERATIONS = 2;
 const MEMBRANE_SCALE = 1.6; // membrane positions are in σ (~1 nm); scale for display
@@ -1048,7 +1147,6 @@ const baselineOrganelleInventory = (): OrganelleInventoryVisual => ({
   mitochondrialFragments: 1000,
   lysosomes: 400,
   peroxisomes: 500,
-  lipidDroplets: 100,
   ribosomes: 10_000_000,
   centrosomes: 1,
   golgiFragments: 1,
@@ -1111,7 +1209,6 @@ function partitionVisualOrganelles(parent: OrganelleInventoryVisual): [Organelle
   const [fragA, fragB] = splitIntegerCount(parent.mitochondrialFragments);
   const [lysoA, lysoB] = splitIntegerCount(parent.lysosomes);
   const [peroxA, peroxB] = splitIntegerCount(parent.peroxisomes);
-  const [lipidA, lipidB] = splitIntegerCount(parent.lipidDroplets);
   const [riboA, riboB] = splitIntegerCount(parent.ribosomes);
   const [golgiA, golgiB] = splitIntegerCount(Math.max(2, parent.golgiFragments));
   const cenA = 1;
@@ -1122,7 +1219,6 @@ function partitionVisualOrganelles(parent: OrganelleInventoryVisual): [Organelle
       mitochondrialFragments: Math.max(mitoA, fragA),
       lysosomes: lysoA,
       peroxisomes: peroxA,
-      lipidDroplets: lipidA,
       ribosomes: riboA,
       centrosomes: cenA,
       golgiFragments: golgiA > 0 ? 1 : 0,
@@ -1134,7 +1230,6 @@ function partitionVisualOrganelles(parent: OrganelleInventoryVisual): [Organelle
       mitochondrialFragments: Math.max(mitoB, fragB),
       lysosomes: lysoB,
       peroxisomes: peroxB,
-      lipidDroplets: lipidB,
       ribosomes: riboB,
       centrosomes: cenB,
       golgiFragments: golgiB > 0 ? 1 : 0,
@@ -1315,9 +1410,6 @@ function visualCellFromEngineCell(cell: EngineDivisionCell, fallbackIndex: numbe
       mitochondrialFragments: cell.organelles.mitochondrial_fragments,
       lysosomes: cell.organelles.lysosomes,
       peroxisomes: cell.organelles.peroxisomes,
-      // Lipid droplets are visual-only (the engine does not track them yet); seed
-      // from the grounded baseline scaled by biomass so daughters inherit sanely.
-      lipidDroplets: Math.max(1, Math.round(100 * cell.biomass)),
       ribosomes: cell.organelles.ribosomes,
       centrosomes: cell.organelles.centrosomes,
       golgiFragments: cell.organelles.golgi_fragments,
@@ -2197,6 +2289,7 @@ function updateModeControls() {
   // it in the cell scene so the cell reads as a clean 3D body.
   grid.visible = !isBiologicalScene;
   if (!isCell) divisionPanelsEl.style.display = "none";
+  updateScientificOverlayControls();
 }
 
 function loadScene(id: string) {
@@ -2878,229 +2971,6 @@ function updateMembraneProteinAnchors(_t: number) {
   }
 }
 
-// ---- Contact-event channel -------------------------------------------------
-// Physically indent the membrane inward around a contact direction. The push is
-// added into the sim positions, so the membrane physics (edge + bending forces)
-// then propagates and relaxes it through the neighbouring vertices — the local
-// contact deformation spreads and heals exactly like the real elastic surface.
-function indentMembraneAt(dir: THREE.Vector3, deltaInward: number, cosWidth: number): void {
-  const sim = membraneSim;
-  if (!sim) return;
-  const { n, pos, restDir } = sim;
-  const dx = dir.x, dy = dir.y, dz = dir.z;
-  for (let v = 0; v < n; v += 1) {
-    const i = v * 3;
-    const d = restDir[i] * dx + restDir[i + 1] * dy + restDir[i + 2] * dz;
-    if (d <= cosWidth) continue;
-    // Smooth falloff from the contact centre to the patch edge.
-    const w = (d - cosWidth) / (1 - cosWidth);
-    const push = deltaInward * w * w;
-    pos[i] -= restDir[i] * push;
-    pos[i + 1] -= restDir[i + 1] * push;
-    pos[i + 2] -= restDir[i + 2] * push;
-  }
-}
-
-function pickContactReceptorDir(partner: ContactPartner, fallback: THREE.Vector3): { dir: THREE.Vector3; id: string | null } {
-  // Prefer the partner's real receptor if that structure is loaded on the
-  // basolateral face; otherwise the nearest basolateral protein; else fallback.
-  let exact: MembraneProteinAnchor | null = null;
-  let nearestBaso: MembraneProteinAnchor | null = null;
-  let bestDot = -2;
-  for (const a of membraneProteinAnchors) {
-    if (a.proteinId === partner.receptorGene) exact = a;
-    const dot = a.dir.dot(fallback);
-    if (a.dir.x < 0.1 && dot > bestDot) { bestDot = dot; nearestBaso = a; }
-  }
-  const chosen = exact ?? nearestBaso;
-  return chosen ? { dir: chosen.dir.clone(), id: chosen.proteinId } : { dir: fallback.clone(), id: null };
-}
-
-function buildContactChannel(group: THREE.Group, nucleus: THREE.Vector3): void {
-  const bodyGeo = new THREE.IcosahedronGeometry(1, 2);
-  const bodyMat = new THREE.MeshStandardMaterial({ color: "#f2c45b", emissive: "#f2c45b", emissiveIntensity: 0.2, roughness: 0.5, metalness: 0.02 });
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.visible = false;
-  body.userData.hoverKind = "engine-spatial-body";
-  group.add(body);
-  // The second-messenger signal that travels INWARD from an engaged receptor
-  // toward the nucleus (the ligand itself never enters).
-  const pulseMat = new THREE.MeshStandardMaterial({ color: "#8fe3ff", emissive: "#8fe3ff", emissiveIntensity: 0.9, roughness: 0.4, transparent: true, opacity: 0.95 });
-  const signalPulse = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 2), pulseMat);
-  signalPulse.visible = false;
-  group.add(signalPulse);
-  contactChannel = {
-    body, signalPulse,
-    nucleus: nucleus.clone(),
-    dir: new THREE.Vector3(-0.86, 0.2, 0.35).normalize(),
-    partner: CONTACT_PARTNERS[0],
-    partnerIndex: 0,
-    phase: "cooldown",
-    phaseT: 1.2, // small delay before the first approach
-    gapUm: 0,
-    receptorId: null,
-    indent: 0,
-    events: []
-  };
-}
-
-function startContactApproach(cc: ContactChannel): void {
-  cc.partnerIndex = (cc.partnerIndex + 1) % CONTACT_PARTNERS.length;
-  cc.partner = CONTACT_PARTNERS[cc.partnerIndex];
-  const basolateral = new THREE.Vector3(-0.86, 0.2, 0.35).normalize();
-  // Only signalling/entry partners engage a specific receptor; a junction or an
-  // unrecognised body just meets the surface at a basolateral point.
-  if (cc.partner.receptorGene) {
-    const target = pickContactReceptorDir(cc.partner, basolateral);
-    cc.dir = target.dir;
-    cc.receptorId = target.id;
-  } else {
-    cc.dir = basolateral.clone();
-    cc.receptorId = null;
-  }
-  cc.phase = "approach";
-  cc.phaseT = 0;
-  cc.indent = 0;
-  const b = cc.body;
-  (b.material as THREE.MeshStandardMaterial).color.set(cc.partner.color);
-  (b.material as THREE.MeshStandardMaterial).emissive.set(cc.partner.color);
-  b.scale.setScalar(cc.partner.radiusWorld);
-  b.position.copy(cc.dir).multiplyScalar(CELL_R * 1.85);
-  b.visible = true;
-  cc.signalPulse.visible = false;
-}
-
-const _ccPos = new THREE.Vector3();
-const _ccNorm = new THREE.Vector3();
-function emitContactEvent(cc: ContactChannel, tSim: number): void {
-  contactEventSeq += 1;
-  cc.events.unshift({
-    id: contactEventSeq,
-    tSim,
-    partnerLabel: cc.partner.label,
-    receptor: cc.receptorId ? `${cc.partner.receptorName} (${cc.receptorId})` : cc.partner.receptorName,
-    response: cc.partner.response,
-    pathway: cc.partner.pathway,
-    gapUm: cc.gapUm
-  });
-  if (cc.events.length > 4) cc.events.length = 4;
-}
-
-// Highlight the receptor that senses the contact (its real hero structure pulses).
-function pulseContactReceptor(receptorId: string | null, on: boolean): void {
-  if (!receptorId) return;
-  for (const a of membraneProteinAnchors) {
-    if (a.proteinId !== receptorId) continue;
-    a.object.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      const mat = mesh.material as THREE.MeshStandardMaterial | undefined;
-      if (mat && "emissiveIntensity" in mat) mat.emissiveIntensity = on ? 0.9 : 0.12;
-    });
-  }
-}
-
-function updateContactChannel(dtSim: number, tSim: number): void {
-  const cc = contactChannel;
-  if (!cc || !membraneSim) return;
-  cc.phaseT += dtSim;
-  sampleMembraneSurface(cc.dir.x, cc.dir.y, cc.dir.z, 1.0, _ccPos, _ccNorm);
-  const surfaceR = _ccPos.length();
-  const bodyR = cc.partner.radiusWorld;
-  const contactR = surfaceR + bodyR * 0.55;
-
-  switch (cc.phase) {
-    case "approach": {
-      const speed = CELL_R * 0.9;
-      const r = Math.max(contactR, cc.body.position.length() - speed * dtSim);
-      cc.body.position.copy(cc.dir).multiplyScalar(r);
-      cc.gapUm = Math.max(0, r - contactR) * (CELL_RADIUS_UM / CELL_R);
-      cc.body.rotation.y += dtSim * 0.6;
-      if (r <= contactR + 1e-3) {
-        // The body has reached the surface. The cell now DECIDES by recognition.
-        cc.phase = "decide"; cc.phaseT = 0;
-        cc.gapUm = 0;
-        if (cc.receptorId) pulseContactReceptor(cc.receptorId, true);
-        emitContactEvent(cc, tSim);
-      }
-      break;
-    }
-    case "decide": {
-      // Brief recognition dwell, then act on the decided response.
-      cc.body.position.copy(cc.dir).multiplyScalar(contactR);
-      if (cc.phaseT > 0.7) { cc.phase = "respond"; cc.phaseT = 0; }
-      break;
-    }
-    case "respond": {
-      cc.body.position.copy(cc.dir).multiplyScalar(contactR);
-      if (cc.partner.response === "signal") {
-        // Ligand stays docked; a second-messenger pulse travels to the nucleus.
-        const t = Math.min(1, cc.phaseT / 1.6);
-        cc.signalPulse.visible = true;
-        cc.signalPulse.position.lerpVectors(_ccPos, cc.nucleus, t);
-        (cc.signalPulse.material as THREE.MeshStandardMaterial).opacity = 0.95 * (1 - t * 0.5);
-        if (t >= 1) { cc.signalPulse.visible = false; cc.phase = "depart"; cc.phaseT = 0; pulseContactReceptor(cc.receptorId, false); }
-      } else if (cc.partner.response === "entry_hijack") {
-        // The rare specific IMPORT: the receptor is hijacked and the membrane
-        // invaginates, carrying the virion inward; then the patch seals.
-        cc.indent = Math.min(bodyR * 1.6, cc.indent + dtSim * bodyR);
-        const depth = Math.min(1, cc.phaseT / 1.8);
-        cc.body.position.copy(cc.dir).multiplyScalar(contactR - cc.indent - depth * CELL_R * 0.22);
-        if (depth >= 1) { cc.body.visible = false; cc.phase = "cooldown"; cc.phaseT = 0; pulseContactReceptor(cc.receptorId, false); }
-      } else {
-        // junction (neighbour cell) or no_uptake (bacterium): the body is NOT
-        // internalised. It simply rests at the surface for a moment.
-        if (cc.phaseT > 1.4) { cc.phase = "depart"; cc.phaseT = 0; }
-      }
-      break;
-    }
-    case "depart": {
-      // The partner leaves the way it came — nothing was taken into the cell
-      // (this is the common, correct outcome).
-      const r = cc.body.position.length() + CELL_R * 0.7 * dtSim;
-      cc.body.position.copy(cc.dir).multiplyScalar(r);
-      cc.body.rotation.y += dtSim * 0.6;
-      if (r > CELL_R * 1.7) { cc.body.visible = false; cc.phase = "cooldown"; cc.phaseT = 0; }
-      break;
-    }
-    case "cooldown": {
-      // Any transient invagination (entry case) relaxes via the membrane physics.
-      cc.indent *= Math.max(0, 1 - dtSim * 1.6);
-      if (cc.phaseT > 1.8) startContactApproach(cc);
-      break;
-    }
-  }
-  renderContactBadge(cc);
-}
-
-function contactResponseTag(r: ContactResponse): { arrow: string; cls: string } {
-  switch (r) {
-    case "signal": return { arrow: "→ SIGNAL IN (ligand stays out)", cls: "is-signal" };
-    case "junction": return { arrow: "↔ JUNCTION (no import)", cls: "is-junction" };
-    case "entry_hijack": return { arrow: "⇢ RECEPTOR-MEDIATED ENTRY (pathological)", cls: "is-entry" };
-    case "no_uptake": return { arrow: "✕ NOT TAKEN IN (Kupffer-cell role)", cls: "is-none" };
-  }
-}
-
-function renderContactBadge(cc: ContactChannel): void {
-  if (!cc.events.length) { contactBadge.style.display = "none"; return; }
-  contactBadge.style.display = "block";
-  const rows = cc.events.map((e, idx) => {
-    const tag = contactResponseTag(e.response);
-    const live = idx === 0 ? " is-live" : "";
-    return `<div class="contact-badge__row${live} ${tag.cls}"><span class="contact-badge__partner">${e.partnerLabel}</span> · ${e.receptor} <span class="contact-badge__resp">${tag.arrow}</span><br><small>${e.pathway}</small></div>`;
-  }).join("");
-  const phase = cc.phase === "approach"
-    ? `approaching · gap ${cc.gapUm.toFixed(2)} µm`
-    : cc.phase === "decide" ? "cell deciding (molecular recognition)"
-    : cc.phase === "respond" ? (cc.partner.response === "signal" ? "signal cascade → nucleus" : cc.partner.response === "entry_hijack" ? "receptor-mediated entry" : cc.partner.response === "junction" ? "junction engaged" : "not internalised")
-    : cc.phase === "depart" ? "partner leaving (nothing imported)"
-    : "resetting";
-  contactBadge.innerHTML =
-    `<div class="contact-badge__head"><span class="contact-badge__title">Contact channel</span><span class="contact-badge__phase">${phase}</span></div>` +
-    rows +
-    `<div class="contact-badge__note">The cell DECIDES by molecular recognition — most contact is signalling, not import. Geometric contact + the decided response are the engine's trigger inputs; response kinetics remain fail-closed.</div>`;
-}
-
 // Per-frame bounded random motion of the instanced organelle display samples.
 // Each sample takes an independent step and stays inside its reserved cage, so
 // the renderer remains dynamic without interpenetration. This is visual motion,
@@ -3376,23 +3246,21 @@ const _surfaceNorm = new THREE.Vector3();
 function writeMembraneBoundPositions(binding: MembraneSurfaceBinding, arr: Float32Array): void {
   const sim = membraneSim;
   if (!sim) return;
-  const { faces, pos, normals } = sim;
+  const { faces, normals } = sim;
   for (let i = 0; i < binding.face.length; i += 1) {
     const f = binding.face[i] * 3;
     const ia = faces[f] * 3, ib = faces[f + 1] * 3, ic = faces[f + 2] * 3;
     const wa = binding.wa[i], wb = binding.wb[i], wc = binding.wc[i];
-    const sx = pos[ia] * wa + pos[ib] * wb + pos[ic] * wc;
-    const sy = pos[ia + 1] * wa + pos[ib + 1] * wb + pos[ic + 1] * wc;
-    const sz = pos[ia + 2] * wa + pos[ib + 2] * wb + pos[ic + 2] * wc;
+    writePrevalidatedBarycentricMembranePoint(sim, binding.face[i], wa, wb, wc, arr, i * 3);
     let nx = normals[ia] * wa + normals[ib] * wb + normals[ic] * wc;
     let ny = normals[ia + 1] * wa + normals[ib + 1] * wb + normals[ic + 1] * wc;
     let nz = normals[ia + 2] * wa + normals[ib + 2] * wb + normals[ic + 2] * wc;
     const inv = 1 / (Math.hypot(nx, ny, nz) || 1);
     nx *= inv; ny *= inv; nz *= inv;
     const lift = (binding.offset[i] - 1) * binding.restRadius[i];
-    arr[i * 3] = sx + nx * lift;
-    arr[i * 3 + 1] = sy + ny * lift;
-    arr[i * 3 + 2] = sz + nz * lift;
+    arr[i * 3] += nx * lift;
+    arr[i * 3 + 1] += ny * lift;
+    arr[i * 3 + 2] += nz * lift;
   }
 }
 
@@ -3484,12 +3352,6 @@ function updateMembraneShape(dtReal: number) {
     restoreMembraneRestShape(sim);
     engineMembraneDeformationActive = false;
   }
-  // Re-impose the current contact-endocytosis indent AFTER the physics step, so
-  // the next step's elastic forces see the dimple and propagate/heal it through
-  // the neighbouring vertices (real local deformation, not a painted-on dent).
-  if (contactChannel && contactChannel.indent > 0.01) {
-    indentMembraneAt(contactChannel.dir, contactChannel.indent, Math.cos(0.34));
-  }
   const attr = organelleMembrane.geometry.getAttribute("position") as THREE.BufferAttribute;
   (attr.array as Float32Array).set(sim.pos);
   attr.needsUpdate = true;
@@ -3508,17 +3370,9 @@ function updateNutritionVisual(s: CellSnapshot) {
     : clamp(s.glycogenStore01, 0.04, 1);
   // Function: the number of glycogen β-particles shown IS the real store level.
   if (glycogenInstanced) glycogenInstanced.count = Math.max(0, Math.round(glycogenTotal * frac));
-  // Function: hepatic lipid-droplet load by nutritional state. Lowest
-  // post-absorptive; higher fed; highest in prolonged fasting, where adipose
-  // free-fatty-acid influx drives hepatic neutral-lipid accumulation.
-  if (lipidInstanced) {
-    const profileId = engineNutrition?.profile_id;
-    const lipidFrac = profileId === "prolonged_fasted" ? 0.9
-      : profileId === "fed_peak" ? 0.6
-      : profileId === "postabsorptive" ? 0.42
-      : clamp(0.45 + 0.4 * (s.fedState === "fasting" ? 1 : 0), 0.3, 0.9);
-    lipidInstanced.count = Math.max(0, Math.round(lipidTotal * lipidFrac));
-  }
+  // No human PHH dose-time law links these nutritional profiles to droplet
+  // volume, so the healthy aggregate 3D baseline remains static and explicit.
+  if (lipidInstanced) lipidInstanced.count = lipidTotal;
   // The badge is text/DOM — refresh a few times a second, not every frame.
   const now = performance.now();
   if (now - lastNutritionBadgeMs < 220) return;
@@ -4144,11 +3998,46 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
   const authorityRow = summary?.quantitativeState
     ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Unified state</span><span>Primary metrics use source-traceable quantitative_state; overlapping relative pools are quarantined as schematic visual state.</span></div>`
     : "";
+  const geometryReference = summary?.quantitativeState?.geometry_reference;
+  const geometryReferenceRow = geometryReference
+    ? (() => {
+        const canonical = geometryReference.canonical_reference;
+        const lipid = geometryReference.aggregate_lipid_droplet_reference;
+        const historical = geometryReference.historical_in_situ_stereology_cross_check;
+        const isolated = geometryReference.isolated_phh_cross_check;
+        const evidence3d = geometryReference.three_dimensional_evidence;
+        return `<div class="phh-profile phh-profile--geometry-reference"><div class="phh-profile__head"><b>Human hepatocyte geometry v2</b><span>normal-control 3D volume active · individual mesh blocked</span></div><div class="phh-profile__grid"><span>3D NC cell volume <b>${canonical.cell_volume_um3.toFixed(1)} µm³ median</b></span><span>Between-reconstruction spread <b>MAD ${canonical.cell_volume_mad_um3.toFixed(1)} µm³ · n=${canonical.reconstruction_count}</b></span><span>Imaging resolution <b>${canonical.voxel_size_um.map((item) => item.toFixed(1)).join(" × ")} µm voxel</b></span><span>Volume-equivalent diameter <b>${canonical.equivalent_sphere_diameter_um.toFixed(3)} µm · derived</b></span><span>Healthy lipid-droplet volume <b>${lipid.median_percent.toFixed(3)}% median · MAD ${lipid.mad_percentage_points.toFixed(3)} pp</b></span><span>Historical stereology <b>${historical.mean_cell_volume_um3.toFixed(0)} ± ${historical.reported_plus_minus_um3.toFixed(1)} µm³ · retained, not averaged</b></span><span>Isolated PHH cross-check <b>${isolated.median_diameter_um.toFixed(1)} µm median · ${isolated.cryopreserved_batch_count} batches</b></span><span>Single-hepatocyte boundary mesh <b>${evidence3d.donor_resolved_single_hepatocyte_boundary_mesh_available ? "available" : "not measured"}</b></span><span>Membrane-domain surface areas <b>${evidence3d.quantitative_membrane_domain_surface_area_available ? "available" : "not measured"}</b></span><span>Canonical contact body <b>measured-volume equivalent proxy</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--source">3D geometry</span><span>Scale now follows direct 0.3-µm isotropic normal-human 3D reconstruction. The conflicting older stereology estimate remains visible; no averaging, donor mesh, shape distribution or contact ground truth is implied.</span></div>`;
+      })()
+    : "";
+  const human3d = summary?.humanHepatocyte3dMorphometry;
+  const human3dRow = human3d
+    ? (() => {
+        const volume = human3d.normal_control_cell_volume_um3;
+        const lipid = human3d.normal_control_lipid_droplet_volume_percent;
+        const study = human3d.study_context;
+        const gates = human3d.integration_gates;
+        return `<div class="phh-profile"><div class="phh-profile__head"><b>Checksummed human 3D morphometry</b><span>Supplementary Table 3 · aggregate NC evidence</span></div><div class="phh-profile__grid"><span>Source workbook <b>${human3d.source_artifact.downloaded_bytes.toLocaleString()} bytes · SHA-256 verified</b></span><span>Study analysis <b>${study.all_group_analyzed_cell_count.toLocaleString()} cells · ${study.all_group_reconstruction_count} reconstructions · all groups</b></span><span>Healthy reference subset <b>${volume.n_reconstructions} NC reconstructions</b></span><span>Lobular regions <b>${volume.regional_medians.length} CV→PV bins retained</b></span><span>Aggregate lipid fraction <b>${lipid.overall.toFixed(6)}% · renderer volume calibrated</b></span><span>Individual boundary coordinates <b>${gates.individual_cell_boundary_mesh_available ? "available" : "not supplied"}</b></span><span>Healthy shape distribution <b>${gates.healthy_population_shape_distribution_available ? "available" : "not identifiable"}</b></span><span>Contact-interface validation <b>${gates.may_calibrate_contact_patch_ground_truth ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--source">Morphometry contract</span><span>Only aggregate volume and aggregate healthy lipid fraction are active. The pooled cell-size classes combine healthy and disease groups and cannot initialize a healthy population.</span></div>`;
+      })()
+    : "";
   const zonation = summary?.zonationState;
   const zonationRow = zonation
     ? (() => {
         const oxygen = zonation.experimental_oxygen_context;
         return `<div class="phh-profile"><div class="phh-profile__head"><b>${zonation.zone.label}</b><span>${zonation.zone.oxygen_context.replaceAll("_", " ")}</span></div><div class="phh-profile__grid"><span>Markers <b>${zonation.zone.marker_genes.slice(0, 6).join(" · ")}</b></span><span>Functions <b>${zonation.zone.functional_biases.join(" · ")}</b></span><span>Human MPS oxygen settings <b>${oxygen.controlled_oxygen_low_percent.toFixed(0)}–${oxygen.controlled_oxygen_high_percent.toFixed(0)}%</b></span><span>In-situ sinusoid pO₂ <b>not measured</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Zonation</span><span>Human atlas identity plus directional human MPS evidence · controlled device oxygen is not a human in-situ pO₂ value and cannot initialize zonal reaction rates.</span></div>`;
+      })()
+    : "";
+  const openAtlas = summary?.humanLiverOpenAtlas;
+  const openAtlasRow = openAtlas
+    ? (() => {
+        const area = openAtlas.morphometry_2d.segmented_area_um2.all;
+        const selectedArea = openAtlas.morphometry_2d.selected_zone_segmented_area_um2;
+        const geometryCheck = openAtlas.morphometry_2d.canonical_geometry_context_check;
+        const zonatedProteins = openAtlas.spatial_proteome.selected_zone_top_proteins
+          .slice(0, 6)
+          .map((item) => item.protein)
+          .join(" · ");
+        const proteinReadout = zonatedProteins || "no separate midlobular maximum class in source analysis";
+        return `<div class="phh-profile phh-profile--open-atlas"><div class="phh-profile__head"><b>Human liver open atlas v1</b><span>5 checksummed open source artifacts</span></div><div class="phh-profile__grid"><span>In-situ hepatocytes <b>${openAtlas.morphometry_2d.cell_count.toLocaleString()}</b></span><span>All segmented area <b>${area.median.toFixed(1)} µm² median · ${area.p05.toFixed(1)}–${area.p95.toFixed(1)} P05–P95</b></span><span>${openAtlas.morphometry_2d.selected_zone_cluster} area <b>${selectedArea.median.toFixed(1)} µm² median · source-mapped ${openAtlas.selected_zone}</b></span><span>Canonical sphere context <b>${geometryCheck.within_in_situ_segmented_area_p05_p95 ? "inside observed range" : "outside observed range"} · not calibration</b></span><span>PHH surface identities <b>${openAtlas.surfaceome.observed_protein_count} · density/domain unknown</b></span><span>Spatial proteins <b>${openAtlas.spatial_proteome.supplement_table_record_count.toLocaleString()} table rows · article ${openAtlas.spatial_proteome.article_reported_protein_count_at_70pct_completeness.toLocaleString()} · difference ${openAtlas.spatial_proteome.article_minus_supplement_record_count}</b></span><span>Strongly zonated proteins <b>${openAtlas.spatial_proteome.strong_zonated_count} · ${proteinReadout}</b></span><span>Selected-zone interaction hypotheses <b>${openAtlas.interaction_hypotheses.selected_zone_interaction_count} · ${openAtlas.interaction_hypotheses.selected_zone_nonzero_edge_count.toLocaleString()} scored edges</b></span><span>Healthy lobule radius <b>${openAtlas.tissue_architecture.healthy_lobule_polygonal_radius_um.median.toFixed(0)} µm median · tissue scale</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--source">Open atlas</span><span>Measured identities, source-mapped clusters and normalized gradients are active evidence. Surface density, orientation, binding kinetics, 3D single-cell geometry replacement and score-driven signaling remain closed.</span></div>`;
       })()
     : "";
   const homeostasis = summary?.sinusoidHomeostasis;
@@ -4267,7 +4156,7 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
         const associationText = mrnaAssociation?.correlation_r !== null && mrnaAssociation?.correlation_r !== undefined && mrnaAssociation.p_value !== null
           ? `r=${mrnaAssociation.correlation_r.toFixed(2)} · p=${mrnaAssociation.p_value.toFixed(2)} · not significant`
           : "numeric association unavailable";
-        return `<div class="phh-profile phh-profile--albumin"><div class="phh-profile__head"><b>PHH albumin secretion v1</b><span>measured output · kinetics blocked</span></div><div class="phh-profile__grid"><span>Commercial 2D PHH batches <b>${albuminSummary.measured_batch_count}</b></span><span>24 h secreted albumin span <b>${span.low_batch_mean.toFixed(1)} ± ${span.low_batch_sd.toFixed(1)} → ${span.high_batch_mean.toFixed(1)} ± ${span.high_batch_sd.toFixed(1)} ng/10⁶ cells</b></span><span>Mass-derived output scale <b>${albuminSummary.low_batch_mean_molecules_per_cell_s.toFixed(0)}–${albuminSummary.high_batch_mean_molecules_per_cell_s.toFixed(0)} mature molecules/cell/s</b></span><span>Mature human albumin <b>${entity.mature_chain_length_aa} aa · ${entity.mature_albumin_molar_mass_g_per_mol.toLocaleString()} Da</b></span><span>Contextual intracellular pool <b>${albuminSummary.contextual_albumin_pool_copies_per_cell.toLocaleString()} copies/cell · unmatched cohort</b></span><span>Secretion ↔ ALB mRNA <b>${associationText}</b></span><span>CSCB product criterion <b>≥${criterion.threshold.toFixed(0)} ng/24 h/10⁶ cells · not model pass</b></span><span>Mechanistic rates identified <b>${albuminSummary.mechanism_specific_rate_identified_count}/${albuminSummary.mechanism_specific_rate_count}</b></span><span>Loaded batch records <b>${albuminSummary.individual_batch_numeric_record_count}/${albuminSummary.measured_batch_count}</b></span><span>Exact model trajectories <b>${albuminSummary.exact_model_trajectory_count}</b></span><span>Window-specific viable-cell denominator <b>not reported</b></span><span>Cell-state coupling <b>blocked</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--source">PHH albumin</span><span>The operator converts cumulative mature-albumin molecules into the source ELISA unit. It does not turn a 24-hour endpoint, the 20-million-copy pool, or the CSCB product criterion into translation, ER, Golgi, exocytosis or degradation kinetics.</span></div>`;
+        return `<div class="phh-profile phh-profile--albumin"><div class="phh-profile__head"><b>PHH albumin secretion v1</b><span>measured output · kinetics blocked</span></div><div class="phh-profile__grid"><span>Commercial 2D PHH batches <b>${albuminSummary.measured_batch_count}</b></span><span>24 h secreted albumin span <b>${span.low_batch_mean.toFixed(1)} ± ${span.low_batch_sd.toFixed(1)} → ${span.high_batch_mean.toFixed(1)} ± ${span.high_batch_sd.toFixed(1)} ng/10⁶ cells</b></span><span>Mass-derived output scale <b>${albuminSummary.low_batch_mean_molecules_per_cell_s.toFixed(0)}–${albuminSummary.high_batch_mean_molecules_per_cell_s.toFixed(0)} mature molecules/cell/s</b></span><span>Mature human albumin <b>${entity.mature_chain_length_aa} aa · ${entity.mature_albumin_molar_mass_g_per_mol.toLocaleString()} Da</b></span><span>Contextual total ALB group <b>${Math.round(albuminSummary.contextual_albumin_pool_copies_per_nucleus).toLocaleString()} median copies/nucleus · unmatched cohort</b></span><span>Secretion ↔ ALB mRNA <b>${associationText}</b></span><span>CSCB product criterion <b>≥${criterion.threshold.toFixed(0)} ng/24 h/10⁶ cells · not model pass</b></span><span>Mechanistic rates identified <b>${albuminSummary.mechanism_specific_rate_identified_count}/${albuminSummary.mechanism_specific_rate_count}</b></span><span>Loaded batch records <b>${albuminSummary.individual_batch_numeric_record_count}/${albuminSummary.measured_batch_count}</b></span><span>Exact model trajectories <b>${albuminSummary.exact_model_trajectory_count}</b></span><span>Window-specific viable-cell denominator <b>not reported</b></span><span>Cell-state coupling <b>blocked</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--source">PHH albumin</span><span>The operator converts cumulative mature-albumin molecules into the source ELISA unit. It does not turn a 24-hour endpoint, the unmatched total ALB group, or the CSCB product criterion into translation, ER, Golgi, exocytosis or degradation kinetics.</span></div>`;
       })()
     : "";
   const phhCypFunction = summary?.phhCypFunction;
@@ -4299,14 +4188,41 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
         const masses = new Map(
           phhProteomeBudget.derived_compartment_mass_budget.map((item) => [item.id, item.derived_protein_mass_pg_per_cell]),
         );
-        return `<div class="phh-profile phh-profile--proteome"><div class="phh-profile__head"><b>Absolute PHH proteome budget v1</b><span>static mass reference · dynamics blocked</span></div><div class="phh-profile__grid"><span>Purified human donors <b>${proteomeSummary.donor_count}</b></span><span>Total protein <b>${proteomeSummary.total_protein_pg_per_cell.toFixed(0)} pg/cell</b></span><span>Protein molecules <b>${(proteomeSummary.total_protein_molecules_per_cell / 1e9).toFixed(1)} billion/cell</b></span><span>Mitochondrial protein mass <b>${masses.get("mitochondria")?.toFixed(0) ?? "-"} pg/cell</b></span><span>ER + Golgi protein mass <b>${masses.get("endoplasmic_reticulum_and_golgi")?.toFixed(0) ?? "-"} pg/cell</b></span><span>Nuclear protein mass <b>${masses.get("nucleus")?.toFixed(0) ?? "-"} pg/cell</b></span><span>Integral plasma-membrane protein <b>${proteomeSummary.integral_plasma_membrane_protein_mass_pg_per_cell.toFixed(1)} pg/cell</b></span><span>Estimated cell volume <b>${proteomeSummary.estimated_cell_volume_um3.toLocaleString()} µm³ · assumed 200 g/L protein</b></span><span>Dynamic parameters <b>${proteomeSummary.dynamic_parameter_count}</b></span><span>Geometry parameters <b>${proteomeSummary.geometry_parameter_count}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Proteome</span><span>Compartment values are arithmetic protein-mass budgets, not organelle volume or membrane-area targets. The seven-donor averages do not define synthesis, degradation, crowding, or one donor-specific cell.</span></div>`;
+        return `<div class="phh-profile phh-profile--proteome"><div class="phh-profile__head"><b>Absolute PHH proteome budget v1</b><span>rounded article headline · denominator audited below</span></div><div class="phh-profile__grid"><span>Purified human donors <b>${proteomeSummary.donor_count}</b></span><span>Article protein headline <b>${proteomeSummary.total_protein_pg_per_cell.toFixed(0)} pg/reference cell</b></span><span>Article molecule headline <b>${(proteomeSummary.total_protein_molecules_per_cell / 1e9).toFixed(1)} billion/reference cell</b></span><span>Mitochondrial protein mass arithmetic <b>${masses.get("mitochondria")?.toFixed(0) ?? "-"} pg/reference</b></span><span>ER + Golgi protein mass arithmetic <b>${masses.get("endoplasmic_reticulum_and_golgi")?.toFixed(0) ?? "-"} pg/reference</b></span><span>Nuclear protein mass arithmetic <b>${masses.get("nucleus")?.toFixed(0) ?? "-"} pg/reference</b></span><span>Integral plasma-membrane protein arithmetic <b>${proteomeSummary.integral_plasma_membrane_protein_mass_pg_per_cell.toFixed(1)} pg/reference</b></span><span>Derived reference volume <b>${proteomeSummary.estimated_cell_volume_um3.toLocaleString()} µm³ · assumed 200 g/L protein</b></span><span>Dynamic parameters <b>${proteomeSummary.dynamic_parameter_count}</b></span><span>Geometry parameters <b>${proteomeSummary.geometry_parameter_count}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Proteome</span><span>The article labels rounded headlines per cell, while its supplement labels the proteomic-ruler denominator per nucleus. Compartment values remain arithmetic protein-mass budgets, not geometry or dynamics.</span></div>`;
+      })()
+    : "";
+  const phhAbsoluteProteomeAtlas = summary?.phhAbsoluteProteomeAtlas;
+  const phhAbsoluteProteomeAtlasRow = phhAbsoluteProteomeAtlas
+    ? (() => {
+        const atlasSummary = phhAbsoluteProteomeAtlas.summary;
+        const panel = new Map(
+          phhAbsoluteProteomeAtlas.selected_canonical_gene_panel.map((record) => [record.gene, record]),
+        );
+        const formatProtein = (gene: string) => {
+          const record = panel.get(gene);
+          if (!record) return "not quantified";
+          return `${Math.round(record.median_copies_per_nucleus).toLocaleString()} median · ${Math.round(record.minimum_copies_per_nucleus).toLocaleString()}–${Math.round(record.maximum_copies_per_nucleus).toLocaleString()}`;
+        };
+        return `<div class="phh-profile phh-profile--absolute-proteome"><div class="phh-profile__head"><b>Donor-resolved PHH proteome v1</b><span>official supplements · no imputation</span></div><div class="phh-profile__grid"><span>Surgical-resection donors <b>${atlasSummary.donor_count} · not healthy volunteers</b></span><span>Quantified target protein groups <b>${atlasSummary.quantified_target_protein_group_count.toLocaleString()}</b></span><span>Quantified in all seven donors <b>${atlasSummary.quantified_in_all_seven_donors_count.toLocaleString()}</b></span><span>Mean total protein <b>${atlasSummary.donor_mean_total_protein_pg_per_nucleus.toFixed(1)} pg/nucleus · ${atlasSummary.donor_minimum_total_protein_pg_per_nucleus.toFixed(1)}–${atlasSummary.donor_maximum_total_protein_pg_per_nucleus.toFixed(1)}</b></span><span>Quantified copy sum <b>${(atlasSummary.donor_mean_quantified_group_copy_sum_per_nucleus / 1e9).toFixed(2)} billion/nucleus · ${(atlasSummary.donor_minimum_quantified_group_copy_sum_per_nucleus / 1e9).toFixed(2)}–${(atlasSummary.donor_maximum_quantified_group_copy_sum_per_nucleus / 1e9).toFixed(2)}</b></span><span>BSEP total <b>${formatProtein("ABCB11")} /nucleus</b></span><span>MRP2 total <b>${formatProtein("ABCC2")} /nucleus</b></span><span>NTCP total <b>${formatProtein("SLC10A1")} /nucleus</b></span><span>GLUT2 total <b>${formatProtein("SLC2A2")} /nucleus</b></span><span>GCK total <b>${formatProtein("GCK")} /nucleus</b></span><span>Imputed values <b>${atlasSummary.imputed_value_count}</b></span><span>Surface / active / turnover / flux parameters <b>${atlasSummary.surface_localized_copy_count_record_count} / ${atlasSummary.active_copy_count_record_count} / ${atlasSummary.turnover_parameter_count} / ${atlasSummary.flux_parameter_count}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--source">Absolute proteome</span><span>Source zeros stay non-quantified, distinct MaxQuant groups are not silently merged, and every donor retains age, sex and diagnosis context. Total copies do not imply membrane surface abundance or activity.</span></div>`;
       })()
     : "";
   const phhTransporterInventory = summary?.phhTransporterInventory;
   const phhTransporterInventoryRow = phhTransporterInventory
     ? (() => {
         const transporterSummary = phhTransporterInventory.summary;
-        return `<div class="phh-profile phh-profile--transporter-inventory"><div class="phh-profile__head"><b>BSEP + MRP2 inventory v1</b><span>one valid denominator bridge</span></div><div class="phh-profile__grid"><span>Transporters audited <b>${transporterSummary.transporter_count}</b></span><span>Same-cohort copy bridges <b>${transporterSummary.same_cohort_total_copy_bridge_count}</b></span><span>Total BSEP reference <b>≈${transporterSummary.bsep_display_precision_copies_per_cell.toLocaleString()} copies/cell</b></span><span>BSEP surface-localized copies <b>not measured</b></span><span>BSEP transport-active copies <b>not measured</b></span><span>MRP2 liver membrane fraction <b>${transporterSummary.mrp2_mean_fmol_per_ug_liver_membrane_protein.toFixed(2)} ± ${transporterSummary.mrp2_sd_fmol_per_ug_liver_membrane_protein.toFixed(2)} fmol/µg</b></span><span>MRP2 copies/hepatocyte <b>blocked · denominator mismatch</b></span><span>Surface densities <b>${transporterSummary.surface_density_record_count}</b></span><span>Flux parameters <b>${transporterSummary.flux_parameter_count}</b></span><span>Literal molecule rendering <b>prohibited at scene scale</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Inventory</span><span>The BSEP estimate is total cellular protein, not canalicular or active BSEP. MRP2 remains in its measured tissue membrane-protein denominator; neither abundance is converted into transport speed.</span></div>`;
+        return `<div class="phh-profile phh-profile--transporter-inventory"><div class="phh-profile__head"><b>BSEP + MRP2 inventory v2</b><span>two direct totals · surface and flux blocked</span></div><div class="phh-profile__grid"><span>Transporters audited <b>${transporterSummary.transporter_count}</b></span><span>Direct seven-donor totals <b>${transporterSummary.direct_total_per_nucleus_observation_count}/2</b></span><span>BSEP total <b>${Math.round(transporterSummary.bsep_median_copies_per_nucleus).toLocaleString()} median · ${Math.round(transporterSummary.bsep_minimum_copies_per_nucleus).toLocaleString()}–${Math.round(transporterSummary.bsep_maximum_copies_per_nucleus).toLocaleString()} /nucleus</b></span><span>MRP2 total <b>${Math.round(transporterSummary.mrp2_median_copies_per_nucleus).toLocaleString()} median · ${Math.round(transporterSummary.mrp2_minimum_copies_per_nucleus).toLocaleString()}–${Math.round(transporterSummary.mrp2_maximum_copies_per_nucleus).toLocaleString()} /nucleus</b></span><span>BSEP rounded-headline cross-check <b>≈${Math.round(transporterSummary.bsep_rounded_arithmetic_cross_check_copies_per_nucleus).toLocaleString()} /nucleus</b></span><span>MRP2 independent liver fraction <b>${transporterSummary.mrp2_mean_fmol_per_ug_liver_membrane_protein.toFixed(2)} ± ${transporterSummary.mrp2_sd_fmol_per_ug_liver_membrane_protein.toFixed(2)} fmol/µg</b></span><span>Canalicular surface copies <b>${transporterSummary.surface_localized_copy_count_record_count} records</b></span><span>Transport-active copies <b>${transporterSummary.active_copy_count_record_count} records</b></span><span>Surface densities <b>${transporterSummary.surface_density_record_count}</b></span><span>Flux parameters <b>${transporterSummary.flux_parameter_count}</b></span><span>Literal molecule rendering <b>prohibited at scene scale</b></span><span>Automatic state coupling <b>blocked</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--source">Inventory</span><span>Total BSEP and MRP2 are now direct donor-resolved observations per nucleus. They remain separate from canalicular localization, active fraction, surface density and transport speed.</span></div>`;
+      })()
+    : "";
+  const phhProteinFunctionalEvidence = summary?.phhProteinFunctionalEvidence;
+  const phhProteinFunctionalEvidenceRow = phhProteinFunctionalEvidence
+    ? (() => {
+        const functionalSummary = phhProteinFunctionalEvidence.summary;
+        const wholeCell = phhProteinFunctionalEvidence.whole_cell_transport_validations[0];
+        const metric = (id: string) => wholeCell?.metric_ranges.find((item) => item.id === id);
+        const uptake = metric("apparent_uptake");
+        const clearance = metric("apparent_intrinsic_biliary_clearance");
+        const bei = metric("biliary_excretion_index");
+        return `<div class="phh-profile phh-profile--protein-function"><div class="phh-profile__head"><b>PHH protein function evidence v1</b><span>location · kinetics · donor variation · coupled transport</span></div><div class="phh-profile__grid"><span>Selected proteins <b>${functionalSummary.protein_count}</b></span><span>Complete seven-donor abundance profiles <b>${functionalSummary.all_seven_donor_abundance_profile_count}/8</b></span><span>PHH surface identities <b>${functionalSummary.surface_identity_observation_count}</b></span><span>Physiological membrane domains <b>${functionalSummary.physiological_domain_identity_count}</b></span><span>Transport assay observations <b>${functionalSummary.assay_kinetic_observation_count}</b></span><span>Curve-evaluable Km/Vmax pairs <b>${functionalSummary.assay_curve_evaluable_count} · BSEP only</b></span><span>MRP2 observations <b>rates at 0.5 µM · not Vmax</b></span><span>Measured INSR-linked responses <b>${functionalSummary.functional_response_observation_count} timepoints</b></span><span>Human SCHH lots <b>${functionalSummary.whole_cell_transport_lot_count}</b></span><span>Taurocholate apparent uptake <b>${uptake?.low.toFixed(0) ?? "-"}–${uptake?.high.toFixed(0) ?? "-"} pmol/min/mg</b></span><span>Apparent intrinsic biliary clearance <b>${clearance?.low.toFixed(1) ?? "-"}–${clearance?.high.toFixed(0) ?? "-"} µL/min/mg</b></span><span>Biliary excretion index <b>${bei?.low.toFixed(0) ?? "-"}–${bei?.high.toFixed(0) ?? "-"}%</b></span><span>Quantitative surface-copy records <b>${functionalSummary.quantitative_surface_localization_count}</b></span><span>Measured active fractions <b>${functionalSummary.active_fraction_observation_count}</b></span><span>Receptor-binding kinetic records <b>${functionalSummary.receptor_binding_kinetic_observation_count}</b></span><span>Whole-cell calibrated protein rates <b>${functionalSummary.whole_cell_rate_ready_count}</b></span><span>Exact SCHH model predictions <b>${functionalSummary.exact_whole_cell_transport_prediction_count}</b></span><span>Largest selected donor abundance CV <b>${functionalSummary.highest_selected_abundance_cv_gene} · ${(functionalSummary.highest_selected_abundance_cv * 100).toFixed(1)}%</b></span><span>Automatic abundance-to-activity scaling <b>blocked</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--source">Protein evidence</span><span>The five-lot taurocholate ranges validate the coupled uptake–intracellular–canalicular system; they are not isolated NTCP, OATP or BSEP rates. Exact protocol prediction and state coupling remain closed.</span></div>`;
       })()
     : "";
   const humanSchBileAcids = summary?.humanSchBileAcids;
@@ -4387,7 +4303,7 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
     `<div class="phh-profile__grid"><span>Defined layers <b>${VISUAL_ANATOMY_REQUIREMENTS.length}</b></span><span>Incomplete layers <b>${incompleteAnatomyLayers.length}</b></span><span>Current LOD <b>${(activeVisualAnatomyLod ?? "loading").replaceAll("_", " ")}</b></span><span>Human numeric transfer <b>LSEC fenestra ${HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM} nm mean</b></span></div></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Anatomy rubric</span><span>Coverage of explicit renderer layers, not percent biological realism. Cell-form morphometry, human organelle counts and quantitative EM-volume registration remain incomplete.</span></div>`;
   return (
-    visualAnatomyRow + profileRow + zonationRow + homeostasisRow + homeostasisV3Row + endocrineRow + validationProtocolRow + healthyPhhValidationRow + phhSpheroidProtocolRow + phhGlucoseObservabilityRow + phhAlbuminSecretionRow + phhCypFunctionRow + phhBiliaryExcretionRow + phhIdentityHeterogeneityRow + phhProteomeBudgetRow + phhTransporterInventoryRow + humanSchBileAcidsRow + evidenceIntakeRow + publishedModelRow + externalValidationRow + publishedLineageRow + nutritionalContextRow + fluxEvidenceRow + phhRow + authorityRow + auditRow + placeholderRow +
+    visualAnatomyRow + profileRow + geometryReferenceRow + human3dRow + zonationRow + openAtlasRow + homeostasisRow + homeostasisV3Row + endocrineRow + validationProtocolRow + healthyPhhValidationRow + phhSpheroidProtocolRow + phhGlucoseObservabilityRow + phhAlbuminSecretionRow + phhCypFunctionRow + phhBiliaryExcretionRow + phhIdentityHeterogeneityRow + phhProteomeBudgetRow + phhAbsoluteProteomeAtlasRow + phhTransporterInventoryRow + phhProteinFunctionalEvidenceRow + humanSchBileAcidsRow + evidenceIntakeRow + publishedModelRow + externalValidationRow + publishedLineageRow + nutritionalContextRow + fluxEvidenceRow + phhRow + authorityRow + auditRow + placeholderRow +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Source-backed</span><span>BSEP/MRP2 directionality; intracellular/extracellular measurement distinction; cholestasis → ER stress; human bile-acid death-mode constraint.</span></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Model state</span><span>Mass-conserving intracellular → canalicular relative pools. CYP7A1 feedback and basolateral escape are explicitly not modeled.</span></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Derived</span><span>Stress-time exposure and fate evidence; no calibrated time-to-death or canalicular pressure.</span></div>` +
@@ -4689,7 +4605,7 @@ function clearWaterVisuals() {
   if (organelleGroup) {
     root.remove(organelleGroup);
     organelleGroup.traverse((o) => {
-      if (o instanceof THREE.Mesh || o instanceof THREE.Points || o instanceof THREE.Line) {
+      if (o instanceof THREE.Mesh || o instanceof THREE.Points || o instanceof THREE.Line || o instanceof THREE.LineSegments) {
         o.geometry.dispose();
         const m = o.material as THREE.Material | THREE.Material[];
         if (Array.isArray(m)) m.forEach((x) => x.dispose());
@@ -4700,8 +4616,6 @@ function clearWaterVisuals() {
   }
   organelleInteractionLayer = null;
   organelleInteractionSummaryRef = null;
-  contactChannel = null;
-  contactBadge.style.display = "none";
   nucleusExpression = null;
 
   if (proteinFieldGroup) {
@@ -4764,6 +4678,9 @@ function clearWaterVisuals() {
   glycogenTotal = 0;
   lipidInstanced = null;
   lipidTotal = 0;
+  organelleVoxelOverlay = null;
+  voxelOverlayDxUm = null;
+  voxelOverlayLoadFailed = false;
   divisionOverlay = null;
   flowVisuals.length = 0;
   organelleAnchors = {};
@@ -5439,14 +5356,21 @@ async function buildProteinScene() {
   });
 }
 
-// Per-voxel protein POPULATION field: the real per-cell copy numbers placed in
-// their correct compartment (RDME), drawn as a density field rather than atoms.
+// Per-voxel protein POPULATION field: seven-donor median copies per reference
+// nucleus placed in coarse compartments (RDME), drawn as density rather than atoms.
 // Loads public/cell_voxel_field.json (generated by scripts/export_voxel_field.py).
 type VoxelFieldRecord = { p: [number, number, number]; c: string; n: Record<string, number> };
 type VoxelFieldPayload = {
-  proteins: { id: string; gene: string; location: string; copiesPerCell: number }[];
+  proteins: {
+    id: string;
+    gene: string;
+    location: string;
+    copiesPerReferenceNucleus: number;
+    copyNumberDenominator: "per_nucleus";
+    aggregation: string;
+  }[];
   totals: Record<string, number>;
-  lattice: { n: number };
+  lattice: { n: number; dxUm: number };
   voxels: VoxelFieldRecord[];
 };
 const PROTEIN_FIELD_COLORS: Record<string, string> = {
@@ -5520,9 +5444,9 @@ async function buildProteinFieldScene() {
     }
     inst.instanceMatrix.needsUpdate = true;
     inst.userData.label =
-      `${meta.gene} (${pid}) — ${meta.copiesPerCell.toLocaleString()} copies/cell, ` +
-      `${meta.location}. Population density: marker size ∝ log(copies in that ~1.25 um voxel). ` +
-      `Real copy numbers (order-of-magnitude) placed in their compartment via RDME; not atoms.`;
+      `${meta.gene} (${pid}) — ${meta.copiesPerReferenceNucleus.toLocaleString()} copies/reference nucleus, ` +
+      `${meta.location}. Population density: marker size ∝ log(copies in that ~${payload.lattice.dxUm.toFixed(2)} um voxel). ` +
+      `Seven-donor median total abundance placed in a schematic compartment via RDME; not atoms, surface copies or active protein.`;
     inst.userData.hoverKind = "protein-population";
     targetGroup.add(inst);
   }
@@ -5664,6 +5588,7 @@ function communicationSnapshotSignature(summary: EngineSnapshotSummary | null): 
   return JSON.stringify({
     spatialWorld,
     spatialState: summary?.spatialState,
+    physicalValidation: summary?.physicalValidation,
     version: communication?.version,
     cells: communication?.reference_cells,
     contacts: communication?.reference_contacts,
@@ -5715,8 +5640,13 @@ function renderCommunicationEvidencePanel(summary: EngineSnapshotSummary | null)
     const load = relation?.normal_load_nN == null ? "load unknown" : `${relation.normal_load_nN.toFixed(3)} nN`;
     const domains = relation?.membrane_domain_a && relation?.membrane_domain_b
       ? `${relation.membrane_domain_a} ↔ ${relation.membrane_domain_b}`
-      : "domains unresolved";
-    return `<div class="communication-contact${contact.geometric_contact ? " is-touching" : ""}"><strong>${contact.cell_a.replace("reference_hepatocyte_", "Cell ")} ↔ ${contact.cell_b.replace("reference_hepatocyte_", "Cell ")}</strong><span>${state} · gap ${contact.surface_gap_um.toFixed(3)} µm</span><small>${domains} · ${candidates || "no domain-compatible pathway"} · ${area} · ${load} · activation not inferred</small></div>`;
+      : relation
+        ? `domain assignment ${relation.domain_assignment_status_a.replaceAll("_", " ")} / ${relation.domain_assignment_status_b.replaceAll("_", " ")} · candidates ${relation.membrane_domain_candidates_a.join("/") || "none"} ↔ ${relation.membrane_domain_candidates_b.join("/") || "none"}`
+        : "domains unresolved";
+    const faces = relation
+      ? `faces ${relation.contact_face_candidates_a.join("/") || "none"} ↔ ${relation.contact_face_candidates_b.join("/") || "none"}`
+      : "faces unavailable";
+    return `<div class="communication-contact${contact.geometric_contact ? " is-touching" : ""}"><strong>${contact.cell_a.replace("reference_hepatocyte_", "Cell ")} ↔ ${contact.cell_b.replace("reference_hepatocyte_", "Cell ")}</strong><span>${state} · gap ${contact.surface_gap_um.toFixed(3)} µm</span><small>${domains} · ${faces} · ${candidates || "no domain-compatible pathway"} · ${area} · ${load} · activation not inferred</small></div>`;
   }).join("") || '<div class="communication-contact"><strong>No external body in this scenario</strong><span>contact input OFF</span><small>Add a cell, bacterium or virus through an explicit spatial scenario; the normal snapshot does not invent a neighbour.</small></div>';
   const deformationRows = spatialWorld.bodies.flatMap((body) => {
     if (body.shape.kind !== "convex_polyhedron" || body.shape.deformation === null) return [];
@@ -5732,6 +5662,25 @@ function renderCommunicationEvidencePanel(summary: EngineSnapshotSummary | null)
   const membraneEvidence = primaryMembrane
     ? `<div class="communication-section-title">Intrinsic membrane material</div><div class="communication-runtime"><strong>Fluid bilayer ON</strong><span>surface advection ON · lateral diffusion ${primaryMembrane.active_lateral_diffusion_enabled ? "ON" : "OFF"}</span><small>${primaryMembrane.implemented_geometry_modes.length} implemented geometry modes · ${primaryMembrane.unresolved_geometry_modes.length} unresolved modes · ${primaryMembrane.reference_measurements.length} scoped reference measurements. Healthy-PHH thickness, tension, cortex adhesion, bending modulus and lipid/protein diffusion remain null, so cross-system values cannot drive this cell.</small></div>`
     : "";
+  const physicalValidation = summary?.physicalValidation;
+  const physicalValidationRows = physicalValidation?.layers.map((layer) => {
+    const blocked = layer.criteria.find((criterion) => criterion.status === "blocked");
+    return `<div class="physical-validation__row"><div><strong>${layer.title}</strong><span>${layer.verified_count}/${layer.criterion_count} contracts verified</span></div><b>${layer.verification_coverage_pct.toFixed(0)}%</b><small>Predictive accuracy: not identifiable · ${blocked?.description ?? layer.human_calibration_status}</small></div>`;
+  }).join("") ?? "";
+  const physicalValidationEvidence = physicalValidation
+    ? `<div class="communication-section-title">Physical integrity verification</div><div class="physical-validation">${physicalValidationRows}</div><div class="communication-runtime"><strong>Score boundary</strong><span>verification coverage, not biological realism</span><small>${physicalValidation.score_semantics}</small></div>`
+    : "";
+  const surfaceRows = communication.body_surface_profiles.map((profile) => {
+    const molecules = profile.molecules.map((molecule) => molecule.display_name).join(" · ");
+    return `<div class="communication-runtime"><strong>${profile.body_id}</strong><span>${profile.profile_id.replaceAll("_", " ")}</span><small>${molecules} · body-level capability only; local patch density and molecular orientation remain unresolved.</small></div>`;
+  }).join("") || '<div class="communication-runtime"><strong>No molecular surface profile</strong><span>recognition gate closed</span><small>External bodies must declare an evidence-backed profile; biological kind alone never implies a receptor match.</small></div>';
+  const chainRows = communication.contact_event_chains.map((chain) => {
+    const matches = chain.molecular_matches
+      .filter((match) => match.domain_compatible)
+      .map((match) => `${match.molecule_a_id} ↔ ${match.molecule_b_id}`)
+      .join(" · ") || "no complementary pair";
+    return `<div class="communication-contact${chain.geometric_contact ? " is-touching" : ""}"><strong>${chain.body_a} ↔ ${chain.body_b}</strong><span>geometry: ${chain.geometry_gate_status.replaceAll("_", " ")} · recognition: ${chain.molecular_recognition_status.replaceAll("_", " ")}</span><small>${matches} · signal ${chain.signaling_status.replaceAll("_", " ")} · transport ${chain.transport_status.replaceAll("_", " ")} · state coupling OFF</small></div>`;
+  }).join("") || '<div class="communication-contact"><strong>No contact event chain</strong><span>one engine body · no external geometry</span><small>The renderer does not create hormones, cells, bacteria or viruses on its own.</small></div>';
   const pathwayRows = communication.pathways.map((pathway) => {
     const gate = pathway.contact_required ? "requires physical contact" : "requires extracellular exposure";
     return `<div class="communication-pathway"><div class="communication-pathway__head"><strong>${pathway.label}</strong><span>${pathway.mode.replaceAll("_", " ")}</span></div><div class="communication-chain">${communicationChainText(pathway)}</div><small>${gate} · topology only · no quantitative kinetics · no automatic coupling</small></div>`;
@@ -5761,10 +5710,14 @@ function renderCommunicationEvidencePanel(summary: EngineSnapshotSummary | null)
   const bodyCountLabel = `${spatialWorld.bodies.length} ${spatialWorld.bodies.length === 1 ? "body" : "bodies"}`;
   return (
     `<div class="communication-summary"><strong>Engine geometry is authoritative</strong><span>${spatialWorld.scenario_kind.replaceAll("_", " ")} · ${bodyCountLabel} · ${contacts.length} contact · ${runtimeState}</span><small>${spatialWorld.evidence_status.replaceAll("_", " ")} · geometry is not reconstructed donor histology</small></div>` +
+    physicalValidationEvidence +
     membraneEvidence +
     deformationEvidence +
     measuredEvidence +
     `<div class="communication-section-title">Contact geometry</div><div class="communication-contacts">${contactRows}</div>` +
+    `<div class="communication-section-title">Molecular surface profiles</div><div class="communication-pathways">${surfaceRows}</div>` +
+    `<div class="communication-section-title">Geometry → recognition → signal → transport</div><div class="communication-contacts">${chainRows}</div>` +
+    `<div class="communication-runtime"><strong>Fail-closed chain</strong><span>${communication.recognition_candidate_count} recognition candidate · ${communication.active_signal_count} active signal · ${communication.active_transport_count} active transport</span><small>${communication.event_chain_contract}</small></div>` +
     `<div class="communication-section-title">Receptor and junction chains</div><div class="communication-pathways">${pathwayRows}</div>` +
     `<div class="communication-runtime"><strong>Brian2 ${brian2?.pinned_version ?? "-"}</strong><span>${brianStatus}</span><small>Optional equation/event runtime; never the biological authority.</small></div>` +
     `<div class="communication-runtime communication-runtime--generative"><strong>Generative boundary</strong><span>${generative?.training_ready ? "training ready" : "data-gated"} · ${generative?.inference_ready ? "inference ready" : "no inference"}</span><small>${backendText} · donor-disjoint evaluation required · generated cells quarantined from engine state.</small></div>`
@@ -5849,6 +5802,76 @@ function spatialBodySurfaceGeometry(
   return geometry;
 }
 
+type VoxelLatticeDescriptor = { lattice?: { n?: unknown; dxUm?: unknown } };
+
+function centralVoxelSliceGeometry(n: number, dxUm: number): THREE.BufferGeometry {
+  const halfWorld = (n * dxUm) / (2 * HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT);
+  const spacingWorld = dxUm / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
+  const positions: number[] = [];
+  const addSegment = (a: THREE.Vector3, b: THREE.Vector3) => {
+    positions.push(a.x, a.y, a.z, b.x, b.y, b.z);
+  };
+  for (let index = 0; index <= n; index += 1) {
+    const coordinate = -halfWorld + index * spacingWorld;
+    const extent = Math.sqrt(Math.max(0, halfWorld * halfWorld - coordinate * coordinate));
+    addSegment(new THREE.Vector3(coordinate, -extent, 0), new THREE.Vector3(coordinate, extent, 0));
+    addSegment(new THREE.Vector3(-extent, coordinate, 0), new THREE.Vector3(extent, coordinate, 0));
+    addSegment(new THREE.Vector3(coordinate, 0, -extent), new THREE.Vector3(coordinate, 0, extent));
+    addSegment(new THREE.Vector3(-extent, 0, coordinate), new THREE.Vector3(extent, 0, coordinate));
+    addSegment(new THREE.Vector3(0, coordinate, -extent), new THREE.Vector3(0, coordinate, extent));
+    addSegment(new THREE.Vector3(0, -extent, coordinate), new THREE.Vector3(0, extent, coordinate));
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  return geometry;
+}
+
+async function ensureOrganelleVoxelOverlay(): Promise<void> {
+  const target = organelleVoxelOverlay;
+  if (!target || target.children.length > 0 || target.userData.loading) return;
+  target.userData.loading = true;
+  const baseUrl = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/";
+  try {
+    const response = await fetch(`${baseUrl}cell_voxel_field.json`);
+    if (!response.ok) throw new Error(`voxel field request failed: ${response.status}`);
+    const payload = await response.json() as VoxelLatticeDescriptor;
+    const n = payload.lattice?.n;
+    const dxUm = payload.lattice?.dxUm;
+    if (typeof n !== "number" || !Number.isInteger(n) || n < 2 || n > 128) {
+      throw new Error("voxel lattice n is invalid");
+    }
+    if (typeof dxUm !== "number" || !Number.isFinite(dxUm) || dxUm <= 0) {
+      throw new Error("voxel lattice dxUm is invalid");
+    }
+    const referenceDiameterUm = 2 * CELL_R * HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
+    if (Math.abs(n * dxUm - referenceDiameterUm) / referenceDiameterUm > 0.02) {
+      throw new Error("voxel lattice diameter diverges from the active cell scale");
+    }
+    if (organelleVoxelOverlay !== target || !target.parent) return;
+    const slices = new THREE.LineSegments(
+      centralVoxelSliceGeometry(n, dxUm),
+      new THREE.LineBasicMaterial({
+        color: "#a9c5d9",
+        transparent: true,
+        opacity: 0.13,
+        depthTest: true,
+        depthWrite: false
+      })
+    );
+    slices.renderOrder = 2;
+    slices.userData.hoverKind = "voxel-grid";
+    slices.userData.label = `Three central slices of the engine RDME lattice: ${n} voxels per axis, ${dxUm.toFixed(6)} µm spacing. This is a computational partition, not cell ultrastructure.`;
+    target.add(slices);
+    voxelOverlayDxUm = dxUm;
+    voxelOverlayLoadFailed = false;
+  } catch {
+    if (organelleVoxelOverlay === target) voxelOverlayLoadFailed = true;
+  } finally {
+    target.userData.loading = false;
+    updateScientificOverlayControls();
+  }
+}
+
 function clearOrganelleInteractionGeometry(layer: THREE.Group): void {
   const geometries = new Set<THREE.BufferGeometry>();
   const materials = new Set<THREE.Material>();
@@ -5873,6 +5896,7 @@ function syncOrganelleInteractionGeometry(summary: EngineSnapshotSummary | null)
   if (!layer || summary === organelleInteractionSummaryRef) return;
   organelleInteractionSummaryRef = summary;
   clearOrganelleInteractionGeometry(layer);
+  updateScientificOverlayControls();
 
   const spatialWorld = summary?.spatialWorld;
   if (!spatialWorld) return;
@@ -5936,7 +5960,7 @@ function syncOrganelleInteractionGeometry(summary: EngineSnapshotSummary | null)
     const involvesPrimary = relation.body_a === primary.id || relation.body_b === primary.id;
     if (!involvesPrimary) return;
 
-    if (relation.geometric_contact && relation.contact_patch_polygon_um.length >= 3) {
+    if (contactPatchDecision(relation).render) {
       const polygon = relation.contact_patch_polygon_um.map(toPrimaryDisplay);
       const positions: number[] = [];
       for (let index = 1; index < polygon.length - 1; index += 1) {
@@ -5949,11 +5973,17 @@ function syncOrganelleInteractionGeometry(summary: EngineSnapshotSummary | null)
       geometry.computeVertexNormals();
       const patch = new THREE.Mesh(
         geometry,
-        new THREE.MeshBasicMaterial({
-          color: "#f2cf69",
+        new THREE.MeshStandardMaterial({
+          color: "#d8c88d",
+          emissive: "#6f5f2a",
+          emissiveIntensity: 0.04,
+          roughness: 0.82,
           transparent: true,
-          opacity: 0.52,
-          depthTest: false,
+          opacity: 0.3,
+          depthTest: true,
+          depthWrite: false,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
           side: THREE.DoubleSide
         })
       );
@@ -5961,14 +5991,21 @@ function syncOrganelleInteractionGeometry(summary: EngineSnapshotSummary | null)
         ? "area unresolved"
         : `${relation.contact_patch_area_um2.toFixed(3)} um2 runtime proxy area`;
       patch.name = `engine-contact-patch-${relation.id}`;
+      const primaryNormal = new THREE.Vector3(...relation.normal_a_to_b)
+        .applyQuaternion(primaryInverseOrientation)
+        .normalize()
+        .multiplyScalar(relation.body_a === primary.id ? 1 : -1);
+      patch.position.addScaledVector(primaryNormal, 0.025);
       patch.renderOrder = 8;
       patch.userData.hoverKind = "geometric-contact";
       patch.userData.label = `${relation.body_a} <-> ${relation.body_b}: ${relation.contact_event.toUpperCase()}, explicit engine contact polygon, ${area}. Force and receptor/junction activation remain unresolved unless independently supplied.`;
       layer.add(patch);
 
       const outline = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([...polygon, polygon[0]]),
-        new THREE.LineBasicMaterial({ color: "#fff0a6", transparent: true, opacity: 0.92, depthTest: false })
+        new THREE.BufferGeometry().setFromPoints(
+          [...polygon, polygon[0]].map((point) => point.clone().addScaledVector(primaryNormal, 0.03))
+        ),
+        new THREE.LineBasicMaterial({ color: "#e8dba7", transparent: true, opacity: 0.72, depthTest: true })
       );
       outline.name = `engine-contact-outline-${relation.id}`;
       outline.renderOrder = 9;
@@ -6398,7 +6435,8 @@ function buildCommunicationScene() {
     if (normal.lengthSq() < 1e-12) normal.set(1, 0, 0);
     normal.normalize();
     if (relation.geometric_contact) {
-      if (relation.contact_patch_polygon_um.length >= 3 && relation.contact_patch_area_um2 !== null) {
+      const patchAreaUm2 = relation.contact_patch_area_um2;
+      if (contactPatchDecision(relation).render && patchAreaUm2 !== null) {
         const polygon = relation.contact_patch_polygon_um.map((point) => toDisplay(point));
         const patchPositions: number[] = [];
         for (let index = 1; index < polygon.length - 1; index += 1) {
@@ -6411,60 +6449,35 @@ function buildCommunicationScene() {
         patchGeometry.computeVertexNormals();
         const patch = new THREE.Mesh(
           patchGeometry,
-          new THREE.MeshBasicMaterial({
-            color: "#f3d37a",
+          new THREE.MeshStandardMaterial({
+            color: "#d8c88d",
+            emissive: "#6f5f2a",
+            emissiveIntensity: 0.04,
+            roughness: 0.82,
             transparent: true,
-            opacity: 0.5,
-            depthTest: false,
+            opacity: 0.3,
+            depthTest: true,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
             side: THREE.DoubleSide
           })
         );
         patch.position.addScaledVector(normal, 0.025);
         patch.renderOrder = 8;
         patch.userData.hoverKind = "geometric-contact";
-        patch.userData.label = `${relation.body_a} ↔ ${relation.body_b}: ${relation.contact_event.toUpperCase()}, geometric input ON, ${relation.membrane_domain_a ?? "unknown"} ↔ ${relation.membrane_domain_b ?? "unknown"} patch ${relation.contact_patch_area_um2.toFixed(3)} µm². Area is computed from the runtime proxy surface; force and junction activation remain unknown.`;
+        patch.userData.label = `${relation.body_a} ↔ ${relation.body_b}: ${relation.contact_event.toUpperCase()}, geometric input ON, ${relation.membrane_domain_a ?? "unknown"} ↔ ${relation.membrane_domain_b ?? "unknown"} patch ${patchAreaUm2.toFixed(3)} µm². Area is computed from the runtime proxy surface; force and junction activation remain unknown.`;
         group.add(patch);
         const outlinePoints = [...polygon, polygon[0]].map((point) => point.clone().addScaledVector(normal, 0.03));
         const outline = new THREE.Line(
           new THREE.BufferGeometry().setFromPoints(outlinePoints),
-          new THREE.LineBasicMaterial({ color: "#fff0a6", transparent: true, opacity: 0.9, depthTest: false })
+          new THREE.LineBasicMaterial({ color: "#e8dba7", transparent: true, opacity: 0.72, depthTest: true })
         );
         outline.renderOrder = 9;
         outline.userData.hoverKind = "geometric-contact";
         outline.userData.label = patch.userData.label;
         group.add(outline);
-        continue;
       }
-      const minimumRadius = Math.min(spatialBodyRadiusUm(bodyA), spatialBodyRadiusUm(bodyB)) * COMMUNICATION_DISPLAY_UNITS_PER_UM;
-      const annotationRadius = Math.max(0.24, minimumRadius * 0.07);
-      const marker = new THREE.Mesh(
-        new THREE.RingGeometry(annotationRadius * 0.72, annotationRadius, 48),
-        new THREE.MeshBasicMaterial({
-          color: "#f3d37a",
-          transparent: true,
-          opacity: 0.82,
-          depthTest: false,
-          side: THREE.DoubleSide
-        })
-      );
-      marker.position.copy(start).add(end).multiplyScalar(0.5);
-      marker.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
-      marker.renderOrder = 8;
-      marker.userData.hoverKind = "geometric-contact";
-      marker.userData.label = `${relation.body_a} ↔ ${relation.body_b}: ${relation.contact_event.toUpperCase()}, geometric input ON, gap ${relation.surface_gap_um.toFixed(3)} µm. Ring radius is annotation only; contact area and force remain unknown.`;
-      group.add(marker);
-
-      const normalLine = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([
-          marker.position.clone().addScaledVector(normal, -annotationRadius * 1.7),
-          marker.position.clone().addScaledVector(normal, annotationRadius * 1.7)
-        ]),
-        new THREE.LineBasicMaterial({ color: "#f3d37a", transparent: true, opacity: 0.42, depthTest: false })
-      );
-      normalLine.renderOrder = 7;
-      normalLine.userData.hoverKind = "geometric-contact";
-      normalLine.userData.label = marker.userData.label;
-      group.add(normalLine);
       continue;
     }
     const gapLine = new THREE.Line(
@@ -6590,6 +6603,10 @@ function buildOrganelleScene() {
   organelleInteractionLayer.userData.label = "Engine-authoritative external bodies and contact patches in the organelle-network coordinate system.";
   group.add(organelleInteractionLayer);
   organelleInteractionSummaryRef = null;
+  organelleVoxelOverlay = new THREE.Group();
+  organelleVoxelOverlay.name = "engine-rdme-voxel-slices";
+  organelleVoxelOverlay.visible = false;
+  group.add(organelleVoxelOverlay);
   let seed = 20260618;
   const rnd = () => ((seed = (1_664_525 * seed + 1_013_904_223) >>> 0) / 4_294_967_296);
   const randDir = () => {
@@ -6599,7 +6616,7 @@ function buildOrganelleScene() {
   const trackMotion = (object: THREE.Object3D, base: THREE.Vector3, amp: number, speed: number, spin = 0.004, phase = rnd() * Math.PI * 2) => {
     organelleMotions.push({ object, base: base.clone(), amp, speed, phase, spin, axis: randDir() });
   };
-  const nmToWorld = (nm: number) => (nm / 1000) / (CELL_RADIUS_UM / CELL_R);
+  const nmToWorld = (nm: number) => (nm / 1000) / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
   // Sinusoid sits outside the cell. Its normalized renderer shell clears the
   // maximum membrane excursion, leaving the Space of Disse as a real gap.
   const sinusoidAnchor = new THREE.Vector3(-CELL_R * 1.45, -1.0, 0);
@@ -6872,14 +6889,10 @@ function buildOrganelleScene() {
   // subdiv 4 (2562 vertices) gives a smooth cell silhouette instead of a coarse
   // facetted shell; the rest shape and bounded physics are unchanged.
   membraneSim = createHepatocyteMembraneSim(CELL_R, 4);
-  // Opt into stochastic thermal undulation: each vertex is kicked randomly and
-  // the edge + bending coupling diffuses that energy to its neighbours, so the
-  // living membrane ripples and carries its embedded proteins / surface tracers,
-  // instead of sitting as a rigid shell. Bounded by the same area/volume caps.
-  // A modest kick with strong curvature coupling gives smooth, low-frequency
-  // undulation (not per-vertex jitter): bending damps the high-frequency modes.
-  membraneSim.noise = 3.2;
-  membraneSim.kBend = 11.0;
+  // Molecular fluidity is lateral lipid/protein mobility, not a license for
+  // visible cell-scale random forcing. The coarse surface moves only when the
+  // engine supplies a geometric deformation; unresolved thermal amplitudes do
+  // not alter the collision shape.
   membraneRestPos = new Float32Array(membraneSim.pos);
   rebuildMembraneSurfaceIndex();
   membraneField = null;
@@ -6908,7 +6921,7 @@ function buildOrganelleScene() {
     });
     organelleMembrane = new THREE.Mesh(geo, mat);
     organelleMembrane.userData.label =
-      "Intrinsic fluid-bilayer plasma membrane - cyan is sinusoidal/basolateral, blue is lateral and yellow-green is canalicular/apical. The surface mesh is an Eulerian shape coordinate, not a frozen lipid lattice; membrane proteins and surface tracers use barycentric anchors and follow every deformation. The 18.4 µm PHH reference sets equivalent scale; the space-filling rest shape and domains are geometric proxies. Direct lipid-area strain and enclosed volume remain constrained, while visible contact deformation comes only from engine geometry.";
+      "Intrinsic fluid-bilayer plasma membrane - cyan is sinusoidal/basolateral, blue is lateral and yellow-green is canalicular/apical. The surface mesh is an Eulerian shape coordinate, not a frozen lipid lattice; membrane proteins and surface tracers use barycentric anchors and follow every deformation. The 22.107 µm volume-equivalent diameter is derived from the active 5657.071 µm³ human normal-control 3D median; the space-filling rest shape and domain areas remain geometric proxies. Direct lipid-area strain and enclosed volume remain constrained, while visible contact deformation comes only from engine geometry.";
     group.add(organelleMembrane);
     rebuildMembraneField();
   }
@@ -7592,7 +7605,7 @@ function buildOrganelleScene() {
     }
   }
   // One round-ovoid display population. A ~0.66 µm-wide, ~0.92 µm-long ovoid
-  // (CELL_R ≈ 9.2 µm, so 1 µm ≈ 1.52 world) — real hepatocyte mitochondrial
+  // (14 world units represent the 9.2 µm reference radius) - real hepatocyte mitochondrial
   // shape, near-spherical so bounding-sphere packing is efficient and the
   // measured ~18-20% volume fraction is reached without interpenetration.
   addOrganellePopulation(
@@ -7662,9 +7675,9 @@ function buildOrganelleScene() {
   );
   // --- Lipid droplets: ER-derived neutral-lipid (triacylglycerol / cholesteryl
   // ester) stores bounded by a phospholipid MONOLAYER (not a bilayer). Placed by
-  // excluded volume among the organelles; the visible instance count later tracks
-  // nutritional state (function: hepatic fat storage - lowest post-absorptive,
-  // higher fed, highest in prolonged fasting as FFA influx drives accumulation). ---
+  // excluded volume among the organelles. Their combined sphere volume is
+  // normalized to the source-reported healthy NC aggregate cell-volume fraction.
+  // The sample count and narrow size variation remain renderer-only. ---
   {
     const lipidPositions: THREE.Vector3[] = [];
     for (let i = 0; i < LIPID_DROPLET_DISPLAY_SAMPLES; i += 1) {
@@ -7689,14 +7702,20 @@ function buildOrganelleScene() {
       const lm = new THREE.Matrix4();
       const lq = new THREE.Quaternion();
       const ls = new THREE.Vector3();
+      const displayScales = normalizeDisplaySphereScalesToVolumeFraction(
+        lipidPositions.map(() => 0.85 + rnd() * 0.3),
+        0.5,
+        CELL_R,
+        HUMAN_NC_3D_LIPID_DROPLET_VOLUME_FRACTION
+      );
       for (let i = 0; i < lipidTotal; i += 1) {
-        const sc = 0.7 + rnd() * 0.9;
+        const sc = displayScales[i];
         ls.set(sc, sc, sc);
         lm.compose(lipidPositions[i], lq, ls);
         lipidInstanced.setMatrixAt(i, lm);
       }
       lipidInstanced.instanceMatrix.needsUpdate = true;
-      lipidInstanced.userData.label = "Lipid droplets - ER-derived neutral-lipid (triacylglycerol / cholesteryl-ester) stores bounded by a phospholipid monolayer, not a bilayer. The number shown tracks nutritional state: hepatic fat storage rises in the fed liver and further in prolonged fasting as adipose free-fatty-acid influx drives accumulation. Display size is not a donor volume fraction.";
+      lipidInstanced.userData.label = "Lipid droplets - ER-derived neutral-lipid stores bounded by a phospholipid monolayer. Combined display volume is normalized to the 0.507807% normal-control human 3D median from Segovia-Miranda et al.; sample count and size variation are renderer-only, and no nutrition-dependent PHH response law is asserted.";
       lipidInstanced.userData.hoverKind = "communication-organelle";
       group.add(lipidInstanced);
       registerAnatomyLod(lipidInstanced, "cellular");
@@ -8038,9 +8057,8 @@ function buildOrganelleScene() {
     registerAnatomyLod(glycogenInstanced, "cellular");
   }
 
-  // (Lipid droplets are rendered once, earlier, as the grounded ~100-count
-  // instanced population with full excluded-volume placement — no separate,
-  // weaker set here.)
+  // Lipid droplets are rendered once above as an aggregate-volume-calibrated
+  // sample field with excluded-volume placement. No biological count is shown.
 
   // Glycolysis is not a membrane-bound organelle; it is a cytosolic enzyme
   // network. Give it a visible hub so the metabolic traffic can connect to it.
@@ -8085,7 +8103,7 @@ function buildOrganelleScene() {
     return a && a.n > 0 ? a.s.clone().multiplyScalar(1 / a.n) : fallback.clone();
   };
   const mitoC = centroid("mitochondria");
-  const micronsPerUnit = CELL_RADIUS_UM / CELL_R;
+  const micronsPerUnit = HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
   const distances: Partial<Record<keyof OrganelleActivity, number>> = { mitochondria: 1.5, glycolysis: 0.5 };
   for (const k of ["membrane", "nucleus", "er", "ribosome", "golgi", "lysosome", "peroxisome", "cytoskeleton"] as (keyof OrganelleActivity)[]) {
     distances[k] = centroid(k).distanceTo(mitoC);
@@ -8115,13 +8133,14 @@ function buildOrganelleScene() {
     cytoskeleton: centroid("cytoskeleton")
   };
   buildCellFlowVisuals(group);
-  buildContactChannel(group, nuc);
   divisionOverlay = createDivisionOverlay();
   group.add(divisionOverlay.group);
 
   root.add(group);
   organelleGroup = group;
   organelleJiggleTargets = null; // rebuilt lazily for the new scene graph
+  updateScientificOverlayControls();
+  if (scientificOverlayState.voxels) void ensureOrganelleVoxelOverlay();
 
   if (sceneNote) {
     sceneNote.textContent =
@@ -8534,7 +8553,6 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     // Advance the contact-event channel first (external body approach, receptor
     // sensing, endocytosis depth, exchange events) so the membrane step below
     // applies the current invagination and propagates it through the surface.
-    updateContactChannel(Math.min(0.12, realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND), s.elapsedS);
     // Step the physics membrane FIRST so the deformation field is fresh for
     // everything that rides it (proteins, clouds, and the coupled organelles).
     // The membrane carries visible stochastic undulation; it is stepped on
@@ -8649,6 +8667,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     updateCellValidation(display?.integratedMetabolism ?? null);
   }
 
+  updateScientificScaleBar();
   updateHoverTooltip();
   renderFrame();
 }
@@ -8769,6 +8788,7 @@ function resize() {
   }
   renderer.setSize(rect.width, rect.height);
   composer?.setSize(rect.width, rect.height);
+  updateScientificScaleBar();
 }
 
 function setText(element: HTMLElement | null, text: string) {

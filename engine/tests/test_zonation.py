@@ -40,6 +40,20 @@ class HumanHepatocyteZonationTests(unittest.TestCase):
         self.assertIn("human_liver_mps_oxygen_zonation_2017", oxygen.source_ids)
         self.assertIn("not direct human sinusoidal measurements", oxygen.limitations[0])
 
+    def test_published_human_spatial_proteome_is_bound_without_flux_promotion(self) -> None:
+        portal = build_human_hepatocyte_zonation("periportal")
+        middle = build_human_hepatocyte_zonation("midlobular")
+        central = build_human_hepatocyte_zonation("pericentral")
+
+        self.assertEqual(len(portal.spatial_protein_markers), 102)
+        self.assertEqual(len(middle.spatial_protein_markers), 0)
+        self.assertEqual(len(central.spatial_protein_markers), 69)
+        self.assertIn("SUCLG2", {item.protein for item in portal.spatial_protein_markers})
+        self.assertIn("ACSL5", {item.protein for item in central.spatial_protein_markers})
+        self.assertTrue(portal.spatial_proteome_measurements_available)
+        self.assertFalse(portal.spatial_proteome_may_scale_flux)
+        self.assertFalse(portal.dynamic_flux_scaling_enabled)
+
 
 if __name__ == "__main__":
     unittest.main()

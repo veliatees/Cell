@@ -44,19 +44,12 @@ export type MembraneSim = {
   kBend: number;
   kVolume: number;
   gamma: number;
-  // Stochastic (thermal / Langevin) forcing amplitude. Each vertex is kicked
-  // randomly every step; the edge + bending coupling then diffuses that energy
-  // to its neighbours, so a local fluctuation ripples across the surface instead
-  // of the shell sitting rigid. Amplitude is a visualisation choice (true bilayer
-  // undulations are nanometre-scale), not a measured PHH temperature.
-  noise: number;
 };
 
 // Evans et al. reported 2-4% human red-cell membrane area expansion at lysis.
-// Three percent sits at the lower end of that measured band and is the ceiling
-// the undulating surface may reach; it is a cross-system reference bound, not a
-// PHH rheology measurement.
-export const MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT = 0.03;
+// One percent is the engine-wide conservative engineering guard: half the lower
+// failure reference. It is not a PHH stretch or rupture measurement.
+export const MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT = 0.01;
 
 const AREA_CORRECTION_ITERS = 6;
 
@@ -220,9 +213,6 @@ function createMembraneSimWithRestShape(
     kBend: 6.0,
     kVolume: 8.0,
     gamma: 1.0,
-    // Quiescent by default (deterministic, settles to the rest shape). The
-    // renderer opts into stochastic undulation by raising sim.noise.
-    noise: 0.0,
   };
   for (let e = 0; e < ne; e += 1) { sim.degree[edgeA[e]] += 1; sim.degree[edgeB[e]] += 1; }
   sim.a0 = membraneSurfaceArea(sim);
@@ -246,6 +236,44 @@ export function membraneRestRadiusAlongDirection(sim: MembraneSim, x: number, y:
   return sim.restShape === "canonical_hepatocyte_polyhedron"
     ? canonicalHepatocyteRadius(sim.radius, nx, ny, nz)
     : sim.radius;
+}
+
+export function writeBarycentricMembranePoint(
+  sim: MembraneSim,
+  faceIndex: number,
+  wa: number,
+  wb: number,
+  wc: number,
+  target: Float32Array,
+  targetOffset = 0
+): void {
+  const face = faceIndex * 3;
+  if (faceIndex < 0 || face + 2 >= sim.faces.length) throw new RangeError("membrane face index is out of range");
+  const sum = wa + wb + wc;
+  if (![wa, wb, wc, sum].every(Number.isFinite) || Math.abs(sum - 1) > 1e-5) {
+    throw new RangeError("barycentric membrane weights must be finite and sum to one");
+  }
+  if (targetOffset < 0 || targetOffset + 2 >= target.length) throw new RangeError("membrane point target is too small");
+  writePrevalidatedBarycentricMembranePoint(sim, faceIndex, wa, wb, wc, target, targetOffset);
+}
+
+/** Hot-path writer for bindings validated when they are constructed. */
+export function writePrevalidatedBarycentricMembranePoint(
+  sim: MembraneSim,
+  faceIndex: number,
+  wa: number,
+  wb: number,
+  wc: number,
+  target: Float32Array,
+  targetOffset = 0
+): void {
+  const face = faceIndex * 3;
+  const ia = sim.faces[face] * 3;
+  const ib = sim.faces[face + 1] * 3;
+  const ic = sim.faces[face + 2] * 3;
+  target[targetOffset] = sim.pos[ia] * wa + sim.pos[ib] * wb + sim.pos[ic] * wc;
+  target[targetOffset + 1] = sim.pos[ia + 1] * wa + sim.pos[ib + 1] * wb + sim.pos[ic + 1] * wc;
+  target[targetOffset + 2] = sim.pos[ia + 2] * wa + sim.pos[ib + 2] * wb + sim.pos[ic + 2] * wc;
 }
 
 // ---- Geometry helpers -------------------------------------------------------
@@ -465,17 +493,6 @@ export function stepMembrane(sim: MembraneSim, dt: number): void {
     addGrad(a, b, cc);
     addGrad(b, cc, a);
     addGrad(cc, a, b);
-  }
-
-  // 3.5) Thermal (Langevin) forcing — the stochastic driver. Each vertex gets an
-  //      independent random kick every step. Because the edge and bending terms
-  //      above couple every vertex to its neighbours, this energy does not stay
-  //      local: it diffuses across the overdamped surface, so a fluctuation at
-  //      one point ripples outward and carries the embedded proteins and surface
-  //      tracers with it, rather than the shell sitting rigid.
-  const noise = sim.noise;
-  if (noise > 0) {
-    for (let i = 0; i < n * 3; i += 1) force[i] += (Math.random() * 2 - 1) * noise;
   }
 
   // 4) Overdamped integration (low-Reynolds): x ← x + (dt/γ)·F, with a per-step

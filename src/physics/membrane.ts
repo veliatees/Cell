@@ -416,21 +416,14 @@ export class MembraneSystem {
     const n = this.beads.length;
     const rc = RC_ATTR + this.wc + 0.3; // interaction cutoff + small skin
 
-    // For a small periodic box (fewer than 3 cells per side) the wrapped cell
-    // list would double-count, so fall back to the direct O(N²) loop there.
+    // Small periodic boxes wrap multiple offsets onto the same neighbour cell.
+    // Deduplicating those cells below keeps the neighbour list exact without an
+    // O(N²) fallback for the compact patches used by the viewer and tests.
     let ncx = 0;
     let ncy = 0;
     if (this.periodic) {
-      ncx = Math.floor(this.lx / rc);
-      ncy = Math.floor(this.ly / rc);
-      if (ncx < 3 || ncy < 3) {
-        for (let i = 0; i < n; i += 1) {
-          for (let j = i + 1; j < n; j += 1) {
-            visit(i, j);
-          }
-        }
-        return;
-      }
+      ncx = Math.max(1, Math.floor(this.lx / rc));
+      ncy = Math.max(1, Math.floor(this.ly / rc));
     }
     const csx = this.periodic ? this.lx / ncx : rc;
     const csy = this.periodic ? this.ly / ncy : rc;
@@ -461,6 +454,7 @@ export class MembraneSystem {
 
     for (let i = 0; i < n; i += 1) {
       const [cx, cy, cz] = coords[i];
+      const neighbourKeys = new Set<string>();
       for (let dx = -1; dx <= 1; dx += 1) {
         for (let dy = -1; dy <= 1; dy += 1) {
           for (let dz = -1; dz <= 1; dz += 1) {
@@ -470,15 +464,18 @@ export class MembraneSystem {
               nx = ((nx % ncx) + ncx) % ncx;
               ny = ((ny % ncy) + ncy) % ncy;
             }
-            const arr = cells.get(`${nx},${ny},${cz + dz}`);
-            if (!arr) {
-              continue;
-            }
-            for (const j of arr) {
-              if (j > i) {
-                visit(i, j);
-              }
-            }
+            neighbourKeys.add(`${nx},${ny},${cz + dz}`);
+          }
+        }
+      }
+      for (const key of neighbourKeys) {
+        const arr = cells.get(key);
+        if (!arr) {
+          continue;
+        }
+        for (const j of arr) {
+          if (j > i) {
+            visit(i, j);
           }
         }
       }

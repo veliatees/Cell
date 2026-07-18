@@ -1,5 +1,9 @@
 # Milestone 071 - Event-driven polyhedral contact world v2
 
+> Historical scale note: Milestone 080 now calibrates the volume-equivalent body
+> to the direct normal-control human 3D median `5657.07116 um3`. The contact
+> topology remains a proxy because individual-cell meshes are unavailable.
+
 Status: implemented
 
 Date: 2026-07-14

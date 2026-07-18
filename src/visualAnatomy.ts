@@ -15,6 +15,11 @@ export const VISUAL_ANATOMY_SOURCES = {
     url: "https://doi.org/10.1126/sciadv.adz2299",
     supports: ["human 3D liver cellular architecture", "tissue-scale spatial context; not single-cell mechanics"]
   },
+  humanHepatocyte3dMorphometry: {
+    id: "segovia_miranda2019_human_liver_3d_morphometry",
+    url: "https://doi.org/10.1038/s41591-019-0660-7",
+    supports: ["normal-control human 3D hepatocyte aggregate volume", "normal-control aggregate lipid-droplet volume fraction"]
+  },
   humanSinusoidUltrastructure: {
     id: "wisse2010_human_liver_em",
     url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC2887580/",
@@ -66,6 +71,20 @@ export const VISUAL_ANATOMY_SOURCES = {
 // endothelium. This is the only numeric ultrastructural dimension transferred
 // into the renderer by this visual-anatomy contract.
 export const HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM = 105;
+export const ISOLATED_PHH_MEDIAN_DIAMETER_UM = 18.4;
+export const HISTORICAL_IN_SITU_PHH_MEAN_VOLUME_UM3 = 2850;
+// Aggregate normal-control 3D median and MAD from Segovia-Miranda et al.
+// Supplementary Table 3, Figure 3c. The equivalent diameter is derived.
+export const HUMAN_NC_3D_HEPATOCYTE_MEDIAN_VOLUME_UM3 = 5657.07116;
+export const HUMAN_NC_3D_HEPATOCYTE_VOLUME_MAD_UM3 = 744.875484;
+export const HEPATOCYTE_REFERENCE_EQUIVALENT_DIAMETER_UM = 22.107060841416555;
+// Figure 3i normal-control median. This constrains aggregate display volume,
+// not droplet count, size distribution or a nutrition-dependent response law.
+export const HUMAN_NC_3D_LIPID_DROPLET_VOLUME_FRACTION = 0.00507807;
+export const HEPATOCYTE_CANONICAL_POLARITY_AXIS = [1, 0, 0] as const;
+export const HEPATOCYTE_RENDER_RADIUS_WORLD = 14;
+export const HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT =
+  (HEPATOCYTE_REFERENCE_EQUIVALENT_DIAMETER_UM / 2) / HEPATOCYTE_RENDER_RADIUS_WORLD;
 
 // This is a project-defined coverage rubric, not a percentage of hepatocyte
 // biology and not a validation score. Completion can only describe whether a
@@ -94,22 +113,51 @@ export function visualAnatomyCoverage(requirements: readonly VisualAnatomyRequir
   return (completed / total) * 100;
 }
 
+export function normalizeDisplaySphereScalesToVolumeFraction(
+  rawScales: readonly number[],
+  baseRadius: number,
+  cellEquivalentRadius: number,
+  targetFraction: number
+): number[] {
+  if (
+    rawScales.length === 0 ||
+    !rawScales.every((value) => Number.isFinite(value) && value > 0) ||
+    !Number.isFinite(baseRadius) || baseRadius <= 0 ||
+    !Number.isFinite(cellEquivalentRadius) || cellEquivalentRadius <= 0 ||
+    !Number.isFinite(targetFraction) || targetFraction <= 0 || targetFraction >= 1
+  ) throw new Error("Display-volume normalization requires positive finite geometry.");
+  const rawRadiusCubeSum = rawScales.reduce(
+    (sum, scale) => sum + (baseRadius * scale) ** 3,
+    0
+  );
+  const targetRadiusCubeSum = targetFraction * cellEquivalentRadius ** 3;
+  const factor = Math.cbrt(targetRadiusCubeSum / rawRadiusCubeSum);
+  return rawScales.map((scale) => scale * factor);
+}
+
 export function visualAnatomyLod(cameraDistance: number, viewportWidth: number): VisualAnatomyLod {
   if (cameraDistance > 48 || (viewportWidth < 700 && cameraDistance > 44)) return "overview";
   if (cameraDistance > 24) return "cellular";
   return "ultrastructure";
 }
 
-// The domain boundaries are normalized renderer geometry. The topology is
-// source-backed, while these angular cutoffs are not morphometric measurements.
+// Ray/face classification for the canonical truncated-octahedron collision
+// proxy: |x|,|y|,|z| <= 2s and |x|+|y|+|z| <= 3s. This keeps renderer domains
+// identical to engine faces; it is not donor-specific membrane morphometry.
 export function membraneDomainForDirection(x: number, y: number, z: number): VisualAnatomyDomain {
   const magnitude = Math.hypot(x, y, z) || 1;
-  const nx = x / magnitude;
-  const ny = y / magnitude;
-  const nz = z / magnitude;
-  const apicalMagnitude = Math.hypot(1, 0.18, 0.02);
-  const apicalDot = nx / apicalMagnitude + (ny * 0.18) / apicalMagnitude + (nz * 0.02) / apicalMagnitude;
-  if (apicalDot >= 0.86) return "apical";
-  if (nx <= -0.38) return "basolateral";
+  const nx = x / magnitude, ny = y / magnitude, nz = z / magnitude;
+  const tx = Math.abs(nx) > Number.EPSILON ? 2 / Math.abs(nx) : Number.POSITIVE_INFINITY;
+  const ty = Math.abs(ny) > Number.EPSILON ? 2 / Math.abs(ny) : Number.POSITIVE_INFINITY;
+  const tz = Math.abs(nz) > Number.EPSILON ? 2 / Math.abs(nz) : Number.POSITIVE_INFINITY;
+  const tsum = 3 / (Math.abs(nx) + Math.abs(ny) + Math.abs(nz));
+  const firstHit = Math.min(tx, ty, tz, tsum);
+  const tolerance = 1e-10;
+  const xFaceIsUnique = Math.abs(tx - firstHit) <= tolerance
+    && ty - firstHit > tolerance
+    && tz - firstHit > tolerance
+    && tsum - firstHit > tolerance;
+  if (xFaceIsUnique && nx > 0) return "apical";
+  if (xFaceIsUnique && nx < 0) return "basolateral";
   return "lateral";
 }

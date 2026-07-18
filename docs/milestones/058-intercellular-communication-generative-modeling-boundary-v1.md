@@ -38,8 +38,8 @@ generated samples as measured cell state.
 
 ## Reference Geometry
 
-The browser fixture uses the existing source-backed canonical hepatocyte
-diameter of 25 um. Cell A and Cell B are exactly tangent; Cell C is separated.
+The historical browser fixture now consumes the shared isolated-PHH median
+diameter of 18.4 um. Cell A and Cell B are exactly tangent; Cell C is separated.
 This arrangement is a mathematical test fixture, not a histological observation
 or a reconstructed liver plate. Spherical proximity alone cannot determine a
 real contact-patch area because that requires deformable-cell mechanics,

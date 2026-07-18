@@ -70,13 +70,21 @@ linked to its dependencies.
 - Five-batch d8-TCA BEI paired-condition operator with transporter and geometry gates: `milestones/064-phh-biliary-excretion-observability-v1.md`
 - Six-batch FACS/scRNA identity and product-composition panel with one-cell and generative-model gates: `milestones/065-phh-identity-heterogeneity-observability-v1.md`
 - Seven-donor absolute PHH protein-mass budget with dynamic-proteostasis and geometry gates: `milestones/066-absolute-phh-proteome-budget-v1.md`
-- Same-cohort total-BSEP copy bridge and denominator-preserved MRP2 inventory: `milestones/067-bsep-mrp2-transporter-inventory-v1.md`
+- Historical BSEP-only arithmetic bridge, superseded by donor-resolved BSEP/MRP2 totals in Milestone 077: `milestones/067-bsep-mrp2-transporter-inventory-v1.md`
 - Four-donor day-7 human-SCH endogenous bile-acid compartments with aggregation, censoring, and canalicular-concentration gates: `milestones/068-human-sch-endogenous-bile-acids-v1.md`
 - Evidence-scoped hepatocyte polarity, endomembrane, cytoskeleton, sinusoid, cutaway, and LOD renderer contract: `milestones/069-source-backed-hepatocyte-visual-anatomy-v2.md`
 - Engine-authoritative sphere/capsule proximity, closest-point, overlap, and contact-duration state with fail-closed mechanics: `milestones/070-geometry-authoritative-spatial-world-v1.md`
 - Single-cell default runtime, convex polyhedral surfaces, broad membrane-domain contact patches, and enter/stay/exit geometry inputs: `milestones/071-event-driven-polyhedral-contact-world-v2.md`
 - Volume-preserving contact deformation, conservative cross-system area cap, rest-shape recovery, and renderer coupling: `milestones/072-volume-preserving-contact-deformation-v1.md`
 - Intrinsic fluid-bilayer material on every hepatocyte, barycentric surface tracers, local protein contact gates, and single-cell browser integration: `milestones/073-intrinsic-fluid-hepatocyte-membrane-v1.md`
+- Engine-owned geometry, complementary surface-molecule matching, and fail-closed signal/transport gates: `milestones/074-geometry-molecular-signal-transport-gates-v1.md`
+- Shared isolated-PHH scale, membrane evidence-transfer gates, ambiguity-aware contact domains, and three-layer physical verification ledger: `milestones/075-physical-integrity-verification-v1.md`
+- Checksum-verified human liver morphometry, PHH surfaceome, spatial proteome, tissue architecture, and fail-closed interaction hypotheses: `milestones/076-human-liver-open-data-atlas-v1.md`
+- Seven-donor, checksum-verified absolute PHH protein-group atlas with per-nucleus semantics, zero-imputation policy, corrected selected counts, and BSEP/MRP2 denominator gates: `milestones/077-donor-resolved-absolute-phh-proteome-v1.md`
+- Eight-protein PHH location, assay-kinetic, donor-variation, response-validation, and fail-closed activity-coupling layer: `milestones/078-phh-protein-location-kinetics-donor-validation-v1.md`
+- In-situ human hepatocyte volume anchor, explicit 3D evidence gates, and coupled five-lot human taurocholate validation: `milestones/079-human-in-situ-geometry-coupled-transport-v1.md`
+- Checksummed normal-control human 3D cell volume and lipid-droplet fraction, conflict-preserving scale promotion, and aggregate renderer calibration: `milestones/080-human-3d-hepatocyte-morphometry-v1.md`
+- Seeded stochastic approach placement, declared-shape support geometry, fail-closed contact-patch rendering, and scientific scale/domain/voxel layers: `milestones/081-stochastic-contact-surface-scientific-overlays-v1.md`
 
 ## Epithelial Biology
 
