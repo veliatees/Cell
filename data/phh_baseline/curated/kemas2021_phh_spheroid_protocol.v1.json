@@ -1,0 +1,59 @@
+{
+  "schema_version": "cell.phh-spheroid-validation-protocol.v1",
+  "date_verified": "2026-07-14",
+  "protocol_id": "kemas2021_insulin_sensitive_phh_spheroid_glucose",
+  "status": "primary_source_locked_validation_protocol_no_model_prediction",
+  "source_ids": ["kemas2021_phh_glucose"],
+  "source_locators": ["Methods 2.4", "Methods 2.7", "Table 1", "Discussion"],
+  "method_contract": {
+    "species": "Homo sapiens",
+    "cell_format": "primary_human_hepatocyte_3d_spheroid",
+    "plate_format": "ultra_low_attachment_96_well_plate",
+    "seeded_viable_cells_per_well": 1500,
+    "single_spheroid_observed_per_well_after_aggregation": true,
+    "culture_seeding_medium_volume_uL": 100.0,
+    "glucose_challenge_initial_medium_volume_uL": null,
+    "assay_sample_supernatant_volume_uL": 10.0,
+    "assay_replication": "duplicates",
+    "assay_replication_count": 2,
+    "remaining_medium_volume_schedule_uL": null,
+    "volumetric_factor_VF": null,
+    "viable_cell_count_at_each_observation_window": null,
+    "reported_calculation": "(C0 * V0 - Ct * Vt) / (VF * n)",
+    "reported_symbol_semantics": {
+      "C0": "initial glucose concentration in culture medium",
+      "V0": "initial culture-medium volume",
+      "Ct": "glucose concentration at time t",
+      "Vt": "remaining culture-medium volume at time t",
+      "n": "number of cells per spheroid",
+      "VF": "volumetric factor of the considered spheroids"
+    }
+  },
+  "output_contract": {
+    "quantity": "net_medium_glucose_disappearance",
+    "positive_direction": "positive_is_net_disappearance",
+    "rate_unit": "fmol_per_cell_per_h",
+    "cumulative_unit": "fmol_per_seeded_cell",
+    "denominator": "seeded_cells_per_spheroid",
+    "uncertainty_type": "SD",
+    "nonoverlapping_windows_h": [[0.0, 6.0], [6.0, 24.0], [24.0, 72.0]],
+    "overlapping_audit_window_h": [0.0, 72.0]
+  },
+  "gates": {
+    "medium_concentration_trajectory_reconstruction_ready": false,
+    "cumulative_mean_trajectory_ready": true,
+    "combined_cumulative_uncertainty_ready": false,
+    "vectorial_flux_decomposition_ready": false,
+    "exact_protocol_prediction_loaded": false,
+    "acceptance_threshold_assigned": false,
+    "automatic_state_coupling": false,
+    "predictive_ready": false
+  },
+  "limitations": [
+    "The reported 100 uL is the cell-culture seeding volume; Methods 2.7 does not restate the initial medium volume after the glucose-challenge medium change.",
+    "The remaining-volume schedule, volumetric factor and viable cell count at each observation window are not numerically identified in the primary paper.",
+    "Cumulative means can be derived from the three non-overlapping window means by linearity, but their combined SD cannot be reconstructed without covariance or repeated-measures structure.",
+    "The 0-72 h records overlap the three shorter windows and are retained as descriptive internal consistency audits, not independent validation targets.",
+    "Net medium glucose disappearance cannot be decomposed into uptake, utilization and production without additional tracer-resolved measurements."
+  ]
+}

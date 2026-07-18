@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from math import pi
-
 from cell_engine.core.cell_definition import (
     CellDefinition,
     CompartmentDefinition,
@@ -17,10 +15,14 @@ from cell_engine.core.expression import build_initial_hepatocyte_expression
 from cell_engine.core.genomic_architecture import build_genomic_architecture
 from cell_engine.core.history import initial_cell_history
 from cell_engine.core.state import CargoPacket, CellEvent, CellState, OrganelleState, PoolState
+from cell_engine.quantitative.geometry import (
+    HEPATOCYTE_CANONICAL_POLARITY_AXIS,
+    HEPATOCYTE_REFERENCE_EQUIVALENT_SPHERE_DIAMETER_UM,
+    HEPATOCYTE_REFERENCE_VOLUME_UM3,
+)
 
 DATE_VERIFIED = "2026-06-19"
-HEPATOCYTE_REFERENCE_VOLUME_UM3 = 3400.0
-HEPATOCYTE_EQUIVALENT_SPHERE_RADIUS_UM = (3.0 * HEPATOCYTE_REFERENCE_VOLUME_UM3 / (4.0 * pi)) ** (1.0 / 3.0)
+HEPATOCYTE_EQUIVALENT_SPHERE_RADIUS_UM = HEPATOCYTE_REFERENCE_EQUIVALENT_SPHERE_DIAMETER_UM / 2.0
 
 
 def build_hepatocyte_definition(zone: str = "midlobular") -> CellDefinition:
@@ -41,13 +43,29 @@ def build_hepatocyte_definition(zone: str = "midlobular") -> CellDefinition:
             date_verified=DATE_VERIFIED,
             notes="Quantitative reference for sizes, concentrations, copy numbers, and order-of-magnitude checks.",
         ),
-        "human_cell_proteome_quantitative_2023": SourceReference(
-            id="human_cell_proteome_quantitative_2023",
-            title="Quantitative Aspects of the Human Cell Proteome",
-            url="https://pmc.ncbi.nlm.nih.gov/articles/PMC10218018/",
-            source_type="review",
-            date_verified="2026-07-11",
-            notes="Reports a characteristic average hepatocyte volume of 3400 um3 and discusses cell-volume scaling of protein content.",
+        "olander2021_human_hepatocyte_size": SourceReference(
+            id="olander2021_human_hepatocyte_size",
+            title="Hepatocyte size fractionation allows dissection of human liver zonation",
+            url="https://doi.org/10.1002/jcp.30273",
+            source_type="primary_paper",
+            date_verified="2026-07-15",
+            notes="Median diameter 18.4 um across 54 isolated cryopreserved primary-human-hepatocyte batches; 88% were 12-26 um.",
+        ),
+        "duarte1989_human_hepatocyte_volume": SourceReference(
+            id="duarte1989_human_hepatocyte_volume",
+            title="Baseline volume data of human liver parenchymal cell",
+            url="https://pubmed.ncbi.nlm.nih.gov/2752360/",
+            source_type="primary_paper",
+            date_verified="2026-07-17",
+            notes="Normal-human in-situ intermediate-zone mean hepatocyte volume 2850 +/- 99.9 um3 in five selected cases; uncertainty statistic not identified in the abstract.",
+        ),
+        "segovia_miranda2019_human_liver_3d_morphometry": SourceReference(
+            id="segovia_miranda2019_human_liver_3d_morphometry",
+            title="Three-dimensional spatially resolved geometrical and functional models of human liver tissue reveal new aspects of NAFLD progression",
+            url="https://doi.org/10.1038/s41591-019-0660-7",
+            source_type="primary_paper",
+            date_verified="2026-07-17",
+            notes="Normal-control human liver 3D reconstructions report median hepatocyte volume 5657.07116 um3 with MAD 744.875484 um3 across five reconstructions at 0.3 um isotropic voxels.",
         ),
         "project_roadmap_07": SourceReference(
             id="project_roadmap_07",
@@ -64,10 +82,10 @@ def build_hepatocyte_definition(zone: str = "midlobular") -> CellDefinition:
             name="hepatocyte_radius_um",
             value=HEPATOCYTE_EQUIVALENT_SPHERE_RADIUS_UM,
             unit="um",
-            source_id="human_cell_proteome_quantitative_2023",
+            source_id="segovia_miranda2019_human_liver_3d_morphometry",
             assumption_level="literature_derived",
-            confidence=0.60,
-            notes="Equivalent-sphere radius derived geometrically from the 3400 um3 reference volume; not a claim that a polarized hepatocyte is spherical.",
+            confidence=0.85,
+            notes="Radius of a volume-equivalent sphere derived from the measured normal-control 3D hepatocyte-volume median; not a claim that the cell is spherical.",
         ),
         "initial_pool_unit": ParameterProvenance(
             name="initial_pool_unit",
@@ -349,7 +367,7 @@ def build_hepatocyte_definition(zone: str = "midlobular") -> CellDefinition:
         zone=zone,
         geometry=GeometryDefinition(
             radius_um=HEPATOCYTE_EQUIVALENT_SPHERE_RADIUS_UM,
-            polarity_axis=(0.0, 1.0, 0.0),
+            polarity_axis=HEPATOCYTE_CANONICAL_POLARITY_AXIS,
             membrane_regions={
                 "sinusoidal": "blood-facing uptake/secretion face",
                 "canalicular": "bile-facing export face",

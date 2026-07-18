@@ -288,7 +288,7 @@ def build_initial_hepatocyte_expression(
             evidence_status=("literature_derived" if protein_count is not None else "unknown"),
             source_ids=definition.source_ids + ("expression_unknown_policy",),
             notes=(
-                "Protein count is an order-of-magnitude total-abundance anchor; functional scale 1 is the normalized healthy reference, not a measured surface fraction."
+                "Protein count is a seven-donor median total-abundance observation per nucleus; functional scale 1 is a normalized reference, not a measured surface or active fraction."
                 if protein_count is not None
                 else "Gene-specific RNA counts, promoter kinetics and protein abundance are not calibrated."
             ),

@@ -1,0 +1,161 @@
+{
+  "schema_version": "cell.human-hepatocyte-3d-morphometry.v1",
+  "version": "human_hepatocyte_3d_morphometry_v1",
+  "date_verified": "2026-07-17",
+  "status": "healthy_human_aggregate_3d_morphometry_active_individual_mesh_blocked",
+  "policy": "Aggregate normal-control 3D measurements may initialize aggregate cell volume and lipid-droplet volume fraction. They must not be converted into an individual-cell shape distribution, donor-specific mesh, membrane-domain area, organelle count or mechanics law.",
+  "source_artifact": {
+    "source_id": "segovia_miranda2019_human_liver_3d_morphometry",
+    "title": "Three-dimensional spatially resolved geometrical and functional models of human liver tissue reveal new aspects of NAFLD progression",
+    "doi": "10.1038/s41591-019-0660-7",
+    "pmid": "31792455",
+    "pmcid": "PMC6899159",
+    "article_url": "https://www.nature.com/articles/s41591-019-0660-7",
+    "supplement_url": "https://static-content.springer.com/esm/art%3A10.1038%2Fs41591-019-0660-7/MediaObjects/41591_2019_660_MOESM1_ESM.xlsx",
+    "retrieved_filename": "41591_2019_660_MOESM1_ESM.xlsx",
+    "downloaded_bytes": 104382,
+    "md5": "7dcf837c391ae5433cbeb507d6baf534",
+    "sha256": "ab282a593c9b66fd95f764271625f73cd3c5ab33746c8f757c6c60fa2b8ffc3f",
+    "workbook_sheet": "Supplementary Table 3",
+    "cell_volume_locator": "O42:AA46 (Figure 3 Panel c; NC Median/MAD/N)",
+    "lipid_droplet_locator": "O118:AA122 (Figure 3 Panel i; NC Median/MAD/N)",
+    "license_status": "publisher_supplement_accessible_license_not_reinterpreted"
+  },
+  "study_context": {
+    "species": "Homo sapiens",
+    "tissue_context": "human_liver_tissue",
+    "normal_control_abbreviation": "NC",
+    "normal_control_reconstruction_count": 5,
+    "all_group_reconstruction_count": 16,
+    "all_group_analyzed_cell_count": 11278,
+    "all_group_counts": {
+      "NC": 5,
+      "HO": 3,
+      "STEA": 4,
+      "eNASH": 4
+    },
+    "section_thickness_um": {
+      "value": 100.0,
+      "qualifier": "approximately"
+    },
+    "voxel_size_um": [0.3, 0.3, 0.3],
+    "imaging": "optically_cleared_multiphoton_microscopy",
+    "segmented_structures": [
+      "hepatocyte_cell_border",
+      "nucleus",
+      "lipid_droplet",
+      "bile_canaliculus",
+      "sinusoid"
+    ],
+    "lobular_region_order": "CVPV_1_is_central_vein_adjacent_CVPV_10_is_portal_vein_adjacent",
+    "scope_note": "The 11278-cell total pools all four study groups. It is study context, not a healthy-control cell count."
+  },
+  "normal_control_cell_volume_um3": {
+    "statistic": "source_reported_median",
+    "overall": 5657.07116,
+    "overall_mad": 744.875484,
+    "n_reconstructions": 5,
+    "regional_medians": [
+      5897.249482,
+      5260.386663,
+      5805.821244,
+      5411.935226,
+      5630.647671,
+      5334.579136,
+      5640.533401,
+      5710.192109,
+      5251.397274,
+      5079.849567
+    ],
+    "regional_mads": [
+      147.329029,
+      740.056354,
+      634.538775999999,
+      818.677689,
+      452.913742000001,
+      298.122291,
+      1036.282474,
+      270.562624,
+      251.447192,
+      573.017524
+    ],
+    "regional_n_reconstructions": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+    "derived_equivalent_sphere_diameter_um": 22.107060841416555,
+    "derived_equivalent_sphere_surface_area_um2": 1535.3658816738957,
+    "diameter_and_area_are_derived_not_measured": true,
+    "may_initialize_reference_cell_volume": true,
+    "may_define_single_cell_shape_distribution": false
+  },
+  "normal_control_lipid_droplet_volume_percent": {
+    "statistic": "source_reported_median",
+    "overall": 0.507807,
+    "overall_mad_percentage_points": 0.403178,
+    "n_reconstructions": 5,
+    "regional_medians": [
+      1.11846,
+      0.678647,
+      0.420377,
+      0.327839,
+      0.44739,
+      0.489409,
+      0.262475,
+      0.087351,
+      0.187659,
+      0.148508
+    ],
+    "regional_mads_percentage_points": [
+      0.352492,
+      0.310493,
+      0.420377,
+      0.263661,
+      0.44739,
+      0.299738,
+      0.262475,
+      0.087351,
+      0.095039,
+      0.140793
+    ],
+    "regional_n_reconstructions": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+    "fraction_of_cell_volume": 0.00507807,
+    "may_initialize_aggregate_healthy_display_fraction": true,
+    "may_define_droplet_count_or_size_distribution": false,
+    "may_define_dynamic_nutritional_response": false
+  },
+  "pooled_all_group_cell_volume_classes_um3": {
+    "small_upper_exclusive": 5800.0,
+    "medium_lower_inclusive": 5800.0,
+    "medium_upper_inclusive": 11000.0,
+    "large_lower_exclusive": 11000.0,
+    "scope": "all_four_study_groups_pooled_not_healthy_reference",
+    "may_initialize_healthy_population_mixture": false
+  },
+  "historical_stereology_conflict": {
+    "source_id": "duarte1989_human_hepatocyte_volume",
+    "historical_mean_volume_um3": 2850.0,
+    "historical_reported_plus_minus_um3": 99.9,
+    "historical_case_count": 5,
+    "new_to_historical_ratio": 1.9849372491228072,
+    "percent_difference_relative_to_historical": 98.49372491228071,
+    "resolution_policy": "do_not_average_promote_direct_high_resolution_3d_NC_median_keep_historical_stereology_as_cross_check"
+  },
+  "integration_gates": {
+    "aggregate_3d_normal_control_volume_available": true,
+    "aggregate_3d_normal_control_lipid_fraction_available": true,
+    "individual_cell_boundary_mesh_available": false,
+    "healthy_population_shape_distribution_available": false,
+    "quantitative_apical_basal_lateral_surface_area_available": false,
+    "organelle_resolved_human_mesh_available": false,
+    "matched_contact_interface_mesh_available": false,
+    "may_initialize_reference_volume": true,
+    "may_initialize_aggregate_lipid_fraction": true,
+    "may_replace_runtime_polyhedron_with_measured_mesh": false,
+    "may_calibrate_contact_patch_ground_truth": false
+  },
+  "limitations": [
+    "The normal-control values are aggregate source-reported median/MAD summaries across five reconstructions, not raw individual-cell distributions.",
+    "The supplementary workbook does not provide individual hepatocyte meshes or raw per-cell boundary coordinates.",
+    "The article reconstructs apical, basal and lateral topology, but Supplementary Table 3 does not report quantitative membrane-domain surface areas.",
+    "Lipid-droplet volume fraction may constrain only the aggregate healthy display fraction; droplet count, size distribution and nutritional dynamics remain unidentified.",
+    "The pooled small/medium/large thresholds combine healthy and disease groups and therefore cannot initialize a healthy-only population mixture."
+  ]
+}

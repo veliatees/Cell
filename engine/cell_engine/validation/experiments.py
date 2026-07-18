@@ -40,7 +40,7 @@ class ScenarioResult:
 
 BASELINE_SCENARIO = Scenario(
     id="baseline",
-    description="Fed baseline hepatocyte",
+    description="Healthy reference hepatocyte",
     interventions={},
     controls={"experiment_id": "baseline", "intervention_type": "healthy_reference"},
 )

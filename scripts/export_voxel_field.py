@@ -1,7 +1,7 @@
-"""Export the per-voxel protein population field for the renderer.
+"""Export the per-voxel reference-nucleus protein field for the renderer.
 
-Builds the hepatocyte voxel lattice, seeds every protein at its real per-cell
-copy number into its correct compartment, and writes the sparse per-voxel field
+Builds the hepatocyte voxel lattice, seeds selected groups at the seven-donor
+median copies per nucleus into their coarse compartment, and writes the sparse field
 to public/cell_voxel_field.json. The renderer draws this as a population density
 (real numbers, in the right place) rather than atomic structures.
 """
@@ -31,7 +31,7 @@ def main() -> None:
         "--scale",
         type=float,
         default=1.0,
-        help="multiply real copy numbers (1.0 = true counts)",
+        help="multiply reference-nucleus counts (1.0 = source medians)",
     )
     parser.add_argument("--out", type=Path, default=_DEFAULT_OUT)
     args = parser.parse_args()
@@ -46,7 +46,9 @@ def main() -> None:
             "id": p.id,
             "gene": p.gene,
             "location": p.location,
-            "copiesPerCell": int(round(p.copies_typical * args.scale)),
+            "copiesPerReferenceNucleus": int(round(p.copies_typical * args.scale)),
+            "copyNumberDenominator": p.copy_number_denominator,
+            "aggregation": p.aggregation,
             "quality": p.quality,
             "footprintNm": p.footprint_nm,
         }
@@ -55,13 +57,13 @@ def main() -> None:
     totals = {p.id: state.total(p.id) for p in PROTEINS}
 
     payload = {
-        "_note": "Per-voxel protein population for the hepatocyte. Real per-cell "
-        "copy numbers (order-of-magnitude; see docs/12-hepatocyte-quantitative.md) "
+        "_note": "Per-voxel protein-group population for one reference nucleus. "
+        "Seven-donor median copy numbers from Wisniewski 2016 Supplementary Table 2 "
         "seeded into their correct compartment voxels. Positions are normalised "
         "cell coordinates in [-1,1]; counts are populations, not atoms. Geometry "
         "(membrane split by x-sign, ~20% hashed mitochondrial fraction) is "
-        "schematic; the copy numbers and compartment assignments are grounded.",
-        "lattice": {"n": args.n, "dxUm": lattice.dx_um, "scale": args.scale},
+        "schematic; total abundance is measured but surface/active fractions are unknown.",
+        "lattice": {"n": args.n, "dxUm": round(lattice.dx_um, 12), "scale": args.scale},
         "proteins": proteins_meta,
         "totals": totals,
         "voxels": field,

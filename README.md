@@ -43,8 +43,28 @@ biology rather than tuned to look right.
   with exact conservation laws.
 - **Gene expression** — stochastic gene → mRNA → protein with a **two-state
   promoter**, reproducing transcriptional bursting (super-Poissonian mRNA).
-- **Hormonal signalling** — insulin / glucagon / AMPK switching glycogen storage
-  vs mobilisation (fed vs fasted).
+- **Human endocrine context** — measured healthy-human mixed-meal plasma glucose,
+  insulin and glucagon plus tracer-derived hepatic-output observations and a
+  causal glucagon-clamp glycogen benchmark. Legacy normalized hormone switches
+  remain schematic; portal exposure, receptor activity and hormone-to-rate
+  coupling fail closed.
+- **Human validation protocol** — 19 reported mixed-meal observations retained as
+  exact points, windows or summary parameters. Separate cohorts are not matched,
+  no time point is interpolated, and comparisons require the same unit, timing
+  and biological scale.
+- **Exact PHH spheroid protocol** — the Kemas 2021 3D-PHH experiment is locked as
+  12 non-overlapping cumulative-mean targets plus four descriptive overlap
+  audits. Wrong scale, denominator, unit, hormone bundle or time window fails
+  closed; unreported medium-volume, covariance and tracer details remain null.
+- **External evidence intake** — a nine-file, checksum-audited delivery contract
+  rejects ambiguous missing values, malformed provenance and model outputs
+  labelled as measurements. Even valid deliveries require manual primary-source
+  review before any parameter can be activated.
+- **Published-model external check** — the postabsorptive shadow predicts
+  10.02 umol glucose/kg/min production versus a unit-normalized healthy-human
+  tracer estimate of 10.55 +/- 0.22. The -5.0% contextual residual is reported
+  without a pass claim because boundaries, timing, donors and data independence
+  are not matched.
 - **Membrane transport** — polarized vectorial flux through real transporters
   (GLUT2, NTCP, OATP, Na⁺/K⁺-ATPase, BSEP, MRP2); a BSEP defect reproduces
   cholestasis.
@@ -52,8 +72,14 @@ biology rather than tuned to look right.
   frequency rises with agonist (Goldbeter 1990).
 - **Lipid metabolism** — de novo lipogenesis, β-oxidation and VLDL secretion;
   steatosis emerges when synthesis outpaces export.
-- **Secretion** — constitutive albumin trafficking with measured ER→Golgi→blood
-  transit times (~30 min).
+- **Albumin secretion** - six commercial PHH batch endpoints are represented in
+  the exact 24 h ELISA unit. ER, Golgi, exocytosis and degradation rates remain
+  blocked because the available PHH assay does not resolve them.
+- **PHH functional quality panel** - 72 batch-resolved CYP SCR/MFR observations,
+  five d8-TCA BEI values, six-batch FACS identity markers, and 54,134 filtered
+  single-cell transcriptomes are available as assay-matched validation surfaces.
+  Product criteria and censored records never become simulation thresholds or
+  biological zeros.
 - **DNA damage & repair** — stochastic double-strand-break repair with a p53
   fate decision keyed to the DSB burden (~30 DSB/Gy).
 - **Life and death** — cell-cycle states, biomass growth, division (binomial
@@ -92,17 +118,29 @@ Recent additions make more of the engine visible and keep it physically honest:
   two-state promoters flare as they fire transcription bursts; mRNA transcripts
   stream to a nuclear pore, exit, and head into the cytoplasm — burst intensity
   tracking the engine's mRNA pool.
-- **Stochastic feeding / fasting.** Meals arrive on a compressed physiological
-  clock (random interval, capped at a 10 h overnight fast). Glycogen granules
-  visibly fill when fed and mobilise when fasting; ketone bodies are a *real fuel*
-  (fat → ketones → ATP) that buffers the cell through a fast while glycogen is
-  spent, and a readout reports state, hours-since-meal, blood glucose and ketones.
-- **One solid, deformable membrane.** A single fluid bilayer (no second static
-  shell) that flexes, with every embedded transport protein riding the deforming
-  surface. Nothing interpenetrates: the membrane cannot balloon into the
-  neighbouring sinusoid (a real space-of-Disse gap separates them), and every
-  organelle — mitochondria, the many Golgi dictyosomes, ER, canaliculus, lipid
-  droplets — is placed with hard excluded-volume so none clips through another.
+- **Explicit nutritional contexts.** Fed peak, postabsorptive and prolonged-fast
+  selections load source-backed liver-glycogen references. Blood glucose,
+  insulin, glucagon and ketones appear only where the selected profile has a
+  compatible measurement; unavailable boundaries remain visibly unavailable.
+- **An intrinsic fluid membrane on every hepatocyte.** Each engine hepatocyte
+  carries its own fluid-bilayer material contract. The visible membrane is one
+  Eulerian deformable mesh, while lipids, microvilli and membrane proteins use
+  surface coordinates so they remain attached as the mesh bends; there is no
+  second static shell or product-level second-cell demonstration.
+- **Contact deforms the main cell itself.** When an authoritative engine contact
+  is present, the same high-resolution membrane shown in the browser compresses
+  along the contact normal and expands tangentially with exact affine volume
+  preservation. Local membrane proteins are gated by patch overlap, partner,
+  orientation and pathway state. Membrane evidence and interaction state live
+  inside the single **Hepatocyte - organelle network** scene; there is no
+  separate communication hepatocyte. A future explicit cell, bacterium or virus
+  is placed in this same coordinate system, and contact is highlighted only
+  when the engine supplies its patch polygon. The default export remains a
+  single cell, and
+  its silhouette does not perform an invented whole-cell wobble in the absence
+  of a load. The current `1%` mesh-area cap is labelled only as a conservative
+  engineering guard, not as a healthy-PHH material measurement; PHH membrane
+  tension, bending modulus, cortex adhesion and rupture strain remain null.
 
 **Concentration fields from the spatial engine.** Two views render the RDME's
 steady-state output directly on the hepatocyte lattice — the same geometry and
@@ -285,6 +323,36 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 049: Human PHH zonation context v1](docs/milestones/049-human-phh-zonation-context-v1.md)
 - [Milestone 050: PHH zonation + sinusoid-coupled homeostasis v2](docs/milestones/050-phh-zonation-sinusoid-homeostasis-v2.md)
 - [Milestone 051: PHH zonation + sinusoid-coupled homeostasis v3](docs/milestones/051-phh-zonation-sinusoid-homeostasis-v3.md)
+- [Milestone 052: Unified nutritional state v1](docs/milestones/052-unified-nutritional-state-v1.md)
+- [Milestone 053: Human endocrine-glycogen coupling v1](docs/milestones/053-human-endocrine-glycogen-coupling-v1.md)
+- [Milestone 054: Published hepatic glucose shadow model v1](docs/milestones/054-published-hepatic-glucose-shadow-model-v1.md)
+- [Milestone 055: Published glucose model lineage audit v1](docs/milestones/055-published-glucose-model-lineage-audit-v1.md)
+- [Milestone 056: Human evidence intake + validation protocol v1](docs/milestones/056-human-evidence-intake-validation-protocol-v1.md)
+- [Milestone 057: Published glucose external human validation v1](docs/milestones/057-published-glucose-external-human-validation-v1.md)
+- [Milestone 058: Intercellular communication + generative modeling boundary v1](docs/milestones/058-intercellular-communication-generative-modeling-boundary-v1.md)
+- [Milestone 059: Healthy PHH spheroid validation v1](docs/milestones/059-healthy-phh-spheroid-validation-v1.md)
+- [Milestone 060: PHH spheroid exact-protocol validation v1](docs/milestones/060-phh-spheroid-exact-protocol-validation-v1.md)
+- [Milestone 061: PHH glucose measurement operator + identifiability gate v1](docs/milestones/061-phh-glucose-measurement-operator-identifiability-v1.md)
+- [Milestone 062: PHH albumin secretion observability + secretory-path gate v1](docs/milestones/062-phh-albumin-secretion-observability-v1.md)
+- [Milestone 063: PHH CYP450 batch-resolved function observability v1](docs/milestones/063-phh-cyp450-function-observability-v1.md)
+- [Milestone 064: PHH d8-TCA biliary-excretion observability v1](docs/milestones/064-phh-biliary-excretion-observability-v1.md)
+- [Milestone 065: PHH identity, purity, and heterogeneity observability v1](docs/milestones/065-phh-identity-heterogeneity-observability-v1.md)
+- [Milestone 066: Absolute PHH proteome budget v1](docs/milestones/066-absolute-phh-proteome-budget-v1.md)
+- [Milestone 067: Historical BSEP/MRP2 denominator bridge v1](docs/milestones/067-bsep-mrp2-transporter-inventory-v1.md)
+- [Milestone 068: Human SCH endogenous bile-acid compartments v1](docs/milestones/068-human-sch-endogenous-bile-acids-v1.md)
+- [Milestone 069: Source-backed hepatocyte visual anatomy v2](docs/milestones/069-source-backed-hepatocyte-visual-anatomy-v2.md)
+- [Milestone 070: Geometry-authoritative spatial world v1](docs/milestones/070-geometry-authoritative-spatial-world-v1.md)
+- [Milestone 071: Event-driven polyhedral contact world v2](docs/milestones/071-event-driven-polyhedral-contact-world-v2.md)
+- [Milestone 072: Volume-preserving contact deformation v1](docs/milestones/072-volume-preserving-contact-deformation-v1.md)
+- [Milestone 073: Intrinsic fluid hepatocyte membrane v1](docs/milestones/073-intrinsic-fluid-hepatocyte-membrane-v1.md)
+- [Milestone 074: Geometry-molecular-signal-transport gates v1](docs/milestones/074-geometry-molecular-signal-transport-gates-v1.md)
+- [Milestone 075: Physical integrity verification v1](docs/milestones/075-physical-integrity-verification-v1.md)
+- [Milestone 076: Human liver open-data atlas v1](docs/milestones/076-human-liver-open-data-atlas-v1.md)
+- [Milestone 077: Donor-resolved absolute PHH proteome v1](docs/milestones/077-donor-resolved-absolute-phh-proteome-v1.md)
+- [Milestone 078: PHH protein location, kinetics, donor variation, and validation v1](docs/milestones/078-phh-protein-location-kinetics-donor-validation-v1.md)
+- [Milestone 079: Human in-situ geometry and coupled transport v1](docs/milestones/079-human-in-situ-geometry-coupled-transport-v1.md)
+- [Milestone 080: Human 3D hepatocyte morphometry v1](docs/milestones/080-human-3d-hepatocyte-morphometry-v1.md)
+- [Milestone 081: Stochastic contact placement and scientific overlays v1](docs/milestones/081-stochastic-contact-surface-scientific-overlays-v1.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)

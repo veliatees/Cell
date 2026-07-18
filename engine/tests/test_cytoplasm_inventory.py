@@ -29,8 +29,12 @@ class InventoryTest(unittest.TestCase):
     def test_counts_track_concentration_and_copy_number(self) -> None:
         # K+ (140 mM) is far more abundant than free Ca2+ (1e-4 mM).
         self.assertGreater(self.counts["K+"], 1e5 * self.counts["Ca2+"])
-        # Albumin is the top protein crowder (~1e8 copies).
-        self.assertGreater(self.counts[f"{PROTEIN_PREFIX}ALB"], 5e7)
+        # FABP1 is the most abundant selected canonical group in this cohort.
+        self.assertGreater(self.counts[f"{PROTEIN_PREFIX}FABP1"], 1.4e8)
+        self.assertGreater(
+            self.counts[f"{PROTEIN_PREFIX}FABP1"],
+            self.counts[f"{PROTEIN_PREFIX}ALB"],
+        )
 
     def test_summary_is_consistent(self) -> None:
         s = inventory_summary(self.geometry)
