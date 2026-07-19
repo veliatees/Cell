@@ -28,6 +28,14 @@ class PhhBaselineTests(unittest.TestCase):
         self.assertEqual(anchors["human_liver_glycogen_in_vivo"].sample_size, 25)
         self.assertEqual(anchors["human_liver_atp_control"].measurement.unit, "umol_per_g_wet_liver")
         self.assertEqual(anchors["human_liver_apparent_atp_synthesis"].measurement.value, 29.5)
+        self.assertEqual(
+            anchors["human_liver_apparent_atp_synthesis"].model_use,
+            "same_assay_apparent_exchange_observation",
+        )
+        self.assertIn(
+            "does not identify net mitochondrial ATP synthesis",
+            anchors["human_liver_apparent_atp_synthesis"].limitations,
+        )
 
     def test_registry_does_not_claim_unavailable_whole_cell_conversion(self) -> None:
         registry = load_phh_baseline()
@@ -43,7 +51,8 @@ class PhhBaselineTests(unittest.TestCase):
         assert isinstance(readiness, dict)
         self.assertFalse(readiness["whole_cell_transport_flux_ready"])
         self.assertTrue(readiness["metabolic_pool_initialization_ready"])
-        self.assertTrue(readiness["energy_turnover_ready"])
+        self.assertTrue(readiness["apparent_atp_exchange_observation_ready"])
+        self.assertFalse(readiness["energy_turnover_ready"])
 
     def test_nutritional_profiles_preserve_measured_glycogen_order(self) -> None:
         fed = PHH_NUTRITIONAL_PROFILES["fed_peak"]
@@ -53,7 +62,7 @@ class PhhBaselineTests(unittest.TestCase):
         self.assertGreater(post.pools["glycogen"].value_mM, fasted.pools["glycogen"].value_mM)
         self.assertAlmostEqual(post.energy_charge(), 0.713, delta=0.02)
 
-    def test_atp_turnover_is_stationary_at_the_phh_baseline(self) -> None:
+    def test_legacy_atp_fixture_is_stationary_but_explicitly_placeholder(self) -> None:
         profile = PHH_NUTRITIONAL_PROFILES["postabsorptive"]
         network = build_phh_atp_turnover_network(INTEGRATED_VOLUME_L)
         counts = {
@@ -62,12 +71,27 @@ class PhhBaselineTests(unittest.TestCase):
         }
         rates = network.propensities(counts)
         self.assertAlmostEqual(rates[0] / rates[1], 1.0, places=12)
+        self.assertTrue(
+            all(
+                reaction.parameter_provenance
+                and all(
+                    item.assumption_level == "placeholder"
+                    for item in reaction.parameter_provenance
+                )
+                for reaction in network.reactions
+            )
+        )
 
     def test_release_gate_is_honest_about_scope(self) -> None:
         self.assertTrue(evaluate_scientific_release("research_preview").passed)
         predictive = evaluate_scientific_release("predictive")
         self.assertFalse(predictive.passed)
-        self.assertIn("NADH and GSH/GSSG are not compartment resolved", predictive.blockers)
+        self.assertTrue(
+            any(
+                blocker.startswith("energy/redox:")
+                for blocker in predictive.blockers
+            )
+        )
         self.assertIn("published hepatic glucose shadow model reproduces only 2 of 5 publication benchmarks", predictive.blockers)
 
 
