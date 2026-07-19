@@ -639,6 +639,11 @@ engine already models, so rendered atoms and simulated flux describe the same pr
   Published liver-scale model source retained as a non-authoritative shadow
   model. Delivered model trajectories without numeric human comparators are
   not classified as held-out validation.
+- Koenig et al., Text S2 kinetic equations and parameters:
+  https://doi.org/10.1371/journal.pcbi.1002577.s013. Official supplement used
+  for equation-level provenance. Literature kinetic constants and fitted
+  whole-model `Vmax` values retain their original model and per-kilogram scale;
+  they are not direct single-PHH rate constants.
 - Grankvist et al., "Global 13C tracing and metabolic flux analysis of intact
   human liver tissue ex vivo":
   https://www.nature.com/articles/s42255-024-01119-3. Primary intact-human-liver

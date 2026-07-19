@@ -72,7 +72,11 @@ from cell_engine.quantitative.human_sch_bile_acids import (
     validate_human_sch_bile_acids,
 )
 from cell_engine.stochastic.bioenergetics import build_phh_atp_turnover_network
-from cell_engine.stochastic.integrated_cell import INTEGRATED_VOLUME_L
+from cell_engine.stochastic.integrated_cell import (
+    INTEGRATED_VOLUME_L,
+    build_integrated_hepatocyte_network,
+)
+from cell_engine.stochastic.signaling import HormoneState
 from cell_engine.stochastic.sinusoid import (
     build_sinusoid_boundary_network,
     build_sinusoid_coupled_homeostasis,
@@ -80,6 +84,11 @@ from cell_engine.stochastic.sinusoid import (
 )
 from cell_engine.validation.phh_baseline import load_phh_baseline
 from cell_engine.validation.model_audit import MODEL_SURFACE_AUDIT
+from cell_engine.validation.reaction_authority import audit_reaction_network
+from cell_engine.validation.kinetic_transfer import (
+    build_kinetic_transfer_audit,
+    validate_kinetic_transfer_audit,
+)
 from cell_engine.validation.hepatic_flux import (
     build_unified_nutritional_context,
     load_hepatic_flux_evidence,
@@ -130,6 +139,8 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
     phh_transporter_inventory = None
     phh_protein_functional_evidence = None
     human_sch_bile_acids = None
+    integrated_reaction_authority = None
+    kinetic_transfer = None
 
     if registry.metabolic_pool_initialization_ready:
         checks.append("source-traceable metabolic pool initialization")
@@ -374,6 +385,34 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         checks.append("no placeholder in authoritative PHH, ATP-turnover, or glucose-sinusoid surface")
         checks.append("compartment-correct postabsorptive blood glucose boundary")
 
+    integrated_reaction_authority = audit_reaction_network(
+        build_integrated_hepatocyte_network(HormoneState()),
+        network_id="integrated_hepatocyte_fuel_network_v1",
+        context_match_confirmed=False,
+        context_description=(
+            "Composed exploratory fuel network without a matched healthy-human PHH "
+            "multi-pathway flux protocol."
+        ),
+    )
+    if integrated_reaction_authority.scientific_validation_ready:
+        blockers.append("exploratory integrated fuel network was promoted to scientific validation")
+    else:
+        checks.append(
+            "reaction-level authority firewall keeps the integrated fuel network "
+            f"exploratory ({integrated_reaction_authority.source_backed_parameterization_count}/"
+            f"{integrated_reaction_authority.reaction_count} reactions source-backed)"
+        )
+
+    try:
+        kinetic_transfer = build_kinetic_transfer_audit()
+        validate_kinetic_transfer_audit(kinetic_transfer)
+        checks.append(
+            "published kinetic-transfer gate covers all active reactions and activates "
+            f"{kinetic_transfer.activated_transfer_count} unqualified parameters"
+        )
+    except ValueError as exc:
+        blockers.append(f"invalid published kinetic-transfer audit: {exc}")
+
     invalid_drivers = tuple(
         surface.id
         for surface in MODEL_SURFACE_AUDIT
@@ -528,6 +567,15 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
             "no Brian2 communication model has passed equation, unit, parameter and geometry gates",
             "no donor-held-out generative hepatocyte model artifact is available",
         ))
+        if integrated_reaction_authority is not None and not integrated_reaction_authority.predictive_execution_ready:
+            blockers.extend(
+                f"integrated reaction authority: {blocker}"
+                for blocker in integrated_reaction_authority.predictive_blockers
+            )
+        if kinetic_transfer is not None and kinetic_transfer.activated_transfer_count == 0:
+            blockers.append(
+                "published kinetic transfer: no active reaction passes equation, per-cell unit, context and held-out-validation gates"
+            )
         blockers.extend(
             f"model surface not predictive: {surface.id}"
             for surface in MODEL_SURFACE_AUDIT
@@ -549,5 +597,5 @@ def scientific_release_snapshot() -> dict[str, object]:
     return {
         "research_preview": preview,
         "predictive": predictive,
-        "authoritative_scope": "Healthy PHH metabolic pools, unified fed/postabsorptive/prolonged-fast glycogen contexts, apparent ATP turnover, human zonation reference context with controlled-MPS oxygen evidence, postabsorptive blood-glucose perfusion boundary, measured peripheral endocrine observations, a causal liver-glycogen clamp benchmark, a non-interpolated human mixed-meal protocol, a source-locked PHH 3D-spheroid protocol with 12 independent cumulative-mean targets plus four descriptive overlap audits, a signed cumulative-to-window glucose operator, a six-batch 24-hour PHH albumin ELISA operator, 72 batch-resolved CYP SCR/MFR observations, five d8-TCA BEI observations, separate six-batch FACS/scRNA identity-composition surfaces, a seven-donor absolute proteome-mass reference, one same-cohort total-BSEP copy bridge, denominator-preserved human-liver MRP2 abundance, and four-donor day-7 human-SCH endogenous bile-acid endpoints with explicit identifiability gates. Published hepatic glucose execution, model-lineage reproduction and its contextual external HGO comparison are shadow/diagnostic only. Runtime convex-surface geometry, closest points, overlap, membrane-domain labels, polygonal contact patches, enter/stay/exit contact inputs and bounded volume-preserving affine deformation are engine-authoritative. The normal snapshot contains one hepatocyte. Its 18.4 um equivalent-size scale uses isolated-human-hepatocyte evidence; the regular truncated-octahedron boundary and any diagnostic pair arrangement remain mathematical rather than donor morphometry. The 1% elastic-area cap is an explicit cross-system engineering bound equal to half the lower human-RBC lysis strain, not PHH rheology. Elapsed contact duration is not a causal input. Patch area may be computed from runtime geometry, while force, stiffness, adhesion, junction gating, mechanotransduction and biochemical effects remain blocked. Intercellular topology plus one measured PHH insulin-response chain are source-backed; receptor activation, Brian2 execution and generative-model coupling remain blocked. External evidence intake is manual-review-only. Dynamic proteostasis, macromolecular crowding, proteome-to-geometry mapping, canalicular surface and active transporter copies, transporter flux, raw donor-level bile-acid censoring, true canalicular concentration, healthy in-vivo bile-acid initialization, raw CYP time-course reconstruction, CYP kinetic fitting, transporter-resolved BEI, canalicular geometry coupling, product-composition-to-one-cell initialization, donor-disjoint generative training, albumin translation and secretory-path kinetics, portal receptor, hormone-to-rate, in-situ zonal oxygen, zone-specific flux and predictive external validation remain blocked.",
+        "authoritative_scope": "Healthy PHH metabolic pools, unified fed/postabsorptive/prolonged-fast glycogen contexts, apparent ATP turnover, human zonation reference context with controlled-MPS oxygen evidence, postabsorptive blood-glucose perfusion boundary, measured peripheral endocrine observations, a causal liver-glycogen clamp benchmark, a non-interpolated human mixed-meal protocol, a source-locked PHH 3D-spheroid protocol with 12 independent cumulative-mean targets plus four descriptive overlap audits, a signed cumulative-to-window glucose operator, a six-batch 24-hour PHH albumin ELISA operator, 72 batch-resolved CYP SCR/MFR observations, five d8-TCA BEI observations, separate six-batch FACS/scRNA identity-composition surfaces, a seven-donor absolute proteome-mass reference, one same-cohort total-BSEP copy bridge, denominator-preserved human-liver MRP2 abundance, and four-donor day-7 human-SCH endogenous bile-acid endpoints with explicit identifiability gates. Reaction-level numerical parameter provenance is audited separately from pathway topology; the composed integrated fuel network remains exploratory unless every reaction, model context and held-out validation gate passes. A checksum-locked equation-level transfer audit maps all 36 active reactions against the published hepatic-glucose SBML and activates no fitted parameter without exact stoichiometry, compartment, symbolic law, per-cell units, matched PHH context and validation. Published hepatic glucose execution, model-lineage reproduction and its contextual external HGO comparison are shadow/diagnostic only. Runtime convex-surface geometry, closest points, overlap, membrane-domain labels, polygonal contact patches, enter/stay/exit contact inputs and bounded volume-preserving affine deformation are engine-authoritative. The normal snapshot contains one hepatocyte. Its active equivalent-size scale follows the normal-control human 3D median volume; the regular truncated-octahedron boundary and any diagnostic pair arrangement remain mathematical rather than donor morphometry. The 1% elastic-area cap is an explicit cross-system engineering bound equal to half the lower human-RBC lysis strain, not PHH rheology. Elapsed contact duration is not a causal input. Patch area may be computed from runtime geometry, while force, stiffness, adhesion, junction gating, mechanotransduction and biochemical effects remain blocked. Intercellular topology plus one measured PHH insulin-response chain are source-backed; receptor activation, Brian2 execution and generative-model coupling remain blocked. External evidence intake is manual-review-only. Dynamic proteostasis, macromolecular crowding, proteome-to-geometry mapping, canalicular surface and active transporter copies, transporter flux, raw donor-level bile-acid censoring, true canalicular concentration, healthy in-vivo bile-acid initialization, raw CYP time-course reconstruction, CYP kinetic fitting, transporter-resolved BEI, canalicular geometry coupling, product-composition-to-one-cell initialization, donor-disjoint generative training, albumin translation and secretory-path kinetics, portal receptor, hormone-to-rate, in-situ zonal oxygen, zone-specific flux and predictive external validation remain blocked.",
     }

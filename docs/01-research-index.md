@@ -85,6 +85,8 @@ linked to its dependencies.
 - In-situ human hepatocyte volume anchor, explicit 3D evidence gates, and coupled five-lot human taurocholate validation: `milestones/079-human-in-situ-geometry-coupled-transport-v1.md`
 - Checksummed normal-control human 3D cell volume and lipid-droplet fraction, conflict-preserving scale promotion, and aggregate renderer calibration: `milestones/080-human-3d-hepatocyte-morphometry-v1.md`
 - Seeded stochastic approach placement, declared-shape support geometry, fail-closed contact-patch rendering, and scientific scale/domain/voxel layers: `milestones/081-stochastic-contact-surface-scientific-overlays-v1.md`
+- Reaction-level numerical provenance, context-match and held-out-validation firewall for the active integrated network: `milestones/082-quantitative-reaction-authority-firewall-v1.md`
+- Exhaustive published-model reaction mapping, SBML MathML fingerprints, and fail-closed kinetic parameter transfer: `milestones/083-published-reaction-kinetic-transfer-audit-v1.md`
 
 ## Epithelial Biology
 
