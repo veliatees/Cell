@@ -58,8 +58,8 @@ class KineticTransferAuditTests(unittest.TestCase):
             {
                 "single_reaction_candidate": 10,
                 "multi_reaction_lump": 2,
-                "outside_source_scope": 22,
-                "current_source_backed_outside_source_scope": 2,
+                "outside_source_scope": 24,
+                "current_source_backed_outside_source_scope": 0,
             },
         )
         by_id = {item.active_reaction_id: item for item in self.audit.reactions}
@@ -67,9 +67,9 @@ class KineticTransferAuditTests(unittest.TestCase):
         self.assertEqual(by_id["cps1"].status, "blocked_outside_source_scope")
         self.assertEqual(
             by_id["atp_regeneration"].status,
-            "not_applicable_current_parameterization_retained",
+            "blocked_outside_source_scope",
         )
-        self.assertEqual(by_id["atp_regeneration"].current_authority, "source_backed")
+        self.assertEqual(by_id["atp_regeneration"].current_authority, "placeholder")
 
     def test_transfer_activation_guard_rejects_topology_only_match(self) -> None:
         with self.assertRaises(KineticTransferError) as captured:

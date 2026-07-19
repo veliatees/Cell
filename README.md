@@ -33,7 +33,8 @@ biology rather than tuned to look right.
   active rates are explicitly audited and quarantined as exploratory.
 - **A reaction-authority firewall** — pathway topology and numerical rates are
   audited separately. The current integrated fuel network is honestly exposed
-  as `2 / 36` source-backed reaction parameterizations; its other 34 channels
+  as `0 / 36` source-backed reaction parameterizations: two ATP-turnover rates
+  are explicit placeholders and the other 34 channels are unparameterized. All
   may run only as an exploratory model and cannot drive quantitative validation.
 - **An equation-level kinetic-transfer firewall** — all 36 active reactions are
   mapped against the pinned Koenig human hepatic-glucose SBML. Twelve have
@@ -47,13 +48,14 @@ biology rather than tuned to look right.
 
 ### The cell's processes (each tested, each grounded or honestly flagged)
 
-- **Energy & carbon metabolism** — full glycolysis (literature enzyme kinetics on
-  the regulated steps; the seven near-equilibrium steps treated as grounded
-  thermodynamics, not invented numbers), the **pentose phosphate pathway**
-  (2 NADPH per glucose-6-phosphate), and **TCA + oxidative phosphorylation**
-  (P/O ratios 2.5 / 1.5, ~10 ATP per acetyl-CoA, respiratory control by ADP).
+- **Energy & carbon metabolism** — glycolysis, pentose-phosphate, TCA and
+  oxidative-phosphorylation topology with explicit reaction authority. The new
+  energy/redox contract separates 38 ATP, adenylate, nicotinamide, glutathione,
+  oxygen and ROS pools across six compartments and 14 process systems. All
+  unmeasured organelle values and rates remain null.
 - **Nitrogen & redox** — the **urea cycle** and the **glutathione/NADPH** couple,
-  with exact conservation laws.
+  with software conservation tests. Legacy glutathione and OXPHOS kinetics are
+  explicitly placeholder fixtures, not healthy-PHH predictions.
 - **Gene expression** — stochastic gene → mRNA → protein with a **two-state
   promoter**, reproducing transcriptional bursting (super-Poissonian mRNA).
 - **Human endocrine context** — measured healthy-human mixed-meal plasma glucose,
@@ -111,12 +113,13 @@ biology rather than tuned to look right.
 
 ### Validation & calibration
 
-Emergent outputs are checked against measured hepatocyte values — energy charge,
-steady-state ATP, ATP:ADP, glucokinase glucose-sensing (S₀.₅ ≈ 8 mM), and the
-GSH:GSSG redox ratio — **all within the measured physiological range**. A
-calibration routine fits placeholder constants to measured targets and records
-them as *fitted* rather than guessed. The full engine suite is covered by unit
-tests and should be re-run after every biology change.
+Validation is assay-specific and fail-closed. The former broad ATP/redox
+"100% accuracy" score has been retired because its outputs came from calibrated
+software fixtures and unmatched aggregate ranges. The remaining glucokinase
+S₀.₅ check verifies implementation of the same sourced equation; it is not an
+independent biological validation. Separate gates expose exactly which PHH
+observations can be compared, fitted or held out, and currently activate zero
+energy/redox kinetic parameters.
 
 ### The browser scene (TypeScript + Three.js)
 
@@ -198,7 +201,7 @@ npm run build
 python -m unittest discover -s engine/tests -t engine
 ```
 
-To print the validation scorecard (model vs measured hepatocyte data):
+To print the legacy software-consistency report (not biological accuracy):
 
 ```bash
 PYTHONPATH=engine python -c "from cell_engine.stochastic.validation import run_validation, format_report; print(format_report(run_validation()))"
@@ -231,21 +234,21 @@ constant is either measured (with a citation), a justified modelling assumption
 (named as such — e.g. "near-equilibrium step, rate non-flux-determining"), or an
 explicitly flagged placeholder. No number is ever dressed up as real biology.
 
-What is real now: the engine does the *right kind* of thing the field does
-(hybrid stochastic kinetics in real units); the metabolic core (glycolysis, PPP,
-TCA/OXPHOS, urea, redox) is grounded in literature stoichiometry and kinetics; a
-broad set of cell processes is implemented and tested; and a handful of emergent
-behaviours are **validated** against measured hepatocyte data (all current targets
-in range). The division module now separates compressed demo timing from
+What is real now: the engine has hybrid stochastic machinery, explicit units,
+source-backed structural topology, denominator-preserved human observations and
+machine-enforced authority gates. The energy/redox layer now distinguishes
+cytosol, mitochondrial intermembrane space and matrix, ER lumen and peroxisome;
+it does not infer organelle concentrations or kinetics from whole-liver values.
+The division module separates compressed demo timing from
 source-traced biological timing profiles, including a rat post-partial-
 hepatectomy profile that blocks fast G1/S entry.
 
 What is still depth-work (the road ahead is depth, not a new approach):
 
-- the composed fuel network currently has 36 reaction channels, but only two
-  carry source-backed numerical parameter provenance. The remaining 34 are
-  explicitly unparameterized, run under an exploratory role, and are blocked
-  from quantitative validation by the reaction-authority firewall;
+- the composed fuel network currently has 36 reaction channels and zero fully
+  source-backed numerical parameterizations. Two ATP channels are explicit
+  placeholders; the remaining 34 are unparameterized. The entire network runs
+  under an exploratory role and is blocked from quantitative validation;
 - the published human hepatic-glucose model supplies related candidates for 12
   active reactions, but its fitted `Vmax` values are whole-model quantities on
   a per-kilogram scale. The equation-level transfer audit activates none until
@@ -366,6 +369,11 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 081: Stochastic contact placement and scientific overlays v1](docs/milestones/081-stochastic-contact-surface-scientific-overlays-v1.md)
 - [Milestone 082: Quantitative reaction authority firewall v1](docs/milestones/082-quantitative-reaction-authority-firewall-v1.md)
 - [Milestone 083: Published reaction kinetic-transfer audit v1](docs/milestones/083-published-reaction-kinetic-transfer-audit-v1.md)
+- [Milestone 084: Exact glucose-homeostasis subnetwork v1](docs/milestones/084-exact-glucose-homeostasis-subnetwork-v1.md)
+- [Milestone 085: Glucose open system and exact assay bridge v1](docs/milestones/085-glucose-open-system-exact-assay-v1.md)
+- [Milestone 086: Glucose calibration and held-out validation gate v1](docs/milestones/086-glucose-calibration-heldout-validation-gate-v1.md)
+- [Milestone 087: Compartment-resolved energy and redox contract v1](docs/milestones/087-compartment-resolved-energy-redox-contract-v1.md)
+- [Milestone 088: Energy/redox calibration and validation firewall v1](docs/milestones/088-energy-redox-calibration-validation-firewall-v1.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)

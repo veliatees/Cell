@@ -12,15 +12,20 @@ The milestone provides:
 - fed-peak, postabsorptive/overnight-fast and prolonged-fast glycogen profiles;
 - ATP, ADP, AMP and NAD+ tissue-equivalent initialization;
 - adenylate energy-charge validation;
-- human-liver-anchored apparent ATP turnover;
+- human-liver apparent Pi-to-ATP exchange retained in its original assay space;
+- explicit rejection of that observation as mitochondrial ATP synthesis,
+  cellular ATP demand, or a first-order rate constant;
 - automatic rejection of placeholders from the authoritative PHH release surface;
 - browser snapshot readouts for the selected real-unit baseline.
 - a source-backed postabsorptive glucose-facing sinusoid boundary.
 
 The source registry is `data/phh_baseline/curated/quantitative_anchors.json`.
-Typed profiles are in `engine/cell_engine/quantitative/phh_profiles.py`, ATP
-turnover is in `engine/cell_engine/stochastic/bioenergetics.py`, and release
-checks are in `engine/cell_engine/validation/scientific_release.py`.
+Typed profiles are in `engine/cell_engine/quantitative/phh_profiles.py`. The
+legacy ATP fixture is quarantined in
+`engine/cell_engine/stochastic/bioenergetics.py`; the compartment-resolved
+replacement contract and activation gate live in
+`engine/cell_engine/quantitative/compartmental_energy_redox.py` and
+`engine/cell_engine/validation/energy_redox_gate.py`.
 
 ## Nutritional Profiles
 
@@ -35,15 +40,17 @@ umol/g wet control human liver. The engine converts them to wet-tissue-equivalen
 mmol/L with the reported 1.054 kg/L liver density. The resulting energy charge
 is 0.721; the independently reported control value is 0.713 +/- 0.0465.
 
-## Energy Turnover
+## Apparent Exchange Is Not ATP Turnover
 
-In-vivo human-liver 31P magnetization transfer measured an apparent ATP
-synthesis/exchange rate of 29.5 +/- 1.8 mM/min in nine healthy volunteers. The
-engine derives first-order ADP-to-ATP and matched ATP-demand constants around the
-measured baseline. Their fluxes are equal at initialization.
+In-vivo human-liver 31P magnetization transfer measured apparent Pi-to-ATP
+exchange of 29.5 +/- 1.8 mM/min in nine healthy volunteers. Magnetization
+transfer does not identify net mitochondrial ATP production, cellular ATP
+demand, compartment-specific pools, or first-order ADP/ATP constants.
 
-This is explicitly an apparent Pi-to-ATP exchange flux. It is not presented as
-pure net mitochondrial ATP production.
+The prior matched ADP-to-ATP and ATP-to-ADP runtime constants are now explicitly
+`placeholder` software fixtures. They remain available only for exploratory
+legacy execution and conservation tests. They cannot enter quantitative
+validation, calibration, prediction, or automatic cell-state coupling.
 
 ## Redox Boundary
 
@@ -55,12 +62,13 @@ seeds remain outside the v1 authoritative surface.
 
 ## Release Status
 
-`research_preview` passes only for the declared scope: metabolic pool
-initialization, nutrition-state glycogen, apparent ATP turnover and the
-postabsorptive glucose-facing sinusoid boundary. `predictive`
-fails closed until matched donor trajectories, compartment-resolved redox,
-canalicular surface transporter copies, substrate concentrations, and validated
-whole-cell transport fluxes are available.
+`research_preview` passes only for the declared scope: aggregate metabolic
+observations, nutrition-state glycogen, apparent exchange as an assay
+observation, a non-executable compartment/process graph, and the postabsorptive
+glucose-facing sinusoid boundary. `predictive` fails closed until matched PHH
+compartment volumes and states, OCR/ATP-linked respiration, targeted redox
+trajectories, localized active proteins, identifying perturbations, donor-
+disjoint held-out data, and qualified uncertainty are available.
 
 ## Primary Sources
 

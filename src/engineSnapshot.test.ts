@@ -101,20 +101,20 @@ const reactionAuthorityAudit: EngineReactionNetworkAuthorityAudit = {
   status: "mixed_authority_exploratory",
   runtime_role: "exploratory",
   reaction_count: 36,
-  authority_counts: { source_backed: 2, fitted: 0, placeholder: 0, unparameterized: 34, invalid: 0 },
+  authority_counts: { source_backed: 0, fitted: 0, placeholder: 2, unparameterized: 34, invalid: 0 },
   parameter_provenance_documented_count: 2,
-  source_backed_parameterization_count: 2,
+  source_backed_parameterization_count: 0,
   parameter_provenance_coverage_fraction: 2 / 36,
-  source_backed_fraction: 2 / 36,
+  source_backed_fraction: 0,
   context_match_confirmed: false,
   context_description: "Composed exploratory network without a matched PHH protocol.",
   heldout_validation_confirmed: false,
   scientific_validation_ready: false,
   predictive_execution_ready: false,
   exploratory_execution_allowed: true,
-  validation_blockers: ["34 of 36 reactions lack source-backed numerical parameterization"],
-  predictive_blockers: ["34 of 36 reactions lack source-backed numerical parameterization", "independent held-out validation is not confirmed"],
-  blocked_reaction_ids: Array.from({ length: 34 }, (_, index) => `blocked-${index}`),
+  validation_blockers: ["36 of 36 reactions lack source-backed numerical parameterization"],
+  predictive_blockers: ["36 of 36 reactions lack source-backed numerical parameterization", "independent held-out validation is not confirmed"],
+  blocked_reaction_ids: Array.from({ length: 36 }, (_, index) => `blocked-${index}`),
   reactions: [],
   policy: "Topology citations do not authorize numerical rates."
 };
@@ -138,8 +138,8 @@ const kineticTransferAudit: EngineKineticTransferAudit = {
   relationship_counts: {
     single_reaction_candidate: 10,
     multi_reaction_lump: 2,
-    outside_source_scope: 22,
-    current_source_backed_outside_source_scope: 2
+    outside_source_scope: 24,
+    current_source_backed_outside_source_scope: 0
   },
   mapped_active_reaction_ids: [],
   exact_stoichiometry_reaction_ids: [
@@ -1657,7 +1657,7 @@ describe("engine snapshot client", () => {
     expect(summary.quantitativeState?.authority).toBe("authoritative_research_preview");
     expect(summary.quantitativeState?.pools.ATP.value).toBeCloseTo(2.19232);
     expect(summary.reactionAuthority?.runtime_role).toBe("exploratory");
-    expect(summary.reactionAuthority?.source_backed_parameterization_count).toBe(2);
+    expect(summary.reactionAuthority?.source_backed_parameterization_count).toBe(0);
     expect(summary.reactionAuthority?.scientific_validation_ready).toBe(false);
     expect(summary.kineticTransfer?.mapped_candidate_count).toBe(12);
     expect(summary.kineticTransfer?.exact_stoichiometry_match_count).toBe(3);
@@ -2207,6 +2207,15 @@ describe("engine snapshot client", () => {
         .toContainEqual(expect.objectContaining({ id: "biliary_excretion_index", low: 41, high: 63 }));
       expect(result.summary.phhProteinFunctionalEvidence?.summary.whole_cell_rate_ready_count).toBe(0);
       expect(result.summary.phhProteinFunctionalEvidence?.integration_gates.automatic_state_coupling).toBe(false);
+      expect(result.summary.compartmentalEnergyRedox?.summary.compartment_count).toBe(6);
+      expect(result.summary.compartmentalEnergyRedox?.summary.explicit_pool_count).toBe(38);
+      expect(result.summary.compartmentalEnergyRedox?.summary.structural_process_count).toBe(14);
+      expect(result.summary.compartmentalEnergyRedox?.summary.phh_quantified_gene_count).toBe(27);
+      expect(result.summary.compartmentalEnergyRedox?.summary.executable_process_count).toBe(0);
+      expect(result.summary.energyRedoxValidation?.summary.audited_legacy_reaction_count).toBe(9);
+      expect(result.summary.energyRedoxValidation?.summary.placeholder_reaction_count).toBe(9);
+      expect(result.summary.energyRedoxValidation?.summary.fit_eligible_reaction_count).toBe(0);
+      expect(result.summary.energyRedoxValidation?.summary.activated_parameter_count).toBe(0);
       expect(result.summary.intercellularCommunication?.body_surface_profiles[0].molecules)
         .toContainEqual(expect.objectContaining({ id: "ABCB11_BSEP", role: "transporter" }));
     }
