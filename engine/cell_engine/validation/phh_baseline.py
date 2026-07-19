@@ -49,6 +49,7 @@ class PhhBaselineRegistry:
     anchors: tuple[PhhQuantitativeAnchor, ...]
     direct_initialization_ready: bool
     metabolic_pool_initialization_ready: bool
+    apparent_atp_exchange_observation_ready: bool
     energy_turnover_ready: bool
     whole_cell_transport_flux_ready: bool
     blocking_measurements: tuple[str, ...]
@@ -121,6 +122,9 @@ def load_phh_baseline(path: Path = PHH_BASELINE_PATH) -> PhhBaselineRegistry:
         anchors=tuple(anchors),
         direct_initialization_ready=bool(readiness.get("direct_initialization_ready", False)),
         metabolic_pool_initialization_ready=bool(readiness.get("metabolic_pool_initialization_ready", False)),
+        apparent_atp_exchange_observation_ready=bool(
+            readiness.get("apparent_atp_exchange_observation_ready", False)
+        ),
         energy_turnover_ready=bool(readiness.get("energy_turnover_ready", False)),
         whole_cell_transport_flux_ready=bool(readiness.get("whole_cell_transport_flux_ready", False)),
         blocking_measurements=tuple(str(item) for item in readiness.get("blocking_measurements", ())),
@@ -137,6 +141,7 @@ def phh_baseline_snapshot(registry: PhhBaselineRegistry | None = None) -> dict[s
         "readiness": {
             "direct_initialization_ready": registry.direct_initialization_ready,
             "metabolic_pool_initialization_ready": registry.metabolic_pool_initialization_ready,
+            "apparent_atp_exchange_observation_ready": registry.apparent_atp_exchange_observation_ready,
             "energy_turnover_ready": registry.energy_turnover_ready,
             "whole_cell_transport_flux_ready": registry.whole_cell_transport_flux_ready,
             "blocking_measurements": registry.blocking_measurements,

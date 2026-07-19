@@ -39,6 +39,9 @@ from cell_engine.stochastic.integrated_cell import (
     SCOREABLE_SPECIES,
     build_integrated_hepatocyte_network,
 )
+from cell_engine.stochastic.bioenergetics import BIOENERGETICS_SOURCES
+from cell_engine.stochastic.oxphos import OXPHOS_SOURCES
+from cell_engine.stochastic.redox import REDOX_SOURCES
 from cell_engine.stochastic.signaling import HormoneState
 from cell_engine.validation.hmdb_ranges import score_compartment_concentrations
 from cell_engine.validation.experiments import CURATED_EXPERIMENTS, apply_scenario
@@ -120,6 +123,10 @@ from cell_engine.quantitative.human_sch_bile_acids import (
     HUMAN_SCH_BILE_ACID_SOURCES,
     human_sch_bile_acids_snapshot,
 )
+from cell_engine.quantitative.compartmental_energy_redox import (
+    ENERGY_REDOX_SOURCES,
+    compartmental_energy_redox_snapshot,
+)
 from cell_engine.stochastic.secretion import SECRETION_SOURCES
 from cell_engine.stochastic.sinusoid import sinusoid_boundary_snapshot, sinusoid_coupled_homeostasis_snapshot
 from cell_engine.validation.model_audit import scientific_model_audit_snapshot
@@ -135,6 +142,9 @@ from cell_engine.validation.kinetic_transfer import (
     kinetic_transfer_snapshot,
 )
 from cell_engine.validation.glucose_calibration import glucose_calibration_validation_snapshot
+from cell_engine.validation.energy_redox_gate import (
+    energy_redox_calibration_validation_snapshot,
+)
 from cell_engine.validation.reports import build_assumption_report
 from cell_engine.processes.cellular_memory import CELLULAR_MEMORY_SOURCES
 from cell_engine.processes.cellular_response import CELLULAR_RESPONSE_SOURCES
@@ -293,6 +303,10 @@ def main() -> None:
                     **PHH_TRANSPORTER_INVENTORY_SOURCES,
                     **PHH_PROTEIN_FUNCTIONAL_EVIDENCE_SOURCES,
                     **HUMAN_SCH_BILE_ACID_SOURCES,
+                    **ENERGY_REDOX_SOURCES,
+                    **BIOENERGETICS_SOURCES,
+                    **REDOX_SOURCES,
+                    **OXPHOS_SOURCES,
                     **SECRETION_SOURCES,
                     **COMMUNICATION_SOURCES,
                     **SPATIAL_WORLD_SOURCES,
@@ -313,11 +327,11 @@ def main() -> None:
                     "status": "mixed_authority_research_preview",
                     "primary_state_path": "quantitative_state",
                     "schematic_state_path": "pools",
-                    "authoritative_sections": ["quantitative_state", "quantitative_state.geometry_reference", "human_hepatocyte_3d_morphometry.normal_control_cell_volume_um3", "human_hepatocyte_3d_morphometry.normal_control_lipid_droplet_volume_percent", "nutritional_context", "endocrine_context.measured_observations", "endocrine_context.causal_glycogen_benchmark", "human_validation_protocol.observations", "healthy_phh_glucose_validation.glucose_consumption_observations", "healthy_phh_glucose_validation.insulin_response_observations", "healthy_phh_glucose_validation.human_scale_bridge", "phh_spheroid_validation_protocol.method_contract", "phh_spheroid_validation_protocol.window_targets", "phh_spheroid_validation_protocol.cumulative_target_trajectories", "phh_spheroid_validation_protocol.overlap_consistency_audits", "phh_glucose_observability.measurement_contract", "phh_glucose_observability.supplemental_constraints", "phh_glucose_observability.quantity_audit", "exact_glucose_homeostasis.source_species", "exact_glucose_homeostasis.source_reactions", "exact_glucose_homeostasis.canonical_pools", "glucose_open_system.physiological_sinusoid", "glucose_open_system.phh_batch_assay", "glucose_calibration_validation.reaction_fit_eligibility", "glucose_calibration_validation.observation_use_audit", "glucose_calibration_validation.validation_requirements", "phh_albumin_secretion.assay_contract", "phh_albumin_secretion.observed_batch_span", "phh_albumin_secretion.measurement_contract", "phh_albumin_secretion.quantity_audit", "phh_cyp_function.assay_contract", "phh_cyp_function.enzymes", "phh_biliary_excretion.assay_contract", "phh_biliary_excretion.batch_records", "phh_biliary_excretion.measurement_contract", "phh_identity_heterogeneity.facs_records", "phh_identity_heterogeneity.scrna_records", "phh_proteome_budget.whole_cell_anchors", "phh_proteome_budget.compartment_protein_mass_fractions", "phh_proteome_budget.derived_compartment_mass_budget", "phh_absolute_proteome_atlas.selected_canonical_gene_panel", "phh_absolute_proteome_atlas.cohort", "phh_transporter_inventory.transporters", "phh_protein_functional_evidence.proteins", "phh_protein_functional_evidence.kinetic_observations", "phh_protein_functional_evidence.whole_cell_transport_validations", "phh_protein_functional_evidence.functional_responses", "human_sch_bile_acids.assay_contract", "human_sch_bile_acids.measurement_contract", "human_sch_bile_acids.conditions", "human_liver_open_atlas.morphometry_2d", "human_liver_open_atlas.surfaceome", "human_liver_open_atlas.spatial_proteome", "human_liver_open_atlas.interaction_hypotheses", "zonation_state.reference_context", "zonation_state.experimental_oxygen_context", "sinusoid_homeostasis.perfusion_boundary", "nutritional_homeostasis_v3.organ_validation_trajectory", "phh_baseline", "integrated_metabolism", "reaction_authority", "kinetic_transfer", "genome.reference_assembly", "spatial_state", "spatial_world", "physical_validation"],
+                    "authoritative_sections": ["quantitative_state", "quantitative_state.geometry_reference", "human_hepatocyte_3d_morphometry.normal_control_cell_volume_um3", "human_hepatocyte_3d_morphometry.normal_control_lipid_droplet_volume_percent", "nutritional_context", "endocrine_context.measured_observations", "endocrine_context.causal_glycogen_benchmark", "human_validation_protocol.observations", "healthy_phh_glucose_validation.glucose_consumption_observations", "healthy_phh_glucose_validation.insulin_response_observations", "healthy_phh_glucose_validation.human_scale_bridge", "phh_spheroid_validation_protocol.method_contract", "phh_spheroid_validation_protocol.window_targets", "phh_spheroid_validation_protocol.cumulative_target_trajectories", "phh_spheroid_validation_protocol.overlap_consistency_audits", "phh_glucose_observability.measurement_contract", "phh_glucose_observability.supplemental_constraints", "phh_glucose_observability.quantity_audit", "exact_glucose_homeostasis.source_species", "exact_glucose_homeostasis.source_reactions", "exact_glucose_homeostasis.canonical_pools", "glucose_open_system.physiological_sinusoid", "glucose_open_system.phh_batch_assay", "glucose_calibration_validation.reaction_fit_eligibility", "glucose_calibration_validation.observation_use_audit", "glucose_calibration_validation.validation_requirements", "compartmental_energy_redox.compartments", "compartmental_energy_redox.pools", "compartmental_energy_redox.processes", "compartmental_energy_redox.human_phh_proteome_evidence", "compartmental_energy_redox.aggregate_observations", "compartmental_energy_redox.runtime_conflicts", "energy_redox_validation.reaction_fit_eligibility", "energy_redox_validation.observation_use_audit", "energy_redox_validation.validation_requirements", "phh_albumin_secretion.assay_contract", "phh_albumin_secretion.observed_batch_span", "phh_albumin_secretion.measurement_contract", "phh_albumin_secretion.quantity_audit", "phh_cyp_function.assay_contract", "phh_cyp_function.enzymes", "phh_biliary_excretion.assay_contract", "phh_biliary_excretion.batch_records", "phh_biliary_excretion.measurement_contract", "phh_identity_heterogeneity.facs_records", "phh_identity_heterogeneity.scrna_records", "phh_proteome_budget.whole_cell_anchors", "phh_proteome_budget.compartment_protein_mass_fractions", "phh_proteome_budget.derived_compartment_mass_budget", "phh_absolute_proteome_atlas.selected_canonical_gene_panel", "phh_absolute_proteome_atlas.cohort", "phh_transporter_inventory.transporters", "phh_protein_functional_evidence.proteins", "phh_protein_functional_evidence.kinetic_observations", "phh_protein_functional_evidence.whole_cell_transport_validations", "phh_protein_functional_evidence.functional_responses", "human_sch_bile_acids.assay_contract", "human_sch_bile_acids.measurement_contract", "human_sch_bile_acids.conditions", "human_liver_open_atlas.morphometry_2d", "human_liver_open_atlas.surfaceome", "human_liver_open_atlas.spatial_proteome", "human_liver_open_atlas.interaction_hypotheses", "zonation_state.reference_context", "zonation_state.experimental_oxygen_context", "sinusoid_homeostasis.perfusion_boundary", "nutritional_homeostasis_v3.organ_validation_trajectory", "phh_baseline", "integrated_metabolism", "reaction_authority", "kinetic_transfer", "genome.reference_assembly", "spatial_state", "spatial_world", "physical_validation"],
                     "runtime_authoritative_sections": ["spatial_state", "spatial_world"],
                     "shadow_sections": ["healthy_phh_glucose_validation.contextual_organ_to_cell_conversion", "published_glucose_model.profile_projection", "published_glucose_model.shadow_flux_prediction", "published_glucose_lineage", "published_glucose_external_validation", "intercellular_communication", "brian2_communication", "generative_modeling"],
                     "schematic_sections": ["pools", "organelles", "stress", "metabolic_fluxes", "pathway_results", "signaling_results", "membrane_state", "intercellular_communication.reference_cells"],
-                    "policy": "quantitative_state wins on overlapping species; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+                    "policy": "quantitative_state wins on overlapping aggregate species; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
                 },
                 "quantitative_state": quantitative_phh_state_snapshot(args.nutrition_profile),
                 "human_hepatocyte_3d_morphometry": human_hepatocyte_3d_morphometry_snapshot(),
@@ -335,6 +349,8 @@ def main() -> None:
                 "exact_glucose_homeostasis": exact_glucose_homeostasis_snapshot(),
                 "glucose_open_system": glucose_open_system_snapshot(),
                 "glucose_calibration_validation": glucose_calibration_validation_snapshot(),
+                "compartmental_energy_redox": compartmental_energy_redox_snapshot(),
+                "energy_redox_validation": energy_redox_calibration_validation_snapshot(),
                 "phh_albumin_secretion": phh_albumin_secretion_snapshot(),
                 "phh_cyp_function": phh_cyp_function_snapshot(),
                 "phh_biliary_excretion": phh_biliary_excretion_snapshot(),

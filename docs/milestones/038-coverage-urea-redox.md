@@ -1,5 +1,11 @@
 # Milestone 038 — Coverage: urea cycle + glutathione redox
 
+> **Superseded authority note (2026-07-20):** The reported GSH:GSSG result was a
+> calibrated software-fixture consistency check, not healthy-PHH validation.
+> GPx, reductase, NADPH-regeneration and ROS-input rates are now explicit
+> placeholders; the range score and `100%` accuracy claim below are retained only
+> as historical record. See Milestones 087-088.
+
 ## Why
 
 The validation harness (M037) only watched energy/glucose handling. This

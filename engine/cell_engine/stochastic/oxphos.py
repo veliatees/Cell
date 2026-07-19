@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from cell_engine.core.provenance import SourceReference
+from cell_engine.core.provenance import ParameterProvenance, SourceReference
 from cell_engine.core.random import EngineRng
 from cell_engine.quantitative.geometry import AVOGADRO
 from cell_engine.stochastic.cell_model import CellReactionModel
@@ -25,9 +25,33 @@ OXPHOS_SOURCES: dict[str, SourceReference] = {
         date_verified=DATE_VERIFIED,
         notes="P/O ratio ~2.5 ATP per NADH and ~1.5 per FADH2 (10 vs 6 H+ translocated). ~30-32 ATP per glucose. OXPHOS rate is controlled by ADP availability (respiratory control).",
     ),
+    "legacy_oxphos_fixture_v1": SourceReference(
+        id="legacy_oxphos_fixture_v1",
+        title="Legacy TCA/OXPHOS software fixture",
+        url="",
+        source_type="project_assumption",
+        date_verified="2026-07-20",
+        notes=(
+            "The executable Vmax, Km, co-substrate Km and seed counts are "
+            "uncalibrated software-fixture values. Only pathway topology and the "
+            "explicitly cited P/O convention are literature grounded."
+        ),
+    ),
 }
 
 OXPHOS_VOLUME_L = 1.0 / AVOGADRO
+
+
+def _placeholder_parameter(name: str, value: float, unit: str) -> ParameterProvenance:
+    return ParameterProvenance(
+        name=name,
+        value=value,
+        unit=unit,
+        source_id="legacy_oxphos_fixture_v1",
+        assumption_level="placeholder",
+        confidence=0.0,
+        notes="Executable software-fixture value; not calibrated to human PHH data.",
+    )
 
 
 def build_oxphos_network(volume_l: float = OXPHOS_VOLUME_L) -> ReactionNetwork:
@@ -36,10 +60,9 @@ def build_oxphos_network(volume_l: float = OXPHOS_VOLUME_L) -> ReactionNetwork:
     TCA (per acetyl-CoA): 3 NADH + FADH2 + GTP(~ATP) + 2 CO2 — grounded. Electron
     transport uses the measured P/O ratios (NADH -> 2.5 ATP, FADH2 -> 1.5 ATP),
     encoded as 2 NADH -> 5 ATP and 2 FADH2 -> 3 ATP to keep integer stoichiometry.
-    Propensities are Michaelis-Menten in the carrier (so they don't explode at
-    high order); the full cofactor stoichiometry lives in the net change. OXPHOS
-    is gated on ADP (respiratory control) and TCA on NAD+ (IDH regulation) — both
-    grounded, not invented control terms.
+    Propensities are Michaelis-Menten in the carrier so software tests remain
+    bounded. Their Vmax and Km values are placeholders; numerical output is not a
+    human-hepatocyte prediction. The stoichiometric topology is the supported part.
     """
     s = AVOGADRO * volume_l  # = 1 here; concentrations equal counts
     species = ("acetyl_CoA", "NAD_plus", "NADH", "FAD", "FADH2",
@@ -55,6 +78,11 @@ def build_oxphos_network(volume_l: float = OXPHOS_VOLUME_L) -> ReactionNetwork:
             cosubstrate="acetyl_CoA", cosubstrate_km_M=1000.0 / s,
             source_id="tca_cycle",
             notes="3 NADH + FADH2 + GTP + 2 CO2 per acetyl-CoA; IDH gated on NAD+/acetyl-CoA.",
+            parameter_provenance=(
+                _placeholder_parameter("legacy_tca_vmax", 4.0e4 / s, "M_per_s"),
+                _placeholder_parameter("legacy_tca_nad_km", 2000.0 / s, "M"),
+                _placeholder_parameter("legacy_tca_acetyl_coa_km", 1000.0 / s, "M"),
+            ),
         ),
         michaelis_menten(
             "etc_nadh_oxidation",
@@ -63,6 +91,11 @@ def build_oxphos_network(volume_l: float = OXPHOS_VOLUME_L) -> ReactionNetwork:
             cosubstrate="ADP", cosubstrate_km_M=500.0 / s,  # respiratory control by ADP
             source_id="oxphos_po_ratio",
             notes="P/O 2.5: 2 NADH + O2 + 5 ADP -> 2 NAD+ + 5 ATP. Gated on ADP.",
+            parameter_provenance=(
+                _placeholder_parameter("legacy_nadh_etc_vmax", 5.0e4 / s, "M_per_s"),
+                _placeholder_parameter("legacy_nadh_etc_km", 1000.0 / s, "M"),
+                _placeholder_parameter("legacy_nadh_etc_adp_km", 500.0 / s, "M"),
+            ),
         ),
         michaelis_menten(
             "etc_fadh2_oxidation",
@@ -71,6 +104,11 @@ def build_oxphos_network(volume_l: float = OXPHOS_VOLUME_L) -> ReactionNetwork:
             cosubstrate="ADP", cosubstrate_km_M=500.0 / s,
             source_id="oxphos_po_ratio",
             notes="P/O 1.5: 2 FADH2 + O2 + 3 ADP -> 2 FAD + 3 ATP. Gated on ADP.",
+            parameter_provenance=(
+                _placeholder_parameter("legacy_fadh2_etc_vmax", 5.0e4 / s, "M_per_s"),
+                _placeholder_parameter("legacy_fadh2_etc_km", 1000.0 / s, "M"),
+                _placeholder_parameter("legacy_fadh2_etc_adp_km", 500.0 / s, "M"),
+            ),
         ),
     )
     return ReactionNetwork(species=species, reactions=reactions, volume_l=volume_l)
@@ -89,6 +127,7 @@ def total_guanylate(counts):
 
 
 def seed_oxphos(acetyl_CoA=2000.0, adp=20000.0):
+    """Return legacy software-fixture counts, not measured PHH initial values."""
     return {"acetyl_CoA": acetyl_CoA, "NAD_plus": 10000.0, "NADH": 1000.0,
             "FAD": 5000.0, "FADH2": 200.0, "ADP": adp, "ATP": 2000.0,
             "GDP": 5000.0, "GTP": 0.0, "O2": 50000.0, "CO2": 0.0}

@@ -270,15 +270,15 @@
       "active_reaction_id": "atp_regeneration",
       "candidate_reaction_ids": [],
       "species_aliases": {},
-      "relationship": "current_source_backed_outside_source_scope",
-      "note": "This apparent ATP-turnover channel has separate literature provenance and is not transferred from the glucose model."
+      "relationship": "outside_source_scope",
+      "note": "This legacy ADP-to-ATP software fixture is outside the glucose model and its apparent-exchange source does not identify the executable rate."
     },
     {
       "active_reaction_id": "atp_maintenance",
       "candidate_reaction_ids": [],
       "species_aliases": {},
-      "relationship": "current_source_backed_outside_source_scope",
-      "note": "This matched ATP-demand channel has separate literature provenance and is not transferred from the glucose model."
+      "relationship": "outside_source_scope",
+      "note": "This legacy ATP-to-ADP software fixture is outside the glucose model and has no measured healthy-PHH demand constant."
     }
   ]
 }

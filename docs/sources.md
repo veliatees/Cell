@@ -964,6 +964,37 @@ row identifiers. Source zeros/blanks become non-quantified `null` values; no
 imputation is performed. The workbook's `copies per nucleus` denominator is
 preserved and is never relabeled as copies per hepatocyte.
 
+## Compartmental Energy and Redox V1
+
+- Cimadamore-Werthein et al., human SLC25A4 ADP/ATP exchange mechanism:
+  https://doi.org/10.15252/embr.202357127. Supports equimolar inner-membrane
+  exchange topology; purified-carrier kinetics are not transferred to PHH.
+- Choudhary et al., ATP transport through VDAC:
+  https://doi.org/10.1021/bi4011495. Supports outer-mitochondrial-membrane
+  ATP/ADP pathway identity; simulation energetics are not transferred.
+- Mayr et al., human mitochondrial phosphate-carrier deficiency:
+  https://doi.org/10.1086/511788. Supports SLC25A3 phosphate delivery into the
+  matrix; patient phenotype does not parameterize healthy PHH.
+- Wang et al., SLC25A39 mitochondrial glutathione import:
+  https://doi.org/10.1038/s41586-021-04025-w. Supports mammalian transport
+  topology, not a healthy-PHH import rate.
+- Yong et al., SLC35B1/AXER ER ATP import:
+  https://doi.org/10.7554/eLife.49682. Supports ER nucleotide topology in
+  mammalian cell systems, not PHH kinetics.
+- Lewis et al., compartmentalized NADPH tracing:
+  https://doi.org/10.1016/j.molcel.2014.05.008. Supports distinct cytosolic and
+  mitochondrial NADPH pathways; cancer-cell fluxes are not transferred.
+- Hwang et al., oxidized ER glutathione state:
+  https://pubmed.ncbi.nlm.nih.gov/1523409/. Supports a secretory-pathway redox
+  pool distinct from cytosol.
+- Kappenberg et al., PHH oxygen-consumption monitoring:
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC8822303/. Supports an observability
+  design; no numeric rate is activated without exact denominator curation.
+
+These sources authorize compartment and process identity only. The project does
+not infer compartment volumes, initial concentrations, active protein fractions,
+fluxes or rate constants from them.
+
 ## PHH Protein Location and Functional Evidence V1
 
 - Noe et al., recombinant human BSEP taurocholate transport:

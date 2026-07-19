@@ -1,5 +1,11 @@
 # Milestone 082 - Quantitative reaction authority firewall v1
 
+> **Corrected authority note (2026-07-20):** The apparent Pi-to-ATP exchange
+> measurement does not identify the two executable first-order ATP reactions.
+> Their authority is now `placeholder`, so the corrected integrated-network
+> result is `0 / 36` source-backed, `2 / 36` placeholder, and `34 / 36`
+> unparameterized. The original finding below is retained as historical record.
+
 ## Goal
 
 Prevent a source-backed pathway name or stoichiometric topology from being
