@@ -247,9 +247,9 @@
       "assay": "localized 31P saturation-transfer MRS",
       "sample_size": 9,
       "source_id": "human_liver_atp_synthesis_2008",
-      "model_use": "lumped_atp_turnover_anchor",
-      "applicability": "Calibrates apparent ATP turnover around the healthy baseline pools.",
-      "limitations": "Magnetization-transfer exchange is not identical to net mitochondrial ATP synthesis."
+      "model_use": "same_assay_apparent_exchange_observation",
+      "applicability": "Provides a whole-liver apparent Pi-to-ATP exchange observation in its original assay space.",
+      "limitations": "Magnetization-transfer exchange does not identify net mitochondrial ATP synthesis, cellular ATP demand, or first-order ADP/ATP rate constants."
     },
     {
       "id": "human_liver_glycogen_fed_peak",
@@ -327,13 +327,15 @@
   "readiness": {
     "direct_initialization_ready": false,
     "metabolic_pool_initialization_ready": true,
-    "energy_turnover_ready": true,
+    "apparent_atp_exchange_observation_ready": true,
+    "energy_turnover_ready": false,
     "whole_cell_transport_flux_ready": false,
     "blocking_measurements": [
       "matched donor and nutritional state",
       "per-cell total protein and membrane-protein mass for the modeled cell",
       "canalicular surface-localized BSEP and MRP2 copy numbers",
       "matched intracellular bile-acid substrate concentrations",
+      "compartment-resolved ATP, ADP and phosphate time courses with matched PHH oxygen consumption",
       "held-out primary-human-hepatocyte trajectory data"
     ]
   }

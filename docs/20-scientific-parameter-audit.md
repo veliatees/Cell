@@ -169,8 +169,9 @@ Correction:
 
 The integrated fuel network has source-linked reaction topology, but a source
 ID on a reaction does not show that the numerical constant used by the runtime
-was reported by that source. Direct inspection found 36 active reactions, only
-two with source-backed numerical parameter provenance, and 34 with no numerical
+was reported by that source. The corrected inspection finds 36 active
+reactions, zero with fully source-backed numerical parameterization, two ATP
+channels with documented placeholder constants, and 34 with no numerical
 parameter provenance record.
 
 Correction:
@@ -183,7 +184,7 @@ Correction:
   a confirmed biological/experimental context match;
 - predictive execution additionally requires independent held-out validation;
 - unsupported reactions may execute only under the explicit exploratory role;
-- all browser context snapshots expose the machine-generated `2 / 36` authority
+- all browser context snapshots expose the machine-generated `0 / 36` authority
   result instead of implying that the full network is quantitative.
 
 ### 11. Related published reactions were being mistaken for transferable kinetics
@@ -208,11 +209,33 @@ Correction:
 - the transfer guard therefore activates `0 / 36` published parameter sets and
   raises an error if code requests one prematurely.
 
+### 12. Apparent ATP exchange was being treated as cellular ATP turnover
+
+The healthy-human liver value `29.5 +/- 1.8 mM/min` comes from localized 31P
+saturation-transfer MRS. It is an apparent Pi-to-ATP exchange observation. It
+does not identify net mitochondrial ATP production, ATP consumption, a
+first-order rate constant, or any compartment-specific pool.
+
+Correction:
+
+- the baseline now labels this as a same-assay observation only;
+- `energy_turnover_ready` is false;
+- both legacy ATP reactions carry explicit placeholder provenance;
+- cytosolic, mitochondrial-intermembrane-space, mitochondrial-matrix and ER
+  adenylates are distinct structural pools;
+- VDAC outer-membrane permeation, ANT inner-membrane exchange and SLC25A3
+  phosphate import are separate non-executable processes;
+- all legacy ATP, glutathione and OXPHOS numerical reactions pass through a
+  fail-closed calibration gate, with zero fit-eligible or activated parameters.
+
 ## Current Authority Surface
 
 May drive quantitative validation:
 
-- source-traceable PHH energy and glycogen profiles;
+- source-traceable PHH glycogen contexts;
+- denominator-preserved aggregate energy/redox observations;
+- the non-executable compartment-resolved energy/redox structural contract and
+  its numerical activation firewall;
 - postabsorptive blood-glucose boundary.
 
 May drive visualization or qualitative direction only:
