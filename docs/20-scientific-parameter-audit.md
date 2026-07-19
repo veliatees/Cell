@@ -165,6 +165,27 @@ Correction:
 - the normal one-hepatocyte runtime contains no external body and therefore no
   contact marker.
 
+### 10. Pathway citations were being overinterpreted as numerical rate authority
+
+The integrated fuel network has source-linked reaction topology, but a source
+ID on a reaction does not show that the numerical constant used by the runtime
+was reported by that source. Direct inspection found 36 active reactions, only
+two with source-backed numerical parameter provenance, and 34 with no numerical
+parameter provenance record.
+
+Correction:
+
+- every reaction is independently classified as source-backed, fitted,
+  placeholder, unparameterized, or invalid;
+- source-backed topology and source-backed numerical parameterization are
+  separate fields;
+- quantitative validation requires complete source-backed parameterization and
+  a confirmed biological/experimental context match;
+- predictive execution additionally requires independent held-out validation;
+- unsupported reactions may execute only under the explicit exploratory role;
+- all browser context snapshots expose the machine-generated `2 / 36` authority
+  result instead of implying that the full network is quantitative.
+
 ## Current Authority Surface
 
 May drive quantitative validation:
@@ -187,6 +208,7 @@ Disabled or blocked:
 - absolute transporter flux;
 - quantitative redox kinetics;
 - calibrated time-to-death.
+- quantitative or predictive use of the 36-reaction integrated fuel network.
 
 ## Evidence Reviewed
 

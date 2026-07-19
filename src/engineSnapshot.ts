@@ -937,6 +937,7 @@ export type EngineSnapshot = {
     division?: EngineDivisionSnapshot;
     regeneration_context?: EngineRegenerationContext;
     integrated_metabolism?: EngineIntegratedMetabolism;
+    reaction_authority?: EngineReactionNetworkAuthorityAudit;
     quantitative_state?: EngineQuantitativePhhState;
     human_hepatocyte_3d_morphometry?: EngineHumanHepatocyte3dMorphometry;
     zonation_state?: EngineHumanZonationState;
@@ -3067,6 +3068,42 @@ export type EngineScientificAudit = {
   surfaces: { id: string; status: string; default_snapshot_role: string; drives_scientific_validation: boolean; action: string; source_ids: string[]; limitations: string }[];
 };
 
+export type EngineReactionAuthorityRecord = {
+  reaction_id: string;
+  authority: "source_backed" | "fitted" | "placeholder" | "unparameterized" | "invalid";
+  topology_source_id: string;
+  parameter_count: number;
+  parameter_names: string[];
+  assumption_levels: string[];
+  parameter_source_ids: string[];
+  parameter_provenance_complete: boolean;
+  eligible_for_context_matched_quantitative_use: boolean;
+  blockers: string[];
+};
+
+export type EngineReactionNetworkAuthorityAudit = {
+  network_id: string;
+  status: string;
+  runtime_role: "exploratory" | "quantitative" | "predictive";
+  reaction_count: number;
+  authority_counts: Record<"source_backed" | "fitted" | "placeholder" | "unparameterized" | "invalid", number>;
+  parameter_provenance_documented_count: number;
+  source_backed_parameterization_count: number;
+  parameter_provenance_coverage_fraction: number;
+  source_backed_fraction: number;
+  context_match_confirmed: boolean;
+  context_description: string;
+  heldout_validation_confirmed: boolean;
+  scientific_validation_ready: boolean;
+  predictive_execution_ready: boolean;
+  exploratory_execution_allowed: boolean;
+  validation_blockers: string[];
+  predictive_blockers: string[];
+  blocked_reaction_ids: string[];
+  reactions: EngineReactionAuthorityRecord[];
+  policy: string;
+};
+
 export type EngineAssumptionReport = {
   definition_id: string;
   counts: Record<string, number>;
@@ -3140,6 +3177,7 @@ export type EngineSnapshotSummary = {
   divisionDisplay: EngineDivisionDisplayState;
   regenerationContext: EngineRegenerationContext | null;
   integratedMetabolism: EngineIntegratedMetabolism | null;
+  reactionAuthority: EngineReactionNetworkAuthorityAudit | null;
   quantitativeState: EngineQuantitativePhhState | null;
   humanHepatocyte3dMorphometry: EngineHumanHepatocyte3dMorphometry | null;
   zonationState: EngineHumanZonationState | null;
@@ -3302,6 +3340,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     divisionDisplay: summarizeEngineDivisionDisplay(division),
     regenerationContext: isEngineRegenerationContext(snapshot.state.regeneration_context) ? snapshot.state.regeneration_context : null,
     integratedMetabolism: snapshot.state.integrated_metabolism ?? null,
+    reactionAuthority: snapshot.state.reaction_authority ?? null,
     quantitativeState: snapshot.state.quantitative_state ?? null,
     humanHepatocyte3dMorphometry: snapshot.state.human_hepatocyte_3d_morphometry ?? null,
     zonationState: snapshot.state.zonation_state ?? null,

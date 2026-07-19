@@ -3809,6 +3809,10 @@ function renderExternalEngineStatus(): string {
     .join(" · ");
   const response = s.cellularResponse;
   const experiment = s.experiment;
+  const reactionAuthority = s.reactionAuthority;
+  const reactionAuthorityText = reactionAuthority
+    ? `reaction authority ${reactionAuthority.source_backed_parameterization_count}/${reactionAuthority.reaction_count} source-backed · ${reactionAuthority.runtime_role}`
+    : "reaction authority unavailable";
   const experimentText = experiment
     ? `experiment ${experiment.id.replaceAll("_", " ")} · ${experiment.description}`
     : "experiment -";
@@ -3819,6 +3823,7 @@ function renderExternalEngineStatus(): string {
     `<span class="external-snapshot__label">Python engine snapshot - mixed authority</span>` +
     `<span>${s.cellType} · schematic status ${s.status} · ${atp} · Ca(rel) ${s.cytosolicCa == null ? "-" : s.cytosolicCa.toFixed(2)} · ${vm} · ${pump} · cargo ${cargo || "none"} · ` +
     `SBML ${s.pathwayCount} · signaling ${s.signalingCount}${flux}</span>` +
+    `<span class="external-snapshot__diag">${reactionAuthorityText}</span>` +
     `<span class="external-snapshot__diag">${divisionText}</span>` +
     `<span class="external-snapshot__diag">${displayReason} · ${displayGate}</span>` +
     `<span class="external-snapshot__diag">${regenText}</span>` +
@@ -3991,6 +3996,10 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
     : "";
   const auditRow = audit
     ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Audit</span><span>${audit.authoritative_surfaces.length} source-backed validation surfaces · ${audit.blocked_or_disabled_surfaces.length} blocked or disabled model surfaces.</span></div>`
+    : "";
+  const reactionAuthority = summary?.reactionAuthority;
+  const reactionAuthorityRow = reactionAuthority
+    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Reaction authority firewall</b><span>${reactionAuthority.runtime_role} runtime</span></div><div class="phh-profile__grid"><span>Active reactions <b>${reactionAuthority.reaction_count}</b></span><span>Source-backed numerical rates <b>${reactionAuthority.source_backed_parameterization_count}/${reactionAuthority.reaction_count}</b></span><span>Documented parameter provenance <b>${reactionAuthority.parameter_provenance_documented_count}/${reactionAuthority.reaction_count}</b></span><span>Unparameterized <b>${reactionAuthority.authority_counts.unparameterized}</b></span><span>Fitted <b>${reactionAuthority.authority_counts.fitted}</b></span><span>Placeholder <b>${reactionAuthority.authority_counts.placeholder}</b></span><span>Matched network context <b>${reactionAuthority.context_match_confirmed ? "confirmed" : "not confirmed"}</b></span><span>Held-out validation <b>${reactionAuthority.heldout_validation_confirmed ? "confirmed" : "not confirmed"}</b></span><span>Scientific validation <b>${reactionAuthority.scientific_validation_ready ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Rate firewall</span><span>Pathway topology may run as an exploratory model, but unsupported numerical rates cannot contribute to quantitative validation or predictive claims.</span></div>`
     : "";
   const placeholderRow = assumptions
     ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Schematic</span><span>${assumptions.placeholder_pools.length} relative pools remain placeholders and do not drive quantitative validation.</span></div>`
@@ -4303,7 +4312,7 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
     `<div class="phh-profile__grid"><span>Defined layers <b>${VISUAL_ANATOMY_REQUIREMENTS.length}</b></span><span>Incomplete layers <b>${incompleteAnatomyLayers.length}</b></span><span>Current LOD <b>${(activeVisualAnatomyLod ?? "loading").replaceAll("_", " ")}</b></span><span>Human numeric transfer <b>LSEC fenestra ${HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM} nm mean</b></span></div></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Anatomy rubric</span><span>Coverage of explicit renderer layers, not percent biological realism. Cell-form morphometry, human organelle counts and quantitative EM-volume registration remain incomplete.</span></div>`;
   return (
-    visualAnatomyRow + profileRow + geometryReferenceRow + human3dRow + zonationRow + openAtlasRow + homeostasisRow + homeostasisV3Row + endocrineRow + validationProtocolRow + healthyPhhValidationRow + phhSpheroidProtocolRow + phhGlucoseObservabilityRow + phhAlbuminSecretionRow + phhCypFunctionRow + phhBiliaryExcretionRow + phhIdentityHeterogeneityRow + phhProteomeBudgetRow + phhAbsoluteProteomeAtlasRow + phhTransporterInventoryRow + phhProteinFunctionalEvidenceRow + humanSchBileAcidsRow + evidenceIntakeRow + publishedModelRow + externalValidationRow + publishedLineageRow + nutritionalContextRow + fluxEvidenceRow + phhRow + authorityRow + auditRow + placeholderRow +
+    visualAnatomyRow + profileRow + geometryReferenceRow + human3dRow + zonationRow + openAtlasRow + homeostasisRow + homeostasisV3Row + endocrineRow + validationProtocolRow + healthyPhhValidationRow + phhSpheroidProtocolRow + phhGlucoseObservabilityRow + phhAlbuminSecretionRow + phhCypFunctionRow + phhBiliaryExcretionRow + phhIdentityHeterogeneityRow + phhProteomeBudgetRow + phhAbsoluteProteomeAtlasRow + phhTransporterInventoryRow + phhProteinFunctionalEvidenceRow + humanSchBileAcidsRow + evidenceIntakeRow + publishedModelRow + externalValidationRow + publishedLineageRow + nutritionalContextRow + fluxEvidenceRow + phhRow + authorityRow + reactionAuthorityRow + auditRow + placeholderRow +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Source-backed</span><span>BSEP/MRP2 directionality; intracellular/extracellular measurement distinction; cholestasis → ER stress; human bile-acid death-mode constraint.</span></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Model state</span><span>Mass-conserving intracellular → canalicular relative pools. CYP7A1 feedback and basolateral escape are explicitly not modeled.</span></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Derived</span><span>Stress-time exposure and fate evidence; no calibrated time-to-death or canalicular pressure.</span></div>` +

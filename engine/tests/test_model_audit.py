@@ -35,6 +35,7 @@ class ScientificModelAuditTests(unittest.TestCase):
             "integrated_fuel_pathway_rates",
             "endocrine_receptor_rate_coupling",
             "albumin_secretory_pathway_kinetics",
+            "integrated_fuel_pathway_rates",
         ):
             self.assertIn(by_id[surface_id].status, ("blocked", "disabled"))
             self.assertFalse(by_id[surface_id].drives_scientific_validation)
@@ -53,6 +54,8 @@ class ScientificModelAuditTests(unittest.TestCase):
         self.assertIn("rawicz2000_bilayer_elasticity", by_id["cell_contact_geometry"].source_ids)
         self.assertIn("guillou2016_membrane_surface_reservoirs", by_id["cell_contact_geometry"].source_ids)
         self.assertFalse(by_id["cell_contact_geometry"].drives_scientific_validation)
+        self.assertEqual(by_id["integrated_reaction_authority"].status, "derived")
+        self.assertFalse(by_id["integrated_reaction_authority"].drives_scientific_validation)
 
 
 if __name__ == "__main__":
