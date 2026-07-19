@@ -43,6 +43,10 @@ from cell_engine.quantitative.glucose_homeostasis_contract import (
     build_exact_glucose_homeostasis_contract,
     validate_exact_glucose_homeostasis_contract,
 )
+from cell_engine.quantitative.glucose_open_system import (
+    build_glucose_open_system_program,
+    validate_glucose_open_system_program,
+)
 from cell_engine.quantitative.phh_albumin_secretion import (
     build_phh_albumin_secretion,
     validate_phh_albumin_secretion,
@@ -136,6 +140,7 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
     phh_spheroid_protocol = None
     phh_glucose_observability = None
     exact_glucose_contract = None
+    glucose_open_system = None
     phh_albumin_secretion = None
     phh_cyp_function = None
     phh_biliary_excretion = None
@@ -254,6 +259,15 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid exact glucose-homeostasis structural contract: {exc}")
+
+    try:
+        glucose_open_system = build_glucose_open_system_program()
+        validate_glucose_open_system_program(glucose_open_system)
+        checks.append(
+            "physiological sinusoid and finite PHH spheroid boundaries remain non-interchangeable, with an exact signed 12-window input to 16-window assay bridge and no invented volume"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid glucose open-system and exact-assay bridge: {exc}")
 
     try:
         phh_albumin_secretion = build_phh_albumin_secretion()
@@ -507,6 +521,15 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
                 blockers.append("source-exact glucose topology has not replaced the split and lumped exploratory runtime")
             if not exact_glucose_contract.parameter_activation_allowed:
                 blockers.append("source-exact glucose topology has no qualified numerical parameter activation")
+        if glucose_open_system is None:
+            blockers.append("glucose open-system and exact-assay bridge is unavailable")
+        else:
+            if not glucose_open_system.physiological_sinusoid.hepatocyte_transport_coupling_ready:
+                blockers.append("physiological sinusoid has no calibrated hepatocyte glucose-exchange flux")
+            if not glucose_open_system.phh_batch_assay.concentration_trajectory_reconstruction_ready:
+                blockers.append("PHH batch assay lacks reported volumes for medium concentration reconstruction")
+            if not glucose_open_system.predictive_ready:
+                blockers.append("glucose open-system program has no exact-protocol predictive model output")
         if phh_albumin_secretion is None:
             blockers.append("PHH albumin-secretion measurement operator and identifiability audit are unavailable")
         else:
