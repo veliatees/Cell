@@ -165,6 +165,49 @@ Correction:
 - the normal one-hepatocyte runtime contains no external body and therefore no
   contact marker.
 
+### 10. Pathway citations were being overinterpreted as numerical rate authority
+
+The integrated fuel network has source-linked reaction topology, but a source
+ID on a reaction does not show that the numerical constant used by the runtime
+was reported by that source. Direct inspection found 36 active reactions, only
+two with source-backed numerical parameter provenance, and 34 with no numerical
+parameter provenance record.
+
+Correction:
+
+- every reaction is independently classified as source-backed, fitted,
+  placeholder, unparameterized, or invalid;
+- source-backed topology and source-backed numerical parameterization are
+  separate fields;
+- quantitative validation requires complete source-backed parameterization and
+  a confirmed biological/experimental context match;
+- predictive execution additionally requires independent held-out validation;
+- unsupported reactions may execute only under the explicit exploratory role;
+- all browser context snapshots expose the machine-generated `2 / 36` authority
+  result instead of implying that the full network is quantitative.
+
+### 11. Related published reactions were being mistaken for transferable kinetics
+
+The Koenig human hepatic-glucose model contains literature kinetic constants
+and fitted `Vmax` values, but those values belong to its own equations, fixed
+cofactor assumptions, compartments, mean-liver context, and per-kilogram output
+scale. A shared enzyme name is not sufficient evidence for copying a number into
+the active single-cell network.
+
+Correction:
+
+- all 36 active reactions are mapped in one checksum-locked manifest;
+- the executable SBML is inspected reaction by reaction for exact
+  stoichiometry, direction, compartment, modifiers, kinetic symbols, boundary
+  species, and canonicalized MathML hash;
+- 12 active reactions have related published candidates;
+- only `glucose_export`, `phosphoglucose_isomerase_reverse`, and
+  `hepatic_glucose_output` share exact stoichiometry after explicit aliases;
+- none shares the complete symbolic law, validated per-cell scale, matched
+  healthy-PHH context, and held-out validation;
+- the transfer guard therefore activates `0 / 36` published parameter sets and
+  raises an error if code requests one prematurely.
+
 ## Current Authority Surface
 
 May drive quantitative validation:
@@ -187,6 +230,7 @@ Disabled or blocked:
 - absolute transporter flux;
 - quantitative redox kinetics;
 - calibrated time-to-death.
+- quantitative or predictive use of the 36-reaction integrated fuel network.
 
 ## Evidence Reviewed
 

@@ -69,6 +69,31 @@ class SbmlDocumentManifest:
 
 
 @dataclass(frozen=True)
+class SbmlReactionParticipant:
+    species_id: str
+    stoichiometry: float
+    compartment_id: str
+    boundary_condition: bool
+
+
+@dataclass(frozen=True)
+class SbmlReactionFingerprint:
+    reaction_id: str
+    name: str | None
+    compartment_id: str | None
+    reversible: bool
+    reactants: tuple[SbmlReactionParticipant, ...]
+    products: tuple[SbmlReactionParticipant, ...]
+    modifier_species_ids: tuple[str, ...]
+    kinetic_law_present: bool
+    kinetic_math_sha256: str | None
+    kinetic_symbol_ids: tuple[str, ...]
+    kinetic_parameter_ids: tuple[str, ...]
+    kinetic_species_ids: tuple[str, ...]
+    boundary_species_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class RoadRunnerAdapter:
     available: bool
     error: str = ""
@@ -156,6 +181,125 @@ def inspect_sbml_document(path: str | Path) -> SbmlDocumentManifest:
         ),
         path=str(model_path),
     )
+
+
+def inspect_sbml_reaction_fingerprints(
+    path: str | Path,
+) -> tuple[SbmlReactionFingerprint, ...]:
+    """Return equation-level fingerprints without evaluating the SBML model.
+
+    The MathML digest is intentionally tied to the exact symbolic law in the
+    vendored artifact. It is a provenance/integrity check, not a claim that two
+    algebraically equivalent expressions must share a digest.
+    """
+    model_path = Path(path)
+    root = ET.fromstring(model_path.read_bytes())
+    if _local_name(root.tag) != "sbml":
+        raise ValueError(f"SBML file {model_path} has unexpected root element {root.tag}")
+    model = next((element for element in root if _local_name(element.tag) == "model"), None)
+    if model is None:
+        raise ValueError(f"SBML file {model_path} does not contain a model")
+
+    elements = tuple(model.iter())
+    species_elements = {
+        element.attrib["id"]: element
+        for element in elements
+        if _local_name(element.tag) == "species" and "id" in element.attrib
+    }
+    species_ids = set(species_elements)
+    global_parameter_ids = {
+        element.attrib["id"]
+        for element in elements
+        if _local_name(element.tag) == "parameter" and "id" in element.attrib
+    }
+
+    def participants(reaction: ET.Element, list_name: str) -> tuple[SbmlReactionParticipant, ...]:
+        participant_list = _direct_child(reaction, list_name)
+        if participant_list is None:
+            return ()
+        result: list[SbmlReactionParticipant] = []
+        for reference in participant_list:
+            if _local_name(reference.tag) != "speciesReference":
+                continue
+            species_id = _required(reference.attrib, "species")
+            species = species_elements.get(species_id)
+            if species is None:
+                raise ValueError(
+                    f"Reaction {reaction.attrib.get('id', '<unknown>')} references unknown species {species_id}"
+                )
+            result.append(
+                SbmlReactionParticipant(
+                    species_id=species_id,
+                    stoichiometry=float(reference.attrib.get("stoichiometry", "1")),
+                    compartment_id=_required(species.attrib, "compartment"),
+                    boundary_condition=species.attrib.get("boundaryCondition", "false").lower() == "true",
+                )
+            )
+        return tuple(result)
+
+    fingerprints: list[SbmlReactionFingerprint] = []
+    for reaction in elements:
+        if _local_name(reaction.tag) != "reaction" or "id" not in reaction.attrib:
+            continue
+        reaction_id = reaction.attrib["id"]
+        kinetic_law = _direct_child(reaction, "kineticLaw")
+        math = _direct_child(kinetic_law, "math") if kinetic_law is not None else None
+        math_digest: str | None = None
+        symbol_ids: tuple[str, ...] = ()
+        local_parameter_ids: set[str] = set()
+        if kinetic_law is not None:
+            local_parameter_ids = {
+                element.attrib["id"]
+                for element in kinetic_law.iter()
+                if _local_name(element.tag) in ("localParameter", "parameter")
+                and "id" in element.attrib
+            }
+        if math is not None:
+            canonical_math = ET.canonicalize(
+                ET.tostring(math, encoding="unicode"),
+                strip_text=True,
+            )
+            math_digest = sha256(canonical_math.encode("utf-8")).hexdigest()
+            symbol_ids = tuple(
+                dict.fromkeys(
+                    (element.text or "").strip()
+                    for element in math.iter()
+                    if _local_name(element.tag) == "ci" and (element.text or "").strip()
+                )
+            )
+        parameter_ids = global_parameter_ids | local_parameter_ids
+        kinetic_species_ids = tuple(symbol for symbol in symbol_ids if symbol in species_ids)
+        boundary_species_ids = tuple(
+            symbol
+            for symbol in kinetic_species_ids
+            if species_elements[symbol].attrib.get("boundaryCondition", "false").lower() == "true"
+        )
+        modifiers = _direct_child(reaction, "listOfModifiers")
+        modifier_references = modifiers if modifiers is not None else ()
+        modifier_ids = tuple(
+            reference.attrib["species"]
+            for reference in modifier_references
+            if _local_name(reference.tag) == "modifierSpeciesReference"
+            and "species" in reference.attrib
+        )
+        fingerprints.append(
+            SbmlReactionFingerprint(
+                reaction_id=reaction_id,
+                name=reaction.attrib.get("name"),
+                compartment_id=reaction.attrib.get("compartment"),
+                reversible=reaction.attrib.get("reversible", "true").lower() == "true",
+                reactants=participants(reaction, "listOfReactants"),
+                products=participants(reaction, "listOfProducts"),
+                modifier_species_ids=modifier_ids,
+                kinetic_law_present=kinetic_law is not None,
+                kinetic_math_sha256=math_digest,
+                kinetic_symbol_ids=symbol_ids,
+                kinetic_parameter_ids=tuple(symbol for symbol in symbol_ids if symbol in parameter_ids),
+                kinetic_species_ids=kinetic_species_ids,
+                boundary_species_ids=boundary_species_ids,
+            )
+        )
+    return tuple(fingerprints)
 
 
 def load_sbml_subset(path: str | Path) -> SbmlSubsetModel:
@@ -250,6 +394,12 @@ def _attrs(text: str) -> dict[str, str]:
 
 def _local_name(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
+
+
+def _direct_child(element: ET.Element | None, tag: str) -> ET.Element | None:
+    if element is None:
+        return None
+    return next((child for child in element if _local_name(child.tag) == tag), None)
 
 
 def _required(attrs: dict[str, str], key: str) -> str:

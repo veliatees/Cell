@@ -57,6 +57,25 @@ from cell_engine.validation.physical_validation import (
     physical_validation_snapshot,
     validate_physical_validation_report,
 )
+from cell_engine.validation.reaction_authority import (
+    ReactionAuthorityError,
+    ReactionAuthorityRecord,
+    ReactionNetworkAuthorityAudit,
+    assert_reaction_network_authority,
+    audit_reaction_authority,
+    audit_reaction_network,
+)
+from cell_engine.validation.kinetic_transfer import (
+    KINETIC_TRANSFER_SOURCES,
+    CandidateReactionAudit,
+    KineticTransferAudit,
+    KineticTransferError,
+    ReactionKineticTransferAudit,
+    assert_kinetic_transfer_allowed,
+    build_kinetic_transfer_audit,
+    kinetic_transfer_snapshot,
+    validate_kinetic_transfer_audit,
+)
 
 __all__ = [
     "BASELINE_SCENARIO",
@@ -112,4 +131,19 @@ __all__ = [
     "build_physical_validation_report",
     "physical_validation_snapshot",
     "validate_physical_validation_report",
+    "ReactionAuthorityError",
+    "ReactionAuthorityRecord",
+    "ReactionNetworkAuthorityAudit",
+    "assert_reaction_network_authority",
+    "audit_reaction_authority",
+    "audit_reaction_network",
+    "KINETIC_TRANSFER_SOURCES",
+    "CandidateReactionAudit",
+    "KineticTransferAudit",
+    "KineticTransferError",
+    "ReactionKineticTransferAudit",
+    "assert_kinetic_transfer_allowed",
+    "build_kinetic_transfer_audit",
+    "kinetic_transfer_snapshot",
+    "validate_kinetic_transfer_audit",
 ]
