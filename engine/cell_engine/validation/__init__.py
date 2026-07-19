@@ -57,6 +57,14 @@ from cell_engine.validation.physical_validation import (
     physical_validation_snapshot,
     validate_physical_validation_report,
 )
+from cell_engine.validation.reaction_authority import (
+    ReactionAuthorityError,
+    ReactionAuthorityRecord,
+    ReactionNetworkAuthorityAudit,
+    assert_reaction_network_authority,
+    audit_reaction_authority,
+    audit_reaction_network,
+)
 
 __all__ = [
     "BASELINE_SCENARIO",
@@ -112,4 +120,10 @@ __all__ = [
     "build_physical_validation_report",
     "physical_validation_snapshot",
     "validate_physical_validation_report",
+    "ReactionAuthorityError",
+    "ReactionAuthorityRecord",
+    "ReactionNetworkAuthorityAudit",
+    "assert_reaction_network_authority",
+    "audit_reaction_authority",
+    "audit_reaction_network",
 ]

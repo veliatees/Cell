@@ -30,6 +30,10 @@ biology rather than tuned to look right.
 
 - **Real units** — concentrations and molecule counts tied to a grounded
   hepatocyte volume; every species and rate carries provenance.
+- **A reaction-authority firewall** — pathway topology and numerical rates are
+  audited separately. The current integrated fuel network is honestly exposed
+  as `2 / 36` source-backed reaction parameterizations; its other 34 channels
+  may run only as an exploratory model and cannot drive quantitative validation.
 - **A stochastic reaction core** — exact Gillespie SSA for low-copy species and
   the chemical Langevin equation (an SDE) for high-copy species, the same hybrid
   the field's whole-cell models use, verified against analytic results (Poisson
@@ -232,16 +236,17 @@ hepatectomy profile that blocks fast G1/S entry.
 
 What is still depth-work (the road ahead is depth, not a new approach):
 
-- some newer modules (membrane transport, hormonal signalling, lipid handling)
-  still carry **illustrative** rate constants — the mechanism is grounded, the
-  magnitudes are flagged, and they are being replaced with literature kinetics
-  module by module;
+- the composed fuel network currently has 36 reaction channels, but only two
+  carry source-backed numerical parameter provenance. The remaining 34 are
+  explicitly unparameterized, run under an exploratory role, and are blocked
+  from quantitative validation by the reaction-authority firewall;
 - coverage is still a fraction of a hepatocyte (HEPATOKIN1-level coverage is
   hundreds of grounded reactions; genome-scale models thousands);
 - validation is a handful of checkpoints, not a broad comparison against
   metabolomics / fluxomics / perturbation data;
-- the spatial layer is 1-D and deterministic (the field standard is 3-D stochastic
-  RDME) and is not yet fused with the whole-cell network;
+- the project now has a 3-D voxel RDME layer and exported glucose/ATP fields,
+  but the broad whole-cell reaction network is not yet fully fused into that
+  lattice with source-backed per-reaction kinetics;
 - volume dynamics at division and quantitative CDK/cyclin/p53 kinetics are not
   yet modelled; the current checkpoint layer is qualitative and source-traced,
   with real-time phase anchors available separately from the accelerated browser
@@ -348,6 +353,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 079: Human in-situ geometry and coupled transport v1](docs/milestones/079-human-in-situ-geometry-coupled-transport-v1.md)
 - [Milestone 080: Human 3D hepatocyte morphometry v1](docs/milestones/080-human-3d-hepatocyte-morphometry-v1.md)
 - [Milestone 081: Stochastic contact placement and scientific overlays v1](docs/milestones/081-stochastic-contact-surface-scientific-overlays-v1.md)
+- [Milestone 082: Quantitative reaction authority firewall v1](docs/milestones/082-quantitative-reaction-authority-firewall-v1.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)

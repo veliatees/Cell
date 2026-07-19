@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-17T21:21:02.738333+00:00",
+    "created_at_utc": "2026-07-19T15:27:59.475582+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -8901,12 +8901,13 @@
         "nutritional_homeostasis_v3.organ_validation_trajectory",
         "phh_baseline",
         "integrated_metabolism",
+        "reaction_authority",
         "genome.reference_assembly",
         "spatial_state",
         "spatial_world",
         "physical_validation"
       ],
-      "policy": "quantitative_state wins on overlapping species; spatial_world wins on runtime geometry; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+      "policy": "quantitative_state wins on overlapping species; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
       "primary_state_path": "quantitative_state",
       "runtime_authoritative_sections": [
         "spatial_state",
@@ -12120,7 +12121,7 @@
         "whole_cell_transport_flux_ready": false
       },
       "scientific_release": {
-        "authoritative_scope": "Healthy PHH metabolic pools, unified fed/postabsorptive/prolonged-fast glycogen contexts, apparent ATP turnover, human zonation reference context with controlled-MPS oxygen evidence, postabsorptive blood-glucose perfusion boundary, measured peripheral endocrine observations, a causal liver-glycogen clamp benchmark, a non-interpolated human mixed-meal protocol, a source-locked PHH 3D-spheroid protocol with 12 independent cumulative-mean targets plus four descriptive overlap audits, a signed cumulative-to-window glucose operator, a six-batch 24-hour PHH albumin ELISA operator, 72 batch-resolved CYP SCR/MFR observations, five d8-TCA BEI observations, separate six-batch FACS/scRNA identity-composition surfaces, a seven-donor absolute proteome-mass reference, one same-cohort total-BSEP copy bridge, denominator-preserved human-liver MRP2 abundance, and four-donor day-7 human-SCH endogenous bile-acid endpoints with explicit identifiability gates. Published hepatic glucose execution, model-lineage reproduction and its contextual external HGO comparison are shadow/diagnostic only. Runtime convex-surface geometry, closest points, overlap, membrane-domain labels, polygonal contact patches, enter/stay/exit contact inputs and bounded volume-preserving affine deformation are engine-authoritative. The normal snapshot contains one hepatocyte. Its 18.4 um equivalent-size scale uses isolated-human-hepatocyte evidence; the regular truncated-octahedron boundary and any diagnostic pair arrangement remain mathematical rather than donor morphometry. The 1% elastic-area cap is an explicit cross-system engineering bound equal to half the lower human-RBC lysis strain, not PHH rheology. Elapsed contact duration is not a causal input. Patch area may be computed from runtime geometry, while force, stiffness, adhesion, junction gating, mechanotransduction and biochemical effects remain blocked. Intercellular topology plus one measured PHH insulin-response chain are source-backed; receptor activation, Brian2 execution and generative-model coupling remain blocked. External evidence intake is manual-review-only. Dynamic proteostasis, macromolecular crowding, proteome-to-geometry mapping, canalicular surface and active transporter copies, transporter flux, raw donor-level bile-acid censoring, true canalicular concentration, healthy in-vivo bile-acid initialization, raw CYP time-course reconstruction, CYP kinetic fitting, transporter-resolved BEI, canalicular geometry coupling, product-composition-to-one-cell initialization, donor-disjoint generative training, albumin translation and secretory-path kinetics, portal receptor, hormone-to-rate, in-situ zonal oxygen, zone-specific flux and predictive external validation remain blocked.",
+        "authoritative_scope": "Healthy PHH metabolic pools, unified fed/postabsorptive/prolonged-fast glycogen contexts, apparent ATP turnover, human zonation reference context with controlled-MPS oxygen evidence, postabsorptive blood-glucose perfusion boundary, measured peripheral endocrine observations, a causal liver-glycogen clamp benchmark, a non-interpolated human mixed-meal protocol, a source-locked PHH 3D-spheroid protocol with 12 independent cumulative-mean targets plus four descriptive overlap audits, a signed cumulative-to-window glucose operator, a six-batch 24-hour PHH albumin ELISA operator, 72 batch-resolved CYP SCR/MFR observations, five d8-TCA BEI observations, separate six-batch FACS/scRNA identity-composition surfaces, a seven-donor absolute proteome-mass reference, one same-cohort total-BSEP copy bridge, denominator-preserved human-liver MRP2 abundance, and four-donor day-7 human-SCH endogenous bile-acid endpoints with explicit identifiability gates. Reaction-level numerical parameter provenance is audited separately from pathway topology; the composed integrated fuel network remains exploratory unless every reaction, model context and held-out validation gate passes. Published hepatic glucose execution, model-lineage reproduction and its contextual external HGO comparison are shadow/diagnostic only. Runtime convex-surface geometry, closest points, overlap, membrane-domain labels, polygonal contact patches, enter/stay/exit contact inputs and bounded volume-preserving affine deformation are engine-authoritative. The normal snapshot contains one hepatocyte. Its active equivalent-size scale follows the normal-control human 3D median volume; the regular truncated-octahedron boundary and any diagnostic pair arrangement remain mathematical rather than donor morphometry. The 1% elastic-area cap is an explicit cross-system engineering bound equal to half the lower human-RBC lysis strain, not PHH rheology. Elapsed contact duration is not a causal input. Patch area may be computed from runtime geometry, while force, stiffness, adhesion, junction gating, mechanotransduction and biochemical effects remain blocked. Intercellular topology plus one measured PHH insulin-response chain are source-backed; receptor activation, Brian2 execution and generative-model coupling remain blocked. External evidence intake is manual-review-only. Dynamic proteostasis, macromolecular crowding, proteome-to-geometry mapping, canalicular surface and active transporter copies, transporter flux, raw donor-level bile-acid censoring, true canalicular concentration, healthy in-vivo bile-acid initialization, raw CYP time-course reconstruction, CYP kinetic fitting, transporter-resolved BEI, canalicular geometry coupling, product-composition-to-one-cell initialization, donor-disjoint generative training, albumin translation and secretory-path kinetics, portal receptor, hormone-to-rate, in-situ zonal oxygen, zone-specific flux and predictive external validation remain blocked.",
         "predictive": {
           "blockers": [
             "matched donor and nutritional state",
@@ -12169,6 +12170,9 @@
             "intercellular communication has no matched healthy-PHH exposure/receptor/response kinetics",
             "no Brian2 communication model has passed equation, unit, parameter and geometry gates",
             "no donor-held-out generative hepatocyte model artifact is available",
+            "integrated reaction authority: 34 of 36 reactions lack source-backed numerical parameterization",
+            "integrated reaction authority: network biological and experimental context match is not confirmed",
+            "integrated reaction authority: independent held-out validation is not confirmed",
             "model surface not predictive: albumin_secretory_pathway_kinetics",
             "model surface not predictive: external_phh_evidence_intake",
             "model surface not predictive: brian2_intercellular_execution",
@@ -12214,6 +12218,7 @@
             "generative modeling boundary enforces donor-disjoint data and quarantines synthetic cells",
             "no placeholder in authoritative PHH, ATP-turnover, or glucose-sinusoid surface",
             "compartment-correct postabsorptive blood glucose boundary",
+            "reaction-level authority firewall keeps the integrated fuel network exploratory (2/36 reactions source-backed)",
             "schematic and blocked model surfaces excluded from scientific validation"
           ],
           "passed": false,
@@ -12252,6 +12257,7 @@
             "generative modeling boundary enforces donor-disjoint data and quarantines synthetic cells",
             "no placeholder in authoritative PHH, ATP-turnover, or glucose-sinusoid surface",
             "compartment-correct postabsorptive blood glucose boundary",
+            "reaction-level authority firewall keeps the integrated fuel network exploratory (2/36 reactions source-backed)",
             "schematic and blocked model surfaces excluded from scientific validation"
           ],
           "passed": true,
@@ -17876,6 +17882,589 @@
       "profile_label": "Postabsorptive / overnight fast",
       "status": "source_backed_baseline_not_dynamic"
     },
+    "reaction_authority": {
+      "authority_counts": {
+        "fitted": 0,
+        "invalid": 0,
+        "placeholder": 0,
+        "source_backed": 2,
+        "unparameterized": 34
+      },
+      "blocked_reaction_ids": [
+        "glycogen_synthesis",
+        "glycogen_breakdown",
+        "glucose_export",
+        "glutaminase",
+        "alanine_transaminase",
+        "aspartate_transaminase",
+        "glutamate_dehydrogenase",
+        "lactate_dehydrogenase",
+        "pyruvate_carboxylase",
+        "pepck",
+        "lower_glycolysis_reverse",
+        "fructose_1_6_bisphosphatase",
+        "phosphoglucose_isomerase_reverse",
+        "glucose_6_phosphatase",
+        "hepatic_glucose_output",
+        "glycerol_kinase",
+        "glycerol_3_phosphate_dehydrogenase",
+        "triose_phosphate_condensation",
+        "beta_oxidation",
+        "thiolase",
+        "hmgcs2",
+        "hmgcl",
+        "bdh1_forward",
+        "bdh1_reverse",
+        "acetoacetate_decarboxylation",
+        "acetyl_coa_carboxylase",
+        "fatty_acid_synthase",
+        "malonyl_coa_decarboxylase",
+        "cpt1_beta_oxidation",
+        "cps1",
+        "otc",
+        "ass1",
+        "asl",
+        "arg1"
+      ],
+      "context_description": "Composed exploratory fuel network without a matched healthy-human PHH multi-pathway flux protocol.",
+      "context_match_confirmed": false,
+      "exploratory_execution_allowed": true,
+      "heldout_validation_confirmed": false,
+      "network_id": "integrated_hepatocyte_fuel_network_v1",
+      "parameter_provenance_coverage_fraction": 0.05555555555555555,
+      "parameter_provenance_documented_count": 2,
+      "policy": "A pathway or topology citation does not authorize its numerical rate. Quantitative validation requires source-backed parameter provenance for every reaction plus a confirmed biological/experimental context match. Predictive execution additionally requires independent held-out validation.",
+      "predictive_blockers": [
+        "34 of 36 reactions lack source-backed numerical parameterization",
+        "network biological and experimental context match is not confirmed",
+        "independent held-out validation is not confirmed"
+      ],
+      "predictive_execution_ready": false,
+      "reaction_count": 36,
+      "reactions": [
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "glycogen_synthesis",
+          "topology_source_id": "hepatic_glucose_control"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "glycogen_breakdown",
+          "topology_source_id": "hepatic_glucose_control"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "glucose_export",
+          "topology_source_id": "hepatic_glucose_control"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "glutaminase",
+          "topology_source_id": "glutamate_nitrogen_hub"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "alanine_transaminase",
+          "topology_source_id": "glutamate_nitrogen_hub"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "aspartate_transaminase",
+          "topology_source_id": "glutamate_nitrogen_hub"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "glutamate_dehydrogenase",
+          "topology_source_id": "liver_gdh_gluconeogenesis"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "lactate_dehydrogenase",
+          "topology_source_id": "hepatic_glucose_homeostasis"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "pyruvate_carboxylase",
+          "topology_source_id": "hepatic_glucose_homeostasis"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "pepck",
+          "topology_source_id": "gng_reciprocal_regulation"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "lower_glycolysis_reverse",
+          "topology_source_id": "hepatic_glucose_homeostasis"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "fructose_1_6_bisphosphatase",
+          "topology_source_id": "gng_reciprocal_regulation"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "phosphoglucose_isomerase_reverse",
+          "topology_source_id": "hepatic_glucose_homeostasis"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "glucose_6_phosphatase",
+          "topology_source_id": "gng_reciprocal_regulation"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "hepatic_glucose_output",
+          "topology_source_id": "hepatic_glucose_homeostasis"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "glycerol_kinase",
+          "topology_source_id": "glycerol_g3p_review"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "glycerol_3_phosphate_dehydrogenase",
+          "topology_source_id": "glycerol_g3p_review"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "triose_phosphate_condensation",
+          "topology_source_id": "glycerol_preferred_substrate"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "beta_oxidation",
+          "topology_source_id": "ketone_physiology"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "thiolase",
+          "topology_source_id": "hmgcs2_control"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "hmgcs2",
+          "topology_source_id": "hmgcs2_control"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "hmgcl",
+          "topology_source_id": "hmgcs2_control"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "bdh1_forward",
+          "topology_source_id": "ketone_redox_ratio"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "bdh1_reverse",
+          "topology_source_id": "ketone_redox_ratio"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "acetoacetate_decarboxylation",
+          "topology_source_id": "ketone_physiology"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "acetyl_coa_carboxylase",
+          "topology_source_id": "malonyl_coa_regulator_review"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "fatty_acid_synthase",
+          "topology_source_id": "malonyl_coa_regulator_review"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "malonyl_coa_decarboxylase",
+          "topology_source_id": "malonyl_coa_regulator_review"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "cpt1_beta_oxidation",
+          "topology_source_id": "malonyl_coa_cpt1"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "cps1",
+          "topology_source_id": "cps1_structure"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "otc",
+          "topology_source_id": "urea_cycle_textbook"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "ass1",
+          "topology_source_id": "urea_cycle_textbook"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "asl",
+          "topology_source_id": "urea_cycle_textbook"
+        },
+        {
+          "assumption_levels": [],
+          "authority": "unparameterized",
+          "blockers": [
+            "no numerical parameter provenance is registered"
+          ],
+          "eligible_for_context_matched_quantitative_use": false,
+          "parameter_count": 0,
+          "parameter_names": [],
+          "parameter_provenance_complete": false,
+          "parameter_source_ids": [],
+          "reaction_id": "arg1",
+          "topology_source_id": "urea_cycle_textbook"
+        },
+        {
+          "assumption_levels": [
+            "literature_derived"
+          ],
+          "authority": "source_backed",
+          "blockers": [],
+          "eligible_for_context_matched_quantitative_use": true,
+          "parameter_count": 1,
+          "parameter_names": [
+            "apparent_hepatic_atp_exchange_flux"
+          ],
+          "parameter_provenance_complete": true,
+          "parameter_source_ids": [
+            "human_liver_atp_synthesis_2008"
+          ],
+          "reaction_id": "atp_regeneration",
+          "topology_source_id": "human_liver_atp_synthesis_2008"
+        },
+        {
+          "assumption_levels": [
+            "literature_derived"
+          ],
+          "authority": "source_backed",
+          "blockers": [],
+          "eligible_for_context_matched_quantitative_use": true,
+          "parameter_count": 1,
+          "parameter_names": [
+            "apparent_hepatic_atp_exchange_flux"
+          ],
+          "parameter_provenance_complete": true,
+          "parameter_source_ids": [
+            "human_liver_atp_synthesis_2008"
+          ],
+          "reaction_id": "atp_maintenance",
+          "topology_source_id": "human_liver_atp_synthesis_2008"
+        }
+      ],
+      "runtime_role": "exploratory",
+      "scientific_validation_ready": false,
+      "source_backed_fraction": 0.05555555555555555,
+      "source_backed_parameterization_count": 2,
+      "status": "mixed_authority_exploratory",
+      "validation_blockers": [
+        "34 of 36 reactions lack source-backed numerical parameterization",
+        "network biological and experimental context match is not confirmed"
+      ]
+    },
     "regeneration_context": {
       "decision": {
         "anti_proliferative_brake_active": false,
@@ -18687,6 +19276,15 @@
             "primary_hepatocyte_isolation_metabolism_2018"
           ],
           "status": "blocked"
+        },
+        {
+          "action": "audit numerical parameter provenance separately from pathway topology; allow unsupported channels only in an explicitly exploratory runtime and fail closed for quantitative validation or prediction",
+          "default_snapshot_role": "reaction_level_validation_firewall",
+          "drives_scientific_validation": false,
+          "id": "integrated_reaction_authority",
+          "limitations": "A pathway citation does not identify the numerical rate used by the runtime. Source-backed parameterization, matched biological/experimental context and independent held-out validation are separate gates.",
+          "source_ids": [],
+          "status": "derived"
         },
         {
           "action": "replace pseudo-first-order magnitudes with fitted human fluxes",
