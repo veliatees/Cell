@@ -186,6 +186,28 @@ Correction:
 - all browser context snapshots expose the machine-generated `2 / 36` authority
   result instead of implying that the full network is quantitative.
 
+### 11. Related published reactions were being mistaken for transferable kinetics
+
+The Koenig human hepatic-glucose model contains literature kinetic constants
+and fitted `Vmax` values, but those values belong to its own equations, fixed
+cofactor assumptions, compartments, mean-liver context, and per-kilogram output
+scale. A shared enzyme name is not sufficient evidence for copying a number into
+the active single-cell network.
+
+Correction:
+
+- all 36 active reactions are mapped in one checksum-locked manifest;
+- the executable SBML is inspected reaction by reaction for exact
+  stoichiometry, direction, compartment, modifiers, kinetic symbols, boundary
+  species, and canonicalized MathML hash;
+- 12 active reactions have related published candidates;
+- only `glucose_export`, `phosphoglucose_isomerase_reverse`, and
+  `hepatic_glucose_output` share exact stoichiometry after explicit aliases;
+- none shares the complete symbolic law, validated per-cell scale, matched
+  healthy-PHH context, and held-out validation;
+- the transfer guard therefore activates `0 / 36` published parameter sets and
+  raises an error if code requests one prematurely.
+
 ## Current Authority Surface
 
 May drive quantitative validation:
