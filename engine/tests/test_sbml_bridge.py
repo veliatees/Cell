@@ -1,10 +1,19 @@
 from dataclasses import replace
 import unittest
 
-from cell_engine.io.sbml import RoadRunnerAdapter, load_sbml_subset, simulate_sbml_subset
+from cell_engine.io.sbml import (
+    RoadRunnerAdapter,
+    inspect_sbml_reaction_fingerprints,
+    load_sbml_subset,
+    simulate_sbml_subset,
+)
 from cell_engine.io.snapshots import build_snapshot
 from cell_engine.processes.hepatocyte import build_hepatocyte_definition, initial_hepatocyte_state
 from cell_engine.processes.sbml_subnetwork import DEFAULT_SBML_MODEL, apply_sbml_subnetwork
+from cell_engine.quantitative.published_glucose_model import (
+    EXECUTABLE_MODEL_PATH,
+    OFFICIAL_MODEL_PATH,
+)
 from cell_engine.validation.invariants import validate_state
 
 
@@ -64,7 +73,34 @@ class SbmlBridgeTests(unittest.TestCase):
         self.assertIsInstance(adapter.available, bool)
         self.assertEqual(adapter.module_name, "roadrunner")
 
+    def test_reaction_fingerprints_preserve_published_mathml_identity(self) -> None:
+        fingerprints = {
+            item.reaction_id: item
+            for item in inspect_sbml_reaction_fingerprints(EXECUTABLE_MODEL_PATH)
+        }
+        self.assertEqual(len(fingerprints), 36)
+        glut2 = fingerprints["GLUT2"]
+        self.assertTrue(glut2.reversible)
+        self.assertEqual(glut2.compartment_id, "pm")
+        self.assertEqual(glut2.reactants[0].species_id, "glc_ext")
+        self.assertTrue(glut2.reactants[0].boundary_condition)
+        self.assertEqual(glut2.products[0].species_id, "glc")
+        self.assertEqual(
+            glut2.kinetic_math_sha256,
+            "1f33d7fb20d1cfba550460e059dfd2abe8fdb0dc1e1c4a7f4a20be25da35799f",
+        )
+        self.assertEqual(
+            glut2.kinetic_parameter_ids,
+            ("f_gly", "GLUT2_Vmax", "GLUT2_k_glc", "GLUT2_keq"),
+        )
+        self.assertEqual(glut2.boundary_species_ids, ("glc_ext",))
+
+    def test_official_nonkinetic_supplement_has_null_equation_digests(self) -> None:
+        fingerprints = inspect_sbml_reaction_fingerprints(OFFICIAL_MODEL_PATH)
+        self.assertEqual(len(fingerprints), 36)
+        self.assertTrue(all(not item.kinetic_law_present for item in fingerprints))
+        self.assertTrue(all(item.kinetic_math_sha256 is None for item in fingerprints))
+
 
 if __name__ == "__main__":
     unittest.main()
-

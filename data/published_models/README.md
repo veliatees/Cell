@@ -52,3 +52,23 @@ MATLAB-to-SBML technical parity with a maximum absolute error of `1.377e-9`.
 The paper legend and later repository code specify different glucose and
 glycogen grids. Exact publication-artifact equivalence therefore remains
 unresolved, and all model-lineage results remain disconnected from cell state.
+
+## Reaction Transfer Manifest
+
+`koenig2012_reaction_transfer_manifest.json` maps every reaction in the active
+36-channel integrated fuel network to the pinned executable model. The runtime
+audit verifies candidate identities against the model checksum, extracts exact
+stoichiometry, compartments, parameter symbols and canonicalized MathML
+digests, and rejects an incomplete or stale mapping.
+
+Current audited result:
+
+- `12 / 36` active reactions have one or more related published candidates;
+- `3 / 36` have identical stoichiometry after explicit species aliases;
+- `0 / 36` match the complete symbolic law, per-cell unit scale and healthy-PHH
+  context;
+- `0 / 36` published parameter transfers are activated.
+
+This file is a transfer firewall, not a parameter table. In particular, the
+publication's fitted per-kilogram `Vmax` values are not relabeled as direct
+single-hepatocyte measurements.

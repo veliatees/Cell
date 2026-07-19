@@ -30,6 +30,7 @@ class Reaction:
     source_id: str = ""
     notes: str = ""
     parameter_provenance: tuple[ParameterProvenance, ...] = ()
+    rate_law_family: str = "custom_callable"
 
     def net_change(self) -> dict[str, int]:
         delta: dict[str, int] = {}
@@ -99,13 +100,14 @@ def mass_action(
         return c * combinatorial
 
     return Reaction(
-        reaction_id,
-        dict(reactants),
-        dict(products),
-        propensity,
-        source_id,
-        notes,
-        _normalize_parameter_provenance(parameter_provenance),
+        id=reaction_id,
+        reactants=dict(reactants),
+        products=dict(products),
+        propensity=propensity,
+        source_id=source_id,
+        notes=notes,
+        parameter_provenance=_normalize_parameter_provenance(parameter_provenance),
+        rate_law_family="mass_action",
     )
 
 
@@ -162,13 +164,14 @@ def michaelis_menten(
         return velocity * scale  # molecules/s
 
     return Reaction(
-        reaction_id,
-        dict(reactants),
-        dict(products),
-        propensity,
-        source_id,
-        notes,
-        _normalize_parameter_provenance(parameter_provenance),
+        id=reaction_id,
+        reactants=dict(reactants),
+        products=dict(products),
+        propensity=propensity,
+        source_id=source_id,
+        notes=notes,
+        parameter_provenance=_normalize_parameter_provenance(parameter_provenance),
+        rate_law_family="michaelis_menten_or_hill",
     )
 
 

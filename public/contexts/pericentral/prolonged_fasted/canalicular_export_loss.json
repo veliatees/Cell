@@ -1499,7 +1499,7 @@
     "zone": "pericentral"
   },
   "metadata": {
-    "created_at_utc": "2026-07-19T15:28:15.424348+00:00",
+    "created_at_utc": "2026-07-19T21:36:00.172550+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -3274,6 +3274,14 @@
         "source_type": "primary_model",
         "title": "Koenig et al. 2012 Dataset S2: SBML model",
         "url": "https://journals.plos.org/ploscompbiol/article/file?type=supplementary&id=info:doi/10.1371/journal.pcbi.1002577.s002"
+      },
+      "koenig2012_text_s2_kinetic_parameters": {
+        "date_verified": "2026-07-19",
+        "id": "koenig2012_text_s2_kinetic_parameters",
+        "notes": "Official supporting text containing kinetic equations, literature parameter references and fitted model Vmax values. Values are model-context parameters, not direct single-PHH rate constants.",
+        "source_type": "primary_supplement",
+        "title": "Koenig et al. 2012 Text S2: kinetic equations and parameters",
+        "url": "https://doi.org/10.1371/journal.pcbi.1002577.s013"
       },
       "koenig_glucose_glycogen_figure_script": {
         "date_verified": "2026-07-13",
@@ -9578,6 +9586,1392 @@
       "status": "engine_geometry_molecular_match_signal_transport_fail_closed",
       "version": "hepatocyte_intercellular_communication_v4"
     },
+    "kinetic_transfer": {
+      "activated_reaction_ids": [],
+      "activated_transfer_count": 0,
+      "active_reaction_count": 36,
+      "biological_context_match_count": 0,
+      "exact_stoichiometry_match_count": 3,
+      "exact_stoichiometry_reaction_ids": [
+        "glucose_export",
+        "phosphoglucose_isomerase_reverse",
+        "hepatic_glucose_output"
+      ],
+      "exact_symbolic_rate_law_match_count": 0,
+      "limitations": [
+        "The published model is a mean human-liver glucose model, not a donor-, zone- or single-cell-resolved PHH experiment.",
+        "Published Vmax values are fitted model quantities on a per-kilogram scale and are not direct per-cell measurements.",
+        "Three active channels share exact stoichiometry with a published reversible reaction after aliases, but none shares the full symbolic rate law, unit scale and context.",
+        "No published parameter is activated in the integrated network by this audit."
+      ],
+      "mapped_active_reaction_ids": [
+        "glycogen_synthesis",
+        "glycogen_breakdown",
+        "glucose_export",
+        "lactate_dehydrogenase",
+        "pyruvate_carboxylase",
+        "pepck",
+        "lower_glycolysis_reverse",
+        "fructose_1_6_bisphosphatase",
+        "phosphoglucose_isomerase_reverse",
+        "glucose_6_phosphatase",
+        "hepatic_glucose_output",
+        "triose_phosphate_condensation"
+      ],
+      "mapped_candidate_count": 12,
+      "outside_source_scope_count": 24,
+      "per_cell_unit_bridge_ready_count": 0,
+      "policy": {
+        "automatic_parameter_activation": false,
+        "exact_compartment_semantics_required": true,
+        "exact_stoichiometry_required": true,
+        "exact_symbolic_rate_law_required": true,
+        "independent_heldout_validation_required_for_prediction": true,
+        "matched_experimental_context_required": true,
+        "per_cell_unit_bridge_required": true
+      },
+      "reactions": [
+        {
+          "active_reaction_id": "glycogen_synthesis",
+          "biological_context_match": false,
+          "blockers": [
+            "reactants/products and stoichiometric coefficients are not identical",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "candidate_reaction_ids": [
+            "GS"
+          ],
+          "candidates": [
+            {
+              "boundary_species_ids": [],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "f04027e270c8c63689fd1ac29ffd4a3ce7ea92079869a7ba711f884eea327b4a",
+              "kinetic_parameter_ids": [
+                "gamma",
+                "GSn",
+                "GSp"
+              ],
+              "kinetic_species_ids": [],
+              "matching_orientation": null,
+              "model_reaction_id": "GS",
+              "name": "Glycogen synthase",
+              "reversible": false
+            }
+          ],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "mass_action",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The active lump starts from free glucose; GS starts from UDP-glucose and retains nucleotide chemistry.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "single_reaction_candidate",
+          "source_compartment_matches_runtime_volume": true,
+          "species_aliases": {
+            "glucose_cyto": "glc",
+            "glycogen": "glyglc"
+          },
+          "status": "blocked_stoichiometry_mismatch"
+        },
+        {
+          "active_reaction_id": "glycogen_breakdown",
+          "biological_context_match": false,
+          "blockers": [
+            "reactants/products and stoichiometric coefficients are not identical",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "candidate_reaction_ids": [
+            "GP"
+          ],
+          "candidates": [
+            {
+              "boundary_species_ids": [],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "de8266cc01ddf7dd5c9984e1baa02a4b76dbecb79c45295ccd7d4480e5960f2e",
+              "kinetic_parameter_ids": [
+                "gamma",
+                "GPn",
+                "GPp"
+              ],
+              "kinetic_species_ids": [],
+              "matching_orientation": null,
+              "model_reaction_id": "GP",
+              "name": "Glycogen-Phosphorylase",
+              "reversible": true
+            }
+          ],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "mass_action",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The active lump produces free glucose; GP produces glucose-1-phosphate and includes phosphate/water chemistry.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "single_reaction_candidate",
+          "source_compartment_matches_runtime_volume": true,
+          "species_aliases": {
+            "glucose_cyto": "glc",
+            "glycogen": "glyglc"
+          },
+          "status": "blocked_stoichiometry_mismatch"
+        },
+        {
+          "active_reaction_id": "glucose_export",
+          "biological_context_match": false,
+          "blockers": [
+            "source compartment semantics do not match the active shared-cytosol runtime",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "candidate_reaction_ids": [
+            "GLUT2"
+          ],
+          "candidates": [
+            {
+              "boundary_species_ids": [
+                "glc_ext"
+              ],
+              "compartment_id": "pm",
+              "exact_stoichiometry": true,
+              "kinetic_math_sha256": "1f33d7fb20d1cfba550460e059dfd2abe8fdb0dc1e1c4a7f4a20be25da35799f",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "GLUT2_Vmax",
+                "GLUT2_k_glc",
+                "GLUT2_keq"
+              ],
+              "kinetic_species_ids": [
+                "glc_ext",
+                "glc"
+              ],
+              "matching_orientation": "reverse",
+              "model_reaction_id": "GLUT2",
+              "name": "GLUT2 glucose transporter",
+              "reversible": true
+            }
+          ],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "mass_action",
+          "exact_stoichiometry_match": true,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Reverse GLUT2 stoichiometry matches after aliases, but membrane compartment and reversible saturable kinetics are absent from the active channel.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "single_reaction_candidate",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {
+            "glucose_blood": "glc_ext",
+            "glucose_cyto": "glc"
+          },
+          "status": "blocked_after_topology_match"
+        },
+        {
+          "active_reaction_id": "glutaminase",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Nitrogen and amino-acid metabolism are outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "alanine_transaminase",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Alanine transamination is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "aspartate_transaminase",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Aspartate transamination is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "glutamate_dehydrogenase",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Glutamate dehydrogenase is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "lactate_dehydrogenase",
+          "biological_context_match": false,
+          "blockers": [
+            "reactants/products and stoichiometric coefficients are not identical",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "candidate_reaction_ids": [
+            "LDH"
+          ],
+          "candidates": [
+            {
+              "boundary_species_ids": [
+                "nadh",
+                "nad"
+              ],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "e182518d32df2ca52339e06ade98d87cb465398b24134a731d65fd03fba87745",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "LDH_Vmax",
+                "LDH_k_pyr",
+                "LDH_k_nadh",
+                "LDH_keq",
+                "LDH_k_lac",
+                "LDH_k_nad"
+              ],
+              "kinetic_species_ids": [
+                "pyr",
+                "nadh",
+                "lac",
+                "nad"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "LDH",
+              "name": "Lactate Dehydrogenase",
+              "reversible": true
+            }
+          ],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The active forward channel omits proton bookkeeping and the published reversible multi-substrate rate law.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "single_reaction_candidate",
+          "source_compartment_matches_runtime_volume": true,
+          "species_aliases": {
+            "NADH": "nadh",
+            "NAD_plus": "nad",
+            "lactate": "lac",
+            "pyruvate": "pyr"
+          },
+          "status": "blocked_stoichiometry_mismatch"
+        },
+        {
+          "active_reaction_id": "pyruvate_carboxylase",
+          "biological_context_match": false,
+          "blockers": [
+            "reactants/products and stoichiometric coefficients are not identical",
+            "source compartment semantics do not match the active shared-cytosol runtime",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "candidate_reaction_ids": [
+            "PC"
+          ],
+          "candidates": [
+            {
+              "boundary_species_ids": [
+                "atp_mito",
+                "co2_mito",
+                "acoa_mito"
+              ],
+              "compartment_id": "mito",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "06b5a1b68b654a135a1b149aa4273c14ae0ed504739d8c65e80fac5fc364f1cb",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "PC_Vmax",
+                "PC_k_atp",
+                "PC_k_pyr",
+                "PC_k_co2",
+                "PC_n",
+                "PC_k_acoa"
+              ],
+              "kinetic_species_ids": [
+                "atp_mito",
+                "pyr_mito",
+                "co2_mito",
+                "acoa_mito"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "PC",
+              "name": "Pyruvate Carboxylase",
+              "reversible": false
+            }
+          ],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The active channel omits mitochondrial CO2, water, phosphate, proton and acetyl-CoA activation terms.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "single_reaction_candidate",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {
+            "ADP": "adp_mito",
+            "ATP": "atp_mito",
+            "oxaloacetate": "oaa_mito",
+            "pyruvate": "pyr_mito"
+          },
+          "status": "blocked_stoichiometry_mismatch"
+        },
+        {
+          "active_reaction_id": "pepck",
+          "biological_context_match": false,
+          "blockers": [
+            "reactants/products and stoichiometric coefficients are not identical",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "candidate_reaction_ids": [
+            "PEPCK"
+          ],
+          "candidates": [
+            {
+              "boundary_species_ids": [
+                "co2"
+              ],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "7c300a0c0bc90a103bacfee560c3e1105bf814072534e71d297878aedebec333",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "PEPCK_Vmax",
+                "PEPCK_k_oaa",
+                "PEPCK_k_gtp",
+                "PEPCK_keq",
+                "PEPCK_k_pep",
+                "PEPCK_k_gdp",
+                "PEPCK_k_co2"
+              ],
+              "kinetic_species_ids": [
+                "oaa",
+                "gtp",
+                "pep",
+                "gdp",
+                "co2"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "PEPCK",
+              "name": "PEPCK cyto",
+              "reversible": true
+            }
+          ],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The active ATP/ADP approximation is not the published GTP/GDP plus CO2 reaction.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "single_reaction_candidate",
+          "source_compartment_matches_runtime_volume": true,
+          "species_aliases": {
+            "ADP": "adp",
+            "ATP": "atp",
+            "oxaloacetate": "oaa",
+            "phosphoenolpyruvate": "pep"
+          },
+          "status": "blocked_stoichiometry_mismatch"
+        },
+        {
+          "active_reaction_id": "lower_glycolysis_reverse",
+          "biological_context_match": false,
+          "blockers": [
+            "one active event collapses multiple published reactions and intermediate pools",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "candidate_reaction_ids": [
+            "EN",
+            "PGM",
+            "PGK",
+            "GAPDH",
+            "TPI",
+            "ALD"
+          ],
+          "candidates": [
+            {
+              "boundary_species_ids": [],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "eaeaec8ef2f44c0adce8e5035865f2368704c1dedcef36557e14e1bd9d2132d7",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "EN_Vmax",
+                "EN_keq",
+                "EN_k_pg2",
+                "EN_k_pep"
+              ],
+              "kinetic_species_ids": [
+                "pg2",
+                "pep"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "EN",
+              "name": "2-Phospho-D-glucerate hydro-lyase (enolase)",
+              "reversible": true
+            },
+            {
+              "boundary_species_ids": [],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "e8e17d4a844655e46e2c301f3f6027ea8eba4685b9c55bdc0cd624c3f337efc6",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "PGM_Vmax",
+                "PGM_keq",
+                "PGM_k_pg3",
+                "PGM_k_pg2"
+              ],
+              "kinetic_species_ids": [
+                "pg3",
+                "pg2"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "PGM",
+              "name": "2-Phospho-D-glycerate 2,3-phosphomutase",
+              "reversible": true
+            },
+            {
+              "boundary_species_ids": [
+                "adp",
+                "atp"
+              ],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "d6ec22c6d2d45de28b3f6d87805e62822193e19777ec99e9eddcaeae07ae75f6",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "PGK_Vmax",
+                "PGK_k_adp",
+                "PGK_k_bpg13",
+                "PGK_keq",
+                "PGK_k_atp",
+                "PGK_k_pg3"
+              ],
+              "kinetic_species_ids": [
+                "adp",
+                "bpg13",
+                "atp",
+                "pg3"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "PGK",
+              "name": "Phosphoglycerate Kinase",
+              "reversible": true
+            },
+            {
+              "boundary_species_ids": [
+                "nad",
+                "phos",
+                "nadh"
+              ],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "882348bfbff7bdf4fadddf0235689994b144701fc2188280e7a4107615884bdd",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "GAPDH_Vmax",
+                "GAPDH_k_nad",
+                "GAPDH_k_grap",
+                "GAPDH_k_phos",
+                "GAPDH_keq",
+                "GAPDH_k_nadh",
+                "GAPDH_k_bpg13"
+              ],
+              "kinetic_species_ids": [
+                "nad",
+                "grap",
+                "phos",
+                "bpg13",
+                "nadh"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "GAPDH",
+              "name": "D-Glyceraldehyde-3-phosphate:NAD+ oxidoreductase",
+              "reversible": true
+            },
+            {
+              "boundary_species_ids": [],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "4e8032562cbdc1c8aa43693459c51ab98d246fbb71881b6894cc56e2f3a0fad7",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "TPI_Vmax",
+                "TPI_k_dhap",
+                "TPI_keq",
+                "TPI_k_grap"
+              ],
+              "kinetic_species_ids": [
+                "dhap",
+                "grap"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "TPI",
+              "name": "Triosephosphate Isomerase",
+              "reversible": true
+            },
+            {
+              "boundary_species_ids": [],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "e0562f2c058b3503080d5c435ba7a5eed1a597e4bdfdbc9494d1c989c1c76ede",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "ALD_Vmax",
+                "ALD_k_fru16bp",
+                "ALD_keq",
+                "ALD_ki1_grap",
+                "ALD_k_grap",
+                "ALD_k_dhap",
+                "ALD_ki2_grap"
+              ],
+              "kinetic_species_ids": [
+                "fru16bp",
+                "grap",
+                "dhap"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "ALD",
+              "name": "Aldolase",
+              "reversible": true
+            }
+          ],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "One active event collapses six separately parameterized reversible steps and intermediate pools.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "multi_reaction_lump",
+          "source_compartment_matches_runtime_volume": true,
+          "species_aliases": {
+            "ADP": "adp",
+            "ATP": "atp",
+            "NADH": "nadh",
+            "NAD_plus": "nad",
+            "fructose_1_6_bisphosphate": "fru16bp",
+            "phosphoenolpyruvate": "pep"
+          },
+          "status": "blocked_lumped_reaction"
+        },
+        {
+          "active_reaction_id": "fructose_1_6_bisphosphatase",
+          "biological_context_match": false,
+          "blockers": [
+            "reactants/products and stoichiometric coefficients are not identical",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "candidate_reaction_ids": [
+            "FBP1"
+          ],
+          "candidates": [
+            {
+              "boundary_species_ids": [],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "7b4dca8e3d0c328b44e492541ff32d23deaea287d991a7d1c30f13aaff86551f",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "FBP1_Vmax",
+                "FBP1_ki_fru26bp",
+                "FBP1_k_fru16bp"
+              ],
+              "kinetic_species_ids": [
+                "fru26bp",
+                "fru16bp"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "FBP1",
+              "name": "D-Fructose-1,6-bisphosphate 1-phosphohydrolase",
+              "reversible": false
+            }
+          ],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The active channel omits water, phosphate and fructose-2,6-bisphosphate inhibition.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "single_reaction_candidate",
+          "source_compartment_matches_runtime_volume": true,
+          "species_aliases": {
+            "fructose_1_6_bisphosphate": "fru16bp",
+            "fructose_6_phosphate": "fru6p"
+          },
+          "status": "blocked_stoichiometry_mismatch"
+        },
+        {
+          "active_reaction_id": "phosphoglucose_isomerase_reverse",
+          "biological_context_match": false,
+          "blockers": [
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "candidate_reaction_ids": [
+            "GPI"
+          ],
+          "candidates": [
+            {
+              "boundary_species_ids": [],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": true,
+              "kinetic_math_sha256": "8d9b87121a13202af1b00929487c01bdb22f0bd0cbbb37c26965ef18ff6b6c4e",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "GPI_Vmax",
+                "GPI_k_glc6p",
+                "GPI_keq",
+                "GPI_k_fru6p"
+              ],
+              "kinetic_species_ids": [
+                "glc6p",
+                "fru6p"
+              ],
+              "matching_orientation": "reverse",
+              "model_reaction_id": "GPI",
+              "name": "D-Glucose-6-phosphate Isomerase",
+              "reversible": true
+            }
+          ],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": true,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Reverse stoichiometry matches, but the active one-way callable is not the published reversible convenience rate law.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "single_reaction_candidate",
+          "source_compartment_matches_runtime_volume": true,
+          "species_aliases": {
+            "fructose_6_phosphate": "fru6p",
+            "glucose_6_phosphate": "glc6p"
+          },
+          "status": "blocked_after_topology_match"
+        },
+        {
+          "active_reaction_id": "glucose_6_phosphatase",
+          "biological_context_match": false,
+          "blockers": [
+            "reactants/products and stoichiometric coefficients are not identical",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "candidate_reaction_ids": [
+            "G6PASE"
+          ],
+          "candidates": [
+            {
+              "boundary_species_ids": [],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "ed00ba57abe9f4f642943a91fbd3a5878739a43b2cd2e5453f508f298d4215c3",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "G6PASE_Vmax",
+                "G6PASE_k_glc6p"
+              ],
+              "kinetic_species_ids": [
+                "glc6p"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "G6PASE",
+              "name": "D-Glucose-6-phosphate Phosphatase",
+              "reversible": false
+            }
+          ],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The active channel omits water and phosphate and does not reproduce the published saturation law.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "single_reaction_candidate",
+          "source_compartment_matches_runtime_volume": true,
+          "species_aliases": {
+            "glucose": "glc",
+            "glucose_6_phosphate": "glc6p"
+          },
+          "status": "blocked_stoichiometry_mismatch"
+        },
+        {
+          "active_reaction_id": "hepatic_glucose_output",
+          "biological_context_match": false,
+          "blockers": [
+            "source compartment semantics do not match the active shared-cytosol runtime",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "candidate_reaction_ids": [
+            "GLUT2"
+          ],
+          "candidates": [
+            {
+              "boundary_species_ids": [
+                "glc_ext"
+              ],
+              "compartment_id": "pm",
+              "exact_stoichiometry": true,
+              "kinetic_math_sha256": "1f33d7fb20d1cfba550460e059dfd2abe8fdb0dc1e1c4a7f4a20be25da35799f",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "GLUT2_Vmax",
+                "GLUT2_k_glc",
+                "GLUT2_keq"
+              ],
+              "kinetic_species_ids": [
+                "glc_ext",
+                "glc"
+              ],
+              "matching_orientation": "reverse",
+              "model_reaction_id": "GLUT2",
+              "name": "GLUT2 glucose transporter",
+              "reversible": true
+            }
+          ],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": true,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Reverse GLUT2 stoichiometry matches after aliases, but membrane compartment and reversible saturable kinetics are absent from the active channel.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "single_reaction_candidate",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {
+            "glucose": "glc",
+            "glucose_blood": "glc_ext"
+          },
+          "status": "blocked_after_topology_match"
+        },
+        {
+          "active_reaction_id": "glycerol_kinase",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Glycerol entry is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "glycerol_3_phosphate_dehydrogenase",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Glycerol-3-phosphate metabolism is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "triose_phosphate_condensation",
+          "biological_context_match": false,
+          "blockers": [
+            "one active event collapses multiple published reactions and intermediate pools",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "candidate_reaction_ids": [
+            "TPI",
+            "ALD"
+          ],
+          "candidates": [
+            {
+              "boundary_species_ids": [],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "4e8032562cbdc1c8aa43693459c51ab98d246fbb71881b6894cc56e2f3a0fad7",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "TPI_Vmax",
+                "TPI_k_dhap",
+                "TPI_keq",
+                "TPI_k_grap"
+              ],
+              "kinetic_species_ids": [
+                "dhap",
+                "grap"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "TPI",
+              "name": "Triosephosphate Isomerase",
+              "reversible": true
+            },
+            {
+              "boundary_species_ids": [],
+              "compartment_id": "cyto",
+              "exact_stoichiometry": false,
+              "kinetic_math_sha256": "e0562f2c058b3503080d5c435ba7a5eed1a597e4bdfdbc9494d1c989c1c76ede",
+              "kinetic_parameter_ids": [
+                "f_gly",
+                "ALD_Vmax",
+                "ALD_k_fru16bp",
+                "ALD_keq",
+                "ALD_ki1_grap",
+                "ALD_k_grap",
+                "ALD_k_dhap",
+                "ALD_ki2_grap"
+              ],
+              "kinetic_species_ids": [
+                "fru16bp",
+                "grap",
+                "dhap"
+              ],
+              "matching_orientation": null,
+              "model_reaction_id": "ALD",
+              "name": "Aldolase",
+              "reversible": true
+            }
+          ],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The active 2-DHAP lump removes glyceraldehyde-3-phosphate and combines TPI with aldolase.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "multi_reaction_lump",
+          "source_compartment_matches_runtime_volume": true,
+          "species_aliases": {
+            "dihydroxyacetone_phosphate": "dhap",
+            "fructose_1_6_bisphosphate": "fru16bp"
+          },
+          "status": "blocked_lumped_reaction"
+        },
+        {
+          "active_reaction_id": "beta_oxidation",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Fatty-acid oxidation is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "thiolase",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Ketogenesis is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "hmgcs2",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Ketogenesis is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "hmgcl",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Ketogenesis is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "bdh1_forward",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Ketone redox interconversion is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "bdh1_reverse",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Ketone redox interconversion is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "acetoacetate_decarboxylation",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Acetoacetate decarboxylation is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "acetyl_coa_carboxylase",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "De-novo lipogenesis is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "fatty_acid_synthase",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "De-novo lipogenesis is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "malonyl_coa_decarboxylase",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "Malonyl-CoA clearance is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "cpt1_beta_oxidation",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "custom_callable",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "CPT1 control and beta oxidation are outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "cps1",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "michaelis_menten_or_hill",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The urea cycle is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "otc",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "mass_action",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The urea cycle is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "ass1",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "mass_action",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The urea cycle is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "asl",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "mass_action",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The urea cycle is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "arg1",
+          "biological_context_match": false,
+          "blockers": [
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "unparameterized",
+          "current_rate_law_family": "mass_action",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "The urea cycle is outside the published glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "blocked_outside_source_scope"
+        },
+        {
+          "active_reaction_id": "atp_regeneration",
+          "biological_context_match": false,
+          "blockers": [
+            "published-model transfer is not applicable to this separately sourced channel"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "source_backed",
+          "current_rate_law_family": "mass_action",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "This apparent ATP-turnover channel has separate literature provenance and is not transferred from the glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "current_source_backed_outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "not_applicable_current_parameterization_retained"
+        },
+        {
+          "active_reaction_id": "atp_maintenance",
+          "biological_context_match": false,
+          "blockers": [
+            "published-model transfer is not applicable to this separately sourced channel"
+          ],
+          "candidate_reaction_ids": [],
+          "candidates": [],
+          "current_authority": "source_backed",
+          "current_rate_law_family": "mass_action",
+          "exact_stoichiometry_match": false,
+          "exact_symbolic_rate_law_match": false,
+          "heldout_validation_confirmed": false,
+          "note": "This matched ATP-demand channel has separate literature provenance and is not transferred from the glucose model.",
+          "parameter_activation_allowed": false,
+          "per_cell_unit_bridge_ready": false,
+          "relationship": "current_source_backed_outside_source_scope",
+          "source_compartment_matches_runtime_volume": false,
+          "species_aliases": {},
+          "status": "not_applicable_current_parameterization_retained"
+        }
+      ],
+      "relationship_counts": {
+        "current_source_backed_outside_source_scope": 2,
+        "multi_reaction_lump": 2,
+        "outside_source_scope": 22,
+        "single_reaction_candidate": 10
+      },
+      "source_ids": [
+        "koenig2012_hepatic_glucose_model",
+        "koenig2012_author_executable_reencoding",
+        "koenig2012_text_s2_kinetic_parameters"
+      ],
+      "source_model": {
+        "biological_context": "published mean human liver/hepatocyte glucose-metabolism model",
+        "parameter_authority": "literature kinetic constants plus whole-model fitted Vmax values",
+        "path": "models/sbml/koenig2012_hepatic_glucose_executable.xml",
+        "reported_flux_scale": "umol_per_min_per_kg_body_mass",
+        "sha256": "5091963c02f39cf00ae02b4fca9362af5f43544851f75b7e17768c7fc56835a3",
+        "source_ids": [
+          "koenig2012_hepatic_glucose_model",
+          "koenig2012_author_executable_reencoding",
+          "koenig2012_text_s2_kinetic_parameters"
+        ]
+      },
+      "source_model_kinetic_law_count": 36,
+      "source_model_reaction_count": 36,
+      "status": "blocked_no_equation_level_transfer",
+      "target_network": {
+        "biological_context": "exploratory single-hepatocyte multi-pathway network",
+        "id": "integrated_hepatocyte_fuel_network_v1",
+        "runtime_compartment": "one shared cytosolic volume",
+        "runtime_rate_unit": "molecules_per_second"
+      },
+      "version": "published_reaction_kinetic_transfer_audit_v1"
+    },
     "membrane_state": {
       "channel_open_probability": 0.056942138340477205,
       "cytosolic_ca": 0.027672910490691923,
@@ -9788,12 +11182,13 @@
         "phh_baseline",
         "integrated_metabolism",
         "reaction_authority",
+        "kinetic_transfer",
         "genome.reference_assembly",
         "spatial_state",
         "spatial_world",
         "physical_validation"
       ],
-      "policy": "quantitative_state wins on overlapping species; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+      "policy": "quantitative_state wins on overlapping species; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
       "primary_state_path": "quantitative_state",
       "runtime_authoritative_sections": [
         "spatial_state",
@@ -12809,7 +14204,7 @@
         "whole_cell_transport_flux_ready": false
       },
       "scientific_release": {
-        "authoritative_scope": "Healthy PHH metabolic pools, unified fed/postabsorptive/prolonged-fast glycogen contexts, apparent ATP turnover, human zonation reference context with controlled-MPS oxygen evidence, postabsorptive blood-glucose perfusion boundary, measured peripheral endocrine observations, a causal liver-glycogen clamp benchmark, a non-interpolated human mixed-meal protocol, a source-locked PHH 3D-spheroid protocol with 12 independent cumulative-mean targets plus four descriptive overlap audits, a signed cumulative-to-window glucose operator, a six-batch 24-hour PHH albumin ELISA operator, 72 batch-resolved CYP SCR/MFR observations, five d8-TCA BEI observations, separate six-batch FACS/scRNA identity-composition surfaces, a seven-donor absolute proteome-mass reference, one same-cohort total-BSEP copy bridge, denominator-preserved human-liver MRP2 abundance, and four-donor day-7 human-SCH endogenous bile-acid endpoints with explicit identifiability gates. Reaction-level numerical parameter provenance is audited separately from pathway topology; the composed integrated fuel network remains exploratory unless every reaction, model context and held-out validation gate passes. Published hepatic glucose execution, model-lineage reproduction and its contextual external HGO comparison are shadow/diagnostic only. Runtime convex-surface geometry, closest points, overlap, membrane-domain labels, polygonal contact patches, enter/stay/exit contact inputs and bounded volume-preserving affine deformation are engine-authoritative. The normal snapshot contains one hepatocyte. Its active equivalent-size scale follows the normal-control human 3D median volume; the regular truncated-octahedron boundary and any diagnostic pair arrangement remain mathematical rather than donor morphometry. The 1% elastic-area cap is an explicit cross-system engineering bound equal to half the lower human-RBC lysis strain, not PHH rheology. Elapsed contact duration is not a causal input. Patch area may be computed from runtime geometry, while force, stiffness, adhesion, junction gating, mechanotransduction and biochemical effects remain blocked. Intercellular topology plus one measured PHH insulin-response chain are source-backed; receptor activation, Brian2 execution and generative-model coupling remain blocked. External evidence intake is manual-review-only. Dynamic proteostasis, macromolecular crowding, proteome-to-geometry mapping, canalicular surface and active transporter copies, transporter flux, raw donor-level bile-acid censoring, true canalicular concentration, healthy in-vivo bile-acid initialization, raw CYP time-course reconstruction, CYP kinetic fitting, transporter-resolved BEI, canalicular geometry coupling, product-composition-to-one-cell initialization, donor-disjoint generative training, albumin translation and secretory-path kinetics, portal receptor, hormone-to-rate, in-situ zonal oxygen, zone-specific flux and predictive external validation remain blocked.",
+        "authoritative_scope": "Healthy PHH metabolic pools, unified fed/postabsorptive/prolonged-fast glycogen contexts, apparent ATP turnover, human zonation reference context with controlled-MPS oxygen evidence, postabsorptive blood-glucose perfusion boundary, measured peripheral endocrine observations, a causal liver-glycogen clamp benchmark, a non-interpolated human mixed-meal protocol, a source-locked PHH 3D-spheroid protocol with 12 independent cumulative-mean targets plus four descriptive overlap audits, a signed cumulative-to-window glucose operator, a six-batch 24-hour PHH albumin ELISA operator, 72 batch-resolved CYP SCR/MFR observations, five d8-TCA BEI observations, separate six-batch FACS/scRNA identity-composition surfaces, a seven-donor absolute proteome-mass reference, one same-cohort total-BSEP copy bridge, denominator-preserved human-liver MRP2 abundance, and four-donor day-7 human-SCH endogenous bile-acid endpoints with explicit identifiability gates. Reaction-level numerical parameter provenance is audited separately from pathway topology; the composed integrated fuel network remains exploratory unless every reaction, model context and held-out validation gate passes. A checksum-locked equation-level transfer audit maps all 36 active reactions against the published hepatic-glucose SBML and activates no fitted parameter without exact stoichiometry, compartment, symbolic law, per-cell units, matched PHH context and validation. Published hepatic glucose execution, model-lineage reproduction and its contextual external HGO comparison are shadow/diagnostic only. Runtime convex-surface geometry, closest points, overlap, membrane-domain labels, polygonal contact patches, enter/stay/exit contact inputs and bounded volume-preserving affine deformation are engine-authoritative. The normal snapshot contains one hepatocyte. Its active equivalent-size scale follows the normal-control human 3D median volume; the regular truncated-octahedron boundary and any diagnostic pair arrangement remain mathematical rather than donor morphometry. The 1% elastic-area cap is an explicit cross-system engineering bound equal to half the lower human-RBC lysis strain, not PHH rheology. Elapsed contact duration is not a causal input. Patch area may be computed from runtime geometry, while force, stiffness, adhesion, junction gating, mechanotransduction and biochemical effects remain blocked. Intercellular topology plus one measured PHH insulin-response chain are source-backed; receptor activation, Brian2 execution and generative-model coupling remain blocked. External evidence intake is manual-review-only. Dynamic proteostasis, macromolecular crowding, proteome-to-geometry mapping, canalicular surface and active transporter copies, transporter flux, raw donor-level bile-acid censoring, true canalicular concentration, healthy in-vivo bile-acid initialization, raw CYP time-course reconstruction, CYP kinetic fitting, transporter-resolved BEI, canalicular geometry coupling, product-composition-to-one-cell initialization, donor-disjoint generative training, albumin translation and secretory-path kinetics, portal receptor, hormone-to-rate, in-situ zonal oxygen, zone-specific flux and predictive external validation remain blocked.",
         "predictive": {
           "blockers": [
             "matched donor and nutritional state",
@@ -12861,6 +14256,7 @@
             "integrated reaction authority: 34 of 36 reactions lack source-backed numerical parameterization",
             "integrated reaction authority: network biological and experimental context match is not confirmed",
             "integrated reaction authority: independent held-out validation is not confirmed",
+            "published kinetic transfer: no active reaction passes equation, per-cell unit, context and held-out-validation gates",
             "model surface not predictive: albumin_secretory_pathway_kinetics",
             "model surface not predictive: external_phh_evidence_intake",
             "model surface not predictive: brian2_intercellular_execution",
@@ -12907,6 +14303,7 @@
             "no placeholder in authoritative PHH, ATP-turnover, or glucose-sinusoid surface",
             "compartment-correct postabsorptive blood glucose boundary",
             "reaction-level authority firewall keeps the integrated fuel network exploratory (2/36 reactions source-backed)",
+            "published kinetic-transfer gate covers all active reactions and activates 0 unqualified parameters",
             "schematic and blocked model surfaces excluded from scientific validation"
           ],
           "passed": false,
@@ -12946,6 +14343,7 @@
             "no placeholder in authoritative PHH, ATP-turnover, or glucose-sinusoid surface",
             "compartment-correct postabsorptive blood glucose boundary",
             "reaction-level authority firewall keeps the integrated fuel network exploratory (2/36 reactions source-backed)",
+            "published kinetic-transfer gate covers all active reactions and activates 0 unqualified parameters",
             "schematic and blocked model surfaces excluded from scientific validation"
           ],
           "passed": true,
@@ -19728,6 +21126,19 @@
             "koenig2012_hepatic_glucose_model",
             "koenig2012_plos_dataset_s2",
             "koenig2012_author_executable_reencoding"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "retain the exhaustive 36-reaction mapping and MathML fingerprints; activate no published parameter unless stoichiometry, compartment, symbolic law, per-cell units, biological context and validation all match",
+          "default_snapshot_role": "equation_level_transfer_firewall",
+          "drives_scientific_validation": false,
+          "id": "published_reaction_kinetic_transfer_audit",
+          "limitations": "Twelve active reactions have related candidates and three match stoichiometry after aliases, but none matches the full symbolic law, per-cell scale and healthy-PHH context. Fitted per-kilogram Vmax values cannot be copied into the single-cell network.",
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model",
+            "koenig2012_author_executable_reencoding",
+            "koenig2012_text_s2_kinetic_parameters"
           ],
           "status": "derived"
         },

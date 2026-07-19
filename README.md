@@ -29,11 +29,17 @@ biology rather than tuned to look right.
 ### The engine (`engine/cell_engine`)
 
 - **Real units** — concentrations and molecule counts tied to a grounded
-  hepatocyte volume; every species and rate carries provenance.
+  hepatocyte volume; authoritative values carry provenance, while unsupported
+  active rates are explicitly audited and quarantined as exploratory.
 - **A reaction-authority firewall** — pathway topology and numerical rates are
   audited separately. The current integrated fuel network is honestly exposed
   as `2 / 36` source-backed reaction parameterizations; its other 34 channels
   may run only as an exploratory model and cannot drive quantitative validation.
+- **An equation-level kinetic-transfer firewall** — all 36 active reactions are
+  mapped against the pinned Koenig human hepatic-glucose SBML. Twelve have
+  related candidates and three share exact aliased stoichiometry, but zero pass
+  the full MathML, compartment, per-cell-unit, PHH-context, and validation gates;
+  therefore zero fitted publication parameters are imported.
 - **A stochastic reaction core** — exact Gillespie SSA for low-copy species and
   the chemical Langevin equation (an SDE) for high-copy species, the same hybrid
   the field's whole-cell models use, verified against analytic results (Poisson
@@ -240,6 +246,11 @@ What is still depth-work (the road ahead is depth, not a new approach):
   carry source-backed numerical parameter provenance. The remaining 34 are
   explicitly unparameterized, run under an exploratory role, and are blocked
   from quantitative validation by the reaction-authority firewall;
+- the published human hepatic-glucose model supplies related candidates for 12
+  active reactions, but its fitted `Vmax` values are whole-model quantities on
+  a per-kilogram scale. The equation-level transfer audit activates none until
+  complete symbolic laws, compartments, single-cell units, matched PHH context,
+  and held-out validation agree;
 - coverage is still a fraction of a hepatocyte (HEPATOKIN1-level coverage is
   hundreds of grounded reactions; genome-scale models thousands);
 - validation is a handful of checkpoints, not a broad comparison against
@@ -354,6 +365,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 080: Human 3D hepatocyte morphometry v1](docs/milestones/080-human-3d-hepatocyte-morphometry-v1.md)
 - [Milestone 081: Stochastic contact placement and scientific overlays v1](docs/milestones/081-stochastic-contact-surface-scientific-overlays-v1.md)
 - [Milestone 082: Quantitative reaction authority firewall v1](docs/milestones/082-quantitative-reaction-authority-firewall-v1.md)
+- [Milestone 083: Published reaction kinetic-transfer audit v1](docs/milestones/083-published-reaction-kinetic-transfer-audit-v1.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)

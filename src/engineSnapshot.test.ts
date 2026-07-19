@@ -10,6 +10,7 @@ import {
   type EngineDivisionCell,
   type EngineDivisionOrganelleInventory,
   type EngineMembraneMaterialProfile,
+  type EngineKineticTransferAudit,
   type EnginePhysicalValidation,
   type EnginePhysicalVerificationLayer,
   type EngineReactionNetworkAuthorityAudit,
@@ -116,6 +117,40 @@ const reactionAuthorityAudit: EngineReactionNetworkAuthorityAudit = {
   blocked_reaction_ids: Array.from({ length: 34 }, (_, index) => `blocked-${index}`),
   reactions: [],
   policy: "Topology citations do not authorize numerical rates."
+};
+
+const kineticTransferAudit: EngineKineticTransferAudit = {
+  version: "published_reaction_kinetic_transfer_audit_v1",
+  status: "blocked_no_equation_level_transfer",
+  source_model: {},
+  target_network: {},
+  policy: {},
+  source_model_reaction_count: 36,
+  source_model_kinetic_law_count: 36,
+  active_reaction_count: 36,
+  mapped_candidate_count: 12,
+  outside_source_scope_count: 24,
+  exact_stoichiometry_match_count: 3,
+  exact_symbolic_rate_law_match_count: 0,
+  per_cell_unit_bridge_ready_count: 0,
+  biological_context_match_count: 0,
+  activated_transfer_count: 0,
+  relationship_counts: {
+    single_reaction_candidate: 10,
+    multi_reaction_lump: 2,
+    outside_source_scope: 22,
+    current_source_backed_outside_source_scope: 2
+  },
+  mapped_active_reaction_ids: [],
+  exact_stoichiometry_reaction_ids: [
+    "glucose_export",
+    "phosphoglucose_isomerase_reverse",
+    "hepatic_glucose_output"
+  ],
+  activated_reaction_ids: [],
+  reactions: [],
+  source_ids: ["koenig2012_hepatic_glucose_model"],
+  limitations: ["No published parameter is activated."]
 };
 
 const baseOrganelles: EngineDivisionOrganelleInventory = {
@@ -266,6 +301,7 @@ const snapshot: EngineSnapshot = {
       limitations: ["Tissue-equivalent pools are not compartment-resolved isolated-PHH measurements."]
     },
     reaction_authority: reactionAuthorityAudit,
+    kinetic_transfer: kineticTransferAudit,
     zonation_state: {
       species: "Homo sapiens",
       selected_zone: "midlobular",
@@ -1623,6 +1659,10 @@ describe("engine snapshot client", () => {
     expect(summary.reactionAuthority?.runtime_role).toBe("exploratory");
     expect(summary.reactionAuthority?.source_backed_parameterization_count).toBe(2);
     expect(summary.reactionAuthority?.scientific_validation_ready).toBe(false);
+    expect(summary.kineticTransfer?.mapped_candidate_count).toBe(12);
+    expect(summary.kineticTransfer?.exact_stoichiometry_match_count).toBe(3);
+    expect(summary.kineticTransfer?.exact_symbolic_rate_law_match_count).toBe(0);
+    expect(summary.kineticTransfer?.activated_transfer_count).toBe(0);
     expect(summary.zone).toBe("midlobular");
     expect(summary.zonationState?.zone.marker_genes).toContain("HSD17B13");
     expect(summary.zonationState?.dynamic_flux_scaling_enabled).toBe(false);
