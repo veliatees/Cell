@@ -23,6 +23,9 @@ class ScientificModelAuditTests(unittest.TestCase):
         self.assertIn("phh_absolute_proteome_budget", {surface.id for surface in drivers})
         self.assertIn("hepatocyte_transporter_inventory_bridge", {surface.id for surface in drivers})
         self.assertIn("human_sch_endogenous_bile_acid_compartments", {surface.id for surface in drivers})
+        self.assertIn("aggregate_energy_redox_observations", {surface.id for surface in drivers})
+        self.assertIn("compartmental_energy_redox_contract", {surface.id for surface in drivers})
+        self.assertIn("energy_redox_calibration_validation_gate", {surface.id for surface in drivers})
         self.assertNotIn("published_hepatic_glucose_shadow_model", {surface.id for surface in drivers})
 
     def test_known_unsupported_surfaces_are_blocked_or_disabled(self) -> None:
@@ -31,7 +34,9 @@ class ScientificModelAuditTests(unittest.TestCase):
             "organelle_failure_hazards",
             "cytokinesis_failure_probability",
             "absolute_transporter_flux",
+            "legacy_atp_turnover_kinetics",
             "glutathione_redox_kinetics",
+            "legacy_oxphos_kinetics",
             "integrated_fuel_pathway_rates",
             "endocrine_receptor_rate_coupling",
             "albumin_secretory_pathway_kinetics",

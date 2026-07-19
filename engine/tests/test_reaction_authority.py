@@ -128,16 +128,18 @@ class ReactionAuthorityTests(unittest.TestCase):
         )
 
         self.assertEqual(audit.reaction_count, 36)
-        self.assertEqual(audit.source_backed_parameterization_count, 2)
+        self.assertEqual(audit.source_backed_parameterization_count, 0)
+        self.assertEqual(audit.authority_counts["placeholder"], 2)
         self.assertEqual(audit.authority_counts["unparameterized"], 34)
         self.assertEqual(
             {
                 record.reaction_id
                 for record in audit.reactions
-                if record.authority == "source_backed"
+                if record.authority == "placeholder"
             },
             {"atp_regeneration", "atp_maintenance"},
         )
+        self.assertEqual(len(audit.blocked_reaction_ids), 36)
         self.assertFalse(audit.scientific_validation_ready)
         self.assertFalse(audit.predictive_execution_ready)
 
