@@ -911,6 +911,160 @@ export type EngineGenerativeModelingBoundary = {
   source_ids: string[];
 };
 
+export type EngineCompartmentalEnergyRedox = {
+  version: "compartment_resolved_energy_redox_contract_v1";
+  status: string;
+  compartments: {
+    id: string;
+    label: string;
+    measured_volume_l: number | null;
+    volume_initialization_allowed: boolean;
+    boundary: string;
+  }[];
+  pools: {
+    id: string;
+    molecule: string;
+    compartment_id: string;
+    quantity_kind: string;
+    initial_value: number | null;
+    initial_unit: string | null;
+    initialization_allowed: boolean;
+    source_ids: string[];
+    limitation: string;
+  }[];
+  processes: {
+    id: string;
+    process_kind: string;
+    reactant_pool_ids: string[];
+    product_pool_ids: string[];
+    mediator_gene_symbols: string[];
+    topology_source_ids: string[];
+    exact_stoichiometry_claimed: boolean;
+    numerical_rate: number | null;
+    numerical_rate_unit: string | null;
+    numerical_execution_allowed: boolean;
+    evidence_context: string;
+    limitation: string;
+  }[];
+  human_phh_proteome_evidence: {
+    gene_symbol: string;
+    source_status: string;
+    protein_groups: {
+      group_id: string;
+      protein_ids: string[];
+      detected_donor_count: number;
+      donor_copies_per_nucleus: [string, number | null][];
+    }[];
+    allowed_use: string;
+    prohibited_inference: string;
+  }[];
+  aggregate_observations: {
+    id: string;
+    target: string;
+    value: number | null;
+    low: number | null;
+    high: number | null;
+    uncertainty_type: string | null;
+    uncertainty_value: number | null;
+    unit: string;
+    biological_system: string;
+    assay: string;
+    source_id: string;
+    permitted_use: string;
+    compartment_allocation_allowed: boolean;
+    kinetic_parameter_fit_allowed: boolean;
+    limitation: string;
+  }[];
+  runtime_conflicts: {
+    id: string;
+    detected: boolean;
+    affected_pool_or_reaction_ids: string[];
+    consequence: string;
+  }[];
+  compartment_topology_ready: boolean;
+  whole_tissue_observation_registry_ready: boolean;
+  human_phh_proteome_presence_bridge_ready: boolean;
+  compartment_initialization_ready: boolean;
+  numerical_execution_enabled: boolean;
+  parameter_activation_allowed: boolean;
+  automatic_state_coupling: boolean;
+  predictive_ready: boolean;
+  source_ids: string[];
+  blockers: string[];
+  policy: string;
+  summary: {
+    compartment_count: number;
+    explicit_pool_count: number;
+    structural_process_count: number;
+    phh_proteome_gene_count: number;
+    phh_quantified_gene_count: number;
+    aggregate_observation_count: number;
+    detected_runtime_conflict_count: number;
+    initialized_compartment_pool_count: number;
+    executable_process_count: number;
+    activated_parameter_count: number;
+  };
+};
+
+export type EngineEnergyRedoxValidation = {
+  version: "energy_redox_calibration_validation_gate_v1";
+  status: string;
+  reaction_fit_eligibility: {
+    network_id: string;
+    reaction_id: string;
+    current_authority: string;
+    parameter_provenance_documented: boolean;
+    compartment_context_match: boolean;
+    aggregate_observation_identifies_rate: boolean;
+    fit_allowed: boolean;
+    quantitative_validation_allowed: boolean;
+    predictive_execution_allowed: boolean;
+    blockers: string[];
+  }[];
+  observation_use_audit: {
+    observation_id: string;
+    target: string;
+    source_id: string;
+    original_unit: string;
+    permitted_role: string;
+    aggregate_reference_allowed: boolean;
+    same_assay_comparison_allowed: boolean;
+    compartment_initialization_allowed: boolean;
+    kinetic_parameter_fit_allowed: boolean;
+    independent_heldout_eligible: boolean;
+    reason: string;
+  }[];
+  validation_requirements: {
+    id: string;
+    satisfied: boolean;
+    requirement: string;
+    current_evidence: string;
+  }[];
+  structural_topology_ready: boolean;
+  aggregate_reference_ready: boolean;
+  compartment_state_initialization_ready: boolean;
+  same_assay_descriptive_comparison_ready: boolean;
+  reaction_parameter_calibration_ready: boolean;
+  donor_disjoint_split_ready: boolean;
+  independent_heldout_validation_ready: boolean;
+  uncertainty_qualified_pass_fail_ready: boolean;
+  predictive_parameter_activation_allowed: boolean;
+  automatic_state_coupling: boolean;
+  predictive_ready: boolean;
+  source_ids: string[];
+  policy: string;
+  summary: {
+    audited_legacy_reaction_count: number;
+    placeholder_reaction_count: number;
+    fit_eligible_reaction_count: number;
+    aggregate_observation_count: number;
+    same_assay_observation_count: number;
+    satisfied_validation_requirement_count: number;
+    independent_heldout_result_count: number;
+    activated_parameter_count: number;
+  };
+};
+
 export type EngineSnapshot = {
   schema_version: string;
   definition: {
@@ -952,6 +1106,8 @@ export type EngineSnapshot = {
     healthy_phh_glucose_validation?: EngineHealthyPhhGlucoseValidation;
     phh_spheroid_validation_protocol?: EnginePhhSpheroidValidationProtocol;
     phh_glucose_observability?: EnginePhhGlucoseObservability;
+    compartmental_energy_redox?: EngineCompartmentalEnergyRedox;
+    energy_redox_validation?: EngineEnergyRedoxValidation;
     phh_albumin_secretion?: EnginePhhAlbuminSecretion;
     phh_cyp_function?: EnginePhhCypFunction;
     phh_biliary_excretion?: EnginePhhBiliaryExcretion;
@@ -3177,6 +3333,7 @@ export type EnginePhhBaseline = {
   readiness: {
     direct_initialization_ready: boolean;
     metabolic_pool_initialization_ready?: boolean;
+    apparent_atp_exchange_observation_ready?: boolean;
     energy_turnover_ready?: boolean;
     whole_cell_transport_flux_ready: boolean;
     blocking_measurements: string[];
@@ -3251,6 +3408,8 @@ export type EngineSnapshotSummary = {
   healthyPhhGlucoseValidation: EngineHealthyPhhGlucoseValidation | null;
   phhSpheroidValidationProtocol: EnginePhhSpheroidValidationProtocol | null;
   phhGlucoseObservability: EnginePhhGlucoseObservability | null;
+  compartmentalEnergyRedox: EngineCompartmentalEnergyRedox | null;
+  energyRedoxValidation: EngineEnergyRedoxValidation | null;
   phhAlbuminSecretion: EnginePhhAlbuminSecretion | null;
   phhCypFunction: EnginePhhCypFunction | null;
   phhBiliaryExcretion: EnginePhhBiliaryExcretion | null;
@@ -3415,6 +3574,8 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     healthyPhhGlucoseValidation: snapshot.state.healthy_phh_glucose_validation ?? null,
     phhSpheroidValidationProtocol: snapshot.state.phh_spheroid_validation_protocol ?? null,
     phhGlucoseObservability: snapshot.state.phh_glucose_observability ?? null,
+    compartmentalEnergyRedox: snapshot.state.compartmental_energy_redox ?? null,
+    energyRedoxValidation: snapshot.state.energy_redox_validation ?? null,
     phhAlbuminSecretion: snapshot.state.phh_albumin_secretion ?? null,
     phhCypFunction: snapshot.state.phh_cyp_function ?? null,
     phhBiliaryExcretion: snapshot.state.phh_biliary_excretion ?? null,

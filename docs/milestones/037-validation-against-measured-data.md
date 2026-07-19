@@ -1,5 +1,12 @@
 # Milestone 037 — Validation against measured hepatocyte data
 
+> **Superseded authority note (2026-07-20):** The ATP, ATP:ADP, energy-charge
+> and later GSH:GSSG range matches used calibrated shared-pool software fixtures
+> and unmatched aggregate reference ranges. They are not independent biological
+> validation and the former `100%` accuracy claim is retired. The current harness
+> retains only the glucokinase S0.5 same-equation implementation check and labels
+> it explicitly as non-independent. See Milestones 087-088.
+
 ## Why this is the keystone gap
 
 Every other gap (coverage, grounding, integration, spatial) is about *building

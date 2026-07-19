@@ -79,7 +79,10 @@ from cell_engine.quantitative.human_sch_bile_acids import (
     build_human_sch_bile_acids,
     validate_human_sch_bile_acids,
 )
-from cell_engine.stochastic.bioenergetics import build_phh_atp_turnover_network
+from cell_engine.quantitative.compartmental_energy_redox import (
+    build_compartmental_energy_redox_contract,
+    validate_compartmental_energy_redox_contract,
+)
 from cell_engine.stochastic.integrated_cell import (
     INTEGRATED_VOLUME_L,
     build_integrated_hepatocyte_network,
@@ -100,6 +103,10 @@ from cell_engine.validation.kinetic_transfer import (
 from cell_engine.validation.glucose_calibration import (
     build_glucose_calibration_validation_gate,
     validate_glucose_calibration_validation_gate,
+)
+from cell_engine.validation.energy_redox_gate import (
+    build_energy_redox_calibration_validation_gate,
+    validate_energy_redox_calibration_validation_gate,
 )
 from cell_engine.validation.hepatic_flux import (
     build_unified_nutritional_context,
@@ -146,6 +153,8 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
     exact_glucose_contract = None
     glucose_open_system = None
     glucose_calibration = None
+    compartmental_energy_redox = None
+    energy_redox_gate = None
     phh_albumin_secretion = None
     phh_cyp_function = None
     phh_biliary_excretion = None
@@ -161,10 +170,14 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         checks.append("source-traceable metabolic pool initialization")
     else:
         blockers.append("metabolic pool initialization is not ready")
-    if registry.energy_turnover_ready:
-        checks.append("human-liver-anchored apparent ATP turnover")
+    if registry.apparent_atp_exchange_observation_ready:
+        checks.append("human-liver apparent Pi-to-ATP exchange retained as an assay observation")
     else:
-        blockers.append("energy turnover is not ready")
+        blockers.append("human-liver apparent Pi-to-ATP exchange observation is unavailable")
+    if registry.energy_turnover_ready:
+        blockers.append("aggregate apparent Pi-to-ATP exchange was promoted to cellular ATP turnover")
+    else:
+        checks.append("mitochondrial ATP synthesis and cellular ATP demand remain uninitialized")
 
     source_ids = set(registry.sources)
     for profile in PHH_NUTRITIONAL_PROFILES.values():
@@ -282,6 +295,24 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid glucose calibration and held-out validation gate: {exc}")
+
+    try:
+        compartmental_energy_redox = build_compartmental_energy_redox_contract()
+        validate_compartmental_energy_redox_contract(compartmental_energy_redox)
+        checks.append(
+            "ATP, adenylate, nicotinamide, glutathione, oxygen and ROS pools are separated across cytosol, both mitochondrial boundaries, ER and peroxisome while all unmeasured values remain null"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid compartment-resolved energy/redox contract: {exc}")
+
+    try:
+        energy_redox_gate = build_energy_redox_calibration_validation_gate()
+        validate_energy_redox_calibration_validation_gate(energy_redox_gate)
+        checks.append(
+            "all nine legacy ATP/redox/OXPHOS reactions are quarantined as placeholders and zero energy/redox fits, state couplings or predictive activations are permitted"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid energy/redox calibration and validation gate: {exc}")
 
     try:
         phh_albumin_secretion = build_phh_albumin_secretion()
@@ -416,15 +447,17 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
     except ValueError as exc:
         blockers.append(f"invalid generative modeling boundary: {exc}")
 
-    network = build_phh_atp_turnover_network(INTEGRATED_VOLUME_L)
     sinusoid = build_sinusoid_boundary_network("postabsorptive", INTEGRATED_VOLUME_L)
-    for reaction in network.reactions + sinusoid.reactions:
+    sinusoid_surface_valid = True
+    for reaction in sinusoid.reactions:
         if not reaction.parameter_provenance:
             blockers.append(f"{reaction.id} lacks parameter provenance")
+            sinusoid_surface_valid = False
         if any(item.assumption_level == "placeholder" for item in reaction.parameter_provenance):
             blockers.append(f"{reaction.id} contains a placeholder parameter")
-    if not blockers:
-        checks.append("no placeholder in authoritative PHH, ATP-turnover, or glucose-sinusoid surface")
+            sinusoid_surface_valid = False
+    if sinusoid_surface_valid:
+        checks.append("no placeholder in the authoritative glucose-sinusoid boundary")
         checks.append("compartment-correct postabsorptive blood glucose boundary")
 
     integrated_reaction_authority = audit_reaction_network(
@@ -467,10 +500,22 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
 
     if target == "predictive":
         blockers.extend(registry.blocking_measurements)
-        blockers.extend((
-            "NADH and GSH/GSSG are not compartment resolved",
-            "healthy donor trajectory validation is not complete",
-        ))
+        if compartmental_energy_redox is None:
+            blockers.append("compartment-resolved energy/redox contract is unavailable")
+        else:
+            blockers.extend(
+                f"energy/redox: {blocker}"
+                for blocker in compartmental_energy_redox.blockers
+            )
+        if energy_redox_gate is None:
+            blockers.append("energy/redox calibration and validation gate is unavailable")
+        else:
+            blockers.extend(
+                f"energy/redox validation: {item.requirement}"
+                for item in energy_redox_gate.validation_requirements
+                if not item.satisfied
+            )
+        blockers.append("healthy donor trajectory validation is not complete")
         if evidence_intake["status"] == "awaiting_external_evidence_bundle":
             blockers.append("requested nine-file healthy-human/PHH evidence bundle is not yet delivered")
         elif evidence_intake["status"] == "structurally_valid_manual_review_required":
@@ -666,5 +711,18 @@ def scientific_release_snapshot() -> dict[str, object]:
     return {
         "research_preview": preview,
         "predictive": predictive,
-        "authoritative_scope": "Healthy PHH metabolic pools, unified fed/postabsorptive/prolonged-fast glycogen contexts, apparent ATP turnover, human zonation reference context with controlled-MPS oxygen evidence, postabsorptive blood-glucose perfusion boundary, measured peripheral endocrine observations, a causal liver-glycogen clamp benchmark, a non-interpolated human mixed-meal protocol, a source-locked PHH 3D-spheroid protocol with 12 independent cumulative-mean targets plus four descriptive overlap audits, a signed cumulative-to-window glucose operator, a six-batch 24-hour PHH albumin ELISA operator, 72 batch-resolved CYP SCR/MFR observations, five d8-TCA BEI observations, separate six-batch FACS/scRNA identity-composition surfaces, a seven-donor absolute proteome-mass reference, one same-cohort total-BSEP copy bridge, denominator-preserved human-liver MRP2 abundance, and four-donor day-7 human-SCH endogenous bile-acid endpoints with explicit identifiability gates. Reaction-level numerical parameter provenance is audited separately from pathway topology; the composed integrated fuel network remains exploratory unless every reaction, model context and held-out validation gate passes. A checksum-locked equation-level transfer audit maps all 36 active reactions against the published hepatic-glucose SBML and activates no fitted parameter without exact stoichiometry, compartment, symbolic law, per-cell units, matched PHH context and validation. Published hepatic glucose execution, model-lineage reproduction and its contextual external HGO comparison are shadow/diagnostic only. Runtime convex-surface geometry, closest points, overlap, membrane-domain labels, polygonal contact patches, enter/stay/exit contact inputs and bounded volume-preserving affine deformation are engine-authoritative. The normal snapshot contains one hepatocyte. Its active equivalent-size scale follows the normal-control human 3D median volume; the regular truncated-octahedron boundary and any diagnostic pair arrangement remain mathematical rather than donor morphometry. The 1% elastic-area cap is an explicit cross-system engineering bound equal to half the lower human-RBC lysis strain, not PHH rheology. Elapsed contact duration is not a causal input. Patch area may be computed from runtime geometry, while force, stiffness, adhesion, junction gating, mechanotransduction and biochemical effects remain blocked. Intercellular topology plus one measured PHH insulin-response chain are source-backed; receptor activation, Brian2 execution and generative-model coupling remain blocked. External evidence intake is manual-review-only. Dynamic proteostasis, macromolecular crowding, proteome-to-geometry mapping, canalicular surface and active transporter copies, transporter flux, raw donor-level bile-acid censoring, true canalicular concentration, healthy in-vivo bile-acid initialization, raw CYP time-course reconstruction, CYP kinetic fitting, transporter-resolved BEI, canalicular geometry coupling, product-composition-to-one-cell initialization, donor-disjoint generative training, albumin translation and secretory-path kinetics, portal receptor, hormone-to-rate, in-situ zonal oxygen, zone-specific flux and predictive external validation remain blocked.",
+        "authoritative_scope": (
+            "Healthy PHH aggregate metabolic observations, nutritional glycogen contexts, "
+            "and apparent Pi-to-ATP exchange retained only in its original assay space. "
+            "The source-supported energy/redox compartment and process graph is authoritative "
+            "as non-executable structure; all organelle initial values, ATP demand, OXPHOS, "
+            "antioxidant kinetics and predictive coupling remain blocked. Human zonation, "
+            "postabsorptive glucose perfusion, measured endocrine observations, exact PHH "
+            "glucose/albumin/CYP/BEI operators, donor-resolved proteome references and bile-acid "
+            "endpoints retain their declared assay and denominator limits. Reaction authority "
+            "and kinetic-transfer firewalls keep the integrated fuel runtime exploratory. "
+            "Published glucose execution remains shadow/diagnostic. Runtime contact geometry is "
+            "engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, "
+            "Brian2 biochemical execution and generative-state coupling remain blocked."
+        ),
     }
