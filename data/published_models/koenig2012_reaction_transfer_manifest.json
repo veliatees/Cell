@@ -1,0 +1,284 @@
+{
+  "schema_version": "koenig2012.reaction-transfer.v1",
+  "source_model": {
+    "path": "models/sbml/koenig2012_hepatic_glucose_executable.xml",
+    "sha256": "5091963c02f39cf00ae02b4fca9362af5f43544851f75b7e17768c7fc56835a3",
+    "source_ids": [
+      "koenig2012_hepatic_glucose_model",
+      "koenig2012_author_executable_reencoding",
+      "koenig2012_text_s2_kinetic_parameters"
+    ],
+    "biological_context": "published mean human liver/hepatocyte glucose-metabolism model",
+    "parameter_authority": "literature kinetic constants plus whole-model fitted Vmax values",
+    "reported_flux_scale": "umol_per_min_per_kg_body_mass"
+  },
+  "target_network": {
+    "id": "integrated_hepatocyte_fuel_network_v1",
+    "biological_context": "exploratory single-hepatocyte multi-pathway network",
+    "runtime_compartment": "one shared cytosolic volume",
+    "runtime_rate_unit": "molecules_per_second"
+  },
+  "policy": {
+    "exact_stoichiometry_required": true,
+    "exact_compartment_semantics_required": true,
+    "exact_symbolic_rate_law_required": true,
+    "per_cell_unit_bridge_required": true,
+    "matched_experimental_context_required": true,
+    "independent_heldout_validation_required_for_prediction": true,
+    "automatic_parameter_activation": false
+  },
+  "mappings": [
+    {
+      "active_reaction_id": "glycogen_synthesis",
+      "candidate_reaction_ids": ["GS"],
+      "species_aliases": {"glucose_cyto": "glc", "glycogen": "glyglc"},
+      "relationship": "single_reaction_candidate",
+      "note": "The active lump starts from free glucose; GS starts from UDP-glucose and retains nucleotide chemistry."
+    },
+    {
+      "active_reaction_id": "glycogen_breakdown",
+      "candidate_reaction_ids": ["GP"],
+      "species_aliases": {"glycogen": "glyglc", "glucose_cyto": "glc"},
+      "relationship": "single_reaction_candidate",
+      "note": "The active lump produces free glucose; GP produces glucose-1-phosphate and includes phosphate/water chemistry."
+    },
+    {
+      "active_reaction_id": "glucose_export",
+      "candidate_reaction_ids": ["GLUT2"],
+      "species_aliases": {"glucose_cyto": "glc", "glucose_blood": "glc_ext"},
+      "relationship": "single_reaction_candidate",
+      "note": "Reverse GLUT2 stoichiometry matches after aliases, but membrane compartment and reversible saturable kinetics are absent from the active channel."
+    },
+    {
+      "active_reaction_id": "glutaminase",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Nitrogen and amino-acid metabolism are outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "alanine_transaminase",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Alanine transamination is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "aspartate_transaminase",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Aspartate transamination is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "glutamate_dehydrogenase",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Glutamate dehydrogenase is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "lactate_dehydrogenase",
+      "candidate_reaction_ids": ["LDH"],
+      "species_aliases": {"lactate": "lac", "NAD_plus": "nad", "pyruvate": "pyr", "NADH": "nadh"},
+      "relationship": "single_reaction_candidate",
+      "note": "The active forward channel omits proton bookkeeping and the published reversible multi-substrate rate law."
+    },
+    {
+      "active_reaction_id": "pyruvate_carboxylase",
+      "candidate_reaction_ids": ["PC"],
+      "species_aliases": {"pyruvate": "pyr_mito", "ATP": "atp_mito", "oxaloacetate": "oaa_mito", "ADP": "adp_mito"},
+      "relationship": "single_reaction_candidate",
+      "note": "The active channel omits mitochondrial CO2, water, phosphate, proton and acetyl-CoA activation terms."
+    },
+    {
+      "active_reaction_id": "pepck",
+      "candidate_reaction_ids": ["PEPCK"],
+      "species_aliases": {"oxaloacetate": "oaa", "ATP": "atp", "phosphoenolpyruvate": "pep", "ADP": "adp"},
+      "relationship": "single_reaction_candidate",
+      "note": "The active ATP/ADP approximation is not the published GTP/GDP plus CO2 reaction."
+    },
+    {
+      "active_reaction_id": "lower_glycolysis_reverse",
+      "candidate_reaction_ids": ["EN", "PGM", "PGK", "GAPDH", "TPI", "ALD"],
+      "species_aliases": {"phosphoenolpyruvate": "pep", "ATP": "atp", "NADH": "nadh", "fructose_1_6_bisphosphate": "fru16bp", "ADP": "adp", "NAD_plus": "nad"},
+      "relationship": "multi_reaction_lump",
+      "note": "One active event collapses six separately parameterized reversible steps and intermediate pools."
+    },
+    {
+      "active_reaction_id": "fructose_1_6_bisphosphatase",
+      "candidate_reaction_ids": ["FBP1"],
+      "species_aliases": {"fructose_1_6_bisphosphate": "fru16bp", "fructose_6_phosphate": "fru6p"},
+      "relationship": "single_reaction_candidate",
+      "note": "The active channel omits water, phosphate and fructose-2,6-bisphosphate inhibition."
+    },
+    {
+      "active_reaction_id": "phosphoglucose_isomerase_reverse",
+      "candidate_reaction_ids": ["GPI"],
+      "species_aliases": {"fructose_6_phosphate": "fru6p", "glucose_6_phosphate": "glc6p"},
+      "relationship": "single_reaction_candidate",
+      "note": "Reverse stoichiometry matches, but the active one-way callable is not the published reversible convenience rate law."
+    },
+    {
+      "active_reaction_id": "glucose_6_phosphatase",
+      "candidate_reaction_ids": ["G6PASE"],
+      "species_aliases": {"glucose_6_phosphate": "glc6p", "glucose": "glc"},
+      "relationship": "single_reaction_candidate",
+      "note": "The active channel omits water and phosphate and does not reproduce the published saturation law."
+    },
+    {
+      "active_reaction_id": "hepatic_glucose_output",
+      "candidate_reaction_ids": ["GLUT2"],
+      "species_aliases": {"glucose": "glc", "glucose_blood": "glc_ext"},
+      "relationship": "single_reaction_candidate",
+      "note": "Reverse GLUT2 stoichiometry matches after aliases, but membrane compartment and reversible saturable kinetics are absent from the active channel."
+    },
+    {
+      "active_reaction_id": "glycerol_kinase",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Glycerol entry is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "glycerol_3_phosphate_dehydrogenase",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Glycerol-3-phosphate metabolism is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "triose_phosphate_condensation",
+      "candidate_reaction_ids": ["TPI", "ALD"],
+      "species_aliases": {"dihydroxyacetone_phosphate": "dhap", "fructose_1_6_bisphosphate": "fru16bp"},
+      "relationship": "multi_reaction_lump",
+      "note": "The active 2-DHAP lump removes glyceraldehyde-3-phosphate and combines TPI with aldolase."
+    },
+    {
+      "active_reaction_id": "beta_oxidation",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Fatty-acid oxidation is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "thiolase",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Ketogenesis is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "hmgcs2",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Ketogenesis is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "hmgcl",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Ketogenesis is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "bdh1_forward",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Ketone redox interconversion is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "bdh1_reverse",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Ketone redox interconversion is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "acetoacetate_decarboxylation",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Acetoacetate decarboxylation is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "acetyl_coa_carboxylase",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "De-novo lipogenesis is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "fatty_acid_synthase",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "De-novo lipogenesis is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "malonyl_coa_decarboxylase",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "Malonyl-CoA clearance is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "cpt1_beta_oxidation",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "CPT1 control and beta oxidation are outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "cps1",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "The urea cycle is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "otc",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "The urea cycle is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "ass1",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "The urea cycle is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "asl",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "The urea cycle is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "arg1",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "outside_source_scope",
+      "note": "The urea cycle is outside the published glucose model."
+    },
+    {
+      "active_reaction_id": "atp_regeneration",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "current_source_backed_outside_source_scope",
+      "note": "This apparent ATP-turnover channel has separate literature provenance and is not transferred from the glucose model."
+    },
+    {
+      "active_reaction_id": "atp_maintenance",
+      "candidate_reaction_ids": [],
+      "species_aliases": {},
+      "relationship": "current_source_backed_outside_source_scope",
+      "note": "This matched ATP-demand channel has separate literature provenance and is not transferred from the glucose model."
+    }
+  ]
+}

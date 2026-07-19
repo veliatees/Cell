@@ -56,6 +56,14 @@ class ScientificModelAuditTests(unittest.TestCase):
         self.assertFalse(by_id["cell_contact_geometry"].drives_scientific_validation)
         self.assertEqual(by_id["integrated_reaction_authority"].status, "derived")
         self.assertFalse(by_id["integrated_reaction_authority"].drives_scientific_validation)
+        self.assertEqual(by_id["published_reaction_kinetic_transfer_audit"].status, "derived")
+        self.assertEqual(
+            by_id["published_reaction_kinetic_transfer_audit"].default_snapshot_role,
+            "equation_level_transfer_firewall",
+        )
+        self.assertFalse(
+            by_id["published_reaction_kinetic_transfer_audit"].drives_scientific_validation
+        )
 
 
 if __name__ == "__main__":

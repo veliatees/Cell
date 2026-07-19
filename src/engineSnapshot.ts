@@ -938,6 +938,7 @@ export type EngineSnapshot = {
     regeneration_context?: EngineRegenerationContext;
     integrated_metabolism?: EngineIntegratedMetabolism;
     reaction_authority?: EngineReactionNetworkAuthorityAudit;
+    kinetic_transfer?: EngineKineticTransferAudit;
     quantitative_state?: EngineQuantitativePhhState;
     human_hepatocyte_3d_morphometry?: EngineHumanHepatocyte3dMorphometry;
     zonation_state?: EngineHumanZonationState;
@@ -3104,6 +3105,64 @@ export type EngineReactionNetworkAuthorityAudit = {
   policy: string;
 };
 
+export type EngineCandidateReactionAudit = {
+  model_reaction_id: string;
+  name: string | null;
+  compartment_id: string | null;
+  reversible: boolean;
+  exact_stoichiometry: boolean;
+  matching_orientation: "forward" | "reverse" | null;
+  kinetic_math_sha256: string | null;
+  kinetic_parameter_ids: string[];
+  kinetic_species_ids: string[];
+  boundary_species_ids: string[];
+};
+
+export type EngineReactionKineticTransferAudit = {
+  active_reaction_id: string;
+  current_authority: string;
+  current_rate_law_family: string;
+  relationship: "single_reaction_candidate" | "multi_reaction_lump" | "outside_source_scope" | "current_source_backed_outside_source_scope";
+  candidate_reaction_ids: string[];
+  candidates: EngineCandidateReactionAudit[];
+  species_aliases: Record<string, string>;
+  exact_stoichiometry_match: boolean;
+  source_compartment_matches_runtime_volume: boolean;
+  exact_symbolic_rate_law_match: boolean;
+  per_cell_unit_bridge_ready: boolean;
+  biological_context_match: boolean;
+  heldout_validation_confirmed: boolean;
+  parameter_activation_allowed: boolean;
+  status: string;
+  blockers: string[];
+  note: string;
+};
+
+export type EngineKineticTransferAudit = {
+  version: "published_reaction_kinetic_transfer_audit_v1";
+  status: string;
+  source_model: Record<string, unknown>;
+  target_network: Record<string, unknown>;
+  policy: Record<string, unknown>;
+  source_model_reaction_count: number;
+  source_model_kinetic_law_count: number;
+  active_reaction_count: number;
+  mapped_candidate_count: number;
+  outside_source_scope_count: number;
+  exact_stoichiometry_match_count: number;
+  exact_symbolic_rate_law_match_count: number;
+  per_cell_unit_bridge_ready_count: number;
+  biological_context_match_count: number;
+  activated_transfer_count: number;
+  relationship_counts: Record<string, number>;
+  mapped_active_reaction_ids: string[];
+  exact_stoichiometry_reaction_ids: string[];
+  activated_reaction_ids: string[];
+  reactions: EngineReactionKineticTransferAudit[];
+  source_ids: string[];
+  limitations: string[];
+};
+
 export type EngineAssumptionReport = {
   definition_id: string;
   counts: Record<string, number>;
@@ -3178,6 +3237,7 @@ export type EngineSnapshotSummary = {
   regenerationContext: EngineRegenerationContext | null;
   integratedMetabolism: EngineIntegratedMetabolism | null;
   reactionAuthority: EngineReactionNetworkAuthorityAudit | null;
+  kineticTransfer: EngineKineticTransferAudit | null;
   quantitativeState: EngineQuantitativePhhState | null;
   humanHepatocyte3dMorphometry: EngineHumanHepatocyte3dMorphometry | null;
   zonationState: EngineHumanZonationState | null;
@@ -3341,6 +3401,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     regenerationContext: isEngineRegenerationContext(snapshot.state.regeneration_context) ? snapshot.state.regeneration_context : null,
     integratedMetabolism: snapshot.state.integrated_metabolism ?? null,
     reactionAuthority: snapshot.state.reaction_authority ?? null,
+    kineticTransfer: snapshot.state.kinetic_transfer ?? null,
     quantitativeState: snapshot.state.quantitative_state ?? null,
     humanHepatocyte3dMorphometry: snapshot.state.human_hepatocyte_3d_morphometry ?? null,
     zonationState: snapshot.state.zonation_state ?? null,
