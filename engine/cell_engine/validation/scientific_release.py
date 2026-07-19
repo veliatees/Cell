@@ -39,6 +39,10 @@ from cell_engine.quantitative.phh_glucose_observability import (
     build_phh_glucose_observability,
     validate_phh_glucose_observability,
 )
+from cell_engine.quantitative.glucose_homeostasis_contract import (
+    build_exact_glucose_homeostasis_contract,
+    validate_exact_glucose_homeostasis_contract,
+)
 from cell_engine.quantitative.phh_albumin_secretion import (
     build_phh_albumin_secretion,
     validate_phh_albumin_secretion,
@@ -131,6 +135,7 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
     phh_glucose_validation = None
     phh_spheroid_protocol = None
     phh_glucose_observability = None
+    exact_glucose_contract = None
     phh_albumin_secretion = None
     phh_cyp_function = None
     phh_biliary_excretion = None
@@ -240,6 +245,15 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid PHH glucose observability gate: {exc}")
+
+    try:
+        exact_glucose_contract = build_exact_glucose_homeostasis_contract()
+        validate_exact_glucose_homeostasis_contract(exact_glucose_contract)
+        checks.append(
+            "official glucose-model topology is preserved as a non-executable 52-species, five-compartment, 36-reaction contract while split pools, duplicated export, lumping and compartment collapse remain blocked"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid exact glucose-homeostasis structural contract: {exc}")
 
     try:
         phh_albumin_secretion = build_phh_albumin_secretion()
@@ -486,6 +500,13 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
                 blockers.append("no signed cumulative model trajectory is loaded for the PHH measurement operator")
             if not phh_glucose_observability.mechanistic_flux_decomposition_ready:
                 blockers.append("PHH net medium glucose measurements do not identify intracellular pathway fluxes")
+        if exact_glucose_contract is None:
+            blockers.append("source-exact glucose-homeostasis structural contract is unavailable")
+        else:
+            if not exact_glucose_contract.active_runtime_replacement_ready:
+                blockers.append("source-exact glucose topology has not replaced the split and lumped exploratory runtime")
+            if not exact_glucose_contract.parameter_activation_allowed:
+                blockers.append("source-exact glucose topology has no qualified numerical parameter activation")
         if phh_albumin_secretion is None:
             blockers.append("PHH albumin-secretion measurement operator and identifiability audit are unavailable")
         else:
