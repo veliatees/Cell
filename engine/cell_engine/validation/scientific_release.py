@@ -97,6 +97,10 @@ from cell_engine.validation.kinetic_transfer import (
     build_kinetic_transfer_audit,
     validate_kinetic_transfer_audit,
 )
+from cell_engine.validation.glucose_calibration import (
+    build_glucose_calibration_validation_gate,
+    validate_glucose_calibration_validation_gate,
+)
 from cell_engine.validation.hepatic_flux import (
     build_unified_nutritional_context,
     load_hepatic_flux_evidence,
@@ -141,6 +145,7 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
     phh_glucose_observability = None
     exact_glucose_contract = None
     glucose_open_system = None
+    glucose_calibration = None
     phh_albumin_secretion = None
     phh_cyp_function = None
     phh_biliary_excretion = None
@@ -268,6 +273,15 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid glucose open-system and exact-assay bridge: {exc}")
+
+    try:
+        glucose_calibration = build_glucose_calibration_validation_gate()
+        validate_glucose_calibration_validation_gate(glucose_calibration)
+        checks.append(
+            "all 36 active glucose reactions and 16 PHH windows pass through a fail-closed calibration/held-out gate that permits descriptive residuals but zero kinetic fits, predictive activations or false held-out claims"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid glucose calibration and held-out validation gate: {exc}")
 
     try:
         phh_albumin_secretion = build_phh_albumin_secretion()
@@ -530,6 +544,17 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
                 blockers.append("PHH batch assay lacks reported volumes for medium concentration reconstruction")
             if not glucose_open_system.predictive_ready:
                 blockers.append("glucose open-system program has no exact-protocol predictive model output")
+        if glucose_calibration is None:
+            blockers.append("glucose calibration and held-out validation gate is unavailable")
+        else:
+            if not glucose_calibration.kinetic_parameter_calibration_ready:
+                blockers.append("PHH aggregate glucose endpoint identifies zero reaction-specific kinetic parameters")
+            if not glucose_calibration.donor_disjoint_split_ready:
+                blockers.append("PHH glucose evidence has no donor-disjoint numeric calibration/held-out split")
+            if not glucose_calibration.independent_heldout_validation_ready:
+                blockers.append("PHH glucose program has no independent held-out human result")
+            if not glucose_calibration.uncertainty_qualified_pass_fail_ready:
+                blockers.append("PHH glucose program lacks covariance and a predeclared uncertainty-qualified pass criterion")
         if phh_albumin_secretion is None:
             blockers.append("PHH albumin-secretion measurement operator and identifiability audit are unavailable")
         else:
