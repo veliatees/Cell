@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-19T21:34:30.551827+00:00",
+    "created_at_utc": "2026-07-19T22:31:27.756046+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -3609,6 +3609,1924 @@
         "url": "https://doi.org/10.7554/eLife.00049"
       }
     },
+    "exact_glucose_homeostasis": {
+      "active_runtime_replacement_ready": false,
+      "blockers": [
+        "One cytosolic glucose pool is represented by two disconnected runtime species, so storage, production and export cannot share an exact mass balance.",
+        "Two non-equivalent exploratory reactions export glucose from different internal pools.",
+        "A multi-step pathway is collapsed into one callable and is not equation-isomorphic to the source-resolved reaction sequence.",
+        "The exploratory network uses one numerical volume for reactions that require separate cytosolic and mitochondrial pools.",
+        "The official publication supplement establishes structure but contains zero kinetic laws.",
+        "No reaction currently has a complete healthy-PHH equation, per-cell unit, context and held-out-validation transfer."
+      ],
+      "canonical_pool_contract_ready": true,
+      "canonical_pools": [
+        {
+          "canonical_pool_id": "glucose_extracellular",
+          "compartment_id": "blood_or_assay_medium",
+          "exploratory_runtime_species_ids": [
+            "glucose_blood"
+          ],
+          "mapping_status": "one_to_one_name_bridge",
+          "source_species_ids": [
+            "glc_blood"
+          ]
+        },
+        {
+          "canonical_pool_id": "glucose_cytosol",
+          "compartment_id": "cytosol",
+          "exploratory_runtime_species_ids": [
+            "glucose",
+            "glucose_cyto"
+          ],
+          "mapping_status": "blocked_exploratory_runtime_splits_one_physical_pool",
+          "source_species_ids": [
+            "glc"
+          ]
+        },
+        {
+          "canonical_pool_id": "glucose_6_phosphate_cytosol",
+          "compartment_id": "cytosol",
+          "exploratory_runtime_species_ids": [
+            "glucose_6_phosphate"
+          ],
+          "mapping_status": "one_to_one_name_bridge",
+          "source_species_ids": [
+            "glc6p"
+          ]
+        },
+        {
+          "canonical_pool_id": "glycogen_glucosyl_residue_cytosol",
+          "compartment_id": "cytosol",
+          "exploratory_runtime_species_ids": [
+            "glycogen"
+          ],
+          "mapping_status": "one_to_one_name_bridge",
+          "source_species_ids": [
+            "glyglc"
+          ]
+        },
+        {
+          "canonical_pool_id": "lactate_extracellular",
+          "compartment_id": "blood_or_assay_medium",
+          "exploratory_runtime_species_ids": [],
+          "mapping_status": "missing_exploratory_runtime_boundary_pool",
+          "source_species_ids": [
+            "lac_blood"
+          ]
+        },
+        {
+          "canonical_pool_id": "lactate_cytosol",
+          "compartment_id": "cytosol",
+          "exploratory_runtime_species_ids": [
+            "lactate"
+          ],
+          "mapping_status": "one_to_one_name_bridge",
+          "source_species_ids": [
+            "lac"
+          ]
+        },
+        {
+          "canonical_pool_id": "pyruvate_cytosol",
+          "compartment_id": "cytosol",
+          "exploratory_runtime_species_ids": [
+            "pyruvate"
+          ],
+          "mapping_status": "one_to_one_name_bridge",
+          "source_species_ids": [
+            "pyr"
+          ]
+        },
+        {
+          "canonical_pool_id": "pyruvate_mitochondrial",
+          "compartment_id": "mitochondrion",
+          "exploratory_runtime_species_ids": [
+            "pyruvate"
+          ],
+          "mapping_status": "blocked_exploratory_runtime_collapses_compartments",
+          "source_species_ids": [
+            "pyr_mito"
+          ]
+        },
+        {
+          "canonical_pool_id": "ATP_cytosol",
+          "compartment_id": "cytosol",
+          "exploratory_runtime_species_ids": [
+            "ATP"
+          ],
+          "mapping_status": "one_to_one_name_bridge",
+          "source_species_ids": [
+            "atp"
+          ]
+        },
+        {
+          "canonical_pool_id": "ATP_mitochondrial",
+          "compartment_id": "mitochondrion",
+          "exploratory_runtime_species_ids": [
+            "ATP"
+          ],
+          "mapping_status": "blocked_exploratory_runtime_collapses_compartments",
+          "source_species_ids": [
+            "atp_mito"
+          ]
+        },
+        {
+          "canonical_pool_id": "NADH_cytosol",
+          "compartment_id": "cytosol",
+          "exploratory_runtime_species_ids": [
+            "NADH"
+          ],
+          "mapping_status": "one_to_one_name_bridge",
+          "source_species_ids": [
+            "nadh"
+          ]
+        },
+        {
+          "canonical_pool_id": "NADH_mitochondrial",
+          "compartment_id": "mitochondrion",
+          "exploratory_runtime_species_ids": [
+            "NADH"
+          ],
+          "mapping_status": "blocked_exploratory_runtime_collapses_compartments",
+          "source_species_ids": [
+            "nadh_mito"
+          ]
+        }
+      ],
+      "exact_source_topology_ready": true,
+      "numerical_execution_enabled": false,
+      "parameter_activation_allowed": false,
+      "policy": "Source-exact topology and canonical naming may drive structural tests. Numerical execution remains disabled until every active reaction has a qualified equation, unit bridge, matched PHH context and independent validation.",
+      "predictive_ready": false,
+      "runtime_conflicts": [
+        {
+          "affected_reaction_ids": [
+            "glycogen_synthesis",
+            "glycogen_breakdown",
+            "glucose_6_phosphatase",
+            "glucose_export",
+            "hepatic_glucose_output"
+          ],
+          "affected_species_ids": [
+            "glucose",
+            "glucose_cyto"
+          ],
+          "consequence": "One cytosolic glucose pool is represented by two disconnected runtime species, so storage, production and export cannot share an exact mass balance.",
+          "detected": true,
+          "id": "split_cytosolic_glucose_pool"
+        },
+        {
+          "affected_reaction_ids": [
+            "glucose_export",
+            "hepatic_glucose_output"
+          ],
+          "affected_species_ids": [
+            "glucose",
+            "glucose_cyto",
+            "glucose_blood"
+          ],
+          "consequence": "Two non-equivalent exploratory reactions export glucose from different internal pools.",
+          "detected": true,
+          "id": "duplicate_glucose_export_channels"
+        },
+        {
+          "affected_reaction_ids": [
+            "lower_glycolysis_reverse"
+          ],
+          "affected_species_ids": [
+            "phosphoenolpyruvate",
+            "fructose_1_6_bisphosphate",
+            "ATP",
+            "ADP",
+            "NADH",
+            "NAD_plus"
+          ],
+          "consequence": "A multi-step pathway is collapsed into one callable and is not equation-isomorphic to the source-resolved reaction sequence.",
+          "detected": true,
+          "id": "lumped_lower_gluconeogenesis"
+        },
+        {
+          "affected_reaction_ids": [
+            "acetoacetate_decarboxylation",
+            "acetyl_coa_carboxylase",
+            "alanine_transaminase",
+            "arg1",
+            "asl",
+            "aspartate_transaminase",
+            "ass1",
+            "atp_maintenance",
+            "atp_regeneration",
+            "bdh1_forward",
+            "bdh1_reverse",
+            "beta_oxidation",
+            "cps1",
+            "cpt1_beta_oxidation",
+            "fatty_acid_synthase",
+            "fructose_1_6_bisphosphatase",
+            "glucose_6_phosphatase",
+            "glucose_export",
+            "glutamate_dehydrogenase",
+            "glutaminase",
+            "glycerol_3_phosphate_dehydrogenase",
+            "glycerol_kinase",
+            "glycogen_breakdown",
+            "glycogen_synthesis",
+            "hepatic_glucose_output",
+            "hmgcl",
+            "hmgcs2",
+            "lactate_dehydrogenase",
+            "lower_glycolysis_reverse",
+            "malonyl_coa_decarboxylase",
+            "otc",
+            "pepck",
+            "phosphoglucose_isomerase_reverse",
+            "pyruvate_carboxylase",
+            "thiolase",
+            "triose_phosphate_condensation"
+          ],
+          "affected_species_ids": [
+            "ATP",
+            "ADP",
+            "NADH",
+            "NAD_plus",
+            "pyruvate"
+          ],
+          "consequence": "The exploratory network uses one numerical volume for reactions that require separate cytosolic and mitochondrial pools.",
+          "detected": true,
+          "id": "cytosol_mitochondrion_compartment_collapse"
+        }
+      ],
+      "source_compartment_ids": [
+        "cyto",
+        "blood",
+        "mito",
+        "mm",
+        "pm"
+      ],
+      "source_ids": [
+        "koenig2012_hepatic_glucose_model",
+        "koenig2012_plos_dataset_s2",
+        "koenig2012_author_executable_reencoding",
+        "koenig2012_text_s2_kinetic_parameters"
+      ],
+      "source_kinetic_law_count": 0,
+      "source_model_id": "Koenig2012",
+      "source_model_sha256": "9dc142160a8c4c0179523c438baa6b8f6ba2edc27824a87910fa712ac16c4e6f",
+      "source_reaction_count": 36,
+      "source_reactions": [
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "GLUT2",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "glc",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "blood",
+              "species_id": "glc_blood",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "GLUT2",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "GK",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "adp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "glc6p",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "atp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "glc",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "GK",
+          "reversible": false,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "G6PASE",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "p",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "glc",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "h2o",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "glc6p",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "G6PASE",
+          "reversible": false,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "GPI",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "fru6p",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "glc6p",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "GPI",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "G16PI",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "glc6p",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "glc1p",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "G16PI",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "UPGASE",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "pp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "udpglc",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "utp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "glc1p",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "UPGASE",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "PPASE",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "p",
+              "stoichiometry": 2.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "pp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "h2o",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "PPASE",
+          "reversible": false,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "GS",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "udp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "glyglc",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "udpglc",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "GS",
+          "reversible": false,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "GP",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "glc1p",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "p",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "glyglc",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "GP",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "NTKGTP",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "adp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "gtp",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "atp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "gdp",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "NTKGTP",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "NTKUTP",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "adp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "utp",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "atp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "udp",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "NTKUTP",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "AK",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "adp",
+              "stoichiometry": 2.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "atp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "amp",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "AK",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "PFK2",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "adp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "fru26bp",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "atp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "fru6p",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "PFK2",
+          "reversible": false,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "FBP2",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "p",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "fru6p",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "h2o",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "fru26bp",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "FBP2",
+          "reversible": false,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "PFK1",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "adp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "fru16bp",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "atp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "fru6p",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "PFK1",
+          "reversible": false,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "FBP1",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "p",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "fru6p",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "h2o",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "fru16bp",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "FBP1",
+          "reversible": false,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "ALD",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "grap",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "dhap",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "fru16bp",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "ALD",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "TPI",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "grap",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "dhap",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "TPI",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "GAPDH",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "nadh",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "h",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "bpg13",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "nad",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "p",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "grap",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "GAPDH",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "PGK",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "atp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "pg3",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "adp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "bpg13",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "PGK",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "PGAM",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "pg2",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "pg3",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "PGAM",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "EN",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "h2o",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "pep",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "pg2",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "EN",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "PK",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "atp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "pyr",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "adp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "pep",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "PK",
+          "reversible": false,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "PEPCK",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "gdp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "co2",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "pep",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "gtp",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "oaa",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "PEPCK",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "PEPCK_mito",
+          "products": [
+            {
+              "compartment_id": "mito",
+              "species_id": "co2_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "pep_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "gdp_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "nadh_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "nad_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "h_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "mito",
+              "species_id": "oaa_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "gtp_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "PEPCK_mito",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "PC",
+          "products": [
+            {
+              "compartment_id": "mito",
+              "species_id": "p_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "oaa_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "adp_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "mito",
+              "species_id": "co2_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "pyr_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "atp_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "PC",
+          "reversible": false,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "LDH",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "nad",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "lac",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "nadh",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "h",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "cyto",
+              "species_id": "pyr",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "LDH",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "LACT",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "lac",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "blood",
+              "species_id": "lac_blood",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "LACT",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "PYRT",
+          "products": [
+            {
+              "compartment_id": "mito",
+              "species_id": "pyr_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "pyr",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "PYRT",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "PEPT",
+          "products": [
+            {
+              "compartment_id": "cyto",
+              "species_id": "pep",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "mito",
+              "species_id": "pep_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "PEPT",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "PDH",
+          "products": [
+            {
+              "compartment_id": "mito",
+              "species_id": "co2_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "acoa_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "nadh_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "h_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "mito",
+              "species_id": "pyr_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "coa_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "nad_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "PDH",
+          "reversible": false,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "CS",
+          "products": [
+            {
+              "compartment_id": "mito",
+              "species_id": "cit_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "coa_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "mito",
+              "species_id": "oaa_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "acoa_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "h20_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "CS",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "NDK_mito",
+          "products": [
+            {
+              "compartment_id": "mito",
+              "species_id": "adp_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "gtp_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [
+            {
+              "compartment_id": "mito",
+              "species_id": "atp_mito",
+              "stoichiometry": 1.0
+            },
+            {
+              "compartment_id": "mito",
+              "species_id": "gdp_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "NDK_mito",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "OAAFLX",
+          "products": [
+            {
+              "compartment_id": "mito",
+              "species_id": "oaa_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reactants": [],
+          "reaction_id": "OAAFLX",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "ACOAFLX",
+          "products": [],
+          "reactants": [
+            {
+              "compartment_id": "mito",
+              "species_id": "acoa_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "ACOAFLX",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        },
+        {
+          "kinetic_law_present": false,
+          "modifier_species_ids": [],
+          "name": "VCITFLX",
+          "products": [],
+          "reactants": [
+            {
+              "compartment_id": "mito",
+              "species_id": "cit_mito",
+              "stoichiometry": 1.0
+            }
+          ],
+          "reaction_id": "VCITFLX",
+          "reversible": true,
+          "topology_source_id": "koenig2012_plos_dataset_s2"
+        }
+      ],
+      "source_species": [
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 2.8,
+          "name": "atp",
+          "species_id": "atp",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.8,
+          "name": "adp",
+          "species_id": "adp",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.16,
+          "name": "amp",
+          "species_id": "amp",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.27,
+          "name": "utp",
+          "species_id": "utp",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.09,
+          "name": "udp",
+          "species_id": "udp",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.29,
+          "name": "gtp",
+          "species_id": "gtp",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.1,
+          "name": "gdp",
+          "species_id": "gdp",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 1.22,
+          "name": "nad",
+          "species_id": "nad",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.00056,
+          "name": "nadh",
+          "species_id": "nadh",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 5.0,
+          "name": "p",
+          "species_id": "p",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.008,
+          "name": "pp",
+          "species_id": "pp",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 55000.0,
+          "name": "h2o",
+          "species_id": "h2o",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 5.0,
+          "name": "co2",
+          "species_id": "co2",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 5e-08,
+          "name": "h",
+          "species_id": "h",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.012,
+          "name": "glc1p",
+          "species_id": "glc1p",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.38,
+          "name": "udpglc",
+          "species_id": "udpglc",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 5.0,
+          "name": "glc",
+          "species_id": "glc",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 250.0,
+          "name": "glyglc",
+          "species_id": "glyglc",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.05,
+          "name": "fru6p",
+          "species_id": "fru6p",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.12,
+          "name": "glc6p",
+          "species_id": "glc6p",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.004,
+          "name": "fru26bp",
+          "species_id": "fru26bp",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.02,
+          "name": "fru16bp",
+          "species_id": "fru16bp",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.03,
+          "name": "dhap",
+          "species_id": "dhap",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.1,
+          "name": "grap",
+          "species_id": "grap",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.27,
+          "name": "pg3",
+          "species_id": "pg3",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.3,
+          "name": "bpg13",
+          "species_id": "bpg13",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.15,
+          "name": "pep",
+          "species_id": "pep",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.03,
+          "name": "pg2",
+          "species_id": "pg2",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.01,
+          "name": "oaa",
+          "species_id": "oaa",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.1,
+          "name": "pyr",
+          "species_id": "pyr",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "blood",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 5.0,
+          "name": "glc_blood",
+          "species_id": "glc_blood",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "cyto",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.5,
+          "name": "lac",
+          "species_id": "lac",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 5.0,
+          "name": "p_mito",
+          "species_id": "p_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.01,
+          "name": "oaa_mito",
+          "species_id": "oaa_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "blood",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 1.2,
+          "name": "lac_blood",
+          "species_id": "lac_blood",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 5.0,
+          "name": "co2_mito",
+          "species_id": "co2_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.1,
+          "name": "pyr_mito",
+          "species_id": "pyr_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.32,
+          "name": "cit_mito",
+          "species_id": "cit_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.15,
+          "name": "pep_mito",
+          "species_id": "pep_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.04,
+          "name": "acoa_mito",
+          "species_id": "acoa_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.29,
+          "name": "gtp_mito",
+          "species_id": "gtp_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.1,
+          "name": "gdp_mito",
+          "species_id": "gdp_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 2.8,
+          "name": "atp_mito",
+          "species_id": "atp_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.8,
+          "name": "adp_mito",
+          "species_id": "adp_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.98,
+          "name": "nad_mito",
+          "species_id": "nad_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 1e-08,
+          "name": "h_mito",
+          "species_id": "h_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.055,
+          "name": "coa_mito",
+          "species_id": "coa_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 0.24,
+          "name": "nadh_mito",
+          "species_id": "nadh_mito",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "blood",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 206.11,
+          "name": "epinephrine_blood",
+          "species_id": "epinephrine_blood",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "blood",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 4.36e-08,
+          "name": "glucagon_blood",
+          "species_id": "glucagon_blood",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "blood",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 7.61e-08,
+          "name": "insulin_blood",
+          "species_id": "insulin_blood",
+          "substance_units": "mM"
+        },
+        {
+          "boundary_condition": false,
+          "compartment_id": "mito",
+          "constant": false,
+          "has_only_substance_units": false,
+          "initial_amount": null,
+          "initial_concentration": 55000.0,
+          "name": "h20_mito",
+          "species_id": "h20_mito",
+          "substance_units": "mM"
+        }
+      ],
+      "source_species_count": 52,
+      "status": "source_exact_topology_ready_runtime_replacement_blocked",
+      "summary": {
+        "activated_parameter_count": 0,
+        "canonical_pool_count": 12,
+        "detected_runtime_conflict_count": 4,
+        "executable_reaction_count": 0,
+        "source_compartment_count": 5,
+        "source_kinetic_law_count": 0,
+        "source_reaction_count": 36,
+        "source_species_count": 52
+      },
+      "version": "exact_glucose_homeostasis_subnetwork_v1"
+    },
     "experiment": {
       "controls": {
         "experiment_id": "baseline",
@@ -4726,6 +6644,888 @@
         "human_liver_multiome"
       ],
       "variant_functional_links": []
+    },
+    "glucose_calibration_validation": {
+      "automatic_state_coupling": false,
+      "donor_disjoint_split_ready": false,
+      "independent_heldout_validation_ready": false,
+      "kinetic_parameter_calibration_ready": false,
+      "observation_use_audit": [
+        {
+          "condition_id": "hi_hg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_hi_hg_0_6h",
+          "reason": "The non-overlapping window is a valid same-format aggregate comparison, but the pooled two-donor source does not expose donor-resolved numeric trajectories for a donor-disjoint held-out split.",
+          "role": "same_format_nonoverlapping_validation_target",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 6.0,
+          "time_start_h": 0.0
+        },
+        {
+          "condition_id": "li_hg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_li_hg_0_6h",
+          "reason": "The non-overlapping window is a valid same-format aggregate comparison, but the pooled two-donor source does not expose donor-resolved numeric trajectories for a donor-disjoint held-out split.",
+          "role": "same_format_nonoverlapping_validation_target",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 6.0,
+          "time_start_h": 0.0
+        },
+        {
+          "condition_id": "hi_lg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_hi_lg_0_6h",
+          "reason": "The non-overlapping window is a valid same-format aggregate comparison, but the pooled two-donor source does not expose donor-resolved numeric trajectories for a donor-disjoint held-out split.",
+          "role": "same_format_nonoverlapping_validation_target",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 6.0,
+          "time_start_h": 0.0
+        },
+        {
+          "condition_id": "li_lg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_li_lg_0_6h",
+          "reason": "The non-overlapping window is a valid same-format aggregate comparison, but the pooled two-donor source does not expose donor-resolved numeric trajectories for a donor-disjoint held-out split.",
+          "role": "same_format_nonoverlapping_validation_target",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 6.0,
+          "time_start_h": 0.0
+        },
+        {
+          "condition_id": "hi_hg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_hi_hg_6_24h",
+          "reason": "The non-overlapping window is a valid same-format aggregate comparison, but the pooled two-donor source does not expose donor-resolved numeric trajectories for a donor-disjoint held-out split.",
+          "role": "same_format_nonoverlapping_validation_target",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 24.0,
+          "time_start_h": 6.0
+        },
+        {
+          "condition_id": "li_hg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_li_hg_6_24h",
+          "reason": "The non-overlapping window is a valid same-format aggregate comparison, but the pooled two-donor source does not expose donor-resolved numeric trajectories for a donor-disjoint held-out split.",
+          "role": "same_format_nonoverlapping_validation_target",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 24.0,
+          "time_start_h": 6.0
+        },
+        {
+          "condition_id": "hi_lg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_hi_lg_6_24h",
+          "reason": "The non-overlapping window is a valid same-format aggregate comparison, but the pooled two-donor source does not expose donor-resolved numeric trajectories for a donor-disjoint held-out split.",
+          "role": "same_format_nonoverlapping_validation_target",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 24.0,
+          "time_start_h": 6.0
+        },
+        {
+          "condition_id": "li_lg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_li_lg_6_24h",
+          "reason": "The non-overlapping window is a valid same-format aggregate comparison, but the pooled two-donor source does not expose donor-resolved numeric trajectories for a donor-disjoint held-out split.",
+          "role": "same_format_nonoverlapping_validation_target",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 24.0,
+          "time_start_h": 6.0
+        },
+        {
+          "condition_id": "hi_hg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_hi_hg_24_72h",
+          "reason": "The non-overlapping window is a valid same-format aggregate comparison, but the pooled two-donor source does not expose donor-resolved numeric trajectories for a donor-disjoint held-out split.",
+          "role": "same_format_nonoverlapping_validation_target",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 72.0,
+          "time_start_h": 24.0
+        },
+        {
+          "condition_id": "li_hg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_li_hg_24_72h",
+          "reason": "The non-overlapping window is a valid same-format aggregate comparison, but the pooled two-donor source does not expose donor-resolved numeric trajectories for a donor-disjoint held-out split.",
+          "role": "same_format_nonoverlapping_validation_target",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 72.0,
+          "time_start_h": 24.0
+        },
+        {
+          "condition_id": "hi_lg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_hi_lg_24_72h",
+          "reason": "The non-overlapping window is a valid same-format aggregate comparison, but the pooled two-donor source does not expose donor-resolved numeric trajectories for a donor-disjoint held-out split.",
+          "role": "same_format_nonoverlapping_validation_target",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 72.0,
+          "time_start_h": 24.0
+        },
+        {
+          "condition_id": "li_lg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_li_lg_24_72h",
+          "reason": "The non-overlapping window is a valid same-format aggregate comparison, but the pooled two-donor source does not expose donor-resolved numeric trajectories for a donor-disjoint held-out split.",
+          "role": "same_format_nonoverlapping_validation_target",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 72.0,
+          "time_start_h": 24.0
+        },
+        {
+          "condition_id": "hi_hg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_hi_hg_0_72h",
+          "reason": "The 0-72 h row overlaps all three shorter windows and cannot be counted as an independent target.",
+          "role": "descriptive_overlapping_consistency_audit",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 72.0,
+          "time_start_h": 0.0
+        },
+        {
+          "condition_id": "li_hg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_li_hg_0_72h",
+          "reason": "The 0-72 h row overlaps all three shorter windows and cannot be counted as an independent target.",
+          "role": "descriptive_overlapping_consistency_audit",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 72.0,
+          "time_start_h": 0.0
+        },
+        {
+          "condition_id": "hi_lg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_hi_lg_0_72h",
+          "reason": "The 0-72 h row overlaps all three shorter windows and cannot be counted as an independent target.",
+          "role": "descriptive_overlapping_consistency_audit",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 72.0,
+          "time_start_h": 0.0
+        },
+        {
+          "condition_id": "li_lg",
+          "independent_heldout_eligible": false,
+          "may_fit_kinetic_parameter": false,
+          "observation_id": "kemas_is_li_lg_0_72h",
+          "reason": "The 0-72 h row overlaps all three shorter windows and cannot be counted as an independent target.",
+          "role": "descriptive_overlapping_consistency_audit",
+          "same_format_comparison_allowed": true,
+          "time_end_h": 72.0,
+          "time_start_h": 0.0
+        }
+      ],
+      "policy": "Exact-protocol residuals are descriptive until reaction-specific observability, donor-disjoint held-out evidence and a predeclared uncertainty model all pass. No fit, score threshold or cell-state coupling is inferred from pooled aggregate data.",
+      "predictive_parameter_activation_allowed": false,
+      "predictive_ready": false,
+      "reaction_fit_eligibility": [
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "reactants/products and stoichiometric coefficients are not identical",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": true,
+          "reaction_id": "glycogen_synthesis",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "reactants/products and stoichiometric coefficients are not identical",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": true,
+          "reaction_id": "glycogen_breakdown",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "source compartment semantics do not match the active shared-cytosol runtime",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": true,
+          "fit_allowed": false,
+          "published_candidate_present": true,
+          "reaction_id": "glucose_export",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "glutaminase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "alanine_transaminase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "aspartate_transaminase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "glutamate_dehydrogenase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "reactants/products and stoichiometric coefficients are not identical",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": true,
+          "reaction_id": "lactate_dehydrogenase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "reactants/products and stoichiometric coefficients are not identical",
+            "source compartment semantics do not match the active shared-cytosol runtime",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": true,
+          "reaction_id": "pyruvate_carboxylase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "reactants/products and stoichiometric coefficients are not identical",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": true,
+          "reaction_id": "pepck",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "one active event collapses multiple published reactions and intermediate pools",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": true,
+          "reaction_id": "lower_glycolysis_reverse",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "reactants/products and stoichiometric coefficients are not identical",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": true,
+          "reaction_id": "fructose_1_6_bisphosphatase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": true,
+          "fit_allowed": false,
+          "published_candidate_present": true,
+          "reaction_id": "phosphoglucose_isomerase_reverse",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "reactants/products and stoichiometric coefficients are not identical",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": true,
+          "reaction_id": "glucose_6_phosphatase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "source compartment semantics do not match the active shared-cytosol runtime",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": true,
+          "fit_allowed": false,
+          "published_candidate_present": true,
+          "reaction_id": "hepatic_glucose_output",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "glycerol_kinase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "glycerol_3_phosphate_dehydrogenase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "one active event collapses multiple published reactions and intermediate pools",
+            "the active callable has no symbolic equation fingerprint matching the published MathML",
+            "published per-kilogram flux scale has no validated per-hepatocyte unit bridge",
+            "published mean-liver model context is not a matched healthy-PHH experiment",
+            "independent held-out validation of the transferred reaction is absent"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": true,
+          "reaction_id": "triose_phosphate_condensation",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "beta_oxidation",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "thiolase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "hmgcs2",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "hmgcl",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "bdh1_forward",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "bdh1_reverse",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "acetoacetate_decarboxylation",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "acetyl_coa_carboxylase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "fatty_acid_synthase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "malonyl_coa_decarboxylase",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "cpt1_beta_oxidation",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "cps1",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "otc",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "ass1",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "asl",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "no reaction candidate exists in the published glucose-model scope"
+          ],
+          "current_authority": "unparameterized",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "arg1",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "published-model transfer is not applicable to this separately sourced channel"
+          ],
+          "current_authority": "source_backed",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "atp_regeneration",
+          "source_parameter_transfer_allowed": false
+        },
+        {
+          "aggregate_endpoint_identifies_rate": false,
+          "blockers": [
+            "The aggregate PHH medium endpoint does not identify a reaction-specific kinetic parameter.",
+            "published-model transfer is not applicable to this separately sourced channel"
+          ],
+          "current_authority": "source_backed",
+          "exact_stoichiometry_match": false,
+          "fit_allowed": false,
+          "published_candidate_present": false,
+          "reaction_id": "atp_maintenance",
+          "source_parameter_transfer_allowed": false
+        }
+      ],
+      "same_format_descriptive_comparison_ready": true,
+      "source_ids": [
+        "kemas2021_phh_glucose",
+        "koenig2012_hepatic_glucose_model",
+        "koenig2012_plos_dataset_s2",
+        "koenig2012_author_executable_reencoding",
+        "koenig2012_text_s2_kinetic_parameters",
+        "grankvist2024_human_liver_fluxomics"
+      ],
+      "status": "descriptive_comparison_ready_calibration_and_heldout_blocked",
+      "summary": {
+        "activated_parameter_count": 0,
+        "audited_reaction_count": 36,
+        "descriptive_overlap_count": 4,
+        "fit_eligible_reaction_count": 0,
+        "independent_heldout_result_count": 0,
+        "pass_fail_count": 0,
+        "reported_observation_count": 16,
+        "same_format_nonoverlapping_target_count": 12,
+        "satisfied_validation_requirement_count": 0
+      },
+      "uncertainty_qualified_pass_fail_ready": false,
+      "validation_requirements": [
+        {
+          "current_evidence": "No scientific model prediction artifact is loaded; only the software bridge is tested.",
+          "id": "exact_protocol_model_prediction",
+          "requirement": "A frozen model must submit all 12 independent signed PHH window fluxes with matching metadata and artifact checksum.",
+          "satisfied": false
+        },
+        {
+          "current_evidence": "The table pools an insulin-sensitive group and the supplement gives donor sign differences only qualitatively.",
+          "id": "donor_resolved_numeric_trajectories",
+          "requirement": "Raw signed glucose trajectories must retain donor and biological-replicate identities.",
+          "satisfied": false
+        },
+        {
+          "current_evidence": "Numeric donor assignments are unavailable, so a donor-disjoint partition cannot be constructed.",
+          "id": "donor_disjoint_partition",
+          "requirement": "Calibration and held-out sets must contain disjoint donor identities declared before fitting.",
+          "satisfied": false
+        },
+        {
+          "current_evidence": "Current PHH data measure only net medium glucose disappearance.",
+          "id": "mechanism_identifying_measurements",
+          "requirement": "Isotope-resolved fluxes, intracellular metabolite time courses and matched enzyme/transporter abundance must identify fitted reactions.",
+          "satisfied": false
+        },
+        {
+          "current_evidence": "All required values are absent from the primary report and remain null.",
+          "id": "window_specific_normalization",
+          "requirement": "Initial/remaining medium volume, volumetric factor and viable-cell count at every window must be reported for concentration or viable-cell reconstruction.",
+          "satisfied": false
+        },
+        {
+          "current_evidence": "Window SDs are reported, but covariance and replicate identity are not.",
+          "id": "uncertainty_and_covariance",
+          "requirement": "Replicate structure, covariance across repeated windows and a predeclared uncertainty model must support aggregate scoring.",
+          "satisfied": false
+        },
+        {
+          "current_evidence": "The delivered held-out file contains model predictions and a null human comparator, not a held-out human result.",
+          "id": "independent_heldout_result",
+          "requirement": "A model frozen before access to the held-out observations must be evaluated without refitting.",
+          "satisfied": false
+        }
+      ],
+      "version": "glucose_calibration_heldout_validation_gate_v1"
+    },
+    "glucose_open_system": {
+      "automatic_state_coupling": false,
+      "cross_context_parameter_transfer_allowed": false,
+      "phh_batch_assay": {
+        "biological_system": "primary_human_hepatocyte_3d_spheroid",
+        "challenge_initial_medium_volume_uL": null,
+        "concentration_trajectory_reconstruction_ready": false,
+        "cumulative_amount_operator_ready": true,
+        "exposures": [
+          {
+            "concentration_control_mode": "reported_initial_medium_composition_not_clamped",
+            "condition_id": "hi_hg",
+            "glucagon_status": "not_listed_as_supplemented_actual_concentration_unmeasured",
+            "initial_glucagon_nM": null,
+            "initial_glucose_mM": 11.0,
+            "initial_insulin_pM": 1700000.0,
+            "label": "high insulin, high glucose"
+          },
+          {
+            "concentration_control_mode": "reported_initial_medium_composition_not_clamped",
+            "condition_id": "li_hg",
+            "glucagon_status": "supplemented",
+            "initial_glucagon_nM": 100.0,
+            "initial_glucose_mM": 11.0,
+            "initial_insulin_pM": 100.0,
+            "label": "low insulin, high glucose"
+          },
+          {
+            "concentration_control_mode": "reported_initial_medium_composition_not_clamped",
+            "condition_id": "hi_lg",
+            "glucagon_status": "not_listed_as_supplemented_actual_concentration_unmeasured",
+            "initial_glucagon_nM": null,
+            "initial_glucose_mM": 5.5,
+            "initial_insulin_pM": 1700000.0,
+            "label": "high insulin, low glucose"
+          },
+          {
+            "concentration_control_mode": "reported_initial_medium_composition_not_clamped",
+            "condition_id": "li_lg",
+            "glucagon_status": "supplemented",
+            "initial_glucagon_nM": 100.0,
+            "initial_glucose_mM": 5.5,
+            "initial_insulin_pM": 100.0,
+            "label": "low insulin, low glucose"
+          }
+        ],
+        "initial_exposure_matrix_ready": true,
+        "intracellular_transport_coupling_ready": false,
+        "limitations": [
+          "The challenge-medium initial volume, remaining-volume schedule and volumetric factor are not reported.",
+          "The reported endpoint is signed net medium glucose disappearance, not GLUT2 influx or intracellular pathway flux.",
+          "High-insulin conditions do not report a measured zero glucagon concentration."
+        ],
+        "remaining_medium_volume_schedule_uL": null,
+        "required_timepoints_h": [
+          0.0,
+          6.0,
+          24.0,
+          72.0
+        ],
+        "seeded_viable_cells_per_spheroid": 1500,
+        "source_ids": [
+          "kemas2021_phh_glucose"
+        ],
+        "topology": "finite_batch_culture_not_perfusion_not_sinusoid",
+        "viable_cell_count_schedule": null,
+        "volumetric_factor": null
+      },
+      "physiological_sinusoid": {
+        "anatomical_sinusoid_volume_l": null,
+        "biological_system": "healthy_adult_human_liver_blood_boundary_reference",
+        "concentration_boundary_ready": true,
+        "glucose_reference_high_mM": 5.6,
+        "glucose_reference_low_mM": 3.9,
+        "glucose_target_mM": 4.75,
+        "hepatocyte_exchange_flux_fmol_per_cell_h": null,
+        "hepatocyte_transport_coupling_ready": false,
+        "limitations": [
+          "The 13.4 s value is a whole-liver mean transit time, not one sinusoid residence time.",
+          "Boundary recovery is perfusion homeostasis; it does not claim hepatocyte glucose uptake.",
+          "No mouse spatial-metabolomics effect size is transferred into the human model.",
+          "No anatomical sinusoid control volume or human zonal pO2 is assigned."
+        ],
+        "nutritional_profile": "postabsorptive",
+        "single_sinusoid_flow_geometry_ready": false,
+        "source_ids": [
+          "human_hepatic_transit_1996",
+          "hmdb_2022"
+        ],
+        "whole_liver_mean_transit_time_s": 13.4
+      },
+      "policy": "A physiological sinusoid and a finite PHH spheroid culture are non-interchangeable. Only exact model-generated signed outputs may be projected into the assay; missing volumes, transport rates and concentration trajectories remain null.",
+      "predictive_ready": false,
+      "source_ids": [
+        "hmdb_2022",
+        "human_hepatic_transit_1996",
+        "kemas2021_phh_glucose"
+      ],
+      "status": "boundaries_structurally_ready_cell_exchange_and_prediction_blocked",
+      "summary": {
+        "active_hepatocyte_exchange_flux_count": 0,
+        "automatic_state_coupling_count": 0,
+        "loaded_exact_protocol_prediction_count": 0,
+        "phh_exposure_condition_count": 4,
+        "phh_required_timepoint_count": 4,
+        "physical_context_count": 2,
+        "reported_assay_volume_value_count": 0
+      },
+      "version": "glucose_open_system_exact_assay_v1"
     },
     "healthy_phh_glucose_validation": {
       "automatic_state_coupling": false,
@@ -10223,6 +13023,14 @@
         "phh_glucose_observability.measurement_contract",
         "phh_glucose_observability.supplemental_constraints",
         "phh_glucose_observability.quantity_audit",
+        "exact_glucose_homeostasis.source_species",
+        "exact_glucose_homeostasis.source_reactions",
+        "exact_glucose_homeostasis.canonical_pools",
+        "glucose_open_system.physiological_sinusoid",
+        "glucose_open_system.phh_batch_assay",
+        "glucose_calibration_validation.reaction_fit_eligibility",
+        "glucose_calibration_validation.observation_use_audit",
+        "glucose_calibration_validation.validation_requirements",
         "phh_albumin_secretion.assay_contract",
         "phh_albumin_secretion.observed_batch_span",
         "phh_albumin_secretion.measurement_contract",
@@ -10264,7 +13072,7 @@
         "spatial_world",
         "physical_validation"
       ],
-      "policy": "quantitative_state wins on overlapping species; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+      "policy": "quantitative_state wins on overlapping species; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
       "primary_state_path": "quantitative_state",
       "runtime_authoritative_sections": [
         "spatial_state",
@@ -13499,6 +16307,15 @@
             "no model prediction matches the locked 16-window PHH spheroid protocol",
             "no signed cumulative model trajectory is loaded for the PHH measurement operator",
             "PHH net medium glucose measurements do not identify intracellular pathway fluxes",
+            "source-exact glucose topology has not replaced the split and lumped exploratory runtime",
+            "source-exact glucose topology has no qualified numerical parameter activation",
+            "physiological sinusoid has no calibrated hepatocyte glucose-exchange flux",
+            "PHH batch assay lacks reported volumes for medium concentration reconstruction",
+            "glucose open-system program has no exact-protocol predictive model output",
+            "PHH aggregate glucose endpoint identifies zero reaction-specific kinetic parameters",
+            "PHH glucose evidence has no donor-disjoint numeric calibration/held-out split",
+            "PHH glucose program has no independent held-out human result",
+            "PHH glucose program lacks covariance and a predeclared uncertainty-qualified pass criterion",
             "no exact cumulative albumin model trajectory is loaded for the PHH assay operator",
             "PHH albumin endpoint does not identify translation or secretory-path kinetics",
             "PHH CYP source lacks raw substrate/product time courses and LLOQs",
@@ -13558,6 +16375,9 @@
             "16 mean-plus-SD healthy-PHH spheroid glucose windows and three insulin responses retain exact media, time and denominator semantics",
             "PHH spheroid protocol derives 12 non-overlapping cumulative mean targets, keeps four overlap audits descriptive, and blocks unidentified concentration reconstruction",
             "PHH cumulative model outputs map exactly to 16 signed assay windows while nine mechanism-specific fluxes and all kinetic fits remain unidentified",
+            "official glucose-model topology is preserved as a non-executable 52-species, five-compartment, 36-reaction contract while split pools, duplicated export, lumping and compartment collapse remain blocked",
+            "physiological sinusoid and finite PHH spheroid boundaries remain non-interchangeable, with an exact signed 12-window input to 16-window assay bridge and no invented volume",
+            "all 36 active glucose reactions and 16 PHH windows pass through a fail-closed calibration/held-out gate that permits descriptive residuals but zero kinetic fits, predictive activations or false held-out claims",
             "six-batch PHH albumin ELISA evidence maps through an exact mature-protein mass operator while five hidden secretory rates remain unidentified",
             "72 batch-resolved PHH CYP SCR/MFR means remain same-format diagnostics while censored records and hidden kinetics fail closed",
             "five batch-resolved d8-TCA BEI outputs retain the paired-condition operator while transporter and canalicular-geometry coupling fail closed",
@@ -13598,6 +16418,9 @@
             "16 mean-plus-SD healthy-PHH spheroid glucose windows and three insulin responses retain exact media, time and denominator semantics",
             "PHH spheroid protocol derives 12 non-overlapping cumulative mean targets, keeps four overlap audits descriptive, and blocks unidentified concentration reconstruction",
             "PHH cumulative model outputs map exactly to 16 signed assay windows while nine mechanism-specific fluxes and all kinetic fits remain unidentified",
+            "official glucose-model topology is preserved as a non-executable 52-species, five-compartment, 36-reaction contract while split pools, duplicated export, lumping and compartment collapse remain blocked",
+            "physiological sinusoid and finite PHH spheroid boundaries remain non-interchangeable, with an exact signed 12-window input to 16-window assay bridge and no invented volume",
+            "all 36 active glucose reactions and 16 PHH windows pass through a fail-closed calibration/held-out gate that permits descriptive residuals but zero kinetic fits, predictive activations or false held-out claims",
             "six-batch PHH albumin ELISA evidence maps through an exact mature-protein mass operator while five hidden secretory rates remain unidentified",
             "72 batch-resolved PHH CYP SCR/MFR means remain same-format diagnostics while censored records and hidden kinetics fail closed",
             "five batch-resolved d8-TCA BEI outputs retain the paired-condition operator while transporter and canalicular-geometry coupling fail closed",
@@ -20125,6 +22948,9 @@
         "healthy_phh_spheroid_glucose_validation",
         "phh_spheroid_glucose_validation_protocol",
         "phh_glucose_observability_gate",
+        "exact_glucose_homeostasis_subnetwork",
+        "glucose_open_system_exact_assay",
+        "glucose_calibration_heldout_validation_gate",
         "phh_albumin_secretion_observability",
         "phh_cyp_function_observability",
         "phh_biliary_excretion_observability",
@@ -20319,6 +23145,49 @@
           "source_ids": [
             "kemas2021_phh_glucose",
             "koenig2012_hepatic_glucose_model",
+            "grankvist2024_human_liver_fluxomics"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "retain the official 52-species, five-compartment, 36-reaction topology and canonical pool aliases; block numerical execution until runtime pool splits, duplicated export, lumping, compartment collapse and kinetic transfer are resolved",
+          "default_snapshot_role": "source_exact_structural_contract",
+          "drives_scientific_validation": true,
+          "id": "exact_glucose_homeostasis_subnetwork",
+          "limitations": "The official publication supplement contains zero kinetic laws. Source-exact topology does not authorize fitted per-kilogram rates, and the exploratory runtime still splits cytosolic glucose and collapses cytosolic/mitochondrial cofactors.",
+          "source_ids": [
+            "koenig2012_hepatic_glucose_model",
+            "koenig2012_plos_dataset_s2",
+            "koenig2012_author_executable_reencoding",
+            "koenig2012_text_s2_kinetic_parameters"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "keep physiological sinusoid flow and finite PHH spheroid culture as separate contexts; accept only checksum-provenanced signed model fluxes on the exact 12 independent windows and derive the 16 assay windows without inventing volume or concentration trajectories",
+          "default_snapshot_role": "non_interchangeable_boundary_and_measurement_bridge",
+          "drives_scientific_validation": true,
+          "id": "glucose_open_system_exact_assay",
+          "limitations": "Whole-liver transit does not identify one sinusoid. The PHH assay does not report challenge-medium volume, remaining-volume schedule, volumetric factor or window-specific viable-cell counts, so transport coupling and concentration reconstruction remain blocked.",
+          "source_ids": [
+            "hmdb_2022",
+            "human_hepatic_transit_1996",
+            "kemas2021_phh_glucose"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "audit all 36 active reactions and all 16 PHH windows; permit exact-protocol descriptive residuals only; require mechanism-identifying measurements, donor-resolved trajectories, donor-disjoint splits, frozen artifacts and qualified uncertainty before fitting or activation",
+          "default_snapshot_role": "descriptive_comparison_and_predictive_firewall",
+          "drives_scientific_validation": true,
+          "id": "glucose_calibration_heldout_validation_gate",
+          "limitations": "The current endpoint identifies one aggregate medium balance and zero reaction-specific kinetic parameters. The 12 non-overlapping rows are same-format targets, while four 0-72 h rows overlap; none is a donor-held-out result.",
+          "source_ids": [
+            "kemas2021_phh_glucose",
+            "koenig2012_hepatic_glucose_model",
+            "koenig2012_plos_dataset_s2",
+            "koenig2012_author_executable_reencoding",
+            "koenig2012_text_s2_kinetic_parameters",
             "grankvist2024_human_liver_fluxomics"
           ],
           "status": "derived"
