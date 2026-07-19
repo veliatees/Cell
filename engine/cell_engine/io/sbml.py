@@ -77,6 +77,19 @@ class SbmlReactionParticipant:
 
 
 @dataclass(frozen=True)
+class SbmlSpeciesFingerprint:
+    species_id: str
+    name: str | None
+    compartment_id: str
+    boundary_condition: bool
+    constant: bool
+    has_only_substance_units: bool
+    initial_concentration: float | None
+    initial_amount: float | None
+    substance_units: str | None
+
+
+@dataclass(frozen=True)
 class SbmlReactionFingerprint:
     reaction_id: str
     name: str | None
@@ -300,6 +313,44 @@ def inspect_sbml_reaction_fingerprints(
             )
         )
     return tuple(fingerprints)
+
+
+def inspect_sbml_species_fingerprints(
+    path: str | Path,
+) -> tuple[SbmlSpeciesFingerprint, ...]:
+    """Return source-exact species metadata without interpreting model values.
+
+    Initial concentration and amount are kept as separate optional fields because
+    SBML gives them different semantics. Callers must not silently convert one to
+    the other or assume a compartment volume that the source did not establish.
+    """
+    model_path = Path(path)
+    root = ET.fromstring(model_path.read_bytes())
+    if _local_name(root.tag) != "sbml":
+        raise ValueError(f"SBML file {model_path} has unexpected root element {root.tag}")
+    model = next((element for element in root if _local_name(element.tag) == "model"), None)
+    if model is None:
+        raise ValueError(f"SBML file {model_path} does not contain a model")
+
+    def optional_float(attrs: dict[str, str], key: str) -> float | None:
+        value = attrs.get(key)
+        return None if value is None else float(value)
+
+    return tuple(
+        SbmlSpeciesFingerprint(
+            species_id=_required(element.attrib, "id"),
+            name=element.attrib.get("name"),
+            compartment_id=_required(element.attrib, "compartment"),
+            boundary_condition=element.attrib.get("boundaryCondition", "false").lower() == "true",
+            constant=element.attrib.get("constant", "false").lower() == "true",
+            has_only_substance_units=element.attrib.get("hasOnlySubstanceUnits", "false").lower() == "true",
+            initial_concentration=optional_float(element.attrib, "initialConcentration"),
+            initial_amount=optional_float(element.attrib, "initialAmount"),
+            substance_units=element.attrib.get("substanceUnits"),
+        )
+        for element in model.iter()
+        if _local_name(element.tag) == "species" and "id" in element.attrib
+    )
 
 
 def load_sbml_subset(path: str | Path) -> SbmlSubsetModel:
