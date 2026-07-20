@@ -26,6 +26,7 @@ class ScientificModelAuditTests(unittest.TestCase):
         self.assertIn("aggregate_energy_redox_observations", {surface.id for surface in drivers})
         self.assertIn("compartmental_energy_redox_contract", {surface.id for surface in drivers})
         self.assertIn("energy_redox_calibration_validation_gate", {surface.id for surface in drivers})
+        self.assertIn("external_validation_readiness_program", {surface.id for surface in drivers})
         self.assertNotIn("published_hepatic_glucose_shadow_model", {surface.id for surface in drivers})
 
     def test_known_unsupported_surfaces_are_blocked_or_disabled(self) -> None:
@@ -68,6 +69,14 @@ class ScientificModelAuditTests(unittest.TestCase):
         )
         self.assertFalse(
             by_id["published_reaction_kinetic_transfer_audit"].drives_scientific_validation
+        )
+        self.assertEqual(
+            by_id["external_validation_readiness_program"].default_snapshot_role,
+            "context_of_use_claim_and_independence_contract",
+        )
+        self.assertIs(
+            by_id["external_validation_readiness_program"].drives_scientific_validation,
+            True,
         )
 
 

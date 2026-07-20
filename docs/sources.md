@@ -1025,3 +1025,28 @@ fluxes or rate constants from them.
 The functional-evidence registry cross-links these sources with the Wiśniewski
 seven-donor total proteome and Mallanna PHH surfaceome. No total abundance is
 converted automatically into surface abundance, active copies or cell flux.
+
+## External Scientific Review and Model Credibility V1
+
+- U.S. Food and Drug Administration, "Assessing the Credibility of
+  Computational Modeling and Simulation in Medical Device Submissions":
+  https://www.fda.gov/regulatory-information/search-fda-guidance-documents/assessing-credibility-computational-modeling-and-simulation-medical-device-submissions.
+  The project uses its risk-informed context-of-use, verification, validation
+  and uncertainty concepts as governance guidance. This is not a regulatory
+  submission or FDA qualification.
+- BioModels submission and curation guidance:
+  https://www.ebi.ac.uk/biomodels/model/submission-guidelines-and-agreement.
+  The project uses its model-format, annotation and reproducibility principles.
+  Repository curation would not certify hepatocyte biology.
+- Human Cell Atlas Liver Biological Network:
+  https://www.humancellatlas.org/biological-networks/liver-biological-network/.
+  It is listed as a route to spatial, structural and genomic liver expertise,
+  not as a project endorser.
+- EASL Basic Science Task Force:
+  https://easl.eu/easl/leadership-and-governance/basic-science-task-force/.
+  It is listed as a route to independent liver basic-science and clinical
+  reviewers, not as evidence that review has occurred.
+
+The external-review program contains no signed reviewer report, same-assay pass,
+prospective PHH result or independent reproduction. Biological accuracy remains
+unassigned until claim-specific external evidence exists.
