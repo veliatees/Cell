@@ -76,6 +76,18 @@ from cell_engine.validation.kinetic_transfer import (
     kinetic_transfer_snapshot,
     validate_kinetic_transfer_audit,
 )
+from cell_engine.validation.external_review import (
+    EXTERNAL_REVIEW_SOURCES,
+    ExternalValidationClaim,
+    ExternalValidationError,
+    ExternalValidationProgram,
+    ReviewerRole,
+    assert_claim_validation_level,
+    build_external_validation_program,
+    external_validation_snapshot,
+    render_external_review_dossier,
+    validate_external_validation_program,
+)
 
 __all__ = [
     "BASELINE_SCENARIO",
@@ -146,4 +158,14 @@ __all__ = [
     "build_kinetic_transfer_audit",
     "kinetic_transfer_snapshot",
     "validate_kinetic_transfer_audit",
+    "EXTERNAL_REVIEW_SOURCES",
+    "ExternalValidationClaim",
+    "ExternalValidationError",
+    "ExternalValidationProgram",
+    "ReviewerRole",
+    "assert_claim_validation_level",
+    "build_external_validation_program",
+    "external_validation_snapshot",
+    "render_external_review_dossier",
+    "validate_external_validation_program",
 ]

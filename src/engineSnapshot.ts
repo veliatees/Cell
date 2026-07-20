@@ -1065,6 +1065,101 @@ export type EngineEnergyRedoxValidation = {
   };
 };
 
+export type EngineExternalValidationContext = {
+  id: string;
+  title: string;
+  species: "Homo sapiens";
+  biological_system: string;
+  evidence_context: string;
+  intended_use: string;
+  allowed_outputs: string[];
+  prohibited_uses: string[];
+  status:
+    | "internal_review_ready"
+    | "comparison_blocked"
+    | "software_verified_human_calibration_blocked"
+    | "predictive_use_blocked";
+  predictive_claim_allowed: false;
+  biological_accuracy_pct: null;
+  blockers: string[];
+};
+
+export type EngineExternalReviewerRole = {
+  id: string;
+  title: string;
+  remit: string;
+  required_questions: string[];
+  independence_requirement: string;
+};
+
+export type EngineExternalValidationClaim = {
+  id: string;
+  title: string;
+  statement: string;
+  context_ids: string[];
+  model_surface_ids: string[];
+  required_reviewer_role_ids: string[];
+  current_level:
+    | "internal_contract_ready"
+    | "external_domain_reviewed"
+    | "same_assay_quantitatively_validated"
+    | "prospectively_validated";
+  internal_contract_ready: boolean;
+  external_review_result_count: number;
+  same_assay_validation_result_count: number;
+  prospective_validation_result_count: number;
+  biological_accuracy_pct: null;
+  blockers: string[];
+  falsification_questions: string[];
+};
+
+export type EngineExternalValidationReviewRound = {
+  id: string;
+  title: string;
+  status: "ready" | "blocked";
+  required_inputs: string[];
+  required_outputs: string[];
+  pass_criterion: string | null;
+  blockers: string[];
+};
+
+export type EngineExternalValidationProgram = {
+  version: "external_validation_program_v1";
+  status: string;
+  score_policy: string;
+  contexts: EngineExternalValidationContext[];
+  reviewer_roles: EngineExternalReviewerRole[];
+  claims: EngineExternalValidationClaim[];
+  independence: {
+    reviewer_conflicts_must_be_declared: true;
+    source_authorship_must_be_declared: true;
+    validation_donors_must_be_disjoint_from_calibration: true;
+    model_artifact_must_be_frozen_before_heldout_evaluation: true;
+    predictions_must_be_frozen_before_prospective_measurement: true;
+    independent_wet_lab_required_for_predictive_claim: true;
+    independent_software_reproduction_required_for_predictive_claim: true;
+    current_independent_external_review_count: number;
+    current_independent_wet_lab_result_count: number;
+    current_independent_reproduction_count: number;
+  };
+  review_rounds: EngineExternalValidationReviewRound[];
+  source_ids: string[];
+  summary: {
+    context_count: number;
+    scoped_claim_count: number;
+    reviewer_role_count: number;
+    internal_contract_ready_claim_count: number;
+    externally_reviewed_claim_count: number;
+    same_assay_validated_claim_count: number;
+    prospectively_validated_claim_count: number;
+    independent_external_review_count: number;
+    independent_wet_lab_result_count: number;
+    independent_reproduction_count: number;
+    predictive_claim_count: number;
+    biological_accuracy_pct: null;
+  };
+};
+
 export type EngineSnapshot = {
   schema_version: string;
   definition: {
@@ -1108,6 +1203,7 @@ export type EngineSnapshot = {
     phh_glucose_observability?: EnginePhhGlucoseObservability;
     compartmental_energy_redox?: EngineCompartmentalEnergyRedox;
     energy_redox_validation?: EngineEnergyRedoxValidation;
+    external_validation_program?: EngineExternalValidationProgram;
     phh_albumin_secretion?: EnginePhhAlbuminSecretion;
     phh_cyp_function?: EnginePhhCypFunction;
     phh_biliary_excretion?: EnginePhhBiliaryExcretion;
@@ -3410,6 +3506,7 @@ export type EngineSnapshotSummary = {
   phhGlucoseObservability: EnginePhhGlucoseObservability | null;
   compartmentalEnergyRedox: EngineCompartmentalEnergyRedox | null;
   energyRedoxValidation: EngineEnergyRedoxValidation | null;
+  externalValidationProgram: EngineExternalValidationProgram | null;
   phhAlbuminSecretion: EnginePhhAlbuminSecretion | null;
   phhCypFunction: EnginePhhCypFunction | null;
   phhBiliaryExcretion: EnginePhhBiliaryExcretion | null;
@@ -3576,6 +3673,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     phhGlucoseObservability: snapshot.state.phh_glucose_observability ?? null,
     compartmentalEnergyRedox: snapshot.state.compartmental_energy_redox ?? null,
     energyRedoxValidation: snapshot.state.energy_redox_validation ?? null,
+    externalValidationProgram: snapshot.state.external_validation_program ?? null,
     phhAlbuminSecretion: snapshot.state.phh_albumin_secretion ?? null,
     phhCypFunction: snapshot.state.phh_cyp_function ?? null,
     phhBiliaryExcretion: snapshot.state.phh_biliary_excretion ?? null,
@@ -5707,6 +5805,140 @@ export function connectEngineSnapshotStream(
   return { mode: "websocket", status: "connected", close: () => socket.close() };
 }
 
+function isEngineExternalValidationProgram(value: unknown): value is EngineExternalValidationProgram {
+  if (!isRecord(value)) return false;
+  const stringArray = (candidate: unknown): candidate is string[] =>
+    Array.isArray(candidate) && candidate.every(isString);
+  if (
+    value.version !== "external_validation_program_v1" ||
+    !isString(value.status) ||
+    !isString(value.score_policy) ||
+    !Array.isArray(value.contexts) || value.contexts.length !== 4 ||
+    !Array.isArray(value.reviewer_roles) || value.reviewer_roles.length !== 6 ||
+    !Array.isArray(value.claims) || value.claims.length !== 10 ||
+    !isRecord(value.independence) ||
+    !Array.isArray(value.review_rounds) || value.review_rounds.length !== 4 ||
+    !stringArray(value.source_ids) ||
+    !isRecord(value.summary)
+  ) return false;
+
+  const contextIds = new Set<string>();
+  for (const context of value.contexts) {
+    if (
+      !isRecord(context) ||
+      !isString(context.id) ||
+      !isString(context.title) ||
+      context.species !== "Homo sapiens" ||
+      !isString(context.biological_system) ||
+      !isString(context.evidence_context) ||
+      !isString(context.intended_use) ||
+      !stringArray(context.allowed_outputs) ||
+      !stringArray(context.prohibited_uses) || context.prohibited_uses.length === 0 ||
+      ![
+        "internal_review_ready",
+        "comparison_blocked",
+        "software_verified_human_calibration_blocked",
+        "predictive_use_blocked"
+      ].includes(String(context.status)) ||
+      context.predictive_claim_allowed !== false ||
+      context.biological_accuracy_pct !== null ||
+      !stringArray(context.blockers) || context.blockers.length === 0
+    ) return false;
+    contextIds.add(context.id);
+  }
+  if (contextIds.size !== value.contexts.length) return false;
+
+  const reviewerIds = new Set<string>();
+  for (const role of value.reviewer_roles) {
+    if (
+      !isRecord(role) ||
+      !isString(role.id) ||
+      !isString(role.title) ||
+      !isString(role.remit) ||
+      !stringArray(role.required_questions) || role.required_questions.length === 0 ||
+      !isString(role.independence_requirement)
+    ) return false;
+    reviewerIds.add(role.id);
+  }
+  if (reviewerIds.size !== value.reviewer_roles.length) return false;
+
+  const claimIds = new Set<string>();
+  for (const claim of value.claims) {
+    if (
+      !isRecord(claim) ||
+      !isString(claim.id) ||
+      !isString(claim.title) ||
+      !isString(claim.statement) ||
+      !stringArray(claim.context_ids) || claim.context_ids.length === 0 ||
+      !claim.context_ids.every((id) => contextIds.has(id)) ||
+      !stringArray(claim.model_surface_ids) || claim.model_surface_ids.length === 0 ||
+      !stringArray(claim.required_reviewer_role_ids) ||
+      claim.required_reviewer_role_ids.length === 0 ||
+      !claim.required_reviewer_role_ids.every((id) => reviewerIds.has(id)) ||
+      claim.current_level !== "internal_contract_ready" ||
+      claim.internal_contract_ready !== true ||
+      claim.external_review_result_count !== 0 ||
+      claim.same_assay_validation_result_count !== 0 ||
+      claim.prospective_validation_result_count !== 0 ||
+      claim.biological_accuracy_pct !== null ||
+      !stringArray(claim.blockers) || claim.blockers.length === 0 ||
+      !stringArray(claim.falsification_questions) || claim.falsification_questions.length === 0
+    ) return false;
+    claimIds.add(claim.id);
+  }
+  if (claimIds.size !== value.claims.length) return false;
+
+  const independence = value.independence;
+  if (
+    independence.reviewer_conflicts_must_be_declared !== true ||
+    independence.source_authorship_must_be_declared !== true ||
+    independence.validation_donors_must_be_disjoint_from_calibration !== true ||
+    independence.model_artifact_must_be_frozen_before_heldout_evaluation !== true ||
+    independence.predictions_must_be_frozen_before_prospective_measurement !== true ||
+    independence.independent_wet_lab_required_for_predictive_claim !== true ||
+    independence.independent_software_reproduction_required_for_predictive_claim !== true ||
+    independence.current_independent_external_review_count !== 0 ||
+    independence.current_independent_wet_lab_result_count !== 0 ||
+    independence.current_independent_reproduction_count !== 0
+  ) return false;
+
+  const expectedRoundIds = [
+    "round_1_claim_source_red_team",
+    "round_2_same_assay_heldout_validation",
+    "round_3_prospective_wet_lab_validation",
+    "round_4_independent_reproduction"
+  ];
+  for (let index = 0; index < value.review_rounds.length; index += 1) {
+    const round = value.review_rounds[index];
+    if (
+      !isRecord(round) ||
+      round.id !== expectedRoundIds[index] ||
+      !isString(round.title) ||
+      round.status !== (index === 0 ? "ready" : "blocked") ||
+      !stringArray(round.required_inputs) || round.required_inputs.length === 0 ||
+      !stringArray(round.required_outputs) || round.required_outputs.length === 0 ||
+      !(round.pass_criterion === null || isString(round.pass_criterion)) ||
+      !stringArray(round.blockers)
+    ) return false;
+  }
+
+  const summary = value.summary;
+  return (
+    summary.context_count === value.contexts.length &&
+    summary.scoped_claim_count === value.claims.length &&
+    summary.reviewer_role_count === value.reviewer_roles.length &&
+    summary.internal_contract_ready_claim_count === value.claims.length &&
+    summary.externally_reviewed_claim_count === 0 &&
+    summary.same_assay_validated_claim_count === 0 &&
+    summary.prospectively_validated_claim_count === 0 &&
+    summary.independent_external_review_count === 0 &&
+    summary.independent_wet_lab_result_count === 0 &&
+    summary.independent_reproduction_count === 0 &&
+    summary.predictive_claim_count === 0 &&
+    summary.biological_accuracy_pct === null
+  );
+}
+
 function isEnginePhysicalValidation(value: unknown): value is EnginePhysicalValidation {
   if (!isRecord(value)) return false;
   if (
@@ -5783,6 +6015,7 @@ function isEngineSnapshot(value: unknown): value is EngineSnapshot {
     (candidate.state.spatial_world === undefined || isEngineSpatialWorld(candidate.state.spatial_world)) &&
     (candidate.state.spatial_state === undefined || candidate.state.spatial_state === null || isEngineCellSpatialState(candidate.state.spatial_state)) &&
     (candidate.state.physical_validation === undefined || isEnginePhysicalValidation(candidate.state.physical_validation)) &&
+    (candidate.state.external_validation_program === undefined || isEngineExternalValidationProgram(candidate.state.external_validation_program)) &&
     (candidate.state.brian2_communication === undefined || isEngineBrian2Communication(candidate.state.brian2_communication)) &&
     (candidate.state.generative_modeling === undefined || isEngineGenerativeModelingBoundary(candidate.state.generative_modeling))
   );
