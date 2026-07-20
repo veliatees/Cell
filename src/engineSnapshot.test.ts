@@ -2216,6 +2216,15 @@ describe("engine snapshot client", () => {
       expect(result.summary.energyRedoxValidation?.summary.placeholder_reaction_count).toBe(9);
       expect(result.summary.energyRedoxValidation?.summary.fit_eligible_reaction_count).toBe(0);
       expect(result.summary.energyRedoxValidation?.summary.activated_parameter_count).toBe(0);
+      expect(result.summary.externalValidationProgram?.summary.context_count).toBe(4);
+      expect(result.summary.externalValidationProgram?.summary.scoped_claim_count).toBe(10);
+      expect(result.summary.externalValidationProgram?.summary.reviewer_role_count).toBe(6);
+      expect(result.summary.externalValidationProgram?.summary.internal_contract_ready_claim_count).toBe(10);
+      expect(result.summary.externalValidationProgram?.summary.externally_reviewed_claim_count).toBe(0);
+      expect(result.summary.externalValidationProgram?.summary.same_assay_validated_claim_count).toBe(0);
+      expect(result.summary.externalValidationProgram?.summary.prospectively_validated_claim_count).toBe(0);
+      expect(result.summary.externalValidationProgram?.summary.predictive_claim_count).toBe(0);
+      expect(result.summary.externalValidationProgram?.summary.biological_accuracy_pct).toBeNull();
       expect(result.summary.intercellularCommunication?.body_surface_profiles[0].molecules)
         .toContainEqual(expect.objectContaining({ id: "ABCB11_BSEP", role: "transporter" }));
     }
