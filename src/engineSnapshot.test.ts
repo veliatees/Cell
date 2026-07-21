@@ -2179,6 +2179,17 @@ describe("engine snapshot client", () => {
 
     expect(result.status).toBe("loaded");
     if (result.status === "loaded") {
+      expect(result.summary.hepatocyteCapabilityAtlas?.summary.feature_template_count).toBe(38);
+      expect(result.summary.hepatocyteCapabilityAtlas?.summary.filled_parameter_slot_count).toBe(0);
+      expect(result.summary.cellularMemoryContract?.event_log_is_memory).toBe(false);
+      expect(result.summary.cellularMemoryContract?.summary.substrate_contract_count).toBe(12);
+      expect(result.summary.reactionEvidenceAtlas?.summary.active_reaction_count).toBe(36);
+      expect(result.summary.reactionEvidenceAtlas?.summary.evidence_slot_count).toBe(432);
+      expect(result.summary.reactionEvidenceAtlas?.summary.transport_coupled_reaction_count).toBe(0);
+      expect(result.summary.cytosolTransport?.material_model.model).toBe("poroelastic_two_phase_cytoplasm");
+      expect(result.summary.cytosolTransport?.summary.healthy_phh_numeric_rheology_parameter_count).toBe(0);
+      expect(result.summary.cytosolTransport?.solver_layers.renderer_correlated_tracer_field.biological_time_or_velocity_claim).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
       expect(result.summary.humanLiverOpenAtlas?.morphometry_2d.cell_count).toBe(56_055);
       expect(result.summary.humanLiverOpenAtlas?.surfaceome.observed_protein_count).toBe(300);
       expect(result.summary.humanLiverOpenAtlas?.spatial_proteome.strong_zonated_count).toBe(171);
