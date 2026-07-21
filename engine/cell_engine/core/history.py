@@ -19,13 +19,22 @@ LifecycleStateName = Literal[
 EventStatus = Literal["instantaneous", "ongoing", "completed"]
 MemorySubstrate = Literal[
     "genetic",
+    "dna_damage_or_repair_scar",
     "dna_methylation",
     "histone_or_chromatin",
     "transcriptional_network",
+    "rna_or_ribonucleoprotein_state",
+    "stable_post_translational_state",
+    "receptor_desensitization",
+    "protein_turnover",
     "protein_or_aggregate",
     "mitochondrial",
+    "organelle_age_or_quality",
     "organelle_composition",
     "metabolic",
+    "metabolic_store",
+    "lipid_or_membrane_composition",
+    "cytoskeletal_or_polarity_state",
     "damage_response",
     "external_niche",
 ]

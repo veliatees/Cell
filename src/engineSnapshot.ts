@@ -1160,6 +1160,209 @@ export type EngineExternalValidationProgram = {
   };
 };
 
+export type EngineCapabilityParameterSlot = {
+  id: string;
+  quantity: string;
+  unit: string;
+  value: number | string | null;
+  required_evidence: string;
+};
+
+export type EngineHepatocyteCapabilityAtlas = {
+  version: "hepatocyte_capability_atlas_v1";
+  status: string;
+  scope: string;
+  policy: string;
+  domains: string[];
+  features: {
+    id: string;
+    domain: string;
+    biological_role: string;
+    compartments: string[];
+    inputs: string[];
+    outputs: string[];
+    state_variables: string[];
+    dependencies: string[];
+    parameter_slots: EngineCapabilityParameterSlot[];
+    validation_observables: string[];
+    history_substrates: string[];
+    visual_representation: string;
+    implementation_refs: string[];
+    topology_source_ids: string[];
+    template_status: "template_non_executable";
+    quantitative_activation_allowed: false;
+  }[];
+  source_ids: string[];
+  summary: {
+    declared_domain_count: number;
+    feature_template_count: number;
+    parameter_slot_count: number;
+    filled_parameter_slot_count: number;
+    quantitatively_activated_template_count: number;
+    template_non_executable_count: number;
+    biological_accuracy_pct: null;
+  };
+  limitations: string[];
+};
+
+export type EngineCellularMemoryContract = {
+  version: "cellular_memory_substrate_contract_v1";
+  status: string;
+  event_log_is_memory: false;
+  causal_rule: string;
+  substrates: {
+    id: string;
+    physical_carrier: string;
+    compartments: string[];
+    candidate_write_processes: string[];
+    required_persistence_tests: string[];
+    future_response_readouts: string[];
+    division_handling: string;
+    source_ids: string[];
+    quantitative_coupling_allowed: false;
+  }[];
+  active_memory_trace_count: number;
+  automatic_memory_consolidation: false;
+  automatic_future_response_coupling: false;
+  source_ids: string[];
+  summary: {
+    substrate_contract_count: number;
+    quantitatively_coupled_substrate_count: number;
+    required_persistence_test_count: number;
+  };
+};
+
+export type EngineReactionEvidenceAtlas = {
+  version: "reaction_evidence_atlas_v1";
+  status: string;
+  network_id: string;
+  policy: string;
+  evidence_tiers: Record<string, string>;
+  candidate_search_sources: string[];
+  reactions: {
+    reaction_id: string;
+    reactants: Record<string, number>;
+    products: Record<string, number>;
+    runtime_topology_source_id: string;
+    runtime_rate_law_family: string;
+    runtime_parameter_authority: string;
+    runtime_parameter_count: number;
+    legacy_runtime_compartment: string;
+    legacy_runtime_compartment_is_biological_assignment: false;
+    published_candidate_relationship: string;
+    published_candidate_reaction_ids: string[];
+    evidence_slots: {
+      id: string;
+      quantity: string;
+      unit: string;
+      value: number | string | null;
+      status: string;
+      required_context: string;
+    }[];
+    transport_coupling: {
+      diffusion_limitation_demonstrated: boolean;
+      species_apparent_diffusivity_um2_s: number | null;
+      characteristic_length_um: number | null;
+      damkohler_number: number | null;
+      direct_fluid_rate_multiplier: number | null;
+      local_concentration_coupling_allowed: boolean;
+      direct_rate_correction_allowed: boolean;
+      blockers: string[];
+    };
+    evidence_tier: string;
+    quantitative_execution_allowed: boolean;
+    predictive_execution_allowed: boolean;
+    blockers: string[];
+  }[];
+  source_ids: string[];
+  summary: {
+    active_reaction_count: number;
+    evidence_slot_count: number;
+    filled_evidence_slot_count: number;
+    source_backed_quantitative_reaction_count: number;
+    transport_coupled_reaction_count: number;
+    direct_fluid_rate_multiplier_count: number;
+    quantitative_execution_allowed_count: number;
+    predictive_execution_allowed_count: number;
+    published_candidate_mapping_count: number;
+  };
+  limitations: string[];
+};
+
+export type EngineCytosolTransport = {
+  version: "cytosol_transport_rheology_contract_v1";
+  status: string;
+  material_model: {
+    model: "poroelastic_two_phase_cytoplasm";
+    fluid_phase: string;
+    solid_phase: string;
+    scale_dependence_required: true;
+    single_newtonian_viscosity_for_all_probes_prohibited: true;
+    source_ids: string[];
+  };
+  governing_contract: Record<string, string | boolean | number | null>;
+  healthy_phh_parameter_slots: Record<string, number | null>;
+  measured_cell_geometry_context: Record<string, string | number | boolean>;
+  legacy_runtime_conflict: {
+    cytosol_volume_fraction: number;
+    authority: string;
+    used_by_exploratory_reaction_volume: true;
+    may_parameterize_quantitative_fluid_or_reaction_model: false;
+    migration_required: true;
+  };
+  cross_context_reference_observations: {
+    id: string;
+    biological_system: string;
+    observable: string;
+    value: number;
+    uncertainty: number | null;
+    unit: string;
+    evidence_role: string;
+    may_parameterize_healthy_phh: false;
+    source_ids: string[];
+  }[];
+  solver_layers: {
+    renderer_correlated_tracer_field: { enabled: true; role: string; membrane_volume_mapping: string; biological_time_or_velocity_claim: false };
+    quantitative_poroelastic_solver: { enabled: false; reason: string };
+    advection_diffusion_reaction_coupling: { enabled: false; reason: string };
+  };
+  reaction_coupling_policy: {
+    local_concentration_coupling: string;
+    direct_rate_correction: string;
+    global_rate_multiplier: "prohibited";
+    currently_coupled_reaction_count: number;
+  };
+  source_ids: string[];
+  summary: {
+    cross_context_reference_count: number;
+    healthy_phh_numeric_rheology_parameter_count: number;
+    quantitative_fluid_solver_count: number;
+    reaction_transport_coupling_count: number;
+    visual_fluid_layer_count: number;
+  };
+  blockers: string[];
+};
+
+export type EngineMetabolicConstraintShell = {
+  version: "metabolic_constraint_shell_v1";
+  status: string;
+  role: string;
+  candidate_reconstruction: {
+    model_family: string;
+    model_version: string | null;
+    artifact_sha256: string | null;
+    sbml_path: string | null;
+    license_audited: boolean;
+    mass_charge_balance_audited_in_project: boolean;
+  };
+  hepatocyte_context: Record<string, string | null>;
+  optimization_problem: Record<string, string | number | boolean | null>;
+  required_outputs: string[];
+  gates: Record<string, boolean>;
+  source_ids: string[];
+  blockers: string[];
+};
+
 export type EngineSnapshot = {
   schema_version: string;
   definition: {
@@ -1204,6 +1407,11 @@ export type EngineSnapshot = {
     compartmental_energy_redox?: EngineCompartmentalEnergyRedox;
     energy_redox_validation?: EngineEnergyRedoxValidation;
     external_validation_program?: EngineExternalValidationProgram;
+    hepatocyte_capability_atlas?: EngineHepatocyteCapabilityAtlas;
+    cellular_memory_contract?: EngineCellularMemoryContract;
+    reaction_evidence_atlas?: EngineReactionEvidenceAtlas;
+    cytosol_transport?: EngineCytosolTransport;
+    metabolic_constraint_shell?: EngineMetabolicConstraintShell;
     phh_albumin_secretion?: EnginePhhAlbuminSecretion;
     phh_cyp_function?: EnginePhhCypFunction;
     phh_biliary_excretion?: EnginePhhBiliaryExcretion;
@@ -3507,6 +3715,11 @@ export type EngineSnapshotSummary = {
   compartmentalEnergyRedox: EngineCompartmentalEnergyRedox | null;
   energyRedoxValidation: EngineEnergyRedoxValidation | null;
   externalValidationProgram: EngineExternalValidationProgram | null;
+  hepatocyteCapabilityAtlas: EngineHepatocyteCapabilityAtlas | null;
+  cellularMemoryContract: EngineCellularMemoryContract | null;
+  reactionEvidenceAtlas: EngineReactionEvidenceAtlas | null;
+  cytosolTransport: EngineCytosolTransport | null;
+  metabolicConstraintShell: EngineMetabolicConstraintShell | null;
   phhAlbuminSecretion: EnginePhhAlbuminSecretion | null;
   phhCypFunction: EnginePhhCypFunction | null;
   phhBiliaryExcretion: EnginePhhBiliaryExcretion | null;
@@ -3674,6 +3887,11 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     compartmentalEnergyRedox: snapshot.state.compartmental_energy_redox ?? null,
     energyRedoxValidation: snapshot.state.energy_redox_validation ?? null,
     externalValidationProgram: snapshot.state.external_validation_program ?? null,
+    hepatocyteCapabilityAtlas: snapshot.state.hepatocyte_capability_atlas ?? null,
+    cellularMemoryContract: snapshot.state.cellular_memory_contract ?? null,
+    reactionEvidenceAtlas: snapshot.state.reaction_evidence_atlas ?? null,
+    cytosolTransport: snapshot.state.cytosol_transport ?? null,
+    metabolicConstraintShell: snapshot.state.metabolic_constraint_shell ?? null,
     phhAlbuminSecretion: snapshot.state.phh_albumin_secretion ?? null,
     phhCypFunction: snapshot.state.phh_cyp_function ?? null,
     phhBiliaryExcretion: snapshot.state.phh_biliary_excretion ?? null,
