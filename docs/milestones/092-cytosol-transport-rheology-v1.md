@@ -62,3 +62,10 @@ MDCK cells remain cross-context observations and do not parameterize the PHH.
 - `src/physics/intracellularFluid.ts`
 - `src/physics/intracellularFluid.test.ts`
 - `src/main.ts`
+
+## Successor Milestones
+
+The original qualitative tracer layer is extended by Milestones 094-096 with a
+dimensionless pressure-projection grid, moving analytic organelle boundaries, a
+conservative unbound scalar kernel and explicit passive/active transport
+separation. The healthy-PHH quantitative gates remain closed.

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   INTRACELLULAR_FLUID_VISUAL_CONTRACT,
   IntracellularFluidField,
@@ -6,6 +6,7 @@ import {
   createSeededSphereTracerPositions,
   volumePreservingFluidMapDeterminant
 } from "./intracellularFluid";
+import { CytosolProjectionGrid } from "./cytosolNumerics";
 
 describe("intracellular fluid renderer field", () => {
   it("reproduces the same tracer field from the same seed", () => {
@@ -71,6 +72,27 @@ describe("intracellular fluid renderer field", () => {
     field.step(1 / 30, null, () => true);
 
     expect(Array.from(field.referencePositions)).toEqual(Array.from(before));
+  });
+
+  it("reuses the projected field between moving-boundary refresh frames", () => {
+    const grid = new CytosolProjectionGrid({
+      resolution: 10,
+      halfExtent: 6,
+      seed: 17,
+      radiusAtDirection: () => 5
+    });
+    const projectionStep = vi.spyOn(grid, "step");
+    const field = new IntracellularFluidField({
+      seed: 18,
+      initialPositions: createSeededSphereTracerPositions(12, 3, 19),
+      radiusAtDirection: () => 5,
+      numericalGrid: grid
+    });
+
+    field.step(1 / 60, null, undefined, undefined, true);
+    field.step(1 / 60, null, undefined, undefined, false);
+
+    expect(projectionStep).toHaveBeenCalledTimes(1);
   });
 
   it("does not claim molecule counts, measured velocity or reaction coupling", () => {

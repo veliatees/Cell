@@ -6,6 +6,12 @@
 // a moving aqueous phase legible. Numerical reaction coupling remains owned by
 // the Python evidence gate.
 
+import {
+  CytosolProjectionGrid,
+  DynamicCytosolObstacleField,
+  inverseVolumePreservingPoint
+} from "./cytosolNumerics";
+
 export type IntracellularFluidDeformation = {
   normal: readonly [number, number, number];
   axialScale: number;
@@ -25,6 +31,7 @@ export type IntracellularFluidFieldOptions = {
   safetyFraction?: number;
   tracerRadius?: number;
   modeCount?: number;
+  numericalGrid?: CytosolProjectionGrid;
 };
 
 type FlowMode = {
@@ -45,10 +52,15 @@ export const INTRACELLULAR_FLUID_VISUAL_CONTRACT = Object.freeze({
   representation: "seeded_sparse_transport_tracers",
   materialClass: "aqueous_mobile_phase_coupled_to_a_poroviscoelastic_scaffold",
   biologicalVelocityClaim: false,
+  biologicalPressureClaim: false,
   concentrationClaim: false,
   moleculeCountClaim: false,
   reactionRateCoupling: false,
-  membraneMapping: "volume_preserving_affine_contact_map"
+  membraneMapping: "volume_preserving_affine_contact_map",
+  dimensionlessProjectionSolver: true,
+  movingAnalyticObstacleBoundaries: true,
+  quantitativePoroelasticSolver: false,
+  membranePressureFeedback: false
 });
 
 const DEFAULT_SAFETY_FRACTION = 0.9;
@@ -149,6 +161,7 @@ export class IntracellularFluidField {
   private readonly tracerRadius: number;
   private readonly modes: FlowMode[];
   private readonly domainScale: number;
+  private readonly numericalGrid: CytosolProjectionGrid | null;
   private elapsedRenderS = 0;
 
   constructor(options: IntracellularFluidFieldOptions) {
@@ -175,6 +188,7 @@ export class IntracellularFluidField {
     this.radiusAtDirection = options.radiusAtDirection;
     this.safetyFraction = safetyFraction;
     this.tracerRadius = tracerRadius;
+    this.numericalGrid = options.numericalGrid ?? null;
 
     let maximumRadius = 0;
     for (let index = 0; index < this.referencePositions.length; index += 3) {
@@ -213,7 +227,9 @@ export class IntracellularFluidField {
   step(
     realDeltaS: number,
     deformation: IntracellularFluidDeformation | null,
-    collides?: IntracellularFluidCollision
+    collides?: IntracellularFluidCollision,
+    obstacles?: DynamicCytosolObstacleField,
+    refreshNumericalGrid = true
   ): void {
     if (!Number.isFinite(realDeltaS) || realDeltaS < 0) {
       throw new RangeError("fluid renderer delta must be finite and non-negative");
@@ -227,8 +243,11 @@ export class IntracellularFluidField {
 
     const dt = Math.min(realDeltaS, 0.05);
     this.elapsedRenderS += dt;
+    if (refreshNumericalGrid) this.numericalGrid?.step(dt, deformation, obstacles);
     const candidate = new Float32Array(3);
+    const renderedSource = new Float32Array(3);
     const renderedCandidate = new Float32Array(3);
+    const sampledVelocity = new Float32Array(3);
     for (let index = 0; index < this.referencePositions.length; index += 3) {
       const x = this.referencePositions[index];
       const y = this.referencePositions[index + 1];
@@ -236,24 +255,37 @@ export class IntracellularFluidField {
       let velocityX = 0;
       let velocityY = 0;
       let velocityZ = 0;
-      for (const mode of this.modes) {
-        const rx = x - mode.centerX;
-        const ry = y - mode.centerY;
-        const rz = z - mode.centerZ;
-        const inverseInfluenceSq = 1 / (mode.influenceRadius * mode.influenceRadius);
-        const weight = Math.exp(-(rx * rx + ry * ry + rz * rz) * inverseInfluenceSq);
-        const modulation = 1 + mode.modulationDepth * Math.sin(mode.phase + this.elapsedRenderS * mode.temporalRate);
-        const strength = mode.signedRate * modulation * weight;
-        velocityX += (mode.axisY * rz - mode.axisZ * ry) * strength;
-        velocityY += (mode.axisZ * rx - mode.axisX * rz) * strength;
-        velocityZ += (mode.axisX * ry - mode.axisY * rx) * strength;
+      if (this.numericalGrid) {
+        applyVolumePreservingFluidDeformation(x, y, z, deformation, renderedSource);
+        this.numericalGrid.sampleVelocity(
+          renderedSource[0], renderedSource[1], renderedSource[2], sampledVelocity
+        );
+        velocityX = sampledVelocity[0];
+        velocityY = sampledVelocity[1];
+        velocityZ = sampledVelocity[2];
+        renderedCandidate[0] = renderedSource[0] + velocityX * dt;
+        renderedCandidate[1] = renderedSource[1] + velocityY * dt;
+        renderedCandidate[2] = renderedSource[2] + velocityZ * dt;
+        inverseVolumePreservingPoint(
+          renderedCandidate[0], renderedCandidate[1], renderedCandidate[2], deformation, candidate
+        );
+      } else {
+        for (const mode of this.modes) {
+          const rx = x - mode.centerX;
+          const ry = y - mode.centerY;
+          const rz = z - mode.centerZ;
+          const inverseInfluenceSq = 1 / (mode.influenceRadius * mode.influenceRadius);
+          const weight = Math.exp(-(rx * rx + ry * ry + rz * rz) * inverseInfluenceSq);
+          const modulation = 1 + mode.modulationDepth * Math.sin(mode.phase + this.elapsedRenderS * mode.temporalRate);
+          const strength = mode.signedRate * modulation * weight;
+          velocityX += (mode.axisY * rz - mode.axisZ * ry) * strength;
+          velocityY += (mode.axisZ * rx - mode.axisX * rz) * strength;
+          velocityZ += (mode.axisX * ry - mode.axisY * rx) * strength;
+        }
+        candidate[0] = x + velocityX * dt;
+        candidate[1] = y + velocityY * dt;
+        candidate[2] = z + velocityZ * dt;
       }
-      const trialX = x + velocityX * dt;
-      const trialY = y + velocityY * dt;
-      const trialZ = z + velocityZ * dt;
-      candidate[0] = trialX;
-      candidate[1] = trialY;
-      candidate[2] = trialZ;
       this.projectPointInside(candidate, 0);
       applyVolumePreservingFluidDeformation(
         candidate[0], candidate[1], candidate[2], deformation, renderedCandidate

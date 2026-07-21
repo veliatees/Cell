@@ -1290,7 +1290,7 @@ export type EngineReactionEvidenceAtlas = {
 };
 
 export type EngineCytosolTransport = {
-  version: "cytosol_transport_rheology_contract_v1";
+  version: "cytosol_transport_rheology_contract_v2";
   status: string;
   material_model: {
     model: "poroelastic_two_phase_cytoplasm";
@@ -1310,6 +1310,16 @@ export type EngineCytosolTransport = {
     may_parameterize_quantitative_fluid_or_reaction_model: false;
     migration_required: true;
   };
+  human_in_vivo_validation_targets: {
+    id: string;
+    biological_system: string;
+    participant_count: number;
+    measured_readouts: string[];
+    numeric_values_curated: false;
+    validation_role: string;
+    may_parameterize_viscosity_pressure_or_bulk_flow: false;
+    source_ids: string[];
+  }[];
   cross_context_reference_observations: {
     id: string;
     biological_system: string;
@@ -1321,8 +1331,41 @@ export type EngineCytosolTransport = {
     may_parameterize_healthy_phh: false;
     source_ids: string[];
   }[];
+  transport_mode_contract: {
+    aqueous_passive_transport: {
+      carriers: string;
+      mechanisms: string[];
+      numerical_kernel_available: true;
+      healthy_phh_species_bound: false;
+    };
+    active_cargo_transport: {
+      carriers: string;
+      mechanisms: string[];
+      numerical_kernel_available: false;
+      healthy_phh_rate_bound: false;
+      cross_context_reference_only: true;
+    };
+    mode_interchange_prohibited: true;
+  };
   solver_layers: {
-    renderer_correlated_tracer_field: { enabled: true; role: string; membrane_volume_mapping: string; biological_time_or_velocity_claim: false };
+    renderer_dimensionless_projection_grid: {
+      enabled: true;
+      role: string;
+      membrane_volume_mapping: string;
+      moving_analytic_obstacle_boundaries: true;
+      static_anatomy_proxy_boundaries: true;
+      pressure_reaction_diagnostic_only: true;
+      biological_time_or_velocity_claim: false;
+      biological_pressure_claim: false;
+      membrane_pressure_feedback: false;
+    };
+    conservative_passive_scalar_kernel: {
+      enabled: true;
+      role: string;
+      boundary_condition: string;
+      biological_species_bound_count: 0;
+      biological_diffusivity_claim: false;
+    };
     quantitative_poroelastic_solver: { enabled: false; reason: string };
     advection_diffusion_reaction_coupling: { enabled: false; reason: string };
   };
@@ -1335,7 +1378,13 @@ export type EngineCytosolTransport = {
   source_ids: string[];
   summary: {
     cross_context_reference_count: number;
+    human_in_vivo_validation_target_count: number;
     healthy_phh_numeric_rheology_parameter_count: number;
+    dimensionless_projection_solver_count: number;
+    conservative_passive_scalar_kernel_count: number;
+    biological_species_bound_count: number;
+    moving_analytic_obstacle_layer_count: number;
+    membrane_pressure_feedback_count: number;
     quantitative_fluid_solver_count: number;
     reaction_transport_coupling_count: number;
     visual_fluid_layer_count: number;
