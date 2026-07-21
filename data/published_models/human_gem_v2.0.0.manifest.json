@@ -1,0 +1,36 @@
+{
+  "schema_version": "cell.published-model-manifest.v1",
+  "model_family": "Human-GEM",
+  "model_name": "Human 2.0.0",
+  "model_version": "2.0.0",
+  "release_tag": "v2.0.0",
+  "release_commit": "635f533152dc5f7290ce04d12700eaa882273c3e",
+  "release_date": "2026-03-30",
+  "artifact_format": "SBML Level 3 Version 1 with FBC Version 2",
+  "artifact_url": "https://raw.githubusercontent.com/SysBioChalmers/Human-GEM/635f533152dc5f7290ce04d12700eaa882273c3e/model/Human-GEM.xml",
+  "artifact_sha256": "cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a",
+  "artifact_size_bytes": 43115559,
+  "expected_local_cache_path": "data/published_models/cache/Human-GEM-v2.0.0.xml",
+  "license": "CC-BY-4.0",
+  "license_url": "https://github.com/SysBioChalmers/Human-GEM/blob/635f533152dc5f7290ce04d12700eaa882273c3e/LICENSE.md",
+  "structural_counts_verified_from_sbml": {
+    "compartments": 9,
+    "metabolites": 8461,
+    "reactions": 12931,
+    "genes": 2848
+  },
+  "verification": {
+    "date_verified": "2026-07-22",
+    "method": "Downloaded the immutable release-tag URL, computed SHA-256, and counted SBML elements by namespace-aware XML parsing.",
+    "artifact_vendored_in_repository": false,
+    "model_loaded_by_runtime": false
+  },
+  "scientific_scope": {
+    "reconstruction_role": "generic_human_stoichiometric_candidate_only",
+    "healthy_phh_context_extracted": false,
+    "measured_boundary_fluxes_attached": false,
+    "measured_objective_attached": false,
+    "independent_flux_validation_attached": false,
+    "fba_execution_allowed": false
+  }
+}
