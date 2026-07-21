@@ -87,6 +87,21 @@ linked to its dependencies.
 - Seeded stochastic approach placement, declared-shape support geometry, fail-closed contact-patch rendering, and scientific scale/domain/voxel layers: `milestones/081-stochastic-contact-surface-scientific-overlays-v1.md`
 - Reaction-level numerical provenance, context-match and held-out-validation firewall for the active integrated network: `milestones/082-quantitative-reaction-authority-firewall-v1.md`
 - Exhaustive published-model reaction mapping, SBML MathML fingerprints, and fail-closed kinetic parameter transfer: `milestones/083-published-reaction-kinetic-transfer-audit-v1.md`
+- Exact 52-species, five-compartment, 36-reaction glucose-homeostasis structural contract: `milestones/084-exact-glucose-homeostasis-subnetwork-v1.md`
+- Non-interchangeable physiological-sinusoid and finite-PHH-assay boundary bridge: `milestones/085-glucose-open-system-exact-assay-v1.md`
+- Reaction-fit eligibility, donor-disjoint and held-out glucose validation firewall: `milestones/086-glucose-calibration-heldout-validation-gate-v1.md`
+- Compartment-resolved ATP, adenylate, redox and transport topology with null numerical state: `milestones/087-compartment-resolved-energy-redox-contract-v1.md`
+- Legacy ATP/redox/OXPHOS quarantine and numerical activation firewall: `milestones/088-energy-redox-calibration-validation-firewall-v1.md`
+- Context-of-use, claim, reviewer-role, independence and external-review contract: `milestones/089-external-scientific-review-readiness-v1.md`
+- Bounded hepatocyte feature scope and physical-substrate cellular-memory contract: `milestones/090-hepatocyte-capability-memory-atlas-v1.md`
+- Per-reaction kinetic, abundance, compartment, transport and validation evidence queue: `milestones/091-reaction-evidence-atlas-v1.md`
+- Evidence-gated two-phase cytoplasm contract and membrane-consistent qualitative transport tracers: `milestones/092-cytosol-transport-rheology-v1.md`
+- Fail-closed Human-GEM/Human1 genome-scale constraint shell: `milestones/093-metabolic-constraint-shell-v1.md`
+- Dimensionless three-dimensional cytosol projection with deforming membrane coordinates and moving analytic organelle boundaries: `milestones/094-moving-boundary-cytosol-projection-v1.md`
+- Conservative passive-scalar test kernel with zero biological species bound: `milestones/095-conservative-cytosol-species-transport-v1.md`
+- Healthy-human restricted-water validation target and strict passive-fluid versus active-cargo separation: `milestones/096-cytosol-validation-active-transport-separation-v1.md`
+- Generated external scientific review dossier: `validation/external-review-dossier.md`
+- Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`
 
 ## Epithelial Biology
 

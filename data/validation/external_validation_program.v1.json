@@ -1,0 +1,631 @@
+{
+  "version": "external_validation_program_v1",
+  "status": "internal_contract_ready_external_review_pending",
+  "score_policy": "No global biological-accuracy percentage is identifiable. Engineering coverage, software verification, source review, same-assay validation and prospective validation are separate quantities and must never be averaged into one realism score.",
+  "contexts": [
+    {
+      "id": "healthy_phh_reference_research_preview",
+      "title": "Healthy-PHH evidence reference and research preview",
+      "species": "Homo sapiens",
+      "biological_system": "A reference hepatocyte assembled from non-interchangeable human liver tissue, isolated PHH, sandwich-culture and 3D-PHH evidence surfaces",
+      "evidence_context": "Fed-peak, postabsorptive and prolonged-fasted nutritional references; periportal, midlobular and pericentral categorical contexts",
+      "intended_use": "Explore source-traceable structure, observations, missingness and model hypotheses; design future validation experiments",
+      "allowed_outputs": [
+        "source-scoped observations in original units",
+        "derived geometry with explicit assumptions",
+        "non-executable mechanism and compartment topology",
+        "descriptive exact-assay comparison when a matched prediction exists"
+      ],
+      "prohibited_uses": [
+        "patient-specific prediction",
+        "clinical diagnosis or treatment selection",
+        "drug-safety decision",
+        "whole-cell biological accuracy percentage",
+        "cross-assay synthetic-donor initialization"
+      ],
+      "status": "internal_review_ready",
+      "predictive_claim_allowed": false,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "No independent external domain-review report is loaded.",
+        "No complete donor-resolved healthy-PHH calibration and held-out cohort exists."
+      ]
+    },
+    {
+      "id": "exact_phh_spheroid_glucose_comparison",
+      "title": "Exact-protocol 3D-PHH glucose comparison",
+      "species": "Homo sapiens",
+      "biological_system": "Two-donor primary-human-hepatocyte 3D spheroid assay",
+      "evidence_context": "Kemas 2021 glucose-media conditions, seeded-cell denominator and exact reported observation windows",
+      "intended_use": "Compare a frozen signed cumulative model trajectory with the exact assay measurement operator without inferring hidden intracellular fluxes",
+      "allowed_outputs": [
+        "window-matched descriptive residuals",
+        "source-reported mean and SD",
+        "overlap audits kept separate from independent windows"
+      ],
+      "prohibited_uses": [
+        "reaction-specific kinetic fitting from net medium glucose",
+        "claiming overlapping windows as independent validation",
+        "fresh-PHH or in-vivo single-cell extrapolation"
+      ],
+      "status": "comparison_blocked",
+      "predictive_claim_allowed": false,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "No exact-protocol model trajectory is loaded.",
+        "No donor-disjoint numeric calibration/held-out split is available.",
+        "No predeclared uncertainty-qualified pass criterion is defined."
+      ]
+    },
+    {
+      "id": "single_hepatocyte_contact_geometry",
+      "title": "Single-hepatocyte contact geometry",
+      "species": "Homo sapiens",
+      "biological_system": "Measured-volume-equivalent hepatocyte proxy with canonical membrane domains",
+      "evidence_context": "Human PHH scale plus engine-owned closed-surface contact geometry; no donor-resolved interface mesh",
+      "intended_use": "Compute proximity, contact enter/stay/exit, closest points, contact patch and volume-preserving kinematic deformation",
+      "allowed_outputs": [
+        "signed surface gap",
+        "contact lifecycle event",
+        "contact patch geometry",
+        "canonical membrane-domain candidates and ambiguity"
+      ],
+      "prohibited_uses": [
+        "adhesion force prediction",
+        "PHH membrane-tension prediction",
+        "receptor occupancy or signaling activation from geometry alone",
+        "claiming the proxy boundary as donor histology"
+      ],
+      "status": "software_verified_human_calibration_blocked",
+      "predictive_claim_allowed": false,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "No matched healthy-human cell-interface reconstruction is available.",
+        "No healthy-adult-PHH membrane/cortex mechanical parameter set is available.",
+        "Local receptor density, orientation and two-dimensional kinetics are unknown."
+      ]
+    },
+    {
+      "id": "predictive_healthy_phh_digital_twin",
+      "title": "Predictive healthy-PHH digital twin",
+      "species": "Homo sapiens",
+      "biological_system": "Donor-resolved healthy adult primary human hepatocyte",
+      "evidence_context": "Would require matched compartment, flux, protein-activity, mechanics, signaling and outcome trajectories",
+      "intended_use": "Prospective prediction of a defined hepatocyte response",
+      "allowed_outputs": [],
+      "prohibited_uses": [
+        "all current predictive or clinical use",
+        "cancer reversal or toxicity decisions",
+        "individual donor inference"
+      ],
+      "status": "predictive_use_blocked",
+      "predictive_claim_allowed": false,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "The integrated reaction network has no source-qualified predictive parameter set.",
+        "No independent held-out healthy-PHH validation result is loaded.",
+        "No prospective wet-lab validation has been completed.",
+        "No independent software reproduction has been completed."
+      ]
+    }
+  ],
+  "reviewer_roles": [
+    {
+      "id": "human_hepatocyte_biology",
+      "title": "Primary human hepatocyte biologist",
+      "remit": "PHH identity, polarity, zonation, organelles, culture context and donor variation",
+      "required_questions": [
+        "Are tissue, isolated-PHH, sandwich-culture and spheroid observations kept non-interchangeable?",
+        "Are hepatocyte polarity, zonation and transporter localizations represented within source scope?",
+        "Which structural or functional transfers overreach the underlying human evidence?"
+      ],
+      "independence_requirement": "Declare authorship of any source dataset and any contribution to this project."
+    },
+    {
+      "id": "computational_liver_modeling",
+      "title": "Computational liver and systems-biology modeler",
+      "remit": "Compartments, equations, scale bridges, identifiability and liver-metabolism context",
+      "required_questions": [
+        "Are organ, tissue, culture and per-cell quantities separated correctly?",
+        "Do compartment, unit and symbolic-rate-law gates prevent invalid parameter transfer?",
+        "Are claimed observables identifiable from the cited assay outputs?"
+      ],
+      "independence_requirement": "Must review frozen equations and manifests rather than an author-selected demonstration only."
+    },
+    {
+      "id": "membrane_cell_biophysics",
+      "title": "Membrane and cell-mechanics biophysicist",
+      "remit": "Bilayer mechanics, cortex coupling, deformation, contact patches and receptor-scale geometry",
+      "required_questions": [
+        "Does the implementation distinguish bending and membrane-reservoir shape change from direct area stretch?",
+        "Are engineering caps and proxy geometry clearly separated from PHH measurements?",
+        "Which experiments are required before force, adhesion or mechanotransduction can be activated?"
+      ],
+      "independence_requirement": "Must not treat red-cell or model-bilayer values as hepatocyte calibration."
+    },
+    {
+      "id": "clinical_hepatology_pathology",
+      "title": "Hepatologist or liver pathologist",
+      "remit": "Healthy-reference scope, disease phenotype, clinical interpretation and pathological plausibility",
+      "required_questions": [
+        "Are healthy, cultured, diseased and cancer-related states labelled without clinical overreach?",
+        "Could any display or output be misread as diagnosis, prognosis or treatment advice?",
+        "Which disease endpoints would be clinically meaningful for later prospective validation?"
+      ],
+      "independence_requirement": "Must have no responsibility for promoting the software or its claimed accuracy."
+    },
+    {
+      "id": "validation_uncertainty",
+      "title": "Model validation, statistics and uncertainty specialist",
+      "remit": "Context of use, calibration/validation separation, uncertainty and prospective test design",
+      "required_questions": [
+        "Is each claim tied to a precise context of use and comparator?",
+        "Are donor-disjoint splits, multiplicity, censoring and covariance handled correctly?",
+        "Are acceptance criteria predeclared and justified from assay uncertainty rather than invented thresholds?"
+      ],
+      "independence_requirement": "Must not inspect held-out outcomes before the model artifact and criteria are frozen."
+    },
+    {
+      "id": "scientific_software_reproducibility",
+      "title": "Scientific software and reproducibility reviewer",
+      "remit": "Code verification, provenance, deterministic artifacts, environment capture and independent execution",
+      "required_questions": [
+        "Can every reported result be regenerated from a pinned command and source checksum?",
+        "Do snapshots preserve missing values, units, denominators and authority labels?",
+        "Can an independent environment reproduce the manuscript figures and validation tables?"
+      ],
+      "independence_requirement": "Final reproduction must run outside the development environment."
+    }
+  ],
+  "claims": [
+    {
+      "id": "cell_identity_scale_and_zonation",
+      "title": "Cell identity, scale and zonation",
+      "statement": "The project exposes source-scoped human hepatocyte identity, aggregate scale and zonation references without claiming a donor-specific in-situ cell.",
+      "context_ids": [
+        "healthy_phh_reference_research_preview"
+      ],
+      "model_surface_ids": [
+        "human_hepatocyte_3d_morphometry",
+        "human_liver_open_atlas",
+        "phh_identity_heterogeneity_observability",
+        "human_hepatocyte_zonation_context"
+      ],
+      "required_reviewer_role_ids": [
+        "human_hepatocyte_biology",
+        "clinical_hepatology_pathology"
+      ],
+      "current_level": "internal_contract_ready",
+      "internal_contract_ready": true,
+      "external_review_result_count": 0,
+      "same_assay_validation_result_count": 0,
+      "prospective_validation_result_count": 0,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "Donor-resolved healthy in-situ boundary meshes and organelle morphometry are unavailable.",
+        "Commercial PHH product composition is not an in-vivo population distribution."
+      ],
+      "falsification_questions": [
+        "Does any active geometry or zone label contradict its human source context?",
+        "Is any culture-product statistic presented as an in-vivo single-cell state?"
+      ]
+    },
+    {
+      "id": "membrane_and_contact_geometry",
+      "title": "Membrane and contact geometry",
+      "statement": "The engine computes closed-surface proximity, contact patches, domain ambiguity and volume-preserving kinematic deformation; it does not predict PHH mechanics.",
+      "context_ids": [
+        "single_hepatocyte_contact_geometry"
+      ],
+      "model_surface_ids": [
+        "cell_contact_geometry",
+        "hepatocyte_communication_mechanism_atlas"
+      ],
+      "required_reviewer_role_ids": [
+        "membrane_cell_biophysics",
+        "scientific_software_reproducibility",
+        "human_hepatocyte_biology"
+      ],
+      "current_level": "internal_contract_ready",
+      "internal_contract_ready": true,
+      "external_review_result_count": 0,
+      "same_assay_validation_result_count": 0,
+      "prospective_validation_result_count": 0,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "Healthy-human PHH membrane/cortex calibration is missing.",
+        "Matched human contact-interface ground truth is missing."
+      ],
+      "falsification_questions": [
+        "Do rotation, body-order or mesh-resolution changes alter invariant contact outputs?",
+        "Does any geometry event activate force or biochemistry without a qualified law?"
+      ]
+    },
+    {
+      "id": "nutritional_endocrine_and_zonation_context",
+      "title": "Nutrition, endocrine and zonation context",
+      "statement": "Human nutritional, endocrine and zonation observations remain at their measured scale and do not automatically become single-cell reaction-rate multipliers.",
+      "context_ids": [
+        "healthy_phh_reference_research_preview"
+      ],
+      "model_surface_ids": [
+        "phh_glycogen_contexts",
+        "human_nutritional_homeostasis_v3",
+        "human_endocrine_glycogen_context",
+        "human_hepatocyte_zonation_context"
+      ],
+      "required_reviewer_role_ids": [
+        "human_hepatocyte_biology",
+        "computational_liver_modeling"
+      ],
+      "current_level": "internal_contract_ready",
+      "internal_contract_ready": true,
+      "external_review_result_count": 0,
+      "same_assay_validation_result_count": 0,
+      "prospective_validation_result_count": 0,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "Portal and sinusoid-resolved hormone exposure is unavailable.",
+        "Human in-situ zonal reaction-rate effect sizes are unavailable."
+      ],
+      "falsification_questions": [
+        "Has any organ-scale observation leaked into per-cell initialization or flux?",
+        "Are controlled-device oxygen settings mislabelled as human in-situ pO2?"
+      ]
+    },
+    {
+      "id": "glucose_measurement_and_model_bridge",
+      "title": "Glucose measurement and model bridge",
+      "statement": "The exact PHH spheroid measurement operator is encoded, while reaction-specific kinetic fitting and predictive validation remain blocked.",
+      "context_ids": [
+        "healthy_phh_reference_research_preview",
+        "exact_phh_spheroid_glucose_comparison"
+      ],
+      "model_surface_ids": [
+        "healthy_phh_spheroid_glucose_validation",
+        "phh_spheroid_glucose_validation_protocol",
+        "phh_glucose_observability_gate",
+        "glucose_calibration_heldout_validation_gate"
+      ],
+      "required_reviewer_role_ids": [
+        "human_hepatocyte_biology",
+        "computational_liver_modeling",
+        "validation_uncertainty"
+      ],
+      "current_level": "internal_contract_ready",
+      "internal_contract_ready": true,
+      "external_review_result_count": 0,
+      "same_assay_validation_result_count": 0,
+      "prospective_validation_result_count": 0,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "No exact-protocol model trajectory is loaded.",
+        "No donor-disjoint held-out PHH result is loaded."
+      ],
+      "falsification_questions": [
+        "Does the measurement operator reproduce every source window and denominator exactly?",
+        "Are overlapping 0-72 hour summaries incorrectly counted as independent evidence?"
+      ]
+    },
+    {
+      "id": "protein_abundance_localization_and_transport",
+      "title": "Protein abundance, localization and transport",
+      "statement": "Donor-resolved total protein abundance, localization identity and assay outputs are distinct observables; none is silently converted into active surface flux.",
+      "context_ids": [
+        "healthy_phh_reference_research_preview"
+      ],
+      "model_surface_ids": [
+        "phh_donor_resolved_absolute_proteome",
+        "hepatocyte_transporter_inventory_bridge",
+        "phh_protein_functional_evidence",
+        "human_sch_endogenous_bile_acid_compartments",
+        "absolute_transporter_flux"
+      ],
+      "required_reviewer_role_ids": [
+        "human_hepatocyte_biology",
+        "computational_liver_modeling"
+      ],
+      "current_level": "internal_contract_ready",
+      "internal_contract_ready": true,
+      "external_review_result_count": 0,
+      "same_assay_validation_result_count": 0,
+      "prospective_validation_result_count": 0,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "Surface-localized active copy counts are unavailable.",
+        "Matched whole-cell transport predictions and donor activity distributions are unavailable."
+      ],
+      "falsification_questions": [
+        "Is a per-nucleus protein-group abundance ever relabelled as active copies per cell?",
+        "Are coupled sandwich-culture outputs assigned to one transporter without identification?"
+      ]
+    },
+    {
+      "id": "compartmental_energy_and_redox_topology",
+      "title": "Compartmental energy and redox topology",
+      "statement": "ATP, adenylate, nicotinamide, glutathione, oxygen and ROS identities are separated across relevant compartments while all unmeasured states and rates remain null.",
+      "context_ids": [
+        "healthy_phh_reference_research_preview"
+      ],
+      "model_surface_ids": [
+        "aggregate_energy_redox_observations",
+        "compartmental_energy_redox_contract",
+        "energy_redox_calibration_validation_gate",
+        "legacy_atp_turnover_kinetics",
+        "glutathione_redox_kinetics",
+        "legacy_oxphos_kinetics"
+      ],
+      "required_reviewer_role_ids": [
+        "human_hepatocyte_biology",
+        "computational_liver_modeling"
+      ],
+      "current_level": "internal_contract_ready",
+      "internal_contract_ready": true,
+      "external_review_result_count": 0,
+      "same_assay_validation_result_count": 0,
+      "prospective_validation_result_count": 0,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "Compartment-resolved PHH initial states and matched trajectories are unavailable.",
+        "All legacy ATP/redox/OXPHOS numerical reactions remain placeholders."
+      ],
+      "falsification_questions": [
+        "Does any aggregate tissue value initialize an organelle compartment?",
+        "Is apparent Pi-to-ATP exchange interpreted as mitochondrial synthesis or demand?"
+      ]
+    },
+    {
+      "id": "communication_and_receptor_chain",
+      "title": "Communication and receptor-event chain",
+      "statement": "Geometry can open a contact or exposure gate, but receptor binding, signaling and transport require independent local abundance and kinetic evidence.",
+      "context_ids": [
+        "healthy_phh_reference_research_preview",
+        "single_hepatocyte_contact_geometry"
+      ],
+      "model_surface_ids": [
+        "hepatocyte_communication_mechanism_atlas",
+        "endocrine_receptor_rate_coupling",
+        "brian2_intercellular_execution"
+      ],
+      "required_reviewer_role_ids": [
+        "human_hepatocyte_biology",
+        "membrane_cell_biophysics",
+        "computational_liver_modeling"
+      ],
+      "current_level": "internal_contract_ready",
+      "internal_contract_ready": true,
+      "external_review_result_count": 0,
+      "same_assay_validation_result_count": 0,
+      "prospective_validation_result_count": 0,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "Local receptor density, orientation and two-dimensional binding kinetics are unavailable.",
+        "No calibrated Brian2 communication model is attached."
+      ],
+      "falsification_questions": [
+        "Can a contact event change cell state without a separately validated interaction law?",
+        "Are soluble endocrine fields incorrectly represented as collision bodies?"
+      ]
+    },
+    {
+      "id": "cell_fate_damage_and_disease",
+      "title": "Cell fate, damage and disease",
+      "statement": "Disease interventions and damage pathways are exploratory evidence-labelled scenarios, not calibrated predictions of death, recovery or cancer progression.",
+      "context_ids": [
+        "healthy_phh_reference_research_preview",
+        "predictive_healthy_phh_digital_twin"
+      ],
+      "model_surface_ids": [
+        "cell_fate_thresholds",
+        "organelle_failure_hazards",
+        "cytokinesis_failure_probability"
+      ],
+      "required_reviewer_role_ids": [
+        "human_hepatocyte_biology",
+        "clinical_hepatology_pathology",
+        "validation_uncertainty"
+      ],
+      "current_level": "internal_contract_ready",
+      "internal_contract_ready": true,
+      "external_review_result_count": 0,
+      "same_assay_validation_result_count": 0,
+      "prospective_validation_result_count": 0,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "No calibrated healthy-human time-to-fate or recovery model exists.",
+        "No prospective disease-transition validation exists."
+      ],
+      "falsification_questions": [
+        "Does any scenario claim a calibrated time-to-death or reversibility threshold?",
+        "Are cell-line, animal or disease observations generalized to healthy PHH without a gate?"
+      ]
+    },
+    {
+      "id": "genome_expression_and_generative_boundary",
+      "title": "Genome, expression and generative boundary",
+      "statement": "Reference genomic structure and selected calibrated expression effects may be represented, while synthetic cells remain quarantined from mechanistic state coupling.",
+      "context_ids": [
+        "healthy_phh_reference_research_preview",
+        "predictive_healthy_phh_digital_twin"
+      ],
+      "model_surface_ids": [
+        "genome_expression",
+        "generative_hepatocyte_model"
+      ],
+      "required_reviewer_role_ids": [
+        "human_hepatocyte_biology",
+        "validation_uncertainty",
+        "scientific_software_reproducibility"
+      ],
+      "current_level": "internal_contract_ready",
+      "internal_contract_ready": true,
+      "external_review_result_count": 0,
+      "same_assay_validation_result_count": 0,
+      "prospective_validation_result_count": 0,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "No donor-disjoint generative training and held-out evaluation bundle is loaded.",
+        "Most gene-specific expression and turnover kinetics are unknown."
+      ],
+      "falsification_questions": [
+        "Can a synthetic sample alter the mechanistic engine without posterior predictive validation?",
+        "Are reference coordinates or abundance observations presented as donor-specific dynamics?"
+      ]
+    },
+    {
+      "id": "whole_cell_predictive_hepatocyte",
+      "title": "Whole-cell predictive hepatocyte",
+      "statement": "The current project is a mixed-authority research preview and does not claim a quantitatively validated whole-cell hepatocyte or a biological accuracy percentage.",
+      "context_ids": [
+        "healthy_phh_reference_research_preview",
+        "predictive_healthy_phh_digital_twin"
+      ],
+      "model_surface_ids": [
+        "integrated_reaction_authority",
+        "integrated_fuel_pathway_rates",
+        "published_reaction_kinetic_transfer_audit",
+        "published_hepatic_glucose_shadow_model"
+      ],
+      "required_reviewer_role_ids": [
+        "computational_liver_modeling",
+        "validation_uncertainty",
+        "scientific_software_reproducibility",
+        "clinical_hepatology_pathology"
+      ],
+      "current_level": "internal_contract_ready",
+      "internal_contract_ready": true,
+      "external_review_result_count": 0,
+      "same_assay_validation_result_count": 0,
+      "prospective_validation_result_count": 0,
+      "biological_accuracy_pct": null,
+      "blockers": [
+        "Zero integrated reactions currently pass the complete source-backed predictive authority gate.",
+        "No independent held-out or prospective whole-cell result exists.",
+        "No independent software reproduction exists."
+      ],
+      "falsification_questions": [
+        "Can every active numerical rate be traced to a matched equation, unit, PHH context and validation result?",
+        "Can an independent lab and software team reproduce a predeclared prospective prediction?"
+      ]
+    }
+  ],
+  "independence": {
+    "reviewer_conflicts_must_be_declared": true,
+    "source_authorship_must_be_declared": true,
+    "validation_donors_must_be_disjoint_from_calibration": true,
+    "model_artifact_must_be_frozen_before_heldout_evaluation": true,
+    "predictions_must_be_frozen_before_prospective_measurement": true,
+    "independent_wet_lab_required_for_predictive_claim": true,
+    "independent_software_reproduction_required_for_predictive_claim": true,
+    "current_independent_external_review_count": 0,
+    "current_independent_wet_lab_result_count": 0,
+    "current_independent_reproduction_count": 0
+  },
+  "review_rounds": [
+    {
+      "id": "round_1_claim_source_red_team",
+      "title": "Claim, source and scope red-team review",
+      "status": "ready",
+      "required_inputs": [
+        "frozen source registry and checksums",
+        "context-of-use contracts",
+        "claim-to-model-surface matrix",
+        "known blockers and null parameters",
+        "reproducible research-preview command"
+      ],
+      "required_outputs": [
+        "signed reviewer role and conflict declaration",
+        "finding list with severity and affected claim ids",
+        "source-transfer decisions and required corrections"
+      ],
+      "pass_criterion": "Every finding is dispositioned and every retained claim is approved within its declared non-predictive scope; no numerical biological threshold is inferred.",
+      "blockers": []
+    },
+    {
+      "id": "round_2_same_assay_heldout_validation",
+      "title": "Frozen same-assay held-out validation",
+      "status": "blocked",
+      "required_inputs": [
+        "mechanism-identifying calibration data",
+        "donor-disjoint held-out PHH trajectories",
+        "frozen model artifact and parameter checksum",
+        "predeclared endpoint-specific uncertainty model and acceptance criteria"
+      ],
+      "required_outputs": [
+        "exact-assay predictions",
+        "residual and uncertainty report",
+        "held-out donor accounting",
+        "claim-specific pass or fail result"
+      ],
+      "pass_criterion": null,
+      "blockers": [
+        "No donor-disjoint held-out PHH trajectory bundle is loaded.",
+        "No endpoint-specific acceptance criterion is justified and preregistered."
+      ]
+    },
+    {
+      "id": "round_3_prospective_wet_lab_validation",
+      "title": "Prospective independent PHH experiment",
+      "status": "blocked",
+      "required_inputs": [
+        "externally reviewed model",
+        "frozen prospective predictions",
+        "independent wet-lab protocol",
+        "predeclared exclusions, endpoints and uncertainty analysis"
+      ],
+      "required_outputs": [
+        "timestamped prediction artifact",
+        "raw and processed assay data",
+        "blinded comparison report",
+        "protocol deviations and negative results"
+      ],
+      "pass_criterion": null,
+      "blockers": [
+        "Round 2 is incomplete.",
+        "No independent wet-lab collaboration and protocol are registered."
+      ]
+    },
+    {
+      "id": "round_4_independent_reproduction",
+      "title": "Independent software and manuscript reproduction",
+      "status": "blocked",
+      "required_inputs": [
+        "frozen release archive",
+        "pinned environment",
+        "machine-readable model and evidence package",
+        "manuscript figure and table recipes"
+      ],
+      "required_outputs": [
+        "independent execution log",
+        "reproduced figures and tables",
+        "deviation report",
+        "repository curation record when eligible"
+      ],
+      "pass_criterion": null,
+      "blockers": [
+        "Prospective validation is incomplete.",
+        "No independent reproduction report is loaded."
+      ]
+    }
+  ],
+  "source_ids": [
+    "fda2023_computational_model_credibility",
+    "biomodels_submission_curation_guidance",
+    "human_cell_atlas_liver_network",
+    "easl_basic_science_task_force"
+  ],
+  "summary": {
+    "context_count": 4,
+    "scoped_claim_count": 10,
+    "reviewer_role_count": 6,
+    "internal_contract_ready_claim_count": 10,
+    "externally_reviewed_claim_count": 0,
+    "same_assay_validated_claim_count": 0,
+    "prospectively_validated_claim_count": 0,
+    "independent_external_review_count": 0,
+    "independent_wet_lab_result_count": 0,
+    "independent_reproduction_count": 0,
+    "predictive_claim_count": 0,
+    "biological_accuracy_pct": null
+  }
+}

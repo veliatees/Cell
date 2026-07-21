@@ -2179,6 +2179,21 @@ describe("engine snapshot client", () => {
 
     expect(result.status).toBe("loaded");
     if (result.status === "loaded") {
+      expect(result.summary.hepatocyteCapabilityAtlas?.summary.feature_template_count).toBe(38);
+      expect(result.summary.hepatocyteCapabilityAtlas?.summary.filled_parameter_slot_count).toBe(0);
+      expect(result.summary.cellularMemoryContract?.event_log_is_memory).toBe(false);
+      expect(result.summary.cellularMemoryContract?.summary.substrate_contract_count).toBe(12);
+      expect(result.summary.reactionEvidenceAtlas?.summary.active_reaction_count).toBe(36);
+      expect(result.summary.reactionEvidenceAtlas?.summary.evidence_slot_count).toBe(432);
+      expect(result.summary.reactionEvidenceAtlas?.summary.transport_coupled_reaction_count).toBe(0);
+      expect(result.summary.cytosolTransport?.material_model.model).toBe("poroelastic_two_phase_cytoplasm");
+      expect(result.summary.cytosolTransport?.summary.healthy_phh_numeric_rheology_parameter_count).toBe(0);
+      expect(result.summary.cytosolTransport?.summary.human_in_vivo_validation_target_count).toBe(1);
+      expect(result.summary.cytosolTransport?.summary.biological_species_bound_count).toBe(0);
+      expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.biological_time_or_velocity_claim).toBe(false);
+      expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.membrane_pressure_feedback).toBe(false);
+      expect(result.summary.cytosolTransport?.solver_layers.conservative_passive_scalar_kernel.biological_species_bound_count).toBe(0);
+      expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
       expect(result.summary.humanLiverOpenAtlas?.morphometry_2d.cell_count).toBe(56_055);
       expect(result.summary.humanLiverOpenAtlas?.surfaceome.observed_protein_count).toBe(300);
       expect(result.summary.humanLiverOpenAtlas?.spatial_proteome.strong_zonated_count).toBe(171);
@@ -2216,6 +2231,15 @@ describe("engine snapshot client", () => {
       expect(result.summary.energyRedoxValidation?.summary.placeholder_reaction_count).toBe(9);
       expect(result.summary.energyRedoxValidation?.summary.fit_eligible_reaction_count).toBe(0);
       expect(result.summary.energyRedoxValidation?.summary.activated_parameter_count).toBe(0);
+      expect(result.summary.externalValidationProgram?.summary.context_count).toBe(4);
+      expect(result.summary.externalValidationProgram?.summary.scoped_claim_count).toBe(10);
+      expect(result.summary.externalValidationProgram?.summary.reviewer_role_count).toBe(6);
+      expect(result.summary.externalValidationProgram?.summary.internal_contract_ready_claim_count).toBe(10);
+      expect(result.summary.externalValidationProgram?.summary.externally_reviewed_claim_count).toBe(0);
+      expect(result.summary.externalValidationProgram?.summary.same_assay_validated_claim_count).toBe(0);
+      expect(result.summary.externalValidationProgram?.summary.prospectively_validated_claim_count).toBe(0);
+      expect(result.summary.externalValidationProgram?.summary.predictive_claim_count).toBe(0);
+      expect(result.summary.externalValidationProgram?.summary.biological_accuracy_pct).toBeNull();
       expect(result.summary.intercellularCommunication?.body_surface_profiles[0].molecules)
         .toContainEqual(expect.objectContaining({ id: "ABCB11_BSEP", role: "transporter" }));
     }
