@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
 import pytest
 
 from cell_engine.quantitative.cytosol_transport import (
@@ -14,8 +16,14 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     snapshot = cytosol_transport_snapshot()
     validate_cytosol_transport_snapshot(snapshot)
     summary = snapshot["summary"]
-    assert summary["cross_context_reference_count"] == 8
+    assert summary["cross_context_reference_count"] == 10
+    assert summary["human_in_vivo_validation_target_count"] == 1
     assert summary["healthy_phh_numeric_rheology_parameter_count"] == 0
+    assert summary["dimensionless_projection_solver_count"] == 1
+    assert summary["conservative_passive_scalar_kernel_count"] == 1
+    assert summary["biological_species_bound_count"] == 0
+    assert summary["moving_analytic_obstacle_layer_count"] == 1
+    assert summary["membrane_pressure_feedback_count"] == 0
     assert summary["quantitative_fluid_solver_count"] == 0
     assert summary["reaction_transport_coupling_count"] == 0
     assert all(value is None for value in snapshot["healthy_phh_parameter_slots"].values())
@@ -23,6 +31,27 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
         not observation.may_parameterize_healthy_phh
         for observation in snapshot["cross_context_reference_observations"]
     )
+    target = snapshot["human_in_vivo_validation_targets"][0]
+    assert target["participant_count"] == 3
+    assert target["numeric_values_curated"] is False
+    assert target["may_parameterize_viscosity_pressure_or_bulk_flow"] is False
+
+
+@pytest.mark.parametrize(
+    ("path", "unsafe_value"),
+    (
+        (("renderer_dimensionless_projection_grid", "biological_pressure_claim"), True),
+        (("renderer_dimensionless_projection_grid", "membrane_pressure_feedback"), True),
+        (("conservative_passive_scalar_kernel", "biological_species_bound_count"), 1),
+    ),
+)
+def test_unvalidated_numerical_layer_cannot_escape_into_biology(
+    path: tuple[str, str], unsafe_value: object
+) -> None:
+    snapshot = deepcopy(cytosol_transport_snapshot())
+    snapshot["solver_layers"][path[0]][path[1]] = unsafe_value
+    with pytest.raises(ValueError):
+        validate_cytosol_transport_snapshot(snapshot)
 
 
 def test_missing_transport_evidence_cannot_modify_a_reaction() -> None:

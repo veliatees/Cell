@@ -15,8 +15,8 @@ from cell_engine.processes.hepatocyte import build_hepatocyte_definition
 from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_VOLUME_UM3
 
 
-DATE_VERIFIED = "2026-07-21"
-VERSION = "cytosol_transport_rheology_contract_v1"
+DATE_VERIFIED = "2026-07-22"
+VERSION = "cytosol_transport_rheology_contract_v2"
 
 CYTOSOL_TRANSPORT_SOURCES: dict[str, SourceReference] = {
     "moeendarbary2013_poroelastic_cytoplasm": SourceReference(
@@ -61,6 +61,55 @@ CYTOSOL_TRANSPORT_SOURCES: dict[str, SourceReference] = {
         notes=(
             "Optical-tweezer measurements in NRK and HeLa cells distinguish viscous, "
             "viscoelastic and poroelastic regimes by probe size and strain rate."
+        ),
+    ),
+    "jiang2020_human_hepatocyte_diffusion_mri": SourceReference(
+        id="jiang2020_human_hepatocyte_diffusion_mri",
+        title="Mapping hepatocyte size in vivo using temporal diffusion spectroscopy MRI",
+        url="https://doi.org/10.1002/mrm.28299",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes=(
+            "IMPULSED diffusion MRI in three healthy human volunteers estimated "
+            "hepatocyte restriction size and intracellular-water diffusion distributions. "
+            "It is a tissue-voxel water-transport validation target, not a measurement "
+            "of cytosolic viscosity, pressure, bulk flow, or metabolite diffusivity."
+        ),
+    ),
+    "guo2014_motor_driven_cytoplasm": SourceReference(
+        id="guo2014_motor_driven_cytoplasm",
+        title="Probing the stochastic, motor-driven properties of the cytoplasm using force spectrum microscopy",
+        url="https://doi.org/10.1016/j.cell.2014.06.051",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes=(
+            "Force-spectrum microscopy separates ATP-dependent active fluctuations "
+            "from equilibrium thermal transport in mammalian cell systems. It does "
+            "not provide a healthy-PHH active-noise parameter."
+        ),
+    ),
+    "fort2011_hepatocyte_connexin_kinesin_transport": SourceReference(
+        id="fort2011_hepatocyte_connexin_kinesin_transport",
+        title="In vitro motility of liver connexin vesicles along microtubules utilizes kinesin motors",
+        url="https://doi.org/10.1074/jbc.M111.219709",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes=(
+            "Reports microtubule-dependent Cx32 vesicle motion in WIF-B9 cells and "
+            "ATP-dependent motility of vesicles isolated from rat liver. Neither "
+            "context is a healthy primary-human-hepatocyte transport calibration."
+        ),
+    ),
+    "murray2008_primary_rat_hepatocyte_endosome_transport": SourceReference(
+        id="murray2008_primary_rat_hepatocyte_endosome_transport",
+        title="Single vesicle analysis of endocytic fission on microtubules in vitro",
+        url="https://doi.org/10.1111/j.1600-0854.2008.00725.x",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes=(
+            "Primary cultured rat hepatocytes show microtubule-based endosome motion, "
+            "fusion/fission and sorting. This authorizes active/passive mode separation, "
+            "not a human numerical rate."
         ),
     ),
 }
@@ -193,6 +242,28 @@ REFERENCE_OBSERVATIONS: tuple[CytosolReferenceObservation, ...] = (
         False,
         ("swaminathan1997_gfp_cytoplasmic_diffusion",),
     ),
+    CytosolReferenceObservation(
+        "wif_b9_cx32_vesicle_speed",
+        "polarized WIF-B9 hepatocyte cell line",
+        "microtubule-dependent Cx32 vesicle speed",
+        0.246,
+        0.032,
+        "um/s",
+        "cross_context_active_transport_reference",
+        False,
+        ("fort2011_hepatocyte_connexin_kinesin_transport",),
+    ),
+    CytosolReferenceObservation(
+        "rat_liver_isolated_cx32_vesicle_speed_midpoint",
+        "Cx32 vesicles isolated from rat liver on stabilized microtubules in vitro",
+        "ATP-dependent kinesin vesicle-speed interval midpoint",
+        0.45,
+        0.05,
+        "um/s",
+        "cross_species_in_vitro_active_transport_reference",
+        False,
+        ("fort2011_hepatocyte_connexin_kinesin_transport",),
+    ),
 )
 
 
@@ -306,6 +377,24 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "may_initialize_aqueous_cytosol_volume": False,
             "source_id": "segovia_miranda2019_human_liver_3d_morphometry",
         },
+        "human_in_vivo_validation_targets": (
+            {
+                "id": "healthy_human_liver_restricted_water_mri",
+                "biological_system": "healthy adult human liver in vivo",
+                "participant_count": 3,
+                "measured_readouts": (
+                    "hepatocyte restriction-size distribution",
+                    "intracellular-water diffusion distribution",
+                ),
+                "numeric_values_curated": False,
+                "validation_role": (
+                    "future tissue-scale restricted-water and cell-size validation; "
+                    "not a cytosol constitutive calibration"
+                ),
+                "may_parameterize_viscosity_pressure_or_bulk_flow": False,
+                "source_ids": ("jiang2020_human_hepatocyte_diffusion_mri",),
+            },
+        ),
         "legacy_runtime_conflict": {
             "cytosol_volume_fraction": cytosol.volume_fraction,
             "authority": "legacy_model_fraction_without_healthy_human_morphometric_source",
@@ -314,12 +403,43 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "migration_required": True,
         },
         "cross_context_reference_observations": REFERENCE_OBSERVATIONS,
+        "transport_mode_contract": {
+            "aqueous_passive_transport": {
+                "carriers": "ions, metabolites and soluble macromolecules",
+                "mechanisms": ("advection", "species-specific diffusion"),
+                "numerical_kernel_available": True,
+                "healthy_phh_species_bound": False,
+            },
+            "active_cargo_transport": {
+                "carriers": "vesicles and organelle-associated cargo",
+                "mechanisms": (
+                    "ATP-dependent motor transport on cytoskeletal tracks",
+                    "fusion, fission and sorting",
+                ),
+                "numerical_kernel_available": False,
+                "healthy_phh_rate_bound": False,
+                "cross_context_reference_only": True,
+            },
+            "mode_interchange_prohibited": True,
+        },
         "solver_layers": {
-            "renderer_correlated_tracer_field": {
+            "renderer_dimensionless_projection_grid": {
                 "enabled": True,
-                "role": "qualitative moving-domain visualization",
+                "role": "dimensionless moving-domain visualization and numerical test bed",
                 "membrane_volume_mapping": "same volume-preserving affine deformation as the rendered membrane",
+                "moving_analytic_obstacle_boundaries": True,
+                "static_anatomy_proxy_boundaries": True,
+                "pressure_reaction_diagnostic_only": True,
                 "biological_time_or_velocity_claim": False,
+                "biological_pressure_claim": False,
+                "membrane_pressure_feedback": False,
+            },
+            "conservative_passive_scalar_kernel": {
+                "enabled": True,
+                "role": "mass-conservation and non-negativity test bed",
+                "boundary_condition": "no flux through analytic solid faces",
+                "biological_species_bound_count": 0,
+                "biological_diffusivity_claim": False,
             },
             "quantitative_poroelastic_solver": {
                 "enabled": False,
@@ -339,7 +459,13 @@ def cytosol_transport_snapshot() -> dict[str, object]:
         "source_ids": tuple(CYTOSOL_TRANSPORT_SOURCES),
         "summary": {
             "cross_context_reference_count": len(REFERENCE_OBSERVATIONS),
+            "human_in_vivo_validation_target_count": 1,
             "healthy_phh_numeric_rheology_parameter_count": 0,
+            "dimensionless_projection_solver_count": 1,
+            "conservative_passive_scalar_kernel_count": 1,
+            "biological_species_bound_count": 0,
+            "moving_analytic_obstacle_layer_count": 1,
+            "membrane_pressure_feedback_count": 0,
             "quantitative_fluid_solver_count": 0,
             "reaction_transport_coupling_count": 0,
             "visual_fluid_layer_count": 1,
@@ -349,6 +475,8 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "Whole-cell volume does not identify aqueous cytosol volume after organelle and macromolecule exclusion.",
             "HepG2 nanoviscosity is cancer-cell-line context and cannot initialize healthy PHH.",
             "Species-specific apparent diffusion and reaction-specific diffusion limitation are missing.",
+            "Healthy-PHH motor-cargo rates and route-resolved validation trajectories are missing.",
+            "Membrane pressure feedback requires measured PHH permeability, modulus and hydraulic boundary data.",
         ),
     }
 
@@ -368,6 +496,22 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("quantitative cytosol solver cannot be active")
     if solvers["advection_diffusion_reaction_coupling"]["enabled"] is not False:
         raise ValueError("reaction-fluid coupling cannot be active")
+    projection = solvers.get("renderer_dimensionless_projection_grid")
+    scalar = solvers.get("conservative_passive_scalar_kernel")
+    if not isinstance(projection, dict) or projection.get("enabled") is not True:
+        raise ValueError("dimensionless projection layer is missing")
+    if projection.get("biological_time_or_velocity_claim") is not False:
+        raise ValueError("dimensionless projection escaped into a biological velocity claim")
+    if projection.get("biological_pressure_claim") is not False:
+        raise ValueError("dimensionless pressure escaped into a biological pressure claim")
+    if projection.get("membrane_pressure_feedback") is not False:
+        raise ValueError("unvalidated cytosol pressure feeds the membrane")
+    if not isinstance(scalar, dict) or scalar.get("enabled") is not True:
+        raise ValueError("conservative passive-scalar kernel is missing")
+    if scalar.get("biological_species_bound_count") != 0:
+        raise ValueError("passive-scalar kernel was bound to an unvalidated biological species")
+    if scalar.get("biological_diffusivity_claim") is not False:
+        raise ValueError("dimensionless scalar diffusion escaped into a biological claim")
     if coupling.get("currently_coupled_reaction_count") != 0:
         raise ValueError("cytosol transport contract activated a reaction")
     if conflict.get("may_parameterize_quantitative_fluid_or_reaction_model") is not False:

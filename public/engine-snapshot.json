@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-21T19:27:04.144218+00:00",
+    "created_at_utc": "2026-07-21T21:44:27.216382+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -5281,7 +5281,9 @@
         "No matched healthy primary-human-hepatocyte intracellular rheology dataset was identified.",
         "Whole-cell volume does not identify aqueous cytosol volume after organelle and macromolecule exclusion.",
         "HepG2 nanoviscosity is cancer-cell-line context and cannot initialize healthy PHH.",
-        "Species-specific apparent diffusion and reaction-specific diffusion limitation are missing."
+        "Species-specific apparent diffusion and reaction-specific diffusion limitation are missing.",
+        "Healthy-PHH motor-cargo rates and route-resolved validation trajectories are missing.",
+        "Membrane pressure feedback requires measured PHH permeability, modulus and hydraulic boundary data."
       ],
       "cross_context_reference_observations": [
         {
@@ -5387,6 +5389,32 @@
           "uncertainty": null,
           "unit": "dimensionless_ratio",
           "value": 1.5
+        },
+        {
+          "biological_system": "polarized WIF-B9 hepatocyte cell line",
+          "evidence_role": "cross_context_active_transport_reference",
+          "id": "wif_b9_cx32_vesicle_speed",
+          "may_parameterize_healthy_phh": false,
+          "observable": "microtubule-dependent Cx32 vesicle speed",
+          "source_ids": [
+            "fort2011_hepatocyte_connexin_kinesin_transport"
+          ],
+          "uncertainty": 0.032,
+          "unit": "um/s",
+          "value": 0.246
+        },
+        {
+          "biological_system": "Cx32 vesicles isolated from rat liver on stabilized microtubules in vitro",
+          "evidence_role": "cross_species_in_vitro_active_transport_reference",
+          "id": "rat_liver_isolated_cx32_vesicle_speed_midpoint",
+          "may_parameterize_healthy_phh": false,
+          "observable": "ATP-dependent kinesin vesicle-speed interval midpoint",
+          "source_ids": [
+            "fort2011_hepatocyte_connexin_kinesin_transport"
+          ],
+          "uncertainty": 0.05,
+          "unit": "um/s",
+          "value": 0.45
         }
       ],
       "governing_contract": {
@@ -5409,6 +5437,23 @@
         "pressure_field_Pa": null,
         "species_apparent_diffusivity_um2_s": null
       },
+      "human_in_vivo_validation_targets": [
+        {
+          "biological_system": "healthy adult human liver in vivo",
+          "id": "healthy_human_liver_restricted_water_mri",
+          "may_parameterize_viscosity_pressure_or_bulk_flow": false,
+          "measured_readouts": [
+            "hepatocyte restriction-size distribution",
+            "intracellular-water diffusion distribution"
+          ],
+          "numeric_values_curated": false,
+          "participant_count": 3,
+          "source_ids": [
+            "jiang2020_human_hepatocyte_diffusion_mri"
+          ],
+          "validation_role": "future tissue-scale restricted-water and cell-size validation; not a cytosol constitutive calibration"
+        }
+      ],
       "legacy_runtime_conflict": {
         "authority": "legacy_model_fraction_without_healthy_human_morphometric_source",
         "cytosol_volume_fraction": 0.52,
@@ -5445,32 +5490,76 @@
           "enabled": false,
           "reason": "species fields and reaction-specific transport gates are not validated"
         },
+        "conservative_passive_scalar_kernel": {
+          "biological_diffusivity_claim": false,
+          "biological_species_bound_count": 0,
+          "boundary_condition": "no flux through analytic solid faces",
+          "enabled": true,
+          "role": "mass-conservation and non-negativity test bed"
+        },
         "quantitative_poroelastic_solver": {
           "enabled": false,
           "reason": "healthy-PHH constitutive parameters and validation trajectories are unavailable"
         },
-        "renderer_correlated_tracer_field": {
+        "renderer_dimensionless_projection_grid": {
+          "biological_pressure_claim": false,
           "biological_time_or_velocity_claim": false,
           "enabled": true,
+          "membrane_pressure_feedback": false,
           "membrane_volume_mapping": "same volume-preserving affine deformation as the rendered membrane",
-          "role": "qualitative moving-domain visualization"
+          "moving_analytic_obstacle_boundaries": true,
+          "pressure_reaction_diagnostic_only": true,
+          "role": "dimensionless moving-domain visualization and numerical test bed",
+          "static_anatomy_proxy_boundaries": true
         }
       },
       "source_ids": [
         "moeendarbary2013_poroelastic_cytoplasm",
         "kwapiszewska2020_cytoplasm_nanoviscosity",
         "swaminathan1997_gfp_cytoplasmic_diffusion",
-        "guo2017_cytoplasm_size_speed_mechanics"
+        "guo2017_cytoplasm_size_speed_mechanics",
+        "jiang2020_human_hepatocyte_diffusion_mri",
+        "guo2014_motor_driven_cytoplasm",
+        "fort2011_hepatocyte_connexin_kinesin_transport",
+        "murray2008_primary_rat_hepatocyte_endosome_transport"
       ],
       "status": "two_phase_transport_contract_active_healthy_phh_parameters_blocked",
       "summary": {
-        "cross_context_reference_count": 8,
+        "biological_species_bound_count": 0,
+        "conservative_passive_scalar_kernel_count": 1,
+        "cross_context_reference_count": 10,
+        "dimensionless_projection_solver_count": 1,
         "healthy_phh_numeric_rheology_parameter_count": 0,
+        "human_in_vivo_validation_target_count": 1,
+        "membrane_pressure_feedback_count": 0,
+        "moving_analytic_obstacle_layer_count": 1,
         "quantitative_fluid_solver_count": 0,
         "reaction_transport_coupling_count": 0,
         "visual_fluid_layer_count": 1
       },
-      "version": "cytosol_transport_rheology_contract_v1"
+      "transport_mode_contract": {
+        "active_cargo_transport": {
+          "carriers": "vesicles and organelle-associated cargo",
+          "cross_context_reference_only": true,
+          "healthy_phh_rate_bound": false,
+          "mechanisms": [
+            "ATP-dependent motor transport on cytoskeletal tracks",
+            "fusion, fission and sorting"
+          ],
+          "numerical_kernel_available": false
+        },
+        "aqueous_passive_transport": {
+          "carriers": "ions, metabolites and soluble macromolecules",
+          "healthy_phh_species_bound": false,
+          "mechanisms": [
+            "advection",
+            "species-specific diffusion"
+          ],
+          "numerical_kernel_available": true
+        },
+        "mode_interchange_prohibited": true
+      },
+      "version": "cytosol_transport_rheology_contract_v2"
     },
     "definition_id": "human_hepatocyte_midlobular_v1",
     "division": {
@@ -6543,6 +6632,14 @@
         "title": "Assessing the Credibility of Computational Modeling and Simulation in Medical Device Submissions",
         "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/assessing-credibility-computational-modeling-and-simulation-medical-device-submissions"
       },
+      "fort2011_hepatocyte_connexin_kinesin_transport": {
+        "date_verified": "2026-07-22",
+        "id": "fort2011_hepatocyte_connexin_kinesin_transport",
+        "notes": "Reports microtubule-dependent Cx32 vesicle motion in WIF-B9 cells and ATP-dependent motility of vesicles isolated from rat liver. Neither context is a healthy primary-human-hepatocyte transport calibration.",
+        "source_type": "primary_paper",
+        "title": "In vitro motility of liver connexin vesicles along microtubules utilizes kinesin motors",
+        "url": "https://doi.org/10.1074/jbc.M111.219709"
+      },
       "fujiwara2002_phospholipid_hop_diffusion": {
         "date_verified": "2026-07-15",
         "id": "fujiwara2002_phospholipid_hop_diffusion",
@@ -6607,8 +6704,16 @@
         "title": "T-lymphocyte passive deformation is controlled by unfolding of membrane surface reservoirs",
         "url": "https://doi.org/10.1091/mbc.E16-06-0414"
       },
+      "guo2014_motor_driven_cytoplasm": {
+        "date_verified": "2026-07-22",
+        "id": "guo2014_motor_driven_cytoplasm",
+        "notes": "Force-spectrum microscopy separates ATP-dependent active fluctuations from equilibrium thermal transport in mammalian cell systems. It does not provide a healthy-PHH active-noise parameter.",
+        "source_type": "primary_paper",
+        "title": "Probing the stochastic, motor-driven properties of the cytoplasm using force spectrum microscopy",
+        "url": "https://doi.org/10.1016/j.cell.2014.06.051"
+      },
       "guo2017_cytoplasm_size_speed_mechanics": {
-        "date_verified": "2026-07-21",
+        "date_verified": "2026-07-22",
         "id": "guo2017_cytoplasm_size_speed_mechanics",
         "notes": "Optical-tweezer measurements in NRK and HeLa cells distinguish viscous, viscoelastic and poroelastic regimes by probe size and strain rate.",
         "source_type": "primary_paper",
@@ -6967,6 +7072,14 @@
         "title": "Epidermal growth factor receptor is a host-entry cofactor triggering hepatitis B virus internalization",
         "url": "https://doi.org/10.1073/pnas.1811064116"
       },
+      "jiang2020_human_hepatocyte_diffusion_mri": {
+        "date_verified": "2026-07-22",
+        "id": "jiang2020_human_hepatocyte_diffusion_mri",
+        "notes": "IMPULSED diffusion MRI in three healthy human volunteers estimated hepatocyte restriction size and intracellular-water diffusion distributions. It is a tissue-voxel water-transport validation target, not a measurement of cytosolic viscosity, pressure, bulk flow, or metabolite diffusivity.",
+        "source_type": "primary_paper",
+        "title": "Mapping hepatocyte size in vivo using temporal diffusion spectroscopy MRI",
+        "url": "https://doi.org/10.1002/mrm.28299"
+      },
       "kappenberg2022_phh_oxygen_consumption": {
         "date_verified": "2026-07-20",
         "id": "kappenberg2022_phh_oxygen_consumption",
@@ -7040,7 +7153,7 @@
         "url": "https://github.com/matthiaskoenig/glucose-model/tree/747ff4ef1f3b0159f968165bb16de022c5dc5799"
       },
       "kwapiszewska2020_cytoplasm_nanoviscosity": {
-        "date_verified": "2026-07-21",
+        "date_verified": "2026-07-22",
         "id": "kwapiszewska2020_cytoplasm_nanoviscosity",
         "notes": "FCS with probes spanning 0.65-81 nm hydrodynamic radius in six human cell lines, including HepG2, demonstrates length-scale-dependent effective viscosity.",
         "source_type": "primary_paper",
@@ -7144,12 +7257,20 @@
         "url": "https://doi.org/10.1073/pnas.0307332101"
       },
       "moeendarbary2013_poroelastic_cytoplasm": {
-        "date_verified": "2026-07-21",
+        "date_verified": "2026-07-22",
         "id": "moeendarbary2013_poroelastic_cytoplasm",
         "notes": "Microindentation in HeLa, HT1080 and MDCK cells supports a biphasic porous solid/interstitial-fluid description. These are not primary hepatocytes.",
         "source_type": "primary_paper",
         "title": "The cytoplasm of living cells behaves as a poroelastic material",
         "url": "https://doi.org/10.1038/nmat3517"
+      },
+      "murray2008_primary_rat_hepatocyte_endosome_transport": {
+        "date_verified": "2026-07-22",
+        "id": "murray2008_primary_rat_hepatocyte_endosome_transport",
+        "notes": "Primary cultured rat hepatocytes show microtubule-based endosome motion, fusion/fission and sorting. This authorizes active/passive mode separation, not a human numerical rate.",
+        "source_type": "primary_paper",
+        "title": "Single vesicle analysis of endocytic fission on microtubules in vitro",
+        "url": "https://doi.org/10.1111/j.1600-0854.2008.00725.x"
       },
       "ncbi_gene_records": {
         "date_verified": "2026-07-10",
@@ -7344,7 +7465,7 @@
         "url": "https://doi.org/10.1016/0167-4889(85)90209-5"
       },
       "swaminathan1997_gfp_cytoplasmic_diffusion": {
-        "date_verified": "2026-07-21",
+        "date_verified": "2026-07-22",
         "id": "swaminathan1997_gfp_cytoplasmic_diffusion",
         "notes": "CHO-cell GFP rotation and translation report different effective relative viscosities, supporting probe- and interaction-dependent intracellular mobility.",
         "source_type": "primary_paper",
@@ -35740,16 +35861,20 @@
           "status": "derived"
         },
         {
-          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; permit seeded qualitative advection only in the renderer and require healthy-PHH rheology, species-specific diffusion and matched reaction evidence before numerical coupling",
-          "default_snapshot_role": "qualitative_renderer_and_numerical_coupling_firewall",
+          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise moving-boundary pressure projection and conservative passive-scalar transport only as dimensionless numerical kernels; keep aqueous diffusion separate from ATP-dependent motor cargo and require matched healthy-PHH evidence before biological coupling",
+          "default_snapshot_role": "dimensionless_numerics_and_biological_coupling_firewall",
           "drives_scientific_validation": true,
           "id": "cytosol_transport_rheology_contract",
-          "limitations": "No healthy primary-human-hepatocyte intracellular rheology dataset is loaded. Published values come from HeLa, HT1080, MDCK, CHO or pooled cell-line contexts and cannot set PHH flow, diffusion or reaction-rate parameters.",
+          "limitations": "The renderer has a dimensionless projection grid, moving analytic organelle boundaries and an unbound conservative scalar kernel. No healthy-PHH viscosity, pressure, intracellular velocity, species diffusivity, motor-cargo rate or reaction-transport validation is loaded, so zero biological species and zero reactions are coupled and pressure cannot feed membrane mechanics.",
           "source_ids": [
             "moeendarbary2013_poroelastic_cytoplasm",
             "kwapiszewska2020_cytoplasm_nanoviscosity",
             "swaminathan1997_gfp_cytoplasmic_diffusion",
-            "guo2017_cytoplasm_size_speed_mechanics"
+            "guo2017_cytoplasm_size_speed_mechanics",
+            "jiang2020_human_hepatocyte_diffusion_mri",
+            "guo2014_motor_driven_cytoplasm",
+            "fort2011_hepatocyte_connexin_kinesin_transport",
+            "murray2008_primary_rat_hepatocyte_endosome_transport"
           ],
           "status": "derived"
         },

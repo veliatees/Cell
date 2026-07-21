@@ -1085,3 +1085,43 @@ converted automatically into surface abundance, active copies or cell flux.
 The external-review program contains no signed reviewer report, same-assay pass,
 prospective PHH result or independent reproduction. Biological accuracy remains
 unassigned until claim-specific external evidence exists.
+
+## Cytosol Transport and Active Cargo V2
+
+- Moeendarbary et al., poroelastic cytoplasm:
+  https://doi.org/10.1038/nmat3517. HeLa, HT1080 and MDCK measurements support
+  a porous solid plus interstitial-fluid material picture, but their numerical
+  coefficients are not transferred to healthy PHH.
+- Kwapiszewska et al., length-scale-dependent cytoplasmic nanoviscosity:
+  https://doi.org/10.1021/acs.jpclett.0c01748. The study includes HepG2 among
+  six human cell lines and supports probe-size dependence; a cancer cell line
+  is not used as a primary-hepatocyte calibration.
+- Swaminathan et al., GFP translation and rotation in CHO cytoplasm:
+  https://doi.org/10.1016/S0006-3495(97)78835-0. The two mobility readouts
+  support probe- and interaction-dependent effective transport only.
+- Guo et al., size- and speed-dependent mammalian cytoplasm mechanics:
+  https://doi.org/10.1073/pnas.1616310114. NRK and HeLa measurements support
+  scale-dependent viscous, viscoelastic and poroelastic regimes without setting
+  healthy-PHH parameters.
+- Jiang et al., in-vivo temporal diffusion spectroscopy MRI in three healthy
+  human volunteers: https://doi.org/10.1002/mrm.28299. The dataset is retained
+  as a future hepatocyte restriction-size and intracellular-water validation
+  target. Tissue-voxel MRI does not identify cytosolic viscosity, pressure,
+  bulk-flow velocity or a metabolite diffusion coefficient.
+- Guo et al., motor-driven cytoplasmic fluctuations:
+  https://doi.org/10.1016/j.cell.2014.06.051. This supports separation of
+  ATP-dependent active fluctuations from equilibrium transport, not a PHH
+  active-noise parameter.
+- Fort et al., Cx32 vesicle motility:
+  https://doi.org/10.1074/jbc.M111.219709. The retained WIF-B9 mean speed is
+  `0.246 +/- 0.032 um/s`; the reported isolated-rat-liver interval `0.4-0.5
+  um/s` is represented by its exact midpoint and half-range only for audit.
+  Neither observation initializes a healthy-human-hepatocyte cargo rate.
+- Murray et al., primary-rat-hepatocyte endosome transport and fission:
+  https://doi.org/10.1111/j.1600-0854.2008.00725.x. This supports explicit
+  motor-cargo, fusion/fission and sorting mechanisms, while cross-species rates
+  remain blocked.
+
+The renderer's projection-grid velocity, pressure and passive-scalar
+diffusivity are dimensionless numerical variables. Zero biological species,
+zero reactions and zero membrane-force laws are bound to this layer.
