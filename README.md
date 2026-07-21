@@ -121,6 +121,13 @@ independent biological validation. Separate gates expose exactly which PHH
 observations can be compared, fitted or held out, and currently activate zero
 energy/redox kinetic parameters.
 
+External review is now claim-specific rather than percentage-based. Four
+contexts of use, ten scoped claims, six reviewer roles and four ordered review
+rounds are exported as a machine-readable contract and human review dossier.
+The current record contains zero external domain-review results, zero
+same-assay validated claims, zero prospective PHH results and zero independent
+reproductions; whole-cell biological accuracy therefore remains unidentifiable.
+
 ### The browser scene (TypeScript + Three.js)
 
 A polarized hepatocyte with a **fenestrated sinusoidal endothelium** (sieve-plate
@@ -374,6 +381,9 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 086: Glucose calibration and held-out validation gate v1](docs/milestones/086-glucose-calibration-heldout-validation-gate-v1.md)
 - [Milestone 087: Compartment-resolved energy and redox contract v1](docs/milestones/087-compartment-resolved-energy-redox-contract-v1.md)
 - [Milestone 088: Energy/redox calibration and validation firewall v1](docs/milestones/088-energy-redox-calibration-validation-firewall-v1.md)
+- [Milestone 089: External scientific review readiness v1](docs/milestones/089-external-scientific-review-readiness-v1.md)
+- [External scientific review dossier](docs/validation/external-review-dossier.md)
+- [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
 - [Roadmap (what's next)](docs/05-roadmap.md)
 - [Source ledger](docs/sources.md)

@@ -92,6 +92,14 @@ class PhhBaselineTests(unittest.TestCase):
                 for blocker in predictive.blockers
             )
         )
+        self.assertIn(
+            "external review: no claim has an independent domain-review result",
+            predictive.blockers,
+        )
+        self.assertIn(
+            "external review: no claim has a prospective independent PHH result",
+            predictive.blockers,
+        )
         self.assertIn("published hepatic glucose shadow model reproduces only 2 of 5 publication benchmarks", predictive.blockers)
 
 

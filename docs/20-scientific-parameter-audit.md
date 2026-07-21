@@ -236,6 +236,8 @@ May drive quantitative validation:
 - denominator-preserved aggregate energy/redox observations;
 - the non-executable compartment-resolved energy/redox structural contract and
   its numerical activation firewall;
+- the external-review context-of-use, claim, reviewer-role and independence
+  contract, which assigns no biological-accuracy percentage;
 - postabsorptive blood-glucose boundary.
 
 May drive visualization or qualitative direction only:
@@ -273,3 +275,8 @@ The audit does not make blocked modules quantitative. It prevents them from
 making unsupported claims. Each can be re-enabled only after a matched dataset,
 unit-preserving parameter transform, uncertainty model and held-out validation
 are added.
+
+External scientific review is also now fail-closed. The project has a generated
+review packet, but no signed external review, same-assay validation pass,
+prospective PHH result or independent reproduction. These must remain separate
+claim-addressed records rather than being averaged into a whole-cell percentage.

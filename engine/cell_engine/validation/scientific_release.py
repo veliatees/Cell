@@ -108,6 +108,10 @@ from cell_engine.validation.energy_redox_gate import (
     build_energy_redox_calibration_validation_gate,
     validate_energy_redox_calibration_validation_gate,
 )
+from cell_engine.validation.external_review import (
+    build_external_validation_program,
+    validate_external_validation_program,
+)
 from cell_engine.validation.hepatic_flux import (
     build_unified_nutritional_context,
     load_hepatic_flux_evidence,
@@ -155,6 +159,7 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
     glucose_calibration = None
     compartmental_energy_redox = None
     energy_redox_gate = None
+    external_validation_program = None
     phh_albumin_secretion = None
     phh_cyp_function = None
     phh_biliary_excretion = None
@@ -313,6 +318,15 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid energy/redox calibration and validation gate: {exc}")
+
+    try:
+        external_validation_program = build_external_validation_program()
+        validate_external_validation_program(external_validation_program)
+        checks.append(
+            "external review program scopes four contexts, ten claims and six reviewer roles while biological accuracy, external validation and predictive use remain explicitly unclaimed"
+        )
+    except ValueError as exc:
+        blockers.append(f"invalid external scientific-review program: {exc}")
 
     try:
         phh_albumin_secretion = build_phh_albumin_secretion()
@@ -500,6 +514,20 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
 
     if target == "predictive":
         blockers.extend(registry.blocking_measurements)
+        if external_validation_program is None:
+            blockers.append("external scientific-review program is unavailable")
+        else:
+            external_summary = external_validation_program.summary
+            if external_summary.externally_reviewed_claim_count == 0:
+                blockers.append("external review: no claim has an independent domain-review result")
+            if external_summary.same_assay_validated_claim_count == 0:
+                blockers.append("external review: no claim has an uncertainty-qualified same-assay validation result")
+            if external_summary.prospectively_validated_claim_count == 0:
+                blockers.append("external review: no claim has a prospective independent PHH result")
+            if external_summary.independent_reproduction_count == 0:
+                blockers.append("external review: no frozen release has an independent software reproduction result")
+            if external_summary.biological_accuracy_pct is not None:
+                blockers.append("external review: an unidentifiable whole-cell biological accuracy percentage was assigned")
         if compartmental_energy_redox is None:
             blockers.append("compartment-resolved energy/redox contract is unavailable")
         else:
@@ -724,5 +752,8 @@ def scientific_release_snapshot() -> dict[str, object]:
             "Published glucose execution remains shadow/diagnostic. Runtime contact geometry is "
             "engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, "
             "Brian2 biochemical execution and generative-state coupling remain blocked."
+            " External scientific review is organized by explicit context, claim, reviewer role "
+            "and independence rules; no external report, prospective result, independent "
+            "reproduction or whole-cell biological-accuracy percentage is claimed."
         ),
     }
