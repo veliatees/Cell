@@ -1,11 +1,17 @@
-"""Fail-closed contract for a future genome-scale hepatocyte constraint shell."""
+"""Fail-closed contract for a genome-scale hepatocyte constraint shell."""
 
 from __future__ import annotations
+
+import json
+from pathlib import Path
 
 from cell_engine.core.provenance import SourceReference
 
 
-DATE_VERIFIED = "2026-07-21"
+DATE_VERIFIED = "2026-07-22"
+VERSION = "metabolic_constraint_shell_v2"
+ROOT = Path(__file__).resolve().parents[3]
+MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
 METABOLIC_CONSTRAINT_SOURCES: dict[str, SourceReference] = {
     "human1_metabolic_atlas": SourceReference(
@@ -25,27 +31,57 @@ METABOLIC_CONSTRAINT_SOURCES: dict[str, SourceReference] = {
         url="https://github.com/SysBioChalmers/Human-GEM",
         source_type="database",
         date_verified=DATE_VERIFIED,
-        notes="Candidate model artifact source; no version or checksum is pinned by this contract yet.",
+        notes=(
+            "Official release repository for the pinned Human-GEM v2.0.0 candidate artifact. "
+            "A generic human reconstruction is not a healthy-PHH context model."
+        ),
     ),
 }
+
+
+def _load_manifest() -> dict[str, object]:
+    payload = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    if payload.get("schema_version") != "cell.published-model-manifest.v1":
+        raise ValueError("unsupported Human-GEM artifact manifest")
+    return payload
 
 
 def metabolic_constraint_shell_snapshot() -> dict[str, object]:
     """Expose every input required before FBA/FVA can influence the cell state."""
 
+    manifest = _load_manifest()
+    scope = manifest["scientific_scope"]
+    verification = manifest["verification"]
+    counts = manifest["structural_counts_verified_from_sbml"]
+    if not all(isinstance(item, dict) for item in (scope, verification, counts)):
+        raise ValueError("Human-GEM manifest sections are malformed")
+
     return {
-        "version": "metabolic_constraint_shell_v1",
-        "status": "template_non_executable_model_artifact_not_pinned",
+        "version": VERSION,
+        "status": "release_and_checksum_pinned_context_and_optimization_blocked",
         "role": (
             "Genome-scale stoichiometric feasibility shell around validated dynamic cores. "
             "It may constrain boundary-consistent flux space but cannot supply a time trajectory."
         ),
         "candidate_reconstruction": {
             "model_family": "Human-GEM",
-            "model_version": None,
-            "artifact_sha256": None,
+            "model_name": manifest["model_name"],
+            "model_version": manifest["model_version"],
+            "release_tag": manifest["release_tag"],
+            "release_commit": manifest["release_commit"],
+            "release_date": manifest["release_date"],
+            "artifact_url": manifest["artifact_url"],
+            "artifact_sha256": manifest["artifact_sha256"],
+            "artifact_size_bytes": manifest["artifact_size_bytes"],
+            "artifact_format": manifest["artifact_format"],
+            "manifest_path": str(MANIFEST_PATH.relative_to(ROOT)),
+            "expected_local_cache_path": manifest["expected_local_cache_path"],
             "sbml_path": None,
-            "license_audited": False,
+            "artifact_vendored_in_repository": verification["artifact_vendored_in_repository"],
+            "model_loaded_by_runtime": verification["model_loaded_by_runtime"],
+            "license": manifest["license"],
+            "license_audited": True,
+            "structural_counts_verified_from_sbml": counts,
             "mass_charge_balance_audited_in_project": False,
         },
         "hepatocyte_context": {
@@ -81,17 +117,18 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
         },
         "source_ids": tuple(METABOLIC_CONSTRAINT_SOURCES),
         "blockers": (
-            "exact reconstruction release and checksum are not pinned",
+            "pinned SBML is not vendored or loaded by the runtime; use the checksum-verifying fetch tool",
             "healthy-PHH context extraction is not defined",
             "measured boundary fluxes are insufficient for the declared contexts",
             "objective function is not identified as a healthy-hepatocyte measurement",
+            "mass and charge balance have not been audited in this project",
             "independent flux validation is absent",
         ),
     }
 
 
 def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
-    if payload.get("version") != "metabolic_constraint_shell_v1":
+    if payload.get("version") != VERSION:
         raise ValueError("unexpected metabolic constraint shell version")
     reconstruction = payload.get("candidate_reconstruction")
     context = payload.get("hepatocyte_context")
@@ -101,9 +138,25 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
         raise ValueError("metabolic constraint shell is malformed")
     if any(gates.values()):
         raise ValueError("metabolic constraint shell may not execute before evidence intake")
+    if reconstruction.get("model_version") != "2.0.0":
+        raise ValueError("unexpected Human-GEM version")
+    if (
+        reconstruction.get("release_tag") != "v2.0.0"
+        or reconstruction.get("release_commit")
+        != "635f533152dc5f7290ce04d12700eaa882273c3e"
+    ):
+        raise ValueError("unexpected Human-GEM release identity")
+    if reconstruction.get("artifact_sha256") != "cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a":
+        raise ValueError("unexpected Human-GEM artifact checksum")
+    if reconstruction.get("artifact_size_bytes") != 43115559:
+        raise ValueError("unexpected Human-GEM artifact size")
+    if reconstruction.get("license") != "CC-BY-4.0" or reconstruction.get("license_audited") is not True:
+        raise ValueError("Human-GEM license audit is incomplete")
+    if reconstruction.get("model_loaded_by_runtime") is not False:
+        raise ValueError("Human-GEM runtime loading changed without context review")
+    if reconstruction.get("mass_charge_balance_audited_in_project") is not False:
+        raise ValueError("Human-GEM mass/charge audit changed without review")
     required_nulls = (
-        reconstruction.get("model_version"),
-        reconstruction.get("artifact_sha256"),
         reconstruction.get("sbml_path"),
         context.get("extraction_algorithm"),
         optimization.get("objective"),
