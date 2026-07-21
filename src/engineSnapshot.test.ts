@@ -2188,7 +2188,11 @@ describe("engine snapshot client", () => {
       expect(result.summary.reactionEvidenceAtlas?.summary.transport_coupled_reaction_count).toBe(0);
       expect(result.summary.cytosolTransport?.material_model.model).toBe("poroelastic_two_phase_cytoplasm");
       expect(result.summary.cytosolTransport?.summary.healthy_phh_numeric_rheology_parameter_count).toBe(0);
-      expect(result.summary.cytosolTransport?.solver_layers.renderer_correlated_tracer_field.biological_time_or_velocity_claim).toBe(false);
+      expect(result.summary.cytosolTransport?.summary.human_in_vivo_validation_target_count).toBe(1);
+      expect(result.summary.cytosolTransport?.summary.biological_species_bound_count).toBe(0);
+      expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.biological_time_or_velocity_claim).toBe(false);
+      expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.membrane_pressure_feedback).toBe(false);
+      expect(result.summary.cytosolTransport?.solver_layers.conservative_passive_scalar_kernel.biological_species_bound_count).toBe(0);
       expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
       expect(result.summary.humanLiverOpenAtlas?.morphometry_2d.cell_count).toBe(56_055);
       expect(result.summary.humanLiverOpenAtlas?.surfaceome.observed_protein_count).toBe(300);
