@@ -96,10 +96,12 @@ linked to its dependencies.
 - Bounded hepatocyte feature scope and physical-substrate cellular-memory contract: `milestones/090-hepatocyte-capability-memory-atlas-v1.md`
 - Per-reaction kinetic, abundance, compartment, transport and validation evidence queue: `milestones/091-reaction-evidence-atlas-v1.md`
 - Evidence-gated two-phase cytoplasm contract and membrane-consistent qualitative transport tracers: `milestones/092-cytosol-transport-rheology-v1.md`
-- Fail-closed Human-GEM/Human1 genome-scale constraint shell: `milestones/093-metabolic-constraint-shell-v1.md`
+- Checksum-pinned Human-GEM v2.0.0 candidate and fail-closed genome-scale constraint shell: `milestones/093-metabolic-constraint-shell-v1.md`
 - Dimensionless three-dimensional cytosol projection with deforming membrane coordinates and moving analytic organelle boundaries: `milestones/094-moving-boundary-cytosol-projection-v1.md`
 - Conservative passive-scalar test kernel with zero biological species bound: `milestones/095-conservative-cytosol-species-transport-v1.md`
 - Healthy-human restricted-water validation target and strict passive-fluid versus active-cargo separation: `milestones/096-cytosol-validation-active-transport-separation-v1.md`
+- Scoped 26-item completion ledger and immutable Human-GEM retrieval: `milestones/097-pinned-human-gem-and-completion-ledger-v1.md`
+- Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`
 

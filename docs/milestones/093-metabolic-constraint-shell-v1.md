@@ -1,4 +1,4 @@
-# Milestone 093: Metabolic Constraint Shell v1
+# Milestone 093: Metabolic Constraint Shell v2
 
 ## Goal
 
@@ -9,7 +9,13 @@ rates or time trajectories.
 ## Implemented
 
 - Fail-closed Human-GEM/Human1 artifact contract.
-- Required model release, checksum, SBML path, license and mass/charge audit.
+- Official Human-GEM `v2.0.0` release pinned to commit `635f533`.
+- Official 43,115,559-byte SBML artifact pinned to SHA-256
+  `cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a`.
+- Namespace-aware inspection of the pinned SBML verified 9 compartments,
+  8,461 metabolites, 12,931 reactions and 2,848 genes.
+- Manifest and checksum-verifying fetch tool; the 43 MB model is not vendored.
+- Required SBML loading, license, mass/charge and artifact checks remain explicit.
 - Required hepatocyte extraction algorithm, donor/cohort, nutrition, zonation,
   transcriptome and proteome context.
 - Required objective, measured exchange bounds, thermodynamic constraints,
@@ -19,9 +25,11 @@ rates or time trajectories.
 
 ## Current Result
 
-FBA, FVA, thermodynamic FBA, enzyme-constrained FBA, dynamic-rate
-initialization and scientific-validation coupling are all disabled. No model
-artifact has been downloaded or silently pinned by this milestone.
+The generic reconstruction's identity is reproducibly pinned, but it is not
+loaded by runtime. FBA, FVA, thermodynamic FBA, enzyme-constrained FBA,
+dynamic-rate initialization and scientific-validation coupling are all
+disabled. Healthy-PHH context extraction, measured exchange bounds, a measured
+objective, mass/charge audit and independent flux validation remain absent.
 
 ## Scientific Boundary
 
@@ -42,3 +50,5 @@ are frozen.
 
 - `engine/cell_engine/quantitative/metabolic_constraint_shell.py`
 - `engine/tests/test_metabolic_constraint_shell.py`
+- `data/published_models/human_gem_v2.0.0.manifest.json`
+- `scripts/fetch_human_gem.py`

@@ -2,6 +2,7 @@ node_modules/
 dist/
 artifacts/
 artifacts/screenshots/
+data/published_models/cache/
 __pycache__/
 *.py[cod]
 .DS_Store

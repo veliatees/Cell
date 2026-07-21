@@ -1393,15 +1393,33 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v1";
+  version: "metabolic_constraint_shell_v2";
   status: string;
   role: string;
   candidate_reconstruction: {
     model_family: string;
+    model_name: string;
     model_version: string | null;
+    release_tag: string;
+    release_commit: string;
+    release_date: string;
+    artifact_url: string;
     artifact_sha256: string | null;
+    artifact_size_bytes: number;
+    artifact_format: string;
+    manifest_path: string;
+    expected_local_cache_path: string;
     sbml_path: string | null;
+    artifact_vendored_in_repository: boolean;
+    model_loaded_by_runtime: boolean;
+    license: string;
     license_audited: boolean;
+    structural_counts_verified_from_sbml: {
+      compartments: number;
+      metabolites: number;
+      reactions: number;
+      genes: number;
+    };
     mass_charge_balance_audited_in_project: boolean;
   };
   hepatocyte_context: Record<string, string | null>;
@@ -1410,6 +1428,40 @@ export type EngineMetabolicConstraintShell = {
   gates: Record<string, boolean>;
   source_ids: string[];
   blockers: string[];
+};
+
+export type EngineCompletionGapStatus =
+  | "closed"
+  | "partial"
+  | "blocked_missing_evidence"
+  | "external_action_required"
+  | "not_applicable_at_model_scale";
+
+export type EngineHepatocyteCompletionMatrix = {
+  version: "hepatocyte_completion_matrix_v1";
+  date_verified: string;
+  status: string;
+  score_policy: string;
+  status_semantics: Record<EngineCompletionGapStatus, string>;
+  entries: {
+    id: string;
+    title: string;
+    status: EngineCompletionGapStatus;
+    scope: string;
+    current_capability: string;
+    observed_metrics: Record<string, string | number | boolean | null>;
+    remaining_requirements: string[];
+    code_surfaces: string[];
+  }[];
+  summary: {
+    entry_count: number;
+    closed_count: number;
+    partial_count: number;
+    blocked_missing_evidence_count: number;
+    external_action_required_count: number;
+    not_applicable_at_model_scale_count: number;
+    biological_accuracy_pct: null;
+  };
 };
 
 export type EngineSnapshot = {
@@ -1461,6 +1513,7 @@ export type EngineSnapshot = {
     reaction_evidence_atlas?: EngineReactionEvidenceAtlas;
     cytosol_transport?: EngineCytosolTransport;
     metabolic_constraint_shell?: EngineMetabolicConstraintShell;
+    hepatocyte_completion_matrix?: EngineHepatocyteCompletionMatrix;
     phh_albumin_secretion?: EnginePhhAlbuminSecretion;
     phh_cyp_function?: EnginePhhCypFunction;
     phh_biliary_excretion?: EnginePhhBiliaryExcretion;
@@ -3769,6 +3822,7 @@ export type EngineSnapshotSummary = {
   reactionEvidenceAtlas: EngineReactionEvidenceAtlas | null;
   cytosolTransport: EngineCytosolTransport | null;
   metabolicConstraintShell: EngineMetabolicConstraintShell | null;
+  hepatocyteCompletionMatrix: EngineHepatocyteCompletionMatrix | null;
   phhAlbuminSecretion: EnginePhhAlbuminSecretion | null;
   phhCypFunction: EnginePhhCypFunction | null;
   phhBiliaryExcretion: EnginePhhBiliaryExcretion | null;
@@ -3941,6 +3995,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     reactionEvidenceAtlas: snapshot.state.reaction_evidence_atlas ?? null,
     cytosolTransport: snapshot.state.cytosol_transport ?? null,
     metabolicConstraintShell: snapshot.state.metabolic_constraint_shell ?? null,
+    hepatocyteCompletionMatrix: snapshot.state.hepatocyte_completion_matrix ?? null,
     phhAlbuminSecretion: snapshot.state.phh_albumin_secretion ?? null,
     phhCypFunction: snapshot.state.phh_cyp_function ?? null,
     phhBiliaryExcretion: snapshot.state.phh_biliary_excretion ?? null,

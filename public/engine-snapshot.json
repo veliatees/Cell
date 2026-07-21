@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-21T21:44:27.216382+00:00",
+    "created_at_utc": "2026-07-21T23:16:38.111443+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -6785,7 +6785,7 @@
         "url": "https://doi.org/10.1038/nature08944"
       },
       "human1_metabolic_atlas": {
-        "date_verified": "2026-07-21",
+        "date_verified": "2026-07-22",
         "id": "human1_metabolic_atlas",
         "notes": "Genome-scale stoichiometric scaffold. FBA/FVA outcomes depend on model version, context extraction, boundary constraints and objective; they are not measured fluxes.",
         "source_type": "primary_paper",
@@ -6841,9 +6841,9 @@
         "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3912179/"
       },
       "human_gem_repository": {
-        "date_verified": "2026-07-21",
+        "date_verified": "2026-07-22",
         "id": "human_gem_repository",
-        "notes": "Candidate model artifact source; no version or checksum is pinned by this contract yet.",
+        "notes": "Official release repository for the pinned Human-GEM v2.0.0 candidate artifact. A generic human reconstruction is not a healthy-PHH context model.",
         "source_type": "database",
         "title": "Human-GEM version-controlled model repository",
         "url": "https://github.com/SysBioChalmers/Human-GEM"
@@ -15083,6 +15083,522 @@
       },
       "version": "hepatocyte_capability_atlas_v1"
     },
+    "hepatocyte_completion_matrix": {
+      "date_verified": "2026-07-22",
+      "entries": [
+        {
+          "code_surfaces": [
+            "src/physics/cytosolNumerics.ts",
+            "src/physics/intracellularFluid.ts"
+          ],
+          "current_capability": "A 3D pressure-projection grid, moving analytic obstacles and conservative passive-scalar kernel are tested and active in the renderer.",
+          "id": "dimensionless_cytosol_numerics",
+          "observed_metrics": {
+            "conservative_scalar_kernel_count": 1,
+            "moving_analytic_obstacle_layer_count": 1,
+            "projection_solver_count": 1
+          },
+          "remaining_requirements": [],
+          "scope": "Numerical test-bed only; no biological pressure, velocity, time or diffusivity claim.",
+          "status": "closed",
+          "title": "Dimensionless cytosol transport numerics"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/cytosol_transport.py"
+          ],
+          "current_capability": "Ten typed parameter slots are explicit and all remain null.",
+          "id": "healthy_phh_cytosol_parameters",
+          "observed_metrics": {
+            "filled_parameter_count": 0,
+            "required_parameter_count": 10
+          },
+          "remaining_requirements": [
+            "Matched intracellular-water/cytosol fraction and aqueous volume.",
+            "Probe- and scale-resolved viscosity or apparent diffusivity.",
+            "Hydraulic permeability, cytoskeletal modulus, pressure and velocity validation."
+          ],
+          "scope": "Healthy adult primary-human-hepatocyte aqueous phase.",
+          "status": "blocked_missing_evidence",
+          "title": "Healthy-PHH cytosol constitutive parameters"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/cytosol_transport.py"
+          ],
+          "current_capability": "The value remains visible for legacy exploratory reaction-volume compatibility and is explicitly barred from quantitative fluid/reaction use.",
+          "id": "legacy_cytosol_fraction_quarantine",
+          "observed_metrics": {
+            "legacy_fraction": 0.52,
+            "quantitative_use_allowed": false
+          },
+          "remaining_requirements": [],
+          "scope": "Prevention of the legacy fraction from parameterizing quantitative fluid or reaction claims.",
+          "status": "closed",
+          "title": "Legacy 0.52 cytosol-fraction quarantine"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/cytosol_transport.py",
+            "src/physics/cytosolNumerics.ts"
+          ],
+          "current_capability": "No quantitative solver is enabled; the dimensionless renderer solver cannot be relabelled as CFD calibration.",
+          "id": "quantitative_poroelastic_cfd",
+          "observed_metrics": {
+            "quantitative_solver_count": 0
+          },
+          "remaining_requirements": [
+            "Healthy-PHH constitutive coefficients and boundary conditions.",
+            "Matched pressure/velocity or displacement-relaxation validation trajectories.",
+            "Grid-convergence and uncertainty-qualified biological validation."
+          ],
+          "scope": "Biological-unit Brinkman/poroelastic flow in healthy PHH.",
+          "status": "blocked_missing_evidence",
+          "title": "Quantitative CFD or poroelastic solver"
+        },
+        {
+          "code_surfaces": [
+            "src/physics/intracellularFluid.ts",
+            "src/physics/cytosolNumerics.ts"
+          ],
+          "current_capability": "Membrane motion drives the numerical fluid map; uncalibrated pressure cannot push the membrane.",
+          "id": "fluid_structure_interaction",
+          "observed_metrics": {
+            "membrane_pressure_feedback_count": 0
+          },
+          "remaining_requirements": [
+            "PHH membrane/cortex mechanics and hydraulic boundary data.",
+            "A coupled stable discretization with force/energy consistency tests.",
+            "Matched deformation and relaxation validation."
+          ],
+          "scope": "Pressure/traction feedback from the aqueous/poroelastic phase to membrane, cortex and organelles.",
+          "status": "blocked_missing_evidence",
+          "title": "Cytosol-to-membrane fluid-structure feedback"
+        },
+        {
+          "code_surfaces": [
+            "src/physics/cytosolNumerics.ts",
+            "src/physics/intracellularFluid.ts"
+          ],
+          "current_capability": "Analytic moving sphere, ellipsoid and capsule obstacles exclude flow/scalar cells, but full mitochondrial, ER and Golgi meshes are not watertight fluid boundaries.",
+          "id": "organelle_fluid_boundaries",
+          "observed_metrics": {
+            "analytic_obstacle_layer_count": 1
+          },
+          "remaining_requirements": [
+            "Watertight organelle meshes with per-frame transforms.",
+            "No-flux and moving-boundary conditions on the actual surfaces.",
+            "Resolution/conservation tests for thin ER and Golgi structures."
+          ],
+          "scope": "Impermeable moving organelle surfaces in the numerical cytosol domain.",
+          "status": "partial",
+          "title": "Organelle-resolved fluid boundaries"
+        },
+        {
+          "code_surfaces": [
+            "src/physics/intracellularFluid.ts",
+            "src/physics/membraneMechanics.ts"
+          ],
+          "current_capability": "The fluid grid follows the global volume-preserving affine membrane map only.",
+          "id": "local_non_affine_membrane_coupling",
+          "observed_metrics": {
+            "local_topology_change_modes_coupled": 0
+          },
+          "remaining_requirements": [
+            "Remeshing and topology-change representation.",
+            "Locally conservative moving-boundary coupling.",
+            "Event-specific membrane reservoir and neck mechanics evidence."
+          ],
+          "scope": "Local folds, buds, endocytosis, exocytosis and topology change.",
+          "status": "blocked_missing_evidence",
+          "title": "Local non-affine membrane-to-fluid coupling"
+        },
+        {
+          "code_surfaces": [
+            "src/physics/intracellularFluid.ts"
+          ],
+          "current_capability": "Tracer points visualize streamlines only and carry no molecule count, concentration, pressure or PHH speed claim.",
+          "id": "explicit_water_molecules",
+          "observed_metrics": {
+            "biological_species_bound_count": 0
+          },
+          "remaining_requirements": [],
+          "scope": "Whole-cell mesoscale renderer and transport solver.",
+          "status": "not_applicable_at_model_scale",
+          "title": "Explicit water-molecule representation"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/cytosol_transport.py",
+            "engine/cell_engine/validation/reaction_evidence_atlas.py"
+          ],
+          "current_capability": "The conservative scalar kernel exists, but no biological species or reaction is attached.",
+          "id": "reaction_fluid_coupling",
+          "observed_metrics": {
+            "biological_species_bound_count": 0,
+            "transport_coupled_reaction_count": 0
+          },
+          "remaining_requirements": [
+            "Species-specific PHH apparent diffusivity and compartment field.",
+            "Reaction timescale and evidence that transport is limiting.",
+            "Same-context held-out validation of the coupling law."
+          ],
+          "scope": "Local concentration fields may influence one reaction only after its own transport gate passes.",
+          "status": "blocked_missing_evidence",
+          "title": "Reaction-specific advection/diffusion coupling"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/cytosol_transport.py",
+            "src/physics/intracellularFluid.ts"
+          ],
+          "current_capability": "Crowder/protein points are visual; a prohibited global viscosity or crowding multiplier is not applied.",
+          "id": "macromolecular_crowding_physics",
+          "observed_metrics": {
+            "quantitatively_bound_crowding_laws": 0
+          },
+          "remaining_requirements": [
+            "Species-size-resolved PHH mobility data.",
+            "Local abundance/obstacle fields and binding kinetics.",
+            "Pathway-specific evidence for channeling or crowding-limited rates."
+          ],
+          "scope": "Size-dependent diffusion, binding, steric exclusion and local substrate channeling.",
+          "status": "blocked_missing_evidence",
+          "title": "Molecule-scale crowding and channeling"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/cytosol_transport.py"
+          ],
+          "current_capability": "The contract assigns metabolites/ions to passive advection-diffusion and vesicles to motor-track transport; cross-context motor rates cannot leak into PHH.",
+          "id": "transport_mode_separation",
+          "observed_metrics": {
+            "separate_transport_modes": 2
+          },
+          "remaining_requirements": [],
+          "scope": "Semantic and activation separation of aqueous transport from ATP-dependent cargo motion.",
+          "status": "closed",
+          "title": "Passive-fluid versus active-cargo separation"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/cytosol_transport.py"
+          ],
+          "current_capability": "Cross-context vesicle-motion observations are retained as references; no PHH numerical kernel or rate is active.",
+          "id": "active_intracellular_transport_model",
+          "observed_metrics": {
+            "healthy_phh_active_transport_kernels": 0
+          },
+          "remaining_requirements": [
+            "Cargo- and route-resolved PHH trajectories.",
+            "Motor occupancy, ATP dependence, pause/reversal and fusion/fission statistics.",
+            "Independent route-level validation."
+          ],
+          "scope": "Microtubule motors, actomyosin, vesicle routing and organelle-driven active mixing in healthy PHH.",
+          "status": "blocked_missing_evidence",
+          "title": "Executable active intracellular transport"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/cytosol_transport.py"
+          ],
+          "current_capability": "One healthy-human in-vivo restricted-water MRI target and ten cross-context references are registered; neither calibrates PHH cytosol mechanics.",
+          "id": "cytosol_experimental_validation",
+          "observed_metrics": {
+            "cross_context_references": 10,
+            "healthy_human_in_vivo_targets": 1,
+            "matched_healthy_phh_rheology_datasets": 0
+          },
+          "remaining_requirements": [
+            "A matched healthy-PHH intracellular transport/rheology time series with uncertainty."
+          ],
+          "scope": "FRAP/FCS, intracellular particle tracking, microrheology or equivalent healthy-PHH trajectories.",
+          "status": "blocked_missing_evidence",
+          "title": "Healthy-PHH cytosol experimental validation"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/validation/capability_atlas.py"
+          ],
+          "current_capability": "All feature topologies and evidence requirements exist; none of the 44 numerical slots is filled or executable.",
+          "id": "capability_template_quantitation",
+          "observed_metrics": {
+            "activated_template_count": 0,
+            "feature_template_count": 38,
+            "filled_parameter_slot_count": 0,
+            "parameter_slot_count": 44
+          },
+          "remaining_requirements": [
+            "Context-matched evidence and independent validation for each individual slot."
+          ],
+          "scope": "The declared 38-feature hepatocyte engineering scope.",
+          "status": "partial",
+          "title": "Capability-template quantitation"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/validation/reaction_evidence_atlas.py"
+          ],
+          "current_capability": "Every reaction has twelve typed evidence fields and a fail-closed transport gate; no reaction passes quantitative authority.",
+          "id": "quantitative_reaction_core",
+          "observed_metrics": {
+            "evidence_slot_count": 432,
+            "filled_evidence_slot_count": 0,
+            "quantitative_reaction_count": 0,
+            "reaction_count": 36
+          },
+          "remaining_requirements": [
+            "Exact equation, units, compartment and molecular identities.",
+            "Healthy-PHH parameter context and identifiable calibration data.",
+            "Donor-disjoint validation with uncertainty."
+          ],
+          "scope": "The 36 reactions currently active in the exploratory integrated network.",
+          "status": "blocked_missing_evidence",
+          "title": "Quantitative reaction core"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/compartmental_energy_redox.py",
+            "engine/cell_engine/validation/energy_redox_gate.py"
+          ],
+          "current_capability": "Pool identities and 14 process topologies are explicit; aggregate observations cannot initialize any compartment or rate.",
+          "id": "energy_redox_quantitation",
+          "observed_metrics": {
+            "compartment_count": 6,
+            "executable_process_count": 0,
+            "initialized_pool_count": 0,
+            "pool_count": 38,
+            "runtime_conflict_count": 6
+          },
+          "remaining_requirements": [
+            "Compartment-resolved healthy-PHH initial states.",
+            "Matched oxygen/redox/adenylate trajectories and flux-identifying perturbations.",
+            "Resolution of legacy aggregate runtime pools."
+          ],
+          "scope": "ATP/ADP/AMP, NAD(H), NADP(H), glutathione, ROS, oxygen and electrochemical states across six compartments.",
+          "status": "partial",
+          "title": "Compartmental energy and redox quantitation"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/phh_protein_functional_evidence.py",
+            "engine/cell_engine/multicell/communication.py"
+          ],
+          "current_capability": "Identity and selected response observations are present, while receptor density, occupancy, binding and internalization kinetics remain absent.",
+          "id": "receptor_signaling_kinetics",
+          "observed_metrics": {
+            "functional_response_observation_count": 3,
+            "receptor_binding_kinetic_observation_count": 0
+          },
+          "remaining_requirements": [
+            "Domain-resolved receptor surface density and active fraction.",
+            "Two-dimensional or exposure-matched kon/koff and occupancy.",
+            "Internalization/recycling and downstream delay trajectories."
+          ],
+          "scope": "INSR, EGFR, MET, NTCP and future contact-triggered receptor chains.",
+          "status": "blocked_missing_evidence",
+          "title": "Receptor and signaling-chain kinetics"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/phh_protein_functional_evidence.py"
+          ],
+          "current_capability": "Seven-donor total abundance exists for all eight proteins; total per-nucleus protein groups are not active surface copies.",
+          "id": "active_protein_copies",
+          "observed_metrics": {
+            "active_fraction_count": 0,
+            "donor_activity_distribution_count": 0,
+            "protein_count": 8,
+            "quantitative_surface_localization_count": 0,
+            "seven_donor_abundance_profile_count": 8
+          },
+          "remaining_requirements": [
+            "Matched total, domain-localized and functional fractions in the same PHH donors.",
+            "Surface/domain area denominator and polarity state.",
+            "Same-assay transport or signaling validation."
+          ],
+          "scope": "BSEP, MRP2, NTCP, INSR, MET, EGFR, GLUT2 and glucokinase.",
+          "status": "blocked_missing_evidence",
+          "title": "Active protein copies and domain densities"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/processes/cellular_memory.py",
+            "engine/cell_engine/core/history.py"
+          ],
+          "current_capability": "Twelve physical substrate contracts and a provenance-preserving event log exist; events cannot silently become memory.",
+          "id": "cellular_memory_laws",
+          "observed_metrics": {
+            "quantitatively_coupled_substrate_count": 0,
+            "required_persistence_test_count": 34,
+            "substrate_contract_count": 12
+          },
+          "remaining_requirements": [
+            "Trigger-write-decay persistence trajectories in matched PHH context.",
+            "Readout laws showing how each retained substrate changes a future response.",
+            "Inheritance and reversibility evidence where applicable."
+          ],
+          "scope": "Epigenetic, long-lived-protein, organelle-quality and metabolic-adaptation substrates.",
+          "status": "partial",
+          "title": "Persistent cellular-memory laws"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/stochastic/apoptosis.py",
+            "engine/cell_engine/processes/cellular_response.py"
+          ],
+          "current_capability": "Exploratory pathways and intervention scenarios exist, but commitment thresholds and recovery windows are not predictive.",
+          "id": "damage_fate_recovery_calibration",
+          "observed_metrics": {
+            "calibrated_fate_commitment_laws": 0
+          },
+          "remaining_requirements": [
+            "Time-resolved dose-response trajectories with fate labels.",
+            "Commitment-point and washout/recovery experiments.",
+            "Donor-disjoint validation for each declared injury context."
+          ],
+          "scope": "Apoptosis, necrosis, cholestasis and proteostasis outcomes in healthy PHH perturbation contexts.",
+          "status": "blocked_missing_evidence",
+          "title": "Damage, death and recovery calibration"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/ml/generative.py"
+          ],
+          "current_capability": "Separate donor/cohort observations exist, but cross-assay records are not fused into synthetic people and no VAE is trained.",
+          "id": "donor_state_model",
+          "observed_metrics": {
+            "validated_generative_donor_models": 0
+          },
+          "remaining_requirements": [
+            "A donor-linked multimodal training cohort and feature manifest.",
+            "Donor-level train/validation/test splits and batch covariates.",
+            "Posterior predictive and biological constraint validation."
+          ],
+          "scope": "Age, sex, genotype, zonation, nutrition and disease history in one donor-resolved state.",
+          "status": "blocked_missing_evidence",
+          "title": "Joint donor-state variability model"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/validation/physical_validation.py",
+            "engine/cell_engine/quantitative/human_hepatocyte_3d_morphometry.py"
+          ],
+          "current_capability": "Human aggregate 3D volume and verified proxy geometry exist; no donor mesh or matched PHH mechanical parameter set exists.",
+          "id": "donor_3d_morphology_mechanics",
+          "observed_metrics": {
+            "donor_resolved_in_situ_mesh_count": 0,
+            "matched_phh_mechanical_parameter_sets": 0
+          },
+          "remaining_requirements": [
+            "Donor-resolved in-situ membrane and organelle meshes.",
+            "Matched cortex, adhesion, tension, bending and hydraulic measurements.",
+            "Contact-interface ground truth."
+          ],
+          "scope": "In-situ hepatocyte surface, organelle distribution, cortex, adhesion and membrane mechanics.",
+          "status": "partial",
+          "title": "Donor-resolved 3D morphology and mechanics"
+        },
+        {
+          "code_surfaces": [
+            "data/published_models/human_gem_v2.0.0.manifest.json",
+            "scripts/fetch_human_gem.py"
+          ],
+          "current_capability": "Human-GEM v2.0.0 is pinned by release tag, commit, byte size and SHA-256; a fetch tool verifies the artifact without vendoring 43 MB.",
+          "id": "human_gem_artifact_identity",
+          "observed_metrics": {
+            "artifact_sha256": "cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a",
+            "model_version": "2.0.0",
+            "release_commit": "635f533152dc5f7290ce04d12700eaa882273c3e",
+            "runtime_loaded": false
+          },
+          "remaining_requirements": [],
+          "scope": "Exact generic reconstruction release identity and reproducible retrieval only.",
+          "status": "closed",
+          "title": "Pinned Human-GEM artifact identity"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/metabolic_constraint_shell.py"
+          ],
+          "current_capability": "The generic reconstruction is pinned, but every optimization and scientific-coupling gate remains false.",
+          "id": "hepatocyte_fba_execution",
+          "observed_metrics": {
+            "enabled_execution_gate_count": 0,
+            "execution_gate_count": 6
+          },
+          "remaining_requirements": [
+            "Declared PHH context-extraction algorithm and donor/cohort inputs.",
+            "Measured exchange bounds, defensible objective and pinned solver.",
+            "FVA, infeasibility, mass/charge and independent flux validation."
+          ],
+          "scope": "A context-extracted and independently validated healthy-hepatocyte constraint model.",
+          "status": "blocked_missing_evidence",
+          "title": "Healthy-PHH FBA/FVA execution"
+        },
+        {
+          "code_surfaces": [
+            "src/main.ts",
+            "artifacts/screenshots/"
+          ],
+          "current_capability": "Manual in-app browser screenshot and console QA is possible and has been performed; a committed deterministic pixel baseline is absent.",
+          "id": "visual_regression_automation",
+          "observed_metrics": {
+            "automated_visual_regression_suites": 0,
+            "manual_browser_qa_available": true
+          },
+          "remaining_requirements": [
+            "A stable headless-browser test with nonblank-canvas, console and approved pixel-difference criteria."
+          ],
+          "scope": "Repeatable render integrity checks for desktop/mobile browser views.",
+          "status": "partial",
+          "title": "Browser visual regression automation"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/validation/external_review.py",
+            "docs/validation/external-review-dossier.md"
+          ],
+          "current_capability": "The review contract and dossier are ready; no external result artifact has been received.",
+          "id": "independent_scientific_validation",
+          "observed_metrics": {
+            "externally_reviewed_claim_count": 0,
+            "independent_reproduction_count": 0,
+            "internally_ready_claim_count": 10,
+            "prospectively_validated_claim_count": 0,
+            "same_assay_validated_claim_count": 0
+          },
+          "remaining_requirements": [
+            "Signed domain-expert review with conflicts declared.",
+            "Donor-disjoint same-assay validation.",
+            "Prospective independent wet-lab PHH result.",
+            "Independent software reproduction."
+          ],
+          "scope": "External domain review, same-assay held-out validation, prospective PHH experiment and independent reproduction.",
+          "status": "external_action_required",
+          "title": "Independent scientific and software validation"
+        }
+      ],
+      "score_policy": "No average realism or biological-accuracy percentage is identifiable. Closed statuses apply only to each entry's exact scope.",
+      "status": "mixed_completion_with_fail_closed_biological_activation",
+      "status_semantics": {
+        "blocked_missing_evidence": "Activation would require unavailable context-matched measurements; values remain null.",
+        "closed": "Every requirement inside the narrowly declared scope is implemented and verified.",
+        "external_action_required": "The requirement cannot be completed by repository code or literature intake alone.",
+        "not_applicable_at_model_scale": "The requested representation is the wrong abstraction at whole-cell scale.",
+        "partial": "A tested contract or numerical layer exists, but the declared capability is incomplete."
+      },
+      "summary": {
+        "biological_accuracy_pct": null,
+        "blocked_missing_evidence_count": 14,
+        "closed_count": 4,
+        "entry_count": 26,
+        "external_action_required_count": 1,
+        "not_applicable_at_model_scale_count": 1,
+        "partial_count": 6
+      },
+      "version": "hepatocyte_completion_matrix_v1"
+    },
     "history": {
       "birth_time_s": 0.0,
       "completed_cytokineses": 0,
@@ -19737,19 +20253,38 @@
     },
     "metabolic_constraint_shell": {
       "blockers": [
-        "exact reconstruction release and checksum are not pinned",
+        "pinned SBML is not vendored or loaded by the runtime; use the checksum-verifying fetch tool",
         "healthy-PHH context extraction is not defined",
         "measured boundary fluxes are insufficient for the declared contexts",
         "objective function is not identified as a healthy-hepatocyte measurement",
+        "mass and charge balance have not been audited in this project",
         "independent flux validation is absent"
       ],
       "candidate_reconstruction": {
-        "artifact_sha256": null,
-        "license_audited": false,
+        "artifact_format": "SBML Level 3 Version 1 with FBC Version 2",
+        "artifact_sha256": "cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a",
+        "artifact_size_bytes": 43115559,
+        "artifact_url": "https://raw.githubusercontent.com/SysBioChalmers/Human-GEM/635f533152dc5f7290ce04d12700eaa882273c3e/model/Human-GEM.xml",
+        "artifact_vendored_in_repository": false,
+        "expected_local_cache_path": "data/published_models/cache/Human-GEM-v2.0.0.xml",
+        "license": "CC-BY-4.0",
+        "license_audited": true,
+        "manifest_path": "data/published_models/human_gem_v2.0.0.manifest.json",
         "mass_charge_balance_audited_in_project": false,
         "model_family": "Human-GEM",
-        "model_version": null,
-        "sbml_path": null
+        "model_loaded_by_runtime": false,
+        "model_name": "Human 2.0.0",
+        "model_version": "2.0.0",
+        "release_commit": "635f533152dc5f7290ce04d12700eaa882273c3e",
+        "release_date": "2026-03-30",
+        "release_tag": "v2.0.0",
+        "sbml_path": null,
+        "structural_counts_verified_from_sbml": {
+          "compartments": 9,
+          "genes": 2848,
+          "metabolites": 8461,
+          "reactions": 12931
+        }
       },
       "gates": {
         "enzyme_constrained_fba_allowed": false,
@@ -19787,8 +20322,8 @@
         "human1_metabolic_atlas",
         "human_gem_repository"
       ],
-      "status": "template_non_executable_model_artifact_not_pinned",
-      "version": "metabolic_constraint_shell_v1"
+      "status": "release_and_checksum_pinned_context_and_optimization_blocked",
+      "version": "metabolic_constraint_shell_v2"
     },
     "metabolic_fluxes": [
       {
@@ -19982,6 +20517,7 @@
         "reaction_evidence_atlas",
         "cytosol_transport",
         "metabolic_constraint_shell",
+        "hepatocyte_completion_matrix",
         "phh_albumin_secretion.assay_contract",
         "phh_albumin_secretion.observed_batch_span",
         "phh_albumin_secretion.measurement_contract",
@@ -20023,7 +20559,7 @@
         "spatial_world",
         "physical_validation"
       ],
-      "policy": "quantitative_state wins on overlapping aggregate species; the capability atlas defines scope but activates no behavior; cellular memory requires an assayed persistent physical substrate and never treats an event log as memory; cytosol_transport forbids a single global viscosity/crowding multiplier and reaction_evidence_atlas gates fluid coupling per reaction; metabolic_constraint_shell cannot execute until a versioned reconstruction, PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+      "policy": "quantitative_state wins on overlapping aggregate species; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; cellular memory requires an assayed persistent physical substrate and never treats an event log as memory; cytosol_transport forbids a single global viscosity/crowding multiplier and reaction_evidence_atlas gates fluid coupling per reaction; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
       "primary_state_path": "quantitative_state",
       "runtime_authoritative_sections": [
         "spatial_state",
@@ -35123,7 +35659,8 @@
         "cellular_memory_substrate_contract",
         "reaction_evidence_atlas",
         "cytosol_transport_rheology_contract",
-        "metabolic_constraint_shell"
+        "metabolic_constraint_shell",
+        "hepatocyte_completion_matrix"
       ],
       "blocked_or_disabled_surfaces": [
         "albumin_secretory_pathway_kinetics",
@@ -35879,15 +36416,24 @@
           "status": "derived"
         },
         {
-          "action": "retain a fail-closed Human-GEM/Human1 integration contract; require an exact model release, checksum, hepatocyte context, exchange bounds, objective, solver configuration and scale-matched validation before FBA, FVA, thermodynamic or enzyme constraints can run",
-          "default_snapshot_role": "genome_scale_constraint_activation_firewall",
+          "action": "retain the checksum-pinned Human-GEM v2.0.0 candidate artifact; require a declared PHH extraction context, measured exchange bounds, objective, solver configuration, mass/charge audit and scale-matched validation before FBA, FVA, thermodynamic or enzyme constraints can run",
+          "default_snapshot_role": "pinned_reconstruction_and_genome_scale_activation_firewall",
           "drives_scientific_validation": true,
           "id": "metabolic_constraint_shell",
-          "limitations": "The current shell loads no genome-scale model and performs no optimization. A reconstruction topology alone does not identify a healthy single-hepatocyte flux state.",
+          "limitations": "The exact generic reconstruction is pinned but not vendored or loaded by runtime, and no optimization runs. A generic stoichiometric topology does not identify a healthy single-hepatocyte flux state.",
           "source_ids": [
             "human1_metabolic_atlas",
             "human_gem_repository"
           ],
+          "status": "derived"
+        },
+        {
+          "action": "report every major engineering and evidence gap using closed, partial, blocked, external-action or scale-inapplicable status; treat closed as local to the declared scope and keep whole-cell biological accuracy null",
+          "default_snapshot_role": "scoped_completion_and_blocker_ledger",
+          "drives_scientific_validation": true,
+          "id": "hepatocyte_completion_matrix",
+          "limitations": "The ledger improves auditability but supplies no biological measurement, parameter, validation result or whole-cell realism percentage.",
+          "source_ids": [],
           "status": "derived"
         }
       ]
