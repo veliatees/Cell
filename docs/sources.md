@@ -197,6 +197,41 @@ link back here or to a more specific research file.
 
 ## Cell Biology
 
+- Cytoplasm transport and rheology evidence boundary:
+  - Moeendarbary et al. (2013), "The cytoplasm of living cells behaves as a
+    poroelastic material": https://doi.org/10.1038/nmat3517
+    - HeLa, HT1080 and MDCK measurements support a biphasic porous-scaffold plus
+      interstitial-fluid material class. They are not healthy PHH parameters.
+  - Kwapiszewska et al. (2020), "Nanoscale Viscosity of Cytoplasm Is Conserved
+    in Human Cell Lines": https://doi.org/10.1021/acs.jpclett.0c01748
+    - Probe-size-dependent diffusion across six human cell lines, including
+      HepG2. HepG2 is a cancer cell line and cannot initialize healthy PHH.
+  - Swaminathan et al. (1997), intracellular GFP diffusion and rotation:
+    https://doi.org/10.1016/S0006-3495(97)78835-0
+    - CHO-cell translation and rotation give different effective viscosity
+      readouts; retained only as cross-context evidence of probe dependence.
+  - Guo et al. (2017), size- and speed-dependent mammalian cytoplasm mechanics:
+    https://doi.org/10.1073/pnas.1616310114
+    - Supports scale- and rate-dependent viscous, viscoelastic and poroelastic
+      regimes; not a source of healthy-PHH coefficients.
+- Reaction-kinetics evidence candidates:
+  - SABIO-RK: https://doi.org/10.1093/nar/gkx1065
+  - BRENDA: https://www.brenda-enzymes.org/
+  - HEPATOKIN1: https://doi.org/10.1038/s41467-018-04720-9
+  - Davidi et al. (2016), in-vivo versus in-vitro catalytic rates:
+    https://doi.org/10.1073/pnas.1514240113
+  - These are candidate evidence sources. Database presence, purified-enzyme
+    constants or fitted liver-scale Vmax values do not authorize transfer to a
+    healthy single hepatocyte.
+- Human capability and genome-scale structural references:
+  - Human1 metabolism atlas: https://doi.org/10.1126/scisignal.aaz1482
+  - Human-GEM repository: https://github.com/SysBioChalmers/Human-GEM
+  - Human Protein Atlas subcellular map:
+    https://doi.org/10.1126/science.aal3321
+  - MacParland et al. normal human liver cell atlas:
+    https://doi.org/10.1038/s41467-018-06318-7
+  - These support topology, identity, localization or a future constraint
+    scaffold. They do not supply a donor-specific kinetic trajectory.
 - NCBI Bookshelf, Molecular Biology of the Cell:
   https://www.ncbi.nlm.nih.gov/books/NBK21054/
   - Use as a broad conceptual cell biology reference.
