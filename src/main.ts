@@ -79,6 +79,17 @@ import {
   type MembraneSim
 } from "./physics/membrane_mechanics";
 import {
+  IntracellularFluidField,
+  type IntracellularFluidCollision,
+  type IntracellularFluidDeformation
+} from "./physics/intracellularFluid";
+import {
+  CytosolProjectionGrid,
+  DynamicCytosolObstacleField,
+  type CytosolObstacle,
+  type CytosolQuaternion
+} from "./physics/cytosolNumerics";
+import {
   engineSnapshotEndpointFromLocation,
   loadEngineSnapshot,
   type EngineDivisionCell,
@@ -86,6 +97,7 @@ import {
   type EngineIntercellularCommunication,
   type EngineSpatialBody,
   type EngineSpatialPairRelation,
+  type EngineSurfaceDeformationState,
   type EngineSnapshotSummary
 } from "./engineSnapshot";
 import {
@@ -595,6 +607,21 @@ let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by c
 let membraneSim: MembraneSim | null = null;
 let membraneRestPos: Float32Array | null = null;
 let engineMembraneDeformationActive = false;
+type IntracellularFluidVisual = {
+  field: IntracellularFluidField;
+  numericalGrid: CytosolProjectionGrid;
+  obstacles: DynamicCytosolObstacleField;
+  syncObstacles: (deltaS: number) => void;
+  points: THREE.Points;
+  trails: THREE.LineSegments;
+  trailIndices: Uint32Array;
+  trailPositions: Float32Array;
+  trailTails: Float32Array;
+  collides: IntracellularFluidCollision;
+  deformationSignature: string;
+  obstacleSyncElapsedS: number;
+};
+let intracellularFluidVisual: IntracellularFluidVisual | null = null;
 
 let organelleInteractionLayer: THREE.Group | null = null;
 let organelleInteractionSummaryRef: EngineSnapshotSummary | null = null;
@@ -905,6 +932,10 @@ type OrganellePopulation = {
   step: number; // per-frame random increment (world units)
   bright: Float32Array; // count, per-instance brightness (independent random walk)
   brightStep: number; // zero disables ungrounded activity-like blinking
+  obstacleShape: "sphere" | "capsule";
+  obstacleRadius: number;
+  obstacleHalfLength: number;
+  currentPos: Float32Array; // 3 * count, exact renderer centers from the latest matrix update
 };
 const organellePopulations: OrganellePopulation[] = [];
 // --- Nucleus gene expression (central dogma made visible) -------------------
@@ -3012,6 +3043,9 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
       _popScale.set(sc, sc, sc);
       _popMat.compose(_popPos, _popQuat, _popScale);
       pop.mesh.setMatrixAt(i, _popMat);
+      pop.currentPos[i * 3] = _popPos.x;
+      pop.currentPos[i * 3 + 1] = _popPos.y;
+      pop.currentPos[i * 3 + 2] = _popPos.z;
       // Stable optical heterogeneity only. A free random brightness walk looked
       // like organelle activity despite having no measured biological driver.
       // The subtle shimmer is refreshed only on colour frames to avoid a
@@ -3332,6 +3366,15 @@ function membraneCoupledFactor(x: number, y: number, z: number, t: number): numb
   return 1 + (surface - 1) * depth * 0.22;
 }
 
+function activeEngineSurfaceDeformation(): EngineSurfaceDeformationState | null {
+  const spatialWorld = externalEngineSummary?.spatialWorld;
+  const bodyId = externalEngineSummary?.spatialState?.body_id;
+  const body = spatialWorld?.bodies.find((candidate) => candidate.id === bodyId)
+    ?? spatialWorld?.bodies.find((candidate) => candidate.biological_kind === "hepatocyte");
+  const deformation = body?.shape.kind === "convex_polyhedron" ? body.shape.deformation : null;
+  return deformation?.active ? deformation : null;
+}
+
 // Repair the coarse surface numerically, consume any engine-authoritative shape,
 // then rebuild the shared render field.
 function updateMembraneShape(dtReal: number) {
@@ -3340,12 +3383,8 @@ function updateMembraneShape(dtReal: number) {
   // These substeps repair mesh quality only; they are not biological time.
   const simDt = clamp(dtReal, 0.004, 0.024);
   stepMembrane(sim, simDt);
-  const spatialWorld = externalEngineSummary?.spatialWorld;
-  const bodyId = externalEngineSummary?.spatialState?.body_id;
-  const body = spatialWorld?.bodies.find((candidate) => candidate.id === bodyId)
-    ?? spatialWorld?.bodies.find((candidate) => candidate.biological_kind === "hepatocyte");
-  const deformation = body?.shape.kind === "convex_polyhedron" ? body.shape.deformation : null;
-  if (deformation?.active) {
+  const deformation = activeEngineSurfaceDeformation();
+  if (deformation) {
     applyVolumePreservingAffineContactShape(sim, deformation.normal_local, deformation.axial_scale);
     engineMembraneDeformationActive = true;
   } else if (engineMembraneDeformationActive) {
@@ -3359,6 +3398,60 @@ function updateMembraneShape(dtReal: number) {
   const nrm = organelleMembrane.geometry.getAttribute("normal") as THREE.BufferAttribute | null;
   if (nrm) { (nrm.array as Float32Array).set(sim.normals); nrm.needsUpdate = true; }
   rebuildMembraneField();
+}
+
+function updateIntracellularFluid(realDeltaS: number, refreshMovingBoundaries: boolean): void {
+  const visual = intracellularFluidVisual;
+  if (!visual) return;
+  const engineDeformation = activeEngineSurfaceDeformation();
+  const deformation: IntracellularFluidDeformation | null = engineDeformation
+    ? { normal: engineDeformation.normal_local, axialScale: engineDeformation.axial_scale }
+    : null;
+  const deformationSignature = engineDeformation
+    ? `${engineDeformation.normal_local.join(":")}:${engineDeformation.axial_scale}`
+    : "rest";
+  const deformationChanged = deformationSignature !== visual.deformationSignature;
+  visual.obstacleSyncElapsedS += running ? realDeltaS : 0;
+  const refreshNumericalGrid = refreshMovingBoundaries || deformationChanged;
+  if (running && refreshNumericalGrid) {
+    visual.syncObstacles(visual.obstacleSyncElapsedS);
+    visual.obstacleSyncElapsedS = 0;
+  }
+  if (running) {
+    visual.field.step(
+      realDeltaS,
+      deformation,
+      visual.collides,
+      visual.obstacles,
+      refreshNumericalGrid
+    );
+  }
+  else visual.field.synchronizeDeformation(deformation);
+  visual.deformationSignature = deformationSignature;
+
+  const pointAttribute = visual.points.geometry.getAttribute("position") as THREE.BufferAttribute;
+  pointAttribute.needsUpdate = true;
+  const trailFollow = running && !deformationChanged ? Math.min(1, realDeltaS * 3.2) : 1;
+  for (let trail = 0; trail < visual.trailIndices.length; trail += 1) {
+    const tracer = visual.trailIndices[trail] * 3;
+    const tail = trail * 3;
+    const segment = trail * 6;
+    const x = visual.field.positions[tracer];
+    const y = visual.field.positions[tracer + 1];
+    const z = visual.field.positions[tracer + 2];
+    visual.trailTails[tail] += (x - visual.trailTails[tail]) * trailFollow;
+    visual.trailTails[tail + 1] += (y - visual.trailTails[tail + 1]) * trailFollow;
+    visual.trailTails[tail + 2] += (z - visual.trailTails[tail + 2]) * trailFollow;
+    visual.trailPositions[segment] = visual.trailTails[tail];
+    visual.trailPositions[segment + 1] = visual.trailTails[tail + 1];
+    visual.trailPositions[segment + 2] = visual.trailTails[tail + 2];
+    visual.trailPositions[segment + 3] = x;
+    visual.trailPositions[segment + 4] = y;
+    visual.trailPositions[segment + 5] = z;
+  }
+  const trailAttribute = visual.trails.geometry.getAttribute("position") as THREE.BufferAttribute;
+  trailAttribute.needsUpdate = true;
+  visual.trails.geometry.computeBoundingSphere();
 }
 
 // Feeding/fasting: fill or mobilise the glycogen store and refresh the readout.
@@ -4010,8 +4103,26 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
   const kineticTransferRow = kineticTransfer
     ? `<div class="phh-profile"><div class="phh-profile__head"><b>Published kinetic-transfer audit</b><span>${kineticTransfer.activated_transfer_count === 0 ? "fail-closed · no rates imported" : `${kineticTransfer.activated_transfer_count} rates activated`}</span></div><div class="phh-profile__grid"><span>Active network coverage <b>${kineticTransfer.active_reaction_count}/${kineticTransfer.active_reaction_count}</b></span><span>Published reaction candidates <b>${kineticTransfer.mapped_candidate_count}/${kineticTransfer.active_reaction_count}</b></span><span>Outside source scope <b>${kineticTransfer.outside_source_scope_count}</b></span><span>Exact aliased stoichiometry <b>${kineticTransfer.exact_stoichiometry_match_count}</b></span><span>Exact symbolic rate law <b>${kineticTransfer.exact_symbolic_rate_law_match_count}</b></span><span>Per-cell unit bridge <b>${kineticTransfer.per_cell_unit_bridge_ready_count}</b></span><span>Matched PHH context <b>${kineticTransfer.biological_context_match_count}</b></span><span>Activated transfers <b>${kineticTransfer.activated_transfer_count}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Equation audit</span><span>${kineticTransfer.exact_stoichiometry_reaction_ids.join(" · ")} match published stoichiometry after explicit aliases. Their full MathML laws, compartments, per-cell scale and PHH context still do not match, so no fitted Vmax enters the cell engine.</span></div>`
     : "";
+  const capabilityAtlas = summary?.hepatocyteCapabilityAtlas;
+  const cellularMemoryContract = summary?.cellularMemoryContract;
+  const capabilityAtlasRow = capabilityAtlas && cellularMemoryContract
+    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Hepatocyte capability + memory atlas v1</b><span>coverage declared · execution gated</span></div><div class="phh-profile__grid"><span>Capability domains <b>${capabilityAtlas.summary.declared_domain_count}</b></span><span>Feature templates <b>${capabilityAtlas.summary.feature_template_count}</b></span><span>Quantitative slots <b>${capabilityAtlas.summary.parameter_slot_count}</b></span><span>Filled slots <b>${capabilityAtlas.summary.filled_parameter_slot_count}</b></span><span>Activated templates <b>${capabilityAtlas.summary.quantitatively_activated_template_count}</b></span><span>Physical memory carriers <b>${cellularMemoryContract.summary.substrate_contract_count}</b></span><span>Persistence tests required <b>${cellularMemoryContract.summary.required_persistence_test_count}</b></span><span>Memory-linked response laws <b>${cellularMemoryContract.summary.quantitatively_coupled_substrate_count}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">History firewall</span><span>An event is retained as provenance, but becomes biological memory only after a physical carrier persists after washout and changes a later measured response.</span></div>`
+    : "";
+  const reactionEvidence = summary?.reactionEvidenceAtlas;
+  const cytosolTransport = summary?.cytosolTransport;
+  const metabolicConstraint = summary?.metabolicConstraintShell;
+  const cytosolTransportRow = reactionEvidence && cytosolTransport && metabolicConstraint
+    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Cytosol transport + reaction evidence v2</b><span>dimensionless projection active · biological coupling blocked</span></div><div class="phh-profile__grid"><span>Active reactions audited <b>${reactionEvidence.summary.active_reaction_count}</b></span><span>Reaction evidence fields <b>${reactionEvidence.summary.filled_evidence_slot_count}/${reactionEvidence.summary.evidence_slot_count} filled</b></span><span>Transport-coupled reactions <b>${reactionEvidence.summary.transport_coupled_reaction_count}</b></span><span>Global fluid multipliers <b>${reactionEvidence.summary.direct_fluid_rate_multiplier_count}</b></span><span>Cross-context references <b>${cytosolTransport.summary.cross_context_reference_count}</b></span><span>Human validation targets <b>${cytosolTransport.summary.human_in_vivo_validation_target_count}</b></span><span>Dimensionless projection grids <b>${cytosolTransport.summary.dimensionless_projection_solver_count}</b></span><span>Conservative scalar kernels <b>${cytosolTransport.summary.conservative_passive_scalar_kernel_count}</b></span><span>Biological species bound <b>${cytosolTransport.summary.biological_species_bound_count}</b></span><span>Healthy-PHH rheology parameters <b>${cytosolTransport.summary.healthy_phh_numeric_rheology_parameter_count}</b></span><span>Membrane pressure feedback <b>${cytosolTransport.summary.membrane_pressure_feedback_count}</b></span><span>Genome-scale FBA execution <b>${metabolicConstraint.gates.fba_execution_allowed ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Transport boundary</span><span>The projected tracer field follows the deforming membrane and moving analytic organelle boundaries. Its velocity and pressure are dimensionless; no molecule, PHH diffusivity, reaction, or membrane-force feedback is activated without matched measurements.</span></div>`
+    : "";
   const placeholderRow = assumptions
     ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Schematic</span><span>${assumptions.placeholder_pools.length} relative pools remain placeholders and do not drive quantitative validation.</span></div>`
+    : "";
+  const externalReview = summary?.externalValidationProgram;
+  const externalReviewRow = externalReview
+    ? (() => {
+        const reviewSummary = externalReview.summary;
+        return `<div class="phh-profile phh-profile--external-review"><div class="phh-profile__head"><b>External scientific review v1</b><span>packet ready · external review pending</span></div><div class="phh-profile__grid"><span>Contexts of use <b>${reviewSummary.context_count}</b></span><span>Scoped claims <b>${reviewSummary.scoped_claim_count}</b></span><span>Reviewer roles <b>${reviewSummary.reviewer_role_count}</b></span><span>Internal review contracts <b>${reviewSummary.internal_contract_ready_claim_count}/${reviewSummary.scoped_claim_count}</b></span><span>External domain reviews <b>${reviewSummary.externally_reviewed_claim_count}</b></span><span>Same-assay validated claims <b>${reviewSummary.same_assay_validated_claim_count}</b></span><span>Prospective PHH validations <b>${reviewSummary.prospectively_validated_claim_count}</b></span><span>Independent reproductions <b>${reviewSummary.independent_reproduction_count}</b></span><span>Predictive claims <b>${reviewSummary.predictive_claim_count}</b></span><span>Biological accuracy <b>not identifiable</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Review contract</span><span>Claim, source and scope red-team review is ready. Quantitative held-out, prospective wet-lab and independent reproduction rounds remain blocked until signed result artifacts exist.</span></div>`;
+      })()
     : "";
   const authorityRow = summary?.quantitativeState
     ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Unified state</span><span>Primary metrics use source-traceable quantitative_state; overlapping relative pools are quarantined as schematic visual state.</span></div>`
@@ -4330,7 +4441,7 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
     `<div class="phh-profile__grid"><span>Defined layers <b>${VISUAL_ANATOMY_REQUIREMENTS.length}</b></span><span>Incomplete layers <b>${incompleteAnatomyLayers.length}</b></span><span>Current LOD <b>${(activeVisualAnatomyLod ?? "loading").replaceAll("_", " ")}</b></span><span>Human numeric transfer <b>LSEC fenestra ${HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM} nm mean</b></span></div></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Anatomy rubric</span><span>Coverage of explicit renderer layers, not percent biological realism. Cell-form morphometry, human organelle counts and quantitative EM-volume registration remain incomplete.</span></div>`;
   return (
-    visualAnatomyRow + profileRow + geometryReferenceRow + human3dRow + zonationRow + openAtlasRow + homeostasisRow + homeostasisV3Row + endocrineRow + validationProtocolRow + healthyPhhValidationRow + phhSpheroidProtocolRow + phhGlucoseObservabilityRow + energyRedoxRow + phhAlbuminSecretionRow + phhCypFunctionRow + phhBiliaryExcretionRow + phhIdentityHeterogeneityRow + phhProteomeBudgetRow + phhAbsoluteProteomeAtlasRow + phhTransporterInventoryRow + phhProteinFunctionalEvidenceRow + humanSchBileAcidsRow + evidenceIntakeRow + publishedModelRow + externalValidationRow + publishedLineageRow + nutritionalContextRow + fluxEvidenceRow + phhRow + authorityRow + reactionAuthorityRow + kineticTransferRow + auditRow + placeholderRow +
+    externalReviewRow + visualAnatomyRow + capabilityAtlasRow + cytosolTransportRow + profileRow + geometryReferenceRow + human3dRow + zonationRow + openAtlasRow + homeostasisRow + homeostasisV3Row + endocrineRow + validationProtocolRow + healthyPhhValidationRow + phhSpheroidProtocolRow + phhGlucoseObservabilityRow + energyRedoxRow + phhAlbuminSecretionRow + phhCypFunctionRow + phhBiliaryExcretionRow + phhIdentityHeterogeneityRow + phhProteomeBudgetRow + phhAbsoluteProteomeAtlasRow + phhTransporterInventoryRow + phhProteinFunctionalEvidenceRow + humanSchBileAcidsRow + evidenceIntakeRow + publishedModelRow + externalValidationRow + publishedLineageRow + nutritionalContextRow + fluxEvidenceRow + phhRow + authorityRow + reactionAuthorityRow + kineticTransferRow + auditRow + placeholderRow +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Source-backed</span><span>BSEP/MRP2 directionality; intracellular/extracellular measurement distinction; cholestasis → ER stress; human bile-acid death-mode constraint.</span></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Model state</span><span>Mass-conserving intracellular → canalicular relative pools. CYP7A1 feedback and basolateral escape are explicitly not modeled.</span></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Derived</span><span>Stress-time exposure and fate evidence; no calibrated time-to-death or canalicular pressure.</span></div>` +
@@ -4695,6 +4806,7 @@ function clearWaterVisuals() {
   membraneSim = null;
   membraneRestPos = null;
   engineMembraneDeformationActive = false;
+  intracellularFluidVisual = null;
   membraneFaceDirs = null;
   membraneField = null;
   diseaseSceneVisuals = null;
@@ -6589,6 +6701,7 @@ function buildOrganelleScene() {
   organelleMembrane = null;
   membraneSim = null;
   membraneRestPos = null;
+  intracellularFluidVisual = null;
   membraneFaceDirs = null;
   membraneField = null;
   organelleGlow = [];
@@ -6708,6 +6821,7 @@ function buildOrganelleScene() {
   // overlaps another. (The hash's 1-cell neighbour search is only valid for the
   // small instanced radii, which is why heroes stay in the exact list.)
   const occupied: { c: THREE.Vector3; r: number }[] = [];
+  const fluidSupplementalStaticObstacles: CytosolObstacle[] = [];
   const place = (orgR: number, minR: number, maxR: number): THREE.Vector3 | null => {
     for (let t = 0; t < 240; t += 1) {
       const dir = randDir();
@@ -6791,7 +6905,19 @@ function buildOrganelleScene() {
     count: number,
     geo: THREE.BufferGeometry,
     color: string,
-    opts: { opacity?: number; emissive?: number; rMax?: number; label: string; jitterScale?: number; collisionRadius: number; cage?: number; step?: number }
+    opts: {
+      opacity?: number;
+      emissive?: number;
+      rMax?: number;
+      label: string;
+      jitterScale?: number;
+      collisionRadius: number;
+      cage?: number;
+      step?: number;
+      obstacleShape?: "sphere" | "capsule";
+      obstacleRadius?: number;
+      obstacleHalfLength?: number;
+    }
   ): THREE.InstancedMesh | null => {
     if (count <= 0) return null;
     const rMax = opts.rMax ?? CELL_R * 0.9;
@@ -6853,6 +6979,7 @@ function buildOrganelleScene() {
     const baseQuat = new Float32Array(actual * 4);
     const scaleArr = new Float32Array(actual);
     const offsetArr = new Float32Array(actual * 3); // starts at rest
+    const currentPos = new Float32Array(actual * 3);
     const cageArr = new Float32Array(actual);
     const brightArr = new Float32Array(actual);
     const col = new THREE.Color();
@@ -6868,6 +6995,9 @@ function buildOrganelleScene() {
       basePos[i * 3] = pos.x;
       basePos[i * 3 + 1] = pos.y;
       basePos[i * 3 + 2] = pos.z;
+      currentPos[i * 3] = pos.x;
+      currentPos[i * 3 + 1] = pos.y;
+      currentPos[i * 3 + 2] = pos.z;
       baseQuat[i * 4] = q.x;
       baseQuat[i * 4 + 1] = q.y;
       baseQuat[i * 4 + 2] = q.z;
@@ -6903,7 +7033,11 @@ function buildOrganelleScene() {
       cage: cageArr,
       step: opts.step ?? 0.03,
       bright: brightArr,
-      brightStep: 0
+      brightStep: 0,
+      obstacleShape: opts.obstacleShape ?? "sphere",
+      obstacleRadius: opts.obstacleRadius ?? opts.collisionRadius,
+      obstacleHalfLength: opts.obstacleHalfLength ?? 0,
+      currentPos
     });
     return inst;
   };
@@ -7647,6 +7781,9 @@ function buildOrganelleScene() {
       // Collision radius = the ovoid's true bounding radius (0.4/2 + 0.5 = 0.7)
       // so reserved space ≈ drawn size and the packing is dense but never overlaps.
       collisionRadius: 0.7,
+      obstacleShape: "capsule",
+      obstacleRadius: 0.5,
+      obstacleHalfLength: 0.2,
       cage: 0.05,
       step: 0.035,
       label: `Mitochondria - real hepatocyte-scale ovoids (~0.6×1.2 µm) packed by excluded volume toward the ~18-20% volume fraction reported for hepatocyte cytoplasm (Blouin, Bolender & Weibel 1977, rat parenchyma stereology; human is the same order). The packer keeps whatever fits without overlap; exact per-cell count and donor morphometry are not claimed.`
@@ -7740,6 +7877,12 @@ function buildOrganelleScene() {
         ls.set(sc, sc, sc);
         lm.compose(lipidPositions[i], lq, ls);
         lipidInstanced.setMatrixAt(i, lm);
+        fluidSupplementalStaticObstacles.push({
+          id: `lipid-droplet-${i}`,
+          kind: "sphere",
+          center: [lipidPositions[i].x, lipidPositions[i].y, lipidPositions[i].z],
+          radius: 0.5 * sc
+        });
       }
       lipidInstanced.instanceMatrix.needsUpdate = true;
       lipidInstanced.userData.label = "Lipid droplets - ER-derived neutral-lipid stores bounded by a phospholipid monolayer. Combined display volume is normalized to the 0.507807% normal-control human 3D median from Segovia-Miranda et al.; sample count and size variation are renderer-only, and no nutrition-dependent PHH response law is asserted.";
@@ -8098,6 +8241,165 @@ function buildOrganelleScene() {
   addPos("glycolysis", glycolysisAnchor);
   trackMotion(glycolysisNode, glycolysisAnchor, 0.16, 0.42, 0.008);
 
+  // Sparse transport tracers make the aqueous cytosol legible without drawing
+  // individual water molecules. A coarse Eulerian grid now projects the seeded
+  // renderer field toward zero divergence around moving analytic organelle
+  // boundaries. The grid is dimensionless: no tracer speed, pressure, density or
+  // path is a healthy-PHH measurement, and this layer cannot alter reactions.
+  {
+    const radiusAtDirection = (x: number, y: number, z: number) => membraneSim
+      ? membraneRestRadiusAlongDirection(membraneSim, x, y, z)
+      : CELL_R;
+    const numericalGrid = new CytosolProjectionGrid({
+      resolution: 18,
+      halfExtent: CELL_R * 1.08,
+      seed: 20260722,
+      radiusAtDirection,
+      safetyFraction: 0.9,
+      projectionIterations: 24,
+      visualModeCount: 6
+    });
+    const obstacles = new DynamicCytosolObstacleField(1.15);
+    const staticObstacles: CytosolObstacle[] = [
+      ...occupied.map((item, index): CytosolObstacle => ({
+        id: `anatomy-proxy-${index}`,
+        kind: "sphere",
+        center: [item.c.x, item.c.y, item.c.z],
+        radius: item.r
+      })),
+      ...fluidSupplementalStaticObstacles
+    ];
+    const syncObstacles = (deltaS: number) => {
+      const current: CytosolObstacle[] = [...staticObstacles];
+      for (let populationIndex = 0; populationIndex < organellePopulations.length; populationIndex += 1) {
+        const population = organellePopulations[populationIndex];
+        for (let i = 0; i < population.scale.length; i += 1) {
+          const center = [
+            population.currentPos[i * 3],
+            population.currentPos[i * 3 + 1],
+            population.currentPos[i * 3 + 2]
+          ] as const;
+          const orientation: CytosolQuaternion = [
+            population.baseQuat[i * 4],
+            population.baseQuat[i * 4 + 1],
+            population.baseQuat[i * 4 + 2],
+            population.baseQuat[i * 4 + 3]
+          ];
+          const scale = population.scale[i];
+          const id = `population-${populationIndex}-${i}`;
+          current.push(population.obstacleShape === "capsule"
+            ? {
+                id,
+                kind: "capsule",
+                center,
+                orientation,
+                radius: population.obstacleRadius * scale,
+                halfLength: population.obstacleHalfLength * scale
+              }
+            : {
+                id,
+                kind: "sphere",
+                center,
+                radius: population.obstacleRadius * scale
+              });
+        }
+      }
+      obstacles.setObstacles(current, deltaS);
+    };
+    syncObstacles(0);
+    const targetTracerCount = 1_600;
+    const tracerValues: number[] = [];
+    let attempts = 0;
+    while (tracerValues.length / 3 < targetTracerCount && attempts < targetTracerCount * 60) {
+      attempts += 1;
+      const candidate = interiorPoint(CELL_R * 0.88);
+      if (obstacles.collides(candidate.x, candidate.y, candidate.z, 0.045)) continue;
+      tracerValues.push(candidate.x, candidate.y, candidate.z);
+    }
+    const initialPositions = new Float32Array(tracerValues);
+    const field = new IntracellularFluidField({
+      seed: 20260721,
+      initialPositions,
+      radiusAtDirection,
+      safetyFraction: 0.9,
+      tracerRadius: 0.045,
+      modeCount: 7,
+      numericalGrid
+    });
+    const pointGeometry = new THREE.BufferGeometry();
+    pointGeometry.setAttribute("position", new THREE.BufferAttribute(field.positions, 3));
+    const points = new THREE.Points(
+      pointGeometry,
+      new THREE.PointsMaterial({
+        color: "#87d8d0",
+        size: 0.043,
+        sizeAttenuation: true,
+        map: DISC_TEXTURE,
+        alphaTest: 0.12,
+        transparent: true,
+        opacity: 0.34,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    points.name = "projected-intracellular-fluid-tracers";
+    points.userData.hoverKind = "cytoplasm-crowd";
+    points.userData.label =
+      "Intracellular aqueous-phase transport tracers - a dimensionless 3D pressure-projection field follows the same volume-preserving membrane map and rebuilds around moving sphere/capsule organelle boundaries. The boundary-pressure reaction is diagnostic only. These are not water molecules, concentrations, measured PHH velocities, PHH pressures or reaction-rate parameters.";
+
+    const trailCount = Math.min(220, field.count);
+    const trailIndices = new Uint32Array(trailCount);
+    const trailPositions = new Float32Array(trailCount * 6);
+    const trailTails = new Float32Array(trailCount * 3);
+    for (let trail = 0; trail < trailCount; trail += 1) {
+      const tracer = Math.min(field.count - 1, Math.floor(((trail + 0.5) / trailCount) * field.count));
+      trailIndices[trail] = tracer;
+      const source = tracer * 3;
+      const tail = trail * 3;
+      const segment = trail * 6;
+      trailTails[tail] = field.positions[source];
+      trailTails[tail + 1] = field.positions[source + 1];
+      trailTails[tail + 2] = field.positions[source + 2];
+      trailPositions[segment] = field.positions[source];
+      trailPositions[segment + 1] = field.positions[source + 1];
+      trailPositions[segment + 2] = field.positions[source + 2];
+      trailPositions[segment + 3] = field.positions[source];
+      trailPositions[segment + 4] = field.positions[source + 1];
+      trailPositions[segment + 5] = field.positions[source + 2];
+    }
+    const trailGeometry = new THREE.BufferGeometry();
+    trailGeometry.setAttribute("position", new THREE.BufferAttribute(trailPositions, 3));
+    const trails = new THREE.LineSegments(
+      trailGeometry,
+      new THREE.LineBasicMaterial({
+        color: "#65b8c2",
+        transparent: true,
+        opacity: 0.13,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    trails.name = "projected-intracellular-fluid-trails";
+    trails.userData.label = points.userData.label;
+    group.add(trails, points);
+    registerAnatomyLod(points, "cellular");
+    registerAnatomyLod(trails, "cellular");
+    intracellularFluidVisual = {
+      field,
+      numericalGrid,
+      obstacles,
+      syncObstacles,
+      points,
+      trails,
+      trailIndices,
+      trailPositions,
+      trailTails,
+      collides: (x, y, z, tracerRadius) => obstacles.collides(x, y, z, tracerRadius),
+      deformationSignature: "rest",
+      obstacleSyncElapsedS: 0
+    };
+  }
+
   // Reference (≈ healthy steady-state) flux per kind, so each organelle's glow
   // is normalised to its own typical activity — each pulses on its own loop.
   const ref: Record<keyof OrganelleActivity, number> = {
@@ -8171,13 +8473,13 @@ function buildOrganelleScene() {
 
   if (sceneNote) {
     sceneNote.textContent =
-      `Source-backed visual anatomy v2 (${VISUAL_ANATOMY_COVERAGE.toFixed(0)}% of the explicit renderer rubric, not biological realism): polarized membrane domains, canalicular junction/actin/microvilli, connected ER-Golgi, three cytoskeleton layers and the LSEC-Disse interface. A front cutaway suppresses renderer samples only so internal topology remains visible; engine inventories are unchanged. Quantitative EM registration and donor-specific human morphometry remain incomplete.`;
+      `Source-backed visual anatomy v2 (${VISUAL_ANATOMY_COVERAGE.toFixed(0)}% of the explicit renderer rubric, not biological realism): polarized membrane domains, canalicular junction/actin/microvilli, connected ER-Golgi, three cytoskeleton layers and the LSEC-Disse interface. Cytosol transport now uses a coarse dimensionless 3D pressure projection around moving analytic organelle boundaries and follows the volume-preserving membrane map. It carries no measured PHH velocity, pressure, diffusivity, concentration or reaction-rate claim; pressure feedback to membrane mechanics remains evidence-gated. A front cutaway changes renderer samples only. Quantitative EM registration, intracellular PHH rheology and donor-specific human morphometry remain incomplete.`;
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;
     compositionEl.innerHTML =
       chip("#3a9bd9", "sinusoid") + chip("#d9e778", "bile canaliculus") + chip("#cfa94b", "glycogen") + chip("#ff7a4d", "mitochondria") + chip("#e8b24a", "ER");
-    netChargeEl.innerHTML = chip("#3fc7a6", "Golgi") + chip("#d7e868", "peroxisome") + chip("#ff6fae", "lysosome") + chip("#e9eef8", "ribosomes");
+    netChargeEl.innerHTML = chip("#3fc7a6", "Golgi") + chip("#d7e868", "peroxisome") + chip("#ff6fae", "lysosome") + chip("#e9eef8", "ribosomes") + chip("#87d8d0", "projected cytosol tracers");
   }
 }
 
@@ -8592,6 +8894,10 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     updateSinusoidBloodFlow(s.elapsedS);
     updateOrganelleMotion(s.elapsedS);
     if (heavyFrame) updateOrganellePopulations(s.elapsedS, colorFrame);
+    // Rebuild moving analytic organelle boundaries only after all organelle
+    // transforms have advanced; the projected cytosol therefore sees this frame,
+    // not the placement-time proxy geometry.
+    updateIntracellularFluid(realDeltaS, heavyFrame);
     updateNucleusExpression(realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND);
     updateMembraneProteinAnchors(s.elapsedS);
     updateMembraneRidingClouds(s.elapsedS);

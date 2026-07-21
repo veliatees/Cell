@@ -197,6 +197,41 @@ link back here or to a more specific research file.
 
 ## Cell Biology
 
+- Cytoplasm transport and rheology evidence boundary:
+  - Moeendarbary et al. (2013), "The cytoplasm of living cells behaves as a
+    poroelastic material": https://doi.org/10.1038/nmat3517
+    - HeLa, HT1080 and MDCK measurements support a biphasic porous-scaffold plus
+      interstitial-fluid material class. They are not healthy PHH parameters.
+  - Kwapiszewska et al. (2020), "Nanoscale Viscosity of Cytoplasm Is Conserved
+    in Human Cell Lines": https://doi.org/10.1021/acs.jpclett.0c01748
+    - Probe-size-dependent diffusion across six human cell lines, including
+      HepG2. HepG2 is a cancer cell line and cannot initialize healthy PHH.
+  - Swaminathan et al. (1997), intracellular GFP diffusion and rotation:
+    https://doi.org/10.1016/S0006-3495(97)78835-0
+    - CHO-cell translation and rotation give different effective viscosity
+      readouts; retained only as cross-context evidence of probe dependence.
+  - Guo et al. (2017), size- and speed-dependent mammalian cytoplasm mechanics:
+    https://doi.org/10.1073/pnas.1616310114
+    - Supports scale- and rate-dependent viscous, viscoelastic and poroelastic
+      regimes; not a source of healthy-PHH coefficients.
+- Reaction-kinetics evidence candidates:
+  - SABIO-RK: https://doi.org/10.1093/nar/gkx1065
+  - BRENDA: https://www.brenda-enzymes.org/
+  - HEPATOKIN1: https://doi.org/10.1038/s41467-018-04720-9
+  - Davidi et al. (2016), in-vivo versus in-vitro catalytic rates:
+    https://doi.org/10.1073/pnas.1514240113
+  - These are candidate evidence sources. Database presence, purified-enzyme
+    constants or fitted liver-scale Vmax values do not authorize transfer to a
+    healthy single hepatocyte.
+- Human capability and genome-scale structural references:
+  - Human1 metabolism atlas: https://doi.org/10.1126/scisignal.aaz1482
+  - Human-GEM repository: https://github.com/SysBioChalmers/Human-GEM
+  - Human Protein Atlas subcellular map:
+    https://doi.org/10.1126/science.aal3321
+  - MacParland et al. normal human liver cell atlas:
+    https://doi.org/10.1038/s41467-018-06318-7
+  - These support topology, identity, localization or a future constraint
+    scaffold. They do not supply a donor-specific kinetic trajectory.
 - NCBI Bookshelf, Molecular Biology of the Cell:
   https://www.ncbi.nlm.nih.gov/books/NBK21054/
   - Use as a broad conceptual cell biology reference.
@@ -1025,3 +1060,68 @@ fluxes or rate constants from them.
 The functional-evidence registry cross-links these sources with the Wiśniewski
 seven-donor total proteome and Mallanna PHH surfaceome. No total abundance is
 converted automatically into surface abundance, active copies or cell flux.
+
+## External Scientific Review and Model Credibility V1
+
+- U.S. Food and Drug Administration, "Assessing the Credibility of
+  Computational Modeling and Simulation in Medical Device Submissions":
+  https://www.fda.gov/regulatory-information/search-fda-guidance-documents/assessing-credibility-computational-modeling-and-simulation-medical-device-submissions.
+  The project uses its risk-informed context-of-use, verification, validation
+  and uncertainty concepts as governance guidance. This is not a regulatory
+  submission or FDA qualification.
+- BioModels submission and curation guidance:
+  https://www.ebi.ac.uk/biomodels/model/submission-guidelines-and-agreement.
+  The project uses its model-format, annotation and reproducibility principles.
+  Repository curation would not certify hepatocyte biology.
+- Human Cell Atlas Liver Biological Network:
+  https://www.humancellatlas.org/biological-networks/liver-biological-network/.
+  It is listed as a route to spatial, structural and genomic liver expertise,
+  not as a project endorser.
+- EASL Basic Science Task Force:
+  https://easl.eu/easl/leadership-and-governance/basic-science-task-force/.
+  It is listed as a route to independent liver basic-science and clinical
+  reviewers, not as evidence that review has occurred.
+
+The external-review program contains no signed reviewer report, same-assay pass,
+prospective PHH result or independent reproduction. Biological accuracy remains
+unassigned until claim-specific external evidence exists.
+
+## Cytosol Transport and Active Cargo V2
+
+- Moeendarbary et al., poroelastic cytoplasm:
+  https://doi.org/10.1038/nmat3517. HeLa, HT1080 and MDCK measurements support
+  a porous solid plus interstitial-fluid material picture, but their numerical
+  coefficients are not transferred to healthy PHH.
+- Kwapiszewska et al., length-scale-dependent cytoplasmic nanoviscosity:
+  https://doi.org/10.1021/acs.jpclett.0c01748. The study includes HepG2 among
+  six human cell lines and supports probe-size dependence; a cancer cell line
+  is not used as a primary-hepatocyte calibration.
+- Swaminathan et al., GFP translation and rotation in CHO cytoplasm:
+  https://doi.org/10.1016/S0006-3495(97)78835-0. The two mobility readouts
+  support probe- and interaction-dependent effective transport only.
+- Guo et al., size- and speed-dependent mammalian cytoplasm mechanics:
+  https://doi.org/10.1073/pnas.1616310114. NRK and HeLa measurements support
+  scale-dependent viscous, viscoelastic and poroelastic regimes without setting
+  healthy-PHH parameters.
+- Jiang et al., in-vivo temporal diffusion spectroscopy MRI in three healthy
+  human volunteers: https://doi.org/10.1002/mrm.28299. The dataset is retained
+  as a future hepatocyte restriction-size and intracellular-water validation
+  target. Tissue-voxel MRI does not identify cytosolic viscosity, pressure,
+  bulk-flow velocity or a metabolite diffusion coefficient.
+- Guo et al., motor-driven cytoplasmic fluctuations:
+  https://doi.org/10.1016/j.cell.2014.06.051. This supports separation of
+  ATP-dependent active fluctuations from equilibrium transport, not a PHH
+  active-noise parameter.
+- Fort et al., Cx32 vesicle motility:
+  https://doi.org/10.1074/jbc.M111.219709. The retained WIF-B9 mean speed is
+  `0.246 +/- 0.032 um/s`; the reported isolated-rat-liver interval `0.4-0.5
+  um/s` is represented by its exact midpoint and half-range only for audit.
+  Neither observation initializes a healthy-human-hepatocyte cargo rate.
+- Murray et al., primary-rat-hepatocyte endosome transport and fission:
+  https://doi.org/10.1111/j.1600-0854.2008.00725.x. This supports explicit
+  motor-cargo, fusion/fission and sorting mechanisms, while cross-species rates
+  remain blocked.
+
+The renderer's projection-grid velocity, pressure and passive-scalar
+diffusivity are dimensionless numerical variables. Zero biological species,
+zero reactions and zero membrane-force laws are bound to this layer.
