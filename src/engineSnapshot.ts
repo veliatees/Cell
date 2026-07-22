@@ -1539,6 +1539,8 @@ export type EngineSnapshot = {
     phh_absolute_proteome_atlas?: EnginePhhAbsoluteProteomeAtlas;
     phh_transporter_inventory?: EnginePhhTransporterInventory;
     phh_protein_functional_evidence?: EnginePhhProteinFunctionalEvidence;
+    hepatocyte_quantity_harvest?: EngineHepatocyteQuantityHarvest;
+    phh_injury_validation?: EnginePhhInjuryValidation;
     human_sch_bile_acids?: EngineHumanSchBileAcids;
     evidence_intake?: EnginePhhEvidenceIntake;
     published_glucose_model?: EnginePublishedGlucoseModelContext;
@@ -3418,13 +3420,21 @@ export type EngineProteinKineticObservation = {
   kinetic_model: string;
   biological_system: string;
   km: {
-    kind: "point" | "range";
+    kind: "point" | "range" | "apparent_S50";
     value: number | null;
     low: number | null;
     high: number | null;
     sd: number | null;
-    unit: "uM";
+    unit: "uM" | "mM";
   };
+  hill_coefficient: {
+    kind: "point";
+    value: number;
+    low: null;
+    high: null;
+    sd: number | null;
+    unit: "dimensionless";
+  } | null;
   velocity: {
     kind: "vmax" | "rate_at_substrate_concentration";
     value: number;
@@ -3487,7 +3497,7 @@ export type EngineWholeCellTransportValidation = {
 };
 
 export type EnginePhhProteinFunctionalEvidence = {
-  version: "phh_protein_functional_evidence_v1";
+  version: "phh_protein_functional_evidence_v2";
   status: string;
   date_verified: string;
   policy: string;
@@ -3555,8 +3565,9 @@ export type EnginePhhProteinFunctionalEvidence = {
     physiological_domain_identity_count: 3;
     quantitative_surface_localization_count: 0;
     active_fraction_observation_count: 0;
-    assay_kinetic_observation_count: 5;
-    assay_curve_evaluable_count: 2;
+    assay_kinetic_observation_count: 12;
+    assay_curve_evaluable_count: 4;
+    hill_coefficient_observation_count: 1;
     receptor_binding_kinetic_observation_count: 0;
     functional_response_observation_count: 3;
     whole_cell_transport_validation_observation_count: 1;
@@ -3568,6 +3579,116 @@ export type EnginePhhProteinFunctionalEvidence = {
     whole_cell_rate_ready_count: 0;
     highest_selected_abundance_cv_gene: string;
     highest_selected_abundance_cv: number;
+  };
+};
+
+export type EngineHepatocyteQuantityHarvest = {
+  version: "hepatocyte_quantity_harvest_audit_v1";
+  status: string;
+  policy: string;
+  audit: {
+    version: "hepatocyte_quantity_harvest_audit_v1";
+    status: string;
+    total_records: 168;
+    track_counts: Record<string, number>;
+    organism_bucket_counts: Record<string, number>;
+    reported_value_records: 144;
+    strict_numeric_value_records: 115;
+    reported_error_records: 65;
+    reported_sample_size_records: 59;
+    unique_primary_source_pmids: 91;
+    distinct_free_text_usability_labels: 73;
+    exact_duplicate_records: 0;
+    bucket_inconsistency_rows: number[];
+    source_review_count: 7;
+    reviewed_raw_record_count: 25;
+    promoted_context_bound_claim_count: 16;
+    automatic_parameter_activation: false;
+    authoritative_runtime_coupling: false;
+    healthy_phh_runtime_parameter_count: 0;
+  };
+  source_reviews: {
+    id: string;
+    raw_csv_rows: number[];
+    expected_pmids: string[];
+    review_status: string;
+    integration_target: string;
+    promoted_claim_count: number;
+    limitations: string;
+  }[];
+  integration_gates: {
+    lossless_raw_bundle_ready: true;
+    same_assay_kinetic_evidence_ready: true;
+    matching_protocol_injury_observations_ready: true;
+    automatic_parameter_activation: false;
+    healthy_phh_initialization_ready: false;
+    whole_cell_rate_coupling_ready: false;
+    predictive_ready: false;
+  };
+  raw_paths: string[];
+};
+
+export type EnginePhhInjuryValidation = {
+  version: "phh_injury_validation_v1";
+  status: string;
+  date_verified: string;
+  policy: string;
+  protocols: {
+    id: string;
+    species: "Homo sapiens";
+    biological_system: string;
+    challenge: string;
+    challenge_low: number;
+    challenge_high: number | null;
+    challenge_unit: string;
+    maximum_exposure_h: number;
+    temperature_c: number;
+    source_id: string;
+    source_locator: string;
+    may_initialize_healthy_baseline: false;
+    may_define_general_fate_law: false;
+    may_drive_cell_state: false;
+  }[];
+  observations: {
+    id: string;
+    protocol_id: string;
+    endpoint: string;
+    assay: string;
+    condition: string;
+    time_low_h: number;
+    time_high_h: number;
+    result: string;
+    death_mode: "necrosis" | null;
+    donor_count_low: number;
+    donor_count_high: number;
+    source_id: string;
+    source_locator: string;
+    may_validate_matching_protocol: true;
+    may_generalize: false;
+    may_drive_cell_state: false;
+  }[];
+  integration_gates: {
+    matching_protocol_observations_ready: true;
+    healthy_baseline_initialization_ready: false;
+    general_fate_law_ready: false;
+    senescence_commitment_ready: false;
+    donor_disjoint_validation_ready: false;
+    automatic_runtime_coupling: false;
+    predictive_ready: false;
+  };
+  source_ids: string[];
+  summary: {
+    primary_source_count: 2;
+    human_phh_protocol_count: 4;
+    matching_protocol_observation_count: 9;
+    apap_observation_count: 5;
+    bile_acid_observation_count: 4;
+    necrosis_mode_observation_count: number;
+    healthy_baseline_parameter_count: 0;
+    general_fate_law_count: 0;
+    senescence_commitment_observation_count: 0;
+    donor_disjoint_validation_count: 0;
+    runtime_coupled_observation_count: 0;
   };
 };
 
@@ -3848,6 +3969,8 @@ export type EngineSnapshotSummary = {
   phhAbsoluteProteomeAtlas: EnginePhhAbsoluteProteomeAtlas | null;
   phhTransporterInventory: EnginePhhTransporterInventory | null;
   phhProteinFunctionalEvidence: EnginePhhProteinFunctionalEvidence | null;
+  hepatocyteQuantityHarvest: EngineHepatocyteQuantityHarvest | null;
+  phhInjuryValidation: EnginePhhInjuryValidation | null;
   humanSchBileAcids: EngineHumanSchBileAcids | null;
   evidenceIntake: EnginePhhEvidenceIntake | null;
   publishedGlucoseModel: EnginePublishedGlucoseModelContext | null;
@@ -4021,6 +4144,8 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     phhAbsoluteProteomeAtlas: snapshot.state.phh_absolute_proteome_atlas ?? null,
     phhTransporterInventory: snapshot.state.phh_transporter_inventory ?? null,
     phhProteinFunctionalEvidence: snapshot.state.phh_protein_functional_evidence ?? null,
+    hepatocyteQuantityHarvest: snapshot.state.hepatocyte_quantity_harvest ?? null,
+    phhInjuryValidation: snapshot.state.phh_injury_validation ?? null,
     humanSchBileAcids: snapshot.state.human_sch_bile_acids ?? null,
     evidenceIntake: snapshot.state.evidence_intake ?? null,
     publishedGlucoseModel: snapshot.state.published_glucose_model ?? null,
@@ -5626,6 +5751,7 @@ function isEngineProteinKineticObservation(value: unknown): value is EngineProte
   if (!isRecord(value) || !isRecord(value.km)) return false;
   const velocity = value.velocity;
   const relative = value.relative_activity_context;
+  const hill = value.hill_coefficient;
   return (
     isString(value.id) &&
     isString(value.gene) &&
@@ -5633,12 +5759,21 @@ function isEngineProteinKineticObservation(value: unknown): value is EngineProte
     isString(value.substrate) &&
     isString(value.kinetic_model) &&
     isString(value.biological_system) &&
-    (value.km.kind === "point" || value.km.kind === "range") &&
+    (value.km.kind === "point" || value.km.kind === "range" || value.km.kind === "apparent_S50") &&
     (value.km.value === null || isFiniteNumber(value.km.value)) &&
     (value.km.low === null || isFiniteNumber(value.km.low)) &&
     (value.km.high === null || isFiniteNumber(value.km.high)) &&
     (value.km.sd === null || isFiniteNumber(value.km.sd)) &&
-    value.km.unit === "uM" &&
+    (value.km.unit === "uM" || value.km.unit === "mM") &&
+    (hill === null || (
+      isRecord(hill) &&
+      hill.kind === "point" &&
+      isFiniteNumber(hill.value) &&
+      hill.low === null &&
+      hill.high === null &&
+      (hill.sd === null || isFiniteNumber(hill.sd)) &&
+      hill.unit === "dimensionless"
+    )) &&
     (velocity === null || (
       isRecord(velocity) &&
       (velocity.kind === "vmax" || velocity.kind === "rate_at_substrate_concentration") &&
@@ -5727,7 +5862,7 @@ function isEnginePhhProteinFunctionalEvidence(
   const gates = value.integration_gates;
   const summary = value.summary;
   return (
-    value.version === "phh_protein_functional_evidence_v1" &&
+    value.version === "phh_protein_functional_evidence_v2" &&
     isString(value.status) &&
     isString(value.date_verified) &&
     isString(value.policy) &&
@@ -5760,9 +5895,10 @@ function isEnginePhhProteinFunctionalEvidence(
       protein.whole_cell_rate_ready === false
     ) &&
     Array.isArray(value.kinetic_observations) &&
-    value.kinetic_observations.length === 5 &&
+    value.kinetic_observations.length === 12 &&
     value.kinetic_observations.every(isEngineProteinKineticObservation) &&
-    value.kinetic_observations.filter((item) => item.may_evaluate_assay_curve).length === 2 &&
+    value.kinetic_observations.filter((item) => item.may_evaluate_assay_curve).length === 4 &&
+    value.kinetic_observations.filter((item) => item.hill_coefficient !== null).length === 1 &&
     value.kinetic_observations.filter(
       (item) => item.velocity?.kind === "rate_at_substrate_concentration",
     ).length === 2 &&
@@ -5792,8 +5928,9 @@ function isEnginePhhProteinFunctionalEvidence(
     summary.physiological_domain_identity_count === 3 &&
     summary.quantitative_surface_localization_count === 0 &&
     summary.active_fraction_observation_count === 0 &&
-    summary.assay_kinetic_observation_count === 5 &&
-    summary.assay_curve_evaluable_count === 2 &&
+    summary.assay_kinetic_observation_count === 12 &&
+    summary.assay_curve_evaluable_count === 4 &&
+    summary.hill_coefficient_observation_count === 1 &&
     summary.receptor_binding_kinetic_observation_count === 0 &&
     summary.functional_response_observation_count === 3 &&
     summary.whole_cell_transport_validation_observation_count === 1 &&
@@ -5805,6 +5942,161 @@ function isEnginePhhProteinFunctionalEvidence(
     isFiniteNumber(summary.highest_selected_abundance_cv) &&
     Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
     Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEngineHepatocyteQuantityHarvest(
+  value: unknown,
+): value is EngineHepatocyteQuantityHarvest {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.audit) ||
+    !isRecord(value.integration_gates) ||
+    !Array.isArray(value.source_reviews) ||
+    !Array.isArray(value.raw_paths)
+  ) return false;
+  const audit = value.audit;
+  const gates = value.integration_gates;
+  const reviewedRows: number[] = [];
+  let promotedClaims = 0;
+  for (const review of value.source_reviews) {
+    if (
+      !isRecord(review) ||
+      !isString(review.id) ||
+      !Array.isArray(review.raw_csv_rows) ||
+      !review.raw_csv_rows.every((row) => Number.isInteger(row)) ||
+      !Array.isArray(review.expected_pmids) ||
+      !review.expected_pmids.every(isString) ||
+      !isString(review.review_status) ||
+      !isString(review.integration_target) ||
+      !Number.isInteger(review.promoted_claim_count) ||
+      !isString(review.limitations)
+    ) return false;
+    reviewedRows.push(...review.raw_csv_rows.map(Number));
+    promotedClaims += Number(review.promoted_claim_count);
+  }
+  return (
+    value.version === "hepatocyte_quantity_harvest_audit_v1" &&
+    isString(value.status) &&
+    isString(value.policy) &&
+    audit.version === "hepatocyte_quantity_harvest_audit_v1" &&
+    audit.total_records === 168 &&
+    audit.reported_value_records === 144 &&
+    audit.strict_numeric_value_records === 115 &&
+    audit.reported_error_records === 65 &&
+    audit.reported_sample_size_records === 59 &&
+    audit.unique_primary_source_pmids === 91 &&
+    audit.distinct_free_text_usability_labels === 73 &&
+    audit.exact_duplicate_records === 0 &&
+    Array.isArray(audit.bucket_inconsistency_rows) &&
+    audit.bucket_inconsistency_rows.length === 1 &&
+    audit.bucket_inconsistency_rows[0] === 167 &&
+    audit.source_review_count === 7 &&
+    audit.reviewed_raw_record_count === 25 &&
+    audit.promoted_context_bound_claim_count === 16 &&
+    audit.automatic_parameter_activation === false &&
+    audit.authoritative_runtime_coupling === false &&
+    audit.healthy_phh_runtime_parameter_count === 0 &&
+    value.source_reviews.length === 7 &&
+    reviewedRows.length === 25 &&
+    new Set(reviewedRows).size === 25 &&
+    promotedClaims === 16 &&
+    value.raw_paths.length === 9 &&
+    value.raw_paths.every(isString) &&
+    gates.lossless_raw_bundle_ready === true &&
+    gates.same_assay_kinetic_evidence_ready === true &&
+    gates.matching_protocol_injury_observations_ready === true &&
+    gates.automatic_parameter_activation === false &&
+    gates.healthy_phh_initialization_ready === false &&
+    gates.whole_cell_rate_coupling_ready === false &&
+    gates.predictive_ready === false
+  );
+}
+
+function isEnginePhhInjuryValidation(value: unknown): value is EnginePhhInjuryValidation {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.integration_gates) ||
+    !isRecord(value.summary) ||
+    !Array.isArray(value.protocols) ||
+    !Array.isArray(value.observations) ||
+    !Array.isArray(value.source_ids)
+  ) return false;
+  const protocolIds = new Set<string>();
+  for (const protocol of value.protocols) {
+    if (
+      !isRecord(protocol) ||
+      !isString(protocol.id) ||
+      protocol.species !== "Homo sapiens" ||
+      !isString(protocol.biological_system) ||
+      !isString(protocol.challenge) ||
+      !isFiniteNumber(protocol.challenge_low) ||
+      !(protocol.challenge_high === null || isFiniteNumber(protocol.challenge_high)) ||
+      !isString(protocol.challenge_unit) ||
+      !isFiniteNumber(protocol.maximum_exposure_h) ||
+      !isFiniteNumber(protocol.temperature_c) ||
+      !isString(protocol.source_id) ||
+      !isString(protocol.source_locator) ||
+      protocol.may_initialize_healthy_baseline !== false ||
+      protocol.may_define_general_fate_law !== false ||
+      protocol.may_drive_cell_state !== false
+    ) return false;
+    protocolIds.add(protocol.id);
+  }
+  let necrosisCount = 0;
+  for (const observation of value.observations) {
+    if (
+      !isRecord(observation) ||
+      !isString(observation.id) ||
+      !isString(observation.protocol_id) ||
+      !protocolIds.has(observation.protocol_id) ||
+      !isString(observation.endpoint) ||
+      !isString(observation.assay) ||
+      !isString(observation.condition) ||
+      !isFiniteNumber(observation.time_low_h) ||
+      !isFiniteNumber(observation.time_high_h) ||
+      !isString(observation.result) ||
+      !(observation.death_mode === null || observation.death_mode === "necrosis") ||
+      !Number.isInteger(observation.donor_count_low) ||
+      !Number.isInteger(observation.donor_count_high) ||
+      !isString(observation.source_id) ||
+      !isString(observation.source_locator) ||
+      observation.may_validate_matching_protocol !== true ||
+      observation.may_generalize !== false ||
+      observation.may_drive_cell_state !== false
+    ) return false;
+    if (observation.death_mode === "necrosis") necrosisCount += 1;
+  }
+  const gates = value.integration_gates;
+  const summary = value.summary;
+  return (
+    value.version === "phh_injury_validation_v1" &&
+    isString(value.status) &&
+    isString(value.date_verified) &&
+    isString(value.policy) &&
+    value.protocols.length === 4 &&
+    protocolIds.size === 4 &&
+    value.observations.length === 9 &&
+    value.source_ids.length === 2 &&
+    value.source_ids.every(isString) &&
+    gates.matching_protocol_observations_ready === true &&
+    gates.healthy_baseline_initialization_ready === false &&
+    gates.general_fate_law_ready === false &&
+    gates.senescence_commitment_ready === false &&
+    gates.donor_disjoint_validation_ready === false &&
+    gates.automatic_runtime_coupling === false &&
+    gates.predictive_ready === false &&
+    summary.primary_source_count === 2 &&
+    summary.human_phh_protocol_count === 4 &&
+    summary.matching_protocol_observation_count === 9 &&
+    summary.apap_observation_count === 5 &&
+    summary.bile_acid_observation_count === 4 &&
+    summary.necrosis_mode_observation_count === necrosisCount &&
+    summary.healthy_baseline_parameter_count === 0 &&
+    summary.general_fate_law_count === 0 &&
+    summary.senescence_commitment_observation_count === 0 &&
+    summary.donor_disjoint_validation_count === 0 &&
+    summary.runtime_coupled_observation_count === 0
   );
 }
 
@@ -6347,6 +6639,8 @@ function isEngineSnapshot(value: unknown): value is EngineSnapshot {
     (candidate.state.phh_absolute_proteome_atlas === undefined || isEnginePhhAbsoluteProteomeAtlas(candidate.state.phh_absolute_proteome_atlas)) &&
     (candidate.state.phh_transporter_inventory === undefined || isEnginePhhTransporterInventory(candidate.state.phh_transporter_inventory)) &&
     (candidate.state.phh_protein_functional_evidence === undefined || isEnginePhhProteinFunctionalEvidence(candidate.state.phh_protein_functional_evidence)) &&
+    (candidate.state.hepatocyte_quantity_harvest === undefined || isEngineHepatocyteQuantityHarvest(candidate.state.hepatocyte_quantity_harvest)) &&
+    (candidate.state.phh_injury_validation === undefined || isEnginePhhInjuryValidation(candidate.state.phh_injury_validation)) &&
     (candidate.state.human_sch_bile_acids === undefined || isEngineHumanSchBileAcids(candidate.state.human_sch_bile_acids)) &&
     (candidate.state.human_hepatocyte_3d_morphometry === undefined || isEngineHumanHepatocyte3dMorphometry(candidate.state.human_hepatocyte_3d_morphometry)) &&
     (candidate.state.human_liver_open_atlas === undefined || isEngineHumanLiverOpenAtlas(candidate.state.human_liver_open_atlas)) &&

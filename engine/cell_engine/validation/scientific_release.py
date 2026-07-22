@@ -75,6 +75,10 @@ from cell_engine.quantitative.phh_protein_functional_evidence import (
     build_phh_protein_functional_evidence,
     validate_phh_protein_functional_evidence,
 )
+from cell_engine.quantitative.phh_injury_validation import (
+    build_phh_injury_validation,
+    validate_phh_injury_validation,
+)
 from cell_engine.quantitative.human_sch_bile_acids import (
     build_human_sch_bile_acids,
     validate_human_sch_bile_acids,
@@ -118,6 +122,7 @@ from cell_engine.validation.hepatic_flux import (
     validate_unified_nutritional_context,
 )
 from cell_engine.validation.evidence_intake import evidence_intake_snapshot
+from cell_engine.validation.hepatocyte_quantities import validate_quantity_harvest
 from cell_engine.io.brian2 import brian2_communication_snapshot
 from cell_engine.ml.generative import (
     build_generative_modeling_boundary,
@@ -167,6 +172,7 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
     phh_proteome_budget = None
     phh_transporter_inventory = None
     phh_protein_functional_evidence = None
+    phh_injury_validation = None
     human_sch_bile_acids = None
     integrated_reaction_authority = None
     kinetic_transfer = None
@@ -391,6 +397,23 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid PHH protein-functional evidence: {exc}")
+
+    try:
+        quantity_harvest = validate_quantity_harvest()
+        checks.append(
+            f"the {quantity_harvest.total_records}-record hepatocyte quantity harvest is checksum-audited, species-partitioned and barred from automatic parameter activation"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid hepatocyte quantity harvest: {exc}")
+
+    try:
+        phh_injury_validation = build_phh_injury_validation()
+        validate_phh_injury_validation(phh_injury_validation)
+        checks.append(
+            "nine primary-human-hepatocyte APAP and bile-acid injury observations retain exact dose, time, assay and death-mode context while generalized fate laws remain blocked"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid PHH injury-validation evidence: {exc}")
 
     try:
         human_sch_bile_acids = build_human_sch_bile_acids()
@@ -693,6 +716,15 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
                 blockers.append("seven-donor total abundance does not identify donor activity distributions")
             if not phh_protein_functional_evidence.integration_gates["whole_cell_flux_coupling_ready"]:
                 blockers.append("assay kinetics lack active-surface and whole-cell flux calibration")
+        if phh_injury_validation is None:
+            blockers.append("PHH injury-validation evidence is unavailable")
+        else:
+            if not phh_injury_validation.integration_gates["general_fate_law_ready"]:
+                blockers.append("PHH injury observations do not identify a generalized fate law")
+            if not phh_injury_validation.integration_gates["donor_disjoint_validation_ready"]:
+                blockers.append("PHH injury contexts lack donor-disjoint validation")
+            if not phh_injury_validation.integration_gates["automatic_runtime_coupling"]:
+                blockers.append("PHH injury observations are not calibrated to drive runtime fate")
         if human_sch_bile_acids is None:
             blockers.append("human SCH endogenous bile-acid reference is unavailable")
         else:
@@ -747,7 +779,9 @@ def scientific_release_snapshot() -> dict[str, object]:
             "antioxidant kinetics and predictive coupling remain blocked. Human zonation, "
             "postabsorptive glucose perfusion, measured endocrine observations, exact PHH "
             "glucose/albumin/CYP/BEI operators, donor-resolved proteome references and bile-acid "
-            "endpoints retain their declared assay and denominator limits. Reaction authority "
+            "endpoints retain their declared assay and denominator limits. The quantity harvest "
+            "and PHH injury observations retain species, dose, time, assay and death-mode context "
+            "without automatic runtime activation. Reaction authority "
             "and kinetic-transfer firewalls keep the integrated fuel runtime exploratory. "
             "Published glucose execution remains shadow/diagnostic. Runtime contact geometry is "
             "engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, "

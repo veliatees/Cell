@@ -20,9 +20,13 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 from cell_engine.quantitative.phh_protein_functional_evidence import (
     phh_protein_functional_evidence_snapshot,
 )
+from cell_engine.quantitative.phh_injury_validation import phh_injury_validation_snapshot
 from cell_engine.validation.capability_atlas import hepatocyte_capability_atlas_snapshot
 from cell_engine.validation.external_review import external_validation_snapshot
 from cell_engine.validation.reaction_evidence_atlas import build_reaction_evidence_atlas
+from cell_engine.validation.hepatocyte_quantities import (
+    hepatocyte_quantity_harvest_snapshot,
+)
 
 
 VERSION = "hepatocyte_completion_matrix_v1"
@@ -73,6 +77,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     reactions = build_reaction_evidence_atlas()["summary"]
     energy = compartmental_energy_redox_snapshot()["summary"]
     proteins = phh_protein_functional_evidence_snapshot()["summary"]
+    injury = phh_injury_validation_snapshot()["summary"]
+    quantity_harvest = hepatocyte_quantity_harvest_snapshot()["audit"]
     memory = cellular_memory_contract_snapshot()["summary"]
     metabolic = metabolic_constraint_shell_snapshot()
     external = external_validation_snapshot()["summary"]
@@ -274,6 +280,40 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ("engine/cell_engine/validation/capability_atlas.py",),
         ),
         _entry(
+            "hepatocyte_quantity_harvest",
+            "Provenance-strict hepatocyte quantity harvest",
+            "partial",
+            "Literature observations spanning species, experimental systems and quantitative tracks; not a homogeneous healthy-PHH parameter set.",
+            "All 168 rows are retained byte-for-byte with checksums and exact species partitions; 25 rows were manually source-reviewed and 16 claims entered context-bound evidence modules without activating runtime parameters.",
+            {
+                "raw_record_count": quantity_harvest["total_records"],
+                "unique_primary_source_pmid_count": quantity_harvest[
+                    "unique_primary_source_pmids"
+                ],
+                "strict_numeric_record_count": quantity_harvest[
+                    "strict_numeric_value_records"
+                ],
+                "reviewed_raw_record_count": quantity_harvest[
+                    "reviewed_raw_record_count"
+                ],
+                "promoted_context_bound_claim_count": quantity_harvest[
+                    "promoted_context_bound_claim_count"
+                ],
+                "healthy_phh_runtime_parameter_count": quantity_harvest[
+                    "healthy_phh_runtime_parameter_count"
+                ],
+            },
+            (
+                "Primary-source review of the remaining rows that address a declared model need.",
+                "Exact context, denominator, uncertainty and assay matching before any numerical activation.",
+                "Independent validation for every promoted model law.",
+            ),
+            (
+                "engine/cell_engine/validation/hepatocyte_quantities.py",
+                "data/hepatocyte_quantities/curated/source_review.v1.json",
+            ),
+        ),
+        _entry(
             "quantitative_reaction_core",
             "Quantitative reaction core",
             "blocked_missing_evidence",
@@ -370,16 +410,32 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
         _entry(
             "damage_fate_recovery_calibration",
             "Damage, death and recovery calibration",
-            "blocked_missing_evidence",
+            "partial",
             "Apoptosis, necrosis, cholestasis and proteostasis outcomes in healthy PHH perturbation contexts.",
-            "Exploratory pathways and intervention scenarios exist, but commitment thresholds and recovery windows are not predictive.",
-            {"calibrated_fate_commitment_laws": 0},
+            "Four exact PHH perturbation protocols now provide nine APAP and bile-acid timing, rescue and necrosis observations. They validate only matching protocols; commitment thresholds and recovery laws remain non-predictive.",
+            {
+                "human_phh_protocol_count": injury["human_phh_protocol_count"],
+                "matching_protocol_observation_count": injury[
+                    "matching_protocol_observation_count"
+                ],
+                "necrosis_mode_observation_count": injury[
+                    "necrosis_mode_observation_count"
+                ],
+                "calibrated_fate_commitment_laws": injury["general_fate_law_count"],
+                "runtime_coupled_observation_count": injury[
+                    "runtime_coupled_observation_count"
+                ],
+            },
             (
-                "Time-resolved dose-response trajectories with fate labels.",
+                "Numeric time-resolved dose-response trajectories with uncertainty and fate labels.",
                 "Commitment-point and washout/recovery experiments.",
                 "Donor-disjoint validation for each declared injury context.",
             ),
-            ("engine/cell_engine/stochastic/apoptosis.py", "engine/cell_engine/processes/cellular_response.py"),
+            (
+                "engine/cell_engine/quantitative/phh_injury_validation.py",
+                "engine/cell_engine/stochastic/apoptosis.py",
+                "engine/cell_engine/processes/cellular_response.py",
+            ),
         ),
         _entry(
             "donor_state_model",
@@ -534,6 +590,14 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         raise ValueError("reaction evidence was promoted without review")
     if by_id["healthy_phh_cytosol_parameters"]["observed_metrics"]["filled_parameter_count"] != 0:
         raise ValueError("healthy-PHH cytosol parameters were promoted without review")
+    if by_id["hepatocyte_quantity_harvest"]["observed_metrics"][
+        "healthy_phh_runtime_parameter_count"
+    ] != 0:
+        raise ValueError("quantity harvest activated an unreviewed PHH parameter")
+    if by_id["damage_fate_recovery_calibration"]["observed_metrics"][
+        "runtime_coupled_observation_count"
+    ] != 0:
+        raise ValueError("injury observations activated an uncalibrated fate law")
     if by_id["hepatocyte_fba_execution"]["observed_metrics"]["enabled_execution_gate_count"] != 0:
         raise ValueError("FBA execution escaped its scientific gate")
     if by_id["independent_scientific_validation"]["observed_metrics"]["externally_reviewed_claim_count"] != 0:

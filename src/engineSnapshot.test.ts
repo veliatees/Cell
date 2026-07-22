@@ -2204,9 +2204,10 @@ describe("engine snapshot client", () => {
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.structural_audit.elementally_imbalanced_reaction_count).toBe(17);
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.structural_audit.jointly_unassessable_reaction_count).toBe(1422);
       expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(26);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(27);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(4);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(14);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.partial_count).toBe(8);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(13);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.biological_accuracy_pct).toBeNull();
       expect(result.summary.humanLiverOpenAtlas?.morphometry_2d.cell_count).toBe(56_055);
       expect(result.summary.humanLiverOpenAtlas?.surfaceome.observed_protein_count).toBe(300);
@@ -2229,13 +2230,23 @@ describe("engine snapshot client", () => {
       expect(result.summary.phhProteinFunctionalEvidence?.summary.protein_count).toBe(8);
       expect(result.summary.phhProteinFunctionalEvidence?.summary.all_seven_donor_abundance_profile_count).toBe(8);
       expect(result.summary.phhProteinFunctionalEvidence?.summary.surface_identity_observation_count).toBe(6);
-      expect(result.summary.phhProteinFunctionalEvidence?.summary.assay_kinetic_observation_count).toBe(5);
+      expect(result.summary.phhProteinFunctionalEvidence?.summary.assay_kinetic_observation_count).toBe(12);
+      expect(result.summary.phhProteinFunctionalEvidence?.summary.assay_curve_evaluable_count).toBe(4);
+      expect(result.summary.phhProteinFunctionalEvidence?.summary.hill_coefficient_observation_count).toBe(1);
       expect(result.summary.phhProteinFunctionalEvidence?.summary.whole_cell_transport_validation_observation_count).toBe(1);
       expect(result.summary.phhProteinFunctionalEvidence?.summary.whole_cell_transport_lot_count).toBe(5);
       expect(result.summary.phhProteinFunctionalEvidence?.whole_cell_transport_validations[0].metric_ranges)
         .toContainEqual(expect.objectContaining({ id: "biliary_excretion_index", low: 41, high: 63 }));
       expect(result.summary.phhProteinFunctionalEvidence?.summary.whole_cell_rate_ready_count).toBe(0);
       expect(result.summary.phhProteinFunctionalEvidence?.integration_gates.automatic_state_coupling).toBe(false);
+      expect(result.summary.hepatocyteQuantityHarvest?.audit.total_records).toBe(168);
+      expect(result.summary.hepatocyteQuantityHarvest?.audit.reviewed_raw_record_count).toBe(25);
+      expect(result.summary.hepatocyteQuantityHarvest?.audit.promoted_context_bound_claim_count).toBe(16);
+      expect(result.summary.hepatocyteQuantityHarvest?.audit.healthy_phh_runtime_parameter_count).toBe(0);
+      expect(result.summary.phhInjuryValidation?.summary.human_phh_protocol_count).toBe(4);
+      expect(result.summary.phhInjuryValidation?.summary.matching_protocol_observation_count).toBe(9);
+      expect(result.summary.phhInjuryValidation?.summary.general_fate_law_count).toBe(0);
+      expect(result.summary.phhInjuryValidation?.integration_gates.automatic_runtime_coupling).toBe(false);
       expect(result.summary.compartmentalEnergyRedox?.summary.compartment_count).toBe(6);
       expect(result.summary.compartmentalEnergyRedox?.summary.explicit_pool_count).toBe(38);
       expect(result.summary.compartmentalEnergyRedox?.summary.structural_process_count).toBe(14);

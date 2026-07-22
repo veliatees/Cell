@@ -262,6 +262,30 @@
       ]
     },
     {
+      "id": "hepatocyte_quantity_harvest",
+      "title": "Provenance-strict hepatocyte quantity harvest",
+      "status": "partial",
+      "scope": "Literature observations spanning species, experimental systems and quantitative tracks; not a homogeneous healthy-PHH parameter set.",
+      "current_capability": "All 168 rows are retained byte-for-byte with checksums and exact species partitions; 25 rows were manually source-reviewed and 16 claims entered context-bound evidence modules without activating runtime parameters.",
+      "observed_metrics": {
+        "raw_record_count": 168,
+        "unique_primary_source_pmid_count": 91,
+        "strict_numeric_record_count": 115,
+        "reviewed_raw_record_count": 25,
+        "promoted_context_bound_claim_count": 16,
+        "healthy_phh_runtime_parameter_count": 0
+      },
+      "remaining_requirements": [
+        "Primary-source review of the remaining rows that address a declared model need.",
+        "Exact context, denominator, uncertainty and assay matching before any numerical activation.",
+        "Independent validation for every promoted model law."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/validation/hepatocyte_quantities.py",
+        "data/hepatocyte_quantities/curated/source_review.v1.json"
+      ]
+    },
+    {
       "id": "quantitative_reaction_core",
       "title": "Quantitative reaction core",
       "status": "blocked_missing_evidence",
@@ -371,18 +395,23 @@
     {
       "id": "damage_fate_recovery_calibration",
       "title": "Damage, death and recovery calibration",
-      "status": "blocked_missing_evidence",
+      "status": "partial",
       "scope": "Apoptosis, necrosis, cholestasis and proteostasis outcomes in healthy PHH perturbation contexts.",
-      "current_capability": "Exploratory pathways and intervention scenarios exist, but commitment thresholds and recovery windows are not predictive.",
+      "current_capability": "Four exact PHH perturbation protocols now provide nine APAP and bile-acid timing, rescue and necrosis observations. They validate only matching protocols; commitment thresholds and recovery laws remain non-predictive.",
       "observed_metrics": {
-        "calibrated_fate_commitment_laws": 0
+        "human_phh_protocol_count": 4,
+        "matching_protocol_observation_count": 9,
+        "necrosis_mode_observation_count": 5,
+        "calibrated_fate_commitment_laws": 0,
+        "runtime_coupled_observation_count": 0
       },
       "remaining_requirements": [
-        "Time-resolved dose-response trajectories with fate labels.",
+        "Numeric time-resolved dose-response trajectories with uncertainty and fate labels.",
         "Commitment-point and washout/recovery experiments.",
         "Donor-disjoint validation for each declared injury context."
       ],
       "code_surfaces": [
+        "engine/cell_engine/quantitative/phh_injury_validation.py",
         "engine/cell_engine/stochastic/apoptosis.py",
         "engine/cell_engine/processes/cellular_response.py"
       ]
@@ -511,10 +540,10 @@
     }
   ],
   "summary": {
-    "entry_count": 26,
+    "entry_count": 27,
     "closed_count": 4,
-    "partial_count": 6,
-    "blocked_missing_evidence_count": 14,
+    "partial_count": 8,
+    "blocked_missing_evidence_count": 13,
     "external_action_required_count": 1,
     "not_applicable_at_model_scale_count": 1,
     "biological_accuracy_pct": null
