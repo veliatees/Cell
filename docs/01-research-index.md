@@ -101,6 +101,10 @@ linked to its dependencies.
 - Conservative passive-scalar test kernel with zero biological species bound: `milestones/095-conservative-cytosol-species-transport-v1.md`
 - Healthy-human restricted-water validation target and strict passive-fluid versus active-cargo separation: `milestones/096-cytosol-validation-active-transport-separation-v1.md`
 - Scoped 26-item completion ledger and immutable Human-GEM retrieval: `milestones/097-pinned-human-gem-and-completion-ledger-v1.md`
+- Quantitative concentration claim firewall and retired pseudo-concentrations: `milestones/098-quantitative-concentration-claim-firewall-v1.md`
+- Conservative moving-domain remap for the numerical cytosol: `milestones/099-conservative-moving-domain-remap-v1.md`
+- Pinned Human-GEM reaction-level structural chemistry audit: `milestones/100-human-gem-structural-chemistry-audit-v1.md`
+- Lossless hepatocyte quantity harvest, primary-source curation, transporter kinetics, and context-bound PHH injury observations: `milestones/101-provenance-strict-hepatocyte-quantity-harvest-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

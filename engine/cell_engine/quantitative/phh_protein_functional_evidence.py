@@ -22,16 +22,16 @@ from cell_engine.quantitative.phh_glucose_validation import load_healthy_phh_glu
 from cell_engine.quantitative.phh_proteome_atlas import canonical_gene_reference
 
 
-DATE_VERIFIED = "2026-07-17"
-VERSION = "phh_protein_functional_evidence_v1"
-SCHEMA_VERSION = "cell.phh-protein-functional-evidence.v1"
+DATE_VERIFIED = "2026-07-22"
+VERSION = "phh_protein_functional_evidence_v2"
+SCHEMA_VERSION = "cell.phh-protein-functional-evidence.v2"
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 DATA_PATH = (
     REPOSITORY_ROOT
     / "data"
     / "phh_baseline"
     / "curated"
-    / "phh_protein_functional_evidence.v1.json"
+    / "phh_protein_functional_evidence.v2.json"
 )
 
 
@@ -104,6 +104,30 @@ PHH_PROTEIN_FUNCTIONAL_EVIDENCE_SOURCES: dict[str, SourceReference] = {
         date_verified=DATE_VERIFIED,
         notes="Defined insulin exposure with pAKT and gene-expression response observations.",
     ),
+    "noe2002_human_bsep_bile_salts": SourceReference(
+        id="noe2002_human_bsep_bile_salts",
+        title="Functional expression of the canalicular bile salt export pump of human liver",
+        url="https://doi.org/10.1053/gast.2002.36587",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes="Recombinant human BSEP affinity observations for four bile salts.",
+    ),
+    "gilibili2017_human_mrp2_probe_substrates": SourceReference(
+        id="gilibili2017_human_mrp2_probe_substrates",
+        title="Coproporphyrin-I: A Fluorescent, Endogenous Optimal Probe Substrate for ABCC2 (MRP2) Suitable for Vesicle-Based MRP2 Inhibition Assay",
+        url="https://pubmed.ncbi.nlm.nih.gov/28325716/",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes="Recombinant human MRP2 E17G and coproporphyrin-I transport curves.",
+    ),
+    "arbuckle1996_human_glut2_oocyte": SourceReference(
+        id="arbuckle1996_human_glut2_oocyte",
+        title="Structure-Function Analysis of Liver-Type (GLUT2) and Brain-Type (GLUT3) Glucose Transporters",
+        url="https://doi.org/10.1021/bi962210n",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes="Human GLUT2 2-deoxyglucose affinity measured in Xenopus oocytes.",
+    ),
 }
 
 
@@ -144,6 +168,7 @@ class ProteinKineticObservation:
     kinetic_model: str
     biological_system: str
     km: NumericEvidence
+    hill_coefficient: NumericEvidence | None
     velocity: VelocityEvidence | None
     relative_activity_context: RelativeActivityContext | None
     source_id: str
@@ -272,6 +297,8 @@ class AssayKineticPrediction:
     velocity_value: float | None
     velocity_unit: str | None
     substrate_concentration_uM: float | None
+    hill_coefficient_value: float | None = None
+    hill_coefficient_unit: str | None = None
 
 
 @dataclass(frozen=True)
@@ -281,6 +308,7 @@ class AssayComparisonAudit:
     biological_system_match: bool
     kinetic_model_match: bool
     km_unit_match: bool
+    hill_coefficient_contract_match: bool
     velocity_contract_match: bool
     exact_input_match: bool
     blockers: tuple[str, ...]
@@ -377,6 +405,11 @@ def _kinetic_observation(raw: object) -> ProteinKineticObservation:
         kinetic_model=str(raw["kinetic_model"]),
         biological_system=str(raw["biological_system"]),
         km=_numeric_evidence(raw["km"]),
+        hill_coefficient=(
+            None
+            if raw.get("hill_coefficient") is None
+            else _numeric_evidence(raw["hill_coefficient"])
+        ),
         velocity=_velocity_evidence(raw.get("velocity")),
         relative_activity_context=_activity_context(raw.get("relative_activity_context")),
         source_id=str(raw["source_id"]),
@@ -608,16 +641,39 @@ def validate_phh_protein_functional_evidence(state: ProteinFunctionalEvidenceSta
     expected_kinetics = {
         "bsep_taurocholate_2002",
         "bsep_taurocholate_2013",
+        "bsep_taurocholate_noe2002",
+        "bsep_glycocholate_noe2002",
+        "bsep_taurochenodeoxycholate_noe2002",
+        "bsep_tauroursodeoxycholate_noe2002",
         "mrp2_monoglucuronosyl_bilirubin_1999",
         "mrp2_bisglucuronosyl_bilirubin_1999",
+        "mrp2_estradiol_17_glucuronide_2017",
+        "mrp2_coproporphyrin_I_2017",
         "ntcp_dominated_taurocholate_uptake_2003",
+        "glut2_2_deoxyglucose_oocyte_1996",
     }
-    if len(state.kinetic_observations) != 5 or set(kinetics) != expected_kinetics:
+    if len(state.kinetic_observations) != 12 or set(kinetics) != expected_kinetics:
         raise ValueError("PHH protein kinetic panel changed")
+    linked_kinetic_ids = [
+        observation.id
+        for protein in state.proteins
+        for observation in protein.kinetic_observations
+    ]
+    if len(linked_kinetic_ids) != len(set(linked_kinetic_ids)) or set(
+        linked_kinetic_ids
+    ) != expected_kinetics:
+        raise ValueError("PHH protein kinetic links are incomplete or duplicated")
+    if any(
+        observation.gene != protein.gene
+        or observation.protein_id != protein.protein_id
+        for protein in state.proteins
+        for observation in protein.kinetic_observations
+    ):
+        raise ValueError("PHH kinetic observation was linked to the wrong protein")
     for observation in state.kinetic_observations:
         if observation.source_id not in state.source_ids or observation.may_scale_whole_cell_flux:
             raise ValueError("assay kinetics exceeded their source context")
-        if observation.km.unit != "uM":
+        if observation.km.unit not in {"uM", "mM"}:
             raise ValueError("kinetic affinity unit changed")
         values = [value for value in (observation.km.value, observation.km.low, observation.km.high) if value is not None]
         if not values or any(not isfinite(value) or value <= 0.0 for value in values):
@@ -637,6 +693,18 @@ def validate_phh_protein_functional_evidence(state: ProteinFunctionalEvidenceSta
             )
         ):
             raise ValueError("invalid assay velocity evidence")
+        hill = observation.hill_coefficient
+        if hill is not None and (
+            hill.kind != "point"
+            or hill.unit != "dimensionless"
+            or hill.value is None
+            or not isfinite(hill.value)
+            or hill.value <= 0.0
+            or hill.low is not None
+            or hill.high is not None
+            or (hill.sd is not None and (not isfinite(hill.sd) or hill.sd <= 0.0))
+        ):
+            raise ValueError("invalid Hill-coefficient evidence")
 
     bsep_2002 = kinetics["bsep_taurocholate_2002"]
     bsep_2013 = kinetics["bsep_taurocholate_2013"]
@@ -662,6 +730,74 @@ def validate_phh_protein_functional_evidence(state: ProteinFunctionalEvidenceSta
             or kinetics[observation_id].may_evaluate_assay_curve
         ):
             raise ValueError("MRP2 measured rate was mislabeled as Vmax")
+
+    noe_bsep = {
+        "bsep_taurocholate_noe2002": ("taurocholate", 7.9, 2.1),
+        "bsep_glycocholate_noe2002": ("glycocholate", 11.1, 3.3),
+        "bsep_taurochenodeoxycholate_noe2002": (
+            "taurochenodeoxycholate",
+            4.8,
+            1.7,
+        ),
+        "bsep_tauroursodeoxycholate_noe2002": (
+            "tauroursodeoxycholate",
+            11.9,
+            1.8,
+        ),
+    }
+    if any(
+        kinetics[observation_id].substrate != substrate
+        or kinetics[observation_id].km.value != value
+        or kinetics[observation_id].km.sd != sd
+        or kinetics[observation_id].velocity is not None
+        or kinetics[observation_id].may_evaluate_assay_curve
+        for observation_id, (substrate, value, sd) in noe_bsep.items()
+    ):
+        raise ValueError("Noe 2002 BSEP affinity observations changed")
+
+    mrp2_e17g = kinetics["mrp2_estradiol_17_glucuronide_2017"]
+    mrp2_cpi = kinetics["mrp2_coproporphyrin_I_2017"]
+    if (
+        mrp2_e17g.kinetic_model != "hill_cooperative"
+        or mrp2_e17g.km.kind != "apparent_S50"
+        or (mrp2_e17g.km.value, mrp2_e17g.km.sd) != (170.0, 17.0)
+        or mrp2_e17g.hill_coefficient is None
+        or (
+            mrp2_e17g.hill_coefficient.value,
+            mrp2_e17g.hill_coefficient.sd,
+        )
+        != (2.05, 0.1)
+        or mrp2_e17g.velocity is None
+        or (mrp2_e17g.velocity.value, mrp2_e17g.velocity.sd) != (1447.0, 137.0)
+        or not mrp2_e17g.may_evaluate_assay_curve
+        or mrp2_cpi.km.value != 7.7
+        or mrp2_cpi.km.sd != 0.7
+        or mrp2_cpi.hill_coefficient is not None
+        or mrp2_cpi.velocity is None
+        or (mrp2_cpi.velocity.value, mrp2_cpi.velocity.sd) != (48.0, 11.0)
+        or not mrp2_cpi.may_evaluate_assay_curve
+    ):
+        raise ValueError("Gilibili 2017 MRP2 kinetic observations changed")
+
+    glut2 = kinetics["glut2_2_deoxyglucose_oocyte_1996"]
+    if (
+        glut2.km.unit != "mM"
+        or (glut2.km.value, glut2.km.sd) != (11.2, 1.1)
+        or glut2.velocity is not None
+        or glut2.hill_coefficient is not None
+        or glut2.may_evaluate_assay_curve
+    ):
+        raise ValueError("Arbuckle 1996 GLUT2 affinity observation changed")
+    if any(
+        observation.km.unit == "mM" and observation.id != glut2.id
+        for observation in state.kinetic_observations
+    ):
+        raise ValueError("Only the source-reported GLUT2 affinity may use mM")
+    if any(
+        observation.hill_coefficient is not None and observation.id != mrp2_e17g.id
+        for observation in state.kinetic_observations
+    ):
+        raise ValueError("Unexpected Hill coefficient was introduced")
 
     if len(state.whole_cell_transport_validations) != 1:
         raise ValueError("whole-cell transport validation panel changed")
@@ -756,7 +892,12 @@ def kinetic_observation_by_id(
     return matches[0]
 
 
-def _metric_residual(observed: NumericEvidence, predicted: float) -> AssayParameterResidual:
+def _metric_residual(
+    observed: NumericEvidence,
+    predicted: float,
+    *,
+    metric: str,
+) -> AssayParameterResidual:
     if observed.value is not None:
         residual = predicted - observed.value
         standardized = residual / observed.sd if observed.sd not in (None, 0.0) else None
@@ -768,7 +909,7 @@ def _metric_residual(observed: NumericEvidence, predicted: float) -> AssayParame
         standardized = None
         within = observed.low <= predicted <= observed.high
     return AssayParameterResidual(
-        metric="km",
+        metric=metric,
         observed_value=observed.value,
         observed_low=observed.low,
         observed_high=observed.high,
@@ -789,12 +930,25 @@ def compare_same_assay_kinetics(
     evidence = state or build_phh_protein_functional_evidence()
     observed = kinetic_observation_by_id(prediction.observation_id, state=evidence)
     velocity = observed.velocity
+    hill = observed.hill_coefficient
     checks = {
         "protein match": prediction.protein_id == observed.protein_id,
         "substrate match": prediction.substrate == observed.substrate,
         "biological system match": prediction.biological_system == observed.biological_system,
         "kinetic model match": prediction.kinetic_model == observed.kinetic_model,
         "Km unit match": prediction.km_unit == observed.km.unit,
+        "Hill coefficient contract match": (
+            (
+                hill is None
+                and prediction.hill_coefficient_value is None
+                and prediction.hill_coefficient_unit is None
+            )
+            or (
+                hill is not None
+                and prediction.hill_coefficient_value is not None
+                and prediction.hill_coefficient_unit == hill.unit
+            )
+        ),
         "velocity contract match": (
             (velocity is None and prediction.velocity_kind is None and prediction.velocity_value is None)
             or (
@@ -814,13 +968,22 @@ def compare_same_assay_kinetics(
         biological_system_match=checks["biological system match"],
         kinetic_model_match=checks["kinetic model match"],
         km_unit_match=checks["Km unit match"],
+        hill_coefficient_contract_match=checks["Hill coefficient contract match"],
         velocity_contract_match=checks["velocity contract match"],
         exact_input_match=exact,
         blockers=blockers,
     )
     residuals: list[AssayParameterResidual] = []
     if exact:
-        residuals.append(_metric_residual(observed.km, prediction.km_value))
+        residuals.append(_metric_residual(observed.km, prediction.km_value, metric="km"))
+        if hill is not None and prediction.hill_coefficient_value is not None:
+            residuals.append(
+                _metric_residual(
+                    hill,
+                    prediction.hill_coefficient_value,
+                    metric="hill_coefficient",
+                )
+            )
         if velocity is not None and prediction.velocity_value is not None:
             raw = prediction.velocity_value - velocity.value
             residuals.append(
@@ -864,6 +1027,9 @@ def phh_protein_functional_evidence_snapshot() -> dict[str, object]:
         "active_fraction_observation_count": 0,
         "assay_kinetic_observation_count": len(state.kinetic_observations),
         "assay_curve_evaluable_count": sum(item.may_evaluate_assay_curve for item in state.kinetic_observations),
+        "hill_coefficient_observation_count": sum(
+            item.hill_coefficient is not None for item in state.kinetic_observations
+        ),
         "receptor_binding_kinetic_observation_count": 0,
         "functional_response_observation_count": len(state.functional_responses),
         "whole_cell_transport_validation_observation_count": len(

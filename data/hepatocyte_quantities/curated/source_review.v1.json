@@ -1,0 +1,74 @@
+{
+  "schema_version": "cell.hepatocyte-quantity-source-review.v1",
+  "version": "hepatocyte_quantity_source_review_v1",
+  "date_verified": "2026-07-22",
+  "policy": "A source review confirms only the listed raw claims and their original assay context. It never licenses cross-species conversion, organ-to-cell conversion, active-copy inference, or automatic runtime coupling.",
+  "reviews": [
+    {
+      "id": "noe2002_recombinant_human_bsep",
+      "raw_csv_rows": [79, 80, 81, 82],
+      "expected_pmids": ["12404240"],
+      "review_status": "primary_source_metadata_and_abstract_values_verified",
+      "integration_target": "same_assay_protein_kinetic_evidence",
+      "promoted_claim_count": 4,
+      "limitations": "Recombinant human BSEP in Sf9 vesicles; affinity values do not identify active canalicular copies or whole-hepatocyte flux."
+    },
+    {
+      "id": "gilibili2017_recombinant_human_mrp2",
+      "raw_csv_rows": [93, 94, 95, 96],
+      "expected_pmids": ["28325716"],
+      "review_status": "primary_source_abstract_and_figure_caption_values_verified",
+      "integration_target": "same_assay_protein_kinetic_evidence",
+      "promoted_claim_count": 2,
+      "limitations": "Recombinant MRP2 membrane-vesicle curves with assay-protein denominators; neither Vmax is a per-cell rate."
+    },
+    {
+      "id": "arbuckle1996_heterologous_human_glut2",
+      "raw_csv_rows": [104],
+      "expected_pmids": ["8987985"],
+      "review_status": "primary_source_abstract_value_verified",
+      "integration_target": "same_assay_protein_kinetic_evidence",
+      "promoted_claim_count": 1,
+      "limitations": "Human GLUT2 expressed in Xenopus oocytes with 2-deoxyglucose; not a PHH glucose-flux parameter."
+    },
+    {
+      "id": "xie2014_apap_primary_human_hepatocytes",
+      "raw_csv_rows": [108, 109, 110, 112],
+      "expected_pmids": ["24905542"],
+      "review_status": "primary_source_full_text_timing_and_protocol_verified",
+      "integration_target": "matching_protocol_injury_validation",
+      "promoted_claim_count": 5,
+      "limitations": "The observations apply to freshly isolated PHH exposed to 10 mM APAP. The raw >70% GSH magnitude and 29/68% death values are not promoted into the curated protocol."
+    },
+    {
+      "id": "woolbright2015_bile_acid_primary_human_hepatocytes",
+      "raw_csv_rows": [114, 115, 116],
+      "expected_pmids": ["25636263"],
+      "review_status": "primary_source_full_text_protocol_and_direction_verified",
+      "integration_target": "matching_protocol_injury_validation",
+      "promoted_claim_count": 4,
+      "limitations": "The observations distinguish serum exposure from local biliary leakage and cannot define a universal intracellular bile-acid death threshold."
+    },
+    {
+      "id": "prasad2014_human_liver_transporter_abundance",
+      "raw_csv_rows": [127, 128, 129, 130],
+      "expected_pmids": ["24122874"],
+      "review_status": "primary_source_abstract_values_verified",
+      "integration_target": "donor_variability_reference_only",
+      "promoted_claim_count": 0,
+      "limitations": "Human liver membrane-protein denominator; no membrane domain, active fraction, or copies per hepatocyte."
+    },
+    {
+      "id": "prasad2015_human_liver_transporter_abundance",
+      "raw_csv_rows": [131, 132, 133, 134, 135],
+      "expected_pmids": ["25926430"],
+      "review_status": "primary_source_abstract_values_verified",
+      "integration_target": "donor_variability_reference_only",
+      "promoted_claim_count": 0,
+      "limitations": "Human liver total-membrane denominator and mixed donor panel; not active surface copies or a joint donor-state model."
+    }
+  ],
+  "automatic_parameter_activation": false,
+  "healthy_phh_initialization_allowed": false,
+  "whole_cell_rate_coupling_allowed": false
+}

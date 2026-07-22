@@ -1,0 +1,42 @@
+{
+  "schema_version": "cell.hepatocyte-quantity-harvest-manifest.v1",
+  "received_date": "2026-07-22",
+  "origin": "user_supplied_external_literature_harvest",
+  "policy": "The files are retained byte-for-byte. A record is evidence intake, not a runtime parameter. Primary-source review and a separate context-preserving curation are required before any model use.",
+  "files": [
+    {
+      "name": "METHODS_README_quantities.md",
+      "sha256": "5f86c5788d6994a6340081ab0ca191a66b5dea027d222b2fe83b6a5a4898b101"
+    },
+    {
+      "name": "hepatocyte_quantities_master.json",
+      "sha256": "059f8fd7ad028139c33a1c86e04a10fdf0e366b7150333aac0f3dcd320d2dd5a"
+    },
+    {
+      "name": "hepatocyte_quantities_HepaRG.csv",
+      "sha256": "278b42afcf033a3f72eb45a069c06a0b9b04b13efb9ff3b8cd2315d26a42baa8"
+    },
+    {
+      "name": "hepatocyte_quantities_human.csv",
+      "sha256": "bd46e49ba07667774dfaf5fd45d8f05b6f3f101e9571550e1544a8daaf5aa1a4"
+    },
+    {
+      "name": "hepatocyte_quantities_master.csv",
+      "sha256": "6548cdd5d2a44a51dbba4c9124305117ccebcd5470175e157cbf5ddab91c177a"
+    },
+    {
+      "name": "hepatocyte_quantities_mouse.csv",
+      "sha256": "37714ef53c882302aa5f733d112951268c83f02a2b13ca82dc736d3118b73992"
+    },
+    {
+      "name": "hepatocyte_quantities_other.csv",
+      "sha256": "e5c812a2f23cea0541f19dd8a9358670157d78f39ffe4a799d64da23711799a9"
+    },
+    {
+      "name": "hepatocyte_quantities_rat.csv",
+      "sha256": "76cf17a7a156de1e11dd97401c73672365ad9d941ea884508102347d25a16b81"
+    }
+  ],
+  "automatic_parameter_activation": false,
+  "authoritative_runtime_coupling": false
+}
