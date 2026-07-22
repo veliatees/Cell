@@ -16,7 +16,7 @@ from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_VOLUME_UM3
 
 
 DATE_VERIFIED = "2026-07-22"
-VERSION = "cytosol_transport_rheology_contract_v2"
+VERSION = "cytosol_transport_rheology_contract_v3"
 
 CYTOSOL_TRANSPORT_SOURCES: dict[str, SourceReference] = {
     "moeendarbary2013_poroelastic_cytoplasm": SourceReference(
@@ -436,8 +436,10 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             },
             "conservative_passive_scalar_kernel": {
                 "enabled": True,
-                "role": "mass-conservation and non-negativity test bed",
+                "role": "fixed- and moving-domain mass-conservation and non-negativity test bed",
                 "boundary_condition": "no flux through analytic solid faces",
+                "moving_domain_remap": "deterministic face-neighbour redistribution with nearest-fluid fallback",
+                "moving_domain_mass_conservation_tested": True,
                 "biological_species_bound_count": 0,
                 "biological_diffusivity_claim": False,
             },
@@ -463,6 +465,7 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "healthy_phh_numeric_rheology_parameter_count": 0,
             "dimensionless_projection_solver_count": 1,
             "conservative_passive_scalar_kernel_count": 1,
+            "conservative_moving_domain_remap_count": 1,
             "biological_species_bound_count": 0,
             "moving_analytic_obstacle_layer_count": 1,
             "membrane_pressure_feedback_count": 0,
@@ -512,6 +515,8 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("passive-scalar kernel was bound to an unvalidated biological species")
     if scalar.get("biological_diffusivity_claim") is not False:
         raise ValueError("dimensionless scalar diffusion escaped into a biological claim")
+    if scalar.get("moving_domain_mass_conservation_tested") is not True:
+        raise ValueError("moving-domain scalar conservation guard is missing")
     if coupling.get("currently_coupled_reaction_count") != 0:
         raise ValueError("cytosol transport contract activated a reaction")
     if conflict.get("may_parameterize_quantitative_fluid_or_reaction_model") is not False:

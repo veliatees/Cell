@@ -21,6 +21,7 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert summary["healthy_phh_numeric_rheology_parameter_count"] == 0
     assert summary["dimensionless_projection_solver_count"] == 1
     assert summary["conservative_passive_scalar_kernel_count"] == 1
+    assert summary["conservative_moving_domain_remap_count"] == 1
     assert summary["biological_species_bound_count"] == 0
     assert summary["moving_analytic_obstacle_layer_count"] == 1
     assert summary["membrane_pressure_feedback_count"] == 0
@@ -35,6 +36,8 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert target["participant_count"] == 3
     assert target["numeric_values_curated"] is False
     assert target["may_parameterize_viscosity_pressure_or_bulk_flow"] is False
+    scalar = snapshot["solver_layers"]["conservative_passive_scalar_kernel"]
+    assert scalar["moving_domain_mass_conservation_tested"] is True
 
 
 @pytest.mark.parametrize(

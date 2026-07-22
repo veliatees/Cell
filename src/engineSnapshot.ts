@@ -1290,7 +1290,7 @@ export type EngineReactionEvidenceAtlas = {
 };
 
 export type EngineCytosolTransport = {
-  version: "cytosol_transport_rheology_contract_v2";
+  version: "cytosol_transport_rheology_contract_v3";
   status: string;
   material_model: {
     model: "poroelastic_two_phase_cytoplasm";
@@ -1363,6 +1363,8 @@ export type EngineCytosolTransport = {
       enabled: true;
       role: string;
       boundary_condition: string;
+      moving_domain_remap: string;
+      moving_domain_mass_conservation_tested: true;
       biological_species_bound_count: 0;
       biological_diffusivity_claim: false;
     };
@@ -1382,6 +1384,7 @@ export type EngineCytosolTransport = {
     healthy_phh_numeric_rheology_parameter_count: number;
     dimensionless_projection_solver_count: number;
     conservative_passive_scalar_kernel_count: number;
+    conservative_moving_domain_remap_count: number;
     biological_species_bound_count: number;
     moving_analytic_obstacle_layer_count: number;
     membrane_pressure_feedback_count: number;
@@ -1393,7 +1396,7 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v2";
+  version: "metabolic_constraint_shell_v3";
   status: string;
   role: string;
   candidate_reconstruction: {
@@ -1420,7 +1423,21 @@ export type EngineMetabolicConstraintShell = {
       reactions: number;
       genes: number;
     };
+    structural_audit_report: string;
     mass_charge_balance_audited_in_project: boolean;
+    structural_audit: {
+      one_sided_reaction_count: number;
+      two_sided_reaction_count: number;
+      chemically_parseable_formula_count: number;
+      elementally_assessable_reaction_count: number;
+      elementally_balanced_reaction_count: number;
+      elementally_imbalanced_reaction_count: number;
+      jointly_assessable_reaction_count: number;
+      jointly_balanced_reaction_count: number;
+      jointly_imbalanced_reaction_count: number;
+      jointly_unassessable_reaction_count: number;
+      one_sided_reactions_excluded_from_internal_balance_claim: boolean;
+    };
   };
   hepatocyte_context: Record<string, string | null>;
   optimization_problem: Record<string, string | number | boolean | null>;

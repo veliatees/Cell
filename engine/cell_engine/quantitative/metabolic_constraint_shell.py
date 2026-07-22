@@ -6,10 +6,13 @@ import json
 from pathlib import Path
 
 from cell_engine.core.provenance import SourceReference
+from cell_engine.quantitative.human_gem_structural_audit import (
+    load_committed_human_gem_audit,
+)
 
 
 DATE_VERIFIED = "2026-07-22"
-VERSION = "metabolic_constraint_shell_v2"
+VERSION = "metabolic_constraint_shell_v3"
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
@@ -50,6 +53,7 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
     """Expose every input required before FBA/FVA can influence the cell state."""
 
     manifest = _load_manifest()
+    audit = load_committed_human_gem_audit()
     scope = manifest["scientific_scope"]
     verification = manifest["verification"]
     counts = manifest["structural_counts_verified_from_sbml"]
@@ -58,7 +62,7 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
 
     return {
         "version": VERSION,
-        "status": "release_and_checksum_pinned_context_and_optimization_blocked",
+        "status": "release_checksum_and_structural_audit_pinned_context_and_optimization_blocked",
         "role": (
             "Genome-scale stoichiometric feasibility shell around validated dynamic cores. "
             "It may constrain boundary-consistent flux space but cannot supply a time trajectory."
@@ -82,7 +86,21 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
             "license": manifest["license"],
             "license_audited": True,
             "structural_counts_verified_from_sbml": counts,
-            "mass_charge_balance_audited_in_project": False,
+            "structural_audit_report": verification["structural_audit_report"],
+            "mass_charge_balance_audited_in_project": verification["mass_charge_audit_completed"],
+            "structural_audit": {
+                "one_sided_reaction_count": audit["structure"]["one_sided_reaction_count"],
+                "two_sided_reaction_count": audit["structure"]["two_sided_reaction_count"],
+                "chemically_parseable_formula_count": audit["species_chemistry"]["chemically_parseable_formula_count"],
+                "elementally_assessable_reaction_count": audit["elemental_balance"]["assessable_reaction_count"],
+                "elementally_balanced_reaction_count": audit["elemental_balance"]["balanced_reaction_count"],
+                "elementally_imbalanced_reaction_count": audit["elemental_balance"]["imbalanced_reaction_count"],
+                "jointly_assessable_reaction_count": audit["joint_balance"]["assessable_reaction_count"],
+                "jointly_balanced_reaction_count": audit["joint_balance"]["balanced_reaction_count"],
+                "jointly_imbalanced_reaction_count": audit["joint_balance"]["imbalanced_reaction_count"],
+                "jointly_unassessable_reaction_count": audit["joint_balance"]["unassessable_reaction_count"],
+                "one_sided_reactions_excluded_from_internal_balance_claim": audit["scientific_boundary"]["one_sided_reactions_excluded_from_internal_balance_claim"],
+            },
         },
         "hepatocyte_context": {
             "extraction_algorithm": None,
@@ -121,7 +139,7 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
             "healthy-PHH context extraction is not defined",
             "measured boundary fluxes are insufficient for the declared contexts",
             "objective function is not identified as a healthy-hepatocyte measurement",
-            "mass and charge balance have not been audited in this project",
+            "structural audit exceptions require reaction-level resolution before scientific optimization",
             "independent flux validation is absent",
         ),
     }
@@ -154,8 +172,17 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
         raise ValueError("Human-GEM license audit is incomplete")
     if reconstruction.get("model_loaded_by_runtime") is not False:
         raise ValueError("Human-GEM runtime loading changed without context review")
-    if reconstruction.get("mass_charge_balance_audited_in_project") is not False:
-        raise ValueError("Human-GEM mass/charge audit changed without review")
+    if reconstruction.get("mass_charge_balance_audited_in_project") is not True:
+        raise ValueError("Human-GEM mass/charge audit is missing")
+    audit = reconstruction.get("structural_audit")
+    if not isinstance(audit, dict):
+        raise ValueError("Human-GEM structural audit summary is missing")
+    if audit.get("elementally_assessable_reaction_count") != 9849:
+        raise ValueError("Human-GEM elemental audit count changed without review")
+    if audit.get("elementally_imbalanced_reaction_count") != 17:
+        raise ValueError("Human-GEM elemental imbalance count changed without review")
+    if audit.get("jointly_unassessable_reaction_count") != 1422:
+        raise ValueError("Human-GEM unassessable reaction count changed without review")
     required_nulls = (
         reconstruction.get("sbml_path"),
         context.get("extraction_algorithm"),

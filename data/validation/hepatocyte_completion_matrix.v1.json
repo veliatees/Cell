@@ -16,10 +16,11 @@
       "title": "Dimensionless cytosol transport numerics",
       "status": "closed",
       "scope": "Numerical test-bed only; no biological pressure, velocity, time or diffusivity claim.",
-      "current_capability": "A 3D pressure-projection grid, moving analytic obstacles and conservative passive-scalar kernel are tested and active in the renderer.",
+      "current_capability": "A 3D pressure-projection grid, moving analytic obstacles and conservative passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
       "observed_metrics": {
         "projection_solver_count": 1,
         "conservative_scalar_kernel_count": 1,
+        "conservative_moving_domain_remap_count": 1,
         "moving_analytic_obstacle_layer_count": 1
       },
       "remaining_requirements": [],
@@ -429,17 +430,22 @@
       "title": "Pinned Human-GEM artifact identity",
       "status": "closed",
       "scope": "Exact generic reconstruction release identity and reproducible retrieval only.",
-      "current_capability": "Human-GEM v2.0.0 is pinned by release tag, commit, byte size and SHA-256; a fetch tool verifies the artifact without vendoring 43 MB.",
+      "current_capability": "Human-GEM v2.0.0 is pinned by release tag, commit, byte size and SHA-256; a streaming audit verifies structure plus scoped elemental/charge balance without vendoring 43 MB.",
       "observed_metrics": {
         "model_version": "2.0.0",
         "release_commit": "635f533152dc5f7290ce04d12700eaa882273c3e",
         "artifact_sha256": "cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a",
-        "runtime_loaded": false
+        "runtime_loaded": false,
+        "elementally_assessable_reaction_count": 9849,
+        "elementally_imbalanced_reaction_count": 17,
+        "jointly_unassessable_reaction_count": 1422
       },
       "remaining_requirements": [],
       "code_surfaces": [
         "data/published_models/human_gem_v2.0.0.manifest.json",
-        "scripts/fetch_human_gem.py"
+        "data/published_models/human_gem_v2.0.0.structural_audit.json",
+        "scripts/fetch_human_gem.py",
+        "scripts/audit_human_gem.py"
       ]
     },
     {
@@ -455,7 +461,7 @@
       "remaining_requirements": [
         "Declared PHH context-extraction algorithm and donor/cohort inputs.",
         "Measured exchange bounds, defensible objective and pinned solver.",
-        "FVA, infeasibility, mass/charge and independent flux validation."
+        "FVA, infeasibility, reaction-level structural-audit exception resolution and independent flux validation."
       ],
       "code_surfaces": [
         "engine/cell_engine/quantitative/metabolic_constraint_shell.py"
