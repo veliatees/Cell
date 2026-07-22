@@ -129,8 +129,6 @@ const EUKARYOTE_SCENE_ID = "eukaryotic-cell";
 const COMMUNICATION_SCENE_ID = "hepatocyte-communication";
 const PROTEIN_SCENE_ID = "glucokinase-structure";
 const PROTEIN_FIELD_SCENE_ID = "protein-populations";
-const CONC_GLUCOSE_SCENE_ID = "concentration-glucose";
-const CONC_ATP_SCENE_ID = "concentration-atp";
 const VISUAL_ANATOMY_COVERAGE = visualAnatomyCoverage();
 // The unified cell reality comes first; the rest are the building blocks /
 // "zoom-ins" that show the rules underneath it.
@@ -140,9 +138,6 @@ const sceneOptions =
   `</optgroup><optgroup label="Real proteins">` +
   `<option value="${PROTEIN_SCENE_ID}">Glucokinase — real structure (PDB 1V4S)</option>` +
   `<option value="${PROTEIN_FIELD_SCENE_ID}">Protein populations — true copy numbers (RDME voxel field)</option>` +
-  `</optgroup><optgroup label="Concentration fields (RDME)">` +
-  `<option value="${CONC_GLUCOSE_SCENE_ID}">Glucose gradient — sinusoid → canaliculus</option>` +
-  `<option value="${CONC_ATP_SCENE_ID}">ATP micro-domains — peri-mitochondrial</option>` +
   `</optgroup><optgroup label="The cell (molecular scale)">` +
   MEMBRANE_SCENES.map(opt).join("") +
   `</optgroup><optgroup label="Building blocks · ions">` +
@@ -159,7 +154,7 @@ const sceneOptions =
 const DEFAULT_SCENE_ID = EUKARYOTE_SCENE_ID;
 let activeSceneId = DEFAULT_SCENE_ID;
 
-type Mode = "ions" | "water" | "solvation" | "diffusion" | "membrane" | "reaction" | "organelles" | "communication" | "protein" | "proteinfield" | "concfield";
+type Mode = "ions" | "water" | "solvation" | "diffusion" | "membrane" | "reaction" | "organelles" | "communication" | "protein" | "proteinfield";
 const isWaterId = (id: string) => WATER_SCENES.some((p) => p.id === id);
 const isSolvationId = (id: string) => SOLVATION_SCENES.some((p) => p.id === id);
 const isDiffusionId = (id: string) => DIFFUSION_SCENES.some((p) => p.id === id);
@@ -375,7 +370,6 @@ if (!viewport) {
 }
 
 const viewportElement = viewport;
-let concLegendEl: HTMLElement | null = null;
 const timeScaleBadge = document.createElement("div");
 timeScaleBadge.className = "time-scale-badge";
 timeScaleBadge.style.display = "none";
@@ -591,8 +585,6 @@ let proteinGroup: THREE.Group | null = null; // real atomic structure (PDB)
 let proteinSpin = 0;
 let proteinFieldGroup: THREE.Group | null = null; // per-voxel protein population field
 let proteinFieldSpin = 0;
-let concFieldGroup: THREE.Group | null = null; // per-voxel concentration heat field (RDME)
-let concFieldSpin = 0;
 // Organelles that get a gentle Brownian jiggle (real organelles are never still:
 // motor transport on cytoskeletal tracks + thermal motion). Cached once per scene.
 let organelleJiggleTargets: { obj: THREE.Object3D; base: THREE.Vector3; seed: number }[] | null = null;
@@ -2066,14 +2058,6 @@ const METRIC_LABELS: Record<Mode, MetricLabels> = {
     kinetic: "—",
     total: "—",
     drift: "—"
-  },
-  concfield: {
-    distance: "—",
-    force: "—",
-    potential: "—",
-    kinetic: "—",
-    total: "—",
-    drift: "—"
   }
 };
 
@@ -2367,20 +2351,6 @@ function loadScene(id: string) {
     membrane = null;
     reaction = null;
     buildProteinFieldScene();
-    cameraDistance = 42;
-    setMetricLabels(mode);
-    updateModeControls();
-    resize();
-    return;
-  }
-  if (id === CONC_GLUCOSE_SCENE_ID || id === CONC_ATP_SCENE_ID) {
-    mode = "concfield";
-    water = null;
-    solvation = null;
-    diffusion = null;
-    membrane = null;
-    reaction = null;
-    buildConcentrationFieldScene(id === CONC_ATP_SCENE_ID ? "a" : "g");
     cameraDistance = 42;
     setMetricLabels(mode);
     updateModeControls();
@@ -4112,7 +4082,7 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
   const cytosolTransport = summary?.cytosolTransport;
   const metabolicConstraint = summary?.metabolicConstraintShell;
   const cytosolTransportRow = reactionEvidence && cytosolTransport && metabolicConstraint
-    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Cytosol transport + reaction evidence v2</b><span>dimensionless projection active · biological coupling blocked</span></div><div class="phh-profile__grid"><span>Active reactions audited <b>${reactionEvidence.summary.active_reaction_count}</b></span><span>Reaction evidence fields <b>${reactionEvidence.summary.filled_evidence_slot_count}/${reactionEvidence.summary.evidence_slot_count} filled</b></span><span>Transport-coupled reactions <b>${reactionEvidence.summary.transport_coupled_reaction_count}</b></span><span>Global fluid multipliers <b>${reactionEvidence.summary.direct_fluid_rate_multiplier_count}</b></span><span>Cross-context references <b>${cytosolTransport.summary.cross_context_reference_count}</b></span><span>Human validation targets <b>${cytosolTransport.summary.human_in_vivo_validation_target_count}</b></span><span>Dimensionless projection grids <b>${cytosolTransport.summary.dimensionless_projection_solver_count}</b></span><span>Conservative scalar kernels <b>${cytosolTransport.summary.conservative_passive_scalar_kernel_count}</b></span><span>Biological species bound <b>${cytosolTransport.summary.biological_species_bound_count}</b></span><span>Healthy-PHH rheology parameters <b>${cytosolTransport.summary.healthy_phh_numeric_rheology_parameter_count}</b></span><span>Membrane pressure feedback <b>${cytosolTransport.summary.membrane_pressure_feedback_count}</b></span><span>Genome-scale FBA execution <b>${metabolicConstraint.gates.fba_execution_allowed ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Transport boundary</span><span>The projected tracer field follows the deforming membrane and moving analytic organelle boundaries. Its velocity and pressure are dimensionless; no molecule, PHH diffusivity, reaction, or membrane-force feedback is activated without matched measurements.</span></div>`
+    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Cytosol transport + reaction evidence v3</b><span>dimensionless projection active · biological coupling blocked</span></div><div class="phh-profile__grid"><span>Active reactions audited <b>${reactionEvidence.summary.active_reaction_count}</b></span><span>Reaction evidence fields <b>${reactionEvidence.summary.filled_evidence_slot_count}/${reactionEvidence.summary.evidence_slot_count} filled</b></span><span>Transport-coupled reactions <b>${reactionEvidence.summary.transport_coupled_reaction_count}</b></span><span>Global fluid multipliers <b>${reactionEvidence.summary.direct_fluid_rate_multiplier_count}</b></span><span>Cross-context references <b>${cytosolTransport.summary.cross_context_reference_count}</b></span><span>Human validation targets <b>${cytosolTransport.summary.human_in_vivo_validation_target_count}</b></span><span>Dimensionless projection grids <b>${cytosolTransport.summary.dimensionless_projection_solver_count}</b></span><span>Conservative scalar kernels <b>${cytosolTransport.summary.conservative_passive_scalar_kernel_count}</b></span><span>Moving-domain remaps <b>${cytosolTransport.summary.conservative_moving_domain_remap_count}</b></span><span>Biological species bound <b>${cytosolTransport.summary.biological_species_bound_count}</b></span><span>Healthy-PHH rheology parameters <b>${cytosolTransport.summary.healthy_phh_numeric_rheology_parameter_count}</b></span><span>Membrane pressure feedback <b>${cytosolTransport.summary.membrane_pressure_feedback_count}</b></span><span>Genome-scale FBA execution <b>${metabolicConstraint.gates.fba_execution_allowed ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Transport boundary</span><span>The projected tracer field follows the deforming membrane and moving analytic organelle boundaries. Dimensionless scalar mass is conserved when those masks move. Velocity and pressure remain dimensionless; no molecule, PHH diffusivity, reaction, or membrane-force feedback is activated without matched measurements.</span></div>`
     : "";
   const placeholderRow = assumptions
     ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Schematic</span><span>${assumptions.placeholder_pools.length} relative pools remain placeholders and do not drive quantitative validation.</span></div>`
@@ -4624,12 +4594,6 @@ function animate() {
       proteinFieldGroup.rotation.y = proteinFieldSpin;
     }
     renderFrame();
-  } else if (mode === "concfield") {
-    if (concFieldGroup) {
-      concFieldSpin += (delta / 1000) * 0.1;
-      concFieldGroup.rotation.y = concFieldSpin;
-    }
-    renderFrame();
   } else if (mode === "protein") {
     if (proteinGroup) {
       proteinSpin += (delta / 1000) * 0.25;
@@ -4768,20 +4732,6 @@ function clearWaterVisuals() {
     });
     proteinFieldGroup = null;
   }
-
-  if (concFieldGroup) {
-    root.remove(concFieldGroup);
-    concFieldGroup.traverse((o) => {
-      if (o instanceof THREE.Mesh || o instanceof THREE.Points || o instanceof THREE.Line || o instanceof THREE.LineSegments) {
-        o.geometry.dispose();
-        const m = o.material as THREE.Material | THREE.Material[];
-        if (Array.isArray(m)) m.forEach((x) => x.dispose());
-        else m.dispose();
-      }
-    });
-    concFieldGroup = null;
-  }
-  setConcLegendVisible(false);
 
   if (proteinGroup) {
     root.remove(proteinGroup);
@@ -5589,135 +5539,6 @@ async function buildProteinFieldScene() {
     inst.userData.hoverKind = "protein-population";
     targetGroup.add(inst);
   }
-}
-
-// --- Concentration heat field (RDME steady state) --------------------------
-// Loads public/cell_concentration_field.json (generated by
-// scripts/export_concentration_field.py): per-voxel steady-state concentration
-// (mM) of a diffusing species on the real hepatocyte lattice. Rendered as a
-// translucent volumetric heat cloud coloured by a sequential ramp.
-type ConcSpecies = "g" | "a";
-type ConcVoxelRecord = { p: [number, number, number]; c: string; g: number; a: number };
-type ConcFieldPayload = {
-  lattice: { n: number; dxUm: number };
-  species: Record<ConcSpecies, { label: string; range: [number, number]; unit: string }>;
-  voxels: ConcVoxelRecord[];
-};
-
-// Sequential colour ramps (hex stops sampled by a 0..1 parameter). Glucose uses a
-// cool→warm gradient (blue = depleted bile pole, red = blood-rich sinusoid); ATP
-// uses an inferno-like ramp so peri-mitochondrial peaks read as hot cores.
-const CONC_RAMPS: Record<ConcSpecies, string[]> = {
-  g: ["#26436b", "#2c7fb8", "#7fcdbb", "#edf8b1", "#fdae61", "#d7301f"],
-  a: ["#160b2e", "#5a189a", "#c1121f", "#f48c06", "#ffd166", "#fff3d6"]
-};
-
-function sampleRamp(stops: string[], t: number): THREE.Color {
-  const x = clamp(t, 0, 1) * (stops.length - 1);
-  const i = Math.min(stops.length - 2, Math.floor(x));
-  const f = x - i;
-  const a = new THREE.Color(stops[i]);
-  const b = new THREE.Color(stops[i + 1]);
-  return a.lerp(b, f);
-}
-
-function ensureConcLegend(): HTMLElement {
-  if (concLegendEl) return concLegendEl;
-  const el = document.createElement("div");
-  el.className = "conc-legend";
-  el.hidden = true;
-  viewportElement.appendChild(el);
-  concLegendEl = el;
-  return el;
-}
-function setConcLegendVisible(on: boolean) {
-  if (!concLegendEl && !on) return;
-  ensureConcLegend().hidden = !on;
-}
-function updateConcLegend(species: ConcSpecies, label: string, unit: string, lo: number, hi: number) {
-  const el = ensureConcLegend();
-  const stops = CONC_RAMPS[species];
-  const gradient = stops.join(", ");
-  el.innerHTML =
-    `<div class="conc-legend__title">${label} — steady-state RDME field</div>` +
-    `<div class="conc-legend__bar" style="background:linear-gradient(90deg, ${gradient})"></div>` +
-    `<div class="conc-legend__scale"><span>${lo.toFixed(2)} ${unit}</span><span>${hi.toFixed(2)} ${unit}</span></div>`;
-  el.hidden = false;
-}
-
-async function buildConcentrationFieldScene(species: ConcSpecies) {
-  clearIonVisuals();
-  clearWaterVisuals();
-
-  concFieldGroup = new THREE.Group();
-  concFieldSpin = 0;
-  root.add(concFieldGroup);
-  const targetGroup = concFieldGroup;
-
-  const baseUrl =
-    (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/";
-
-  let payload: ConcFieldPayload;
-  try {
-    const res = await fetch(`${baseUrl}cell_concentration_field.json`);
-    payload = (await res.json()) as ConcFieldPayload;
-  } catch {
-    return;
-  }
-  if (concFieldGroup !== targetGroup || !targetGroup.parent) return;
-
-  const meta = payload.species[species];
-  const [lo, hi] = meta.range;
-  const span = hi - lo || 1;
-  const R = CELL_R * 0.95;
-  // Voxel spacing in world units: normalised coords step ~2/n; keep boxes just
-  // under the spacing so the field reads as a continuous cloud without hard tiling.
-  const step = (2 / payload.lattice.n) * R;
-  const boxSize = step * 0.92;
-
-  const geo = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
-  const mat = new THREE.MeshBasicMaterial({
-    transparent: true,
-    opacity: 0.32,
-    depthWrite: false,
-    blending: THREE.NormalBlending
-  });
-  const inst = new THREE.InstancedMesh(geo, mat, payload.voxels.length);
-  const dummy = new THREE.Object3D();
-  const color = new THREE.Color();
-  const ramp = CONC_RAMPS[species];
-  for (let i = 0; i < payload.voxels.length; i++) {
-    const v = payload.voxels[i];
-    const value = species === "a" ? v.a : v.g;
-    const t = (value - lo) / span;
-    dummy.position.set(v.p[0] * R, v.p[1] * R, v.p[2] * R);
-    // Low-concentration voxels shrink so the cloud thins where the species is
-    // depleted (canalicular pole / inter-mitochondrial cytosol) and thickens at
-    // the peaks — the gradient reads even through translucency.
-    const s = 0.45 + 0.55 * clamp(t, 0, 1);
-    dummy.scale.setScalar(s);
-    dummy.updateMatrix();
-    inst.setMatrixAt(i, dummy.matrix);
-    inst.setColorAt(i, color.copy(sampleRamp(ramp, t)));
-  }
-  inst.instanceMatrix.needsUpdate = true;
-  if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
-  inst.userData.hoverKind = "concentration-field";
-  inst.userData.label =
-    `${meta.label} steady-state concentration field (RDME diffusion). ` +
-    `Range ${lo.toFixed(2)}–${hi.toFixed(2)} ${meta.unit} across the cell; ` +
-    `${species === "g" ? "high at the blood-facing sinusoid, consumed toward the bile pole" : "peaks around dispersed mitochondria, decays over ~1 µm"}. ` +
-    `Deterministic mean-field limit of the engine's RDME on the real hepatocyte lattice.`;
-  targetGroup.add(inst);
-
-  // A faint cell boundary so the field reads as an enclosed body while rotating.
-  const shell = new THREE.Mesh(
-    new THREE.SphereGeometry(R * 1.02, 32, 24),
-    new THREE.MeshBasicMaterial({ color: "#8fb6ff", transparent: true, opacity: 0.05, depthWrite: false })
-  );
-  targetGroup.add(shell);
-
-  updateConcLegend(species, meta.label, meta.unit, lo, hi);
 }
 
 function communicationSnapshotSignature(summary: EngineSnapshotSummary | null): string {

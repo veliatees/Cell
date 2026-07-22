@@ -1,5 +1,12 @@
 # Milestone 040 — Spatial reaction–diffusion
 
+> **Retrospective scope correction (2026-07-22):** The numerical diffusion,
+> stability and gradient tests in this milestone remain valid. The labels
+> "morphogen" and "ATP microdomain" are pedagogical test cases, not calibrated
+> healthy-PHH concentration fields. No coefficient from this milestone may
+> parameterize a quantitative hepatocyte claim. The later public glucose/ATP
+> field was retired under Milestone 098.
+
 ## Why
 
 The kinetic core so far is **well-mixed**: every molecule is everywhere at once.

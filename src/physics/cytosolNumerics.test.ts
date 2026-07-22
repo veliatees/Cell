@@ -121,10 +121,52 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(Math.max(...scalar.values)).toBeLessThan(1);
   });
 
+  it("conservatively remaps scalar mass when a moving organelle changes the fluid mask", () => {
+    const obstacles = new DynamicCytosolObstacleField(1);
+    obstacles.setObstacles([
+      { id: "moving-organelle", kind: "sphere", center: [-1.8, 0, 0], radius: 1.35 }
+    ], 0);
+    const grid = new CytosolProjectionGrid({
+      resolution: 16,
+      halfExtent: 6,
+      seed: 12,
+      radiusAtDirection: () => 5,
+      visualModeCount: 0
+    });
+    grid.step(1 / 60, null, obstacles);
+    const scalar = new ConservativePassiveScalar3D(grid, {
+      id: "moving_domain_validation_pulse",
+      dimensionlessDiffusivity: 0
+    });
+    scalar.initialize(() => 1);
+    const before = scalar.totalMass();
+
+    obstacles.setObstacles([
+      { id: "moving-organelle", kind: "sphere", center: [1.8, 0, 0], radius: 1.35 }
+    ], 0.1);
+    grid.step(0.1, null, obstacles);
+    scalar.step(0);
+
+    const after = scalar.totalMass();
+    const diagnostics = scalar.domainRemapDiagnostics();
+    expect(diagnostics.remapCount).toBe(1);
+    expect(diagnostics.displacedCellCount).toBeGreaterThan(0);
+    expect(diagnostics.exposedCellCount).toBeGreaterThan(0);
+    expect(diagnostics.displacedDimensionlessMass).toBeGreaterThan(0);
+    expect(diagnostics.redistributedDimensionlessMass).toBeCloseTo(
+      diagnostics.displacedDimensionlessMass,
+      12
+    );
+    expect(diagnostics.absoluteMassResidual).toBeLessThan(1e-10);
+    expect(after).toBeCloseTo(before, 12);
+    expect(Math.min(...scalar.values)).toBeGreaterThanOrEqual(0);
+  });
+
   it("keeps biological units and reaction feedback disabled", () => {
     expect(CYTOSOL_NUMERICAL_CONTRACT.biologicalVelocityClaim).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.biologicalPressureClaim).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.biologicalDiffusivityClaim).toBe(false);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.movingDomainRemap).toContain("deterministic_nearest_fluid");
     expect(CYTOSOL_NUMERICAL_CONTRACT.quantitativePoroelasticSolver).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.reactionCouplingEnabled).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.membranePressureFeedbackEnabled).toBe(false);

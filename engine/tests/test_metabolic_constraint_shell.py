@@ -23,6 +23,14 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     }
     assert reconstruction["sbml_path"] is None
     assert reconstruction["model_loaded_by_runtime"] is False
+    assert reconstruction["mass_charge_balance_audited_in_project"] is True
+    audit = reconstruction["structural_audit"]
+    assert audit["one_sided_reaction_count"] == 1660
+    assert audit["two_sided_reaction_count"] == 11271
+    assert audit["elementally_assessable_reaction_count"] == 9849
+    assert audit["elementally_balanced_reaction_count"] == 9832
+    assert audit["elementally_imbalanced_reaction_count"] == 17
+    assert audit["jointly_unassessable_reaction_count"] == 1422
     assert snapshot["optimization_problem"]["objective"] is None
     assert snapshot["optimization_problem"]["boundary_fluxes"] is None
     assert not any(snapshot["gates"].values())
@@ -34,3 +42,5 @@ def test_exact_release_pin_removed_only_the_artifact_identity_blocker() -> None:
     assert not any("release and checksum are not pinned" in item for item in blockers)
     assert any("healthy-PHH context extraction" in item for item in blockers)
     assert any("independent flux validation" in item for item in blockers)
+    assert not any("have not been audited" in item for item in blockers)
+    assert any("structural audit exceptions" in item for item in blockers)
