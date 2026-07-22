@@ -15,7 +15,9 @@ rates or time trajectories.
 - Namespace-aware inspection of the pinned SBML verified 9 compartments,
   8,461 metabolites, 12,931 reactions and 2,848 genes.
 - Manifest and checksum-verifying fetch tool; the 43 MB model is not vendored.
-- Required SBML loading, license, mass/charge and artifact checks remain explicit.
+- Streaming SBML chemistry audit: one-sided exchange/demand reactions are
+  separated from internal candidates; generic R/X formulas remain unassessable.
+- Required SBML runtime loading, context extraction and optimization checks remain explicit.
 - Required hepatocyte extraction algorithm, donor/cohort, nutrition, zonation,
   transcriptome and proteome context.
 - Required objective, measured exchange bounds, thermodynamic constraints,
@@ -25,11 +27,16 @@ rates or time trajectories.
 
 ## Current Result
 
-The generic reconstruction's identity is reproducibly pinned, but it is not
-loaded by runtime. FBA, FVA, thermodynamic FBA, enzyme-constrained FBA,
-dynamic-rate initialization and scientific-validation coupling are all
-disabled. Healthy-PHH context extraction, measured exchange bounds, a measured
-objective, mass/charge audit and independent flux validation remain absent.
+The generic reconstruction's identity and structural audit are reproducibly
+pinned, but it is not loaded by runtime. Of 11,271 two-sided reactions, 9,849
+have fully chemical formulas for elemental assessment; 9,832 are elementally
+balanced and 17 are not. Joint element/charge assessment leaves 1,422 reactions
+unassessable because of missing or generic formulas. These are audit results,
+not repairs. FBA, FVA, thermodynamic FBA, enzyme-constrained FBA, dynamic-rate
+initialization and scientific-validation coupling remain disabled. Healthy-PHH
+context extraction, measured exchange bounds, a defensible objective,
+reaction-level audit exception resolution and independent flux validation are
+still absent.
 
 ## Scientific Boundary
 

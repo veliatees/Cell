@@ -2193,11 +2193,16 @@ describe("engine snapshot client", () => {
       expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.biological_time_or_velocity_claim).toBe(false);
       expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.membrane_pressure_feedback).toBe(false);
       expect(result.summary.cytosolTransport?.solver_layers.conservative_passive_scalar_kernel.biological_species_bound_count).toBe(0);
-      expect(result.summary.metabolicConstraintShell?.version).toBe("metabolic_constraint_shell_v2");
+      expect(result.summary.cytosolTransport?.solver_layers.conservative_passive_scalar_kernel.moving_domain_mass_conservation_tested).toBe(true);
+      expect(result.summary.cytosolTransport?.summary.conservative_moving_domain_remap_count).toBe(1);
+      expect(result.summary.metabolicConstraintShell?.version).toBe("metabolic_constraint_shell_v3");
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.model_version).toBe("2.0.0");
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.release_commit)
         .toBe("635f533152dc5f7290ce04d12700eaa882273c3e");
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.model_loaded_by_runtime).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.mass_charge_balance_audited_in_project).toBe(true);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.structural_audit.elementally_imbalanced_reaction_count).toBe(17);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.structural_audit.jointly_unassessable_reaction_count).toBe(1422);
       expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(26);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(4);

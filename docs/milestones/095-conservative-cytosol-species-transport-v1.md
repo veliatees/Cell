@@ -14,6 +14,9 @@ an ion or another biological concentration.
   limits.
 - No-flux transfer across analytic solid faces.
 - Tests for mass conservation, non-negativity and spatial spreading.
+- Deterministic conservative remapping when membrane or organelle masks move.
+- Face-neighbour redistribution with a nearest-fluid fallback for fully covered
+  cells, plus per-remap residual diagnostics.
 - A fail-closed engine gate with biological species count `0` and no biological
   diffusivity claim.
 
@@ -21,9 +24,9 @@ an ion or another biological concentration.
 
 The tested scalar is a dimensionless validation pulse. No healthy-PHH
 species-specific apparent diffusivity, intracellular concentration field or
-reaction source term is loaded. A moving mask would additionally require a
-conservative cut-cell/remapping method before a biological species could be
-advanced through changing organelle geometry.
+reaction source term is loaded. The remap conserves the discrete scalar amount,
+but it is not a calibrated cut-cell/ALE biological flow model and does not
+authorize a PHH transport rate.
 
 ## Files
 

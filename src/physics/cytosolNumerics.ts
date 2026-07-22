@@ -70,11 +70,24 @@ export type CytosolProjectionDiagnostics = {
   membranePressureFeedbackEnabled: false;
 };
 
+export type PassiveScalarDomainRemapDiagnostics = {
+  remapCount: number;
+  displacedCellCount: number;
+  exposedCellCount: number;
+  faceRedistributedCellCount: number;
+  nearestFluidFallbackCellCount: number;
+  displacedDimensionlessMass: number;
+  redistributedDimensionlessMass: number;
+  absoluteMassResidual: number;
+  relativeMassResidual: number;
+};
+
 export const CYTOSOL_NUMERICAL_CONTRACT = Object.freeze({
-  version: "dimensionless_moving_boundary_projection_v1",
+  version: "dimensionless_moving_boundary_projection_v2",
   numericalMethod: "cell_centered_eulerian_pressure_projection",
   movingObstacleShapes: ["sphere", "ellipsoid", "capsule"] as const,
-  passiveScalarMethod: "conservative_finite_volume_upwind_advection_centered_diffusion",
+  passiveScalarMethod: "finite_volume_advection_diffusion_with_conservative_moving_domain_remap",
+  movingDomainRemap: "face_neighbor_redistribution_with_deterministic_nearest_fluid_fallback",
   rendererVelocityUnits: "world_units_per_render_second",
   biologicalVelocityClaim: false,
   biologicalPressureClaim: false,
@@ -765,9 +778,23 @@ export type PassiveScalarOptions = {
 
 export class ConservativePassiveScalar3D {
   readonly id: string;
-  readonly values: Float32Array;
+  readonly values: Float64Array;
   readonly dimensionlessDiffusivity: number;
   private readonly delta: Float64Array;
+  private readonly remappedValues: Float64Array;
+  private readonly trackedFluidMask: Uint8Array;
+  private readonly nearestFluidDestination: Int32Array;
+  private currentRemapDiagnostics: PassiveScalarDomainRemapDiagnostics = {
+    remapCount: 0,
+    displacedCellCount: 0,
+    exposedCellCount: 0,
+    faceRedistributedCellCount: 0,
+    nearestFluidFallbackCellCount: 0,
+    displacedDimensionlessMass: 0,
+    redistributedDimensionlessMass: 0,
+    absoluteMassResidual: 0,
+    relativeMassResidual: 0
+  };
 
   constructor(private readonly grid: CytosolProjectionGrid, options: PassiveScalarOptions) {
     if (!options.id) throw new RangeError("passive scalar id must be non-empty");
@@ -776,11 +803,15 @@ export class ConservativePassiveScalar3D {
     }
     this.id = options.id;
     this.dimensionlessDiffusivity = options.dimensionlessDiffusivity;
-    this.values = new Float32Array(grid.fluidMask.length);
+    this.values = new Float64Array(grid.fluidMask.length);
     this.delta = new Float64Array(grid.fluidMask.length);
+    this.remappedValues = new Float64Array(grid.fluidMask.length);
+    this.trackedFluidMask = new Uint8Array(grid.fluidMask);
+    this.nearestFluidDestination = new Int32Array(grid.fluidMask.length);
   }
 
   initialize(initializer: (x: number, y: number, z: number) => number): void {
+    this.trackedFluidMask.set(this.grid.fluidMask);
     const point = new Float32Array(3);
     for (let index = 0; index < this.values.length; index += 1) {
       if (!this.grid.fluidMask[index]) {
@@ -796,19 +827,20 @@ export class ConservativePassiveScalar3D {
     }
   }
 
+  domainRemapDiagnostics(): PassiveScalarDomainRemapDiagnostics {
+    return { ...this.currentRemapDiagnostics };
+  }
+
   totalMass(): number {
-    const cellVolume = this.grid.spacing ** 3;
-    let sum = 0;
-    for (let index = 0; index < this.values.length; index += 1) {
-      if (this.grid.fluidMask[index]) sum += this.values[index] * cellVolume;
-    }
-    return sum;
+    this.synchronizeDomain();
+    return this.massForMask(this.grid.fluidMask, this.values);
   }
 
   step(renderDeltaS: number): void {
     if (!Number.isFinite(renderDeltaS) || renderDeltaS < 0) {
       throw new RangeError("passive scalar delta must be finite and non-negative");
     }
+    this.synchronizeDomain();
     if (renderDeltaS === 0) return;
     const h = this.grid.spacing;
     let maximumSpeed = 0;
@@ -826,6 +858,163 @@ export class ConservativePassiveScalar3D {
     const substeps = Math.max(1, Math.ceil(renderDeltaS / stableStep));
     const dt = renderDeltaS / substeps;
     for (let substep = 0; substep < substeps; substep += 1) this.conservativeSubstep(dt);
+  }
+
+  synchronizeDomain(): PassiveScalarDomainRemapDiagnostics {
+    const nextMask = this.grid.fluidMask;
+    let displacedCellCount = 0;
+    let exposedCellCount = 0;
+    for (let index = 0; index < nextMask.length; index += 1) {
+      if (this.trackedFluidMask[index] && !nextMask[index]) displacedCellCount += 1;
+      else if (!this.trackedFluidMask[index] && nextMask[index]) exposedCellCount += 1;
+    }
+    if (displacedCellCount === 0 && exposedCellCount === 0) {
+      return this.domainRemapDiagnostics();
+    }
+
+    const cellVolume = this.grid.spacing ** 3;
+    const massBefore = this.massForMask(this.trackedFluidMask, this.values);
+    this.remappedValues.fill(0);
+    const displacedIndices: number[] = [];
+    let displacedDimensionlessMass = 0;
+    for (let index = 0; index < nextMask.length; index += 1) {
+      if (this.trackedFluidMask[index] && nextMask[index]) {
+        this.remappedValues[index] = this.values[index];
+      } else if (this.trackedFluidMask[index] && !nextMask[index]) {
+        displacedIndices.push(index);
+        displacedDimensionlessMass += this.values[index] * cellVolume;
+      }
+    }
+
+    let faceRedistributedCellCount = 0;
+    let nearestFluidFallbackCellCount = 0;
+    let redistributedDimensionlessMass = 0;
+    const faceDestinations: number[] = [];
+    let nearestMapReady = false;
+    for (const source of displacedIndices) {
+      const concentration = this.values[source];
+      if (concentration <= 0) continue;
+      faceDestinations.length = 0;
+      this.appendFluidFaceNeighbours(source, nextMask, faceDestinations);
+      if (faceDestinations.length > 0) {
+        const share = concentration / faceDestinations.length;
+        for (const destination of faceDestinations) this.remappedValues[destination] += share;
+        faceRedistributedCellCount += 1;
+      } else {
+        if (!nearestMapReady) {
+          this.buildNearestFluidDestinationMap(nextMask);
+          nearestMapReady = true;
+        }
+        const destination = this.nearestFluidDestination[source];
+        if (destination < 0) {
+          throw new Error("passive scalar cannot conserve mass because the fluid domain is empty");
+        }
+        this.remappedValues[destination] += concentration;
+        nearestFluidFallbackCellCount += 1;
+      }
+      redistributedDimensionlessMass += concentration * cellVolume;
+    }
+
+    this.values.set(this.remappedValues);
+    this.trackedFluidMask.set(nextMask);
+    let massAfter = this.massForMask(nextMask, this.values);
+    const correction = massBefore - massAfter;
+    if (correction !== 0) {
+      let correctionTarget = -1;
+      let largestConcentration = -1;
+      for (let index = 0; index < nextMask.length; index += 1) {
+        if (nextMask[index] && this.values[index] > largestConcentration) {
+          correctionTarget = index;
+          largestConcentration = this.values[index];
+        }
+      }
+      if (correctionTarget < 0) {
+        if (massBefore !== 0) {
+          throw new Error("passive scalar cannot apply conservation correction without fluid cells");
+        }
+      } else {
+        const corrected = this.values[correctionTarget] + correction / cellVolume;
+        if (corrected < -1e-12) {
+          throw new Error("passive scalar moving-domain correction would create negative mass");
+        }
+        this.values[correctionTarget] = Math.max(0, corrected);
+        massAfter = this.massForMask(nextMask, this.values);
+      }
+    }
+
+    const residual = massAfter - massBefore;
+    this.currentRemapDiagnostics = {
+      remapCount: this.currentRemapDiagnostics.remapCount + 1,
+      displacedCellCount,
+      exposedCellCount,
+      faceRedistributedCellCount,
+      nearestFluidFallbackCellCount,
+      displacedDimensionlessMass,
+      redistributedDimensionlessMass,
+      absoluteMassResidual: Math.abs(residual),
+      relativeMassResidual: massBefore !== 0 ? Math.abs(residual) / Math.abs(massBefore) : Math.abs(residual)
+    };
+    return this.domainRemapDiagnostics();
+  }
+
+  private massForMask(mask: Uint8Array, values: Float64Array): number {
+    const cellVolume = this.grid.spacing ** 3;
+    let sum = 0;
+    for (let index = 0; index < values.length; index += 1) {
+      if (mask[index]) sum += values[index] * cellVolume;
+    }
+    return sum;
+  }
+
+  private appendFluidFaceNeighbours(index: number, mask: Uint8Array, target: number[]): void {
+    const n = this.grid.resolution;
+    const plane = n * n;
+    const k = Math.floor(index / plane);
+    const remainder = index - k * plane;
+    const j = Math.floor(remainder / n);
+    const i = remainder - j * n;
+    if (i > 0 && mask[index - 1]) target.push(index - 1);
+    if (i + 1 < n && mask[index + 1]) target.push(index + 1);
+    if (j > 0 && mask[index - n]) target.push(index - n);
+    if (j + 1 < n && mask[index + n]) target.push(index + n);
+    if (k > 0 && mask[index - plane]) target.push(index - plane);
+    if (k + 1 < n && mask[index + plane]) target.push(index + plane);
+  }
+
+  private buildNearestFluidDestinationMap(mask: Uint8Array): void {
+    const nearest = this.nearestFluidDestination;
+    nearest.fill(-1);
+    const queue = new Int32Array(mask.length);
+    let head = 0;
+    let tail = 0;
+    for (let index = 0; index < mask.length; index += 1) {
+      if (!mask[index]) continue;
+      nearest[index] = index;
+      queue[tail] = index;
+      tail += 1;
+    }
+    const n = this.grid.resolution;
+    const plane = n * n;
+    const visit = (from: number, neighbour: number) => {
+      if (nearest[neighbour] >= 0) return;
+      nearest[neighbour] = nearest[from];
+      queue[tail] = neighbour;
+      tail += 1;
+    };
+    while (head < tail) {
+      const index = queue[head];
+      head += 1;
+      const k = Math.floor(index / plane);
+      const remainder = index - k * plane;
+      const j = Math.floor(remainder / n);
+      const i = remainder - j * n;
+      if (i > 0) visit(index, index - 1);
+      if (i + 1 < n) visit(index, index + 1);
+      if (j > 0) visit(index, index - n);
+      if (j + 1 < n) visit(index, index + n);
+      if (k > 0) visit(index, index - plane);
+      if (k + 1 < n) visit(index, index + plane);
+    }
   }
 
   private conservativeSubstep(dt: number): void {

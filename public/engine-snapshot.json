@@ -5495,7 +5495,9 @@
           "biological_species_bound_count": 0,
           "boundary_condition": "no flux through analytic solid faces",
           "enabled": true,
-          "role": "mass-conservation and non-negativity test bed"
+          "moving_domain_mass_conservation_tested": true,
+          "moving_domain_remap": "deterministic face-neighbour redistribution with nearest-fluid fallback",
+          "role": "fixed- and moving-domain mass-conservation and non-negativity test bed"
         },
         "quantitative_poroelastic_solver": {
           "enabled": false,
@@ -5526,6 +5528,7 @@
       "status": "two_phase_transport_contract_active_healthy_phh_parameters_blocked",
       "summary": {
         "biological_species_bound_count": 0,
+        "conservative_moving_domain_remap_count": 1,
         "conservative_passive_scalar_kernel_count": 1,
         "cross_context_reference_count": 10,
         "dimensionless_projection_solver_count": 1,
@@ -5559,7 +5562,7 @@
         },
         "mode_interchange_prohibited": true
       },
-      "version": "cytosol_transport_rheology_contract_v2"
+      "version": "cytosol_transport_rheology_contract_v3"
     },
     "definition_id": "human_hepatocyte_midlobular_v1",
     "division": {
@@ -15091,9 +15094,10 @@
             "src/physics/cytosolNumerics.ts",
             "src/physics/intracellularFluid.ts"
           ],
-          "current_capability": "A 3D pressure-projection grid, moving analytic obstacles and conservative passive-scalar kernel are tested and active in the renderer.",
+          "current_capability": "A 3D pressure-projection grid, moving analytic obstacles and conservative passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
           "id": "dimensionless_cytosol_numerics",
           "observed_metrics": {
+            "conservative_moving_domain_remap_count": 1,
             "conservative_scalar_kernel_count": 1,
             "moving_analytic_obstacle_layer_count": 1,
             "projection_solver_count": 1
@@ -15502,12 +15506,17 @@
         {
           "code_surfaces": [
             "data/published_models/human_gem_v2.0.0.manifest.json",
-            "scripts/fetch_human_gem.py"
+            "data/published_models/human_gem_v2.0.0.structural_audit.json",
+            "scripts/fetch_human_gem.py",
+            "scripts/audit_human_gem.py"
           ],
-          "current_capability": "Human-GEM v2.0.0 is pinned by release tag, commit, byte size and SHA-256; a fetch tool verifies the artifact without vendoring 43 MB.",
+          "current_capability": "Human-GEM v2.0.0 is pinned by release tag, commit, byte size and SHA-256; a streaming audit verifies structure plus scoped elemental/charge balance without vendoring 43 MB.",
           "id": "human_gem_artifact_identity",
           "observed_metrics": {
             "artifact_sha256": "cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a",
+            "elementally_assessable_reaction_count": 9849,
+            "elementally_imbalanced_reaction_count": 17,
+            "jointly_unassessable_reaction_count": 1422,
             "model_version": "2.0.0",
             "release_commit": "635f533152dc5f7290ce04d12700eaa882273c3e",
             "runtime_loaded": false
@@ -15530,7 +15539,7 @@
           "remaining_requirements": [
             "Declared PHH context-extraction algorithm and donor/cohort inputs.",
             "Measured exchange bounds, defensible objective and pinned solver.",
-            "FVA, infeasibility, mass/charge and independent flux validation."
+            "FVA, infeasibility, reaction-level structural-audit exception resolution and independent flux validation."
           ],
           "scope": "A context-extracted and independently validated healthy-hepatocyte constraint model.",
           "status": "blocked_missing_evidence",
@@ -20257,7 +20266,7 @@
         "healthy-PHH context extraction is not defined",
         "measured boundary fluxes are insufficient for the declared contexts",
         "objective function is not identified as a healthy-hepatocyte measurement",
-        "mass and charge balance have not been audited in this project",
+        "structural audit exceptions require reaction-level resolution before scientific optimization",
         "independent flux validation is absent"
       ],
       "candidate_reconstruction": {
@@ -20270,7 +20279,7 @@
         "license": "CC-BY-4.0",
         "license_audited": true,
         "manifest_path": "data/published_models/human_gem_v2.0.0.manifest.json",
-        "mass_charge_balance_audited_in_project": false,
+        "mass_charge_balance_audited_in_project": true,
         "model_family": "Human-GEM",
         "model_loaded_by_runtime": false,
         "model_name": "Human 2.0.0",
@@ -20279,6 +20288,20 @@
         "release_date": "2026-03-30",
         "release_tag": "v2.0.0",
         "sbml_path": null,
+        "structural_audit": {
+          "chemically_parseable_formula_count": 7340,
+          "elementally_assessable_reaction_count": 9849,
+          "elementally_balanced_reaction_count": 9832,
+          "elementally_imbalanced_reaction_count": 17,
+          "jointly_assessable_reaction_count": 9849,
+          "jointly_balanced_reaction_count": 9652,
+          "jointly_imbalanced_reaction_count": 197,
+          "jointly_unassessable_reaction_count": 1422,
+          "one_sided_reaction_count": 1660,
+          "one_sided_reactions_excluded_from_internal_balance_claim": true,
+          "two_sided_reaction_count": 11271
+        },
+        "structural_audit_report": "data/published_models/human_gem_v2.0.0.structural_audit.json",
         "structural_counts_verified_from_sbml": {
           "compartments": 9,
           "genes": 2848,
@@ -20322,8 +20345,8 @@
         "human1_metabolic_atlas",
         "human_gem_repository"
       ],
-      "status": "release_and_checksum_pinned_context_and_optimization_blocked",
-      "version": "metabolic_constraint_shell_v2"
+      "status": "release_checksum_and_structural_audit_pinned_context_and_optimization_blocked",
+      "version": "metabolic_constraint_shell_v3"
     },
     "metabolic_fluxes": [
       {

@@ -23,10 +23,15 @@
     "date_verified": "2026-07-22",
     "method": "Downloaded the immutable release-tag URL, computed SHA-256, and counted SBML elements by namespace-aware XML parsing.",
     "artifact_vendored_in_repository": false,
-    "model_loaded_by_runtime": false
+    "model_loaded_by_runtime": false,
+    "structural_audit_report": "data/published_models/human_gem_v2.0.0.structural_audit.json",
+    "structural_audit_tool": "scripts/audit_human_gem.py",
+    "mass_charge_audit_completed": true,
+    "mass_charge_audit_scope": "Two-sided reactions only; elemental balance requires explicit formulas composed solely of chemical element symbols; one-sided exchange/demand reactions and generic R/X groups are reported separately."
   },
   "scientific_scope": {
     "reconstruction_role": "generic_human_stoichiometric_candidate_only",
+    "generic_stoichiometric_structure_audited": true,
     "healthy_phh_context_extracted": false,
     "measured_boundary_fluxes_attached": false,
     "measured_objective_attached": false,

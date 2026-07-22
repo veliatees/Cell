@@ -1,0 +1,28 @@
+{
+  "schema_version": "cell.retired-artifact.v1",
+  "status": "retired_not_for_runtime_or_scientific_use",
+  "retired_on": "2026-07-22",
+  "former_public_path": "public/cell_concentration_field.json",
+  "retained_for_audit_at": "data/quarantine/legacy_cell_concentration_field.RETIRED.json",
+  "former_sha256": "db9c4cea51da1b06c7898abc5a5d36310df1a16f1d5714630a4efb2b7ecd5aab",
+  "former_claim_scope": [
+    "glucose steady-state field",
+    "ATP steady-state field",
+    "millimolar voxel concentrations",
+    "crowded-cytosol diffusion and consumption parameters"
+  ],
+  "retirement_reason": "The field was generated from order-of-magnitude coefficients and an assumed source concentration rather than a complete, context-matched healthy-PHH evidence and validation package.",
+  "runtime_loading_allowed": false,
+  "scientific_use_allowed": false,
+  "replacement_contract": "scripts/export_concentration_field.py",
+  "retired_visual_evidence": [
+    "data/quarantine/retired_visuals/concentration-atp.RETIRED.png",
+    "data/quarantine/retired_visuals/concentration-glucose.RETIRED.png"
+  ],
+  "reactivation_requirements": [
+    "parameter-level primary-source provenance",
+    "healthy primary human hepatocyte context",
+    "held-out same-context validation",
+    "independent scientific review authorization"
+  ]
+}
