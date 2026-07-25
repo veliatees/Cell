@@ -1,0 +1,144 @@
+{
+  "schema_version": "cell.phh-injury-trajectory-contract.v1",
+  "contract_id": "donor_disjoint_phh_injury_trajectory_v1",
+  "target": "Time-resolved APAP and cholestatic injury, intervention, washout, recovery, and fate observations in primary human hepatocytes",
+  "record_granularity": "One raw endpoint observation for one identified donor, biological replicate, condition, and time point",
+  "expected_record_file": "phh_injury_trajectories.csv",
+  "required_columns": [
+    {
+      "id": "record_id",
+      "reason": "Stable row identity and duplicate detection"
+    },
+    {
+      "id": "donor_id",
+      "reason": "Donor-disjoint calibration and validation"
+    },
+    {
+      "id": "split_role",
+      "reason": "Predeclared calibration, internal-validation, or independent-heldout assignment"
+    },
+    {
+      "id": "source_study_id",
+      "reason": "Study-level independence and provenance"
+    },
+    {
+      "id": "source_locator",
+      "reason": "Exact table, figure, supplement, repository, or raw-file location"
+    },
+    {
+      "id": "species",
+      "reason": "Cross-species records must not enter the human calibration set"
+    },
+    {
+      "id": "biological_system",
+      "reason": "Fresh PHH, plated PHH, sandwich culture, spheroid, and cell-line contexts are not interchangeable"
+    },
+    {
+      "id": "culture_format",
+      "reason": "Culture geometry and medium context affect exposure and response"
+    },
+    {
+      "id": "challenge",
+      "reason": "Exact perturbation identity"
+    },
+    {
+      "id": "challenge_concentration",
+      "reason": "Dose-response coordinate"
+    },
+    {
+      "id": "challenge_concentration_unit",
+      "reason": "No implicit dose-unit conversion"
+    },
+    {
+      "id": "exposure_time_h",
+      "reason": "Time-resolved observation coordinate"
+    },
+    {
+      "id": "endpoint",
+      "reason": "The measured biological quantity or fate label"
+    },
+    {
+      "id": "assay",
+      "reason": "Measurement operators are assay-specific"
+    },
+    {
+      "id": "raw_value",
+      "reason": "Aggregate prose cannot identify donor trajectories"
+    },
+    {
+      "id": "raw_unit",
+      "reason": "No unit-free fitting"
+    },
+    {
+      "id": "biological_replicate_id",
+      "reason": "Replicates must not be mistaken for independent donors"
+    },
+    {
+      "id": "normalization_denominator",
+      "reason": "Per-cell, per-protein, per-well, and medium-volume outputs are not interchangeable"
+    },
+    {
+      "id": "censoring_flag",
+      "reason": "Below-quantification and saturated measurements must remain explicit"
+    }
+  ],
+  "conditional_columns": [
+    {
+      "id": "intervention",
+      "required_when": "A rescue, inhibitor, sensitizer, or co-treatment is present"
+    },
+    {
+      "id": "intervention_start_h",
+      "required_when": "An intervention is present"
+    },
+    {
+      "id": "washout_time_h",
+      "required_when": "Challenge or intervention washout is performed"
+    },
+    {
+      "id": "recovery_followup_h",
+      "required_when": "Recovery or reversibility is claimed"
+    },
+    {
+      "id": "technical_replicate_id",
+      "required_when": "Technical replicates are reported"
+    },
+    {
+      "id": "uncertainty_type",
+      "required_when": "Only a summary statistic rather than raw replicate value is available"
+    },
+    {
+      "id": "uncertainty_value",
+      "required_when": "Only a summary statistic rather than raw replicate value is available"
+    },
+    {
+      "id": "limit_of_quantification",
+      "required_when": "The assay reports an LLOQ or censoring"
+    },
+    {
+      "id": "viable_cell_count_at_measurement",
+      "required_when": "The output is normalized by seeded or viable cell count"
+    },
+    {
+      "id": "fate_label",
+      "required_when": "Apoptosis, necrosis, senescence, survival, or recovery is asserted"
+    }
+  ],
+  "allowed_split_roles": [
+    "calibration",
+    "internal_validation",
+    "independent_heldout"
+  ],
+  "policy": {
+    "donor_id_may_cross_split_roles": false,
+    "biological_replicate_is_independent_donor": false,
+    "aggregate_donor_count_may_reconstruct_donor_ids": false,
+    "unit_conversion_without_explicit_conversion_provenance": false,
+    "time_interpolation_for_validation": false,
+    "unknown_endpoint_means_no_effect": false,
+    "automatic_parameter_activation": false,
+    "automatic_cell_state_coupling": false,
+    "manual_primary_source_review_required": true,
+    "frozen_model_required_before_independent_heldout_evaluation": true
+  }
+}

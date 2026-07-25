@@ -396,6 +396,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 099: Conservative moving-domain remap v1](docs/milestones/099-conservative-moving-domain-remap-v1.md)
 - [Milestone 100: Human-GEM structural chemistry audit v1](docs/milestones/100-human-gem-structural-chemistry-audit-v1.md)
 - [Milestone 101: Provenance-strict hepatocyte quantity harvest v1](docs/milestones/101-provenance-strict-hepatocyte-quantity-harvest-v1.md)
+- [Milestone 102: Exact PHH injury observation operator v1](docs/milestones/102-exact-phh-injury-observation-operator-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

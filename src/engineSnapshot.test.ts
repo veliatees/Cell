@@ -2247,6 +2247,14 @@ describe("engine snapshot client", () => {
       expect(result.summary.phhInjuryValidation?.summary.matching_protocol_observation_count).toBe(9);
       expect(result.summary.phhInjuryValidation?.summary.general_fate_law_count).toBe(0);
       expect(result.summary.phhInjuryValidation?.integration_gates.automatic_runtime_coupling).toBe(false);
+      expect(result.summary.phhInjuryValidation?.observation_operator.exact_protocol_replay_pass_count).toBe(4);
+      expect(result.summary.phhInjuryValidation?.observation_operator.near_miss_rejection_count).toBe(7);
+      expect(result.summary.phhInjuryValidation?.observation_operator.state_mutation_enabled).toBe(false);
+      expect(result.summary.phhInjuryValidation?.runtime_authority.summary.audited_legacy_surface_count).toBe(3);
+      expect(result.summary.phhInjuryValidation?.runtime_authority.summary.quantitative_authority_surface_count).toBe(0);
+      expect(result.summary.phhInjuryValidation?.runtime_authority.explicit_purpose_required).toBe(true);
+      expect(result.summary.phhInjuryValidation?.validation_data_contract.required_columns).toHaveLength(19);
+      expect(result.summary.phhInjuryValidation?.validation_data_contract.current_delivery.donor_resolved_raw_record_count).toBe(0);
       expect(result.summary.compartmentalEnergyRedox?.summary.compartment_count).toBe(6);
       expect(result.summary.compartmentalEnergyRedox?.summary.explicit_pool_count).toBe(38);
       expect(result.summary.compartmentalEnergyRedox?.summary.structural_process_count).toBe(14);
@@ -2286,6 +2294,7 @@ describe("engine snapshot client", () => {
   it("reads endpoint from URL query", () => {
     expect(engineSnapshotEndpointFromLocation({ href: "http://localhost:5173/?engineSnapshot=/tmp/snapshot.json" })).toBe("/tmp/snapshot.json");
     expect(engineSnapshotEndpointFromLocation({ href: "http://localhost:5173/" })).toBe("/engine-snapshot.json");
+    expect(engineSnapshotEndpointFromLocation({ href: "https://example.test/projects/cell/" })).toBe("/projects/cell/engine-snapshot.json");
   });
 
   it("reports unavailable websocket runtime without throwing", () => {

@@ -397,23 +397,31 @@
       "title": "Damage, death and recovery calibration",
       "status": "partial",
       "scope": "Apoptosis, necrosis, cholestasis and proteostasis outcomes in healthy PHH perturbation contexts.",
-      "current_capability": "Four exact PHH perturbation protocols now provide nine APAP and bile-acid timing, rescue and necrosis observations. They validate only matching protocols; commitment thresholds and recovery laws remain non-predictive.",
+      "current_capability": "Four PHH perturbation protocols and nine APAP/bile-acid observations now feed a read-only exact-context operator. Four source protocols replay exactly and seven software near-misses are rejected. Three legacy injury surfaces are audited and carry zero quantitative PHH authority.",
       "observed_metrics": {
         "human_phh_protocol_count": 4,
         "matching_protocol_observation_count": 9,
         "necrosis_mode_observation_count": 5,
         "calibrated_fate_commitment_laws": 0,
-        "runtime_coupled_observation_count": 0
+        "runtime_coupled_observation_count": 0,
+        "exact_protocol_replay_pass_count": 4,
+        "near_miss_rejection_count": 7,
+        "audited_legacy_injury_surface_count": 3,
+        "legacy_quantitative_authority_surface_count": 0,
+        "required_donor_trajectory_field_count": 19,
+        "complete_donor_trajectory_record_count": 0
       },
       "remaining_requirements": [
-        "Numeric time-resolved dose-response trajectories with uncertainty and fate labels.",
-        "Commitment-point and washout/recovery experiments.",
-        "Donor-disjoint validation for each declared injury context."
+        "Populate the 19-field contract with raw donor-resolved dose-time endpoint records.",
+        "Supply intervention, commitment-point, washout and recovery follow-up fields where applicable.",
+        "Freeze model and measurement operators before an independent donor-heldout evaluation."
       ],
       "code_surfaces": [
         "engine/cell_engine/quantitative/phh_injury_validation.py",
+        "engine/cell_engine/core/injury_authority.py",
         "engine/cell_engine/stochastic/apoptosis.py",
-        "engine/cell_engine/processes/cellular_response.py"
+        "engine/cell_engine/processes/cellular_response.py",
+        "data/evidence_intake/phh_injury_trajectory_contract.v1.json"
       ]
     },
     {
