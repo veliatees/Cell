@@ -28,6 +28,7 @@ class ScientificModelAuditTests(unittest.TestCase):
         self.assertIn("energy_redox_calibration_validation_gate", {surface.id for surface in drivers})
         self.assertIn("external_validation_readiness_program", {surface.id for surface in drivers})
         self.assertIn("phh_injury_exact_protocol_operator", {surface.id for surface in drivers})
+        self.assertIn("phh_injury_donor_disjoint_evaluation_gate", {surface.id for surface in drivers})
         self.assertNotIn("published_hepatic_glucose_shadow_model", {surface.id for surface in drivers})
 
     def test_known_unsupported_surfaces_are_blocked_or_disabled(self) -> None:
