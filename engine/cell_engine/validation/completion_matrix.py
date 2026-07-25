@@ -412,7 +412,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Damage, death and recovery calibration",
             "partial",
             "Apoptosis, necrosis, cholestasis and proteostasis outcomes in healthy PHH perturbation contexts.",
-            "Four PHH perturbation protocols and nine APAP/bile-acid observations now feed a read-only exact-context operator. Four source protocols replay exactly and seven software near-misses are rejected. Three legacy injury surfaces are audited and carry zero quantitative PHH authority.",
+            "Four PHH perturbation protocols and nine APAP/bile-acid observations feed a read-only exact-context operator. A strict 29-column donor trajectory intake, donor/study split-leakage guards, exact assay projection and checksum-frozen evaluation contract are executable. No donor trajectory has been delivered, so quantitative projection, held-out result and runtime authority remain zero.",
             {
                 "human_phh_protocol_count": injury["human_phh_protocol_count"],
                 "matching_protocol_observation_count": injury[
@@ -440,17 +440,42 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "required_donor_trajectory_field_count": injury[
                     "required_donor_trajectory_field_count"
                 ],
+                "conditional_donor_trajectory_field_count": injury[
+                    "conditional_donor_trajectory_field_count"
+                ],
+                "trajectory_intake_validator_count": injury[
+                    "trajectory_intake_validator_count"
+                ],
+                "donor_split_leakage_guard_count": injury[
+                    "donor_split_leakage_guard_count"
+                ],
+                "independent_heldout_study_guard_count": injury[
+                    "independent_heldout_study_guard_count"
+                ],
+                "exact_assay_projection_operator_count": injury[
+                    "exact_assay_projection_operator_count"
+                ],
+                "frozen_evaluation_contract_count": injury[
+                    "frozen_evaluation_contract_count"
+                ],
                 "complete_donor_trajectory_record_count": injury[
                     "complete_donor_trajectory_record_count"
                 ],
+                "numeric_measurement_projection_count": injury[
+                    "numeric_measurement_projection_count"
+                ],
+                "independent_heldout_result_count": injury[
+                    "independent_heldout_result_count"
+                ],
             },
             (
-                "Populate the 19-field contract with raw donor-resolved dose-time endpoint records.",
+                "Populate the 19 required plus 10 conditional fields with raw donor-resolved dose-time endpoint records.",
                 "Supply intervention, commitment-point, washout and recovery follow-up fields where applicable.",
                 "Freeze model and measurement operators before an independent donor-heldout evaluation.",
             ),
             (
                 "engine/cell_engine/quantitative/phh_injury_validation.py",
+                "engine/cell_engine/quantitative/phh_injury_trajectory.py",
                 "engine/cell_engine/core/injury_authority.py",
                 "engine/cell_engine/stochastic/apoptosis.py",
                 "engine/cell_engine/processes/cellular_response.py",
@@ -627,8 +652,18 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
     if (
         injury_metrics["legacy_quantitative_authority_surface_count"] != 0
         or injury_metrics["complete_donor_trajectory_record_count"] != 0
+        or injury_metrics["numeric_measurement_projection_count"] != 0
+        or injury_metrics["independent_heldout_result_count"] != 0
     ):
         raise ValueError("legacy injury authority or donor evidence was promoted")
+    if (
+        injury_metrics["trajectory_intake_validator_count"] != 1
+        or injury_metrics["donor_split_leakage_guard_count"] != 1
+        or injury_metrics["independent_heldout_study_guard_count"] != 1
+        or injury_metrics["exact_assay_projection_operator_count"] != 1
+        or injury_metrics["frozen_evaluation_contract_count"] != 1
+    ):
+        raise ValueError("PHH injury data-plane engineering guards changed")
     if by_id["hepatocyte_fba_execution"]["observed_metrics"]["enabled_execution_gate_count"] != 0:
         raise ValueError("FBA execution escaped its scientific gate")
     if by_id["independent_scientific_validation"]["observed_metrics"]["externally_reviewed_claim_count"] != 0:

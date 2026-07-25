@@ -11,6 +11,10 @@ from typing import Any
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.serialization import to_plain
 from cell_engine.core.injury_authority import injury_runtime_authority_snapshot
+from cell_engine.quantitative.phh_injury_trajectory import (
+    load_phh_injury_trajectory_contract,
+    phh_injury_trajectory_intake_snapshot,
+)
 
 
 DATE_VERIFIED = "2026-07-22"
@@ -24,13 +28,6 @@ DATA_PATH = (
     / "curated"
     / "phh_injury_validation.v1.json"
 )
-TRAJECTORY_CONTRACT_PATH = (
-    REPOSITORY_ROOT
-    / "data"
-    / "evidence_intake"
-    / "phh_injury_trajectory_contract.v1.json"
-)
-TRAJECTORY_CONTRACT_SCHEMA_VERSION = "cell.phh-injury-trajectory-contract.v1"
 OBSERVATION_OPERATOR_VERSION = "exact_phh_injury_observation_operator_v1"
 
 PHH_INJURY_VALIDATION_SOURCES: dict[str, SourceReference] = {
@@ -142,65 +139,6 @@ def _load_json(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError("PHH injury evidence must be one JSON object")
-    return payload
-
-
-def _load_trajectory_contract(
-    path: Path = TRAJECTORY_CONTRACT_PATH,
-) -> dict[str, Any]:
-    payload = _load_json(path)
-    if payload.get("schema_version") != TRAJECTORY_CONTRACT_SCHEMA_VERSION:
-        raise ValueError("Unsupported PHH injury-trajectory contract schema")
-    required = payload.get("required_columns")
-    conditional = payload.get("conditional_columns")
-    split_roles = payload.get("allowed_split_roles")
-    policy = payload.get("policy")
-    if (
-        not isinstance(required, list)
-        or not isinstance(conditional, list)
-        or not isinstance(split_roles, list)
-        or not isinstance(policy, dict)
-    ):
-        raise ValueError("PHH injury-trajectory contract is malformed")
-    required_ids = tuple(
-        str(item.get("id", "")) for item in required if isinstance(item, dict)
-    )
-    conditional_ids = tuple(
-        str(item.get("id", "")) for item in conditional if isinstance(item, dict)
-    )
-    if (
-        len(required_ids) != 19
-        or len(set(required_ids)) != len(required_ids)
-        or not all(required_ids)
-        or len(conditional_ids) != 10
-        or len(set(conditional_ids)) != len(conditional_ids)
-        or not all(conditional_ids)
-    ):
-        raise ValueError("PHH injury-trajectory field contract changed")
-    if set(split_roles) != {
-        "calibration",
-        "internal_validation",
-        "independent_heldout",
-    }:
-        raise ValueError("PHH injury-trajectory split roles changed")
-    required_false = {
-        "donor_id_may_cross_split_roles",
-        "biological_replicate_is_independent_donor",
-        "aggregate_donor_count_may_reconstruct_donor_ids",
-        "unit_conversion_without_explicit_conversion_provenance",
-        "time_interpolation_for_validation",
-        "unknown_endpoint_means_no_effect",
-        "automatic_parameter_activation",
-        "automatic_cell_state_coupling",
-    }
-    if any(policy.get(key) is not False for key in required_false):
-        raise ValueError("PHH injury-trajectory contract escaped its fail-closed policy")
-    if (
-        policy.get("manual_primary_source_review_required") is not True
-        or policy.get("frozen_model_required_before_independent_heldout_evaluation")
-        is not True
-    ):
-        raise ValueError("PHH injury-trajectory review policy changed")
     return payload
 
 
@@ -578,6 +516,7 @@ def _observation_operator_snapshot(
 
 
 def validate_phh_injury_validation(state: PhhInjuryValidationState) -> None:
+    load_phh_injury_trajectory_contract()
     if state.version != VERSION or state.date_verified != DATE_VERIFIED:
         raise ValueError("PHH injury-validation version changed")
     if set(state.source_ids) != set(PHH_INJURY_VALIDATION_SOURCES) or len(
@@ -691,19 +630,15 @@ def phh_injury_validation_snapshot() -> dict[str, object]:
     state = build_phh_injury_validation()
     observation_operator = _observation_operator_snapshot(state)
     runtime_authority = injury_runtime_authority_snapshot()
-    trajectory_contract = _load_trajectory_contract()
-    trajectory_contract["current_delivery"] = {
-        "donor_resolved_raw_record_count": 0,
-        "donor_disjoint_split_count": 0,
-        "independent_heldout_trajectory_count": 0,
-        "general_fate_law_count": 0,
-        "automatic_parameter_activation": False,
-        "automatic_cell_state_coupling": False,
-    }
+    trajectory_contract = load_phh_injury_trajectory_contract()
+    trajectory_intake = phh_injury_trajectory_intake_snapshot()
+    trajectory_delivery = trajectory_intake["current_delivery"]
+    trajectory_contract["current_delivery"] = trajectory_delivery
     payload = state.to_dict()
     payload["observation_operator"] = observation_operator
     payload["runtime_authority"] = runtime_authority
     payload["validation_data_contract"] = trajectory_contract
+    payload["trajectory_intake"] = trajectory_intake
     payload["summary"] = {
         "primary_source_count": len(state.source_ids),
         "human_phh_protocol_count": len(state.protocols),
@@ -739,6 +674,27 @@ def phh_injury_validation_snapshot() -> dict[str, object]:
         "conditional_donor_trajectory_field_count": len(
             trajectory_contract["conditional_columns"]
         ),
-        "complete_donor_trajectory_record_count": 0,
+        "trajectory_intake_validator_count": 1,
+        "donor_split_leakage_guard_count": int(
+            trajectory_intake["split_leakage_guard_enabled"]
+        ),
+        "independent_heldout_study_guard_count": int(
+            trajectory_intake["independent_heldout_study_guard_enabled"]
+        ),
+        "exact_assay_projection_operator_count": int(
+            trajectory_intake["measurement_operator"]["structure_ready"]
+        ),
+        "frozen_evaluation_contract_count": int(
+            trajectory_intake["frozen_evaluation"]["contract_ready"]
+        ),
+        "complete_donor_trajectory_record_count": trajectory_delivery[
+            "donor_resolved_raw_record_count"
+        ],
+        "numeric_measurement_projection_count": trajectory_delivery[
+            "numeric_measurement_projection_count"
+        ],
+        "independent_heldout_result_count": trajectory_delivery[
+            "independent_heldout_result_count"
+        ],
     }
     return payload
