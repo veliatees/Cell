@@ -397,7 +397,7 @@
       "title": "Damage, death and recovery calibration",
       "status": "partial",
       "scope": "Apoptosis, necrosis, cholestasis and proteostasis outcomes in healthy PHH perturbation contexts.",
-      "current_capability": "Four PHH perturbation protocols and nine APAP/bile-acid observations now feed a read-only exact-context operator. Four source protocols replay exactly and seven software near-misses are rejected. Three legacy injury surfaces are audited and carry zero quantitative PHH authority.",
+      "current_capability": "Four PHH perturbation protocols and nine APAP/bile-acid observations feed a read-only exact-context operator. A strict 29-column donor trajectory intake, donor/study split-leakage guards, exact assay projection and checksum-frozen evaluation contract are executable. No donor trajectory has been delivered, so quantitative projection, held-out result and runtime authority remain zero.",
       "observed_metrics": {
         "human_phh_protocol_count": 4,
         "matching_protocol_observation_count": 9,
@@ -409,15 +409,24 @@
         "audited_legacy_injury_surface_count": 3,
         "legacy_quantitative_authority_surface_count": 0,
         "required_donor_trajectory_field_count": 19,
-        "complete_donor_trajectory_record_count": 0
+        "conditional_donor_trajectory_field_count": 10,
+        "trajectory_intake_validator_count": 1,
+        "donor_split_leakage_guard_count": 1,
+        "independent_heldout_study_guard_count": 1,
+        "exact_assay_projection_operator_count": 1,
+        "frozen_evaluation_contract_count": 1,
+        "complete_donor_trajectory_record_count": 0,
+        "numeric_measurement_projection_count": 0,
+        "independent_heldout_result_count": 0
       },
       "remaining_requirements": [
-        "Populate the 19-field contract with raw donor-resolved dose-time endpoint records.",
+        "Populate the 19 required plus 10 conditional fields with raw donor-resolved dose-time endpoint records.",
         "Supply intervention, commitment-point, washout and recovery follow-up fields where applicable.",
         "Freeze model and measurement operators before an independent donor-heldout evaluation."
       ],
       "code_surfaces": [
         "engine/cell_engine/quantitative/phh_injury_validation.py",
+        "engine/cell_engine/quantitative/phh_injury_trajectory.py",
         "engine/cell_engine/core/injury_authority.py",
         "engine/cell_engine/stochastic/apoptosis.py",
         "engine/cell_engine/processes/cellular_response.py",

@@ -3628,6 +3628,97 @@ export type EngineHepatocyteQuantityHarvest = {
   raw_paths: string[];
 };
 
+export type EnginePhhInjuryTrajectoryDelivery = {
+  donor_resolved_raw_record_count: number;
+  donor_count: number;
+  biological_replicate_count: number;
+  source_study_count: number;
+  endpoint_count: number;
+  assay_count: number;
+  donor_disjoint_split_count: number;
+  independent_heldout_donor_count: number;
+  independent_heldout_trajectory_count: number;
+  numeric_measurement_projection_count: number;
+  independent_heldout_result_count: number;
+  general_fate_law_count: 0;
+  automatic_parameter_activation: false;
+  automatic_cell_state_coupling: false;
+};
+
+export type EnginePhhInjuryAssayProjectionContract = {
+  version: "exact_phh_injury_assay_projection_v1";
+  input_quantity: string;
+  output_quantity: string;
+  operator_formula: string;
+  exact_match_dimensions: string[];
+  unit_conversion_enabled: false;
+  dose_interpolation_enabled: false;
+  time_interpolation_enabled: false;
+  censored_scalar_residual_enabled: false;
+  aggregate_score_enabled: false;
+  pass_fail_assignment_enabled: false;
+  automatic_cell_state_coupling: false;
+};
+
+export type EnginePhhInjuryFrozenEvaluationContract = {
+  version: "donor_disjoint_phh_injury_frozen_evaluation_v1";
+  required_submission_fields: string[];
+  required_split_role: "independent_heldout";
+  source_study_disjoint_from_nonheldout_required: true;
+  manual_primary_source_review_required: true;
+  donor_identity_scope_review_required: true;
+  independent_review_attestation_required: true;
+  frozen_model_required: true;
+  post_freeze_parameter_refit_allowed: false;
+  descriptive_exact_assay_residuals_allowed: true;
+  aggregate_score_enabled: false;
+  pass_fail_assignment_enabled: false;
+  automatic_parameter_activation: false;
+  automatic_cell_state_coupling: false;
+};
+
+export type EnginePhhInjuryTrajectoryIntake = {
+  version: "donor_disjoint_phh_injury_trajectory_intake_v1";
+  contract_id: "donor_disjoint_phh_injury_trajectory_v1";
+  status: string;
+  delivery_path: string;
+  file_present: boolean;
+  artifact_sha256?: string;
+  contract_sha256: string;
+  expected_header_count: 29;
+  split_leakage_guard_enabled: true;
+  independent_heldout_study_guard_enabled: true;
+  measurement_operator: EnginePhhInjuryAssayProjectionContract & {
+    structure_ready: true;
+    numeric_projection_ready: false;
+    projectable_record_count: 0;
+  };
+  frozen_evaluation: EnginePhhInjuryFrozenEvaluationContract & {
+    contract_ready: true;
+    evaluation_ready: false;
+    independent_heldout_result_count: 0;
+  };
+  current_delivery: EnginePhhInjuryTrajectoryDelivery;
+  record_count?: number;
+  donor_count?: number;
+  biological_replicate_count?: number;
+  source_study_count?: number;
+  endpoint_count?: number;
+  assay_count?: number;
+  split_roles_present?: string[];
+  record_count_by_split?: Record<string, number>;
+  donor_count_by_split?: Record<string, number>;
+  donor_disjoint_split?: true;
+  independent_heldout_study_disjoint?: true;
+  donor_identity_scope?: "source_study_id_plus_donor_id";
+  cross_study_donor_linkage_verified?: false;
+  manual_primary_source_review_required?: true;
+  manual_primary_source_review_complete?: false;
+  automatic_parameter_activation?: false;
+  automatic_cell_state_coupling?: false;
+  blockers: string[];
+};
+
 export type EnginePhhInjuryValidation = {
   version: "phh_injury_validation_v1";
   status: string;
@@ -3728,9 +3819,14 @@ export type EnginePhhInjuryValidation = {
     target: string;
     record_granularity: string;
     expected_record_file: "phh_injury_trajectories.csv";
+    expected_delivery_path: "data/evidence_intake/incoming/phh_injury/latest/phh_injury_trajectories.csv";
+    canonical_null_token: "null";
+    header_policy: string;
     required_columns: { id: string; reason: string }[];
     conditional_columns: { id: string; required_when: string }[];
     allowed_split_roles: ("calibration" | "internal_validation" | "independent_heldout")[];
+    measurement_operator: EnginePhhInjuryAssayProjectionContract;
+    frozen_evaluation: EnginePhhInjuryFrozenEvaluationContract;
     policy: {
       donor_id_may_cross_split_roles: false;
       biological_replicate_is_independent_donor: false;
@@ -3743,15 +3839,9 @@ export type EnginePhhInjuryValidation = {
       manual_primary_source_review_required: true;
       frozen_model_required_before_independent_heldout_evaluation: true;
     };
-    current_delivery: {
-      donor_resolved_raw_record_count: 0;
-      donor_disjoint_split_count: 0;
-      independent_heldout_trajectory_count: 0;
-      general_fate_law_count: 0;
-      automatic_parameter_activation: false;
-      automatic_cell_state_coupling: false;
-    };
+    current_delivery: EnginePhhInjuryTrajectoryDelivery;
   };
+  trajectory_intake: EnginePhhInjuryTrajectoryIntake;
   summary: {
     primary_source_count: 2;
     human_phh_protocol_count: 4;
@@ -3771,7 +3861,14 @@ export type EnginePhhInjuryValidation = {
     legacy_quantitative_authority_surface_count: 0;
     required_donor_trajectory_field_count: number;
     conditional_donor_trajectory_field_count: number;
-    complete_donor_trajectory_record_count: 0;
+    trajectory_intake_validator_count: 1;
+    donor_split_leakage_guard_count: 1;
+    independent_heldout_study_guard_count: 1;
+    exact_assay_projection_operator_count: 1;
+    frozen_evaluation_contract_count: 1;
+    complete_donor_trajectory_record_count: number;
+    numeric_measurement_projection_count: number;
+    independent_heldout_result_count: number;
   };
 };
 
@@ -6107,6 +6204,12 @@ function isEnginePhhInjuryValidation(value: unknown): value is EnginePhhInjuryVa
     !isRecord(value.validation_data_contract) ||
     !isRecord(value.validation_data_contract.policy) ||
     !isRecord(value.validation_data_contract.current_delivery) ||
+    !isRecord(value.validation_data_contract.measurement_operator) ||
+    !isRecord(value.validation_data_contract.frozen_evaluation) ||
+    !isRecord(value.trajectory_intake) ||
+    !isRecord(value.trajectory_intake.measurement_operator) ||
+    !isRecord(value.trajectory_intake.frozen_evaluation) ||
+    !isRecord(value.trajectory_intake.current_delivery) ||
     !Array.isArray(value.protocols) ||
     !Array.isArray(value.observations) ||
     !Array.isArray(value.source_ids) ||
@@ -6173,9 +6276,86 @@ function isEnginePhhInjuryValidation(value: unknown): value is EnginePhhInjuryVa
   const contract = value.validation_data_contract as Record<string, unknown>;
   const contractPolicy = contract.policy as Record<string, unknown>;
   const currentDelivery = contract.current_delivery as Record<string, unknown>;
+  const contractMeasurement = contract.measurement_operator as Record<string, unknown>;
+  const contractFrozenEvaluation = contract.frozen_evaluation as Record<string, unknown>;
   const requiredColumns = contract.required_columns as unknown[];
   const conditionalColumns = contract.conditional_columns as unknown[];
   const allowedSplitRoles = contract.allowed_split_roles as unknown[];
+  const trajectoryIntake = value.trajectory_intake as Record<string, unknown>;
+  const trajectoryMeasurement = trajectoryIntake.measurement_operator as Record<string, unknown>;
+  const trajectoryFrozenEvaluation = trajectoryIntake.frozen_evaluation as Record<string, unknown>;
+  const trajectoryDelivery = trajectoryIntake.current_delivery as Record<string, unknown>;
+  const isSha256 = (candidate: unknown) =>
+    isString(candidate) && /^[0-9a-f]{64}$/.test(candidate);
+  const deliveryCountKeys = [
+    "donor_resolved_raw_record_count",
+    "donor_count",
+    "biological_replicate_count",
+    "source_study_count",
+    "endpoint_count",
+    "assay_count",
+    "donor_disjoint_split_count",
+    "independent_heldout_donor_count",
+    "independent_heldout_trajectory_count",
+    "numeric_measurement_projection_count",
+    "independent_heldout_result_count",
+  ];
+  const isDelivery = (candidate: Record<string, unknown>) =>
+    deliveryCountKeys.every(
+      (key) => Number.isInteger(candidate[key]) && Number(candidate[key]) >= 0,
+    ) &&
+    candidate.general_fate_law_count === 0 &&
+    candidate.automatic_parameter_activation === false &&
+    candidate.automatic_cell_state_coupling === false;
+  const isAssayProjectionContract = (candidate: Record<string, unknown>) => {
+    const dimensions = candidate.exact_match_dimensions;
+    return (
+      candidate.version === "exact_phh_injury_assay_projection_v1" &&
+      isString(candidate.input_quantity) &&
+      isString(candidate.output_quantity) &&
+      isString(candidate.operator_formula) &&
+      Array.isArray(dimensions) &&
+      dimensions.length === 20 &&
+      dimensions.every(isString) &&
+      new Set(dimensions).size === 20 &&
+      candidate.unit_conversion_enabled === false &&
+      candidate.dose_interpolation_enabled === false &&
+      candidate.time_interpolation_enabled === false &&
+      candidate.censored_scalar_residual_enabled === false &&
+      candidate.aggregate_score_enabled === false &&
+      candidate.pass_fail_assignment_enabled === false &&
+      candidate.automatic_cell_state_coupling === false
+    );
+  };
+  const isFrozenEvaluationContract = (candidate: Record<string, unknown>) => {
+    const fields = candidate.required_submission_fields;
+    return (
+      candidate.version === "donor_disjoint_phh_injury_frozen_evaluation_v1" &&
+      Array.isArray(fields) &&
+      fields.length === 12 &&
+      fields.every(isString) &&
+      new Set(fields).size === 12 &&
+      candidate.required_split_role === "independent_heldout" &&
+      candidate.source_study_disjoint_from_nonheldout_required === true &&
+      candidate.manual_primary_source_review_required === true &&
+      candidate.donor_identity_scope_review_required === true &&
+      candidate.independent_review_attestation_required === true &&
+      candidate.frozen_model_required === true &&
+      candidate.post_freeze_parameter_refit_allowed === false &&
+      candidate.descriptive_exact_assay_residuals_allowed === true &&
+      candidate.aggregate_score_enabled === false &&
+      candidate.pass_fail_assignment_enabled === false &&
+      candidate.automatic_parameter_activation === false &&
+      candidate.automatic_cell_state_coupling === false
+    );
+  };
+  const deliveryMatches = deliveryCountKeys.every(
+    (key) => currentDelivery[key] === trajectoryDelivery[key],
+  );
+  const trajectoryStatusValid =
+    trajectoryIntake.status === "awaiting_donor_resolved_phh_injury_trajectories" ||
+    trajectoryIntake.status === "rejected_invalid_phh_injury_trajectory_delivery" ||
+    trajectoryIntake.status === "structurally_valid_manual_primary_source_review_required";
   const requiredColumnsValid = requiredColumns.every((column) =>
     isRecord(column) && isString(column.id) && isString(column.reason)
   );
@@ -6252,6 +6432,9 @@ function isEnginePhhInjuryValidation(value: unknown): value is EnginePhhInjuryVa
     isString(contract.target) &&
     isString(contract.record_granularity) &&
     contract.expected_record_file === "phh_injury_trajectories.csv" &&
+    contract.expected_delivery_path === "data/evidence_intake/incoming/phh_injury/latest/phh_injury_trajectories.csv" &&
+    contract.canonical_null_token === "null" &&
+    isString(contract.header_policy) &&
     requiredColumns.length === 19 &&
     requiredColumnsValid &&
     conditionalColumns.length === 10 &&
@@ -6263,6 +6446,8 @@ function isEnginePhhInjuryValidation(value: unknown): value is EnginePhhInjuryVa
       role === "internal_validation" ||
       role === "independent_heldout"
     ) &&
+    isAssayProjectionContract(contractMeasurement) &&
+    isFrozenEvaluationContract(contractFrozenEvaluation) &&
     contractPolicy.donor_id_may_cross_split_roles === false &&
     contractPolicy.biological_replicate_is_independent_donor === false &&
     contractPolicy.aggregate_donor_count_may_reconstruct_donor_ids === false &&
@@ -6273,12 +6458,30 @@ function isEnginePhhInjuryValidation(value: unknown): value is EnginePhhInjuryVa
     contractPolicy.automatic_cell_state_coupling === false &&
     contractPolicy.manual_primary_source_review_required === true &&
     contractPolicy.frozen_model_required_before_independent_heldout_evaluation === true &&
-    currentDelivery.donor_resolved_raw_record_count === 0 &&
-    currentDelivery.donor_disjoint_split_count === 0 &&
-    currentDelivery.independent_heldout_trajectory_count === 0 &&
-    currentDelivery.general_fate_law_count === 0 &&
-    currentDelivery.automatic_parameter_activation === false &&
-    currentDelivery.automatic_cell_state_coupling === false &&
+    isDelivery(currentDelivery) &&
+    trajectoryIntake.version === "donor_disjoint_phh_injury_trajectory_intake_v1" &&
+    trajectoryIntake.contract_id === "donor_disjoint_phh_injury_trajectory_v1" &&
+    trajectoryStatusValid &&
+    isString(trajectoryIntake.delivery_path) &&
+    (trajectoryIntake.file_present === true || trajectoryIntake.file_present === false) &&
+    (trajectoryIntake.artifact_sha256 === undefined || isSha256(trajectoryIntake.artifact_sha256)) &&
+    isSha256(trajectoryIntake.contract_sha256) &&
+    trajectoryIntake.expected_header_count === 29 &&
+    trajectoryIntake.split_leakage_guard_enabled === true &&
+    trajectoryIntake.independent_heldout_study_guard_enabled === true &&
+    isAssayProjectionContract(trajectoryMeasurement) &&
+    trajectoryMeasurement.structure_ready === true &&
+    trajectoryMeasurement.numeric_projection_ready === false &&
+    trajectoryMeasurement.projectable_record_count === 0 &&
+    isFrozenEvaluationContract(trajectoryFrozenEvaluation) &&
+    trajectoryFrozenEvaluation.contract_ready === true &&
+    trajectoryFrozenEvaluation.evaluation_ready === false &&
+    trajectoryFrozenEvaluation.independent_heldout_result_count === 0 &&
+    isDelivery(trajectoryDelivery) &&
+    deliveryMatches &&
+    Array.isArray(trajectoryIntake.blockers) &&
+    trajectoryIntake.blockers.length > 0 &&
+    trajectoryIntake.blockers.every(isString) &&
     summary.primary_source_count === 2 &&
     summary.human_phh_protocol_count === 4 &&
     summary.matching_protocol_observation_count === 9 &&
@@ -6297,7 +6500,14 @@ function isEnginePhhInjuryValidation(value: unknown): value is EnginePhhInjuryVa
     summary.legacy_quantitative_authority_surface_count === 0 &&
     summary.required_donor_trajectory_field_count === 19 &&
     summary.conditional_donor_trajectory_field_count === 10 &&
-    summary.complete_donor_trajectory_record_count === 0
+    summary.trajectory_intake_validator_count === 1 &&
+    summary.donor_split_leakage_guard_count === 1 &&
+    summary.independent_heldout_study_guard_count === 1 &&
+    summary.exact_assay_projection_operator_count === 1 &&
+    summary.frozen_evaluation_contract_count === 1 &&
+    summary.complete_donor_trajectory_record_count === currentDelivery.donor_resolved_raw_record_count &&
+    summary.numeric_measurement_projection_count === currentDelivery.numeric_measurement_projection_count &&
+    summary.independent_heldout_result_count === currentDelivery.independent_heldout_result_count
   );
 }
 
