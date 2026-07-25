@@ -108,4 +108,8 @@ def damage_signals(outcome: DnaDamageOutcome, lethal_dsb_scale: float = LETHAL_D
 def dna_damage_fate(initial_dsb: int, t_end_s: float, rng: EngineRng, **kwargs):
     """Run damage + repair, then the p53-driven fate decision (uses M045 death)."""
     outcome = simulate_dna_damage(initial_dsb, t_end_s, rng, **kwargs)
-    return outcome, run_death(damage_signals(outcome), 300.0)
+    return outcome, run_death(
+        damage_signals(outcome),
+        300.0,
+        purpose="exploratory_execution",
+    )

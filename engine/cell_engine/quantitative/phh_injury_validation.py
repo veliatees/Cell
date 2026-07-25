@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import isfinite
 from pathlib import Path
 from typing import Any
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.serialization import to_plain
+from cell_engine.core.injury_authority import injury_runtime_authority_snapshot
 
 
 DATE_VERIFIED = "2026-07-22"
@@ -23,6 +24,14 @@ DATA_PATH = (
     / "curated"
     / "phh_injury_validation.v1.json"
 )
+TRAJECTORY_CONTRACT_PATH = (
+    REPOSITORY_ROOT
+    / "data"
+    / "evidence_intake"
+    / "phh_injury_trajectory_contract.v1.json"
+)
+TRAJECTORY_CONTRACT_SCHEMA_VERSION = "cell.phh-injury-trajectory-contract.v1"
+OBSERVATION_OPERATOR_VERSION = "exact_phh_injury_observation_operator_v1"
 
 PHH_INJURY_VALIDATION_SOURCES: dict[str, SourceReference] = {
     "xie2014_apap_phh": SourceReference(
@@ -97,10 +106,101 @@ class PhhInjuryValidationState:
         return to_plain(self)
 
 
+@dataclass(frozen=True)
+class PhhInjuryProtocolQuery:
+    species: str
+    biological_system: str
+    challenge: str
+    challenge_low: float
+    challenge_high: float | None
+    challenge_unit: str
+    maximum_exposure_h: float
+    temperature_c: float
+
+
+@dataclass(frozen=True)
+class PhhInjuryObservationMatch:
+    status: str
+    exact_protocol_match: bool
+    protocol_id: str | None
+    at_time_h: float | None
+    endpoint: str | None
+    condition: str | None
+    mismatch_dimensions: tuple[str, ...]
+    observations: tuple[PhhInjuryObservation, ...]
+    unit_conversion_performed: bool
+    interpolation_performed: bool
+    state_mutation_allowed: bool
+    unknown_is_negative_result: bool
+    reason: str
+
+    def to_dict(self) -> dict[str, object]:
+        return to_plain(self)
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError("PHH injury evidence must be one JSON object")
+    return payload
+
+
+def _load_trajectory_contract(
+    path: Path = TRAJECTORY_CONTRACT_PATH,
+) -> dict[str, Any]:
+    payload = _load_json(path)
+    if payload.get("schema_version") != TRAJECTORY_CONTRACT_SCHEMA_VERSION:
+        raise ValueError("Unsupported PHH injury-trajectory contract schema")
+    required = payload.get("required_columns")
+    conditional = payload.get("conditional_columns")
+    split_roles = payload.get("allowed_split_roles")
+    policy = payload.get("policy")
+    if (
+        not isinstance(required, list)
+        or not isinstance(conditional, list)
+        or not isinstance(split_roles, list)
+        or not isinstance(policy, dict)
+    ):
+        raise ValueError("PHH injury-trajectory contract is malformed")
+    required_ids = tuple(
+        str(item.get("id", "")) for item in required if isinstance(item, dict)
+    )
+    conditional_ids = tuple(
+        str(item.get("id", "")) for item in conditional if isinstance(item, dict)
+    )
+    if (
+        len(required_ids) != 19
+        or len(set(required_ids)) != len(required_ids)
+        or not all(required_ids)
+        or len(conditional_ids) != 10
+        or len(set(conditional_ids)) != len(conditional_ids)
+        or not all(conditional_ids)
+    ):
+        raise ValueError("PHH injury-trajectory field contract changed")
+    if set(split_roles) != {
+        "calibration",
+        "internal_validation",
+        "independent_heldout",
+    }:
+        raise ValueError("PHH injury-trajectory split roles changed")
+    required_false = {
+        "donor_id_may_cross_split_roles",
+        "biological_replicate_is_independent_donor",
+        "aggregate_donor_count_may_reconstruct_donor_ids",
+        "unit_conversion_without_explicit_conversion_provenance",
+        "time_interpolation_for_validation",
+        "unknown_endpoint_means_no_effect",
+        "automatic_parameter_activation",
+        "automatic_cell_state_coupling",
+    }
+    if any(policy.get(key) is not False for key in required_false):
+        raise ValueError("PHH injury-trajectory contract escaped its fail-closed policy")
+    if (
+        policy.get("manual_primary_source_review_required") is not True
+        or policy.get("frozen_model_required_before_independent_heldout_evaluation")
+        is not True
+    ):
+        raise ValueError("PHH injury-trajectory review policy changed")
     return payload
 
 
@@ -176,6 +276,305 @@ def build_phh_injury_validation(
     )
     validate_phh_injury_validation(state)
     return state
+
+
+_PROTOCOL_MATCH_DIMENSIONS = (
+    "species",
+    "biological_system",
+    "challenge",
+    "challenge_low",
+    "challenge_high",
+    "challenge_unit",
+    "maximum_exposure_h",
+    "temperature_c",
+)
+
+
+def protocol_query_from_protocol(
+    protocol: PhhInjuryProtocol,
+) -> PhhInjuryProtocolQuery:
+    return PhhInjuryProtocolQuery(
+        species=protocol.species,
+        biological_system=protocol.biological_system,
+        challenge=protocol.challenge,
+        challenge_low=protocol.challenge_low,
+        challenge_high=protocol.challenge_high,
+        challenge_unit=protocol.challenge_unit,
+        maximum_exposure_h=protocol.maximum_exposure_h,
+        temperature_c=protocol.temperature_c,
+    )
+
+
+def _validate_protocol_query(query: PhhInjuryProtocolQuery) -> None:
+    if not query.species or not query.biological_system or not query.challenge:
+        raise ValueError("PHH injury protocol query labels must be non-empty")
+    if not query.challenge_unit:
+        raise ValueError("PHH injury protocol query unit must be non-empty")
+    values = (
+        query.challenge_low,
+        query.maximum_exposure_h,
+        query.temperature_c,
+    )
+    if any(not isfinite(value) for value in values):
+        raise ValueError("PHH injury protocol query values must be finite")
+    if query.challenge_low < 0.0 or query.maximum_exposure_h < 0.0:
+        raise ValueError("PHH injury protocol query dose and duration must be non-negative")
+    if query.challenge_high is not None and (
+        not isfinite(query.challenge_high)
+        or query.challenge_high < query.challenge_low
+    ):
+        raise ValueError("PHH injury protocol query has invalid challenge bounds")
+
+
+def _protocol_mismatches(
+    query: PhhInjuryProtocolQuery,
+    protocol: PhhInjuryProtocol,
+) -> tuple[str, ...]:
+    return tuple(
+        dimension
+        for dimension in _PROTOCOL_MATCH_DIMENSIONS
+        if getattr(query, dimension) != getattr(protocol, dimension)
+    )
+
+
+def evaluate_phh_injury_observations(
+    query: PhhInjuryProtocolQuery,
+    *,
+    at_time_h: float | None = None,
+    endpoint: str | None = None,
+    condition: str | None = None,
+    state: PhhInjuryValidationState | None = None,
+) -> PhhInjuryObservationMatch:
+    """Return only source observations from one exactly matching PHH protocol."""
+
+    _validate_protocol_query(query)
+    if at_time_h is not None and (not isfinite(at_time_h) or at_time_h < 0.0):
+        raise ValueError("PHH injury observation time must be finite and non-negative")
+    if endpoint is not None and not endpoint:
+        raise ValueError("PHH injury endpoint filter must be non-empty")
+    if condition is not None and not condition:
+        raise ValueError("PHH injury condition filter must be non-empty")
+
+    evidence = state or build_phh_injury_validation()
+    comparisons = tuple(
+        (protocol, _protocol_mismatches(query, protocol))
+        for protocol in evidence.protocols
+    )
+    exact = tuple(protocol for protocol, mismatches in comparisons if not mismatches)
+    if not exact:
+        nearest_protocol, nearest_mismatches = min(
+            comparisons,
+            key=lambda item: (len(item[1]), item[0].id),
+        )
+        return PhhInjuryObservationMatch(
+            status="context_mismatch",
+            exact_protocol_match=False,
+            protocol_id=None,
+            at_time_h=at_time_h,
+            endpoint=endpoint,
+            condition=condition,
+            mismatch_dimensions=nearest_mismatches,
+            observations=(),
+            unit_conversion_performed=False,
+            interpolation_performed=False,
+            state_mutation_allowed=False,
+            unknown_is_negative_result=False,
+            reason=(
+                "No curated protocol matches every required dimension. The nearest "
+                f"protocol is {nearest_protocol.id}, but approximate matching is prohibited."
+            ),
+        )
+    if len(exact) != 1:
+        raise ValueError("PHH injury evidence contains duplicate exact protocols")
+    protocol = exact[0]
+    if at_time_h is not None and at_time_h > protocol.maximum_exposure_h:
+        return PhhInjuryObservationMatch(
+            status="outside_protocol_window",
+            exact_protocol_match=True,
+            protocol_id=protocol.id,
+            at_time_h=at_time_h,
+            endpoint=endpoint,
+            condition=condition,
+            mismatch_dimensions=(),
+            observations=(),
+            unit_conversion_performed=False,
+            interpolation_performed=False,
+            state_mutation_allowed=False,
+            unknown_is_negative_result=False,
+            reason="The requested time is beyond the curated protocol exposure window.",
+        )
+
+    candidates = tuple(
+        observation
+        for observation in evidence.observations
+        if observation.protocol_id == protocol.id
+    )
+    if endpoint is not None:
+        candidates = tuple(
+            observation for observation in candidates if observation.endpoint == endpoint
+        )
+        if not candidates:
+            return PhhInjuryObservationMatch(
+                status="unobserved_endpoint",
+                exact_protocol_match=True,
+                protocol_id=protocol.id,
+                at_time_h=at_time_h,
+                endpoint=endpoint,
+                condition=condition,
+                mismatch_dimensions=("endpoint",),
+                observations=(),
+                unit_conversion_performed=False,
+                interpolation_performed=False,
+                state_mutation_allowed=False,
+                unknown_is_negative_result=False,
+                reason=(
+                    "The exact protocol is curated, but this endpoint was not observed. "
+                    "Missing evidence does not mean no biological effect."
+                ),
+            )
+    if condition is not None:
+        candidates = tuple(
+            observation
+            for observation in candidates
+            if observation.condition == condition
+        )
+        if not candidates:
+            return PhhInjuryObservationMatch(
+                status="unobserved_condition",
+                exact_protocol_match=True,
+                protocol_id=protocol.id,
+                at_time_h=at_time_h,
+                endpoint=endpoint,
+                condition=condition,
+                mismatch_dimensions=("condition",),
+                observations=(),
+                unit_conversion_performed=False,
+                interpolation_performed=False,
+                state_mutation_allowed=False,
+                unknown_is_negative_result=False,
+                reason=(
+                    "The exact protocol is curated, but this intervention or condition "
+                    "was not observed in the retained evidence."
+                ),
+            )
+    if at_time_h is not None:
+        candidates = tuple(
+            observation
+            for observation in candidates
+            if observation.time_low_h <= at_time_h <= observation.time_high_h
+        )
+        if not candidates:
+            return PhhInjuryObservationMatch(
+                status="unobserved_time_window",
+                exact_protocol_match=True,
+                protocol_id=protocol.id,
+                at_time_h=at_time_h,
+                endpoint=endpoint,
+                condition=condition,
+                mismatch_dimensions=("time_window",),
+                observations=(),
+                unit_conversion_performed=False,
+                interpolation_performed=False,
+                state_mutation_allowed=False,
+                unknown_is_negative_result=False,
+                reason=(
+                    "The time lies inside the protocol but outside every retained "
+                    "matching observation window; interpolation is prohibited."
+                ),
+            )
+
+    return PhhInjuryObservationMatch(
+        status="matching_protocol_observations_available",
+        exact_protocol_match=True,
+        protocol_id=protocol.id,
+        at_time_h=at_time_h,
+        endpoint=endpoint,
+        condition=condition,
+        mismatch_dimensions=(),
+        observations=candidates,
+        unit_conversion_performed=False,
+        interpolation_performed=False,
+        state_mutation_allowed=False,
+        unknown_is_negative_result=False,
+        reason=(
+            "These source observations may evaluate the exact matching protocol only. "
+            "They do not define a fate law or mutate simulated cell state."
+        ),
+    )
+
+
+def _observation_operator_snapshot(
+    state: PhhInjuryValidationState,
+) -> dict[str, object]:
+    replay_results = tuple(
+        evaluate_phh_injury_observations(
+            protocol_query_from_protocol(protocol),
+            state=state,
+        )
+        for protocol in state.protocols
+    )
+    reference = protocol_query_from_protocol(state.protocols[0])
+    negative_queries = (
+        replace(reference, species="software_mismatch_probe"),
+        replace(reference, biological_system="software_mismatch_probe"),
+        replace(reference, challenge="software_mismatch_probe"),
+        replace(
+            reference,
+            challenge_low=reference.challenge_low + 1.0,
+            challenge_high=(
+                None
+                if reference.challenge_high is None
+                else reference.challenge_high + 1.0
+            ),
+        ),
+        replace(reference, challenge_unit="software_mismatch_probe"),
+        replace(reference, maximum_exposure_h=reference.maximum_exposure_h + 1.0),
+        replace(reference, temperature_c=reference.temperature_c + 1.0),
+    )
+    negative_results = tuple(
+        evaluate_phh_injury_observations(query, state=state)
+        for query in negative_queries
+    )
+    replay_pass_count = sum(
+        result.exact_protocol_match
+        and result.status == "matching_protocol_observations_available"
+        for result in replay_results
+    )
+    rejection_count = sum(
+        not result.exact_protocol_match and result.status == "context_mismatch"
+        for result in negative_results
+    )
+    if replay_pass_count != len(state.protocols):
+        raise ValueError("PHH injury exact-protocol replay self-check failed")
+    if rejection_count != len(negative_queries):
+        raise ValueError("PHH injury near-miss rejection self-check failed")
+    return {
+        "version": OBSERVATION_OPERATOR_VERSION,
+        "status": "exact_context_read_only_operator_ready",
+        "match_dimensions": list(_PROTOCOL_MATCH_DIMENSIONS),
+        "supported_result_statuses": [
+            "matching_protocol_observations_available",
+            "context_mismatch",
+            "outside_protocol_window",
+            "unobserved_endpoint",
+            "unobserved_condition",
+            "unobserved_time_window",
+        ],
+        "exact_protocol_replay_count": len(replay_results),
+        "exact_protocol_replay_pass_count": replay_pass_count,
+        "near_miss_probe_count": len(negative_results),
+        "near_miss_rejection_count": rejection_count,
+        "unit_conversion_enabled": False,
+        "dose_interpolation_enabled": False,
+        "time_interpolation_enabled": False,
+        "generalization_enabled": False,
+        "state_mutation_enabled": False,
+        "unknown_is_negative_result": False,
+        "policy": (
+            "All protocol dimensions must match exactly. Empty results represent "
+            "unobserved context, endpoint or time, never an inferred absence of effect."
+        ),
+    }
 
 
 def validate_phh_injury_validation(state: PhhInjuryValidationState) -> None:
@@ -290,7 +689,21 @@ def validate_phh_injury_validation(state: PhhInjuryValidationState) -> None:
 
 def phh_injury_validation_snapshot() -> dict[str, object]:
     state = build_phh_injury_validation()
+    observation_operator = _observation_operator_snapshot(state)
+    runtime_authority = injury_runtime_authority_snapshot()
+    trajectory_contract = _load_trajectory_contract()
+    trajectory_contract["current_delivery"] = {
+        "donor_resolved_raw_record_count": 0,
+        "donor_disjoint_split_count": 0,
+        "independent_heldout_trajectory_count": 0,
+        "general_fate_law_count": 0,
+        "automatic_parameter_activation": False,
+        "automatic_cell_state_coupling": False,
+    }
     payload = state.to_dict()
+    payload["observation_operator"] = observation_operator
+    payload["runtime_authority"] = runtime_authority
+    payload["validation_data_contract"] = trajectory_contract
     payload["summary"] = {
         "primary_source_count": len(state.source_ids),
         "human_phh_protocol_count": len(state.protocols),
@@ -307,5 +720,25 @@ def phh_injury_validation_snapshot() -> dict[str, object]:
         "senescence_commitment_observation_count": 0,
         "donor_disjoint_validation_count": 0,
         "runtime_coupled_observation_count": 0,
+        "exact_protocol_operator_count": 1,
+        "exact_protocol_replay_pass_count": observation_operator[
+            "exact_protocol_replay_pass_count"
+        ],
+        "near_miss_rejection_count": observation_operator[
+            "near_miss_rejection_count"
+        ],
+        "audited_legacy_injury_surface_count": runtime_authority["summary"][
+            "audited_legacy_surface_count"
+        ],
+        "legacy_quantitative_authority_surface_count": runtime_authority["summary"][
+            "quantitative_authority_surface_count"
+        ],
+        "required_donor_trajectory_field_count": len(
+            trajectory_contract["required_columns"]
+        ),
+        "conditional_donor_trajectory_field_count": len(
+            trajectory_contract["conditional_columns"]
+        ),
+        "complete_donor_trajectory_record_count": 0,
     }
     return payload

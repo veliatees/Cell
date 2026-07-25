@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from cell_engine.quantitative.phh_injury_validation import (
     build_phh_injury_validation,
+    evaluate_phh_injury_observations,
     phh_injury_validation_snapshot,
+    protocol_query_from_protocol,
     validate_phh_injury_validation,
 )
 
@@ -44,3 +48,80 @@ def test_injury_observations_do_not_activate_fate_runtime() -> None:
     assert snapshot["summary"]["runtime_coupled_observation_count"] == 0
     assert snapshot["integration_gates"]["automatic_runtime_coupling"] is False
     assert snapshot["integration_gates"]["predictive_ready"] is False
+
+
+def test_exact_protocol_operator_returns_only_matching_observation_windows() -> None:
+    state = build_phh_injury_validation()
+    protocol = next(
+        item for item in state.protocols if item.id == "apap_10mM_fresh_phh_48h"
+    )
+    query = protocol_query_from_protocol(protocol)
+    result = evaluate_phh_injury_observations(
+        query,
+        at_time_h=24.0,
+        endpoint="necrotic_cell_death",
+        state=state,
+    )
+    assert result.status == "matching_protocol_observations_available"
+    assert result.protocol_id == protocol.id
+    assert [item.id for item in result.observations] == [
+        "apap_necrosis_onset_24h"
+    ]
+    assert result.interpolation_performed is False
+    assert result.state_mutation_allowed is False
+
+
+def test_exact_protocol_operator_rejects_dose_near_miss_without_conversion() -> None:
+    state = build_phh_injury_validation()
+    protocol = next(
+        item for item in state.protocols if item.id == "apap_10mM_fresh_phh_48h"
+    )
+    query = protocol_query_from_protocol(protocol)
+    mismatch = evaluate_phh_injury_observations(
+        replace(query, challenge_low=9.0, challenge_high=9.0),
+        state=state,
+    )
+    assert mismatch.status == "context_mismatch"
+    assert mismatch.exact_protocol_match is False
+    assert "challenge_low" in mismatch.mismatch_dimensions
+    assert mismatch.unit_conversion_performed is False
+    assert mismatch.observations == ()
+
+
+def test_unobserved_endpoint_and_time_never_mean_no_effect() -> None:
+    state = build_phh_injury_validation()
+    protocol = next(
+        item for item in state.protocols if item.id == "apap_10mM_fresh_phh_48h"
+    )
+    query = protocol_query_from_protocol(protocol)
+    endpoint_gap = evaluate_phh_injury_observations(
+        query,
+        at_time_h=6.0,
+        endpoint="unmeasured_endpoint",
+        state=state,
+    )
+    time_gap = evaluate_phh_injury_observations(
+        query,
+        at_time_h=8.0,
+        endpoint="necrotic_cell_death",
+        state=state,
+    )
+    assert endpoint_gap.status == "unobserved_endpoint"
+    assert time_gap.status == "unobserved_time_window"
+    assert endpoint_gap.unknown_is_negative_result is False
+    assert time_gap.unknown_is_negative_result is False
+
+
+def test_snapshot_exposes_operator_authority_and_donor_data_contract() -> None:
+    snapshot = phh_injury_validation_snapshot()
+    operator = snapshot["observation_operator"]
+    authority = snapshot["runtime_authority"]
+    contract = snapshot["validation_data_contract"]
+    assert operator["exact_protocol_replay_pass_count"] == 4
+    assert operator["near_miss_rejection_count"] == 7
+    assert operator["state_mutation_enabled"] is False
+    assert authority["summary"]["audited_legacy_surface_count"] == 3
+    assert authority["summary"]["quantitative_authority_surface_count"] == 0
+    assert len(contract["required_columns"]) == 19
+    assert len(contract["conditional_columns"]) == 10
+    assert contract["current_delivery"]["donor_resolved_raw_record_count"] == 0

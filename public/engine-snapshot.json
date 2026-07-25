@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-22T21:59:07.263075+00:00",
+    "created_at_utc": "2026-07-25T20:35:41.338177+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -15513,22 +15513,30 @@
         {
           "code_surfaces": [
             "engine/cell_engine/quantitative/phh_injury_validation.py",
+            "engine/cell_engine/core/injury_authority.py",
             "engine/cell_engine/stochastic/apoptosis.py",
-            "engine/cell_engine/processes/cellular_response.py"
+            "engine/cell_engine/processes/cellular_response.py",
+            "data/evidence_intake/phh_injury_trajectory_contract.v1.json"
           ],
-          "current_capability": "Four exact PHH perturbation protocols now provide nine APAP and bile-acid timing, rescue and necrosis observations. They validate only matching protocols; commitment thresholds and recovery laws remain non-predictive.",
+          "current_capability": "Four PHH perturbation protocols and nine APAP/bile-acid observations now feed a read-only exact-context operator. Four source protocols replay exactly and seven software near-misses are rejected. Three legacy injury surfaces are audited and carry zero quantitative PHH authority.",
           "id": "damage_fate_recovery_calibration",
           "observed_metrics": {
+            "audited_legacy_injury_surface_count": 3,
             "calibrated_fate_commitment_laws": 0,
+            "complete_donor_trajectory_record_count": 0,
+            "exact_protocol_replay_pass_count": 4,
             "human_phh_protocol_count": 4,
+            "legacy_quantitative_authority_surface_count": 0,
             "matching_protocol_observation_count": 9,
+            "near_miss_rejection_count": 7,
             "necrosis_mode_observation_count": 5,
+            "required_donor_trajectory_field_count": 19,
             "runtime_coupled_observation_count": 0
           },
           "remaining_requirements": [
-            "Numeric time-resolved dose-response trajectories with uncertainty and fate labels.",
-            "Commitment-point and washout/recovery experiments.",
-            "Donor-disjoint validation for each declared injury context."
+            "Populate the 19-field contract with raw donor-resolved dose-time endpoint records.",
+            "Supply intervention, commitment-point, washout and recovery follow-up fields where applicable.",
+            "Freeze model and measurement operators before an independent donor-heldout evaluation."
           ],
           "scope": "Apoptosis, necrosis, cholestasis and proteostasis outcomes in healthy PHH perturbation contexts.",
           "status": "partial",
@@ -20786,6 +20794,9 @@
         "hepatocyte_quantity_harvest",
         "phh_injury_validation.protocols",
         "phh_injury_validation.observations",
+        "phh_injury_validation.observation_operator",
+        "phh_injury_validation.runtime_authority",
+        "phh_injury_validation.validation_data_contract",
         "phh_albumin_secretion.assay_contract",
         "phh_albumin_secretion.observed_batch_span",
         "phh_albumin_secretion.measurement_contract",
@@ -20827,7 +20838,7 @@
         "spatial_world",
         "physical_validation"
       ],
-      "policy": "quantitative_state wins on overlapping aggregate species; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; PHH injury observations may validate matching protocols but cannot define a general fate law; cellular memory requires an assayed persistent physical substrate and never treats an event log as memory; cytosol_transport forbids a single global viscosity/crowding multiplier and reaction_evidence_atlas gates fluid coupling per reaction; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+      "policy": "quantitative_state wins on overlapping aggregate species; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires an assayed persistent physical substrate and never treats an event log as memory; cytosol_transport forbids a single global viscosity/crowding multiplier and reaction_evidence_atlas gates fluid coupling per reaction; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
       "primary_state_path": "quantitative_state",
       "runtime_authoritative_sections": [
         "spatial_state",
@@ -24141,6 +24152,7 @@
             "model surface not predictive: legacy_oxphos_kinetics",
             "model surface not predictive: integrated_fuel_pathway_rates",
             "model surface not predictive: endocrine_receptor_rate_coupling",
+            "model surface not predictive: legacy_injury_fate_runtime",
             "model surface not predictive: cell_fate_thresholds"
           ],
           "checks": [
@@ -25696,6 +25708,39 @@
         "predictive_ready": false,
         "senescence_commitment_ready": false
       },
+      "observation_operator": {
+        "dose_interpolation_enabled": false,
+        "exact_protocol_replay_count": 4,
+        "exact_protocol_replay_pass_count": 4,
+        "generalization_enabled": false,
+        "match_dimensions": [
+          "species",
+          "biological_system",
+          "challenge",
+          "challenge_low",
+          "challenge_high",
+          "challenge_unit",
+          "maximum_exposure_h",
+          "temperature_c"
+        ],
+        "near_miss_probe_count": 7,
+        "near_miss_rejection_count": 7,
+        "policy": "All protocol dimensions must match exactly. Empty results represent unobserved context, endpoint or time, never an inferred absence of effect.",
+        "state_mutation_enabled": false,
+        "status": "exact_context_read_only_operator_ready",
+        "supported_result_statuses": [
+          "matching_protocol_observations_available",
+          "context_mismatch",
+          "outside_protocol_window",
+          "unobserved_endpoint",
+          "unobserved_condition",
+          "unobserved_time_window"
+        ],
+        "time_interpolation_enabled": false,
+        "unit_conversion_enabled": false,
+        "unknown_is_negative_result": false,
+        "version": "exact_phh_injury_observation_operator_v1"
+      },
       "observations": [
         {
           "assay": "ALT_release_and_PI_nuclear_staining",
@@ -25927,6 +25972,79 @@
           "temperature_c": 37.0
         }
       ],
+      "runtime_authority": {
+        "authoritative_cell_state_coupling_allowed": false,
+        "explicit_purpose_required": true,
+        "exploratory_execution_allowed": true,
+        "policy": "Legacy injury fixtures may exercise software behavior and qualitative topology. They may not validate, predict or authoritatively change a PHH state until their parameters, measurement operators and donor-disjoint validation are supplied.",
+        "predictive_execution_allowed": false,
+        "quantitative_validation_allowed": false,
+        "status": "legacy_injury_runtime_exploratory_only",
+        "summary": {
+          "audited_legacy_surface_count": 3,
+          "authoritative_state_coupling_surface_count": 0,
+          "phh_context_matched_surface_count": 0,
+          "predictive_authority_surface_count": 0,
+          "quantitative_authority_surface_count": 0
+        },
+        "surfaces": [
+          {
+            "authoritative_cell_state_coupling_allowed": false,
+            "blockers": [
+              "Default stress weights, tolerance, decay and commitment thresholds are not calibrated to a matched PHH protocol.",
+              "The ATP-dependent apoptosis-versus-necrosis literature supports mechanism direction, not the executable threshold values.",
+              "No donor-disjoint PHH fate trajectory validates the executable decision law."
+            ],
+            "code_surfaces": [
+              "engine/cell_engine/stochastic/apoptosis.py:death_drive",
+              "engine/cell_engine/stochastic/apoptosis.py:step_death",
+              "engine/cell_engine/stochastic/apoptosis.py:run_death"
+            ],
+            "current_role": "exploratory_qualitative_fate_fixture",
+            "id": "legacy_apoptosis_necrosis_switch",
+            "numerical_parameter_authority": "unresolved_legacy_defaults",
+            "phh_context_match": false,
+            "predictive_execution_allowed": false,
+            "quantitative_validation_allowed": false
+          },
+          {
+            "authoritative_cell_state_coupling_allowed": false,
+            "blockers": [
+              "ROS and adduct saturation scales are not measurements in the APAP PHH protocol.",
+              "The adapter does not preserve measured concentration, compartment or assay units.",
+              "No matched measurement operator maps its internal counts to PHH GSH, membrane-potential or necrosis endpoints."
+            ],
+            "code_surfaces": [
+              "engine/cell_engine/stochastic/apoptosis.py:signals_from_detox",
+              "engine/cell_engine/stochastic/detox.py"
+            ],
+            "current_role": "exploratory_cross_module_adapter",
+            "id": "legacy_detox_to_fate_projection",
+            "numerical_parameter_authority": "unresolved_legacy_scaling",
+            "phh_context_match": false,
+            "predictive_execution_allowed": false,
+            "quantitative_validation_allowed": false
+          },
+          {
+            "authoritative_cell_state_coupling_allowed": false,
+            "blockers": [
+              "Per-cell dose, GSH heterogeneity, exposure duration and clearance settings are not expressed in the curated PHH assay space.",
+              "The synthetic cells are not donor-resolved and do not implement a predeclared donor-disjoint split.",
+              "A monotonic software response is not an experimental dose-response validation."
+            ],
+            "code_surfaces": [
+              "engine/cell_engine/stochastic/tissue_injury.py:expose_tissue_to_toxin"
+            ],
+            "current_role": "exploratory_population_fixture",
+            "id": "legacy_tissue_injury_population",
+            "numerical_parameter_authority": "unresolved_legacy_defaults",
+            "phh_context_match": false,
+            "predictive_execution_allowed": false,
+            "quantitative_validation_allowed": false
+          }
+        ],
+        "version": "injury_runtime_authority_v1"
+      },
       "source_ids": [
         "xie2014_apap_phh",
         "woolbright2015_bile_acid_phh"
@@ -25934,16 +26052,176 @@
       "status": "matching_protocol_human_phh_observations_runtime_law_blocked",
       "summary": {
         "apap_observation_count": 5,
+        "audited_legacy_injury_surface_count": 3,
         "bile_acid_observation_count": 4,
+        "complete_donor_trajectory_record_count": 0,
+        "conditional_donor_trajectory_field_count": 10,
         "donor_disjoint_validation_count": 0,
+        "exact_protocol_operator_count": 1,
+        "exact_protocol_replay_pass_count": 4,
         "general_fate_law_count": 0,
         "healthy_baseline_parameter_count": 0,
         "human_phh_protocol_count": 4,
+        "legacy_quantitative_authority_surface_count": 0,
         "matching_protocol_observation_count": 9,
+        "near_miss_rejection_count": 7,
         "necrosis_mode_observation_count": 5,
         "primary_source_count": 2,
+        "required_donor_trajectory_field_count": 19,
         "runtime_coupled_observation_count": 0,
         "senescence_commitment_observation_count": 0
+      },
+      "validation_data_contract": {
+        "allowed_split_roles": [
+          "calibration",
+          "internal_validation",
+          "independent_heldout"
+        ],
+        "conditional_columns": [
+          {
+            "id": "intervention",
+            "required_when": "A rescue, inhibitor, sensitizer, or co-treatment is present"
+          },
+          {
+            "id": "intervention_start_h",
+            "required_when": "An intervention is present"
+          },
+          {
+            "id": "washout_time_h",
+            "required_when": "Challenge or intervention washout is performed"
+          },
+          {
+            "id": "recovery_followup_h",
+            "required_when": "Recovery or reversibility is claimed"
+          },
+          {
+            "id": "technical_replicate_id",
+            "required_when": "Technical replicates are reported"
+          },
+          {
+            "id": "uncertainty_type",
+            "required_when": "Only a summary statistic rather than raw replicate value is available"
+          },
+          {
+            "id": "uncertainty_value",
+            "required_when": "Only a summary statistic rather than raw replicate value is available"
+          },
+          {
+            "id": "limit_of_quantification",
+            "required_when": "The assay reports an LLOQ or censoring"
+          },
+          {
+            "id": "viable_cell_count_at_measurement",
+            "required_when": "The output is normalized by seeded or viable cell count"
+          },
+          {
+            "id": "fate_label",
+            "required_when": "Apoptosis, necrosis, senescence, survival, or recovery is asserted"
+          }
+        ],
+        "contract_id": "donor_disjoint_phh_injury_trajectory_v1",
+        "current_delivery": {
+          "automatic_cell_state_coupling": false,
+          "automatic_parameter_activation": false,
+          "donor_disjoint_split_count": 0,
+          "donor_resolved_raw_record_count": 0,
+          "general_fate_law_count": 0,
+          "independent_heldout_trajectory_count": 0
+        },
+        "expected_record_file": "phh_injury_trajectories.csv",
+        "policy": {
+          "aggregate_donor_count_may_reconstruct_donor_ids": false,
+          "automatic_cell_state_coupling": false,
+          "automatic_parameter_activation": false,
+          "biological_replicate_is_independent_donor": false,
+          "donor_id_may_cross_split_roles": false,
+          "frozen_model_required_before_independent_heldout_evaluation": true,
+          "manual_primary_source_review_required": true,
+          "time_interpolation_for_validation": false,
+          "unit_conversion_without_explicit_conversion_provenance": false,
+          "unknown_endpoint_means_no_effect": false
+        },
+        "record_granularity": "One raw endpoint observation for one identified donor, biological replicate, condition, and time point",
+        "required_columns": [
+          {
+            "id": "record_id",
+            "reason": "Stable row identity and duplicate detection"
+          },
+          {
+            "id": "donor_id",
+            "reason": "Donor-disjoint calibration and validation"
+          },
+          {
+            "id": "split_role",
+            "reason": "Predeclared calibration, internal-validation, or independent-heldout assignment"
+          },
+          {
+            "id": "source_study_id",
+            "reason": "Study-level independence and provenance"
+          },
+          {
+            "id": "source_locator",
+            "reason": "Exact table, figure, supplement, repository, or raw-file location"
+          },
+          {
+            "id": "species",
+            "reason": "Cross-species records must not enter the human calibration set"
+          },
+          {
+            "id": "biological_system",
+            "reason": "Fresh PHH, plated PHH, sandwich culture, spheroid, and cell-line contexts are not interchangeable"
+          },
+          {
+            "id": "culture_format",
+            "reason": "Culture geometry and medium context affect exposure and response"
+          },
+          {
+            "id": "challenge",
+            "reason": "Exact perturbation identity"
+          },
+          {
+            "id": "challenge_concentration",
+            "reason": "Dose-response coordinate"
+          },
+          {
+            "id": "challenge_concentration_unit",
+            "reason": "No implicit dose-unit conversion"
+          },
+          {
+            "id": "exposure_time_h",
+            "reason": "Time-resolved observation coordinate"
+          },
+          {
+            "id": "endpoint",
+            "reason": "The measured biological quantity or fate label"
+          },
+          {
+            "id": "assay",
+            "reason": "Measurement operators are assay-specific"
+          },
+          {
+            "id": "raw_value",
+            "reason": "Aggregate prose cannot identify donor trajectories"
+          },
+          {
+            "id": "raw_unit",
+            "reason": "No unit-free fitting"
+          },
+          {
+            "id": "biological_replicate_id",
+            "reason": "Replicates must not be mistaken for independent donors"
+          },
+          {
+            "id": "normalization_denominator",
+            "reason": "Per-cell, per-protein, per-well, and medium-volume outputs are not interchangeable"
+          },
+          {
+            "id": "censoring_flag",
+            "reason": "Below-quantification and saturated measurements must remain explicit"
+          }
+        ],
+        "schema_version": "cell.phh-injury-trajectory-contract.v1",
+        "target": "Time-resolved APAP and cholestatic injury, intervention, washout, recovery, and fate observations in primary human hepatocytes"
       },
       "version": "phh_injury_validation_v1"
     },
@@ -36583,6 +36861,7 @@
         "phh_donor_resolved_absolute_proteome",
         "hepatocyte_transporter_inventory_bridge",
         "human_sch_endogenous_bile_acid_compartments",
+        "phh_injury_exact_protocol_operator",
         "hepatocyte_capability_atlas",
         "cellular_memory_substrate_contract",
         "reaction_evidence_atlas",
@@ -36603,6 +36882,7 @@
         "legacy_oxphos_kinetics",
         "integrated_fuel_pathway_rates",
         "endocrine_receptor_rate_coupling",
+        "legacy_injury_fate_runtime",
         "cell_fate_thresholds"
       ],
       "policy": "Only source-backed observations and explicitly derived audit/measurement contracts may drive scientific validation. Schematic, blocked and disabled surfaces may not support quantitative claims.",
@@ -36981,6 +37261,18 @@
           "status": "source_backed"
         },
         {
+          "action": "require exact species, biological system, challenge, concentration bounds, unit, maximum exposure and temperature; filter only observed endpoint, condition and time windows; prohibit conversion, interpolation, generalization and state mutation",
+          "default_snapshot_role": "read_only_exact_context_observation_operator",
+          "drives_scientific_validation": true,
+          "id": "phh_injury_exact_protocol_operator",
+          "limitations": "Four PHH protocols and nine qualitative timing, rescue and death-mode observations are retained. They contain no general fate law, donor-resolved raw trajectories or predictive thresholds; an empty match means unobserved, not no biological effect.",
+          "source_ids": [
+            "xie2014_apap_phh",
+            "woolbright2015_bile_acid_phh"
+          ],
+          "status": "derived"
+        },
+        {
           "action": "require donor-resolved PHH synthesis plus compartment-resolved ER, Golgi, medium and degradation time courses before activating a constitutive secretion model",
           "default_snapshot_role": "explicit_parameter_pulse_chase_only",
           "drives_scientific_validation": false,
@@ -37261,6 +37553,20 @@
             "human_mixed_meal_endocrine_1996",
             "human_glycogen_hormone_clamp_1996",
             "kemas2021_phh_glucose"
+          ],
+          "status": "blocked"
+        },
+        {
+          "action": "permit only explicitly exploratory software execution; reject quantitative validation, prediction and authoritative cell-state coupling until matched PHH parameters, measurement operators and donor-disjoint validation exist",
+          "default_snapshot_role": "exploratory_software_fixture_only",
+          "drives_scientific_validation": false,
+          "id": "legacy_injury_fate_runtime",
+          "limitations": "The executable stress weights, saturation scales, commitment thresholds, synthetic GSH heterogeneity and exposure settings are unresolved legacy defaults. Mechanistic direction and matching-protocol observations do not authorize those numbers.",
+          "source_ids": [
+            "atp_death_switch",
+            "human_bile_acid_death_mode",
+            "xie2014_apap_phh",
+            "woolbright2015_bile_acid_phh"
           ],
           "status": "blocked"
         },

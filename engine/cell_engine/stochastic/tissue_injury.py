@@ -7,6 +7,10 @@ from cell_engine.core.random import EngineRng
 from cell_engine.stochastic.apoptosis import APOPTOSIS, NECROSIS, run_death, signals_from_detox
 from cell_engine.stochastic.detox import run_detox
 from cell_engine.stochastic.tissue import run_tissue
+from cell_engine.core.injury_authority import (
+    InjuryRuntimePurpose,
+    assert_injury_runtime_authority,
+)
 
 DATE_VERIFIED = "2026-06-20"
 
@@ -41,6 +45,7 @@ def expose_tissue_to_toxin(
     dose_per_cell: float,
     base_seed: int,
     *,
+    purpose: InjuryRuntimePurpose,
     gsh: float = 10000.0,
     detox_time_s: float = 60.0,
     death_time_s: float = 300.0,
@@ -54,6 +59,8 @@ def expose_tissue_to_toxin(
     ammonia load (M043). Drug-induced liver injury, emergent at tissue scale:
     higher dose -> more (necrotic) deaths -> less clearance capacity.
     """
+    if purpose != "exploratory_execution":
+        assert_injury_runtime_authority(purpose)
     if n_cells < 1:
         raise ValueError("n_cells must be >= 1")
 
@@ -66,7 +73,11 @@ def expose_tissue_to_toxin(
         # population-level dose-response instead of an all-or-nothing cliff.
         cell_gsh = gsh * (0.6 + 0.8 * cell_rng.random())
         counts = run_detox(dose_per_cell, detox_time_s, cell_rng, gsh=cell_gsh)
-        death = run_death(signals_from_detox(counts, cell_gsh), death_time_s)
+        death = run_death(
+            signals_from_detox(counts, cell_gsh),
+            death_time_s,
+            purpose="exploratory_execution",
+        )
         if death.alive:
             survivors += 1
         elif death.mode == NECROSIS:
