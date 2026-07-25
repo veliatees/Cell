@@ -3677,6 +3677,81 @@ export type EnginePhhInjuryValidation = {
     predictive_ready: false;
   };
   source_ids: string[];
+  observation_operator: {
+    version: "exact_phh_injury_observation_operator_v1";
+    status: "exact_context_read_only_operator_ready";
+    match_dimensions: string[];
+    supported_result_statuses: string[];
+    exact_protocol_replay_count: number;
+    exact_protocol_replay_pass_count: number;
+    near_miss_probe_count: number;
+    near_miss_rejection_count: number;
+    unit_conversion_enabled: false;
+    dose_interpolation_enabled: false;
+    time_interpolation_enabled: false;
+    generalization_enabled: false;
+    state_mutation_enabled: false;
+    unknown_is_negative_result: false;
+    policy: string;
+  };
+  runtime_authority: {
+    version: "injury_runtime_authority_v1";
+    status: "legacy_injury_runtime_exploratory_only";
+    surfaces: {
+      id: string;
+      code_surfaces: string[];
+      current_role: string;
+      numerical_parameter_authority: string;
+      phh_context_match: false;
+      quantitative_validation_allowed: false;
+      predictive_execution_allowed: false;
+      authoritative_cell_state_coupling_allowed: false;
+      blockers: string[];
+    }[];
+    explicit_purpose_required: true;
+    exploratory_execution_allowed: true;
+    quantitative_validation_allowed: false;
+    predictive_execution_allowed: false;
+    authoritative_cell_state_coupling_allowed: false;
+    policy: string;
+    summary: {
+      audited_legacy_surface_count: number;
+      phh_context_matched_surface_count: 0;
+      quantitative_authority_surface_count: 0;
+      predictive_authority_surface_count: 0;
+      authoritative_state_coupling_surface_count: 0;
+    };
+  };
+  validation_data_contract: {
+    schema_version: "cell.phh-injury-trajectory-contract.v1";
+    contract_id: "donor_disjoint_phh_injury_trajectory_v1";
+    target: string;
+    record_granularity: string;
+    expected_record_file: "phh_injury_trajectories.csv";
+    required_columns: { id: string; reason: string }[];
+    conditional_columns: { id: string; required_when: string }[];
+    allowed_split_roles: ("calibration" | "internal_validation" | "independent_heldout")[];
+    policy: {
+      donor_id_may_cross_split_roles: false;
+      biological_replicate_is_independent_donor: false;
+      aggregate_donor_count_may_reconstruct_donor_ids: false;
+      unit_conversion_without_explicit_conversion_provenance: false;
+      time_interpolation_for_validation: false;
+      unknown_endpoint_means_no_effect: false;
+      automatic_parameter_activation: false;
+      automatic_cell_state_coupling: false;
+      manual_primary_source_review_required: true;
+      frozen_model_required_before_independent_heldout_evaluation: true;
+    };
+    current_delivery: {
+      donor_resolved_raw_record_count: 0;
+      donor_disjoint_split_count: 0;
+      independent_heldout_trajectory_count: 0;
+      general_fate_law_count: 0;
+      automatic_parameter_activation: false;
+      automatic_cell_state_coupling: false;
+    };
+  };
   summary: {
     primary_source_count: 2;
     human_phh_protocol_count: 4;
@@ -3689,6 +3764,14 @@ export type EnginePhhInjuryValidation = {
     senescence_commitment_observation_count: 0;
     donor_disjoint_validation_count: 0;
     runtime_coupled_observation_count: 0;
+    exact_protocol_operator_count: 1;
+    exact_protocol_replay_pass_count: number;
+    near_miss_rejection_count: number;
+    audited_legacy_injury_surface_count: number;
+    legacy_quantitative_authority_surface_count: 0;
+    required_donor_trajectory_field_count: number;
+    conditional_donor_trajectory_field_count: number;
+    complete_donor_trajectory_record_count: 0;
   };
 };
 
@@ -4026,7 +4109,7 @@ export type SnapshotFetcher = (url: string) => Promise<SnapshotResponse>;
 
 export function engineSnapshotEndpointFromLocation(locationLike: Pick<Location, "href">): string {
   const url = new URL(locationLike.href);
-  return url.searchParams.get("engineSnapshot") || "/engine-snapshot.json";
+  return url.searchParams.get("engineSnapshot") || new URL("engine-snapshot.json", url).pathname;
 }
 
 export async function loadEngineSnapshot(url: string, fetcher: SnapshotFetcher = defaultSnapshotFetcher): Promise<EngineSnapshotLoadResult> {
@@ -6018,9 +6101,21 @@ function isEnginePhhInjuryValidation(value: unknown): value is EnginePhhInjuryVa
     !isRecord(value) ||
     !isRecord(value.integration_gates) ||
     !isRecord(value.summary) ||
+    !isRecord(value.observation_operator) ||
+    !isRecord(value.runtime_authority) ||
+    !isRecord(value.runtime_authority.summary) ||
+    !isRecord(value.validation_data_contract) ||
+    !isRecord(value.validation_data_contract.policy) ||
+    !isRecord(value.validation_data_contract.current_delivery) ||
     !Array.isArray(value.protocols) ||
     !Array.isArray(value.observations) ||
-    !Array.isArray(value.source_ids)
+    !Array.isArray(value.source_ids) ||
+    !Array.isArray(value.observation_operator.match_dimensions) ||
+    !Array.isArray(value.observation_operator.supported_result_statuses) ||
+    !Array.isArray(value.runtime_authority.surfaces) ||
+    !Array.isArray(value.validation_data_contract.required_columns) ||
+    !Array.isArray(value.validation_data_contract.conditional_columns) ||
+    !Array.isArray(value.validation_data_contract.allowed_split_roles)
   ) return false;
   const protocolIds = new Set<string>();
   for (const protocol of value.protocols) {
@@ -6069,6 +6164,39 @@ function isEnginePhhInjuryValidation(value: unknown): value is EnginePhhInjuryVa
   }
   const gates = value.integration_gates;
   const summary = value.summary;
+  const operator = value.observation_operator as Record<string, unknown>;
+  const matchDimensions = operator.match_dimensions as unknown[];
+  const supportedResultStatuses = operator.supported_result_statuses as unknown[];
+  const authority = value.runtime_authority as Record<string, unknown>;
+  const authoritySummary = authority.summary as Record<string, unknown>;
+  const authoritySurfaces = authority.surfaces as unknown[];
+  const contract = value.validation_data_contract as Record<string, unknown>;
+  const contractPolicy = contract.policy as Record<string, unknown>;
+  const currentDelivery = contract.current_delivery as Record<string, unknown>;
+  const requiredColumns = contract.required_columns as unknown[];
+  const conditionalColumns = contract.conditional_columns as unknown[];
+  const allowedSplitRoles = contract.allowed_split_roles as unknown[];
+  const requiredColumnsValid = requiredColumns.every((column) =>
+    isRecord(column) && isString(column.id) && isString(column.reason)
+  );
+  const conditionalColumnsValid = conditionalColumns.every((column) =>
+    isRecord(column) && isString(column.id) && isString(column.required_when)
+  );
+  const authoritySurfacesValid = authoritySurfaces.every((surface) =>
+    isRecord(surface) &&
+    isString(surface.id) &&
+    Array.isArray(surface.code_surfaces) &&
+    surface.code_surfaces.every(isString) &&
+    isString(surface.current_role) &&
+    isString(surface.numerical_parameter_authority) &&
+    surface.phh_context_match === false &&
+    surface.quantitative_validation_allowed === false &&
+    surface.predictive_execution_allowed === false &&
+    surface.authoritative_cell_state_coupling_allowed === false &&
+    Array.isArray(surface.blockers) &&
+    surface.blockers.length > 0 &&
+    surface.blockers.every(isString)
+  );
   return (
     value.version === "phh_injury_validation_v1" &&
     isString(value.status) &&
@@ -6086,6 +6214,71 @@ function isEnginePhhInjuryValidation(value: unknown): value is EnginePhhInjuryVa
     gates.donor_disjoint_validation_ready === false &&
     gates.automatic_runtime_coupling === false &&
     gates.predictive_ready === false &&
+    operator.version === "exact_phh_injury_observation_operator_v1" &&
+    operator.status === "exact_context_read_only_operator_ready" &&
+    matchDimensions.length === 8 &&
+    matchDimensions.every(isString) &&
+    new Set(matchDimensions).size === 8 &&
+    supportedResultStatuses.length === 6 &&
+    supportedResultStatuses.every(isString) &&
+    operator.exact_protocol_replay_count === 4 &&
+    operator.exact_protocol_replay_pass_count === 4 &&
+    operator.near_miss_probe_count === 7 &&
+    operator.near_miss_rejection_count === 7 &&
+    operator.unit_conversion_enabled === false &&
+    operator.dose_interpolation_enabled === false &&
+    operator.time_interpolation_enabled === false &&
+    operator.generalization_enabled === false &&
+    operator.state_mutation_enabled === false &&
+    operator.unknown_is_negative_result === false &&
+    isString(operator.policy) &&
+    authority.version === "injury_runtime_authority_v1" &&
+    authority.status === "legacy_injury_runtime_exploratory_only" &&
+    authoritySurfaces.length === 3 &&
+    authoritySurfacesValid &&
+    authority.explicit_purpose_required === true &&
+    authority.exploratory_execution_allowed === true &&
+    authority.quantitative_validation_allowed === false &&
+    authority.predictive_execution_allowed === false &&
+    authority.authoritative_cell_state_coupling_allowed === false &&
+    isString(authority.policy) &&
+    authoritySummary.audited_legacy_surface_count === 3 &&
+    authoritySummary.phh_context_matched_surface_count === 0 &&
+    authoritySummary.quantitative_authority_surface_count === 0 &&
+    authoritySummary.predictive_authority_surface_count === 0 &&
+    authoritySummary.authoritative_state_coupling_surface_count === 0 &&
+    contract.schema_version === "cell.phh-injury-trajectory-contract.v1" &&
+    contract.contract_id === "donor_disjoint_phh_injury_trajectory_v1" &&
+    isString(contract.target) &&
+    isString(contract.record_granularity) &&
+    contract.expected_record_file === "phh_injury_trajectories.csv" &&
+    requiredColumns.length === 19 &&
+    requiredColumnsValid &&
+    conditionalColumns.length === 10 &&
+    conditionalColumnsValid &&
+    allowedSplitRoles.length === 3 &&
+    new Set(allowedSplitRoles).size === 3 &&
+    allowedSplitRoles.every((role) =>
+      role === "calibration" ||
+      role === "internal_validation" ||
+      role === "independent_heldout"
+    ) &&
+    contractPolicy.donor_id_may_cross_split_roles === false &&
+    contractPolicy.biological_replicate_is_independent_donor === false &&
+    contractPolicy.aggregate_donor_count_may_reconstruct_donor_ids === false &&
+    contractPolicy.unit_conversion_without_explicit_conversion_provenance === false &&
+    contractPolicy.time_interpolation_for_validation === false &&
+    contractPolicy.unknown_endpoint_means_no_effect === false &&
+    contractPolicy.automatic_parameter_activation === false &&
+    contractPolicy.automatic_cell_state_coupling === false &&
+    contractPolicy.manual_primary_source_review_required === true &&
+    contractPolicy.frozen_model_required_before_independent_heldout_evaluation === true &&
+    currentDelivery.donor_resolved_raw_record_count === 0 &&
+    currentDelivery.donor_disjoint_split_count === 0 &&
+    currentDelivery.independent_heldout_trajectory_count === 0 &&
+    currentDelivery.general_fate_law_count === 0 &&
+    currentDelivery.automatic_parameter_activation === false &&
+    currentDelivery.automatic_cell_state_coupling === false &&
     summary.primary_source_count === 2 &&
     summary.human_phh_protocol_count === 4 &&
     summary.matching_protocol_observation_count === 9 &&
@@ -6096,7 +6289,15 @@ function isEnginePhhInjuryValidation(value: unknown): value is EnginePhhInjuryVa
     summary.general_fate_law_count === 0 &&
     summary.senescence_commitment_observation_count === 0 &&
     summary.donor_disjoint_validation_count === 0 &&
-    summary.runtime_coupled_observation_count === 0
+    summary.runtime_coupled_observation_count === 0 &&
+    summary.exact_protocol_operator_count === 1 &&
+    summary.exact_protocol_replay_pass_count === 4 &&
+    summary.near_miss_rejection_count === 7 &&
+    summary.audited_legacy_injury_surface_count === 3 &&
+    summary.legacy_quantitative_authority_surface_count === 0 &&
+    summary.required_donor_trajectory_field_count === 19 &&
+    summary.conditional_donor_trajectory_field_count === 10 &&
+    summary.complete_donor_trajectory_record_count === 0
   );
 }
 

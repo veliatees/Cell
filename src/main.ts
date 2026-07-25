@@ -484,6 +484,7 @@ type EngineNutritionId = (typeof ENGINE_NUTRITION_PROFILES)[number];
 let selectedExperiment: EngineExperimentId = "baseline";
 let selectedZone: EngineZoneId = "midlobular";
 let selectedNutrition: EngineNutritionId = "postabsorptive";
+const publicAssetPath = (path: string): string => new URL(path, window.location.href).pathname;
 const ENGINE_EXPERIMENT_LABELS: Record<(typeof ENGINE_EXPERIMENTS)[number], string> = {
   baseline: "Control",
   bsep_loss: "BSEP loss",
@@ -494,10 +495,10 @@ let experimentComparisonSummaries: Partial<Record<(typeof ENGINE_EXPERIMENTS)[nu
 
 function contextSnapshotUrl(zone: EngineZoneId, experiment: EngineExperimentId): string {
   if (selectedNutrition === "postabsorptive" && zone === "midlobular") {
-    return experiment === "baseline" ? defaultExternalEngineSnapshotUrl : `/experiments/${experiment}.json`;
+    return experiment === "baseline" ? defaultExternalEngineSnapshotUrl : publicAssetPath(`experiments/${experiment}.json`);
   }
-  if (selectedNutrition === "postabsorptive") return `/contexts/${zone}/${experiment}.json`;
-  return `/contexts/${zone}/${selectedNutrition}/${experiment}.json`;
+  if (selectedNutrition === "postabsorptive") return publicAssetPath(`contexts/${zone}/${experiment}.json`);
+  return publicAssetPath(`contexts/${zone}/${selectedNutrition}/${experiment}.json`);
 }
 
 function selectEngineContext(): void {
@@ -565,6 +566,7 @@ let membrane: MembraneSystem | null = null;
 let membraneIsVesicle = false;
 let reaction: ReactionSystem | null = null;
 let organelleGroup: THREE.Group | null = null; // schematic whole-cell anatomy
+let organelleFrameCenterX = 0;
 let communicationGroup: THREE.Group | null = null;
 let communicationSceneSignature = "";
 let communicationFrameRadius = 0;
@@ -883,9 +885,22 @@ type SinusoidBloodCell = {
   baseU: number;
   radialX: number;
   radialZ: number;
+  tiltX: number;
+  tiltZ: number;
+  roll: number;
+  phase: number;
+  baseScale: THREE.Vector3;
+};
+type SinusoidPlasmaField = {
+  points: THREE.Points;
+  baseU: Float32Array;
+  radialX: Float32Array;
+  radialZ: Float32Array;
+  speed: Float32Array;
 };
 let sinusoidCurveRef: THREE.CatmullRomCurve3 | null = null;
 const sinusoidBloodCells: SinusoidBloodCell[] = [];
+let sinusoidPlasmaField: SinusoidPlasmaField | null = null;
 type MotionTarget = {
   object: THREE.Object3D;
   base: THREE.Vector3;
@@ -3035,18 +3050,52 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
   }
 }
 
+const _sinusoidFlowCenter = new THREE.Vector3();
+const _sinusoidFlowTangent = new THREE.Vector3();
+const _sinusoidFlowAlign = new THREE.Quaternion();
+const _sinusoidFlowTilt = new THREE.Quaternion();
+const _sinusoidFlowEuler = new THREE.Euler();
+const _sinusoidLocalY = new THREE.Vector3(0, 1, 0);
 function updateSinusoidBloodFlow(timeS: number) {
   const curve = sinusoidCurveRef;
   if (!curve) return;
-  const localY = new THREE.Vector3(0, 1, 0);
   for (const cell of sinusoidBloodCells) {
     // Equal advection velocity preserves ordering, so cells do not overtake or
-    // pass through one another in the narrow sinusoidal lumen.
+    // pass through one another in the narrow sinusoidal lumen. Slow orientation
+    // changes are renderer motion, not a calibrated membrane-deformation law.
     const u = (cell.baseU + timeS * 0.012) % 1;
-    const center = curve.getPointAt(u);
-    const tangent = curve.getTangentAt(u).normalize();
-    cell.mesh.position.copy(center).add(new THREE.Vector3(cell.radialX, 0, cell.radialZ));
-    cell.mesh.quaternion.setFromUnitVectors(localY, tangent);
+    curve.getPointAt(u, _sinusoidFlowCenter);
+    curve.getTangentAt(u, _sinusoidFlowTangent).normalize();
+    cell.mesh.position.copy(_sinusoidFlowCenter);
+    cell.mesh.position.x += cell.radialX;
+    cell.mesh.position.z += cell.radialZ;
+    const sway = Math.sin(timeS * 0.42 + cell.phase) * 0.075;
+    _sinusoidFlowAlign.setFromUnitVectors(_sinusoidLocalY, _sinusoidFlowTangent);
+    _sinusoidFlowEuler.set(cell.tiltX + sway, cell.roll, cell.tiltZ - sway * 0.65);
+    _sinusoidFlowTilt.setFromEuler(_sinusoidFlowEuler);
+    cell.mesh.quaternion.copy(_sinusoidFlowAlign).multiply(_sinusoidFlowTilt);
+    const shapePulse = Math.sin(timeS * 0.31 + cell.phase * 1.4) * 0.025;
+    cell.mesh.scale.set(
+      cell.baseScale.x * (1 + shapePulse),
+      cell.baseScale.y * (1 - shapePulse * 0.45),
+      cell.baseScale.z * (1 - shapePulse)
+    );
+  }
+
+  const plasma = sinusoidPlasmaField;
+  if (plasma) {
+    const position = plasma.points.geometry.getAttribute("position") as THREE.BufferAttribute;
+    for (let i = 0; i < plasma.baseU.length; i += 1) {
+      const u = (plasma.baseU[i] + timeS * plasma.speed[i]) % 1;
+      curve.getPointAt(u, _sinusoidFlowCenter);
+      position.setXYZ(
+        i,
+        _sinusoidFlowCenter.x + plasma.radialX[i],
+        _sinusoidFlowCenter.y,
+        _sinusoidFlowCenter.z + plasma.radialZ[i]
+      );
+    }
+    position.needsUpdate = true;
   }
 }
 
@@ -4122,7 +4171,10 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
   const zonationRow = zonation
     ? (() => {
         const oxygen = zonation.experimental_oxygen_context;
-        return `<div class="phh-profile"><div class="phh-profile__head"><b>${zonation.zone.label}</b><span>${zonation.zone.oxygen_context.replaceAll("_", " ")}</span></div><div class="phh-profile__grid"><span>Markers <b>${zonation.zone.marker_genes.slice(0, 6).join(" · ")}</b></span><span>Functions <b>${zonation.zone.functional_biases.join(" · ")}</b></span><span>Human MPS oxygen settings <b>${oxygen.controlled_oxygen_low_percent.toFixed(0)}–${oxygen.controlled_oxygen_high_percent.toFixed(0)}%</b></span><span>In-situ sinusoid pO₂ <b>not measured</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Zonation</span><span>Human atlas identity plus directional human MPS evidence · controlled device oxygen is not a human in-situ pO₂ value and cannot initialize zonal reaction rates.</span></div>`;
+        const oxygenReadout = oxygen
+          ? `${oxygen.controlled_oxygen_low_percent.toFixed(0)}–${oxygen.controlled_oxygen_high_percent.toFixed(0)}%`
+          : "not provided";
+        return `<div class="phh-profile"><div class="phh-profile__head"><b>${zonation.zone.label}</b><span>${zonation.zone.oxygen_context.replaceAll("_", " ")}</span></div><div class="phh-profile__grid"><span>Markers <b>${zonation.zone.marker_genes.slice(0, 6).join(" · ")}</b></span><span>Functions <b>${zonation.zone.functional_biases.join(" · ")}</b></span><span>Human MPS oxygen settings <b>${oxygenReadout}</b></span><span>In-situ sinusoid pO₂ <b>not measured</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Zonation</span><span>Human atlas identity plus directional human MPS evidence · controlled device oxygen is not a human in-situ pO₂ value and cannot initialize zonal reaction rates.</span></div>`;
       })()
     : "";
   const openAtlas = summary?.humanLiverOpenAtlas;
@@ -4333,6 +4385,17 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
         return `<div class="phh-profile phh-profile--protein-function"><div class="phh-profile__head"><b>PHH protein function evidence v1</b><span>location · kinetics · donor variation · coupled transport</span></div><div class="phh-profile__grid"><span>Selected proteins <b>${functionalSummary.protein_count}</b></span><span>Complete seven-donor abundance profiles <b>${functionalSummary.all_seven_donor_abundance_profile_count}/8</b></span><span>PHH surface identities <b>${functionalSummary.surface_identity_observation_count}</b></span><span>Physiological membrane domains <b>${functionalSummary.physiological_domain_identity_count}</b></span><span>Transport assay observations <b>${functionalSummary.assay_kinetic_observation_count}</b></span><span>Curve-evaluable Km/Vmax pairs <b>${functionalSummary.assay_curve_evaluable_count} · BSEP only</b></span><span>MRP2 observations <b>rates at 0.5 µM · not Vmax</b></span><span>Measured INSR-linked responses <b>${functionalSummary.functional_response_observation_count} timepoints</b></span><span>Human SCHH lots <b>${functionalSummary.whole_cell_transport_lot_count}</b></span><span>Taurocholate apparent uptake <b>${uptake?.low.toFixed(0) ?? "-"}–${uptake?.high.toFixed(0) ?? "-"} pmol/min/mg</b></span><span>Apparent intrinsic biliary clearance <b>${clearance?.low.toFixed(1) ?? "-"}–${clearance?.high.toFixed(0) ?? "-"} µL/min/mg</b></span><span>Biliary excretion index <b>${bei?.low.toFixed(0) ?? "-"}–${bei?.high.toFixed(0) ?? "-"}%</b></span><span>Quantitative surface-copy records <b>${functionalSummary.quantitative_surface_localization_count}</b></span><span>Measured active fractions <b>${functionalSummary.active_fraction_observation_count}</b></span><span>Receptor-binding kinetic records <b>${functionalSummary.receptor_binding_kinetic_observation_count}</b></span><span>Whole-cell calibrated protein rates <b>${functionalSummary.whole_cell_rate_ready_count}</b></span><span>Exact SCHH model predictions <b>${functionalSummary.exact_whole_cell_transport_prediction_count}</b></span><span>Largest selected donor abundance CV <b>${functionalSummary.highest_selected_abundance_cv_gene} · ${(functionalSummary.highest_selected_abundance_cv * 100).toFixed(1)}%</b></span><span>Automatic abundance-to-activity scaling <b>blocked</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--source">Protein evidence</span><span>The five-lot taurocholate ranges validate the coupled uptake–intracellular–canalicular system; they are not isolated NTCP, OATP or BSEP rates. Exact protocol prediction and state coupling remain closed.</span></div>`;
       })()
     : "";
+  const phhInjuryValidation = summary?.phhInjuryValidation;
+  const phhInjuryValidationRow = phhInjuryValidation
+    ? (() => {
+        const injurySummary = phhInjuryValidation.summary;
+        const operator = phhInjuryValidation.observation_operator;
+        const authority = phhInjuryValidation.runtime_authority;
+        const contract = phhInjuryValidation.validation_data_contract;
+        const delivery = contract.current_delivery;
+        return `<div class="phh-profile phh-profile--injury-validation"><div class="phh-profile__head"><b>Exact PHH injury validation v1</b><span>APAP + bile acid · read only</span></div><div class="phh-profile__grid"><span>Human PHH protocols <b>${injurySummary.human_phh_protocol_count}</b></span><span>Context-bound observations <b>${injurySummary.matching_protocol_observation_count}</b></span><span>Required match dimensions <b>${operator.match_dimensions.length}/8</b></span><span>Exact source replays <b>${operator.exact_protocol_replay_pass_count}/${operator.exact_protocol_replay_count}</b></span><span>Near-miss rejections <b>${operator.near_miss_rejection_count}/${operator.near_miss_probe_count}</b></span><span>Interpolation / unit conversion <b>disabled</b></span><span>Audited legacy injury surfaces <b>${authority.summary.audited_legacy_surface_count}</b></span><span>Runtime purpose <b>${authority.explicit_purpose_required ? "explicitly required" : "implicit"}</b></span><span>Quantitative PHH authority <b>${authority.summary.quantitative_authority_surface_count}</b></span><span>Required donor-trajectory fields <b>${contract.required_columns.length}</b></span><span>Loaded complete donor trajectories <b>${delivery.donor_resolved_raw_record_count}</b></span><span>General fate laws <b>${injurySummary.general_fate_law_count}</b></span><span>Automatic state coupling <b>blocked</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Injury gate</span><span>Only an exact species, PHH system, challenge, dose, unit, duration and temperature match can expose source observations. An empty result means unobserved, never no effect; legacy fate defaults cannot validate or drive the scientific cell.</span></div>`;
+      })()
+    : "";
   const humanSchBileAcids = summary?.humanSchBileAcids;
   const humanSchBileAcidsRow = humanSchBileAcids
     ? (() => {
@@ -4411,7 +4474,7 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
     `<div class="phh-profile__grid"><span>Defined layers <b>${VISUAL_ANATOMY_REQUIREMENTS.length}</b></span><span>Incomplete layers <b>${incompleteAnatomyLayers.length}</b></span><span>Current LOD <b>${(activeVisualAnatomyLod ?? "loading").replaceAll("_", " ")}</b></span><span>Human numeric transfer <b>LSEC fenestra ${HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM} nm mean</b></span></div></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Anatomy rubric</span><span>Coverage of explicit renderer layers, not percent biological realism. Cell-form morphometry, human organelle counts and quantitative EM-volume registration remain incomplete.</span></div>`;
   return (
-    externalReviewRow + visualAnatomyRow + capabilityAtlasRow + cytosolTransportRow + profileRow + geometryReferenceRow + human3dRow + zonationRow + openAtlasRow + homeostasisRow + homeostasisV3Row + endocrineRow + validationProtocolRow + healthyPhhValidationRow + phhSpheroidProtocolRow + phhGlucoseObservabilityRow + energyRedoxRow + phhAlbuminSecretionRow + phhCypFunctionRow + phhBiliaryExcretionRow + phhIdentityHeterogeneityRow + phhProteomeBudgetRow + phhAbsoluteProteomeAtlasRow + phhTransporterInventoryRow + phhProteinFunctionalEvidenceRow + humanSchBileAcidsRow + evidenceIntakeRow + publishedModelRow + externalValidationRow + publishedLineageRow + nutritionalContextRow + fluxEvidenceRow + phhRow + authorityRow + reactionAuthorityRow + kineticTransferRow + auditRow + placeholderRow +
+    externalReviewRow + visualAnatomyRow + capabilityAtlasRow + cytosolTransportRow + profileRow + geometryReferenceRow + human3dRow + zonationRow + openAtlasRow + homeostasisRow + homeostasisV3Row + endocrineRow + validationProtocolRow + healthyPhhValidationRow + phhSpheroidProtocolRow + phhGlucoseObservabilityRow + energyRedoxRow + phhAlbuminSecretionRow + phhCypFunctionRow + phhBiliaryExcretionRow + phhIdentityHeterogeneityRow + phhProteomeBudgetRow + phhAbsoluteProteomeAtlasRow + phhTransporterInventoryRow + phhProteinFunctionalEvidenceRow + phhInjuryValidationRow + humanSchBileAcidsRow + evidenceIntakeRow + publishedModelRow + externalValidationRow + publishedLineageRow + nutritionalContextRow + fluxEvidenceRow + phhRow + authorityRow + reactionAuthorityRow + kineticTransferRow + auditRow + placeholderRow +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Source-backed</span><span>BSEP/MRP2 directionality; intracellular/extracellular measurement distinction; cholestasis → ER stress; human bile-acid death-mode constraint.</span></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Model state</span><span>Mass-conserving intracellular → canalicular relative pools. CYP7A1 feedback and basolateral escape are explicitly not modeled.</span></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Derived</span><span>Stress-time exposure and fate evidence; no calibrated time-to-death or canalicular pressure.</span></div>` +
@@ -6916,61 +6979,276 @@ function buildOrganelleScene() {
 
   // --- Hepatocyte polarity: sinusoidal blood vessel side vs canalicular bile side ---
   const sinusoidCurve = new THREE.CatmullRomCurve3([
-    sinusoidAnchor.clone().add(new THREE.Vector3(0.05, -8.8, -1.1)),
-    sinusoidAnchor.clone().add(new THREE.Vector3(-0.08, -3.1, 0.25)),
-    sinusoidAnchor.clone().add(new THREE.Vector3(0.04, 3.2, -0.15)),
-    sinusoidAnchor.clone().add(new THREE.Vector3(-0.02, 8.9, 0.9))
-  ]);
+    sinusoidAnchor.clone().add(new THREE.Vector3(-0.16, -9.2, -1.15)),
+    sinusoidAnchor.clone().add(new THREE.Vector3(0.28, -5.2, 0.08)),
+    sinusoidAnchor.clone().add(new THREE.Vector3(-0.22, -1.6, 0.42)),
+    sinusoidAnchor.clone().add(new THREE.Vector3(0.2, 2.5, -0.4)),
+    sinusoidAnchor.clone().add(new THREE.Vector3(-0.12, 6.0, 0.15)),
+    sinusoidAnchor.clone().add(new THREE.Vector3(0.14, 9.4, 1.05))
+  ], false, "centripetal");
   sinusoidCurveRef = sinusoidCurve;
   sinusoidBloodCells.length = 0;
+  sinusoidPlasmaField = null;
+
+  const sinusoidFacingFrame = (u: number) => {
+    const center = sinusoidCurve.getPointAt(u);
+    const tangent = sinusoidCurve.getTangentAt(u).normalize();
+    const facing = center.clone().multiplyScalar(-1);
+    facing.addScaledVector(tangent, -facing.dot(tangent));
+    if (facing.lengthSq() < 1e-6) facing.set(1, 0, 0);
+    else facing.normalize();
+    const lateral = new THREE.Vector3().crossVectors(tangent, facing).normalize();
+    return { center, tangent, facing, lateral };
+  };
+
+  // A varying-radius renderer shell avoids the manufactured "perfect pipe"
+  // silhouette. These bounded undulations are display geometry only: no vessel
+  // diameter, compliance or pressure parameter is inferred from them.
+  const sinusoidTubeGeometry = (
+    radius: number,
+    tubularSegments: number,
+    radialSegments: number,
+    phase: number,
+    variability: number
+  ) => {
+    const frames = sinusoidCurve.computeFrenetFrames(tubularSegments, false);
+    const positions: number[] = [];
+    const colors: number[] = [];
+    const indices: number[] = [];
+    const dark = new THREE.Color("#315f66");
+    const light = new THREE.Color("#9ed5ca");
+    const shade = new THREE.Color();
+    const center = new THREE.Vector3();
+    const radial = new THREE.Vector3();
+    const facing = new THREE.Vector3();
+    for (let i = 0; i <= tubularSegments; i += 1) {
+      const u = i / tubularSegments;
+      sinusoidCurve.getPointAt(u, center);
+      const tangent = sinusoidCurve.getTangentAt(u).normalize();
+      facing.copy(center).multiplyScalar(-1).addScaledVector(tangent, center.dot(tangent));
+      if (facing.lengthSq() < 1e-6) facing.set(1, 0, 0);
+      else facing.normalize();
+      for (let j = 0; j <= radialSegments; j += 1) {
+        const theta = (j / radialSegments) * Math.PI * 2;
+        const longitudinal = Math.sin(u * Math.PI * 4.4 + phase) * 0.62
+          + Math.sin(u * Math.PI * 8.2 - phase * 0.7) * 0.24;
+        const circumferential = Math.sin(theta * 3 + u * Math.PI * 5 + phase) * 0.22;
+        const localRadius = radius * (1 + variability * (longitudinal + circumferential));
+        radial.copy(frames.normals[i]).multiplyScalar(Math.cos(theta) * localRadius)
+          .addScaledVector(frames.binormals[i], Math.sin(theta) * localRadius);
+        positions.push(center.x + radial.x, center.y + radial.y, center.z + radial.z);
+        const cellFacing = THREE.MathUtils.clamp(0.5 + 0.5 * radial.dot(facing) / localRadius, 0, 1);
+        const endothelialPatch = 0.5 + 0.5 * Math.sin(u * Math.PI * 9.2 + theta * 1.7 + phase);
+        shade.copy(dark).lerp(
+          light,
+          THREE.MathUtils.clamp(0.14 + cellFacing * 0.56 + endothelialPatch * 0.16, 0, 1)
+        );
+        colors.push(shade.r, shade.g, shade.b);
+      }
+    }
+    for (let i = 0; i < tubularSegments; i += 1) {
+      for (let j = 0; j < radialSegments; j += 1) {
+        const a = i * (radialSegments + 1) + j;
+        const b = (i + 1) * (radialSegments + 1) + j;
+        indices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  };
+
+  const sinusoidFacingRibbonGeometry = (radius: number, width: number, segments: number) => {
+    const positions: number[] = [];
+    const indices: number[] = [];
+    for (let i = 0; i <= segments; i += 1) {
+      const frame = sinusoidFacingFrame(i / segments);
+      const surface = frame.center.clone().addScaledVector(frame.facing, radius);
+      const left = surface.clone().addScaledVector(frame.lateral, -width * 0.5);
+      const right = surface.clone().addScaledVector(frame.lateral, width * 0.5);
+      positions.push(left.x, left.y, left.z, right.x, right.y, right.z);
+    }
+    for (let i = 0; i < segments; i += 1) {
+      const a = i * 2;
+      const b = a + 2;
+      indices.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  };
+
   const sinusoidOuterRadius = 5.45;
-  const sinusoidLumenRadius = 4.85;
-  const sinusoidWall = mesh(new THREE.TubeGeometry(sinusoidCurve, 96, sinusoidOuterRadius, 36, false), "#55a7bb", new THREE.Vector3(), {
-    opacity: 0.2,
-    emissive: 0.07,
-    rough: 0.62,
-    label: "Fenestrated liver sinusoid wall - thin LSEC endothelium perforated by sieve-plate fenestrae. Shell radius and thickness are normalized renderer geometry, not human morphometry."
-  });
-  const sinusoidLumen = mesh(new THREE.TubeGeometry(sinusoidCurve, 96, sinusoidLumenRadius, 32, false), "#7d2633", new THREE.Vector3(), {
-    opacity: 0.12,
-    emissive: 0.025,
-    rough: 0.7,
-    label: "Sinusoidal blood lumen - nutrients, oxygen, hormones, ammonia, bilirubin and xenobiotics arrive from flowing blood. Display radius is normalized and not a vessel measurement."
-  });
-  // Space of Disse: the thin gap between the cell surface and the sinusoid wall.
-  const disseSpace = mesh(new THREE.BoxGeometry(0.18, 14.8, 6.8), "#8fd0ff", new THREE.Vector3(-(membraneRestXExtent + 0.45), -1.0, 0), {
-    opacity: 0.08,
-    emissive: 0.06,
-    label: "Space of Disse - extracellular exchange compartment between fenestrated sinusoid and hepatocyte microvilli; displayed slab width is not a human morphometric measurement"
-  });
-  disseSpace.rotation.z = 0.05;
+  const sinusoidLumenRadius = 5.08;
+  const sinusoidWall = new THREE.Mesh(
+    sinusoidTubeGeometry(sinusoidOuterRadius, 104, 44, 0.35, 0.026),
+    new THREE.MeshPhysicalMaterial({
+      color: "#ffffff",
+      vertexColors: true,
+      emissive: "#4b9294",
+      emissiveIntensity: 0.15,
+      roughness: 0.6,
+      metalness: 0,
+      clearcoat: 0.08,
+      clearcoatRoughness: 0.7,
+      transparent: true,
+      opacity: 0.19,
+      depthWrite: false,
+      side: THREE.FrontSide
+    })
+  );
+  sinusoidWall.userData.label =
+    "Fenestrated liver sinusoid wall - a thin, irregular LSEC display shell perforated by sieve-plate fenestrae. Radius, waviness and optical thickness are normalized renderer geometry, not human morphometry or mechanics.";
+  sinusoidWall.renderOrder = 3;
+  group.add(sinusoidWall);
+  const sinusoidLumen = new THREE.Mesh(
+    sinusoidTubeGeometry(sinusoidLumenRadius, 96, 40, 1.15, 0.016),
+    new THREE.MeshPhysicalMaterial({
+      color: "#641c2d",
+      emissive: "#2c0710",
+      emissiveIntensity: 0.08,
+      roughness: 0.72,
+      metalness: 0,
+      transparent: true,
+      opacity: 0.075,
+      depthWrite: false,
+      side: THREE.BackSide
+    })
+  );
+  sinusoidLumen.userData.label =
+    "Sinusoidal plasma volume - nutrients, oxygen, hormones, ammonia, bilirubin and xenobiotics arrive with flowing blood. Display radius and optical density are not vessel measurements.";
+  sinusoidLumen.renderOrder = 0;
+  group.add(sinusoidLumen);
+
+  // Space of Disse: a curved exchange ribbon between the cell-facing LSEC
+  // surface and hepatocyte microvilli, not a rectangular translucent slab.
+  const disseSpace = mesh(
+    sinusoidFacingRibbonGeometry(sinusoidOuterRadius + 0.19, 5.9, 72),
+    "#9ed8dc",
+    new THREE.Vector3(),
+    {
+      opacity: 0.045,
+      emissive: 0.025,
+      rough: 0.8,
+      label: "Space of Disse - curved extracellular exchange layer between fenestrated sinusoid and hepatocyte microvilli; displayed width and optical density are not human morphometric measurements"
+    }
+  );
+  (disseSpace.material as THREE.MeshStandardMaterial).depthWrite = false;
   registerAnatomyLod(disseSpace, "cellular");
-  // Render a sparse, ordered biconcave train rather than freely intersecting
-  // discs. Geometry is laterally compressed to fit the normalized lumen.
-  const rbcProfile = [
-    new THREE.Vector2(0, 0.12),
-    new THREE.Vector2(1.1, 0.34),
-    new THREE.Vector2(3.5, 0.58),
-    new THREE.Vector2(4.25, 0.2),
-    new THREE.Vector2(3.5, -0.58),
-    new THREE.Vector2(1.1, -0.34),
-    new THREE.Vector2(0, -0.12)
-  ];
-  const rbcGeometry = new THREE.LatheGeometry(rbcProfile, 36);
-  for (let i = 0; i < 6; i += 1) {
-    const u = (i + 0.5) / 6;
-    const p = sinusoidCurve.getPointAt(u);
-    const radialX = (rnd() - 0.5) * 0.5;
-    const radialZ = (rnd() - 0.5) * 0.5;
-    const rbc = mesh(rbcGeometry, "#b8323f", p.clone().add(new THREE.Vector3(radialX, 0, radialZ)), {
-      opacity: 0.94,
-      emissive: 0.035,
-      rough: 0.72,
-      label: "Biconcave red blood cell advecting inside the sinusoid - an ordered hard-body train. Shape is laterally compressed for the normalized lumen and is not morphometric."
-    });
-    rbc.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), sinusoidCurve.getTangentAt(u).normalize());
-    sinusoidBloodCells.push({ mesh: rbc, baseU: u, radialX, radialZ });
+
+  // Sparse plasma tracers make flow direction readable without pretending to
+  // render water molecules, concentrations or a CFD velocity field.
+  {
+    const plasmaCount = 88;
+    const positions = new Float32Array(plasmaCount * 3);
+    const colors = new Float32Array(plasmaCount * 3);
+    const baseU = new Float32Array(plasmaCount);
+    const radialX = new Float32Array(plasmaCount);
+    const radialZ = new Float32Array(plasmaCount);
+    const speed = new Float32Array(plasmaCount);
+    const warm = new THREE.Color();
+    for (let i = 0; i < plasmaCount; i += 1) {
+      baseU[i] = rnd();
+      const radialDistance = Math.sqrt(rnd()) * (sinusoidLumenRadius - 0.45);
+      const angle = rnd() * Math.PI * 2;
+      radialX[i] = Math.cos(angle) * radialDistance;
+      radialZ[i] = Math.sin(angle) * radialDistance;
+      speed[i] = 0.0085 + rnd() * 0.0035;
+      const center = sinusoidCurve.getPointAt(baseU[i]);
+      positions[i * 3] = center.x + radialX[i];
+      positions[i * 3 + 1] = center.y;
+      positions[i * 3 + 2] = center.z + radialZ[i];
+      warm.set(rnd() > 0.72 ? "#efc4a4" : "#d88987").multiplyScalar(0.72 + rnd() * 0.28);
+      colors[i * 3] = warm.r;
+      colors[i * 3 + 1] = warm.g;
+      colors[i * 3 + 2] = warm.b;
+    }
+    const plasmaGeometry = new THREE.BufferGeometry();
+    plasmaGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    plasmaGeometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    const plasmaPoints = new THREE.Points(
+      plasmaGeometry,
+      new THREE.PointsMaterial({
+        size: 0.13,
+        sizeAttenuation: true,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.42,
+        depthWrite: false
+      })
+    );
+    plasmaPoints.userData.label =
+      "Plasma flow tracers - sparse renderer samples that show advection direction only; they are not water molecules, concentrations, pressure or measured PHH flow speeds.";
+    plasmaPoints.renderOrder = 1;
+    group.add(plasmaPoints);
+    registerAnatomyLod(plasmaPoints, "cellular");
+    sinusoidPlasmaField = { points: plasmaPoints, baseU, radialX, radialZ, speed };
   }
+
+  // Smooth biconcave display proxy. Individual cells are tilted and mildly
+  // anisotropic so the flow reads as deformable blood rather than stacked,
+  // identical rigid plates; these shape variations are not morphometry.
+  const rbcProfile: THREE.Vector2[] = [];
+  const rbcProfileSteps = 28;
+  for (let i = 0; i <= rbcProfileSteps; i += 1) {
+    const t = i / rbcProfileSteps;
+    const radius = t * 3.28;
+    const halfThickness = 0.13 * (1 - t * t) + 0.58 * Math.pow(Math.sin(Math.PI * t), 1.15);
+    rbcProfile.push(new THREE.Vector2(radius, halfThickness));
+  }
+  for (let i = rbcProfileSteps; i >= 0; i -= 1) {
+    const t = i / rbcProfileSteps;
+    const radius = t * 3.28;
+    const halfThickness = 0.13 * (1 - t * t) + 0.58 * Math.pow(Math.sin(Math.PI * t), 1.15);
+    rbcProfile.push(new THREE.Vector2(radius, -halfThickness));
+  }
+  const rbcGeometry = new THREE.LatheGeometry(rbcProfile, 48);
+  rbcGeometry.computeVertexNormals();
+  for (let i = 0; i < 5; i += 1) {
+    const u = (i + 0.5) / 5;
+    const p = sinusoidCurve.getPointAt(u);
+    const radialX = (rnd() - 0.5) * 1.15;
+    const radialZ = (rnd() - 0.5) * 1.15;
+    const rbcColor = new THREE.Color("#a9263a").lerp(new THREE.Color("#cf4650"), rnd() * 0.38);
+    const rbcMaterial = new THREE.MeshPhysicalMaterial({
+      color: rbcColor,
+      emissive: "#3b0711",
+      emissiveIntensity: 0.09,
+      roughness: 0.46,
+      metalness: 0,
+      clearcoat: 0.14,
+      clearcoatRoughness: 0.68
+    });
+    const rbc = new THREE.Mesh(rbcGeometry, rbcMaterial);
+    rbc.position.copy(p).add(new THREE.Vector3(radialX, 0, radialZ));
+    rbc.userData.label =
+      "Biconcave red blood cell advecting inside the sinusoid - ordered single-direction flow with renderer-only tilt and mild shape variation. Display size and deformation are not morphometric measurements.";
+    rbc.renderOrder = 2;
+    group.add(rbc);
+    const baseScale = new THREE.Vector3(
+      0.88 + rnd() * 0.13,
+      0.84 + rnd() * 0.18,
+      0.8 + rnd() * 0.17
+    );
+    rbc.scale.copy(baseScale);
+    sinusoidBloodCells.push({
+      mesh: rbc,
+      baseU: u,
+      radialX,
+      radialZ,
+      tiltX: (rnd() - 0.5) * 0.34,
+      tiltZ: (rnd() - 0.5) * 0.34,
+      roll: rnd() * Math.PI * 2,
+      phase: rnd() * Math.PI * 2,
+      baseScale
+    });
+  }
+  updateSinusoidBloodFlow(0);
   // Basolateral microvilli are bound to the deformable membrane mesh. The line
   // count and displayed length are LOD choices; they are not a biological count
   // or morphometric estimate.
@@ -7032,49 +7310,88 @@ function buildOrganelleScene() {
   // Blood solutes cross into the space of Disse through these many pores, not a
   // single opening. Each pore is also a distinct entry point for cargo packets.
   sinusoidFenestrae = [];
+  const surfaceNormal = new THREE.Vector3(0, 0, 1);
+  const nucleusNormal = new THREE.Vector3(1, 0, 0);
+  // Faint, irregular LSEC outlines break up the shell into thin endothelial
+  // territories without implying a measured cell size or junction map.
+  for (let cellIndex = 0; cellIndex < 5; cellIndex += 1) {
+    const frame = sinusoidFacingFrame((cellIndex + 0.5) / 5);
+    const surface = frame.center.clone().addScaledVector(frame.facing, sinusoidOuterRadius + 0.035);
+    const boundaryPoints: THREE.Vector3[] = [];
+    for (let edge = 0; edge < 44; edge += 1) {
+      const angle = (edge / 44) * Math.PI * 2;
+      const irregularity = 1 + Math.sin(angle * 3 + cellIndex * 1.7) * 0.055;
+      boundaryPoints.push(
+        surface.clone()
+          .addScaledVector(frame.tangent, Math.cos(angle) * 2.05 * irregularity)
+          .addScaledVector(frame.lateral, Math.sin(angle) * 2.45 * irregularity)
+      );
+    }
+    const boundary = new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(boundaryPoints),
+      new THREE.LineBasicMaterial({
+        color: "#93d8d2",
+        transparent: true,
+        opacity: 0.32,
+        depthWrite: false
+      })
+    );
+    boundary.userData.label =
+      "LSEC territory boundary - a topology-only renderer outline on the thin fenestrated endothelium; cell area and junction geometry are not measured.";
+    boundary.renderOrder = 4;
+    group.add(boundary);
+    registerAnatomyLod(boundary, "cellular");
+  }
+
   const sievePlateCount = 6;
   for (let plate = 0; plate < sievePlateCount; plate += 1) {
     const u = (plate + 0.5) / sievePlateCount;
-    const center = sinusoidCurve.getPointAt(u);
-    const wallX = center.x + sinusoidOuterRadius - 0.06; // cell-facing (+x) endothelial surface
-    const sievePlate = mesh(new THREE.CircleGeometry(0.78, 32), "#4fa8c5", new THREE.Vector3(wallX - 0.025, center.y, center.z), {
-      opacity: 0.09,
-      emissive: 0.05,
+    const frame = sinusoidFacingFrame(u);
+    const wallPoint = frame.center.clone().addScaledVector(frame.facing, sinusoidOuterRadius + 0.045);
+    const sievePlate = mesh(new THREE.CircleGeometry(0.72, 32), "#74c9c6", wallPoint, {
+      opacity: 0.13,
+      emissive: 0.04,
       rough: 0.58,
-      rot: [0, Math.PI / 2, 0],
       label: "LSEC sieve-plate region - groups true-scale fenestra display samples; plate diameter and porosity are not inferred"
     });
+    sievePlate.quaternion.setFromUnitVectors(surfaceNormal, frame.facing);
+    sievePlate.scale.set(1, 1.45, 1);
+    sievePlate.renderOrder = 4;
     registerAnatomyLod(sievePlate, "cellular");
     const poresPerPlate = 4 + Math.floor(rnd() * 3);
     for (let k = 0; k < poresPerPlate; k += 1) {
-      const pos = new THREE.Vector3(
-        wallX + (rnd() - 0.5) * 0.22,
-        center.y + (rnd() - 0.5) * 1.6,
-        center.z + (rnd() - 0.5) * 2.5
-      );
+      const pos = wallPoint.clone()
+        .addScaledVector(frame.facing, 0.025 + (rnd() - 0.5) * 0.035)
+        .addScaledVector(frame.tangent, (rnd() - 0.5) * 1.18)
+        .addScaledVector(frame.lateral, (rnd() - 0.5) * 1.42);
       const fenestraRadiusWorld = nmToWorld(HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM) * 0.5;
       const ring = mesh(new THREE.TorusGeometry(fenestraRadiusWorld, 0.018, 6, 16), "#2f86bf", pos, {
-        opacity: 0.55,
-        emissive: 0.16,
+        opacity: 0.68,
+        emissive: 0.12,
         rough: 0.5,
-        rot: [0, Math.PI / 2, (rnd() - 0.5) * 0.7],
         label: `Fenestra - true-scale ${HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM} nm mean diameter from human liver EM; display samples are clustered as a sieve plate and become sub-pixel in whole-cell view`
       });
+      ring.quaternion.setFromUnitVectors(surfaceNormal, frame.facing);
+      ring.rotateZ((rnd() - 0.5) * 0.7);
+      ring.renderOrder = 5;
       registerAnatomyLod(ring, "ultrastructure");
       sinusoidFenestrae.push(pos.clone());
     }
     // A thin liver sinusoidal endothelial cell (LSEC) body/nucleus between plates.
     if (plate < sievePlateCount - 1) {
-      const nucC = sinusoidCurve.getPointAt((plate + 1) / sievePlateCount);
-      const nucWallX = nucC.x + sinusoidOuterRadius - 0.11;
-      const lsecNuc = mesh(new THREE.SphereGeometry(0.4, 16, 12), "#357aa8",
-        new THREE.Vector3(nucWallX, nucC.y, nucC.z + (rnd() - 0.5) * 1.6), {
-        opacity: 0.5,
-        emissive: 0.08,
-        rough: 0.55,
-        label: "Liver sinusoidal endothelial cell (LSEC) nucleus — the thin fenestrated lining between sieve plates"
+      const nucleusFrame = sinusoidFacingFrame((plate + 1) / sievePlateCount);
+      const nucleusPosition = nucleusFrame.center.clone()
+        .addScaledVector(nucleusFrame.facing, sinusoidOuterRadius + 0.08)
+        .addScaledVector(nucleusFrame.lateral, (rnd() - 0.5) * 1.45);
+      const lsecNuc = mesh(new THREE.SphereGeometry(0.4, 20, 14), "#376d91", nucleusPosition, {
+        opacity: 0.62,
+        emissive: 0.065,
+        rough: 0.64,
+        label: "Liver sinusoidal endothelial cell (LSEC) nucleus - flattened into the thin fenestrated lining between sieve plates"
       });
-      lsecNuc.scale.set(0.5, 1.5, 1.2); // flattened, as the endothelium is very thin
+      lsecNuc.quaternion.setFromUnitVectors(nucleusNormal, nucleusFrame.facing);
+      lsecNuc.scale.set(0.34, 1.42, 0.96);
+      lsecNuc.renderOrder = 5;
       registerAnatomyLod(lsecNuc, "cellular");
     }
   }
@@ -8286,6 +8603,9 @@ function buildOrganelleScene() {
   divisionOverlay = createDivisionOverlay();
   group.add(divisionOverlay.group);
 
+  group.updateMatrixWorld(true);
+  const organelleFrameCenter = new THREE.Box3().setFromObject(group).getCenter(new THREE.Vector3());
+  organelleFrameCenterX = Number.isFinite(organelleFrameCenter.x) ? organelleFrameCenter.x : 0;
   root.add(group);
   organelleGroup = group;
   organelleJiggleTargets = null; // rebuilt lazily for the new scene graph
@@ -8924,7 +9244,10 @@ function resize() {
       ? (isNarrow ? 0.46 : 0.82)
       : (isNarrow ? 0.58 : 1);
   root.scale.setScalar(rootScale);
-  root.position.set(0, isNarrow && mode !== "communication" ? 1.45 : 0, 0);
+  const narrowOrganelleCenterOffset = isNarrow && mode === "organelles"
+    ? -organelleFrameCenterX * rootScale
+    : 0;
+  root.position.set(narrowOrganelleCenterOffset, isNarrow && mode !== "communication" ? 1.45 : 0, 0);
   camera.position.set(0, cameraDistance * heightFactor, cameraDistance);
   camera.lookAt(0, 0, 0);
   camera.aspect = aspect;

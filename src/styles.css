@@ -1280,6 +1280,13 @@ input[type="checkbox"] {
 
 .phh-profile--protein-function .phh-profile__head span { color: #e1bd76; }
 
+.phh-profile--injury-validation {
+  border-left-color: #c97878;
+  background: rgba(201, 120, 120, 0.07);
+}
+
+.phh-profile--injury-validation .phh-profile__head span { color: #e4a0a0; }
+
 .phh-profile--sch-bile-acids {
   border-left-color: #c57e65;
   background: rgba(197, 126, 101, 0.07);
@@ -1294,6 +1301,7 @@ input[type="checkbox"] {
 .phh-profile--absolute-proteome .phh-profile__grid,
 .phh-profile--transporter-inventory .phh-profile__grid,
 .phh-profile--protein-function .phh-profile__grid,
+.phh-profile--injury-validation .phh-profile__grid,
 .phh-profile--sch-bile-acids .phh-profile__grid {
   grid-template-columns: minmax(0, 1fr);
   gap: 2px;

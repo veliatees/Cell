@@ -59,6 +59,12 @@ def test_quantity_harvest_and_injury_evidence_remain_fail_closed() -> None:
     assert injury["observed_metrics"]["matching_protocol_observation_count"] == 9
     assert injury["observed_metrics"]["calibrated_fate_commitment_laws"] == 0
     assert injury["observed_metrics"]["runtime_coupled_observation_count"] == 0
+    assert injury["observed_metrics"]["exact_protocol_replay_pass_count"] == 4
+    assert injury["observed_metrics"]["near_miss_rejection_count"] == 7
+    assert injury["observed_metrics"]["audited_legacy_injury_surface_count"] == 3
+    assert injury["observed_metrics"]["legacy_quantitative_authority_surface_count"] == 0
+    assert injury["observed_metrics"]["required_donor_trajectory_field_count"] == 19
+    assert injury["observed_metrics"]["complete_donor_trajectory_record_count"] == 0
 
 
 def test_completion_matrix_rejects_an_unearned_reaction_promotion() -> None:

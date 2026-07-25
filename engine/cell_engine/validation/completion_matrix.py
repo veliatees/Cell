@@ -412,7 +412,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Damage, death and recovery calibration",
             "partial",
             "Apoptosis, necrosis, cholestasis and proteostasis outcomes in healthy PHH perturbation contexts.",
-            "Four exact PHH perturbation protocols now provide nine APAP and bile-acid timing, rescue and necrosis observations. They validate only matching protocols; commitment thresholds and recovery laws remain non-predictive.",
+            "Four PHH perturbation protocols and nine APAP/bile-acid observations now feed a read-only exact-context operator. Four source protocols replay exactly and seven software near-misses are rejected. Three legacy injury surfaces are audited and carry zero quantitative PHH authority.",
             {
                 "human_phh_protocol_count": injury["human_phh_protocol_count"],
                 "matching_protocol_observation_count": injury[
@@ -425,16 +425,36 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "runtime_coupled_observation_count": injury[
                     "runtime_coupled_observation_count"
                 ],
+                "exact_protocol_replay_pass_count": injury[
+                    "exact_protocol_replay_pass_count"
+                ],
+                "near_miss_rejection_count": injury[
+                    "near_miss_rejection_count"
+                ],
+                "audited_legacy_injury_surface_count": injury[
+                    "audited_legacy_injury_surface_count"
+                ],
+                "legacy_quantitative_authority_surface_count": injury[
+                    "legacy_quantitative_authority_surface_count"
+                ],
+                "required_donor_trajectory_field_count": injury[
+                    "required_donor_trajectory_field_count"
+                ],
+                "complete_donor_trajectory_record_count": injury[
+                    "complete_donor_trajectory_record_count"
+                ],
             },
             (
-                "Numeric time-resolved dose-response trajectories with uncertainty and fate labels.",
-                "Commitment-point and washout/recovery experiments.",
-                "Donor-disjoint validation for each declared injury context.",
+                "Populate the 19-field contract with raw donor-resolved dose-time endpoint records.",
+                "Supply intervention, commitment-point, washout and recovery follow-up fields where applicable.",
+                "Freeze model and measurement operators before an independent donor-heldout evaluation.",
             ),
             (
                 "engine/cell_engine/quantitative/phh_injury_validation.py",
+                "engine/cell_engine/core/injury_authority.py",
                 "engine/cell_engine/stochastic/apoptosis.py",
                 "engine/cell_engine/processes/cellular_response.py",
+                "data/evidence_intake/phh_injury_trajectory_contract.v1.json",
             ),
         ),
         _entry(
@@ -598,6 +618,17 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         "runtime_coupled_observation_count"
     ] != 0:
         raise ValueError("injury observations activated an uncalibrated fate law")
+    injury_metrics = by_id["damage_fate_recovery_calibration"]["observed_metrics"]
+    if (
+        injury_metrics["exact_protocol_replay_pass_count"] != 4
+        or injury_metrics["near_miss_rejection_count"] != 7
+    ):
+        raise ValueError("injury exact-protocol operator self-check changed")
+    if (
+        injury_metrics["legacy_quantitative_authority_surface_count"] != 0
+        or injury_metrics["complete_donor_trajectory_record_count"] != 0
+    ):
+        raise ValueError("legacy injury authority or donor evidence was promoted")
     if by_id["hepatocyte_fba_execution"]["observed_metrics"]["enabled_execution_gate_count"] != 0:
         raise ValueError("FBA execution escaped its scientific gate")
     if by_id["independent_scientific_validation"]["observed_metrics"]["externally_reviewed_claim_count"] != 0:

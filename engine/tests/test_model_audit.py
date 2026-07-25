@@ -27,6 +27,7 @@ class ScientificModelAuditTests(unittest.TestCase):
         self.assertIn("compartmental_energy_redox_contract", {surface.id for surface in drivers})
         self.assertIn("energy_redox_calibration_validation_gate", {surface.id for surface in drivers})
         self.assertIn("external_validation_readiness_program", {surface.id for surface in drivers})
+        self.assertIn("phh_injury_exact_protocol_operator", {surface.id for surface in drivers})
         self.assertNotIn("published_hepatic_glucose_shadow_model", {surface.id for surface in drivers})
 
     def test_known_unsupported_surfaces_are_blocked_or_disabled(self) -> None:
@@ -40,6 +41,7 @@ class ScientificModelAuditTests(unittest.TestCase):
             "legacy_oxphos_kinetics",
             "integrated_fuel_pathway_rates",
             "endocrine_receptor_rate_coupling",
+            "legacy_injury_fate_runtime",
             "albumin_secretory_pathway_kinetics",
             "integrated_fuel_pathway_rates",
         ):
