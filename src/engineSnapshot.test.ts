@@ -2187,7 +2187,7 @@ describe("engine snapshot client", () => {
       expect(result.summary.reactionEvidenceAtlas?.summary.evidence_slot_count).toBe(432);
       expect(result.summary.reactionEvidenceAtlas?.summary.transport_coupled_reaction_count).toBe(0);
       expect(result.summary.cytosolTransport?.material_model.model).toBe("poroelastic_two_phase_cytoplasm");
-      expect(result.summary.cytosolTransport?.version).toBe("cytosol_transport_rheology_contract_v6");
+      expect(result.summary.cytosolTransport?.version).toBe("cytosol_transport_rheology_contract_v7");
       expect(result.summary.cytosolTransport?.summary.conservative_subgrid_boundary_treatment_count).toBe(1);
       expect(result.summary.cytosolTransport?.summary.dimensionless_active_cargo_route_kernel_count).toBe(1);
       expect(result.summary.cytosolTransport?.summary.healthy_phh_active_transport_kernel_count).toBe(0);
@@ -2216,8 +2216,8 @@ describe("engine snapshot client", () => {
       expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(27);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(5);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.partial_count).toBe(7);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(13);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.partial_count).toBe(8);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(12);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.biological_accuracy_pct).toBeNull();
       expect(result.summary.humanLiverOpenAtlas?.morphometry_2d.cell_count).toBe(56_055);
       expect(result.summary.humanLiverOpenAtlas?.surfaceome.observed_protein_count).toBe(300);

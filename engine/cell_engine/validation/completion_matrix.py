@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Literal
 
+from cell_engine.ml.generative import generative_donor_manifest_intake_snapshot
 from cell_engine.processes.cellular_memory import cellular_memory_contract_snapshot
 from cell_engine.quantitative.compartmental_energy_redox import (
     compartmental_energy_redox_snapshot,
@@ -82,6 +83,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     memory = cellular_memory_contract_snapshot()["summary"]
     metabolic = metabolic_constraint_shell_snapshot()
     external = external_validation_snapshot()["summary"]
+    donor_generative = generative_donor_manifest_intake_snapshot()
 
     entries = (
         _entry(
@@ -200,16 +202,30 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
         _entry(
             "local_non_affine_membrane_coupling",
             "Local non-affine membrane-to-fluid coupling",
-            "blocked_missing_evidence",
-            "Local folds, buds, endocytosis, exocytosis and topology change.",
-            "The fluid grid follows the global volume-preserving affine membrane map only.",
-            {"local_topology_change_modes_coupled": 0},
+            "partial",
+            "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
+            "The fluid grid now follows the global volume-preserving affine map and a dynamically rasterized reference-space residual from the current membrane mesh. The affine component is removed before sampling, so contact deformation is not counted twice. Multi-intersection folds and topology changes remain unsupported.",
+            {
+                "local_star_shaped_surface_modes_coupled": cytosol_summary[
+                    "local_star_shaped_membrane_boundary_coupling_count"
+                ],
+                "local_topology_change_modes_coupled": cytosol_summary[
+                    "local_membrane_topology_change_coupling_count"
+                ],
+                "locally_conservative_membrane_face_flux_count": cytosol_summary[
+                    "locally_conservative_membrane_face_flux_count"
+                ],
+            },
             (
                 "Remeshing and topology-change representation.",
                 "Locally conservative moving-boundary coupling.",
                 "Event-specific membrane reservoir and neck mechanics evidence.",
             ),
-            ("src/physics/intracellularFluid.ts", "src/physics/membraneMechanics.ts"),
+            (
+                "src/physics/membraneFluidBoundary.ts",
+                "src/physics/intracellularFluid.ts",
+                "src/physics/cytosolNumerics.ts",
+            ),
         ),
         _entry(
             "explicit_water_molecules",
@@ -275,6 +291,18 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "healthy_phh_active_transport_kernels": cytosol_summary[
                     "healthy_phh_active_transport_kernel_count"
                 ],
+                "trajectory_intake_contract_count": cytosol_summary[
+                    "active_cargo_trajectory_intake_contract_count"
+                ],
+                "delivered_phh_route_count": cytosol_summary[
+                    "delivered_phh_active_cargo_route_count"
+                ],
+                "structurally_complete_phh_route_count": cytosol_summary[
+                    "structurally_complete_phh_active_cargo_route_count"
+                ],
+                "quantitatively_authorized_phh_route_count": cytosol_summary[
+                    "quantitatively_authorized_phh_active_cargo_route_count"
+                ],
             },
             (
                 "Cargo- and route-resolved PHH trajectories.",
@@ -283,6 +311,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
             (
                 "engine/cell_engine/quantitative/cytosol_transport.py",
+                "engine/cell_engine/quantitative/active_cargo_trajectory.py",
+                "data/evidence_intake/phh_active_cargo_trajectory_contract.v1.json",
                 "src/physics/transportModes.ts",
                 "src/main.ts",
             ),
@@ -547,14 +577,32 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Joint donor-state variability model",
             "blocked_missing_evidence",
             "Age, sex, genotype, zonation, nutrition and disease history in one donor-resolved state.",
-            "Separate donor/cohort observations exist, but cross-assay records are not fused into synthetic people and no VAE is trained.",
-            {"validated_generative_donor_models": 0},
+            "A strict donor-linked multimodal manifest intake now requires explicit missingness, batch/technical covariates, donor-disjoint train/validation/test splits and a study-disjoint test set. No qualifying delivery, trained VAE or validated synthetic donor exists.",
+            {
+                "donor_manifest_intake_contract_count": 1,
+                "delivered_donor_manifest_sample_count": donor_generative[
+                    "sample_count"
+                ],
+                "delivered_donor_count": donor_generative["donor_count"],
+                "structurally_training_data_ready_count": int(
+                    bool(donor_generative["structurally_training_data_ready"])
+                ),
+                "validated_generative_donor_models": donor_generative[
+                    "validated_generative_donor_model_count"
+                ],
+                "automatic_engine_coupling_count": int(
+                    bool(donor_generative["automatic_engine_coupling"])
+                ),
+            },
             (
                 "A donor-linked multimodal training cohort and feature manifest.",
                 "Donor-level train/validation/test splits and batch covariates.",
                 "Posterior predictive and biological constraint validation.",
             ),
-            ("engine/cell_engine/ml/generative.py",),
+            (
+                "engine/cell_engine/ml/generative.py",
+                "data/evidence_intake/phh_generative_donor_manifest_contract.v1.json",
+            ),
         ),
         _entry(
             "donor_3d_morphology_mechanics",
@@ -717,8 +765,30 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
     if (
         active_transport_metrics["dimensionless_renderer_route_kernels"] != 1
         or active_transport_metrics["healthy_phh_active_transport_kernels"] != 0
+        or active_transport_metrics["trajectory_intake_contract_count"] != 1
+        or active_transport_metrics["delivered_phh_route_count"] != 0
+        or active_transport_metrics["quantitatively_authorized_phh_route_count"] != 0
     ):
         raise ValueError("dimensionless cargo renderer escaped into PHH transport")
+    local_boundary_metrics = by_id["local_non_affine_membrane_coupling"][
+        "observed_metrics"
+    ]
+    if (
+        local_boundary_metrics["local_star_shaped_surface_modes_coupled"] != 1
+        or local_boundary_metrics["local_topology_change_modes_coupled"] != 0
+        or local_boundary_metrics["locally_conservative_membrane_face_flux_count"]
+        != 0
+    ):
+        raise ValueError("local membrane-fluid boundary contract changed")
+    donor_model_metrics = by_id["donor_state_model"]["observed_metrics"]
+    if (
+        donor_model_metrics["donor_manifest_intake_contract_count"] != 1
+        or donor_model_metrics["delivered_donor_manifest_sample_count"] != 0
+        or donor_model_metrics["structurally_training_data_ready_count"] != 0
+        or donor_model_metrics["validated_generative_donor_models"] != 0
+        or donor_model_metrics["automatic_engine_coupling_count"] != 0
+    ):
+        raise ValueError("generative donor intake escaped into model authority")
     if by_id["hepatocyte_quantity_harvest"]["observed_metrics"][
         "healthy_phh_runtime_parameter_count"
     ] != 0:
