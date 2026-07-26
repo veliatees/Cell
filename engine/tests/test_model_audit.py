@@ -90,6 +90,18 @@ class ScientificModelAuditTests(unittest.TestCase):
             "synthetic_linear_programming_verification_only",
         )
         self.assertEqual(
+            by_id["human_gem_generic_flux_consistency"].default_snapshot_role,
+            "checksum_pinned_generic_fastcc_classification",
+        )
+        self.assertIs(
+            by_id["human_gem_generic_flux_consistency"].drives_scientific_validation,
+            True,
+        )
+        self.assertEqual(
+            by_id["human_gem_generic_native_fba"].default_snapshot_role,
+            "checksum_pinned_generic_objective_software_audit",
+        )
+        self.assertEqual(
             by_id["phh_metabolic_execution_bundle_intake"].default_snapshot_role,
             "checksum_frozen_context_and_flux_validation_firewall",
         )

@@ -16,6 +16,7 @@ from typing import Any, Sequence
 VERSION = "fastcore_context_kernel_v1"
 PINNED_SCIPY_VERSION = "1.17.1"
 SOLVER_METHOD = "highs"
+FASTCC_SOLVER_METHOD = "highs-ipm"
 SOURCE_DOI = "https://doi.org/10.1371/journal.pcbi.1003424"
 OFFICIAL_IMPLEMENTATION_URL = (
     "https://github.com/opencobra/cobratoolbox/tree/master/"
@@ -65,6 +66,34 @@ class FastcoreExtractionResult:
     extracted_network_flux_consistent: bool
     core_reactions_retained: bool
     unique_extraction_guaranteed: bool
+
+
+@dataclass(frozen=True)
+class FastccConsistencyResult:
+    consistent_reaction_ids: tuple[str, ...]
+    consistent_reaction_indices: tuple[int, ...]
+    blocked_reaction_ids: tuple[str, ...]
+    forward_witness_reaction_ids: tuple[str, ...]
+    reverse_witness_reaction_ids: tuple[str, ...]
+    reverse_only_witness_reaction_ids: tuple[str, ...]
+    epsilon: float
+    lp7_solve_count: int
+    witness_mode_count: int
+    maximum_mass_balance_residual: float
+    maximum_bound_violation: float
+    complete_consistency_classification: bool
+    biological_context_assigned: bool
+
+
+@dataclass(frozen=True)
+class StructuralDeadEndPruneResult:
+    blocked_reaction_ids: tuple[str, ...]
+    blocked_reaction_indices: tuple[int, ...]
+    initially_subthreshold_reaction_count: int
+    reactions_removed_per_round: tuple[int, ...]
+    epsilon: float
+    complete_flux_consistency_classification: bool
+    biological_context_assigned: bool
 
 
 @dataclass
@@ -145,6 +174,7 @@ def _linprog(
     bounds,
     inequality=None,
     inequality_rhs=None,
+    method: str = SOLVER_METHOD,
 ):
     _, linprog, *_ = _solver_modules()
     result = linprog(
@@ -154,7 +184,7 @@ def _linprog(
         A_eq=equality,
         b_eq=[0.0] * equality.shape[0],
         bounds=bounds,
-        method=SOLVER_METHOD,
+        method=method,
         options={
             "primal_feasibility_tolerance": SOLVER_FEASIBILITY_TOLERANCE,
             "dual_feasibility_tolerance": SOLVER_FEASIBILITY_TOLERANCE,
@@ -217,6 +247,90 @@ def audit_flux_consistency(
     )
 
 
+def prune_sign_definite_dead_ends(
+    network: FluxConsistentNetwork,
+    *,
+    epsilon: float,
+) -> StructuralDeadEndPruneResult:
+    """Remove only reactions proven blocked by iterative mass-balance signs.
+
+    A steady-state metabolite needs nonzero production and consumption from
+    distinct reactions. If the currently retained incident reactions cannot
+    provide that pair at the declared flux threshold, every incident reaction
+    is blocked. Repeating this rule is a sound preprocessing step, not a
+    complete replacement for FASTCC.
+    """
+
+    epsilon_value = _finite_positive(epsilon, label="epsilon")
+    stoichiometry, lower, upper = _validated_arrays(network)
+    np, *_ = _solver_modules()
+    threshold = epsilon_value * (1.0 - SUPPORT_RELATIVE_TOLERANCE)
+    blocked = {
+        int(index)
+        for index in np.flatnonzero(
+            (lower > -threshold) & (upper < threshold)
+        )
+    }
+    initially_subthreshold = len(blocked)
+    rows = stoichiometry.tocsr()
+    removed_per_round: list[int] = []
+
+    while True:
+        newly_blocked: set[int] = set()
+        for row in range(rows.shape[0]):
+            start = rows.indptr[row]
+            stop = rows.indptr[row + 1]
+            incident = [
+                (int(index), float(coefficient))
+                for index, coefficient in zip(
+                    rows.indices[start:stop],
+                    rows.data[start:stop],
+                    strict=True,
+                )
+                if int(index) not in blocked
+            ]
+            if not incident:
+                continue
+            producers: set[int] = set()
+            consumers: set[int] = set()
+            for index, coefficient in incident:
+                if (
+                    (coefficient > 0 and upper[index] >= threshold)
+                    or (coefficient < 0 and lower[index] <= -threshold)
+                ):
+                    producers.add(index)
+                if (
+                    (coefficient < 0 and upper[index] >= threshold)
+                    or (coefficient > 0 and lower[index] <= -threshold)
+                ):
+                    consumers.add(index)
+            if not any(
+                producer != consumer
+                for producer in producers
+                for consumer in consumers
+            ):
+                newly_blocked.update(index for index, _ in incident)
+
+        newly_blocked -= blocked
+        if not newly_blocked:
+            break
+        blocked.update(newly_blocked)
+        removed_per_round.append(len(newly_blocked))
+
+    ordered = tuple(sorted(blocked))
+    return StructuralDeadEndPruneResult(
+        blocked_reaction_ids=tuple(
+            network.reaction_ids[index] for index in ordered
+        ),
+        blocked_reaction_indices=ordered,
+        initially_subthreshold_reaction_count=initially_subthreshold,
+        reactions_removed_per_round=tuple(removed_per_round),
+        epsilon=epsilon_value,
+        complete_flux_consistency_classification=False,
+        biological_context_assigned=False,
+    )
+
+
 def _lp7(
     stoichiometry,
     lower,
@@ -225,6 +339,7 @@ def _lp7(
     *,
     epsilon: float,
     counter: _SolveCounter,
+    solver_method: str = SOLVER_METHOD,
 ):
     np, _, _, csr_matrix, hstack, _ = _solver_modules()
     indices = tuple(reaction_indices)
@@ -242,10 +357,15 @@ def _lp7(
     objective = np.concatenate(
         [np.zeros(reaction_count), -np.ones(auxiliary_count)]
     )
-    inequality = np.zeros((auxiliary_count, reaction_count + auxiliary_count))
-    for row, reaction_index in enumerate(indices):
-        inequality[row, reaction_index] = -1.0
-        inequality[row, reaction_count + row] = 1.0
+    rows = np.repeat(np.arange(auxiliary_count), 2)
+    columns = np.empty(auxiliary_count * 2, dtype=int)
+    columns[0::2] = np.asarray(indices, dtype=int)
+    columns[1::2] = reaction_count + np.arange(auxiliary_count)
+    values = np.tile(np.asarray([-1.0, 1.0]), auxiliary_count)
+    inequality = csr_matrix(
+        (values, (rows, columns)),
+        shape=(auxiliary_count, reaction_count + auxiliary_count),
+    )
     flux_lower = lower.copy()
     for index in indices:
         flux_lower[index] = max(flux_lower[index], 0.0)
@@ -257,6 +377,7 @@ def _lp7(
         bounds=bounds,
         inequality=inequality,
         inequality_rhs=np.zeros(auxiliary_count),
+        method=solver_method,
     )
     counter.lp7 += 1
     if not result.success:
@@ -300,15 +421,25 @@ def _lp10(
     inequality = None
     inequality_rhs = None
     if penalty:
-        inequality = np.zeros(
-            (2 * auxiliary_count, reaction_count + auxiliary_count)
-        )
+        rows = np.empty(auxiliary_count * 4, dtype=int)
+        columns = np.empty(auxiliary_count * 4, dtype=int)
+        values = np.empty(auxiliary_count * 4, dtype=float)
         for offset, reaction_index in enumerate(penalty):
+            row = 2 * offset
             auxiliary_index = reaction_count + offset
-            inequality[2 * offset, reaction_index] = 1.0
-            inequality[2 * offset, auxiliary_index] = -1.0
-            inequality[2 * offset + 1, reaction_index] = -1.0
-            inequality[2 * offset + 1, auxiliary_index] = -1.0
+            base = 4 * offset
+            rows[base:base + 4] = (row, row, row + 1, row + 1)
+            columns[base:base + 4] = (
+                reaction_index,
+                auxiliary_index,
+                reaction_index,
+                auxiliary_index,
+            )
+            values[base:base + 4] = (1.0, -1.0, -1.0, -1.0)
+        inequality = csr_matrix(
+            (values, (rows, columns)),
+            shape=(2 * auxiliary_count, reaction_count + auxiliary_count),
+        )
         inequality_rhs = np.zeros(2 * auxiliary_count)
     result = _linprog(
         objective,
@@ -368,12 +499,219 @@ def _find_sparse_mode(
     return {int(index) for index in mask.nonzero()[0]}
 
 
-def _flip_columns(stoichiometry, lower, upper, indices: Sequence[int]) -> None:
-    for index in indices:
-        stoichiometry[:, index] = -stoichiometry[:, index]
+def _flip_columns(stoichiometry, lower, upper, indices: Sequence[int]):
+    selected = tuple(indices)
+    if not selected:
+        return stoichiometry
+    np, *_ = _solver_modules()
+    from scipy.sparse import diags
+
+    orientation = np.ones(stoichiometry.shape[1])
+    orientation[np.asarray(selected, dtype=int)] = -1.0
+    flipped = (stoichiometry @ diags(orientation, format="csc")).tocsc()
+    for index in selected:
         old_upper = upper[index]
         upper[index] = -lower[index]
         lower[index] = -old_upper
+    return flipped
+
+
+def _witness_quality(
+    stoichiometry,
+    lower,
+    upper,
+    fluxes,
+) -> tuple[float, float]:
+    np, *_ = _solver_modules()
+    residual = float(np.max(np.abs(stoichiometry @ fluxes)))
+    bound_violation = float(
+        np.max(np.maximum(np.maximum(lower - fluxes, fluxes - upper), 0.0))
+    )
+    if (
+        not math.isfinite(residual)
+        or not math.isfinite(bound_violation)
+        or residual > SOLVER_FEASIBILITY_TOLERANCE * 10
+        or bound_violation > SOLVER_FEASIBILITY_TOLERANCE * 10
+    ):
+        raise FastcoreError(
+            "flux-consistency witness violates mass balance or reaction bounds"
+        )
+    return residual, bound_violation
+
+
+def fastcc_flux_consistency(
+    network: FluxConsistentNetwork,
+    *,
+    epsilon: float,
+) -> FastccConsistencyResult:
+    """Classify the flux-consistent subset using source-defined FASTCC.
+
+    The method follows the FASTCORE paper's LP-7 consistency variant and the
+    forward/reverse orientation loop in the official COBRA implementation.
+    Epsilon is mandatory because reaction consistency is threshold dependent.
+    """
+
+    epsilon_value = _finite_positive(epsilon, label="epsilon")
+    original_stoichiometry, original_lower, original_upper = _validated_arrays(
+        network
+    )
+    stoichiometry = original_stoichiometry.copy()
+    lower = original_lower.copy()
+    upper = original_upper.copy()
+    np, *_ = _solver_modules()
+    reaction_count = len(network.reaction_ids)
+    orientation = np.ones(reaction_count)
+    reverse_only = np.flatnonzero((lower < 0) & (upper <= 0))
+    stoichiometry = _flip_columns(
+        stoichiometry,
+        lower,
+        upper,
+        reverse_only,
+    )
+    orientation[reverse_only] *= -1.0
+
+    irreversible = {
+        int(index)
+        for index in np.flatnonzero(lower >= 0)
+    }
+    all_reactions = set(range(reaction_count))
+    selected: set[int] = set()
+    forward_witnesses: set[int] = set()
+    reverse_witnesses: set[int] = set()
+    witness_mode_count = 0
+    maximum_residual = 0.0
+    maximum_bound_violation = 0.0
+    counter = _SolveCounter()
+
+    def record_witness(transformed_fluxes) -> set[int]:
+        nonlocal witness_mode_count, maximum_residual, maximum_bound_violation
+        original_fluxes = transformed_fluxes * orientation
+        residual, bound_violation = _witness_quality(
+            original_stoichiometry,
+            original_lower,
+            original_upper,
+            original_fluxes,
+        )
+        maximum_residual = max(maximum_residual, residual)
+        maximum_bound_violation = max(
+            maximum_bound_violation,
+            bound_violation,
+        )
+        support = {
+            int(index)
+            for index in np.flatnonzero(
+                _support_mask(original_fluxes, epsilon_value)
+            )
+        }
+        if support:
+            witness_mode_count += 1
+        threshold = epsilon_value * (1.0 - SUPPORT_RELATIVE_TOLERANCE)
+        forward_witnesses.update(
+            int(index)
+            for index in np.flatnonzero(original_fluxes >= threshold)
+        )
+        reverse_witnesses.update(
+            int(index)
+            for index in np.flatnonzero(original_fluxes <= -threshold)
+        )
+        return support
+
+    initial_candidates = tuple(sorted(irreversible))
+    initial_mode = _lp7(
+        stoichiometry,
+        lower,
+        upper,
+        initial_candidates,
+        epsilon=epsilon_value,
+        counter=counter,
+        solver_method=FASTCC_SOLVER_METHOD,
+    )
+    selected |= record_witness(initial_mode)
+    inconsistent_irreversible = irreversible - selected
+    remaining = all_reactions - selected - inconsistent_irreversible
+    flipped = False
+    singleton = False
+    maximum_iterations = max(4, 4 * reaction_count)
+    iteration_count = 0
+
+    while remaining:
+        iteration_count += 1
+        if iteration_count > maximum_iterations:
+            raise FastcoreError("FASTCC did not converge within its guarded loop")
+        candidates = tuple(sorted(remaining))
+        if singleton:
+            candidates = candidates[:1]
+        mode = _lp7(
+            stoichiometry,
+            lower,
+            upper,
+            candidates,
+            epsilon=epsilon_value,
+            counter=counter,
+            solver_method=FASTCC_SOLVER_METHOD,
+        )
+        support = record_witness(mode)
+        previous_count = len(selected)
+        selected |= support
+        if remaining & selected:
+            remaining -= selected
+            flipped = False
+            continue
+
+        reversible_candidates = tuple(
+            index for index in candidates if index not in irreversible
+        )
+        if flipped or not reversible_candidates:
+            flipped = False
+            if singleton:
+                remaining.difference_update(candidates)
+            else:
+                singleton = True
+            continue
+
+        stoichiometry = _flip_columns(
+            stoichiometry,
+            lower,
+            upper,
+            reversible_candidates,
+        )
+        orientation[np.asarray(reversible_candidates, dtype=int)] *= -1.0
+        flipped = True
+        if len(selected) != previous_count:
+            raise FastcoreError("FASTCC orientation branch changed selected state")
+
+    ordered = tuple(sorted(selected))
+    blocked = tuple(
+        network.reaction_ids[index]
+        for index in range(reaction_count)
+        if index not in selected
+    )
+    forward_ids = tuple(
+        network.reaction_ids[index] for index in sorted(forward_witnesses)
+    )
+    reverse_ids = tuple(
+        network.reaction_ids[index] for index in sorted(reverse_witnesses)
+    )
+    return FastccConsistencyResult(
+        consistent_reaction_ids=tuple(
+            network.reaction_ids[index] for index in ordered
+        ),
+        consistent_reaction_indices=ordered,
+        blocked_reaction_ids=blocked,
+        forward_witness_reaction_ids=forward_ids,
+        reverse_witness_reaction_ids=reverse_ids,
+        reverse_only_witness_reaction_ids=tuple(
+            network.reaction_ids[index]
+            for index in sorted(reverse_witnesses - forward_witnesses)
+        ),
+        epsilon=epsilon_value,
+        lp7_solve_count=counter.lp7,
+        witness_mode_count=witness_mode_count,
+        maximum_mass_balance_residual=maximum_residual,
+        maximum_bound_violation=maximum_bound_violation,
+        complete_consistency_classification=True,
+        biological_context_assigned=False,
+    )
 
 
 def _subnetwork(
@@ -438,7 +776,12 @@ def fastcore_extract(
         )
         if lower_bound < 0 and upper_bound <= 0
     ]
-    _flip_columns(stoichiometry, lower, upper, reverse_only)
+    stoichiometry = _flip_columns(
+        stoichiometry,
+        lower,
+        upper,
+        reverse_only,
+    )
     irreversible = {
         index
         for index, lower_bound in enumerate(lower)
@@ -512,7 +855,7 @@ def fastcore_extract(
             flipped = False
             singleton = True
             continue
-        _flip_columns(
+        stoichiometry = _flip_columns(
             stoichiometry,
             lower,
             upper,

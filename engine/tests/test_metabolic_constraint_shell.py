@@ -9,7 +9,7 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_context() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     validate_metabolic_constraint_shell(snapshot)
-    assert snapshot["version"] == "metabolic_constraint_shell_v5"
+    assert snapshot["version"] == "metabolic_constraint_shell_v6"
     reconstruction = snapshot["candidate_reconstruction"]
     assert reconstruction["model_version"] == "2.0.0"
     assert reconstruction["release_tag"] == "v2.0.0"
@@ -41,6 +41,23 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     assert loader["active_objective_id"] == "obj"
     assert loader["healthy_phh_context_extracted"] is False
     assert loader["fba_execution_allowed"] is False
+    fastcc = reconstruction["generic_flux_consistency_audit"]
+    assert fastcc["epsilon"] == 1e-4
+    assert fastcc["consistent_reaction_count"] == 11641
+    assert fastcc["blocked_reaction_count"] == 1290
+    assert fastcc["lp7_solve_count"] == 253
+    assert fastcc["maximum_mass_balance_residual"] < 1e-8
+    assert fastcc["healthy_phh_context_extracted"] is False
+    assert fastcc["biological_flux_authority"] is False
+    generic_fba = reconstruction["generic_native_objective_audit"]
+    assert generic_fba["objective_id"] == "obj"
+    assert generic_fba["objective_reaction_id"] == "MAR13082"
+    assert generic_fba["objective_is_healthy_phh_measurement"] is False
+    assert generic_fba["status"] == "optimal"
+    assert generic_fba["objective_value"] == 124.86814837744569
+    assert generic_fba["active_reaction_count_at_1e_minus_9"] == 2566
+    assert generic_fba["maximum_mass_balance_residual"] < 1e-8
+    assert generic_fba["biological_flux_authority"] is False
     assert snapshot["optimization_problem"]["objective"] is None
     assert snapshot["optimization_problem"]["boundary_fluxes"] is None
     numerics = snapshot["generic_constraint_numerics"]

@@ -499,7 +499,10 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         metabolic = metabolic_constraint_shell_snapshot()
         validate_metabolic_constraint_shell(metabolic)
         numerics = metabolic["generic_constraint_numerics"]
-        loader = metabolic["candidate_reconstruction"]["sparse_fbc_loader_audit"]
+        reconstruction = metabolic["candidate_reconstruction"]
+        loader = reconstruction["sparse_fbc_loader_audit"]
+        fastcc = reconstruction["generic_flux_consistency_audit"]
+        native_fba = reconstruction["generic_native_objective_audit"]
         context_kernel = metabolic["context_extraction_kernel"]
         bundle = metabolic["phh_execution_bundle_intake"]
         if (
@@ -510,6 +513,17 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
             or loader["stoichiometric_nonzero_count"] != 55198
             or loader["healthy_phh_context_extracted"] is not False
             or loader["fba_execution_allowed"] is not False
+            or fastcc["consistent_reaction_count"] != 11641
+            or fastcc["blocked_reaction_count"] != 1290
+            or fastcc["maximum_mass_balance_residual"] > 1e-8
+            or fastcc["healthy_phh_context_extracted"] is not False
+            or fastcc["biological_flux_authority"] is not False
+            or native_fba["status"] != "optimal"
+            or native_fba["objective_reaction_id"] != "MAR13082"
+            or native_fba["objective_is_healthy_phh_measurement"] is not False
+            or native_fba["maximum_mass_balance_residual"] > 1e-8
+            or native_fba["healthy_phh_context_extracted"] is not False
+            or native_fba["biological_flux_authority"] is not False
             or context_kernel["synthetic_fixture_pass_count"] != 1
             or context_kernel["human_gem_context_extraction_executed"] is not False
             or context_kernel["biological_flux_authority"] is not False
@@ -521,7 +535,7 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         ):
             raise ValueError("constraint numerics or PHH execution bundle exceeded authority")
         checks.append(
-            "the checksum-pinned Human-GEM sparse loader, five analytic FBA/FVA checks and one synthetic FASTCORE extraction pass while healthy-PHH context extraction, the ten-artifact execution bundle and biological flux coupling remain absent"
+            "the checksum-pinned Human-GEM sparse loader, complete generic FASTCC classification, native generic-biomass solve, five analytic FBA/FVA checks and one synthetic FASTCORE extraction pass while healthy-PHH context extraction, the ten-artifact execution bundle and biological flux coupling remain absent"
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid metabolic constraint execution contract: {exc}")
