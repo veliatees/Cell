@@ -50,6 +50,10 @@ def test_organelle_boundaries_report_geometry_adapter_without_mesh_overclaim() -
     assert boundaries["observed_metrics"]["conservative_subgrid_boundary_treatment_count"] == 1
     assert boundaries["observed_metrics"]["subgrid_boundary_grid_convergence_test_count"] == 1
     assert boundaries["observed_metrics"]["fractional_face_aperture_solver_count"] == 1
+    assert boundaries["observed_metrics"]["generic_watertight_mesh_boundary_kernel_count"] == 1
+    assert boundaries["observed_metrics"]["mesh_intake_contract_count"] == 1
+    assert boundaries["observed_metrics"]["mesh_target_structure_count"] == 11
+    assert boundaries["observed_metrics"]["delivered_mesh_artifact_count"] == 0
     assert boundaries["observed_metrics"]["full_watertight_mesh_boundary_count"] == 0
 
 
@@ -108,6 +112,27 @@ def test_receptor_and_active_protein_intakes_are_present_but_fail_closed() -> No
     assert protein["delivered_localization_record_count"] == 0
     assert protein["active_copy_or_concentration_authorized_count"] == 0
     assert entries["quantitative_reaction_core"]["observed_metrics"]["filled_evidence_slot_count"] == 0
+
+
+def test_mobility_and_reaction_transport_intakes_are_present_but_fail_closed() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    mobility = entries["macromolecular_crowding_physics"]["observed_metrics"]
+    assert mobility["mobility_intake_contract_count"] == 1
+    assert mobility["target_species_count"] == 43
+    assert mobility["required_mobility_stage_slot_count"] == 387
+    assert mobility["delivered_mobility_record_count"] == 0
+    assert mobility["apparent_diffusivity_authorized_species_count"] == 0
+    assert mobility["quantitatively_bound_crowding_laws"] == 0
+    assert mobility["global_viscosity_multiplier_count"] == 0
+    transport = entries["reaction_fluid_coupling"]["observed_metrics"]
+    assert transport["transport_coupling_intake_contract_count"] == 1
+    assert transport["transport_coupling_target_reaction_count"] == 36
+    assert transport["transport_coupling_required_stage_slot_count"] == 288
+    assert transport["transport_coupling_record_count"] == 0
+    assert transport["transport_limitation_demonstrated_reaction_count"] == 0
+    assert transport["local_concentration_coupled_reaction_count"] == 0
+    assert transport["direct_rate_corrected_reaction_count"] == 0
 
 
 def test_tracers_are_not_misrepresented_as_water_molecules() -> None:

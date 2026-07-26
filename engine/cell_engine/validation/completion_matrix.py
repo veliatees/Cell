@@ -21,8 +21,14 @@ from cell_engine.quantitative.cytosol_transport import cytosol_transport_snapsho
 from cell_engine.quantitative.energy_redox_trajectory import (
     energy_redox_trajectory_intake_snapshot,
 )
+from cell_engine.quantitative.intracellular_mobility import (
+    intracellular_mobility_intake_snapshot,
+)
 from cell_engine.quantitative.metabolic_constraint_shell import (
     metabolic_constraint_shell_snapshot,
+)
+from cell_engine.quantitative.phh_3d_mesh_boundary import (
+    phh_3d_mesh_boundary_intake_snapshot,
 )
 from cell_engine.quantitative.phh_protein_functional_evidence import (
     phh_protein_functional_evidence_snapshot,
@@ -33,6 +39,9 @@ from cell_engine.quantitative.reaction_evidence_intake import (
 )
 from cell_engine.quantitative.receptor_signaling_trajectory import (
     receptor_signaling_trajectory_snapshot,
+)
+from cell_engine.quantitative.reaction_transport_coupling import (
+    reaction_transport_coupling_intake_snapshot,
 )
 from cell_engine.validation.capability_atlas import hepatocyte_capability_atlas_snapshot
 from cell_engine.validation.external_review import external_validation_snapshot
@@ -94,6 +103,9 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     proteins = phh_protein_functional_evidence_snapshot()["summary"]
     active_protein_intake = active_protein_localization_snapshot()
     receptor_signal_intake = receptor_signaling_trajectory_snapshot()
+    mesh_boundary_intake = phh_3d_mesh_boundary_intake_snapshot()
+    intracellular_mobility = intracellular_mobility_intake_snapshot()
+    reaction_transport = reaction_transport_coupling_intake_snapshot()
     injury = phh_injury_validation_snapshot()["summary"]
     quantity_harvest = hepatocyte_quantity_harvest_snapshot()["audit"]
     memory = cellular_memory_contract_snapshot()["summary"]
@@ -192,7 +204,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Organelle-resolved fluid boundaries",
             "partial",
             "Impermeable moving organelle surfaces in the numerical cytosol domain.",
-            "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Thin ER/canalicular/Golgi structures use deterministic 2x2x2 volume occupancy plus four analytic face-channel intersections; pressure and passive-scalar fluxes use the resulting fractional apertures while partial-cell scalar mass remains conservative. These assemblies are still not watertight biological meshes.",
+            "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. A generic consistently-wound closed triangle-mesh kernel now supplies topology-audited containment and face interception, but no microscopy-derived PHH mesh is registered. Thin ER/canalicular/Golgi structures retain deterministic subgrid occupancy and fractional face flux.",
             {
                 "analytic_obstacle_layer_count": cytosol_summary["moving_analytic_obstacle_layer_count"],
                 "analytic_obstacle_shape_count": cytosol_summary["analytic_obstacle_shape_count"],
@@ -209,13 +221,35 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "fractional_face_aperture_solver_count": cytosol_summary[
                     "fractional_face_aperture_solver_count"
                 ],
+                "generic_watertight_mesh_boundary_kernel_count": cytosol_summary[
+                    "generic_watertight_mesh_boundary_kernel_count"
+                ],
+                "mesh_intake_contract_count": 1,
+                "mesh_target_structure_count": mesh_boundary_intake["summary"][
+                    "target_structure_count"
+                ],
+                "delivered_mesh_artifact_count": mesh_boundary_intake["summary"][
+                    "mesh_artifact_count"
+                ],
+                "topologically_watertight_delivered_mesh_count": mesh_boundary_intake[
+                    "summary"
+                ]["topologically_watertight_artifact_count"],
+                "self_intersection_audited_mesh_count": mesh_boundary_intake["summary"][
+                    "self_intersection_audited_artifact_count"
+                ],
                 "full_watertight_mesh_boundary_count": cytosol_summary["full_watertight_mesh_boundary_count"],
             },
             (
                 "Watertight donor- or microscopy-derived organelle meshes.",
                 "Grid-convergence validation against those registered surface meshes.",
             ),
-            ("src/physics/cytosolNumerics.ts", "src/physics/intracellularFluid.ts"),
+            (
+                "src/physics/watertightMeshBoundary.ts",
+                "src/physics/cytosolNumerics.ts",
+                "src/physics/intracellularFluid.ts",
+                "engine/cell_engine/quantitative/phh_3d_mesh_boundary.py",
+                "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json",
+            ),
         ),
         _entry(
             "local_non_affine_membrane_coupling",
@@ -259,31 +293,92 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Reaction-specific advection/diffusion coupling",
             "blocked_missing_evidence",
             "Local concentration fields may influence one reaction only after its own transport gate passes.",
-            "The conservative scalar kernel exists, but no biological species or reaction is attached.",
+            "The conservative scalar kernel exists. A strict 35-required plus 16-conditional-field intake now audits matched species mobility, geometry, reaction timescale, transport perturbation, a dimensionally explicit L^2/(D*tau_reaction) scale, equation fingerprints and held-out validation across all 36 reactions; no biological species or reaction is attached.",
             {
                 "biological_species_bound_count": cytosol_summary["biological_species_bound_count"],
                 "transport_coupled_reaction_count": reactions["transport_coupled_reaction_count"],
+                "transport_coupling_intake_contract_count": 1,
+                "transport_coupling_target_reaction_count": reaction_transport["summary"][
+                    "target_reaction_count"
+                ],
+                "transport_coupling_required_stage_slot_count": reaction_transport[
+                    "summary"
+                ]["required_stage_slot_count"],
+                "transport_coupling_record_count": reaction_transport["summary"][
+                    "record_count"
+                ],
+                "transport_limitation_demonstrated_reaction_count": reaction_transport[
+                    "summary"
+                ]["transport_limitation_demonstrated_reaction_count"],
+                "structurally_complete_transport_coupling_reaction_count": reaction_transport[
+                    "summary"
+                ]["structurally_complete_reaction_count"],
+                "local_concentration_coupled_reaction_count": reaction_transport[
+                    "summary"
+                ]["local_concentration_coupled_reaction_count"],
+                "direct_rate_corrected_reaction_count": reaction_transport["summary"][
+                    "direct_rate_corrected_reaction_count"
+                ],
+                "global_fluid_multiplier_count": reaction_transport["summary"][
+                    "global_fluid_multiplier_count"
+                ],
             },
             (
                 "Species-specific PHH apparent diffusivity and compartment field.",
                 "Reaction timescale and evidence that transport is limiting.",
                 "Same-context held-out validation of the coupling law.",
             ),
-            ("engine/cell_engine/quantitative/cytosol_transport.py", "engine/cell_engine/validation/reaction_evidence_atlas.py"),
+            (
+                "engine/cell_engine/quantitative/cytosol_transport.py",
+                "engine/cell_engine/quantitative/reaction_transport_coupling.py",
+                "engine/cell_engine/validation/reaction_evidence_atlas.py",
+                "data/evidence_intake/phh_reaction_transport_coupling_contract.v1.json",
+            ),
         ),
         _entry(
             "macromolecular_crowding_physics",
             "Molecule-scale crowding and channeling",
             "blocked_missing_evidence",
             "Size-dependent diffusion, binding, steric exclusion and local substrate channeling.",
-            "Crowder/protein points are visual; a prohibited global viscosity or crowding multiplier is not applied.",
-            {"quantitatively_bound_crowding_laws": 0},
+            "Crowder/protein points are visual. A 43-species, nine-stage donor-resolved mobility intake now separates molecular form, compartment, probe scale, raw dynamics, local abundance, binding, perturbation and held-out evidence; a prohibited global viscosity or crowding multiplier is not applied.",
+            {
+                "mobility_intake_contract_count": 1,
+                "target_species_count": intracellular_mobility["summary"][
+                    "target_species_count"
+                ],
+                "required_mobility_stage_slot_count": intracellular_mobility["summary"][
+                    "required_stage_slot_count"
+                ],
+                "delivered_mobility_record_count": intracellular_mobility["summary"][
+                    "record_count"
+                ],
+                "structurally_complete_mobility_species_count": intracellular_mobility[
+                    "summary"
+                ]["structurally_complete_species_count"],
+                "size_resolved_crowding_chain_count": intracellular_mobility["summary"][
+                    "size_resolved_crowding_chain_count"
+                ],
+                "apparent_diffusivity_authorized_species_count": intracellular_mobility[
+                    "summary"
+                ]["apparent_diffusivity_authorized_species_count"],
+                "quantitatively_bound_crowding_laws": intracellular_mobility["summary"][
+                    "crowding_law_authorized_species_count"
+                ],
+                "global_viscosity_multiplier_count": intracellular_mobility["summary"][
+                    "global_viscosity_multiplier_count"
+                ],
+            },
             (
                 "Species-size-resolved PHH mobility data.",
                 "Local abundance/obstacle fields and binding kinetics.",
                 "Pathway-specific evidence for channeling or crowding-limited rates.",
             ),
-            ("engine/cell_engine/quantitative/cytosol_transport.py", "src/physics/intracellularFluid.ts"),
+            (
+                "engine/cell_engine/quantitative/cytosol_transport.py",
+                "engine/cell_engine/quantitative/intracellular_mobility.py",
+                "data/evidence_intake/phh_intracellular_mobility_contract.v1.json",
+                "src/physics/intracellularFluid.ts",
+            ),
         ),
         _entry(
             "transport_mode_separation",
@@ -702,14 +797,39 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Donor-resolved 3D morphology and mechanics",
             "partial",
             "In-situ hepatocyte surface, organelle distribution, cortex, adhesion and membrane mechanics.",
-            "Human aggregate 3D volume and verified proxy geometry exist; no donor mesh or matched PHH mechanical parameter set exists.",
-            {"donor_resolved_in_situ_mesh_count": 0, "matched_phh_mechanical_parameter_sets": 0},
+            "Human aggregate 3D volume and verified proxy geometry exist. A checksum-frozen donor mesh manifest plus canonical triangle topology audit now exists, while external self-intersection, registration, contact-interface and grid-convergence evidence remain mandatory. No donor mesh or matched PHH mechanical parameter set is registered.",
+            {
+                "mesh_intake_contract_count": 1,
+                "mesh_target_structure_count": mesh_boundary_intake["summary"][
+                    "target_structure_count"
+                ],
+                "delivered_mesh_artifact_count": mesh_boundary_intake["summary"][
+                    "mesh_artifact_count"
+                ],
+                "structurally_ready_mesh_count": mesh_boundary_intake["summary"][
+                    "structurally_ready_mesh_count"
+                ],
+                "donor_resolved_in_situ_mesh_count": mesh_boundary_intake["summary"][
+                    "registered_biological_mesh_boundary_count"
+                ],
+                "contact_ground_truth_mesh_count": mesh_boundary_intake["summary"][
+                    "contact_ground_truth_mesh_count"
+                ],
+                "matched_phh_mechanical_parameter_sets": mesh_boundary_intake["summary"][
+                    "mechanics_coupled_mesh_count"
+                ],
+            },
             (
                 "Donor-resolved in-situ membrane and organelle meshes.",
                 "Matched cortex, adhesion, tension, bending and hydraulic measurements.",
                 "Contact-interface ground truth.",
             ),
-            ("engine/cell_engine/validation/physical_validation.py", "engine/cell_engine/quantitative/human_hepatocyte_3d_morphometry.py"),
+            (
+                "engine/cell_engine/validation/physical_validation.py",
+                "engine/cell_engine/quantitative/human_hepatocyte_3d_morphometry.py",
+                "engine/cell_engine/quantitative/phh_3d_mesh_boundary.py",
+                "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json",
+            ),
         ),
         _entry(
             "human_gem_artifact_identity",
@@ -919,6 +1039,69 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 1
     ):
         raise ValueError("local membrane-fluid boundary contract changed")
+    organelle_boundary_metrics = by_id["organelle_fluid_boundaries"][
+        "observed_metrics"
+    ]
+    if (
+        organelle_boundary_metrics[
+            "generic_watertight_mesh_boundary_kernel_count"
+        ]
+        != 1
+        or organelle_boundary_metrics["mesh_intake_contract_count"] != 1
+        or organelle_boundary_metrics["mesh_target_structure_count"] != 11
+        or organelle_boundary_metrics["delivered_mesh_artifact_count"] != 0
+        or organelle_boundary_metrics[
+            "topologically_watertight_delivered_mesh_count"
+        ]
+        != 0
+        or organelle_boundary_metrics["self_intersection_audited_mesh_count"] != 0
+        or organelle_boundary_metrics["full_watertight_mesh_boundary_count"] != 0
+    ):
+        raise ValueError("mesh boundary intake escaped into biological geometry")
+    mobility_metrics = by_id["macromolecular_crowding_physics"][
+        "observed_metrics"
+    ]
+    if (
+        mobility_metrics["mobility_intake_contract_count"] != 1
+        or mobility_metrics["target_species_count"] != 43
+        or mobility_metrics["required_mobility_stage_slot_count"] != 387
+        or mobility_metrics["delivered_mobility_record_count"] != 0
+        or mobility_metrics["structurally_complete_mobility_species_count"] != 0
+        or mobility_metrics["size_resolved_crowding_chain_count"] != 0
+        or mobility_metrics["apparent_diffusivity_authorized_species_count"] != 0
+        or mobility_metrics["quantitatively_bound_crowding_laws"] != 0
+        or mobility_metrics["global_viscosity_multiplier_count"] != 0
+    ):
+        raise ValueError("intracellular mobility intake escaped into crowding authority")
+    reaction_transport_metrics = by_id["reaction_fluid_coupling"][
+        "observed_metrics"
+    ]
+    if (
+        reaction_transport_metrics["transport_coupling_intake_contract_count"]
+        != 1
+        or reaction_transport_metrics["transport_coupling_target_reaction_count"]
+        != 36
+        or reaction_transport_metrics[
+            "transport_coupling_required_stage_slot_count"
+        ]
+        != 288
+        or reaction_transport_metrics["transport_coupling_record_count"] != 0
+        or reaction_transport_metrics[
+            "transport_limitation_demonstrated_reaction_count"
+        ]
+        != 0
+        or reaction_transport_metrics[
+            "structurally_complete_transport_coupling_reaction_count"
+        ]
+        != 0
+        or reaction_transport_metrics[
+            "local_concentration_coupled_reaction_count"
+        ]
+        != 0
+        or reaction_transport_metrics["direct_rate_corrected_reaction_count"] != 0
+        or reaction_transport_metrics["global_fluid_multiplier_count"] != 0
+    ):
+        raise ValueError("reaction transport intake escaped into runtime authority")
     donor_model_metrics = by_id["donor_state_model"]["observed_metrics"]
     if (
         donor_model_metrics["donor_manifest_intake_contract_count"] != 1

@@ -1160,6 +1160,113 @@ export type EngineActiveProteinLocalizationIntake = {
   blockers: string[];
 };
 
+export type EnginePhh3dMeshBoundaryIntake = {
+  version: "phh_3d_mesh_boundary_intake_v1";
+  status: string;
+  contract_id: string;
+  contract_path: string;
+  contract_sha256: string;
+  delivery_path: string;
+  delivery_sha256: string | null;
+  expected_headers: string[];
+  target_structure_ids: string[];
+  canonical_mesh_artifact_schema: string;
+  records: unknown[];
+  assessments: unknown[];
+  summary: {
+    required_field_count: number;
+    conditional_field_count: number;
+    target_structure_count: number;
+    manifest_record_count: number;
+    mesh_artifact_count: number;
+    topologically_watertight_artifact_count: number;
+    self_intersection_audited_artifact_count: number;
+    grid_convergence_verified_artifact_count: number;
+    structurally_ready_mesh_count: number;
+    registered_biological_mesh_boundary_count: number;
+    contact_ground_truth_mesh_count: number;
+    mechanics_coupled_mesh_count: number;
+    automatic_runtime_activation_count: number;
+  };
+  gates: {
+    generic_watertight_triangle_mesh_numerical_kernel_available: true;
+    topology_audit_available: true;
+    self_intersection_audit_implemented_in_repository: false;
+    biological_mesh_registration_allowed: false;
+    mechanics_coupling_allowed: false;
+    automatic_runtime_activation: false;
+  };
+  limitations: string[];
+};
+
+export type EngineIntracellularMobilityIntake = {
+  version: "phh_intracellular_mobility_intake_v1";
+  status: string;
+  contract_id: string;
+  contract_path: string;
+  contract_sha256: string;
+  delivery_path: string;
+  delivery_sha256: string | null;
+  expected_headers: string[];
+  target_species_ids: string[];
+  required_stage_ids: string[];
+  records: unknown[];
+  assessments: unknown[];
+  summary: {
+    required_field_count: number;
+    conditional_field_count: number;
+    target_species_count: number;
+    required_stage_count_per_species: number;
+    required_stage_slot_count: number;
+    record_count: number;
+    covered_stage_slot_count: number;
+    structurally_complete_species_count: number;
+    size_resolved_crowding_chain_count: number;
+    apparent_diffusivity_authorized_species_count: number;
+    crowding_law_authorized_species_count: number;
+    reaction_coupled_species_count: number;
+    global_viscosity_multiplier_count: number;
+  };
+  gates: Record<string, boolean>;
+  limitations: string[];
+};
+
+export type EngineReactionTransportCouplingIntake = {
+  version: "phh_reaction_transport_coupling_intake_v1";
+  status: string;
+  contract_id: string;
+  contract_path: string;
+  contract_sha256: string;
+  delivery_path: string;
+  delivery_sha256: string | null;
+  transport_scale_definition: "L^2/(D*tau_reaction)";
+  expected_headers: string[];
+  target_reaction_ids: string[];
+  required_stage_ids: string[];
+  records: unknown[];
+  assessments: unknown[];
+  summary: {
+    required_field_count: number;
+    conditional_field_count: number;
+    target_reaction_count: number;
+    required_stage_count_per_reaction: number;
+    required_stage_slot_count: number;
+    record_count: number;
+    covered_stage_slot_count: number;
+    mobility_resolved_reaction_count: number;
+    geometry_resolved_reaction_count: number;
+    dimensionally_consistent_reaction_count: number;
+    transport_limitation_demonstrated_reaction_count: number;
+    structurally_complete_reaction_count: number;
+    local_concentration_coupled_reaction_count: number;
+    direct_rate_corrected_reaction_count: number;
+    runtime_activated_reaction_count: number;
+    global_fluid_multiplier_count: number;
+  };
+  gates: Record<string, boolean>;
+  limitations: string[];
+};
+
 export type EngineExternalValidationContext = {
   id: string;
   title: string;
@@ -1444,7 +1551,7 @@ export type EngineReactionEvidenceIntake = {
 };
 
 export type EngineCytosolTransport = {
-  version: "cytosol_transport_rheology_contract_v9";
+  version: "cytosol_transport_rheology_contract_v10";
   status: string;
   material_model: {
     model: "poroelastic_two_phase_cytoplasm";
@@ -1549,6 +1656,10 @@ export type EngineCytosolTransport = {
       fractional_face_aperture_flux_weighting: true;
       fractional_face_aperture_pressure_weighting: true;
       partial_cell_volume_conservation: true;
+      generic_watertight_triangle_mesh_boundary_kernel: true;
+      mesh_topology_checks: string[];
+      mesh_self_intersection_detection: false;
+      registered_biological_mesh_boundary_count: 0;
       full_watertight_mesh_boundaries: false;
       pressure_reaction_diagnostic_only: true;
       biological_time_or_velocity_claim: false;
@@ -1613,6 +1724,7 @@ export type EngineCytosolTransport = {
     local_membrane_topology_change_coupling_count: number;
     locally_conservative_membrane_face_flux_count: number;
     fractional_face_aperture_solver_count: number;
+    generic_watertight_mesh_boundary_kernel_count: number;
     full_watertight_mesh_boundary_count: number;
     compound_boundary_conservation_test_count: number;
     membrane_pressure_feedback_count: number;
@@ -1755,6 +1867,9 @@ export type EngineSnapshot = {
     energy_redox_trajectory_intake?: EngineEnergyRedoxTrajectoryIntake;
     receptor_signaling_trajectory_intake?: EngineReceptorSignalingTrajectoryIntake;
     active_protein_localization_intake?: EngineActiveProteinLocalizationIntake;
+    phh_3d_mesh_boundary_intake?: EnginePhh3dMeshBoundaryIntake;
+    intracellular_mobility_intake?: EngineIntracellularMobilityIntake;
+    reaction_transport_coupling_intake?: EngineReactionTransportCouplingIntake;
     external_validation_program?: EngineExternalValidationProgram;
     hepatocyte_capability_atlas?: EngineHepatocyteCapabilityAtlas;
     cellular_memory_contract?: EngineCellularMemoryContract;
@@ -4369,6 +4484,9 @@ export type EngineSnapshotSummary = {
   energyRedoxTrajectoryIntake: EngineEnergyRedoxTrajectoryIntake | null;
   receptorSignalingTrajectoryIntake: EngineReceptorSignalingTrajectoryIntake | null;
   activeProteinLocalizationIntake: EngineActiveProteinLocalizationIntake | null;
+  phh3dMeshBoundaryIntake: EnginePhh3dMeshBoundaryIntake | null;
+  intracellularMobilityIntake: EngineIntracellularMobilityIntake | null;
+  reactionTransportCouplingIntake: EngineReactionTransportCouplingIntake | null;
   externalValidationProgram: EngineExternalValidationProgram | null;
   hepatocyteCapabilityAtlas: EngineHepatocyteCapabilityAtlas | null;
   cellularMemoryContract: EngineCellularMemoryContract | null;
@@ -4550,6 +4668,12 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
       snapshot.state.receptor_signaling_trajectory_intake ?? null,
     activeProteinLocalizationIntake:
       snapshot.state.active_protein_localization_intake ?? null,
+    phh3dMeshBoundaryIntake:
+      snapshot.state.phh_3d_mesh_boundary_intake ?? null,
+    intracellularMobilityIntake:
+      snapshot.state.intracellular_mobility_intake ?? null,
+    reactionTransportCouplingIntake:
+      snapshot.state.reaction_transport_coupling_intake ?? null,
     externalValidationProgram: snapshot.state.external_validation_program ?? null,
     hepatocyteCapabilityAtlas: snapshot.state.hepatocyte_capability_atlas ?? null,
     cellularMemoryContract: snapshot.state.cellular_memory_contract ?? null,

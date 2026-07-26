@@ -9,6 +9,19 @@ import {
   inverseVolumePreservingPoint,
   type CytosolObstacle
 } from "./cytosolNumerics";
+import { WatertightTriangleMeshBoundary } from "./watertightMeshBoundary";
+
+const UNIT_CUBE_MESH = new WatertightTriangleMeshBoundary(
+  [
+    -1, -1, -1, 1, -1, -1, 1, 1, -1, -1, 1, -1,
+    -1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1
+  ],
+  [
+    0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7,
+    0, 1, 5, 0, 5, 4, 3, 7, 6, 3, 6, 2,
+    0, 4, 7, 0, 7, 3, 1, 2, 6, 1, 6, 5
+  ]
+);
 
 describe("dimensionless cytosol numerical kernel", () => {
   it("uses analytic moving sphere, ellipsoid, capsule and box boundaries", () => {
@@ -43,6 +56,41 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(field.solidVelocityAt(0.2, 0, 0, velocity)).toBe(true);
     expect(velocity[0]).toBeCloseTo(2, 6);
     expect(velocity[1]).toBe(0);
+  });
+
+  it("rasterizes a validated watertight triangle mesh as a moving boundary", () => {
+    const field = new DynamicCytosolObstacleField(0.5);
+    field.setObstacles([
+      {
+        id: "mesh-cube",
+        kind: "watertight_triangle_mesh",
+        center: [0, 0, 0],
+        boundary: UNIT_CUBE_MESH,
+        boundarySampling: "conservative_subgrid"
+      }
+    ], 0);
+    expect(field.watertightMeshCount).toBe(1);
+    expect(field.collides(0, 0, 0)).toBe(true);
+    expect(field.collides(1.2, 0, 0)).toBe(false);
+    expect(field.sampleFaceOpenFraction(
+      [-1.5, 0, 0],
+      [1.5, 0, 0],
+      0,
+      0.5
+    )).toBe(0);
+
+    const grid = new CytosolProjectionGrid({
+      resolution: 20,
+      halfExtent: 3,
+      seed: 13,
+      radiusAtDirection: () => 2.8,
+      visualModeCount: 0
+    });
+    grid.step(0, null, field);
+    const diagnostics = grid.diagnostics();
+    expect(diagnostics.watertightMeshObstacleCount).toBe(1);
+    expect(diagnostics.dimensionlessObstacleVolumeEstimate).toBeGreaterThan(6);
+    expect(diagnostics.dimensionlessObstacleVolumeEstimate).toBeLessThan(10);
   });
 
   it("derives rigid rotational boundary velocity from quaternion motion", () => {
@@ -506,6 +554,9 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(CYTOSOL_NUMERICAL_CONTRACT.membraneSubgridQuadratureSamplesPerCell).toBe(8);
     expect(CYTOSOL_NUMERICAL_CONTRACT.membraneFaceApertureQuadratureSamples).toBe(4);
     expect(CYTOSOL_NUMERICAL_CONTRACT.locallyConservativeMembraneFaceFlux).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.genericWatertightTriangleMeshBoundaryKernel).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.registeredBiologicalMeshBoundaryCount).toBe(0);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.meshSelfIntersectionDetection).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.quantitativePoroelasticSolver).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.reactionCouplingEnabled).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.membranePressureFeedbackEnabled).toBe(false);
