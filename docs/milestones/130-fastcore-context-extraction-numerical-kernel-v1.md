@@ -29,8 +29,12 @@ retains the core and adds only the reactions needed to support it.
 - Restoration of original stoichiometry and bounds in extracted output.
 - Global input and extracted-output flux-consistency audits.
 - Identity- and epsilon-bound input consistency certificates.
-- Mandatory, explicit epsilon and LP10 scaling inputs with no runtime defaults.
+- Mandatory, explicit epsilon and fixed LP-10 scale with no biological default.
 - Pinned official fixed LP-10 scaling factor `1e4`.
+- Pinned official adaptive LP-10 branch using ten times the minimum preceding
+  LP-7 core flux, with counted fallback to the fixed branch.
+- A diagnostic extraction API that returns blocked output identities without
+  promoting the candidate; the accepting API still raises on inconsistency.
 - Fail-closed rejection of blocked input reactions, missing core IDs and invalid
   numerical controls.
 - Explicit reporting that the greedy extraction need not be unique.
@@ -43,9 +47,11 @@ blocked-reaction fixture is rejected and a reversible core remains intact.
 
 ## Scientific Boundary
 
-A real Human-GEM trial is reported separately in Milestone 137. Its strict
-output failed consistency and its conservative closure retained nearly the
-entire generic network, so no PHH context model was accepted. Any future
+A real fixed-scaling Human-GEM trial is reported in Milestone 137 and the
+fixed/adaptive comparison in Milestone 139. Adaptive scaling reduced the
+strict blocked set from `408` to `17` but did not eliminate it; the earlier
+conservative closure retained nearly the entire generic network, so no PHH
+context model was accepted. Any future
 accepted output will remain a computational model hypothesis requiring measured
 exchange bounds, an explicit objective, uncertainty analysis and independent
 validation.

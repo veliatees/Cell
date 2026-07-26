@@ -18726,7 +18726,7 @@
     "fastcc_audit_version": "human_gem_fastcc_audit_v2",
     "fastcc_consistent_reaction_id_sha256": "1a0f34e5b599d245e8f625264fe0808212580beb2f59b7a4eb2b14fffbcad1b1",
     "fastcc_epsilon": 0.0001,
-    "gpr_audit_version": "human_gem_phh_proteome_gpr_audit_v1",
+    "gpr_audit_version": "human_gem_phh_proteome_gpr_audit_v2",
     "gpr_core_candidate_count": 4555,
     "gpr_core_candidate_id_sha256": "668a87031d71e63f4d9d67e32d3e14b76638e7f9767be82b389f02e47d8dfb36",
     "not_healthy_volunteers": true,
