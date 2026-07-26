@@ -16,7 +16,7 @@ from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_VOLUME_UM3
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "cytosol_transport_rheology_contract_v4"
+VERSION = "cytosol_transport_rheology_contract_v6"
 
 RENDERER_GEOMETRY_BOUNDARY_CLASSES: tuple[str, ...] = (
     "nuclear_envelope",
@@ -429,7 +429,11 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                     "ATP-dependent motor transport on cytoskeletal tracks",
                     "fusion, fission and sorting",
                 ),
-                "numerical_kernel_available": False,
+                "numerical_kernel_available": True,
+                "numerical_kernel_scope": (
+                    "deterministic dimensionless renderer path progress only"
+                ),
+                "biological_velocity_or_dwell_time_assigned": False,
                 "healthy_phh_rate_bound": False,
                 "cross_context_reference_only": True,
             },
@@ -446,6 +450,12 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "quaternion_derived_rotation_boundary_velocity": True,
                 "renderer_geometry_boundary_adapter": True,
                 "renderer_geometry_boundary_classes": RENDERER_GEOMETRY_BOUNDARY_CLASSES,
+                "thin_boundary_treatment": (
+                    "conservative subgrid 2x2x2 occupancy with intersection fallback"
+                ),
+                "subgrid_quadrature_samples_per_cell": 8,
+                "subgrid_grid_convergence_tested": True,
+                "fractional_face_aperture_flux_weighting": False,
                 "full_watertight_mesh_boundaries": False,
                 "pressure_reaction_diagnostic_only": True,
                 "biological_time_or_velocity_claim": False,
@@ -460,6 +470,18 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "moving_domain_mass_conservation_tested": True,
                 "biological_species_bound_count": 0,
                 "biological_diffusivity_claim": False,
+            },
+            "dimensionless_active_cargo_route_kernel": {
+                "enabled": True,
+                "role": (
+                    "deterministic renderer-only separation of track cargo from "
+                    "the passive aqueous projection field"
+                ),
+                "independent_per_frame_random_walk": False,
+                "biological_velocity_claim": False,
+                "biological_pause_reversal_or_dwell_claim": False,
+                "healthy_phh_route_bound_count": 0,
+                "reaction_or_cell_state_coupling": False,
             },
             "quantitative_poroelastic_solver": {
                 "enabled": False,
@@ -484,6 +506,8 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "dimensionless_projection_solver_count": 1,
             "conservative_passive_scalar_kernel_count": 1,
             "conservative_moving_domain_remap_count": 1,
+            "dimensionless_active_cargo_route_kernel_count": 1,
+            "healthy_phh_active_transport_kernel_count": 0,
             "biological_species_bound_count": 0,
             "moving_analytic_obstacle_layer_count": 1,
             "analytic_obstacle_shape_count": 4,
@@ -492,6 +516,9 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "renderer_geometry_boundary_class_count": len(
                 RENDERER_GEOMETRY_BOUNDARY_CLASSES
             ),
+            "conservative_subgrid_boundary_treatment_count": 1,
+            "subgrid_boundary_grid_convergence_test_count": 1,
+            "fractional_face_aperture_solver_count": 0,
             "full_watertight_mesh_boundary_count": 0,
             "compound_boundary_conservation_test_count": 1,
             "membrane_pressure_feedback_count": 0,
@@ -527,6 +554,7 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("reaction-fluid coupling cannot be active")
     projection = solvers.get("renderer_dimensionless_projection_grid")
     scalar = solvers.get("conservative_passive_scalar_kernel")
+    active_cargo = solvers.get("dimensionless_active_cargo_route_kernel")
     if not isinstance(projection, dict) or projection.get("enabled") is not True:
         raise ValueError("dimensionless projection layer is missing")
     if projection.get("biological_time_or_velocity_claim") is not False:
@@ -552,6 +580,12 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         RENDERER_GEOMETRY_BOUNDARY_CLASSES
     ):
         raise ValueError("renderer geometry boundary classes changed")
+    if (
+        projection.get("subgrid_quadrature_samples_per_cell") != 8
+        or projection.get("subgrid_grid_convergence_tested") is not True
+        or projection.get("fractional_face_aperture_flux_weighting") is not False
+    ):
+        raise ValueError("conservative subgrid thin-boundary contract changed")
     if projection.get("full_watertight_mesh_boundaries") is not False:
         raise ValueError("analytic renderer boundaries were mislabelled as watertight meshes")
     if not isinstance(scalar, dict) or scalar.get("enabled") is not True:
@@ -562,6 +596,17 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("dimensionless scalar diffusion escaped into a biological claim")
     if scalar.get("moving_domain_mass_conservation_tested") is not True:
         raise ValueError("moving-domain scalar conservation guard is missing")
+    if not isinstance(active_cargo, dict) or active_cargo.get("enabled") is not True:
+        raise ValueError("dimensionless active-cargo route kernel is missing")
+    if active_cargo.get("independent_per_frame_random_walk") is not False:
+        raise ValueError("active-cargo display escaped deterministic kinematics")
+    if (
+        active_cargo.get("biological_velocity_claim") is not False
+        or active_cargo.get("biological_pause_reversal_or_dwell_claim") is not False
+        or active_cargo.get("healthy_phh_route_bound_count") != 0
+        or active_cargo.get("reaction_or_cell_state_coupling") is not False
+    ):
+        raise ValueError("dimensionless active-cargo renderer escaped into PHH biology")
     if coupling.get("currently_coupled_reaction_count") != 0:
         raise ValueError("cytosol transport contract activated a reaction")
     if conflict.get("may_parameterize_quantitative_fluid_or_reaction_model") is not False:

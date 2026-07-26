@@ -338,6 +338,11 @@ MemoryTrace
   evidence_source_id
   experimental_system
   uncertainty
+  direct_substrate_assay
+  persistence_evidence_ids
+  future_response_evidence_ids
+  response_coupling_law_id
+  quantitative_coupling_allowed
 
 EventRecord
   event_type
@@ -399,7 +404,19 @@ The first evidence-safe implementation is now present in the engine:
 - `engine/cell_engine/processes/cellular_memory.py` records explicit experiments
   over time but does not convert stress-time into persistent memory.
 - `MemoryTrace` requires a recorded writer event, a physical substrate, a
-  persistence criterion, an experimental system and at least one source.
+  direct substrate assay, persistence evidence record ids, an experimental
+  system and at least one source. Trace storage does not grant response
+  authority.
+- `data/evidence_intake/phh_cellular_memory_trajectory_contract.v1.json`
+  defines the 34-column donor-resolved evidence format. A candidate requires
+  matched baseline, write, verified-removal persistence, first-response, and
+  rechallenge-response phases.
+- `engine/cell_engine/quantitative/cellular_memory_trajectory.py` rejects
+  cross-split donors, mixed held-out studies, non-PHH records, unknown carriers,
+  unmatched assays, and persistence claims without verified trigger removal.
+- Structural completeness still cannot create a trace or change future
+  responses. Manual source review, a frozen operator, and donor/study-disjoint
+  held-out validation are separate gates.
 - The browser snapshot displays lifecycle, events, consolidated traces, genome
   reference, ploidy, functional loci and the current unknown-data boundary.
 
