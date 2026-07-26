@@ -18,7 +18,7 @@ def _write_synthetic_sbml(path: Path) -> None:
 <sbml xmlns="http://www.sbml.org/sbml/level3/version1/core"
       xmlns:fbc="http://www.sbml.org/sbml/level3/version1/fbc/version2"
       level="3" version="1" fbc:required="false">
-  <model id="audit_fixture" fbc:activeObjective="obj">
+  <model id="audit_fixture">
     <listOfCompartments><compartment id="c" constant="true"/></listOfCompartments>
     <listOfSpecies>
       <species id="a" compartment="c" fbc:chemicalFormula="C2H4" fbc:charge="0"/>
@@ -36,7 +36,7 @@ def _write_synthetic_sbml(path: Path) -> None:
       <reaction id="generic_unassessable" reversible="false"><listOfReactants><speciesReference species="generic"/></listOfReactants><listOfProducts><speciesReference species="generic2"/></listOfProducts></reaction>
       <reaction id="exchange" reversible="false"><listOfReactants><speciesReference species="a"/></listOfReactants></reaction>
     </listOfReactions>
-    <fbc:listOfObjectives><fbc:objective fbc:id="obj" fbc:type="maximize"/></fbc:listOfObjectives>
+    <fbc:listOfObjectives fbc:activeObjective="obj"><fbc:objective fbc:id="obj" fbc:type="maximize"/></fbc:listOfObjectives>
     <fbc:listOfGeneProducts><fbc:geneProduct fbc:id="g1" fbc:label="G1"/></fbc:listOfGeneProducts>
   </model>
 </sbml>
@@ -62,6 +62,7 @@ def test_streaming_audit_separates_exchange_unassessable_and_imbalanced_reaction
     assert report["joint_balance"]["balanced_reaction_count"] == 1
     assert report["joint_balance"]["imbalanced_reaction_count"] == 2
     assert report["scientific_boundary"]["fba_execution_allowed"] is False
+    assert report["sbml"]["active_objective_id"] == "obj"
 
 
 def test_committed_human_gem_audit_matches_the_pinned_manifest() -> None:
@@ -73,5 +74,6 @@ def test_committed_human_gem_audit_matches_the_pinned_manifest() -> None:
     assert report["structure"]["species_count"] == 8461
     assert report["structure"]["reaction_count"] == 12931
     assert report["structure"]["one_sided_reaction_count"] > 0
+    assert report["sbml"]["active_objective_id"] == "obj"
     assert report["joint_balance"]["assessable_reaction_count"] > 0
     assert report["scientific_boundary"]["healthy_phh_context_extracted"] is False

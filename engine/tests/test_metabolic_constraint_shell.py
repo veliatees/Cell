@@ -9,7 +9,7 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_context() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     validate_metabolic_constraint_shell(snapshot)
-    assert snapshot["version"] == "metabolic_constraint_shell_v4"
+    assert snapshot["version"] == "metabolic_constraint_shell_v5"
     reconstruction = snapshot["candidate_reconstruction"]
     assert reconstruction["model_version"] == "2.0.0"
     assert reconstruction["release_tag"] == "v2.0.0"
@@ -24,6 +24,7 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     }
     assert reconstruction["sbml_path"] is None
     assert reconstruction["model_loaded_by_runtime"] is False
+    assert reconstruction["model_loader_verified_against_pinned_artifact"] is True
     assert reconstruction["mass_charge_balance_audited_in_project"] is True
     audit = reconstruction["structural_audit"]
     assert audit["one_sided_reaction_count"] == 1660
@@ -32,6 +33,14 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     assert audit["elementally_balanced_reaction_count"] == 9832
     assert audit["elementally_imbalanced_reaction_count"] == 17
     assert audit["jointly_unassessable_reaction_count"] == 1422
+    assert audit["active_objective_id"] == "obj"
+    loader = reconstruction["sparse_fbc_loader_audit"]
+    assert loader["stoichiometric_shape"] == [8461, 12931]
+    assert loader["stoichiometric_nonzero_count"] == 55198
+    assert loader["gene_associated_reaction_count"] == 7782
+    assert loader["active_objective_id"] == "obj"
+    assert loader["healthy_phh_context_extracted"] is False
+    assert loader["fba_execution_allowed"] is False
     assert snapshot["optimization_problem"]["objective"] is None
     assert snapshot["optimization_problem"]["boundary_fluxes"] is None
     numerics = snapshot["generic_constraint_numerics"]
@@ -40,6 +49,12 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     assert numerics["analytic_fixture_pass_count"] == 5
     assert numerics["human_gem_loaded"] is False
     assert numerics["biological_flux_authority"] is False
+    context_kernel = snapshot["context_extraction_kernel"]
+    assert context_kernel["algorithm"] == "FASTCORE"
+    assert context_kernel["synthetic_fixture_pass_count"] == 1
+    assert context_kernel["epsilon_has_runtime_default"] is False
+    assert context_kernel["human_gem_context_extraction_executed"] is False
+    assert context_kernel["biological_flux_authority"] is False
     bundle = snapshot["phh_execution_bundle_intake"]
     assert bundle["required_artifact_count"] == 10
     assert bundle["delivered_bundle_count"] == 0

@@ -4,9 +4,12 @@ import argparse
 import hashlib
 import json
 import shutil
+import ssl
 import tempfile
 import urllib.request
 from pathlib import Path
+
+import certifi
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,7 +58,11 @@ def fetch_verified_artifact(
     with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as temporary:
         temporary_path = Path(temporary.name)
     try:
-        with urllib.request.urlopen(str(manifest["artifact_url"])) as response:
+        tls_context = ssl.create_default_context(cafile=certifi.where())
+        with urllib.request.urlopen(
+            str(manifest["artifact_url"]),
+            context=tls_context,
+        ) as response:
             with temporary_path.open("wb") as stream:
                 shutil.copyfileobj(response, stream)
         actual_size = temporary_path.stat().st_size
