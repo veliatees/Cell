@@ -132,6 +132,12 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     fastcore_scaling = metabolic["candidate_reconstruction"][
         "fastcore_scaling_comparison"
     ]
+    fastcore_blocker_diagnostics = metabolic[
+        "candidate_reconstruction"
+    ]["fastcore_blocker_diagnostics"]
+    fastcore_support_repair = metabolic["candidate_reconstruction"][
+        "fastcore_support_repair"
+    ]
     reaction_evidence_manifest = metabolic["candidate_reconstruction"][
         "reaction_evidence_manifest"
     ]
@@ -1249,6 +1255,142 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "human_gem_fastcore_blocker_diagnostics",
+            "Human-GEM FASTCORE blocker diagnostics",
+            "closed",
+            "Reaction-level generic-network flux-range and structural-witness diagnosis of the 17 adaptive-output blockers; no bound change, minimum-support claim or PHH activity claim.",
+            "All 17 reactions carry flux somewhere in the pinned generic FASTCC-consistent network and are blocked only after adaptive extraction. Exact extrema, omitted full-network witness reactions and omitted one-hop neighborhoods are preserved so numerical extraction failures can be separated from biological evidence gaps.",
+            {
+                "diagnosed_blocker_count": (
+                    fastcore_blocker_diagnostics[
+                        "diagnosed_blocker_count"
+                    ]
+                ),
+                "full_network_active_blocker_count": (
+                    fastcore_blocker_diagnostics[
+                        "full_network_active_blocker_count"
+                    ]
+                ),
+                "candidate_blocked_reaction_count": (
+                    fastcore_blocker_diagnostics[
+                        "candidate_blocked_reaction_count"
+                    ]
+                ),
+                "full_witness_omitted_reaction_union_count": (
+                    fastcore_blocker_diagnostics[
+                        "full_witness_omitted_reaction_union_count"
+                    ]
+                ),
+                "omitted_one_hop_reaction_union_count": (
+                    fastcore_blocker_diagnostics[
+                        "omitted_one_hop_reaction_union_count"
+                    ]
+                ),
+                "minimum_reaction_support_proven": (
+                    fastcore_blocker_diagnostics[
+                        "minimum_reaction_support_proven"
+                    ]
+                ),
+                "context_model_accepted": (
+                    fastcore_blocker_diagnostics[
+                        "context_model_accepted"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/minimum_reaction_support.py",
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_blocker_diagnostics.py",
+                "scripts/diagnose_human_gem_phh_fastcore_blockers.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_blocker_diagnostics.json",
+                "engine/tests/test_minimum_reaction_support.py",
+                "engine/tests/test_human_gem_phh_fastcore_blocker_diagnostics.py",
+            ),
+        ),
+        _entry(
+            "human_gem_fastcore_source_limited_support_repair",
+            "Human-GEM source-limited FASTCORE support repair",
+            "closed",
+            "Zero-gap per-target minimum-reaction MILP, post-MILP LP certification and strict FASTCC validation using only omitted reactions already present in checksum-pinned generic Human-GEM; no accepted PHH context.",
+            "Thirty-four directional MILPs prove target-specific supports of one to 56 reactions. Their 65-reaction union raises the candidate from 7,415 to 7,480 reactions and strict FASTCC classifies all 7,480 as consistent. All 65 additions still require biological evidence: 57 have zero-of-seven donor GPR support and eight have no GPR annotation.",
+            {
+                "target_blocker_count": fastcore_support_repair[
+                    "target_blocker_count"
+                ],
+                "direction_milp_solve_count": fastcore_support_repair[
+                    "direction_milp_solve_count"
+                ],
+                "minimum_per_target_added_reaction_count": (
+                    fastcore_support_repair[
+                        "minimum_per_target_added_reaction_count"
+                    ]
+                ),
+                "maximum_per_target_added_reaction_count": (
+                    fastcore_support_repair[
+                        "maximum_per_target_added_reaction_count"
+                    ]
+                ),
+                "added_reaction_union_count": fastcore_support_repair[
+                    "added_reaction_union_count"
+                ],
+                "repaired_candidate_reaction_count": (
+                    fastcore_support_repair[
+                        "repaired_candidate_reaction_count"
+                    ]
+                ),
+                "strict_fastcc_blocked_reaction_count": (
+                    fastcore_support_repair[
+                        "strict_fastcc_blocked_reaction_count"
+                    ]
+                ),
+                "added_reaction_without_gpr_count": (
+                    fastcore_support_repair[
+                        "added_reaction_without_gpr_count"
+                    ]
+                ),
+                "added_reaction_zero_donor_gpr_count": (
+                    fastcore_support_repair[
+                        "added_reaction_zero_donor_gpr_count"
+                    ]
+                ),
+                "per_target_minimum_cardinality_proven": (
+                    fastcore_support_repair[
+                        "per_target_minimum_cardinality_proven"
+                    ]
+                ),
+                "union_strictly_flux_consistent": (
+                    fastcore_support_repair[
+                        "union_strictly_flux_consistent"
+                    ]
+                ),
+                "union_global_minimum_guaranteed": (
+                    fastcore_support_repair[
+                        "union_global_minimum_guaranteed"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    fastcore_support_repair[
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": fastcore_support_repair[
+                    "context_model_accepted"
+                ],
+                "fba_execution_allowed": fastcore_support_repair[
+                    "fba_execution_allowed"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/minimum_reaction_support.py",
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_support_repair.py",
+                "scripts/repair_human_gem_phh_fastcore_support.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_support_repair.json",
+                "engine/tests/test_minimum_reaction_support.py",
+                "engine/tests/test_human_gem_phh_fastcore_support_repair.py",
+            ),
+        ),
+        _entry(
             "human_gem_reaction_evidence_manifest",
             "Human-GEM reaction evidence manifest",
             "closed",
@@ -1895,6 +2037,80 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or scaling_metrics["context_model_accepted"] is not False
     ):
         raise ValueError("FASTCORE scaling sensitivity escaped fail-closed scope")
+    blocker_diagnostic_metrics = by_id[
+        "human_gem_fastcore_blocker_diagnostics"
+    ]["observed_metrics"]
+    if (
+        blocker_diagnostic_metrics["diagnosed_blocker_count"] != 17
+        or blocker_diagnostic_metrics[
+            "full_network_active_blocker_count"
+        ]
+        != 17
+        or blocker_diagnostic_metrics[
+            "candidate_blocked_reaction_count"
+        ]
+        != 17
+        or blocker_diagnostic_metrics[
+            "full_witness_omitted_reaction_union_count"
+        ]
+        != 1_169
+        or blocker_diagnostic_metrics[
+            "omitted_one_hop_reaction_union_count"
+        ]
+        != 1_402
+        or blocker_diagnostic_metrics[
+            "minimum_reaction_support_proven"
+        ]
+        is not False
+        or blocker_diagnostic_metrics["context_model_accepted"]
+        is not False
+    ):
+        raise ValueError("FASTCORE blocker diagnostics escaped scope")
+    support_repair_metrics = by_id[
+        "human_gem_fastcore_source_limited_support_repair"
+    ]["observed_metrics"]
+    if (
+        support_repair_metrics["target_blocker_count"] != 17
+        or support_repair_metrics["direction_milp_solve_count"] != 34
+        or support_repair_metrics[
+            "minimum_per_target_added_reaction_count"
+        ]
+        != 1
+        or support_repair_metrics[
+            "maximum_per_target_added_reaction_count"
+        ]
+        != 56
+        or support_repair_metrics["added_reaction_union_count"] != 65
+        or support_repair_metrics["repaired_candidate_reaction_count"]
+        != 7_480
+        or support_repair_metrics[
+            "strict_fastcc_blocked_reaction_count"
+        ]
+        != 0
+        or support_repair_metrics[
+            "added_reaction_without_gpr_count"
+        ]
+        != 8
+        or support_repair_metrics[
+            "added_reaction_zero_donor_gpr_count"
+        ]
+        != 57
+        or support_repair_metrics[
+            "per_target_minimum_cardinality_proven"
+        ]
+        is not True
+        or support_repair_metrics["union_strictly_flux_consistent"]
+        is not True
+        or support_repair_metrics["union_global_minimum_guaranteed"]
+        is not False
+        or support_repair_metrics[
+            "reaction_activity_in_phh_established"
+        ]
+        is not False
+        or support_repair_metrics["context_model_accepted"] is not False
+        or support_repair_metrics["fba_execution_allowed"] is not False
+    ):
+        raise ValueError("FASTCORE support repair escaped scope")
     evidence_metrics = by_id[
         "human_gem_reaction_evidence_manifest"
     ]["observed_metrics"]

@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 37
-    assert summary["closed_count"] == 15
+    assert summary["entry_count"] == 39
+    assert summary["closed_count"] == 17
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -172,6 +172,37 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
     assert scaling["observed_metrics"][
         "adaptive_output_flux_consistent"
     ] is False
+    diagnostics = entries["human_gem_fastcore_blocker_diagnostics"]
+    assert diagnostics["status"] == "closed"
+    assert diagnostics["observed_metrics"][
+        "diagnosed_blocker_count"
+    ] == 17
+    assert diagnostics["observed_metrics"][
+        "full_network_active_blocker_count"
+    ] == 17
+    assert diagnostics["observed_metrics"][
+        "minimum_reaction_support_proven"
+    ] is False
+    repair = entries[
+        "human_gem_fastcore_source_limited_support_repair"
+    ]
+    assert repair["status"] == "closed"
+    assert repair["observed_metrics"][
+        "added_reaction_union_count"
+    ] == 65
+    assert repair["observed_metrics"][
+        "repaired_candidate_reaction_count"
+    ] == 7480
+    assert repair["observed_metrics"][
+        "strict_fastcc_blocked_reaction_count"
+    ] == 0
+    assert repair["observed_metrics"][
+        "added_reaction_zero_donor_gpr_count"
+    ] == 57
+    assert repair["observed_metrics"][
+        "reaction_activity_in_phh_established"
+    ] is False
+    assert repair["observed_metrics"]["context_model_accepted"] is False
     evidence = entries["human_gem_reaction_evidence_manifest"]
     assert evidence["status"] == "closed"
     assert evidence["observed_metrics"]["manifest_reaction_count"] == 4895

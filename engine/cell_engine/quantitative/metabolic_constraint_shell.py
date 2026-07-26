@@ -32,6 +32,12 @@ from cell_engine.quantitative.human_gem_phh_fastcore_context import (
 from cell_engine.quantitative.human_gem_phh_fastcore_scaling import (
     load_committed_human_gem_phh_fastcore_scaling_comparison,
 )
+from cell_engine.quantitative.human_gem_phh_fastcore_blocker_diagnostics import (
+    load_committed_human_gem_phh_fastcore_blocker_diagnostics,
+)
+from cell_engine.quantitative.human_gem_phh_fastcore_support_repair import (
+    load_committed_human_gem_phh_fastcore_support_repair,
+)
 from cell_engine.quantitative.human_gem_phh_donor_stability import (
     load_committed_human_gem_phh_donor_stability_audit,
 )
@@ -48,7 +54,7 @@ from cell_engine.quantitative.phh_metabolic_execution_bundle import (
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "metabolic_constraint_shell_v8"
+VERSION = "metabolic_constraint_shell_v9"
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
@@ -90,6 +96,29 @@ METABOLIC_CONSTRAINT_SOURCES: dict[str, SourceReference] = {
             "strict output inconsistency."
         ),
     ),
+    "gapfill": SourceReference(
+        id="gapfill",
+        title="Optimization based automated curation of metabolic reconstructions",
+        url="https://doi.org/10.1186/1471-2105-8-212",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes=(
+            "Primary source for a mixed-integer minimum-reaction gap-filling "
+            "formulation. The project restricts candidates to the pinned "
+            "generic Human-GEM network and treats output as structural only."
+        ),
+    ),
+    "fast_gap_filling": SourceReference(
+        id="fast_gap_filling",
+        title="Efficiently gap-filling reaction networks",
+        url="https://doi.org/10.1186/1471-2105-15-225",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes=(
+            "Supports minimum-reaction structural repair and explicitly does "
+            "not turn an added reaction into evidence of biological activity."
+        ),
+    ),
 }
 
 
@@ -123,6 +152,12 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
     evidence_manifest = (
         load_committed_human_gem_phh_reaction_evidence_manifest()
     )
+    blocker_diagnostics = (
+        load_committed_human_gem_phh_fastcore_blocker_diagnostics()
+    )
+    support_repair = (
+        load_committed_human_gem_phh_fastcore_support_repair()
+    )
     scope = manifest["scientific_scope"]
     verification = manifest["verification"]
     counts = manifest["structural_counts_verified_from_sbml"]
@@ -139,8 +174,9 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
         "version": VERSION,
         "status": (
             "generic_human_gem_loaded_classified_native_objective_solved_"
-            "seven_donor_stability_and_FASTCORE_scaling_audited_"
-            "reaction_evidence_manifest_ready_PHH_execution_blocked"
+            "seven_donor_stability_FASTCORE_scaling_and_source_limited_"
+            "support_repair_audited_reaction_evidence_pending_"
+            "PHH_execution_blocked"
         ),
         "role": (
             "Genome-scale stoichiometric feasibility shell around validated dynamic cores. "
@@ -444,6 +480,96 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
                     "scientific_boundary"
                 ]["context_model_accepted"],
             },
+            "fastcore_blocker_diagnostics": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_"
+                    "fastcore_blocker_diagnostics.json"
+                ),
+                "diagnosed_blocker_count": blocker_diagnostics[
+                    "summary"
+                ]["diagnosed_blocker_count"],
+                "full_network_active_blocker_count": blocker_diagnostics[
+                    "summary"
+                ]["full_network_active_blocker_count"],
+                "candidate_blocked_reaction_count": blocker_diagnostics[
+                    "summary"
+                ]["candidate_blocked_reaction_count"],
+                "full_witness_omitted_reaction_union_count": (
+                    blocker_diagnostics["summary"][
+                        "full_witness_omitted_reaction_union_count"
+                    ]
+                ),
+                "omitted_one_hop_reaction_union_count": (
+                    blocker_diagnostics["summary"][
+                        "omitted_one_hop_reaction_union_count"
+                    ]
+                ),
+                "minimum_reaction_support_proven": (
+                    blocker_diagnostics["scientific_boundary"][
+                        "minimum_reaction_support_proven"
+                    ]
+                ),
+                "context_model_accepted": blocker_diagnostics[
+                    "scientific_boundary"
+                ]["context_model_accepted"],
+            },
+            "fastcore_support_repair": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_"
+                    "fastcore_support_repair.json"
+                ),
+                "target_blocker_count": support_repair["summary"][
+                    "target_blocker_count"
+                ],
+                "direction_milp_solve_count": support_repair["summary"][
+                    "direction_milp_solve_count"
+                ],
+                "minimum_per_target_added_reaction_count": (
+                    support_repair["summary"][
+                        "minimum_per_target_added_reaction_count"
+                    ]
+                ),
+                "maximum_per_target_added_reaction_count": (
+                    support_repair["summary"][
+                        "maximum_per_target_added_reaction_count"
+                    ]
+                ),
+                "added_reaction_union_count": support_repair["summary"][
+                    "added_reaction_union_count"
+                ],
+                "repaired_candidate_reaction_count": support_repair[
+                    "summary"
+                ]["repaired_candidate_reaction_count"],
+                "strict_fastcc_blocked_reaction_count": support_repair[
+                    "summary"
+                ]["strict_fastcc_blocked_reaction_count"],
+                "added_reaction_without_gpr_count": support_repair[
+                    "summary"
+                ]["added_reaction_without_gpr_count"],
+                "added_reaction_zero_donor_gpr_count": support_repair[
+                    "summary"
+                ]["added_reaction_zero_donor_gpr_count"],
+                "per_target_minimum_cardinality_proven": support_repair[
+                    "scientific_boundary"
+                ]["per_target_minimum_cardinality_proven"],
+                "union_strictly_flux_consistent": support_repair[
+                    "scientific_boundary"
+                ]["union_strictly_flux_consistent"],
+                "union_global_minimum_guaranteed": support_repair[
+                    "scientific_boundary"
+                ]["union_global_minimum_guaranteed"],
+                "reaction_activity_in_phh_established": support_repair[
+                    "scientific_boundary"
+                ]["reaction_activity_in_phh_established"],
+                "context_model_accepted": support_repair[
+                    "scientific_boundary"
+                ]["context_model_accepted"],
+                "fba_execution_allowed": support_repair[
+                    "scientific_boundary"
+                ]["fba_execution_allowed"],
+            },
             "reaction_evidence_manifest": {
                 "manifest_path": (
                     "data/evidence_intake/"
@@ -518,7 +644,8 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
         "blockers": (
             "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
             "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
-            "adaptive official LP-10 scaling selected 7,415 reactions but still left 17 output reactions blocked at the declared epsilon",
+            "adaptive official LP-10 scaling selected 7,415 reactions but its raw output left 17 reactions blocked at the declared epsilon",
+            "a source-limited 65-reaction union repairs strict structural consistency to 7,480 of 7,480 reactions, but all 65 additions still lack sufficient PHH activity evidence",
             "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
             "2,860 adaptive non-core support reactions require reaction-level PHH evidence; 2,177 lack a GPR annotation",
             "measured exchange bounds and explicit scale conversion are absent",
@@ -706,6 +833,60 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
         or scaling.get("context_model_accepted") is not False
     ):
         raise ValueError("PHH FASTCORE scaling comparison changed")
+    blocker_diagnostics = reconstruction.get(
+        "fastcore_blocker_diagnostics"
+    )
+    if not isinstance(blocker_diagnostics, dict) or (
+        blocker_diagnostics.get("diagnosed_blocker_count") != 17
+        or blocker_diagnostics.get("full_network_active_blocker_count")
+        != 17
+        or blocker_diagnostics.get("candidate_blocked_reaction_count")
+        != 17
+        or blocker_diagnostics.get(
+            "full_witness_omitted_reaction_union_count"
+        )
+        != 1_169
+        or blocker_diagnostics.get(
+            "omitted_one_hop_reaction_union_count"
+        )
+        != 1_402
+        or blocker_diagnostics.get("minimum_reaction_support_proven")
+        is not False
+        or blocker_diagnostics.get("context_model_accepted") is not False
+    ):
+        raise ValueError("PHH FASTCORE blocker diagnostics changed")
+    support_repair = reconstruction.get("fastcore_support_repair")
+    if not isinstance(support_repair, dict) or (
+        support_repair.get("target_blocker_count") != 17
+        or support_repair.get("direction_milp_solve_count") != 34
+        or support_repair.get(
+            "minimum_per_target_added_reaction_count"
+        )
+        != 1
+        or support_repair.get(
+            "maximum_per_target_added_reaction_count"
+        )
+        != 56
+        or support_repair.get("added_reaction_union_count") != 65
+        or support_repair.get("repaired_candidate_reaction_count")
+        != 7_480
+        or support_repair.get("strict_fastcc_blocked_reaction_count")
+        != 0
+        or support_repair.get("added_reaction_without_gpr_count") != 8
+        or support_repair.get("added_reaction_zero_donor_gpr_count")
+        != 57
+        or support_repair.get("per_target_minimum_cardinality_proven")
+        is not True
+        or support_repair.get("union_strictly_flux_consistent")
+        is not True
+        or support_repair.get("union_global_minimum_guaranteed")
+        is not False
+        or support_repair.get("reaction_activity_in_phh_established")
+        is not False
+        or support_repair.get("context_model_accepted") is not False
+        or support_repair.get("fba_execution_allowed") is not False
+    ):
+        raise ValueError("PHH FASTCORE support-repair audit changed")
     evidence_manifest = reconstruction.get("reaction_evidence_manifest")
     if not isinstance(evidence_manifest, dict) or (
         evidence_manifest.get("manifest_reaction_count") != 4_895
