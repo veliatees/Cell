@@ -232,6 +232,14 @@ link back here or to a more specific research file.
     https://github.com/opencobra/cobratoolbox/tree/67c790dbac809d9d891fdbafc33e18c21fc9bddc/src/dataIntegration/transcriptomics/FASTCORE
   - Pinned COBRA Toolbox LP-10 fixed/adaptive source:
     https://github.com/opencobra/cobratoolbox/blob/67c790dbac809d9d891fdbafc33e18c21fc9bddc/src/dataIntegration/transcriptomics/FASTCORE/LP10.m
+  - Kumar et al. (2007), optimization-based GapFind/GapFill:
+    https://doi.org/10.1186/1471-2105-8-212
+  - Latendresse (2014), Efficiently gap-filling reaction networks:
+    https://doi.org/10.1186/1471-2105-15-225
+  - HiGHS MIP feasibility and integrality option definitions:
+    https://ergo-code.github.io/HiGHS/stable/options/definitions/
+  - Gap-filling outputs are structural hypotheses. They do not establish PHH
+    reaction activity, active enzyme abundance, exchange flux or kinetic rate.
   - Human Protein Atlas subcellular map:
     https://doi.org/10.1126/science.aal3321
   - MacParland et al. normal human liver cell atlas:

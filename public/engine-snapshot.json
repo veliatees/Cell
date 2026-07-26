@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-26T18:32:46.177484+00:00",
+    "created_at_utc": "2026-07-26T19:24:18.258867+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -6888,6 +6888,14 @@
         "title": "3D reconstruction of human liver tissue at cellular resolution",
         "url": "https://doi.org/10.1126/sciadv.adz2299"
       },
+      "fast_gap_filling": {
+        "date_verified": "2026-07-26",
+        "id": "fast_gap_filling",
+        "notes": "Supports minimum-reaction structural repair and explicitly does not turn an added reaction into evidence of biological activity.",
+        "source_type": "primary_paper",
+        "title": "Efficiently gap-filling reaction networks",
+        "url": "https://doi.org/10.1186/1471-2105-15-225"
+      },
       "fastcore": {
         "date_verified": "2026-07-26",
         "id": "fastcore",
@@ -6919,6 +6927,14 @@
         "source_type": "primary_paper",
         "title": "Phospholipids undergo hop diffusion in compartmentalized cell membrane",
         "url": "https://doi.org/10.1083/jcb.200202050"
+      },
+      "gapfill": {
+        "date_verified": "2026-07-26",
+        "id": "gapfill",
+        "notes": "Primary source for a mixed-integer minimum-reaction gap-filling formulation. The project restricts candidates to the pinned generic Human-GEM network and treats output as structural only.",
+        "source_type": "primary_paper",
+        "title": "Optimization based automated curation of metabolic reconstructions",
+        "url": "https://doi.org/10.1186/1471-2105-8-212"
       },
       "genomic_burst_kinetics": {
         "date_verified": "2026-07-10",
@@ -16212,6 +16228,64 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/quantitative/minimum_reaction_support.py",
+            "engine/cell_engine/quantitative/human_gem_phh_fastcore_blocker_diagnostics.py",
+            "scripts/diagnose_human_gem_phh_fastcore_blockers.py",
+            "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_blocker_diagnostics.json",
+            "engine/tests/test_minimum_reaction_support.py",
+            "engine/tests/test_human_gem_phh_fastcore_blocker_diagnostics.py"
+          ],
+          "current_capability": "All 17 reactions carry flux somewhere in the pinned generic FASTCC-consistent network and are blocked only after adaptive extraction. Exact extrema, omitted full-network witness reactions and omitted one-hop neighborhoods are preserved so numerical extraction failures can be separated from biological evidence gaps.",
+          "id": "human_gem_fastcore_blocker_diagnostics",
+          "observed_metrics": {
+            "candidate_blocked_reaction_count": 17,
+            "context_model_accepted": false,
+            "diagnosed_blocker_count": 17,
+            "full_network_active_blocker_count": 17,
+            "full_witness_omitted_reaction_union_count": 1169,
+            "minimum_reaction_support_proven": false,
+            "omitted_one_hop_reaction_union_count": 1402
+          },
+          "remaining_requirements": [],
+          "scope": "Reaction-level generic-network flux-range and structural-witness diagnosis of the 17 adaptive-output blockers; no bound change, minimum-support claim or PHH activity claim.",
+          "status": "closed",
+          "title": "Human-GEM FASTCORE blocker diagnostics"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/minimum_reaction_support.py",
+            "engine/cell_engine/quantitative/human_gem_phh_fastcore_support_repair.py",
+            "scripts/repair_human_gem_phh_fastcore_support.py",
+            "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_support_repair.json",
+            "engine/tests/test_minimum_reaction_support.py",
+            "engine/tests/test_human_gem_phh_fastcore_support_repair.py"
+          ],
+          "current_capability": "Thirty-four directional MILPs prove target-specific supports of one to 56 reactions. Their 65-reaction union raises the candidate from 7,415 to 7,480 reactions and strict FASTCC classifies all 7,480 as consistent. All 65 additions still require biological evidence: 57 have zero-of-seven donor GPR support and eight have no GPR annotation.",
+          "id": "human_gem_fastcore_source_limited_support_repair",
+          "observed_metrics": {
+            "added_reaction_union_count": 65,
+            "added_reaction_without_gpr_count": 8,
+            "added_reaction_zero_donor_gpr_count": 57,
+            "context_model_accepted": false,
+            "direction_milp_solve_count": 34,
+            "fba_execution_allowed": false,
+            "maximum_per_target_added_reaction_count": 56,
+            "minimum_per_target_added_reaction_count": 1,
+            "per_target_minimum_cardinality_proven": true,
+            "reaction_activity_in_phh_established": false,
+            "repaired_candidate_reaction_count": 7480,
+            "strict_fastcc_blocked_reaction_count": 0,
+            "target_blocker_count": 17,
+            "union_global_minimum_guaranteed": false,
+            "union_strictly_flux_consistent": true
+          },
+          "remaining_requirements": [],
+          "scope": "Zero-gap per-target minimum-reaction MILP, post-MILP LP certification and strict FASTCC validation using only omitted reactions already present in checksum-pinned generic Human-GEM; no accepted PHH context.",
+          "status": "closed",
+          "title": "Human-GEM source-limited FASTCORE support repair"
+        },
+        {
+          "code_surfaces": [
             "engine/cell_engine/quantitative/human_gem_phh_reaction_evidence_manifest.py",
             "scripts/build_human_gem_phh_reaction_evidence_manifest.py",
             "data/evidence_intake/human_gem_phh_reaction_evidence_manifest.v1.json",
@@ -16369,8 +16443,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 12,
-        "closed_count": 15,
-        "entry_count": 37,
+        "closed_count": 17,
+        "entry_count": 39,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
@@ -22863,7 +22937,8 @@
       "blockers": [
         "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
         "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
-        "adaptive official LP-10 scaling selected 7,415 reactions but still left 17 output reactions blocked at the declared epsilon",
+        "adaptive official LP-10 scaling selected 7,415 reactions but its raw output left 17 reactions blocked at the declared epsilon",
+        "a source-limited 65-reaction union repairs strict structural consistency to 7,480 of 7,480 reactions, but all 65 additions still lack sufficient PHH activity evidence",
         "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
         "2,860 adaptive non-core support reactions require reaction-level PHH evidence; 2,177 lack a GPR annotation",
         "measured exchange bounds and explicit scale conversion are absent",
@@ -22878,6 +22953,16 @@
         "artifact_url": "https://raw.githubusercontent.com/SysBioChalmers/Human-GEM/635f533152dc5f7290ce04d12700eaa882273c3e/model/Human-GEM.xml",
         "artifact_vendored_in_repository": false,
         "expected_local_cache_path": "data/published_models/cache/Human-GEM-v2.0.0.xml",
+        "fastcore_blocker_diagnostics": {
+          "audit_report": "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_blocker_diagnostics.json",
+          "candidate_blocked_reaction_count": 17,
+          "context_model_accepted": false,
+          "diagnosed_blocker_count": 17,
+          "full_network_active_blocker_count": 17,
+          "full_witness_omitted_reaction_union_count": 1169,
+          "minimum_reaction_support_proven": false,
+          "omitted_one_hop_reaction_union_count": 1402
+        },
         "fastcore_scaling_comparison": {
           "adaptive_fixed_fallback_count": 1,
           "adaptive_lp10_solve_count": 11,
@@ -22889,6 +22974,24 @@
           "fixed_output_blocked_reaction_count": 408,
           "fixed_selected_reaction_count": 7320,
           "selected_jaccard": 0.940858798735511
+        },
+        "fastcore_support_repair": {
+          "added_reaction_union_count": 65,
+          "added_reaction_without_gpr_count": 8,
+          "added_reaction_zero_donor_gpr_count": 57,
+          "audit_report": "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_support_repair.json",
+          "context_model_accepted": false,
+          "direction_milp_solve_count": 34,
+          "fba_execution_allowed": false,
+          "maximum_per_target_added_reaction_count": 56,
+          "minimum_per_target_added_reaction_count": 1,
+          "per_target_minimum_cardinality_proven": true,
+          "reaction_activity_in_phh_established": false,
+          "repaired_candidate_reaction_count": 7480,
+          "strict_fastcc_blocked_reaction_count": 0,
+          "target_blocker_count": 17,
+          "union_global_minimum_guaranteed": false,
+          "union_strictly_flux_consistent": true
         },
         "fbc_loader_audit_report": "data/published_models/human_gem_v2.0.0.fbc_loader_audit.json",
         "generic_flux_consistency_audit": {
@@ -23136,10 +23239,12 @@
       "source_ids": [
         "human1_metabolic_atlas",
         "human_gem_repository",
-        "fastcore"
+        "fastcore",
+        "gapfill",
+        "fast_gap_filling"
       ],
-      "status": "generic_human_gem_loaded_classified_native_objective_solved_seven_donor_stability_and_FASTCORE_scaling_audited_reaction_evidence_manifest_ready_PHH_execution_blocked",
-      "version": "metabolic_constraint_shell_v8"
+      "status": "generic_human_gem_loaded_classified_native_objective_solved_seven_donor_stability_FASTCORE_scaling_and_source_limited_support_repair_audited_reaction_evidence_pending_PHH_execution_blocked",
+      "version": "metabolic_constraint_shell_v9"
     },
     "metabolic_fluxes": [
       {
@@ -41308,6 +41413,8 @@
         "human_gem_real_scale_fastcore_trial",
         "human_gem_phh_donor_gpr_stability",
         "human_gem_fastcore_scaling_sensitivity",
+        "human_gem_fastcore_blocker_diagnostics",
+        "human_gem_fastcore_source_limited_support_repair",
         "human_gem_phh_reaction_evidence_manifest",
         "phh_metabolic_execution_bundle_intake",
         "metabolic_constraint_shell",
@@ -42291,6 +42398,34 @@
           "status": "derived"
         },
         {
+          "action": "compare all 17 adaptive-output blockers against the checksum-pinned generic FASTCC-consistent network; preserve exact flux extrema, omitted witness identities and local incident structure without changing any bound",
+          "default_snapshot_role": "reaction_level_generic_flux_witness_audit",
+          "drives_scientific_validation": true,
+          "id": "human_gem_fastcore_blocker_diagnostics",
+          "limitations": "All 17 reactions are active somewhere in generic Human-GEM and blocked only in the adaptive candidate. Full-network extrema are generic structural witnesses, not PHH flux measurements or minimum support proofs.",
+          "source_ids": [
+            "human_hepatocyte_proteome_2016",
+            "human_gem_repository",
+            "fastcore"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "solve both directions for every blocker with a zero-gap minimum-reaction MILP restricted to omitted reactions already in pinned Human-GEM; post-certify rounded supports with LP and reclassify the 65-reaction union with strict FASTCC",
+          "default_snapshot_role": "exact_structural_repair_and_biological_firewall",
+          "drives_scientific_validation": true,
+          "id": "human_gem_fastcore_source_limited_support_repair",
+          "limitations": "The 7,480-reaction union is structurally flux consistent, but 57 additions have zero-of-seven total-proteome GPR support and eight lack a GPR annotation. Per-target cardinality is proven; union global minimality, support uniqueness, PHH activity, objective, exchange bounds and runtime authority are not.",
+          "source_ids": [
+            "human_hepatocyte_proteome_2016",
+            "human_gem_repository",
+            "fastcore",
+            "gapfill",
+            "fast_gap_filling"
+          ],
+          "status": "derived"
+        },
+        {
           "action": "retain dependency-ordered reaction gap codes and exact requested result fields; use no synthetic priority score and permit no automatic bound, inclusion or exclusion change",
           "default_snapshot_role": "reaction_identity_level_research_intake",
           "drives_scientific_validation": true,
@@ -42313,15 +42448,17 @@
           "status": "derived"
         },
         {
-          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, seven-donor GPR stability, fixed/adaptive FASTCORE sensitivity and reaction evidence manifest; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
+          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, seven-donor GPR stability, FASTCORE sensitivity, source-limited structural repair and reaction evidence manifest; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
           "default_snapshot_role": "pinned_reconstruction_and_genome_scale_activation_firewall",
           "drives_scientific_validation": true,
           "id": "metabolic_constraint_shell",
-          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective. Adaptive FASTCORE narrows but does not eliminate output inconsistency, and the available total proteome does not establish active enzyme capacities. No PHH bundle or biological optimization runs.",
+          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective. A 65-reaction source-limited union repairs the adaptive candidate numerically, but all additions lack sufficient PHH activity evidence and the available total proteome does not establish active enzyme capacities. No PHH bundle or biological optimization runs.",
           "source_ids": [
             "human1_metabolic_atlas",
             "human_gem_repository",
             "fastcore",
+            "gapfill",
+            "fast_gap_filling",
             "human_hepatocyte_proteome_2016"
           ],
           "status": "derived"

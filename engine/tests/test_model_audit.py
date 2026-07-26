@@ -121,6 +121,18 @@ class ScientificModelAuditTests(unittest.TestCase):
         )
         self.assertEqual(
             by_id[
+                "human_gem_fastcore_blocker_diagnostics"
+            ].default_snapshot_role,
+            "reaction_level_generic_flux_witness_audit",
+        )
+        self.assertEqual(
+            by_id[
+                "human_gem_fastcore_source_limited_support_repair"
+            ].default_snapshot_role,
+            "exact_structural_repair_and_biological_firewall",
+        )
+        self.assertEqual(
+            by_id[
                 "human_gem_phh_reaction_evidence_manifest"
             ].default_snapshot_role,
             "reaction_identity_level_research_intake",

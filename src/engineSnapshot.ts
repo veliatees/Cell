@@ -1800,7 +1800,7 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v8";
+  version: "metabolic_constraint_shell_v9";
   status: string;
   role: string;
   candidate_reconstruction: {
@@ -1936,6 +1936,34 @@ export type EngineMetabolicConstraintShell = {
       selected_jaccard: number;
       adaptive_output_flux_consistent: false;
       context_model_accepted: false;
+    };
+    fastcore_blocker_diagnostics: {
+      audit_report: string;
+      diagnosed_blocker_count: number;
+      full_network_active_blocker_count: number;
+      candidate_blocked_reaction_count: number;
+      full_witness_omitted_reaction_union_count: number;
+      omitted_one_hop_reaction_union_count: number;
+      minimum_reaction_support_proven: false;
+      context_model_accepted: false;
+    };
+    fastcore_support_repair: {
+      audit_report: string;
+      target_blocker_count: number;
+      direction_milp_solve_count: number;
+      minimum_per_target_added_reaction_count: number;
+      maximum_per_target_added_reaction_count: number;
+      added_reaction_union_count: number;
+      repaired_candidate_reaction_count: number;
+      strict_fastcc_blocked_reaction_count: number;
+      added_reaction_without_gpr_count: number;
+      added_reaction_zero_donor_gpr_count: number;
+      per_target_minimum_cardinality_proven: true;
+      union_strictly_flux_consistent: true;
+      union_global_minimum_guaranteed: false;
+      reaction_activity_in_phh_established: false;
+      context_model_accepted: false;
+      fba_execution_allowed: false;
     };
     reaction_evidence_manifest: {
       manifest_path: string;
