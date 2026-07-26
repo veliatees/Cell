@@ -86,6 +86,14 @@ class ScientificModelAuditTests(unittest.TestCase):
             "donor_resolved_mechanics_and_fsi_firewall",
         )
         self.assertEqual(
+            by_id["membrane_topology_transition_candidate"].default_snapshot_role,
+            "offline_closed_surface_transition_and_state_conservation_firewall",
+        )
+        self.assertIn(
+            "non-committable",
+            by_id["membrane_topology_transition_candidate"].limitations,
+        )
+        self.assertEqual(
             by_id["generic_constraint_numerics"].default_snapshot_role,
             "synthetic_linear_programming_verification_only",
         )

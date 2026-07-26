@@ -38,6 +38,23 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert summary["subgrid_boundary_grid_convergence_test_count"] == 1
     assert summary["local_star_shaped_membrane_boundary_coupling_count"] == 1
     assert summary["local_membrane_topology_change_coupling_count"] == 0
+    assert summary["membrane_topology_transition_audit_kernel_count"] == 1
+    assert (
+        summary["conservative_membrane_topology_state_transfer_kernel_count"]
+        == 1
+    )
+    assert (
+        summary["membrane_topology_transition_candidate_transaction_count"]
+        == 1
+    )
+    assert summary["membrane_topology_event_intake_contract_count"] == 1
+    assert summary["delivered_phh_membrane_topology_event_record_count"] == 0
+    assert (
+        summary[
+            "quantitatively_authorized_phh_membrane_topology_event_record_count"
+        ]
+        == 0
+    )
     assert summary["locally_conservative_membrane_face_flux_count"] == 1
     assert summary["fractional_face_aperture_solver_count"] == 1
     assert summary["generic_watertight_mesh_boundary_kernel_count"] == 1
@@ -118,6 +135,25 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert fsi["delivered_mechanics_trajectory_count"] == 0
     assert fsi["spatial_fsi_ready_trajectory_count"] == 0
     assert fsi["quantitatively_authorized_parameter_count"] == 0
+    topology = snapshot["solver_layers"][
+        "dimensionless_membrane_topology_transition_candidate"
+    ]
+    assert topology["enabled"] is True
+    assert topology["closed_surface_topology_audit"] is True
+    assert topology["event_specific_euler_change_audit"] is True
+    assert topology["extensive_surface_inventory_conservation"] is True
+    assert topology["area_integrated_density_conservation"] is True
+    assert topology["automatic_event_detection"] is False
+    assert topology["automatic_mesh_surgery"] is False
+    assert topology["runtime_mesh_replacement_enabled"] is False
+    assert topology["fluid_domain_replacement_enabled"] is False
+    assert topology["biological_event_activation_enabled"] is False
+    assert topology["delivered_event_record_count"] == 0
+    assert topology["quantitatively_authorized_event_record_count"] == 0
+    topology_intake = snapshot["phh_membrane_topology_event_intake"]
+    assert topology_intake["required_field_count"] == 57
+    assert topology_intake["record_count"] == 0
+    assert topology_intake["runtime_topology_activation_allowed"] is False
     mechanics = snapshot["phh_mechanics_calibration_intake"]
     assert mechanics["expected_header_count"] == 48
     assert mechanics["target_quantity_count"] == 15
@@ -131,6 +167,7 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
         (("renderer_dimensionless_projection_grid", "membrane_pressure_feedback"), True),
         (("renderer_dimensionless_projection_grid", "full_watertight_mesh_boundaries"), True),
         (("dimensionless_pressure_membrane_response_candidate", "runtime_feedback_enabled"), True),
+        (("dimensionless_membrane_topology_transition_candidate", "runtime_mesh_replacement_enabled"), True),
         (("conservative_passive_scalar_kernel", "biological_species_bound_count"), 1),
         (("dimensionless_active_cargo_route_kernel", "biological_velocity_claim"), True),
     ),
