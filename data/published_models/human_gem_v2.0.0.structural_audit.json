@@ -13,7 +13,7 @@
     "model_name": "Generic genome-scale metabolic model of Homo sapiens",
     "level": 3,
     "version": 1,
-    "active_objective_id": null
+    "active_objective_id": "obj"
   },
   "structure": {
     "compartment_count": 9,

@@ -3,7 +3,7 @@ name = "cell-engine"
 version = "0.1.0"
 description = "Authoritative scientific engine boundary for the Cell project."
 requires-python = ">=3.11"
-dependencies = ["scipy==1.17.1"]
+dependencies = ["certifi==2026.2.25", "scipy==1.17.1"]
 
 [project.optional-dependencies]
 published-models = ["libroadrunner==2.9.2", "h5py==3.16.0"]

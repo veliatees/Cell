@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 28
-    assert summary["closed_count"] == 6
+    assert summary["entry_count"] == 30
+    assert summary["closed_count"] == 8
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -84,6 +84,10 @@ def test_local_membrane_and_generative_data_planes_are_partial_or_blocked() -> N
     assert local["observed_metrics"]["local_topology_change_modes_coupled"] == 0
     assert local["observed_metrics"]["locally_conservative_membrane_face_flux_count"] == 1
     assert local["observed_metrics"]["non_star_shaped_closed_mesh_domain_kernel_count"] == 1
+    assert local["observed_metrics"]["topology_preserving_adaptive_remeshing_kernel_count"] == 1
+    assert local["observed_metrics"]["surface_state_transfer_kernel_count"] == 1
+    assert local["observed_metrics"]["runtime_adaptive_remeshing_coupling_count"] == 0
+    assert local["observed_metrics"]["topology_change_remeshing_kernel_count"] == 0
     fsi = entries["fluid_structure_interaction"]
     assert fsi["status"] == "blocked_missing_evidence"
     assert fsi["observed_metrics"]["dimensionless_pressure_membrane_response_kernel_count"] == 1
@@ -106,14 +110,29 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
     entries = {entry["id"]: entry for entry in matrix["entries"]}
     assert entries["human_gem_artifact_identity"]["status"] == "closed"
     assert entries["human_gem_artifact_identity"]["observed_metrics"]["runtime_loaded"] is False
+    loader = entries["human_gem_sparse_fbc_loader"]
+    assert loader["status"] == "closed"
+    assert loader["observed_metrics"]["stoichiometric_row_count"] == 8461
+    assert loader["observed_metrics"]["stoichiometric_column_count"] == 12931
+    assert loader["observed_metrics"]["stoichiometric_nonzero_count"] == 55198
+    assert loader["observed_metrics"]["healthy_phh_context_extracted"] is False
+    assert loader["observed_metrics"]["fba_execution_allowed"] is False
     generic = entries["generic_fba_fva_numerics"]
     assert generic["status"] == "closed"
     assert generic["observed_metrics"]["analytic_fixture_pass_count"] == 5
     assert generic["observed_metrics"]["alternate_optimum_audit_count"] == 1
     assert generic["observed_metrics"]["biological_flux_authority"] is False
+    fastcore = entries["fastcore_context_extraction_numerics"]
+    assert fastcore["status"] == "closed"
+    assert fastcore["observed_metrics"]["synthetic_fixture_pass_count"] == 1
+    assert fastcore["observed_metrics"]["epsilon_has_runtime_default"] is False
+    assert fastcore["observed_metrics"]["human_gem_context_extraction_executed"] is False
+    assert fastcore["observed_metrics"]["biological_flux_authority"] is False
     assert entries["hepatocyte_fba_execution"]["status"] == "blocked_missing_evidence"
     fba = entries["hepatocyte_fba_execution"]["observed_metrics"]
     assert fba["enabled_execution_gate_count"] == 0
+    assert fba["context_extraction_fixture_pass_count"] == 1
+    assert fba["human_gem_context_extraction_executed_count"] == 0
     assert fba["execution_bundle_intake_contract_count"] == 1
     assert fba["required_execution_bundle_artifact_count"] == 10
     assert fba["delivered_execution_bundle_count"] == 0
