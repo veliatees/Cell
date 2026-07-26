@@ -2193,7 +2193,7 @@ describe("engine snapshot client", () => {
       expect(result.summary.activeProteinLocalizationIntake?.required_protein_slot_count).toBe(63);
       expect(result.summary.activeProteinLocalizationIntake?.active_copy_or_concentration_authorized_count).toBe(0);
       expect(result.summary.cytosolTransport?.material_model.model).toBe("poroelastic_two_phase_cytoplasm");
-      expect(result.summary.cytosolTransport?.version).toBe("cytosol_transport_rheology_contract_v11");
+      expect(result.summary.cytosolTransport?.version).toBe("cytosol_transport_rheology_contract_v12");
       expect(result.summary.cytosolTransport?.summary.conservative_subgrid_boundary_treatment_count).toBe(1);
       expect(result.summary.cytosolTransport?.summary.dimensionless_active_cargo_route_kernel_count).toBe(1);
       expect(result.summary.cytosolTransport?.summary.healthy_phh_active_transport_kernel_count).toBe(0);
@@ -2211,12 +2211,19 @@ describe("engine snapshot client", () => {
       expect(result.summary.cytosolTransport?.summary.dimensionless_pressure_membrane_response_kernel_count).toBe(1);
       expect(result.summary.cytosolTransport?.summary.force_energy_consistency_test_count).toBe(1);
       expect(result.summary.cytosolTransport?.summary.volume_preserving_fsi_candidate_test_count).toBe(1);
+      expect(result.summary.cytosolTransport?.summary.phh_mechanics_calibration_intake_contract_count).toBe(1);
+      expect(result.summary.cytosolTransport?.summary.phh_mechanics_target_quantity_count).toBe(15);
+      expect(result.summary.cytosolTransport?.summary.delivered_phh_mechanics_trajectory_count).toBe(0);
+      expect(result.summary.cytosolTransport?.summary.spatial_fsi_ready_phh_mechanics_trajectory_count).toBe(0);
+      expect(result.summary.cytosolTransport?.summary.quantitatively_authorized_phh_mechanics_parameter_count).toBe(0);
       expect(result.summary.cytosolTransport?.summary.full_watertight_mesh_boundary_count).toBe(0);
       expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.generic_watertight_triangle_mesh_boundary_kernel).toBe(true);
       expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.mesh_self_intersection_detection).toBe(true);
       expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.non_star_shaped_closed_mesh_domain_kernel).toBe(true);
       expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.membrane_topology_change_support).toBe(false);
       expect(result.summary.cytosolTransport?.solver_layers.dimensionless_pressure_membrane_response_candidate.runtime_feedback_enabled).toBe(false);
+      expect(result.summary.cytosolTransport?.phh_mechanics_calibration_intake.expected_header_count).toBe(48);
+      expect(result.summary.cytosolTransport?.phh_mechanics_calibration_intake.mechanics_coupling_allowed).toBe(false);
       expect(result.summary.phh3dMeshBoundaryIntake?.summary.target_structure_count).toBe(11);
       expect(result.summary.phh3dMeshBoundaryIntake?.summary.mesh_artifact_count).toBe(0);
       expect(result.summary.phh3dMeshBoundaryIntake?.summary.registered_biological_mesh_boundary_count).toBe(0);
@@ -2235,7 +2242,7 @@ describe("engine snapshot client", () => {
       expect(result.summary.cytosolTransport?.solver_layers.conservative_passive_scalar_kernel.biological_species_bound_count).toBe(0);
       expect(result.summary.cytosolTransport?.solver_layers.conservative_passive_scalar_kernel.moving_domain_mass_conservation_tested).toBe(true);
       expect(result.summary.cytosolTransport?.summary.conservative_moving_domain_remap_count).toBe(1);
-      expect(result.summary.metabolicConstraintShell?.version).toBe("metabolic_constraint_shell_v3");
+      expect(result.summary.metabolicConstraintShell?.version).toBe("metabolic_constraint_shell_v4");
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.model_version).toBe("2.0.0");
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.release_commit)
         .toBe("635f533152dc5f7290ce04d12700eaa882273c3e");
@@ -2243,9 +2250,15 @@ describe("engine snapshot client", () => {
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.mass_charge_balance_audited_in_project).toBe(true);
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.structural_audit.elementally_imbalanced_reaction_count).toBe(17);
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.structural_audit.jointly_unassessable_reaction_count).toBe(1422);
+      expect(result.summary.metabolicConstraintShell?.generic_constraint_numerics.analytic_fixture_pass_count).toBe(5);
+      expect(result.summary.metabolicConstraintShell?.generic_constraint_numerics.human_gem_loaded).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.generic_constraint_numerics.biological_flux_authority).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.required_artifact_count).toBe(10);
+      expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.delivered_bundle_count).toBe(0);
+      expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.runtime_flux_coupling_allowed).toBe(false);
       expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(27);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(5);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(28);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(6);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.partial_count).toBe(8);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(12);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.biological_accuracy_pct).toBeNull();

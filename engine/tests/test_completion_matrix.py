@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 27
-    assert summary["closed_count"] == 5
+    assert summary["entry_count"] == 28
+    assert summary["closed_count"] == 6
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -90,6 +90,10 @@ def test_local_membrane_and_generative_data_planes_are_partial_or_blocked() -> N
     assert fsi["observed_metrics"]["force_energy_consistency_test_count"] == 1
     assert fsi["observed_metrics"]["volume_preserving_fsi_candidate_test_count"] == 1
     assert fsi["observed_metrics"]["membrane_pressure_feedback_count"] == 0
+    assert fsi["observed_metrics"]["mechanics_calibration_intake_contract_count"] == 1
+    assert fsi["observed_metrics"]["mechanics_target_quantity_count"] == 15
+    assert fsi["observed_metrics"]["delivered_mechanics_trajectory_count"] == 0
+    assert fsi["observed_metrics"]["spatial_fsi_ready_trajectory_count"] == 0
     donor = entries["donor_state_model"]
     assert donor["status"] == "blocked_missing_evidence"
     assert donor["observed_metrics"]["donor_manifest_intake_contract_count"] == 1
@@ -102,8 +106,19 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
     entries = {entry["id"]: entry for entry in matrix["entries"]}
     assert entries["human_gem_artifact_identity"]["status"] == "closed"
     assert entries["human_gem_artifact_identity"]["observed_metrics"]["runtime_loaded"] is False
+    generic = entries["generic_fba_fva_numerics"]
+    assert generic["status"] == "closed"
+    assert generic["observed_metrics"]["analytic_fixture_pass_count"] == 5
+    assert generic["observed_metrics"]["alternate_optimum_audit_count"] == 1
+    assert generic["observed_metrics"]["biological_flux_authority"] is False
     assert entries["hepatocyte_fba_execution"]["status"] == "blocked_missing_evidence"
-    assert entries["hepatocyte_fba_execution"]["observed_metrics"]["enabled_execution_gate_count"] == 0
+    fba = entries["hepatocyte_fba_execution"]["observed_metrics"]
+    assert fba["enabled_execution_gate_count"] == 0
+    assert fba["execution_bundle_intake_contract_count"] == 1
+    assert fba["required_execution_bundle_artifact_count"] == 10
+    assert fba["delivered_execution_bundle_count"] == 0
+    assert fba["structurally_complete_execution_bundle_count"] == 0
+    assert fba["runtime_flux_coupling_allowed_count"] == 0
 
 
 def test_receptor_and_active_protein_intakes_are_present_but_fail_closed() -> None:

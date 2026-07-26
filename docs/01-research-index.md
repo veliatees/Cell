@@ -129,6 +129,9 @@ linked to its dependencies.
 - Repository topology plus non-adjacent triangle self-intersection audit: `milestones/123-repository-mesh-self-intersection-audit-v1.md`
 - Concave, non-star-shaped closed-mesh cytosol-domain kernel: `milestones/124-non-star-shaped-closed-mesh-cytosol-domain-v1.md`
 - Force/work/volume-checked dimensionless pressure-membrane response candidate: `milestones/125-dimensionless-pressure-membrane-response-v1.md`
+- Donor-resolved raw PHH mechanics and constitutive-parameter intake: `milestones/126-donor-resolved-phh-mechanics-calibration-intake-v1.md`
+- Pinned LP backend with analytic FBA/FVA and infeasibility verification: `milestones/127-generic-fba-fva-numerical-kernel-v1.md`
+- Checksum-frozen healthy-PHH Human-GEM execution-bundle gate: `milestones/128-healthy-phh-metabolic-execution-bundle-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

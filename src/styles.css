@@ -1185,6 +1185,30 @@ input[type="checkbox"] {
   overflow-wrap: anywhere;
 }
 
+.phh-profile--mechanics-execution {
+  border-left-color: #7fbfc8;
+  background: rgba(127, 191, 200, 0.07);
+}
+
+.phh-profile--mechanics-execution .phh-profile__head {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.phh-profile--mechanics-execution .phh-profile__head span {
+  color: #9edce3;
+}
+
+.phh-profile--mechanics-execution .phh-profile__grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+.phh-profile--mechanics-execution .phh-profile__grid span {
+  align-items: baseline;
+}
+
 .phh-profile--endocrine {
   border-left-color: #e2a96b;
   background: rgba(226, 169, 107, 0.07);
