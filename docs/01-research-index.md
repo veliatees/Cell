@@ -105,6 +105,15 @@ linked to its dependencies.
 - Conservative moving-domain remap for the numerical cytosol: `milestones/099-conservative-moving-domain-remap-v1.md`
 - Pinned Human-GEM reaction-level structural chemistry audit: `milestones/100-human-gem-structural-chemistry-audit-v1.md`
 - Lossless hepatocyte quantity harvest, primary-source curation, transporter kinetics, and context-bound PHH injury observations: `milestones/101-provenance-strict-hepatocyte-quantity-harvest-v1.md`
+- Exact-context PHH injury observation operator: `milestones/102-exact-phh-injury-observation-operator-v1.md`
+- Donor-disjoint PHH injury trajectory intake: `milestones/103-donor-disjoint-phh-injury-intake-v1.md`
+- Frozen held-out PHH injury assay evaluation: `milestones/104-frozen-phh-injury-assay-evaluation-v1.md`
+- Automated desktop/mobile browser render-integrity regression: `milestones/105-automated-browser-render-integrity-v1.md`
+- Quaternion-derived rigid organelle boundary kinematics: `milestones/106-rigid-organelle-boundary-kinematics-v1.md`
+- Renderer-linked organelle fluid boundaries: `milestones/107-renderer-linked-organelle-fluid-boundaries-v1.md`
+- Donor-resolved write/persist/rechallenge cellular-memory intake: `milestones/108-donor-resolved-cellular-memory-intake-v1.md`
+- Deterministic passive-fluid versus active-cargo runtime separation: `milestones/109-deterministic-active-cargo-separation-v1.md`
+- Conservative subgrid treatment for thin organelle boundaries: `milestones/110-conservative-subgrid-organelle-boundaries-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

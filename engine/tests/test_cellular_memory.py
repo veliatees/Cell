@@ -54,6 +54,11 @@ class CellularMemoryTests(unittest.TestCase):
             source_ids=("hcv_epigenetic_scar",),
             experimental_system="human liver cohort and humanized-liver mouse",
             uncertainty="locus and cohort specific",
+            direct_substrate_assay="H3K27ac ChIP-seq",
+            persistence_evidence_ids=("source-record-hcv-post-SVR",),
+            future_response_evidence_ids=(),
+            response_coupling_law_id=None,
+            quantitative_coupling_allowed=False,
         )
         with self.assertRaises(ValueError):
             consolidate_memory_trace(history, trace)

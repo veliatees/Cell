@@ -5,6 +5,9 @@ from dataclasses import dataclass, replace
 from cell_engine.core.history import CellHistoryState, ExperienceEvent, LifecycleState, initial_cell_history, record_or_extend_event
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.state import CellState
+from cell_engine.quantitative.cellular_memory_trajectory import (
+    cellular_memory_trajectory_intake_snapshot,
+)
 
 DATE_VERIFIED = "2026-07-10"
 
@@ -198,9 +201,12 @@ def cellular_memory_contract_snapshot() -> dict[str, object]:
         raise ValueError("cellular-memory substrate contract ids must be unique")
     if any(item.quantitative_coupling_allowed for item in MEMORY_SUBSTRATE_CONTRACTS):
         raise ValueError("cellular-memory templates may not activate quantitative coupling")
+    trajectory_intake = cellular_memory_trajectory_intake_snapshot(
+        allowed_substrate_ids=ids
+    )
     return {
-        "version": "cellular_memory_substrate_contract_v1",
-        "status": "physical_substrates_declared_quantitative_readout_blocked",
+        "version": "cellular_memory_substrate_contract_v2",
+        "status": "physical_substrates_and_trajectory_intake_declared_quantitative_readout_blocked",
         "event_log_is_memory": False,
         "causal_rule": (
             "An experience becomes cell memory only when it writes a directly assayed "
@@ -211,6 +217,7 @@ def cellular_memory_contract_snapshot() -> dict[str, object]:
         "active_memory_trace_count": 0,
         "automatic_memory_consolidation": False,
         "automatic_future_response_coupling": False,
+        "trajectory_intake": trajectory_intake,
         "source_ids": tuple(CELLULAR_MEMORY_SOURCES),
         "summary": {
             "substrate_contract_count": len(MEMORY_SUBSTRATE_CONTRACTS),
@@ -218,6 +225,24 @@ def cellular_memory_contract_snapshot() -> dict[str, object]:
             "required_persistence_test_count": sum(
                 len(item.required_persistence_tests) for item in MEMORY_SUBSTRATE_CONTRACTS
             ),
+            "trajectory_contract_column_count": trajectory_intake[
+                "expected_header_count"
+            ],
+            "write_persist_rechallenge_gate_count": trajectory_intake[
+                "write_persist_rechallenge_gate_count"
+            ],
+            "donor_split_leakage_guard_count": trajectory_intake[
+                "split_leakage_guard_count"
+            ],
+            "complete_donor_trajectory_record_count": trajectory_intake[
+                "record_count"
+            ],
+            "structurally_complete_candidate_count": trajectory_intake[
+                "structurally_complete_candidate_count"
+            ],
+            "quantitatively_authorized_memory_law_count": trajectory_intake[
+                "quantitatively_authorized_memory_law_count"
+            ],
         },
     }
 

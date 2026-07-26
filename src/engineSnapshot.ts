@@ -450,6 +450,11 @@ export type EngineCellHistory = {
     source_ids: string[];
     experimental_system: string;
     uncertainty: string;
+    direct_substrate_assay: string;
+    persistence_evidence_ids: string[];
+    future_response_evidence_ids: string[];
+    response_coupling_law_id: string | null;
+    quantitative_coupling_allowed: false;
     notes?: string;
   }[];
   source_ids: string[];
@@ -1206,7 +1211,7 @@ export type EngineHepatocyteCapabilityAtlas = {
 };
 
 export type EngineCellularMemoryContract = {
-  version: "cellular_memory_substrate_contract_v1";
+  version: "cellular_memory_substrate_contract_v2";
   status: string;
   event_log_is_memory: false;
   causal_rule: string;
@@ -1224,11 +1229,44 @@ export type EngineCellularMemoryContract = {
   active_memory_trace_count: number;
   automatic_memory_consolidation: false;
   automatic_future_response_coupling: false;
+  trajectory_intake: {
+    version: "phh_cellular_memory_trajectory_intake_v1";
+    contract_id: string;
+    contract_path: string;
+    contract_sha256: string;
+    delivery_path: string;
+    expected_header_count: number;
+    required_column_count: number;
+    conditional_column_count: number;
+    declared_substrate_count: number;
+    write_persist_rechallenge_gate_count: number;
+    split_leakage_guard_count: number;
+    independent_heldout_study_guard_count: number;
+    automatic_memory_trace_creation: false;
+    automatic_future_response_coupling: false;
+    automatic_parameter_activation: false;
+    status: string;
+    artifact_sha256: string | null;
+    record_count: number;
+    donor_count: number;
+    source_study_count: number;
+    candidate_trajectory_count: number;
+    structurally_complete_candidate_count: number;
+    quantitatively_authorized_memory_law_count: number;
+    record_count_by_split: Record<string, number>;
+    blockers: string[];
+  };
   source_ids: string[];
   summary: {
     substrate_contract_count: number;
     quantitatively_coupled_substrate_count: number;
     required_persistence_test_count: number;
+    trajectory_contract_column_count: number;
+    write_persist_rechallenge_gate_count: number;
+    donor_split_leakage_guard_count: number;
+    complete_donor_trajectory_record_count: number;
+    structurally_complete_candidate_count: number;
+    quantitatively_authorized_memory_law_count: number;
   };
 };
 
@@ -1290,7 +1328,7 @@ export type EngineReactionEvidenceAtlas = {
 };
 
 export type EngineCytosolTransport = {
-  version: "cytosol_transport_rheology_contract_v4";
+  version: "cytosol_transport_rheology_contract_v6";
   status: string;
   material_model: {
     model: "poroelastic_two_phase_cytoplasm";
@@ -1341,7 +1379,9 @@ export type EngineCytosolTransport = {
     active_cargo_transport: {
       carriers: string;
       mechanisms: string[];
-      numerical_kernel_available: false;
+      numerical_kernel_available: true;
+      numerical_kernel_scope: string;
+      biological_velocity_or_dwell_time_assigned: false;
       healthy_phh_rate_bound: false;
       cross_context_reference_only: true;
     };
@@ -1358,6 +1398,10 @@ export type EngineCytosolTransport = {
       quaternion_derived_rotation_boundary_velocity: true;
       renderer_geometry_boundary_adapter: true;
       renderer_geometry_boundary_classes: string[];
+      thin_boundary_treatment: string;
+      subgrid_quadrature_samples_per_cell: 8;
+      subgrid_grid_convergence_tested: true;
+      fractional_face_aperture_flux_weighting: false;
       full_watertight_mesh_boundaries: false;
       pressure_reaction_diagnostic_only: true;
       biological_time_or_velocity_claim: false;
@@ -1372,6 +1416,15 @@ export type EngineCytosolTransport = {
       moving_domain_mass_conservation_tested: true;
       biological_species_bound_count: 0;
       biological_diffusivity_claim: false;
+    };
+    dimensionless_active_cargo_route_kernel: {
+      enabled: true;
+      role: string;
+      independent_per_frame_random_walk: false;
+      biological_velocity_claim: false;
+      biological_pause_reversal_or_dwell_claim: false;
+      healthy_phh_route_bound_count: 0;
+      reaction_or_cell_state_coupling: false;
     };
     quantitative_poroelastic_solver: { enabled: false; reason: string };
     advection_diffusion_reaction_coupling: { enabled: false; reason: string };
@@ -1390,12 +1443,17 @@ export type EngineCytosolTransport = {
     dimensionless_projection_solver_count: number;
     conservative_passive_scalar_kernel_count: number;
     conservative_moving_domain_remap_count: number;
+    dimensionless_active_cargo_route_kernel_count: number;
+    healthy_phh_active_transport_kernel_count: number;
     biological_species_bound_count: number;
     moving_analytic_obstacle_layer_count: number;
     analytic_obstacle_shape_count: number;
     rigid_body_boundary_kinematics_count: number;
     renderer_geometry_boundary_adapter_count: number;
     renderer_geometry_boundary_class_count: number;
+    conservative_subgrid_boundary_treatment_count: number;
+    subgrid_boundary_grid_convergence_test_count: number;
+    fractional_face_aperture_solver_count: number;
     full_watertight_mesh_boundary_count: number;
     compound_boundary_conservation_test_count: number;
     membrane_pressure_feedback_count: number;

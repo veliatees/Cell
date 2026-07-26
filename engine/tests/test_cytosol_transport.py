@@ -22,12 +22,17 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert summary["dimensionless_projection_solver_count"] == 1
     assert summary["conservative_passive_scalar_kernel_count"] == 1
     assert summary["conservative_moving_domain_remap_count"] == 1
+    assert summary["dimensionless_active_cargo_route_kernel_count"] == 1
+    assert summary["healthy_phh_active_transport_kernel_count"] == 0
     assert summary["biological_species_bound_count"] == 0
     assert summary["moving_analytic_obstacle_layer_count"] == 1
     assert summary["analytic_obstacle_shape_count"] == 4
     assert summary["rigid_body_boundary_kinematics_count"] == 1
     assert summary["renderer_geometry_boundary_adapter_count"] == 1
     assert summary["renderer_geometry_boundary_class_count"] == 10
+    assert summary["conservative_subgrid_boundary_treatment_count"] == 1
+    assert summary["subgrid_boundary_grid_convergence_test_count"] == 1
+    assert summary["fractional_face_aperture_solver_count"] == 0
     assert summary["full_watertight_mesh_boundary_count"] == 0
     assert summary["compound_boundary_conservation_test_count"] == 1
     assert summary["membrane_pressure_feedback_count"] == 0
@@ -52,7 +57,15 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
         "box",
     )
     assert renderer["quaternion_derived_rotation_boundary_velocity"] is True
+    assert renderer["subgrid_quadrature_samples_per_cell"] == 8
+    assert renderer["subgrid_grid_convergence_tested"] is True
+    assert renderer["fractional_face_aperture_flux_weighting"] is False
     assert renderer["full_watertight_mesh_boundaries"] is False
+    active = snapshot["solver_layers"]["dimensionless_active_cargo_route_kernel"]
+    assert active["enabled"] is True
+    assert active["independent_per_frame_random_walk"] is False
+    assert active["biological_velocity_claim"] is False
+    assert active["healthy_phh_route_bound_count"] == 0
 
 
 @pytest.mark.parametrize(
@@ -62,6 +75,7 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
         (("renderer_dimensionless_projection_grid", "membrane_pressure_feedback"), True),
         (("renderer_dimensionless_projection_grid", "full_watertight_mesh_boundaries"), True),
         (("conservative_passive_scalar_kernel", "biological_species_bound_count"), 1),
+        (("dimensionless_active_cargo_route_kernel", "biological_velocity_claim"), True),
     ),
 )
 def test_unvalidated_numerical_layer_cannot_escape_into_biology(

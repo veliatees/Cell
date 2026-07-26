@@ -288,11 +288,73 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(Math.min(...scalar.values)).toBeGreaterThanOrEqual(0);
   });
 
+  it("retains a membrane thinner than one grid cell with conservative subgrid sampling", () => {
+    const obstacles = new DynamicCytosolObstacleField(1);
+    obstacles.setObstacles([
+      {
+        id: "subgrid-cisterna",
+        kind: "box",
+        center: [0, 0.23, 0],
+        halfExtents: [2, 0.015, 1],
+        boundarySampling: "conservative_subgrid"
+      }
+    ], 0);
+    const grid = new CytosolProjectionGrid({
+      resolution: 12,
+      halfExtent: 6,
+      seed: 55,
+      radiusAtDirection: () => 5.5,
+      visualModeCount: 0
+    });
+    grid.step(1 / 60, null, obstacles);
+    const diagnostics = grid.diagnostics();
+
+    expect(obstacles.collides(0, 0.5, 0)).toBe(false);
+    expect(diagnostics.subgridObstacleCount).toBe(1);
+    expect(diagnostics.subgridInterceptedCellCount).toBeGreaterThan(0);
+    expect(diagnostics.fractionalObstacleCellCount).toBeGreaterThan(0);
+    expect(diagnostics.dimensionlessObstacleVolumeEstimate).toBeGreaterThan(0);
+  });
+
+  it("reduces thin-boundary volume error under deterministic grid refinement", () => {
+    const exactVolume = 3.4 * 0.12 * 2.2;
+    const estimate = (resolution: number) => {
+      const obstacles = new DynamicCytosolObstacleField(0.5);
+      obstacles.setObstacles([
+        {
+          id: "refined-cisterna",
+          kind: "box",
+          center: [0, 0.23, 0],
+          halfExtents: [1.7, 0.06, 1.1],
+          boundarySampling: "conservative_subgrid"
+        }
+      ], 0);
+      const grid = new CytosolProjectionGrid({
+        resolution,
+        halfExtent: 4,
+        seed: 91,
+        radiusAtDirection: () => 3.8,
+        visualModeCount: 0
+      });
+      grid.step(0, null, obstacles);
+      return grid.obstacleVolumeEstimate();
+    };
+    const coarseError = Math.abs(estimate(12) - exactVolume);
+    const mediumError = Math.abs(estimate(24) - exactVolume);
+    const fineError = Math.abs(estimate(48) - exactVolume);
+
+    expect(mediumError).toBeLessThan(coarseError);
+    expect(fineError).toBeLessThan(mediumError);
+  });
+
   it("keeps biological units and reaction feedback disabled", () => {
     expect(CYTOSOL_NUMERICAL_CONTRACT.biologicalVelocityClaim).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.biologicalPressureClaim).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.biologicalDiffusivityClaim).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.movingDomainRemap).toContain("deterministic_nearest_fluid");
+    expect(CYTOSOL_NUMERICAL_CONTRACT.thinBoundaryTreatment).toContain("conservative_subgrid");
+    expect(CYTOSOL_NUMERICAL_CONTRACT.subgridQuadratureSamplesPerCell).toBe(8);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.subgridGridConvergenceTested).toBe(true);
     expect(CYTOSOL_NUMERICAL_CONTRACT.quantitativePoroelasticSolver).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.reactionCouplingEnabled).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.membranePressureFeedbackEnabled).toBe(false);
