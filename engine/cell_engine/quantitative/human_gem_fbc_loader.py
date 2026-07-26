@@ -30,8 +30,8 @@ DEFAULT_LOADER_AUDIT_PATH = (
 )
 SBML_CORE_NAMESPACE = "http://www.sbml.org/sbml/level3/version1/core"
 FBC_NAMESPACE = "http://www.sbml.org/sbml/level3/version1/fbc/version2"
-SCHEMA_VERSION = "cell.human-gem-fbc-loader-audit.v1"
-LOADER_VERSION = "human_gem_fbc_loader_v1"
+SCHEMA_VERSION = "cell.human-gem-fbc-loader-audit.v2"
+LOADER_VERSION = "human_gem_fbc_loader_v2"
 
 
 class HumanGemFbcError(ValueError):
@@ -112,6 +112,7 @@ class HumanGemFbcModel:
     active_objective_id: str | None
     stoichiometry: SparseStoichiometricMatrix
     parameter_values: tuple[tuple[str, float], ...]
+    gene_product_labels: tuple[tuple[str, str], ...] = ()
 
 
 def _local_name(tag: str) -> str:
@@ -344,6 +345,7 @@ def load_sbml_fbc(path: str | Path) -> HumanGemFbcModel:
     ] = []
     parameter_values: dict[str, float] = {}
     gene_product_ids: list[str] = []
+    gene_product_labels: list[tuple[str, str]] = []
     objectives: list[ObjectiveRecord] = []
     compartment_seen: set[str] = set()
     species_seen: set[str] = set()
@@ -473,7 +475,13 @@ def load_sbml_fbc(path: str | Path) -> HumanGemFbcModel:
         elif local == "geneProduct" and namespace == FBC_NAMESPACE:
             identifier = _required_attribute(element, "id", context="geneProduct")
             _assert_unique(identifier, gene_seen, entity="gene product")
+            label = _required_attribute(
+                element,
+                "label",
+                context=f"geneProduct {identifier}",
+            )
             gene_product_ids.append(identifier)
+            gene_product_labels.append((identifier, label))
         element.clear()
 
     if (
@@ -584,6 +592,7 @@ def load_sbml_fbc(path: str | Path) -> HumanGemFbcModel:
             values=tuple(values),
         ),
         parameter_values=tuple(parameter_values.items()),
+        gene_product_labels=tuple(gene_product_labels),
     )
 
 
@@ -644,6 +653,7 @@ def build_fbc_loader_audit(
         (reaction.lower_bound, reaction.upper_bound)
         for reaction in model.reactions
     ]
+    gene_labels = tuple(label for _, label in model.gene_product_labels)
     return {
         "schema_version": SCHEMA_VERSION,
         "loader_version": LOADER_VERSION,
@@ -688,6 +698,11 @@ def build_fbc_loader_audit(
                 reaction.reversible for reaction in model.reactions
             ),
             "gene_product_count": len(model.gene_product_ids),
+            "gene_product_label_count": len(model.gene_product_labels),
+            "unique_gene_product_label_count": len(set(gene_labels)),
+            "duplicate_gene_product_label_count": (
+                len(gene_labels) - len(set(gene_labels))
+            ),
             "gene_associated_reaction_count": len(associated_reactions),
             "parameter_count": len(model.parameter_values),
             "objective_count": len(model.objectives),
@@ -710,6 +725,10 @@ def build_fbc_loader_audit(
             "gene_product_id_sha256_in_file_order": _identifier_digest(
                 model.gene_product_ids
             ),
+            "gene_product_id_label_sha256_in_file_order": _identifier_digest(
+                f"{identifier}\t{label}"
+                for identifier, label in model.gene_product_labels
+            ),
             "stoichiometric_triplet_sha256": _matrix_digest(
                 model.stoichiometry
             ),
@@ -720,6 +739,9 @@ def build_fbc_loader_audit(
             "all_reaction_species_references_resolved": True,
             "all_flux_bound_parameters_resolved": True,
             "all_gene_product_references_resolved": True,
+            "all_gene_product_labels_preserved": (
+                len(model.gene_product_labels) == len(model.gene_product_ids)
+            ),
             "all_objective_reaction_references_resolved": True,
             "finite_stoichiometry_and_bounds": True,
             "lower_bounds_not_above_upper_bounds": True,
@@ -764,6 +786,9 @@ def validate_fbc_loader_audit(
         or structure.get("species_count") != expected["metabolites"]
         or structure.get("reaction_count") != expected["reactions"]
         or structure.get("gene_product_count") != expected["genes"]
+        or structure.get("gene_product_label_count") != expected["genes"]
+        or structure.get("unique_gene_product_label_count") != expected["genes"]
+        or structure.get("duplicate_gene_product_label_count") != 0
     ):
         raise HumanGemFbcError("Human-GEM FBC loader dimensions are stale")
     if structure.get("stoichiometric_shape") != [
@@ -775,6 +800,14 @@ def validate_fbc_loader_audit(
         raise HumanGemFbcError("Human-GEM sparse nonzero count is missing")
     if structure["stoichiometric_nonzero_count"] <= 0:
         raise HumanGemFbcError("Human-GEM sparse matrix is empty")
+    if (
+        not isinstance(
+            structure.get("gene_product_id_label_sha256_in_file_order"),
+            str,
+        )
+        or len(structure["gene_product_id_label_sha256_in_file_order"]) != 64
+    ):
+        raise HumanGemFbcError("Human-GEM gene-product label digest is missing")
     if not integrity or not all(integrity.values()):
         raise HumanGemFbcError("Human-GEM FBC loader integrity checks did not pass")
     sbml_fbc = report.get("sbml_fbc")

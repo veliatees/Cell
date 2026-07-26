@@ -113,6 +113,11 @@ def test_sparse_loader_preserves_bounds_stoichiometry_objective_and_gene_rule(
     ]
     assert model.reactions[1].gene_product_ids == ("g1", "g2", "g3")
     assert model.reactions[1].gene_rule == "(g1 and (g2 or g3))"
+    assert model.gene_product_labels == (
+        ("g1", "G1"),
+        ("g2", "G2"),
+        ("g3", "G3"),
+    )
     assert model.active_objective_id == "obj"
     assert model.objectives[0].objective_type == "maximize"
     assert model.objectives[0].flux_objectives[0].reaction_id == "R_OUT"

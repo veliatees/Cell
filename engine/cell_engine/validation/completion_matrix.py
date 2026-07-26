@@ -120,6 +120,12 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     generic_native_fba = metabolic["candidate_reconstruction"][
         "generic_native_objective_audit"
     ]
+    proteome_gpr = metabolic["candidate_reconstruction"][
+        "seven_donor_proteome_gpr_audit"
+    ]
+    fastcore_trial = metabolic["candidate_reconstruction"][
+        "seven_donor_fastcore_trial"
+    ]
     context_extraction_kernel = metabolic["context_extraction_kernel"]
     metabolic_bundle = metabolic["phh_execution_bundle_intake"]
     external = external_validation_snapshot()["summary"]
@@ -963,6 +969,9 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "gene_associated_reaction_count": metabolic_loader[
                     "gene_associated_reaction_count"
                 ],
+                "gene_product_label_count": metabolic_loader[
+                    "gene_product_label_count"
+                ],
                 "objective_count": metabolic_loader["objective_count"],
                 "active_objective_id": metabolic_loader["active_objective_id"],
                 "healthy_phh_context_extracted": metabolic_loader[
@@ -998,6 +1007,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                     "blocked_reaction_count"
                 ],
                 "lp7_solve_count": generic_fastcc["lp7_solve_count"],
+                "lp3_solve_count": generic_fastcc["lp3_solve_count"],
                 "maximum_mass_balance_residual": generic_fastcc[
                     "maximum_mass_balance_residual"
                 ],
@@ -1061,6 +1071,89 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "seven_donor_phh_proteome_gpr_core",
+            "Seven-donor PHH proteome-to-GPR core evidence",
+            "closed",
+            "Conservative Boolean support mapping from the curated seven-donor resection-PHH total proteome to exact Human-GEM FBC gene-product rules; no activity, capacity or flux claim.",
+            "Every donor is evaluated independently using only single-gene MaxQuant groups with a non-null source observation and exact case-sensitive FBC labels. The all-donor reaction intersection is separated from generic FASTCC conflicts, yielding a reproducible 4,555-reaction candidate core without abundance thresholds, synonym imputation or protein-group summation.",
+            {
+                "donor_count": proteome_gpr["donor_count"],
+                "not_healthy_volunteers": proteome_gpr[
+                    "not_healthy_volunteers"
+                ],
+                "single_gene_group_count": proteome_gpr[
+                    "single_gene_group_count"
+                ],
+                "non_single_gene_excluded_group_count": proteome_gpr[
+                    "non_single_gene_excluded_group_count"
+                ],
+                "reaction_support_intersection_count": proteome_gpr[
+                    "reaction_support_intersection_count"
+                ],
+                "generic_fastcc_blocked_conflict_count": proteome_gpr[
+                    "generic_fastcc_blocked_conflict_count"
+                ],
+                "flux_consistent_core_candidate_count": proteome_gpr[
+                    "flux_consistent_core_candidate_count"
+                ],
+                "active_enzyme_abundance_inferred": proteome_gpr[
+                    "active_enzyme_abundance_inferred"
+                ],
+                "flux_magnitude_inferred": proteome_gpr[
+                    "flux_magnitude_inferred"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/human_gem_gpr.py",
+                "engine/cell_engine/quantitative/human_gem_phh_proteome_context.py",
+                "scripts/audit_human_gem_phh_proteome_gpr.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_proteome_gpr_audit.json",
+                "engine/tests/test_human_gem_phh_proteome_context.py",
+            ),
+        ),
+        _entry(
+            "human_gem_real_scale_fastcore_trial",
+            "Real-scale Human-GEM FASTCORE trial",
+            "closed",
+            "Reproducible offline application and fail-closed diagnosis of source-defined FASTCORE on the seven-donor Boolean proteome core; no accepted PHH context model.",
+            "The source-defined trial selected 7,320 reactions but strict output FASTCC found 408 blocked. A parameter-free bipartite stoichiometric closure restored consistency only by retaining 11,639 of 11,641 input reactions. The trial is therefore recorded as a reproducible negative context-specificity result, not promoted to a hepatocyte model.",
+            {
+                "core_reaction_count": fastcore_trial[
+                    "core_reaction_count"
+                ],
+                "source_fastcore_selected_reaction_count": fastcore_trial[
+                    "source_fastcore_selected_reaction_count"
+                ],
+                "source_fastcore_output_blocked_reaction_count": fastcore_trial[
+                    "source_fastcore_output_blocked_reaction_count"
+                ],
+                "closure_selected_reaction_count": fastcore_trial[
+                    "closure_selected_reaction_count"
+                ],
+                "closure_omitted_reaction_count": fastcore_trial[
+                    "closure_omitted_reaction_count"
+                ],
+                "source_FASTCORE_output_flux_consistent": fastcore_trial[
+                    "source_FASTCORE_output_flux_consistent"
+                ],
+                "context_specificity_established": fastcore_trial[
+                    "context_specificity_established"
+                ],
+                "context_model_accepted": fastcore_trial[
+                    "context_model_accepted"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/fastcore_context.py",
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_context.py",
+                "scripts/extract_human_gem_phh_fastcore_context.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_proteome_fastcore_context.json",
+                "engine/tests/test_human_gem_phh_fastcore_context.py",
+            ),
+        ),
+        _entry(
             "generic_fba_fva_numerics",
             "Generic FBA/FVA numerical kernel",
             "closed",
@@ -1098,7 +1191,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "FASTCORE context-extraction numerical kernel",
             "closed",
             "Source-defined LP-7/LP-10 software behavior on analytic synthetic flux-consistent networks only.",
-            "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon and LP10 scaling inputs, global and output flux-consistency audits, reversible-reaction orientation handling and explicit non-uniqueness. It retains a synthetic core pathway and omits an unrelated pathway; Human-GEM has not been context-extracted.",
+            "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon and source-pinned LP10 scaling, identity-bound input consistency certificates, original reaction-orientation restoration, strict output FASTCC and explicit non-uniqueness. Synthetic fixtures include reverse-only and subthreshold-support closure cases. Real Human-GEM application is reported separately as a rejected trial.",
             {
                 "synthetic_fixture_pass_count": context_extraction_kernel[
                     "synthetic_fixture_pass_count"
@@ -1523,6 +1616,7 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or loader_metrics["stoichiometric_nonzero_count"] != 55198
         or loader_metrics["reversible_reaction_count"] != 5725
         or loader_metrics["gene_associated_reaction_count"] != 7782
+        or loader_metrics["gene_product_label_count"] != 2848
         or loader_metrics["objective_count"] != 1
         or loader_metrics["active_objective_id"] != "obj"
         or loader_metrics["healthy_phh_context_extracted"] is not False
@@ -1537,7 +1631,8 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or fastcc_audit_metrics["epsilon_is_biological_parameter"] is not False
         or fastcc_audit_metrics["consistent_reaction_count"] != 11641
         or fastcc_audit_metrics["blocked_reaction_count"] != 1290
-        or fastcc_audit_metrics["lp7_solve_count"] != 253
+        or fastcc_audit_metrics["lp7_solve_count"] != 6
+        or fastcc_audit_metrics["lp3_solve_count"] != 247
         or fastcc_audit_metrics["maximum_mass_balance_residual"] > 1e-8
         or fastcc_audit_metrics["complete_at_declared_epsilon"] is not True
         or fastcc_audit_metrics["healthy_phh_context_extracted"] is not False
@@ -1565,6 +1660,47 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         raise ValueError(
             "Human-GEM native-objective audit escaped its generic scope"
         )
+    proteome_gpr_metrics = by_id["seven_donor_phh_proteome_gpr_core"][
+        "observed_metrics"
+    ]
+    if (
+        proteome_gpr_metrics["donor_count"] != 7
+        or proteome_gpr_metrics["not_healthy_volunteers"] is not True
+        or proteome_gpr_metrics["single_gene_group_count"] != 8_110
+        or proteome_gpr_metrics[
+            "non_single_gene_excluded_group_count"
+        ]
+        != 579
+        or proteome_gpr_metrics["reaction_support_intersection_count"]
+        != 5_082
+        or proteome_gpr_metrics["generic_fastcc_blocked_conflict_count"]
+        != 527
+        or proteome_gpr_metrics["flux_consistent_core_candidate_count"]
+        != 4_555
+        or proteome_gpr_metrics["active_enzyme_abundance_inferred"] is not False
+        or proteome_gpr_metrics["flux_magnitude_inferred"] is not False
+    ):
+        raise ValueError("PHH proteome GPR core escaped its Boolean scope")
+    fastcore_trial_metrics = by_id["human_gem_real_scale_fastcore_trial"][
+        "observed_metrics"
+    ]
+    if (
+        fastcore_trial_metrics["core_reaction_count"] != 4_555
+        or fastcore_trial_metrics["source_fastcore_selected_reaction_count"]
+        != 7_320
+        or fastcore_trial_metrics[
+            "source_fastcore_output_blocked_reaction_count"
+        ]
+        != 408
+        or fastcore_trial_metrics["closure_selected_reaction_count"] != 11_639
+        or fastcore_trial_metrics["closure_omitted_reaction_count"] != 2
+        or fastcore_trial_metrics["source_FASTCORE_output_flux_consistent"]
+        is not False
+        or fastcore_trial_metrics["context_specificity_established"]
+        is not False
+        or fastcore_trial_metrics["context_model_accepted"] is not False
+    ):
+        raise ValueError("real-scale FASTCORE trial escaped fail-closed scope")
     fastcore_metrics = by_id["fastcore_context_extraction_numerics"][
         "observed_metrics"
     ]

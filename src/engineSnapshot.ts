@@ -1800,7 +1800,7 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v6";
+  version: "metabolic_constraint_shell_v7";
   status: string;
   role: string;
   candidate_reconstruction: {
@@ -1846,12 +1846,14 @@ export type EngineMetabolicConstraintShell = {
       one_sided_reactions_excluded_from_internal_balance_claim: boolean;
     };
     sparse_fbc_loader_audit: {
-      loader_version: "human_gem_fbc_loader_v1";
+      loader_version: "human_gem_fbc_loader_v2";
       artifact_identity_verified_before_parse: true;
       stoichiometric_shape: [number, number];
       stoichiometric_nonzero_count: number;
       reversible_reaction_count: number;
       gene_associated_reaction_count: number;
+      gene_product_label_count: number;
+      unique_gene_product_label_count: number;
       parameter_count: number;
       objective_count: number;
       active_objective_id: string;
@@ -1869,6 +1871,7 @@ export type EngineMetabolicConstraintShell = {
       consistent_reaction_count: number;
       blocked_reaction_count: number;
       lp7_solve_count: number;
+      lp3_solve_count: number;
       maximum_mass_balance_residual: number;
       complete_at_declared_epsilon: true;
       healthy_phh_context_extracted: false;
@@ -1888,6 +1891,29 @@ export type EngineMetabolicConstraintShell = {
       optimum_uniqueness_established: false;
       healthy_phh_context_extracted: false;
       biological_flux_authority: false;
+    };
+    seven_donor_proteome_gpr_audit: {
+      audit_report: string;
+      donor_count: number;
+      not_healthy_volunteers: true;
+      single_gene_group_count: number;
+      non_single_gene_excluded_group_count: number;
+      reaction_support_intersection_count: number;
+      generic_fastcc_blocked_conflict_count: number;
+      flux_consistent_core_candidate_count: number;
+      active_enzyme_abundance_inferred: false;
+      flux_magnitude_inferred: false;
+    };
+    seven_donor_fastcore_trial: {
+      audit_report: string;
+      core_reaction_count: number;
+      source_fastcore_selected_reaction_count: number;
+      source_fastcore_output_blocked_reaction_count: number;
+      closure_selected_reaction_count: number;
+      closure_omitted_reaction_count: number;
+      source_FASTCORE_output_flux_consistent: false;
+      context_specificity_established: false;
+      context_model_accepted: false;
     };
   };
   hepatocyte_context: Record<string, string | null>;
@@ -1914,18 +1940,23 @@ export type EngineMetabolicConstraintShell = {
     biological_flux_authority: false;
   };
   context_extraction_kernel: {
-    version: "fastcore_context_kernel_v1";
+    version: "fastcore_context_kernel_v2";
     algorithm: "FASTCORE";
     algorithm_role: string;
     primary_source: string;
     official_reference_implementation: string;
+    official_reference_implementation_commit: string;
     backend: "scipy.optimize.linprog";
     backend_version: "1.17.1";
     method: "highs";
     epsilon_has_runtime_default: false;
     lp10_scaling_factor_has_runtime_default: false;
+    official_fixed_lp10_scaling_factor: number;
+    support_threshold_fraction_of_epsilon: number;
     requires_flux_consistent_input: true;
+    accepts_identity_bound_flux_consistency_certificate: true;
     requires_explicit_core_reaction_ids: true;
+    preserves_original_reaction_orientation: true;
     preserves_every_consistent_core_reaction: true;
     unique_extraction_guaranteed: false;
     synthetic_fixture_count: number;

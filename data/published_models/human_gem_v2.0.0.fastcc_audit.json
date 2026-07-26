@@ -6,7 +6,7 @@
     "release_commit": "635f533152dc5f7290ce04d12700eaa882273c3e",
     "sha256": "cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a"
   },
-  "audit_version": "human_gem_fastcc_audit_v1",
+  "audit_version": "human_gem_fastcc_audit_v2",
   "classification": {
     "blocked_reaction_count": 1290,
     "blocked_reaction_id_sha256_in_file_order": "79c5119c160db13705bedfc5370be62836a0eb4ed6583521c00ba9f18c8e49a4",
@@ -1310,14 +1310,15 @@
     "blocked_reaction_count": 157,
     "complete_consistency_classification": true,
     "consistent_reaction_count": 11641,
-    "forward_witness_reaction_count": 10539,
+    "forward_witness_reaction_count": 10533,
     "input_reaction_count": 11798,
     "input_species_count": 7086,
-    "lp7_solve_count": 253,
-    "maximum_bound_violation": 7.275957614183426e-12,
+    "lp3_solve_count": 247,
+    "lp7_solve_count": 6,
+    "maximum_bound_violation": 5.4152662179700575e-11,
     "maximum_mass_balance_residual": 3.3518572306275897e-10,
-    "reverse_only_witness_reaction_count": 1102,
-    "reverse_witness_reaction_count": 3434,
+    "reverse_only_witness_reaction_count": 1108,
+    "reverse_witness_reaction_count": 3419,
     "witness_mode_count": 253
   },
   "input_network": {
@@ -1332,14 +1333,16 @@
     "epsilon": 0.0001,
     "epsilon_basis": "Explicit numerical flux threshold; 1e-4 is the value reported for the primary paper's consistency experiments.",
     "epsilon_is_biological_parameter": false,
-    "official_reference_implementation": "https://github.com/opencobra/cobratoolbox/blob/master/src/dataIntegration/transcriptomics/FASTCORE/fastcc.m",
+    "official_reference_implementation": "https://github.com/opencobra/cobratoolbox/blob/67c790dbac809d9d891fdbafc33e18c21fc9bddc/src/dataIntegration/transcriptomics/FASTCORE/fastcc.m",
+    "official_reference_implementation_commit": "67c790dbac809d9d891fdbafc33e18c21fc9bddc",
     "primary_source": "https://doi.org/10.1371/journal.pcbi.1003424",
     "solver_backend": "scipy.optimize.linprog",
     "solver_backend_version": "1.17.1",
     "solver_method": "highs-ipm",
+    "support_threshold_fraction_of_epsilon": 0.99,
     "warm_start_used": false
   },
-  "schema_version": "cell.human-gem-fastcc-audit.v1",
+  "schema_version": "cell.human-gem-fastcc-audit.v2",
   "scientific_boundary": {
     "biological_flux_authority": false,
     "biological_objective_attached": false,

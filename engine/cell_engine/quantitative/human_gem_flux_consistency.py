@@ -16,8 +16,10 @@ from typing import Any, Iterable
 
 from cell_engine.quantitative.fastcore_context import (
     FASTCC_SOLVER_METHOD,
+    OFFICIAL_IMPLEMENTATION_COMMIT,
     PINNED_SCIPY_VERSION,
     SOURCE_DOI,
+    SUPPORT_RELATIVE_TOLERANCE,
     FluxConsistentNetwork,
     fastcc_flux_consistency,
     prune_sign_definite_dead_ends,
@@ -36,11 +38,12 @@ ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_FASTCC_AUDIT_PATH = (
     ROOT / "data/published_models/human_gem_v2.0.0.fastcc_audit.json"
 )
-SCHEMA_VERSION = "cell.human-gem-fastcc-audit.v1"
-AUDIT_VERSION = "human_gem_fastcc_audit_v1"
+SCHEMA_VERSION = "cell.human-gem-fastcc-audit.v2"
+AUDIT_VERSION = "human_gem_fastcc_audit_v2"
 PAPER_EXPERIMENT_EPSILON = 1e-4
 OFFICIAL_IMPLEMENTATION_URL = (
-    "https://github.com/opencobra/cobratoolbox/blob/master/"
+    "https://github.com/opencobra/cobratoolbox/blob/"
+    f"{OFFICIAL_IMPLEMENTATION_COMMIT}/"
     "src/dataIntegration/transcriptomics/FASTCORE/fastcc.m"
 )
 
@@ -152,12 +155,18 @@ def build_human_gem_fastcc_audit(
             "algorithm": "sign_definite_dead_end_prepass_plus_FASTCC",
             "primary_source": SOURCE_DOI,
             "official_reference_implementation": OFFICIAL_IMPLEMENTATION_URL,
+            "official_reference_implementation_commit": (
+                OFFICIAL_IMPLEMENTATION_COMMIT
+            ),
             "epsilon": float(epsilon),
             "epsilon_basis": (
                 "Explicit numerical flux threshold; 1e-4 is the value reported "
                 "for the primary paper's consistency experiments."
             ),
             "epsilon_is_biological_parameter": False,
+            "support_threshold_fraction_of_epsilon": (
+                1.0 - SUPPORT_RELATIVE_TOLERANCE
+            ),
             "solver_backend": "scipy.optimize.linprog",
             "solver_backend_version": PINNED_SCIPY_VERSION,
             "solver_method": FASTCC_SOLVER_METHOD,
@@ -195,6 +204,7 @@ def build_human_gem_fastcc_audit(
             ),
             "blocked_reaction_count": len(fastcc.blocked_reaction_ids),
             "lp7_solve_count": fastcc.lp7_solve_count,
+            "lp3_solve_count": fastcc.lp3_solve_count,
             "witness_mode_count": fastcc.witness_mode_count,
             "forward_witness_reaction_count": len(
                 fastcc.forward_witness_reaction_ids
@@ -289,6 +299,9 @@ def validate_human_gem_fastcc_audit(
         != "sign_definite_dead_end_prepass_plus_FASTCC"
         or method.get("epsilon") != PAPER_EXPERIMENT_EPSILON
         or method.get("epsilon_is_biological_parameter") is not False
+        or method.get("support_threshold_fraction_of_epsilon") != 0.99
+        or method.get("official_reference_implementation_commit")
+        != OFFICIAL_IMPLEMENTATION_COMMIT
         or method.get("solver_backend_version") != PINNED_SCIPY_VERSION
         or method.get("solver_method") != FASTCC_SOLVER_METHOD
     ):
@@ -315,6 +328,8 @@ def validate_human_gem_fastcc_audit(
         != reaction_count
         or fastcc.get("consistent_reaction_count") != consistent_count
         or fastcc.get("complete_consistency_classification") is not True
+        or not isinstance(fastcc.get("lp7_solve_count"), int)
+        or not isinstance(fastcc.get("lp3_solve_count"), int)
     ):
         raise HumanGemFastccError("Human-GEM FASTCC stage counts disagree")
     residual = fastcc.get("maximum_mass_balance_residual")
