@@ -21,8 +21,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     summary = matrix["summary"]
     assert summary["entry_count"] == 27
     assert summary["closed_count"] == 5
-    assert summary["partial_count"] == 7
-    assert summary["blocked_missing_evidence_count"] == 13
+    assert summary["partial_count"] == 8
+    assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
     assert summary["not_applicable_at_model_scale_count"] == 1
     assert summary["biological_accuracy_pct"] is None
@@ -64,6 +64,23 @@ def test_memory_and_active_cargo_engineering_remain_biologically_fail_closed() -
     cargo = entries["active_intracellular_transport_model"]["observed_metrics"]
     assert cargo["dimensionless_renderer_route_kernels"] == 1
     assert cargo["healthy_phh_active_transport_kernels"] == 0
+    assert cargo["trajectory_intake_contract_count"] == 1
+    assert cargo["delivered_phh_route_count"] == 0
+    assert cargo["quantitatively_authorized_phh_route_count"] == 0
+
+
+def test_local_membrane_and_generative_data_planes_are_partial_or_blocked() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    local = entries["local_non_affine_membrane_coupling"]
+    assert local["status"] == "partial"
+    assert local["observed_metrics"]["local_star_shaped_surface_modes_coupled"] == 1
+    assert local["observed_metrics"]["local_topology_change_modes_coupled"] == 0
+    donor = entries["donor_state_model"]
+    assert donor["status"] == "blocked_missing_evidence"
+    assert donor["observed_metrics"]["donor_manifest_intake_contract_count"] == 1
+    assert donor["observed_metrics"]["delivered_donor_manifest_sample_count"] == 0
+    assert donor["observed_metrics"]["validated_generative_donor_models"] == 0
 
 
 def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked() -> None:

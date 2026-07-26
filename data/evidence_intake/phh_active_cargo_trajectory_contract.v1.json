@@ -1,0 +1,222 @@
+{
+  "schema_version": "cell.phh-active-cargo-trajectory-contract.v1",
+  "contract_id": "phh_active_cargo_trajectory_contract_v1",
+  "canonical_null_token": "null",
+  "allowed_split_roles": [
+    "calibration",
+    "internal_validation",
+    "independent_heldout"
+  ],
+  "allowed_event_labels": [
+    "departure",
+    "in_transit",
+    "pause",
+    "reversal",
+    "arrival",
+    "fusion",
+    "fission",
+    "lost_from_track"
+  ],
+  "allowed_track_systems": [
+    "microtubule",
+    "actin",
+    "mixed_or_unresolved"
+  ],
+  "required_columns": [
+    {
+      "id": "record_id",
+      "description": "Globally unique raw trajectory-point identifier."
+    },
+    {
+      "id": "donor_id",
+      "description": "Study-scoped primary-human-hepatocyte donor identifier."
+    },
+    {
+      "id": "split_role",
+      "description": "Calibration, internal validation, or independent held-out assignment."
+    },
+    {
+      "id": "source_study_id",
+      "description": "Stable primary-study identifier such as DOI, PMID, or repository accession."
+    },
+    {
+      "id": "source_locator",
+      "description": "Exact movie, frame range, repository file, and row locator."
+    },
+    {
+      "id": "species",
+      "description": "Must be Homo sapiens for this intake."
+    },
+    {
+      "id": "biological_system",
+      "description": "Exact primary-human-hepatocyte preparation and donor context."
+    },
+    {
+      "id": "culture_format",
+      "description": "Exact 2D, sandwich, spheroid, organoid, precision-cut, or in-situ context."
+    },
+    {
+      "id": "trajectory_id",
+      "description": "Identifier joining all points of one tracked physical cargo."
+    },
+    {
+      "id": "biological_replicate_id",
+      "description": "Biological replicate identifier; it must not be treated as a new donor."
+    },
+    {
+      "id": "cargo_identity",
+      "description": "Directly labeled vesicle, organelle, protein complex, or other tracked cargo."
+    },
+    {
+      "id": "cargo_labeling_method",
+      "description": "Exact label, construct, probe, and imaging compatibility statement."
+    },
+    {
+      "id": "origin_compartment",
+      "description": "Measured or directly annotated starting compartment."
+    },
+    {
+      "id": "destination_compartment",
+      "description": "Measured or directly annotated destination compartment."
+    },
+    {
+      "id": "cytoskeletal_track",
+      "description": "Microtubule, actin, or explicitly unresolved/mixed track system."
+    },
+    {
+      "id": "motor_identity",
+      "description": "Directly established motor identity or the explicit token not_resolved."
+    },
+    {
+      "id": "frame_index",
+      "description": "Non-negative integer frame index within the raw trajectory."
+    },
+    {
+      "id": "time_from_trajectory_start_s",
+      "description": "Non-negative elapsed seconds from the first tracked frame."
+    },
+    {
+      "id": "position_x_um",
+      "description": "Raw x coordinate in micrometres in the declared reference frame."
+    },
+    {
+      "id": "position_y_um",
+      "description": "Raw y coordinate in micrometres in the declared reference frame."
+    },
+    {
+      "id": "position_z_um",
+      "description": "Raw z coordinate in micrometres; use null only through a separate 2D contract, not this 3D intake."
+    },
+    {
+      "id": "position_reference_frame",
+      "description": "Cell-fixed, microscope-stage, organelle-fixed, or other exact coordinate frame."
+    },
+    {
+      "id": "localization_uncertainty_um",
+      "description": "Finite non-negative localization uncertainty in micrometres."
+    },
+    {
+      "id": "trajectory_sampling_interval_s",
+      "description": "Finite positive acquisition interval in seconds."
+    },
+    {
+      "id": "event_label",
+      "description": "Observed trajectory event at this frame."
+    },
+    {
+      "id": "assay",
+      "description": "Exact microscopy modality and trajectory-extraction pipeline."
+    },
+    {
+      "id": "cell_viability_context",
+      "description": "Viability or health context reported for the imaged cell."
+    }
+  ],
+  "conditional_columns": [
+    {
+      "id": "track_polarity",
+      "description": "Measured plus/minus-end orientation when available."
+    },
+    {
+      "id": "atp_value",
+      "description": "Numeric ATP readout measured in the same cell and time context."
+    },
+    {
+      "id": "atp_unit",
+      "description": "Original ATP unit; required whenever atp_value is present."
+    },
+    {
+      "id": "atp_assay",
+      "description": "ATP assay; required whenever atp_value is present."
+    },
+    {
+      "id": "motor_occupancy_value",
+      "description": "Numeric motor occupancy measured on this cargo when available."
+    },
+    {
+      "id": "motor_occupancy_unit",
+      "description": "Original occupancy unit; required whenever motor_occupancy_value is present."
+    },
+    {
+      "id": "perturbation_identity",
+      "description": "Exact motor, track, ATP, or trafficking perturbation."
+    },
+    {
+      "id": "perturbation_value",
+      "description": "Numeric perturbation magnitude when applicable."
+    },
+    {
+      "id": "perturbation_unit",
+      "description": "Original perturbation unit; required whenever perturbation_value is present."
+    },
+    {
+      "id": "fusion_or_fission_partner_id",
+      "description": "Tracked partner identifier for fusion or fission events."
+    },
+    {
+      "id": "uncertainty_type",
+      "description": "Original localization-uncertainty definition."
+    },
+    {
+      "id": "censoring_flag",
+      "description": "Original lost-track, field-of-view, occlusion, or detection-limit status."
+    }
+  ],
+  "route_gate": {
+    "version": "phh_active_cargo_route_gate_v1",
+    "minimum_raw_position_count": 3,
+    "required_event_labels": [
+      "departure",
+      "in_transit"
+    ],
+    "required_terminal_event_any_of": [
+      "arrival",
+      "fusion",
+      "fission"
+    ],
+    "same_donor_required": true,
+    "same_trajectory_required": true,
+    "same_cargo_label_required": true,
+    "same_coordinate_frame_required": true,
+    "strictly_increasing_time_required": true,
+    "donor_disjoint_validation_required": true,
+    "independent_heldout_study_required": true,
+    "frozen_route_model_before_heldout_access_required": true,
+    "automatic_velocity_inference": false,
+    "automatic_motor_parameter_fitting": false,
+    "automatic_route_activation": false,
+    "automatic_cell_state_coupling": false
+  },
+  "policy": {
+    "manual_primary_source_review_required": true,
+    "two_dimensional_tracks_may_enter_three_dimensional_intake": false,
+    "reported_mean_speed_may_replace_raw_positions": false,
+    "cross_species_rate_transfer_allowed": false,
+    "cell_line_rate_transfer_to_healthy_phh_allowed": false,
+    "interpolation_for_validation": false,
+    "missing_event_means_no_event": false,
+    "visual_route_geometry_is_measurement": false,
+    "automatic_parameter_activation": false,
+    "automatic_cell_state_coupling": false
+  }
+}

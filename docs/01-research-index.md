@@ -114,6 +114,9 @@ linked to its dependencies.
 - Donor-resolved write/persist/rechallenge cellular-memory intake: `milestones/108-donor-resolved-cellular-memory-intake-v1.md`
 - Deterministic passive-fluid versus active-cargo runtime separation: `milestones/109-deterministic-active-cargo-separation-v1.md`
 - Conservative subgrid treatment for thin organelle boundaries: `milestones/110-conservative-subgrid-organelle-boundaries-v1.md`
+- Reference-space local star-shaped membrane-to-fluid boundary coupling: `milestones/111-local-star-shaped-membrane-fluid-boundary-v1.md`
+- Donor-resolved raw 3D PHH active-cargo trajectory intake: `milestones/112-donor-resolved-phh-active-cargo-trajectory-intake-v1.md`
+- Donor-linked multimodal PHH generative-model data contract: `milestones/113-donor-multimodal-generative-data-contract-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

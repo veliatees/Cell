@@ -83,6 +83,7 @@ import {
   type IntracellularFluidCollision,
   type IntracellularFluidDeformation
 } from "./physics/intracellularFluid";
+import { ReferenceMembraneRadialBoundary } from "./physics/membraneFluidBoundary";
 import {
   capsuleObstacleBetween,
   CytosolProjectionGrid,
@@ -610,6 +611,7 @@ let engineMembraneDeformationActive = false;
 type IntracellularFluidVisual = {
   field: IntracellularFluidField;
   numericalGrid: CytosolProjectionGrid;
+  membraneBoundary: ReferenceMembraneRadialBoundary;
   obstacles: DynamicCytosolObstacleField;
   syncObstacles: (deltaS: number) => void;
   points: THREE.Points;
@@ -3403,6 +3405,12 @@ function updateMembraneShape(dtReal: number) {
   const nrm = organelleMembrane.geometry.getAttribute("normal") as THREE.BufferAttribute | null;
   if (nrm) { (nrm.array as Float32Array).set(sim.normals); nrm.needsUpdate = true; }
   rebuildMembraneField();
+  intracellularFluidVisual?.membraneBoundary.update(
+    sim,
+    deformation
+      ? { normal: deformation.normal_local, axialScale: deformation.axial_scale }
+      : null
+  );
 }
 
 function updateIntracellularFluid(realDeltaS: number, refreshMovingBoundaries: boolean): void {
@@ -4117,7 +4125,7 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
   const cytosolTransport = summary?.cytosolTransport;
   const metabolicConstraint = summary?.metabolicConstraintShell;
   const cytosolTransportRow = reactionEvidence && cytosolTransport && metabolicConstraint
-    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Cytosol transport + reaction evidence v6</b><span>subgrid boundaries · deterministic cargo · biological coupling blocked</span></div><div class="phh-profile__grid"><span>Active reactions audited <b>${reactionEvidence.summary.active_reaction_count}</b></span><span>Reaction evidence fields <b>${reactionEvidence.summary.filled_evidence_slot_count}/${reactionEvidence.summary.evidence_slot_count} filled</b></span><span>Transport-coupled reactions <b>${reactionEvidence.summary.transport_coupled_reaction_count}</b></span><span>Global fluid multipliers <b>${reactionEvidence.summary.direct_fluid_rate_multiplier_count}</b></span><span>Cross-context references <b>${cytosolTransport.summary.cross_context_reference_count}</b></span><span>Human validation targets <b>${cytosolTransport.summary.human_in_vivo_validation_target_count}</b></span><span>Dimensionless projection grids <b>${cytosolTransport.summary.dimensionless_projection_solver_count}</b></span><span>Analytic boundary shapes <b>${cytosolTransport.summary.analytic_obstacle_shape_count}</b></span><span>Renderer-linked boundary classes <b>${cytosolTransport.summary.renderer_geometry_boundary_class_count}</b></span><span>Subgrid boundary treatments <b>${cytosolTransport.summary.conservative_subgrid_boundary_treatment_count}</b></span><span>Subgrid convergence tests <b>${cytosolTransport.summary.subgrid_boundary_grid_convergence_test_count}</b></span><span>Dimensionless cargo route kernels <b>${cytosolTransport.summary.dimensionless_active_cargo_route_kernel_count}</b></span><span>Healthy-PHH cargo kernels <b>${cytosolTransport.summary.healthy_phh_active_transport_kernel_count}</b></span><span>Watertight mesh boundaries <b>${cytosolTransport.summary.full_watertight_mesh_boundary_count}</b></span><span>Conservative scalar kernels <b>${cytosolTransport.summary.conservative_passive_scalar_kernel_count}</b></span><span>Moving-domain remaps <b>${cytosolTransport.summary.conservative_moving_domain_remap_count}</b></span><span>Biological species bound <b>${cytosolTransport.summary.biological_species_bound_count}</b></span><span>Healthy-PHH rheology parameters <b>${cytosolTransport.summary.healthy_phh_numeric_rheology_parameter_count}</b></span><span>Membrane pressure feedback <b>${cytosolTransport.summary.membrane_pressure_feedback_count}</b></span><span>Genome-scale FBA execution <b>${metabolicConstraint.gates.fba_execution_allowed ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Transport boundary</span><span>The projected aqueous field follows the deforming membrane and renderer-linked organelles. Thin ER, canalicular and Golgi boundaries use conservative subgrid interception; directed cargo uses a separate deterministic dimensionless route renderer. These are not watertight microscopy meshes or PHH transport rates, and no pressure, diffusivity, reaction, or membrane-force feedback is activated.</span></div>`
+    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Cytosol transport + reaction evidence v7</b><span>local membrane boundary · PHH cargo intake · biological coupling blocked</span></div><div class="phh-profile__grid"><span>Active reactions audited <b>${reactionEvidence.summary.active_reaction_count}</b></span><span>Reaction evidence fields <b>${reactionEvidence.summary.filled_evidence_slot_count}/${reactionEvidence.summary.evidence_slot_count} filled</b></span><span>Transport-coupled reactions <b>${reactionEvidence.summary.transport_coupled_reaction_count}</b></span><span>Global fluid multipliers <b>${reactionEvidence.summary.direct_fluid_rate_multiplier_count}</b></span><span>Cross-context references <b>${cytosolTransport.summary.cross_context_reference_count}</b></span><span>Human validation targets <b>${cytosolTransport.summary.human_in_vivo_validation_target_count}</b></span><span>Dimensionless projection grids <b>${cytosolTransport.summary.dimensionless_projection_solver_count}</b></span><span>Local star-shaped boundary couplings <b>${cytosolTransport.summary.local_star_shaped_membrane_boundary_coupling_count}</b></span><span>Membrane topology-change couplings <b>${cytosolTransport.summary.local_membrane_topology_change_coupling_count}</b></span><span>Analytic boundary shapes <b>${cytosolTransport.summary.analytic_obstacle_shape_count}</b></span><span>Renderer-linked boundary classes <b>${cytosolTransport.summary.renderer_geometry_boundary_class_count}</b></span><span>Subgrid boundary treatments <b>${cytosolTransport.summary.conservative_subgrid_boundary_treatment_count}</b></span><span>Subgrid convergence tests <b>${cytosolTransport.summary.subgrid_boundary_grid_convergence_test_count}</b></span><span>PHH cargo intake contracts <b>${cytosolTransport.summary.active_cargo_trajectory_intake_contract_count}</b></span><span>Delivered / authorized PHH routes <b>${cytosolTransport.summary.delivered_phh_active_cargo_route_count} / ${cytosolTransport.summary.quantitatively_authorized_phh_active_cargo_route_count}</b></span><span>Dimensionless cargo route kernels <b>${cytosolTransport.summary.dimensionless_active_cargo_route_kernel_count}</b></span><span>Healthy-PHH cargo kernels <b>${cytosolTransport.summary.healthy_phh_active_transport_kernel_count}</b></span><span>Watertight mesh boundaries <b>${cytosolTransport.summary.full_watertight_mesh_boundary_count}</b></span><span>Conservative scalar kernels <b>${cytosolTransport.summary.conservative_passive_scalar_kernel_count}</b></span><span>Moving-domain remaps <b>${cytosolTransport.summary.conservative_moving_domain_remap_count}</b></span><span>Biological species bound <b>${cytosolTransport.summary.biological_species_bound_count}</b></span><span>Healthy-PHH rheology parameters <b>${cytosolTransport.summary.healthy_phh_numeric_rheology_parameter_count}</b></span><span>Membrane pressure feedback <b>${cytosolTransport.summary.membrane_pressure_feedback_count}</b></span><span>Genome-scale FBA execution <b>${metabolicConstraint.gates.fba_execution_allowed ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Transport boundary</span><span>The projected aqueous field follows the global contact map and the current smooth star-shaped membrane residual without double-applying affine deformation. Thin ER, canalicular and Golgi boundaries use conservative subgrid interception. Directed cargo remains a separate deterministic dimensionless renderer; the 39-field donor-resolved 3D PHH trajectory intake currently authorizes zero routes. Folds, topology change, pressure feedback and biological reaction coupling remain disabled.</span></div>`
     : "";
   const placeholderRow = assumptions
     ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Schematic</span><span>${assumptions.placeholder_pools.length} relative pools remain placeholders and do not drive quantitative validation.</span></div>`
@@ -5613,7 +5621,8 @@ function communicationSnapshotSignature(summary: EngineSnapshotSummary | null): 
     generative: {
       status: summary?.generativeModeling?.status,
       training_ready: summary?.generativeModeling?.training_ready,
-      inference_ready: summary?.generativeModeling?.inference_ready
+      inference_ready: summary?.generativeModeling?.inference_ready,
+      donor_manifest_status: summary?.generativeModeling?.donor_manifest_intake?.status
     }
   });
 }
@@ -5714,6 +5723,10 @@ function renderCommunicationEvidencePanel(summary: EngineSnapshotSummary | null)
   const generative = summary?.generativeModeling;
   const brianStatus = brian2?.gate.execution_ready ? "execution ready" : `blocked · ${brian2?.gate.blockers.length ?? 0} gates`;
   const backendText = generative?.backends.map((backend) => `${backend.module_name} ${backend.available ? backend.package_version ?? "available" : "absent"}`).join(" · ") || "backends unavailable";
+  const donorManifest = generative?.donor_manifest_intake;
+  const donorManifestText = donorManifest
+    ? `${donorManifest.donor_count} donors · ${donorManifest.sample_count} samples · ${donorManifest.feature_count} features`
+    : "donor manifest unavailable";
   const primarySpatialState = summary?.spatialState;
   const runtimeState = primarySpatialState
     ? `${primarySpatialState.active_contact_count} active contact · nearest gap ${primarySpatialState.nearest_surface_gap_um?.toFixed(3) ?? "-"} µm`
@@ -5731,7 +5744,7 @@ function renderCommunicationEvidencePanel(summary: EngineSnapshotSummary | null)
     `<div class="communication-runtime"><strong>Fail-closed chain</strong><span>${communication.recognition_candidate_count} recognition candidate · ${communication.active_signal_count} active signal · ${communication.active_transport_count} active transport</span><small>${communication.event_chain_contract}</small></div>` +
     `<div class="communication-section-title">Receptor and junction chains</div><div class="communication-pathways">${pathwayRows}</div>` +
     `<div class="communication-runtime"><strong>Brian2 ${brian2?.pinned_version ?? "-"}</strong><span>${brianStatus}</span><small>Optional equation/event runtime; never the biological authority.</small></div>` +
-    `<div class="communication-runtime communication-runtime--generative"><strong>Generative boundary</strong><span>${generative?.training_ready ? "training ready" : "data-gated"} · ${generative?.inference_ready ? "inference ready" : "no inference"}</span><small>${backendText} · donor-disjoint evaluation required · generated cells quarantined from engine state.</small></div>`
+    `<div class="communication-runtime communication-runtime--generative"><strong>Generative boundary</strong><span>${generative?.training_ready ? "training ready" : "data-gated"} · ${generative?.inference_ready ? "inference ready" : "no inference"}</span><small>${backendText} · ${donorManifestText} · donor/study-disjoint evaluation required · explicit batch and missingness metadata required · generated cells quarantined from engine state.</small></div>`
   );
 }
 
@@ -8418,9 +8431,11 @@ function buildOrganelleScene() {
   // boundaries. The grid is dimensionless: no tracer speed, pressure, density or
   // path is a healthy-PHH measurement, and this layer cannot alter reactions.
   {
-    const radiusAtDirection = (x: number, y: number, z: number) => membraneSim
-      ? membraneRestRadiusAlongDirection(membraneSim, x, y, z)
-      : CELL_R;
+    const fluidMembrane = membraneSim;
+    if (!fluidMembrane) throw new Error("cytosol requires the plasma-membrane geometry");
+    const membraneBoundary = new ReferenceMembraneRadialBoundary();
+    membraneBoundary.update(fluidMembrane, null);
+    const radiusAtDirection = membraneBoundary.radiusAtDirection;
     const numericalGrid = new CytosolProjectionGrid({
       resolution: 18,
       halfExtent: CELL_R * 1.08,
@@ -8511,7 +8526,7 @@ function buildOrganelleScene() {
     points.name = "projected-intracellular-fluid-tracers";
     points.userData.hoverKind = "cytoplasm-crowd";
     points.userData.label =
-      "Intracellular aqueous-phase transport tracers - a dimensionless 3D pressure-projection field follows the same volume-preserving membrane map. Nucleus, canaliculus, connected ER and Golgi boundaries are assembled from their renderer geometry; moving organelles contribute rigid translational and rotational boundary velocity. The boundary-pressure reaction is diagnostic only. These are not water molecules, concentrations, measured PHH velocities, PHH pressures or reaction-rate parameters.";
+      "Intracellular aqueous-phase transport tracers - a dimensionless 3D pressure-projection field follows the same volume-preserving contact map plus the membrane's current smooth star-shaped local residual. Nucleus, canaliculus, connected ER and Golgi boundaries are assembled from their renderer geometry; moving organelles contribute rigid translational and rotational boundary velocity. Folds with multiple ray intersections, budding and topology change are not solved. The boundary-pressure reaction is diagnostic only. These are not water molecules, concentrations, measured PHH velocities, PHH pressures or reaction-rate parameters.";
 
     const trailCount = Math.min(220, field.count);
     const trailIndices = new Uint32Array(trailCount);
@@ -8553,6 +8568,7 @@ function buildOrganelleScene() {
     intracellularFluidVisual = {
       field,
       numericalGrid,
+      membraneBoundary,
       obstacles,
       syncObstacles,
       points,
@@ -8642,7 +8658,7 @@ function buildOrganelleScene() {
 
   if (sceneNote) {
     sceneNote.textContent =
-      `Source-backed visual anatomy v3 (${VISUAL_ANATOMY_COVERAGE.toFixed(0)}% of the explicit renderer rubric, not biological realism): polarized membrane domains, canalicular junction/actin/microvilli, connected ER-Golgi, three cytoskeleton layers and the LSEC-Disse interface. A coarse dimensionless 3D aqueous projection follows renderer-linked nucleus, canaliculus, ER, Golgi and organelle populations with rigid translation and rotation; thin ER, canalicular and Golgi boundaries use conservative subgrid interception. Passive aqueous tracers and deterministic directed-cargo displays are separate. Neither layer carries a measured PHH velocity, pressure, diffusivity, concentration, motor rate or reaction-rate claim; the assemblies are not watertight microscopy meshes and pressure feedback remains evidence-gated. A front cutaway changes renderer samples only. Quantitative EM registration, intracellular PHH rheology and donor-specific human morphometry remain incomplete.`;
+      `Source-backed visual anatomy v4 (${VISUAL_ANATOMY_COVERAGE.toFixed(0)}% of the explicit renderer rubric, not biological realism): polarized membrane domains, canalicular junction/actin/microvilli, connected ER-Golgi, three cytoskeleton layers and the LSEC-Disse interface. A coarse dimensionless 3D aqueous projection follows the global contact map, the current smooth star-shaped membrane residual, and renderer-linked nucleus, canaliculus, ER, Golgi and organelle populations; thin ER, canalicular and Golgi boundaries use conservative subgrid interception. Passive aqueous tracers and deterministic directed-cargo displays are separate. The donor-resolved 3D PHH cargo intake currently authorizes zero biological routes. Neither layer carries a measured PHH velocity, pressure, diffusivity, concentration, motor rate or reaction-rate claim; folds, topology change, watertight microscopy meshes and pressure feedback remain unavailable. A front cutaway changes renderer samples only. Quantitative EM registration, intracellular PHH rheology and donor-specific human morphometry remain incomplete.`;
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;
@@ -9053,9 +9069,9 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     // applies the current invagination and propagates it through the surface.
     // Step the physics membrane FIRST so the deformation field is fresh for
     // everything that rides it (proteins, clouds, and the coupled organelles).
-    // The membrane carries visible stochastic undulation; it is stepped on
-    // alternating frames (its area/volume projections are the costliest part of
-    // the scene), which stays smooth enough while keeping the main thread free.
+    // The membrane carries the current engine geometry plus deterministic mesh
+    // repair. It is stepped on alternating frames because its area/volume
+    // projections are among the costliest parts of the scene.
     if (heavyFrame) updateMembraneShape(realDeltaS * 2);
     syncOrganelleInteractionGeometry(externalEngineSummary);
     updateVisualAnatomyLod();

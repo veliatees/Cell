@@ -137,11 +137,13 @@
     {
       "id": "local_non_affine_membrane_coupling",
       "title": "Local non-affine membrane-to-fluid coupling",
-      "status": "blocked_missing_evidence",
-      "scope": "Local folds, buds, endocytosis, exocytosis and topology change.",
-      "current_capability": "The fluid grid follows the global volume-preserving affine membrane map only.",
+      "status": "partial",
+      "scope": "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
+      "current_capability": "The fluid grid now follows the global volume-preserving affine map and a dynamically rasterized reference-space residual from the current membrane mesh. The affine component is removed before sampling, so contact deformation is not counted twice. Multi-intersection folds and topology changes remain unsupported.",
       "observed_metrics": {
-        "local_topology_change_modes_coupled": 0
+        "local_star_shaped_surface_modes_coupled": 1,
+        "local_topology_change_modes_coupled": 0,
+        "locally_conservative_membrane_face_flux_count": 0
       },
       "remaining_requirements": [
         "Remeshing and topology-change representation.",
@@ -149,8 +151,9 @@
         "Event-specific membrane reservoir and neck mechanics evidence."
       ],
       "code_surfaces": [
+        "src/physics/membraneFluidBoundary.ts",
         "src/physics/intracellularFluid.ts",
-        "src/physics/membraneMechanics.ts"
+        "src/physics/cytosolNumerics.ts"
       ]
     },
     {
@@ -228,7 +231,11 @@
       "current_capability": "Passive aqueous tracers and directed cargo are now separate at runtime. A deterministic dimensionless path-progress kernel renders track cargo without per-frame random walks, while every PHH motor velocity, dwell, reversal, route and state-coupling parameter remains absent.",
       "observed_metrics": {
         "dimensionless_renderer_route_kernels": 1,
-        "healthy_phh_active_transport_kernels": 0
+        "healthy_phh_active_transport_kernels": 0,
+        "trajectory_intake_contract_count": 1,
+        "delivered_phh_route_count": 0,
+        "structurally_complete_phh_route_count": 0,
+        "quantitatively_authorized_phh_route_count": 0
       },
       "remaining_requirements": [
         "Cargo- and route-resolved PHH trajectories.",
@@ -237,6 +244,8 @@
       ],
       "code_surfaces": [
         "engine/cell_engine/quantitative/cytosol_transport.py",
+        "engine/cell_engine/quantitative/active_cargo_trajectory.py",
+        "data/evidence_intake/phh_active_cargo_trajectory_contract.v1.json",
         "src/physics/transportModes.ts",
         "src/main.ts"
       ]
@@ -463,9 +472,14 @@
       "title": "Joint donor-state variability model",
       "status": "blocked_missing_evidence",
       "scope": "Age, sex, genotype, zonation, nutrition and disease history in one donor-resolved state.",
-      "current_capability": "Separate donor/cohort observations exist, but cross-assay records are not fused into synthetic people and no VAE is trained.",
+      "current_capability": "A strict donor-linked multimodal manifest intake now requires explicit missingness, batch/technical covariates, donor-disjoint train/validation/test splits and a study-disjoint test set. No qualifying delivery, trained VAE or validated synthetic donor exists.",
       "observed_metrics": {
-        "validated_generative_donor_models": 0
+        "donor_manifest_intake_contract_count": 1,
+        "delivered_donor_manifest_sample_count": 0,
+        "delivered_donor_count": 0,
+        "structurally_training_data_ready_count": 0,
+        "validated_generative_donor_models": 0,
+        "automatic_engine_coupling_count": 0
       },
       "remaining_requirements": [
         "A donor-linked multimodal training cohort and feature manifest.",
@@ -473,7 +487,8 @@
         "Posterior predictive and biological constraint validation."
       ],
       "code_surfaces": [
-        "engine/cell_engine/ml/generative.py"
+        "engine/cell_engine/ml/generative.py",
+        "data/evidence_intake/phh_generative_donor_manifest_contract.v1.json"
       ]
     },
     {
@@ -586,8 +601,8 @@
   "summary": {
     "entry_count": 27,
     "closed_count": 5,
-    "partial_count": 7,
-    "blocked_missing_evidence_count": 13,
+    "partial_count": 8,
+    "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,
     "not_applicable_at_model_scale_count": 1,
     "biological_accuracy_pct": null
