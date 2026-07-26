@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 34
-    assert summary["closed_count"] == 12
+    assert summary["entry_count"] == 37
+    assert summary["closed_count"] == 15
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -153,6 +153,34 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
         "closure_selected_reaction_count"
     ] == 11639
     assert fastcore_trial["observed_metrics"]["context_model_accepted"] is False
+    stability = entries["seven_donor_gpr_support_stability"]
+    assert stability["status"] == "closed"
+    assert stability["observed_metrics"][
+        "six_donor_support_reaction_count"
+    ] == 150
+    assert stability["observed_metrics"][
+        "largest_leave_one_out_core_expansion_count"
+    ] == 62
+    scaling = entries["human_gem_fastcore_scaling_sensitivity"]
+    assert scaling["status"] == "closed"
+    assert scaling["observed_metrics"][
+        "adaptive_selected_reaction_count"
+    ] == 7415
+    assert scaling["observed_metrics"][
+        "adaptive_output_blocked_reaction_count"
+    ] == 17
+    assert scaling["observed_metrics"][
+        "adaptive_output_flux_consistent"
+    ] is False
+    evidence = entries["human_gem_reaction_evidence_manifest"]
+    assert evidence["status"] == "closed"
+    assert evidence["observed_metrics"]["manifest_reaction_count"] == 4895
+    assert evidence["observed_metrics"][
+        "adaptive_noncore_without_gpr_count"
+    ] == 2177
+    assert evidence["observed_metrics"][
+        "automatic_bound_change_allowed"
+    ] is False
     generic = entries["generic_fba_fva_numerics"]
     assert generic["status"] == "closed"
     assert generic["observed_metrics"]["analytic_fixture_pass_count"] == 5
@@ -162,6 +190,12 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
     assert fastcore["status"] == "closed"
     assert fastcore["observed_metrics"]["synthetic_fixture_pass_count"] == 1
     assert fastcore["observed_metrics"]["epsilon_has_runtime_default"] is False
+    assert fastcore["observed_metrics"][
+        "official_adaptive_lp10_supported"
+    ] is True
+    assert fastcore["observed_metrics"][
+        "official_adaptive_lp10_core_multiplier"
+    ] == 10.0
     assert fastcore["observed_metrics"]["human_gem_context_extraction_executed"] is False
     assert fastcore["observed_metrics"]["biological_flux_authority"] is False
     assert entries["hepatocyte_fba_execution"]["status"] == "blocked_missing_evidence"

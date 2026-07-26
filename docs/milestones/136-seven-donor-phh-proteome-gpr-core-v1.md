@@ -28,6 +28,9 @@ frozen in the PHH proteome atlas.
 - No synonym expansion, imputation or abundance threshold is used.
 - Quantitative values from distinct MaxQuant groups are never summed.
 - Each donor's complete Boolean GPR is evaluated independently.
+- Audit schema v2 also preserves every donor-supported reaction identifier in
+  Human-GEM order, allowing independent stability analysis without
+  reconstructing donor sets from aggregate counts.
 
 The independent donor evaluation matters for `or` rules: different donors can
 support the same reaction through different exact isoenzymes.

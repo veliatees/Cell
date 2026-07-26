@@ -36,6 +36,11 @@ Source-defined FASTCORE:
 
 The source output therefore failed the strict acceptance gate.
 
+This milestone records the official fixed-scaling branch. Milestone 139
+separately compares it with the adaptive branch from the same pinned COBRA
+Toolbox implementation; the fixed result remains frozen as a reproducible
+baseline.
+
 ## Closure Diagnostic
 
 To determine whether a parameter-free structural closure could rescue the

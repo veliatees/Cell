@@ -9,7 +9,7 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_context() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     validate_metabolic_constraint_shell(snapshot)
-    assert snapshot["version"] == "metabolic_constraint_shell_v7"
+    assert snapshot["version"] == "metabolic_constraint_shell_v8"
     reconstruction = snapshot["candidate_reconstruction"]
     assert reconstruction["model_version"] == "2.0.0"
     assert reconstruction["release_tag"] == "v2.0.0"
@@ -69,6 +69,21 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     assert fastcore_trial["source_fastcore_output_blocked_reaction_count"] == 408
     assert fastcore_trial["closure_selected_reaction_count"] == 11639
     assert fastcore_trial["context_model_accepted"] is False
+    donor_stability = reconstruction["seven_donor_gpr_stability_audit"]
+    assert donor_stability["zero_donor_support_reaction_count"] == 1801
+    assert donor_stability["six_donor_support_reaction_count"] == 150
+    assert donor_stability["largest_leave_one_out_core_expansion_count"] == 62
+    scaling = reconstruction["fastcore_scaling_comparison"]
+    assert scaling["fixed_output_blocked_reaction_count"] == 408
+    assert scaling["adaptive_selected_reaction_count"] == 7415
+    assert scaling["adaptive_output_blocked_reaction_count"] == 17
+    assert scaling["adaptive_fixed_fallback_count"] == 1
+    assert scaling["context_model_accepted"] is False
+    evidence = reconstruction["reaction_evidence_manifest"]
+    assert evidence["manifest_reaction_count"] == 4895
+    assert evidence["adaptive_fastcore_noncore_reaction_count"] == 2860
+    assert evidence["adaptive_noncore_without_gpr_count"] == 2177
+    assert evidence["automatic_bound_change_allowed"] is False
     assert snapshot["optimization_problem"]["objective"] is None
     assert snapshot["optimization_problem"]["boundary_fluxes"] is None
     numerics = snapshot["generic_constraint_numerics"]
@@ -96,6 +111,7 @@ def test_exact_release_pin_removed_only_the_artifact_identity_blocker() -> None:
     blockers = snapshot["blockers"]
     assert not any("release and checksum are not pinned" in item for item in blockers)
     assert any("context specificity was not established" in item for item in blockers)
+    assert any("17 output reactions blocked" in item for item in blockers)
     assert any("independent flux validation" in item for item in blockers)
     assert not any("have not been audited" in item for item in blockers)
     assert any("structural audit exceptions" in item for item in blockers)
