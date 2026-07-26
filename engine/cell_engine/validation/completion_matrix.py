@@ -114,6 +114,12 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     metabolic_loader = metabolic["candidate_reconstruction"][
         "sparse_fbc_loader_audit"
     ]
+    generic_fastcc = metabolic["candidate_reconstruction"][
+        "generic_flux_consistency_audit"
+    ]
+    generic_native_fba = metabolic["candidate_reconstruction"][
+        "generic_native_objective_audit"
+    ]
     context_extraction_kernel = metabolic["context_extraction_kernel"]
     metabolic_bundle = metabolic["phh_execution_bundle_intake"]
     external = external_validation_snapshot()["summary"]
@@ -311,7 +317,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Local non-affine membrane-to-fluid coupling",
             "partial",
             "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
-            "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. A topology-preserving edge-bisection kernel now conserves closed-manifold topology, area, volume, Euler characteristic, vertex/face state and barycentric surface bindings. It is not yet connected to the live MembraneSim, and topology-changing events remain unsupported.",
+            "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. The topology-preserving edge-bisection kernel is now connected to live MembraneSim state: it transfers rest geometry, velocity, arbitrary surface fields and barycentric bindings, then rebuilds edge, face-CSR, Laplacian and normal caches. There is deliberately no automatic refinement threshold, and topology-changing events remain unsupported.",
             {
                 "local_star_shaped_surface_modes_coupled": cytosol_summary[
                     "local_star_shaped_membrane_boundary_coupling_count"
@@ -327,11 +333,12 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 ],
                 "topology_preserving_adaptive_remeshing_kernel_count": 1,
                 "surface_state_transfer_kernel_count": 1,
-                "runtime_adaptive_remeshing_coupling_count": 0,
+                "runtime_adaptive_remeshing_coupling_count": 1,
+                "automatic_runtime_remeshing_trigger_count": 0,
                 "topology_change_remeshing_kernel_count": 0,
             },
             (
-                "Runtime integration of topology-preserving remeshing with MembraneSim caches.",
+                "Evidence-backed runtime refinement criterion and compute budget.",
                 "Topology-change representation for buds, necks, fission and fusion.",
                 "Event-specific membrane reservoir and neck mechanics evidence.",
             ),
@@ -340,6 +347,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "src/physics/intracellularFluid.ts",
                 "src/physics/cytosolNumerics.ts",
                 "src/physics/adaptiveRemeshing.ts",
+                "src/physics/membrane_mechanics.ts",
             ),
         ),
         _entry(
@@ -973,6 +981,86 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "human_gem_generic_flux_consistency",
+            "Pinned Human-GEM generic flux consistency",
+            "closed",
+            "Complete FASTCC classification of the checksum-pinned generic reconstruction at an explicit numerical epsilon; no healthy-PHH context or flux claim.",
+            "A sound sign-definite dead-end prepass and the source-defined FASTCC LP-7 orientation loop classify every Human-GEM v2.0.0 reaction. Witnesses are checked against steady-state mass balance and original bounds; the epsilon is recorded as a numerical threshold rather than a biological parameter.",
+            {
+                "epsilon": generic_fastcc["epsilon"],
+                "epsilon_is_biological_parameter": generic_fastcc[
+                    "epsilon_is_biological_parameter"
+                ],
+                "consistent_reaction_count": generic_fastcc[
+                    "consistent_reaction_count"
+                ],
+                "blocked_reaction_count": generic_fastcc[
+                    "blocked_reaction_count"
+                ],
+                "lp7_solve_count": generic_fastcc["lp7_solve_count"],
+                "maximum_mass_balance_residual": generic_fastcc[
+                    "maximum_mass_balance_residual"
+                ],
+                "complete_at_declared_epsilon": generic_fastcc[
+                    "complete_at_declared_epsilon"
+                ],
+                "healthy_phh_context_extracted": generic_fastcc[
+                    "healthy_phh_context_extracted"
+                ],
+                "biological_flux_authority": generic_fastcc[
+                    "biological_flux_authority"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/fastcore_context.py",
+                "engine/cell_engine/quantitative/human_gem_flux_consistency.py",
+                "scripts/audit_human_gem_fastcc.py",
+                "data/published_models/human_gem_v2.0.0.fastcc_audit.json",
+                "engine/tests/test_human_gem_flux_consistency.py",
+            ),
+        ),
+        _entry(
+            "human_gem_generic_native_fba",
+            "Pinned Human-GEM generic native-objective FBA",
+            "closed",
+            "Reproducible sparse execution of the exact generic SBML/FBC objective and bounds; no healthy-PHH objective, exchange context or dynamic rate claim.",
+            "The checksum-verified model's own Generic human cell biomass reaction is optimized with pinned SciPy/HiGHS. The optimum, active-flux count, residuals and selected-vector digest are committed while non-uniqueness and all biological-authority gates remain explicit.",
+            {
+                "objective_id": generic_native_fba["objective_id"],
+                "objective_reaction_id": generic_native_fba[
+                    "objective_reaction_id"
+                ],
+                "objective_is_healthy_phh_measurement": generic_native_fba[
+                    "objective_is_healthy_phh_measurement"
+                ],
+                "status": generic_native_fba["status"],
+                "objective_value": generic_native_fba["objective_value"],
+                "active_reaction_count_at_1e_minus_9": generic_native_fba[
+                    "active_reaction_count_at_1e_minus_9"
+                ],
+                "maximum_mass_balance_residual": generic_native_fba[
+                    "maximum_mass_balance_residual"
+                ],
+                "optimum_uniqueness_established": generic_native_fba[
+                    "optimum_uniqueness_established"
+                ],
+                "healthy_phh_context_extracted": generic_native_fba[
+                    "healthy_phh_context_extracted"
+                ],
+                "biological_flux_authority": generic_native_fba[
+                    "biological_flux_authority"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/human_gem_generic_fba.py",
+                "scripts/audit_human_gem_generic_fba.py",
+                "data/published_models/human_gem_v2.0.0.generic_fba_audit.json",
+                "engine/tests/test_human_gem_generic_fba.py",
+            ),
+        ),
+        _entry(
             "generic_fba_fva_numerics",
             "Generic FBA/FVA numerical kernel",
             "closed",
@@ -1281,6 +1369,8 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 1
         or local_boundary_metrics["surface_state_transfer_kernel_count"] != 1
         or local_boundary_metrics["runtime_adaptive_remeshing_coupling_count"]
+        != 1
+        or local_boundary_metrics["automatic_runtime_remeshing_trigger_count"]
         != 0
         or local_boundary_metrics["topology_change_remeshing_kernel_count"] != 0
     ):
@@ -1439,6 +1529,42 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or loader_metrics["fba_execution_allowed"] is not False
     ):
         raise ValueError("Human-GEM sparse loader escaped its generic scope")
+    fastcc_audit_metrics = by_id["human_gem_generic_flux_consistency"][
+        "observed_metrics"
+    ]
+    if (
+        fastcc_audit_metrics["epsilon"] != 1e-4
+        or fastcc_audit_metrics["epsilon_is_biological_parameter"] is not False
+        or fastcc_audit_metrics["consistent_reaction_count"] != 11641
+        or fastcc_audit_metrics["blocked_reaction_count"] != 1290
+        or fastcc_audit_metrics["lp7_solve_count"] != 253
+        or fastcc_audit_metrics["maximum_mass_balance_residual"] > 1e-8
+        or fastcc_audit_metrics["complete_at_declared_epsilon"] is not True
+        or fastcc_audit_metrics["healthy_phh_context_extracted"] is not False
+        or fastcc_audit_metrics["biological_flux_authority"] is not False
+    ):
+        raise ValueError("Human-GEM FASTCC audit escaped its generic scope")
+    native_fba_metrics = by_id["human_gem_generic_native_fba"][
+        "observed_metrics"
+    ]
+    if (
+        native_fba_metrics["objective_id"] != "obj"
+        or native_fba_metrics["objective_reaction_id"] != "MAR13082"
+        or native_fba_metrics["objective_is_healthy_phh_measurement"] is not False
+        or native_fba_metrics["status"] != "optimal"
+        or abs(
+            native_fba_metrics["objective_value"] - 124.86814837744569
+        )
+        > 1e-9
+        or native_fba_metrics["active_reaction_count_at_1e_minus_9"] != 2566
+        or native_fba_metrics["maximum_mass_balance_residual"] > 1e-8
+        or native_fba_metrics["optimum_uniqueness_established"] is not False
+        or native_fba_metrics["healthy_phh_context_extracted"] is not False
+        or native_fba_metrics["biological_flux_authority"] is not False
+    ):
+        raise ValueError(
+            "Human-GEM native-objective audit escaped its generic scope"
+        )
     fastcore_metrics = by_id["fastcore_context_extraction_numerics"][
         "observed_metrics"
     ]

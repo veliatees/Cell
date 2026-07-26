@@ -1800,7 +1800,7 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v5";
+  version: "metabolic_constraint_shell_v6";
   status: string;
   role: string;
   candidate_reconstruction: {
@@ -1858,6 +1858,36 @@ export type EngineMetabolicConstraintShell = {
       generic_human_reconstruction_loaded: true;
       healthy_phh_context_extracted: false;
       fba_execution_allowed: false;
+    };
+    generic_flux_consistency_audit: {
+      audit_report: string;
+      algorithm: "sign_definite_dead_end_prepass_plus_FASTCC";
+      epsilon: number;
+      epsilon_is_biological_parameter: false;
+      solver_backend_version: "1.17.1";
+      solver_method: "highs-ipm";
+      consistent_reaction_count: number;
+      blocked_reaction_count: number;
+      lp7_solve_count: number;
+      maximum_mass_balance_residual: number;
+      complete_at_declared_epsilon: true;
+      healthy_phh_context_extracted: false;
+      biological_flux_authority: false;
+    };
+    generic_native_objective_audit: {
+      audit_report: string;
+      objective_id: string;
+      objective_type: "maximize";
+      objective_reaction_id: string;
+      objective_reaction_name: string;
+      objective_is_healthy_phh_measurement: false;
+      status: "optimal";
+      objective_value: number;
+      active_reaction_count_at_1e_minus_9: number;
+      maximum_mass_balance_residual: number;
+      optimum_uniqueness_established: false;
+      healthy_phh_context_extracted: false;
+      biological_flux_authority: false;
     };
   };
   hepatocyte_context: Record<string, string | null>;

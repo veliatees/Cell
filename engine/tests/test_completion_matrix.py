@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 30
-    assert summary["closed_count"] == 8
+    assert summary["entry_count"] == 32
+    assert summary["closed_count"] == 10
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -86,7 +86,8 @@ def test_local_membrane_and_generative_data_planes_are_partial_or_blocked() -> N
     assert local["observed_metrics"]["non_star_shaped_closed_mesh_domain_kernel_count"] == 1
     assert local["observed_metrics"]["topology_preserving_adaptive_remeshing_kernel_count"] == 1
     assert local["observed_metrics"]["surface_state_transfer_kernel_count"] == 1
-    assert local["observed_metrics"]["runtime_adaptive_remeshing_coupling_count"] == 0
+    assert local["observed_metrics"]["runtime_adaptive_remeshing_coupling_count"] == 1
+    assert local["observed_metrics"]["automatic_runtime_remeshing_trigger_count"] == 0
     assert local["observed_metrics"]["topology_change_remeshing_kernel_count"] == 0
     fsi = entries["fluid_structure_interaction"]
     assert fsi["status"] == "blocked_missing_evidence"
@@ -117,6 +118,20 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
     assert loader["observed_metrics"]["stoichiometric_nonzero_count"] == 55198
     assert loader["observed_metrics"]["healthy_phh_context_extracted"] is False
     assert loader["observed_metrics"]["fba_execution_allowed"] is False
+    fastcc_audit = entries["human_gem_generic_flux_consistency"]
+    assert fastcc_audit["status"] == "closed"
+    assert fastcc_audit["observed_metrics"]["epsilon"] == 1e-4
+    assert fastcc_audit["observed_metrics"]["consistent_reaction_count"] == 11641
+    assert fastcc_audit["observed_metrics"]["blocked_reaction_count"] == 1290
+    assert fastcc_audit["observed_metrics"]["maximum_mass_balance_residual"] < 1e-8
+    assert fastcc_audit["observed_metrics"]["biological_flux_authority"] is False
+    native_fba = entries["human_gem_generic_native_fba"]
+    assert native_fba["status"] == "closed"
+    assert native_fba["observed_metrics"]["objective_reaction_id"] == "MAR13082"
+    assert native_fba["observed_metrics"]["objective_is_healthy_phh_measurement"] is False
+    assert native_fba["observed_metrics"]["objective_value"] == 124.86814837744569
+    assert native_fba["observed_metrics"]["active_reaction_count_at_1e_minus_9"] == 2566
+    assert native_fba["observed_metrics"]["biological_flux_authority"] is False
     generic = entries["generic_fba_fva_numerics"]
     assert generic["status"] == "closed"
     assert generic["observed_metrics"]["analytic_fixture_pass_count"] == 5

@@ -5,6 +5,7 @@ import {
   createMembraneSim,
   MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT,
   membraneGeometryMetrics,
+  remeshMembraneSim,
   stepMembrane,
   writeBarycentricMembranePoint,
   writePrevalidatedBarycentricMembranePoint
@@ -109,5 +110,58 @@ describe("whole-cell membrane mechanics", () => {
   it("does not expose uncalibrated whole-cell thermal forcing", () => {
     const sim = createHepatocyteMembraneSim(14, 2);
     expect("noise" in sim).toBe(false);
+  });
+
+  it("rebuilds live mechanics caches after topology-preserving refinement", () => {
+    const sim = createHepatocyteMembraneSim(14, 1);
+    sim.vel.fill(0.25);
+    const pointBefore = new Float32Array(3);
+    writeBarycentricMembranePoint(sim, 0, 0.2, 0.3, 0.5, pointBefore);
+    const result = remeshMembraneSim(sim, {
+      targetMaximumEdgeLength: 0.1,
+      maximumSplitCount: 1,
+      bindings: [{
+        id: "surface-protein-copy",
+        triangleIndex: 0,
+        barycentric: [0.2, 0.3, 0.5]
+      }],
+      vertexFields: [{
+        name: "surface_state",
+        components: 1,
+        values: Array(sim.n).fill(2)
+      }]
+    });
+    const rebuilt = result.sim;
+    const pointAfter = new Float32Array(3);
+    const binding = result.remesh.bindings[0];
+    writeBarycentricMembranePoint(
+      rebuilt,
+      binding.triangleIndex,
+      binding.barycentric[0],
+      binding.barycentric[1],
+      binding.barycentric[2],
+      pointAfter
+    );
+
+    expect(result.remesh.splitCount).toBe(1);
+    expect(rebuilt.n).toBe(sim.n + 1);
+    expect(rebuilt.faces.length).toBe(sim.faces.length + 6);
+    expect(rebuilt.edgeA.length).toBe(rebuilt.edgeB.length);
+    expect(rebuilt.edgeA.length).toBe(rebuilt.restLen.length);
+    expect(rebuilt.vertFaceStart.length).toBe(rebuilt.n + 1);
+    expect(rebuilt.vertFaceStart.at(-1)).toBe(rebuilt.faces.length);
+    expect(rebuilt.restLap.length).toBe(rebuilt.n * 3);
+    expect(rebuilt.normals.length).toBe(rebuilt.n * 3);
+    expect(rebuilt.a0).toBe(sim.a0);
+    expect(rebuilt.v0).toBe(sim.v0);
+    expect(Array.from(rebuilt.vel).every((value) => value === 0.25)).toBe(true);
+    expect(result.runtimeCachesRebuilt).toBe(true);
+    expect(result.automaticTriggerEnabled).toBe(false);
+    expect(result.maximumRuntimeBindingPositionError).toBeLessThan(1e-5);
+    expect(Array.from(pointAfter)).toEqual(Array.from(pointBefore));
+
+    stepMembrane(rebuilt, 0.001);
+    expect(Array.from(rebuilt.pos).every(Number.isFinite)).toBe(true);
+    expect(membraneGeometryMetrics(rebuilt).invertedFaces).toBe(0);
   });
 });

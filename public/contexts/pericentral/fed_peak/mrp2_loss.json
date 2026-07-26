@@ -1499,7 +1499,7 @@
     "zone": "pericentral"
   },
   "metadata": {
-    "created_at_utc": "2026-07-26T15:21:45.004652+00:00",
+    "created_at_utc": "2026-07-26T16:10:05.010205+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -6886,7 +6886,7 @@
       "fastcore": {
         "date_verified": "2026-07-26",
         "id": "fastcore",
-        "notes": "Defines the FASTCORE LP-7/LP-10 extraction method. The repository kernel is verified on synthetic networks only; no healthy-PHH core reaction set has been supplied or applied to Human-GEM.",
+        "notes": "Defines FASTCC flux-consistency classification and the FASTCORE LP-7/LP-10 extraction method. FASTCC has been applied to the pinned generic reconstruction; no healthy-PHH core reaction set has been supplied or applied to Human-GEM.",
         "source_type": "primary_paper",
         "title": "Fast Reconstruction of Compact Context-Specific Metabolic Network Models",
         "url": "https://doi.org/10.1371/journal.pcbi.1003424"
@@ -15573,22 +15573,24 @@
             "src/physics/membraneFluidBoundary.ts",
             "src/physics/intracellularFluid.ts",
             "src/physics/cytosolNumerics.ts",
-            "src/physics/adaptiveRemeshing.ts"
+            "src/physics/adaptiveRemeshing.ts",
+            "src/physics/membrane_mechanics.ts"
           ],
-          "current_capability": "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. A topology-preserving edge-bisection kernel now conserves closed-manifold topology, area, volume, Euler characteristic, vertex/face state and barycentric surface bindings. It is not yet connected to the live MembraneSim, and topology-changing events remain unsupported.",
+          "current_capability": "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. The topology-preserving edge-bisection kernel is now connected to live MembraneSim state: it transfers rest geometry, velocity, arbitrary surface fields and barycentric bindings, then rebuilds edge, face-CSR, Laplacian and normal caches. There is deliberately no automatic refinement threshold, and topology-changing events remain unsupported.",
           "id": "local_non_affine_membrane_coupling",
           "observed_metrics": {
+            "automatic_runtime_remeshing_trigger_count": 0,
             "local_star_shaped_surface_modes_coupled": 1,
             "local_topology_change_modes_coupled": 0,
             "locally_conservative_membrane_face_flux_count": 1,
             "non_star_shaped_closed_mesh_domain_kernel_count": 1,
-            "runtime_adaptive_remeshing_coupling_count": 0,
+            "runtime_adaptive_remeshing_coupling_count": 1,
             "surface_state_transfer_kernel_count": 1,
             "topology_change_remeshing_kernel_count": 0,
             "topology_preserving_adaptive_remeshing_kernel_count": 1
           },
           "remaining_requirements": [
-            "Runtime integration of topology-preserving remeshing with MembraneSim caches.",
+            "Evidence-backed runtime refinement criterion and compute budget.",
             "Topology-change representation for buds, necks, fission and fusion.",
             "Event-specific membrane reservoir and neck mechanics evidence."
           ],
@@ -16067,6 +16069,58 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/quantitative/fastcore_context.py",
+            "engine/cell_engine/quantitative/human_gem_flux_consistency.py",
+            "scripts/audit_human_gem_fastcc.py",
+            "data/published_models/human_gem_v2.0.0.fastcc_audit.json",
+            "engine/tests/test_human_gem_flux_consistency.py"
+          ],
+          "current_capability": "A sound sign-definite dead-end prepass and the source-defined FASTCC LP-7 orientation loop classify every Human-GEM v2.0.0 reaction. Witnesses are checked against steady-state mass balance and original bounds; the epsilon is recorded as a numerical threshold rather than a biological parameter.",
+          "id": "human_gem_generic_flux_consistency",
+          "observed_metrics": {
+            "biological_flux_authority": false,
+            "blocked_reaction_count": 1290,
+            "complete_at_declared_epsilon": true,
+            "consistent_reaction_count": 11641,
+            "epsilon": 0.0001,
+            "epsilon_is_biological_parameter": false,
+            "healthy_phh_context_extracted": false,
+            "lp7_solve_count": 253,
+            "maximum_mass_balance_residual": 3.3518572306275897e-10
+          },
+          "remaining_requirements": [],
+          "scope": "Complete FASTCC classification of the checksum-pinned generic reconstruction at an explicit numerical epsilon; no healthy-PHH context or flux claim.",
+          "status": "closed",
+          "title": "Pinned Human-GEM generic flux consistency"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/human_gem_generic_fba.py",
+            "scripts/audit_human_gem_generic_fba.py",
+            "data/published_models/human_gem_v2.0.0.generic_fba_audit.json",
+            "engine/tests/test_human_gem_generic_fba.py"
+          ],
+          "current_capability": "The checksum-verified model's own Generic human cell biomass reaction is optimized with pinned SciPy/HiGHS. The optimum, active-flux count, residuals and selected-vector digest are committed while non-uniqueness and all biological-authority gates remain explicit.",
+          "id": "human_gem_generic_native_fba",
+          "observed_metrics": {
+            "active_reaction_count_at_1e_minus_9": 2566,
+            "biological_flux_authority": false,
+            "healthy_phh_context_extracted": false,
+            "maximum_mass_balance_residual": 5.229594535194337e-12,
+            "objective_id": "obj",
+            "objective_is_healthy_phh_measurement": false,
+            "objective_reaction_id": "MAR13082",
+            "objective_value": 124.86814837744569,
+            "optimum_uniqueness_established": false,
+            "status": "optimal"
+          },
+          "remaining_requirements": [],
+          "scope": "Reproducible sparse execution of the exact generic SBML/FBC objective and bounds; no healthy-PHH objective, exchange context or dynamic rate claim.",
+          "status": "closed",
+          "title": "Pinned Human-GEM generic native-objective FBA"
+        },
+        {
+          "code_surfaces": [
             "engine/cell_engine/quantitative/constraint_numerics.py",
             "engine/tests/test_constraint_numerics.py"
           ],
@@ -16198,8 +16252,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 12,
-        "closed_count": 8,
-        "entry_count": 30,
+        "closed_count": 10,
+        "entry_count": 32,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
@@ -23605,6 +23659,36 @@
         "artifact_vendored_in_repository": false,
         "expected_local_cache_path": "data/published_models/cache/Human-GEM-v2.0.0.xml",
         "fbc_loader_audit_report": "data/published_models/human_gem_v2.0.0.fbc_loader_audit.json",
+        "generic_flux_consistency_audit": {
+          "algorithm": "sign_definite_dead_end_prepass_plus_FASTCC",
+          "audit_report": "data/published_models/human_gem_v2.0.0.fastcc_audit.json",
+          "biological_flux_authority": false,
+          "blocked_reaction_count": 1290,
+          "complete_at_declared_epsilon": true,
+          "consistent_reaction_count": 11641,
+          "epsilon": 0.0001,
+          "epsilon_is_biological_parameter": false,
+          "healthy_phh_context_extracted": false,
+          "lp7_solve_count": 253,
+          "maximum_mass_balance_residual": 3.3518572306275897e-10,
+          "solver_backend_version": "1.17.1",
+          "solver_method": "highs-ipm"
+        },
+        "generic_native_objective_audit": {
+          "active_reaction_count_at_1e_minus_9": 2566,
+          "audit_report": "data/published_models/human_gem_v2.0.0.generic_fba_audit.json",
+          "biological_flux_authority": false,
+          "healthy_phh_context_extracted": false,
+          "maximum_mass_balance_residual": 5.229594535194337e-12,
+          "objective_id": "obj",
+          "objective_is_healthy_phh_measurement": false,
+          "objective_reaction_id": "MAR13082",
+          "objective_reaction_name": "Generic human cell biomass reaction",
+          "objective_type": "maximize",
+          "objective_value": 124.86814837744569,
+          "optimum_uniqueness_established": false,
+          "status": "optimal"
+        },
         "license": "CC-BY-4.0",
         "license_audited": true,
         "manifest_path": "data/published_models/human_gem_v2.0.0.manifest.json",
@@ -23766,8 +23850,8 @@
         "human_gem_repository",
         "fastcore"
       ],
-      "status": "checksum_verified_sparse_model_loading_and_context_numerics_ready_phh_execution_blocked",
-      "version": "metabolic_constraint_shell_v5"
+      "status": "generic_human_gem_loaded_classified_and_native_objective_solved_phh_execution_blocked",
+      "version": "metabolic_constraint_shell_v6"
     },
     "metabolic_fluxes": [
       {
@@ -27264,7 +27348,7 @@
             "the 50-column species-resolved mobility/crowding intake covers 387 stages while all diffusivity, crowding and reaction coupling authority remains zero",
             "the 51-column reaction-transport intake covers 288 stages while L^2/(D*tau) remains an audit scale and all coupling authority remains zero",
             "self-intersection-audited closed domains and a force/volume-checked pressure-response candidate remain dimensionless while the 48-column PHH mechanics intake, mesh registration and runtime feedback stay fail closed",
-            "the checksum-pinned Human-GEM sparse loader, five analytic FBA/FVA checks and one synthetic FASTCORE extraction pass while healthy-PHH context extraction, the ten-artifact execution bundle and biological flux coupling remain absent",
+            "the checksum-pinned Human-GEM sparse loader, complete generic FASTCC classification, native generic-biomass solve, five analytic FBA/FVA checks and one synthetic FASTCORE extraction pass while healthy-PHH context extraction, the ten-artifact execution bundle and biological flux coupling remain absent",
             "external review program scopes four contexts, ten claims and six reviewer roles while biological accuracy, external validation and predictive use remain explicitly unclaimed",
             "six-batch PHH albumin ELISA evidence maps through an exact mature-protein mass operator while five hidden secretory rates remain unidentified",
             "72 batch-resolved PHH CYP SCR/MFR means remain same-format diagnostics while censored records and hidden kinetics fail closed",
@@ -27322,7 +27406,7 @@
             "the 50-column species-resolved mobility/crowding intake covers 387 stages while all diffusivity, crowding and reaction coupling authority remains zero",
             "the 51-column reaction-transport intake covers 288 stages while L^2/(D*tau) remains an audit scale and all coupling authority remains zero",
             "self-intersection-audited closed domains and a force/volume-checked pressure-response candidate remain dimensionless while the 48-column PHH mechanics intake, mesh registration and runtime feedback stay fail closed",
-            "the checksum-pinned Human-GEM sparse loader, five analytic FBA/FVA checks and one synthetic FASTCORE extraction pass while healthy-PHH context extraction, the ten-artifact execution bundle and biological flux coupling remain absent",
+            "the checksum-pinned Human-GEM sparse loader, complete generic FASTCC classification, native generic-biomass solve, five analytic FBA/FVA checks and one synthetic FASTCORE extraction pass while healthy-PHH context extraction, the ten-artifact execution bundle and biological flux coupling remain absent",
             "external review program scopes four contexts, ten claims and six reviewer roles while biological accuracy, external validation and predictive use remain explicitly unclaimed",
             "six-batch PHH albumin ELISA evidence maps through an exact mature-protein mass operator while five hidden secretory rates remain unidentified",
             "72 batch-resolved PHH CYP SCR/MFR means remain same-format diagnostics while censored records and hidden kinetics fail closed",
@@ -41679,6 +41763,8 @@
         "cytosol_transport_rheology_contract",
         "generic_constraint_numerics",
         "human_gem_sparse_fbc_loader",
+        "human_gem_generic_flux_consistency",
+        "human_gem_generic_native_fba",
         "fastcore_context_extraction_numerics",
         "phh_metabolic_execution_bundle_intake",
         "metabolic_constraint_shell",
@@ -42531,11 +42617,11 @@
           "status": "derived"
         },
         {
-          "action": "bisect long edges only on a valid closed two-manifold; preserve winding, connectivity, Euler characteristic, area, volume, vertex fields, face density/extensive state and barycentric surface bindings; reject topology change",
-          "default_snapshot_role": "surface_discretization_and_state_transfer_kernel",
+          "action": "bisect long edges only on a valid closed two-manifold; transfer rest geometry, velocity, arbitrary surface state and barycentric bindings; rebuild all live MembraneSim topology caches; preserve winding, connectivity, Euler characteristic, area and volume; reject topology change",
+          "default_snapshot_role": "live_membrane_discretization_and_state_transfer_kernel",
           "drives_scientific_validation": true,
           "id": "topology_preserving_adaptive_remeshing",
-          "limitations": "The kernel changes numerical resolution only and is not yet connected to live MembraneSim topology caches. It supplies no membrane modulus, tension, viscosity, remodeling rate, endocytosis, fission or fusion law.",
+          "limitations": "The explicit bridge changes numerical resolution only. It has no automatic runtime threshold and supplies no membrane modulus, tension, viscosity, remodeling rate, endocytosis, fission or fusion law.",
           "source_ids": [],
           "status": "derived"
         },
@@ -42544,7 +42630,7 @@
           "default_snapshot_role": "dimensionless_numerics_and_biological_coupling_firewall",
           "drives_scientific_validation": true,
           "id": "cytosol_transport_rheology_contract",
-          "limitations": "The renderer still uses the smooth star-shaped membrane path. Separate numerical paths accept concave closed meshes and preserve surface state during edge bisection after topology and self-intersection checks; a pressure-response candidate checks action-reaction, work, volume and mesh validity. No microscopy-derived PHH mesh or mechanics trajectory is registered; zero biological species and reactions are coupled, and no candidate pressure response or remeshing is applied to the runtime membrane.",
+          "limitations": "The renderer still uses the smooth star-shaped membrane path. Separate numerical paths accept concave closed meshes, and an explicit live-MembraneSim bridge preserves surface state and rebuilds mechanics caches during topology-preserving edge bisection. A pressure-response candidate checks action-reaction, work, volume and mesh validity. No microscopy-derived PHH mesh or mechanics trajectory is registered; zero biological species and reactions are coupled, automatic remeshing remains disabled, and no candidate pressure response is applied to the runtime membrane.",
           "source_ids": [
             "moeendarbary2013_poroelastic_cytoplasm",
             "kwapiszewska2020_cytoplasm_nanoviscosity",
@@ -42578,6 +42664,29 @@
           "status": "derived"
         },
         {
+          "action": "classify every reaction in the exact Human-GEM v2.0.0 reconstruction using a source-defined FASTCC loop, explicit epsilon, pinned sparse solver and mass-balance/bound witness checks",
+          "default_snapshot_role": "checksum_pinned_generic_fastcc_classification",
+          "drives_scientific_validation": true,
+          "id": "human_gem_generic_flux_consistency",
+          "limitations": "The result identifies reactions capable of nonzero steady-state flux somewhere in the generic reconstruction. It is not a healthy-PHH context, measured activity state, flux magnitude, kinetic rate or validation result.",
+          "source_ids": [
+            "human_gem_repository",
+            "fastcore"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "optimize exactly the generic SBML/FBC biomass objective and model bounds with a pinned sparse solver; preserve numerical residuals, vector identity and non-uniqueness boundaries",
+          "default_snapshot_role": "checksum_pinned_generic_objective_software_audit",
+          "drives_scientific_validation": true,
+          "id": "human_gem_generic_native_fba",
+          "limitations": "The generic biomass optimum is a reconstruction and solver audit. It is not a healthy-PHH objective, measured exchange state, donor flux, dynamic rate or authority for runtime coupling.",
+          "source_ids": [
+            "human_gem_repository"
+          ],
+          "status": "derived"
+        },
+        {
           "action": "implement the source-defined FASTCORE LP-7/LP-10 greedy loop with mandatory numerical inputs, flux-consistent input/output audits and explicit non-uniqueness; test only analytic synthetic networks",
           "default_snapshot_role": "synthetic_context_extraction_verification_only",
           "drives_scientific_validation": true,
@@ -42598,11 +42707,11 @@
           "status": "derived"
         },
         {
-          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, generic LP numerics and synthetic FASTCORE kernel; require the complete PHH execution bundle before FBA, FVA, thermodynamic or enzyme constraints can run",
+          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, generic LP numerics and synthetic FASTCORE kernel; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
           "default_snapshot_role": "pinned_reconstruction_and_genome_scale_activation_firewall",
           "drives_scientific_validation": true,
           "id": "metabolic_constraint_shell",
-          "limitations": "The exact generic reconstruction is cache-fetched and loader-verified but not vendored or context-extracted for a healthy hepatocyte. Generic numerical fixtures pass, but no PHH bundle or biological optimization runs. A generic stoichiometric topology and biomass objective do not identify a healthy single-hepatocyte flux state.",
+          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective, but it is not context-extracted for a healthy hepatocyte. No PHH bundle or biological optimization runs. Generic feasibility and biomass optimization do not identify a healthy single-hepatocyte flux state.",
           "source_ids": [
             "human1_metabolic_atlas",
             "human_gem_repository",

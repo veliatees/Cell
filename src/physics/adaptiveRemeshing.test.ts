@@ -128,7 +128,8 @@ describe("topology-preserving adaptive remeshing", () => {
     expect(ADAPTIVE_REMESHING_CONTRACT.topologyChangeAllowed).toBe(false);
     expect(ADAPTIVE_REMESHING_CONTRACT.endocytosisOrFissionImplemented).toBe(false);
     expect(ADAPTIVE_REMESHING_CONTRACT.biologicalMechanicsAssigned).toBe(false);
-    expect(ADAPTIVE_REMESHING_CONTRACT.runtimeMembraneCouplingEnabled).toBe(false);
+    expect(ADAPTIVE_REMESHING_CONTRACT.runtimeMembraneCouplingEnabled).toBe(true);
+    expect(ADAPTIVE_REMESHING_CONTRACT.automaticRuntimeTriggerEnabled).toBe(false);
     expect(ADAPTIVE_REMESHING_CONTRACT.refinementThresholdHasRuntimeDefault).toBe(false);
   });
 });
