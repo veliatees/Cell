@@ -338,7 +338,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Local non-affine membrane-to-fluid coupling",
             "partial",
             "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
-            "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. The topology-preserving edge-bisection kernel is now connected to live MembraneSim state: it transfers rest geometry, velocity, arbitrary surface fields and barycentric bindings, then rebuilds edge, face-CSR, Laplacian and normal caches. There is deliberately no automatic refinement threshold, and topology-changing events remain unsupported.",
+            "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. The live edge-bisection bridge preserves topology and surface state. A new offline transition candidate verifies explicit bud/neck/fission/fusion pre/post meshes, component lineage, Euler change and cross-component intersections, then conserves extensive surface inventory, area-integrated density and explicit binding identity. It has no mesh-surgery trigger or runtime/fluid-domain commit path.",
             {
                 "local_star_shaped_surface_modes_coupled": cytosol_summary[
                     "local_star_shaped_membrane_boundary_coupling_count"
@@ -356,12 +356,30 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "surface_state_transfer_kernel_count": 1,
                 "runtime_adaptive_remeshing_coupling_count": 1,
                 "automatic_runtime_remeshing_trigger_count": 0,
+                "topology_transition_representation_kernel_count": cytosol_summary[
+                    "membrane_topology_transition_audit_kernel_count"
+                ],
+                "conservative_topology_state_transfer_kernel_count": cytosol_summary[
+                    "conservative_membrane_topology_state_transfer_kernel_count"
+                ],
+                "topology_transition_candidate_transaction_count": cytosol_summary[
+                    "membrane_topology_transition_candidate_transaction_count"
+                ],
+                "topology_event_intake_contract_count": cytosol_summary[
+                    "membrane_topology_event_intake_contract_count"
+                ],
+                "delivered_phh_topology_event_record_count": cytosol_summary[
+                    "delivered_phh_membrane_topology_event_record_count"
+                ],
+                "authorized_phh_topology_event_record_count": cytosol_summary[
+                    "quantitatively_authorized_phh_membrane_topology_event_record_count"
+                ],
                 "topology_change_remeshing_kernel_count": 0,
             },
             (
                 "Evidence-backed runtime refinement criterion and compute budget.",
-                "Topology-change representation for buds, necks, fission and fusion.",
-                "Event-specific membrane reservoir and neck mechanics evidence.",
+                "Event-specific healthy-PHH membrane reservoir, neck mechanics and cargo-partition evidence.",
+                "Runtime mesh/fluid-domain replacement after matched held-out validation.",
             ),
             (
                 "src/physics/membraneFluidBoundary.ts",
@@ -369,6 +387,11 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "src/physics/cytosolNumerics.ts",
                 "src/physics/adaptiveRemeshing.ts",
                 "src/physics/membrane_mechanics.ts",
+                "src/physics/membraneTopology.ts",
+                "src/physics/membraneTopologyTransfer.ts",
+                "src/physics/membraneTopologyTransaction.ts",
+                "engine/cell_engine/quantitative/phh_membrane_topology_event.py",
+                "data/evidence_intake/phh_membrane_topology_event_contract.v1.json",
             ),
         ),
         _entry(
@@ -1763,6 +1786,23 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or local_boundary_metrics["runtime_adaptive_remeshing_coupling_count"]
         != 1
         or local_boundary_metrics["automatic_runtime_remeshing_trigger_count"]
+        != 0
+        or local_boundary_metrics[
+            "topology_transition_representation_kernel_count"
+        ]
+        != 1
+        or local_boundary_metrics[
+            "conservative_topology_state_transfer_kernel_count"
+        ]
+        != 1
+        or local_boundary_metrics[
+            "topology_transition_candidate_transaction_count"
+        ]
+        != 1
+        or local_boundary_metrics["topology_event_intake_contract_count"] != 1
+        or local_boundary_metrics["delivered_phh_topology_event_record_count"]
+        != 0
+        or local_boundary_metrics["authorized_phh_topology_event_record_count"]
         != 0
         or local_boundary_metrics["topology_change_remeshing_kernel_count"] != 0
     ):

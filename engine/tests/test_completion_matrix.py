@@ -88,6 +88,12 @@ def test_local_membrane_and_generative_data_planes_are_partial_or_blocked() -> N
     assert local["observed_metrics"]["surface_state_transfer_kernel_count"] == 1
     assert local["observed_metrics"]["runtime_adaptive_remeshing_coupling_count"] == 1
     assert local["observed_metrics"]["automatic_runtime_remeshing_trigger_count"] == 0
+    assert local["observed_metrics"]["topology_transition_representation_kernel_count"] == 1
+    assert local["observed_metrics"]["conservative_topology_state_transfer_kernel_count"] == 1
+    assert local["observed_metrics"]["topology_transition_candidate_transaction_count"] == 1
+    assert local["observed_metrics"]["topology_event_intake_contract_count"] == 1
+    assert local["observed_metrics"]["delivered_phh_topology_event_record_count"] == 0
+    assert local["observed_metrics"]["authorized_phh_topology_event_record_count"] == 0
     assert local["observed_metrics"]["topology_change_remeshing_kernel_count"] == 0
     fsi = entries["fluid_structure_interaction"]
     assert fsi["status"] == "blocked_missing_evidence"

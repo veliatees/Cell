@@ -1579,7 +1579,7 @@ export type EnginePHHMechanicsCalibrationIntake = {
 };
 
 export type EngineCytosolTransport = {
-  version: "cytosol_transport_rheology_contract_v12";
+  version: "cytosol_transport_rheology_contract_v13";
   status: string;
   material_model: {
     model: "poroelastic_two_phase_cytoplasm";
@@ -1621,6 +1621,27 @@ export type EngineCytosolTransport = {
     source_ids: string[];
   }[];
   phh_mechanics_calibration_intake: EnginePHHMechanicsCalibrationIntake;
+  phh_membrane_topology_event_intake: {
+    version: "phh_membrane_topology_event_intake_v1";
+    contract_id: "healthy_phh_membrane_topology_event_intake_v1";
+    schema_version: "cell.phh-membrane-topology-event-intake.v1";
+    status: string;
+    delivery_path: string;
+    contract_sha256: string;
+    target_event_kinds: ("bud_growth" | "neck_formation" | "fission" | "fusion")[];
+    required_record_fields: string[];
+    required_field_count: number;
+    record_count: number;
+    healthy_phh_context_record_count: number;
+    structurally_complete_record_count: number;
+    quantitatively_authorized_record_count: number;
+    runtime_topology_activation_allowed: boolean;
+    automatic_missing_value_imputation: false;
+    automatic_event_threshold_fitting: false;
+    automatic_runtime_activation: false;
+    record_assessments: unknown[];
+    blockers: string[];
+  };
   transport_mode_contract: {
     aqueous_passive_transport: {
       carriers: string;
@@ -1720,6 +1741,29 @@ export type EngineCytosolTransport = {
       spatial_fsi_ready_trajectory_count: 0;
       quantitatively_authorized_parameter_count: 0;
     };
+    dimensionless_membrane_topology_transition_candidate: {
+      enabled: true;
+      role: string;
+      supported_event_kinds: ("bud_growth" | "neck_formation" | "fission" | "fusion")[];
+      closed_surface_topology_audit: true;
+      cross_component_intersection_audit: true;
+      event_specific_euler_change_audit: true;
+      explicit_component_lineage_required: true;
+      explicit_face_transfer_map_required: true;
+      extensive_surface_inventory_conservation: true;
+      area_integrated_density_conservation: true;
+      explicit_binding_destination_required: true;
+      molecule_identity_resolved: false;
+      automatic_event_detection: false;
+      automatic_mesh_surgery: false;
+      automatic_event_time_or_neck_threshold: false;
+      runtime_mesh_replacement_enabled: false;
+      fluid_domain_replacement_enabled: false;
+      biological_event_activation_enabled: false;
+      evidence_intake_contract_id: string;
+      delivered_event_record_count: number;
+      quantitatively_authorized_event_record_count: number;
+    };
     conservative_passive_scalar_kernel: {
       enabled: true;
       role: string;
@@ -1776,6 +1820,12 @@ export type EngineCytosolTransport = {
     subgrid_boundary_grid_convergence_test_count: number;
     local_star_shaped_membrane_boundary_coupling_count: number;
     local_membrane_topology_change_coupling_count: number;
+    membrane_topology_transition_audit_kernel_count: number;
+    conservative_membrane_topology_state_transfer_kernel_count: number;
+    membrane_topology_transition_candidate_transaction_count: number;
+    membrane_topology_event_intake_contract_count: number;
+    delivered_phh_membrane_topology_event_record_count: number;
+    quantitatively_authorized_phh_membrane_topology_event_record_count: number;
     locally_conservative_membrane_face_flux_count: number;
     fractional_face_aperture_solver_count: number;
     generic_watertight_mesh_boundary_kernel_count: number;

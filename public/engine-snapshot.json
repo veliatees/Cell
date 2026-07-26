@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-26T19:24:18.258867+00:00",
+    "created_at_utc": "2026-07-26T20:08:06.133282+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -5346,7 +5346,8 @@
         "HepG2 nanoviscosity is cancer-cell-line context and cannot initialize healthy PHH.",
         "Species-specific apparent diffusion and reaction-specific diffusion limitation are missing.",
         "Healthy-PHH motor-cargo rates and route-resolved validation trajectories are missing.",
-        "Membrane pressure feedback requires measured PHH permeability, modulus and hydraulic boundary data."
+        "Membrane pressure feedback requires measured PHH permeability, modulus and hydraulic boundary data.",
+        "Runtime membrane topology change requires event-resolved healthy-PHH meshes, neck mechanics, surface partition measurements and held-out validation."
       ],
       "cross_context_reference_observations": [
         {
@@ -5568,6 +5569,92 @@
         "target_quantity_count": 15,
         "version": "phh_mechanics_calibration_intake_v1"
       },
+      "phh_membrane_topology_event_intake": {
+        "automatic_event_threshold_fitting": false,
+        "automatic_missing_value_imputation": false,
+        "automatic_runtime_activation": false,
+        "blockers": [
+          "No event-resolved healthy-PHH membrane topology record is delivered."
+        ],
+        "contract_id": "healthy_phh_membrane_topology_event_intake_v1",
+        "contract_sha256": "d642d42f965bed8cdcc99dfa07df6cff368fdd3ad4eec36a9a1795fe3ba5dfa1",
+        "delivery_path": "data/evidence_intake/phh_membrane_topology_event_contract.v1.json",
+        "healthy_phh_context_record_count": 0,
+        "quantitatively_authorized_record_count": 0,
+        "record_assessments": [],
+        "record_count": 0,
+        "required_field_count": 57,
+        "required_record_fields": [
+          "record_id",
+          "source_id",
+          "source_doi_or_accession",
+          "source_url",
+          "citation",
+          "species",
+          "donor_id",
+          "donor_age_years",
+          "donor_sex",
+          "donor_health_status",
+          "primary_cell_status",
+          "culture_configuration",
+          "medium_and_supplements",
+          "temperature_c",
+          "event_kind",
+          "membrane_domain",
+          "cargo_identity",
+          "surface_protein_identities",
+          "pre_mesh_path",
+          "pre_mesh_sha256",
+          "post_mesh_path",
+          "post_mesh_sha256",
+          "mesh_coordinate_unit",
+          "acquisition_modality",
+          "voxel_size_x_um",
+          "voxel_size_y_um",
+          "voxel_size_z_um",
+          "time_unit",
+          "timepoint_values",
+          "event_time_value",
+          "neck_radius_trajectory",
+          "neck_radius_unit",
+          "surface_area_trajectory",
+          "surface_area_unit",
+          "enclosed_volume_trajectory",
+          "enclosed_volume_unit",
+          "membrane_tension_trajectory",
+          "membrane_tension_unit",
+          "cortical_traction_trajectory",
+          "cortical_traction_unit",
+          "pressure_trajectory",
+          "pressure_unit",
+          "membrane_reservoir_measurement",
+          "lipid_addition_or_removal_measurement",
+          "cargo_partition_before_after",
+          "surface_protein_partition_before_after",
+          "fusion_or_fission_partner_identity",
+          "topology_qc_report_path",
+          "topology_qc_report_sha256",
+          "self_intersection_qc_status",
+          "repository_transition_audit_path",
+          "repository_transition_audit_sha256",
+          "repository_transition_audit_status",
+          "uncertainty_method",
+          "validation_split",
+          "independent_validation_source_id",
+          "notes"
+        ],
+        "runtime_topology_activation_allowed": false,
+        "schema_version": "cell.phh-membrane-topology-event-intake.v1",
+        "status": "empty_intake_runtime_topology_activation_blocked",
+        "structurally_complete_record_count": 0,
+        "target_event_kinds": [
+          "bud_growth",
+          "neck_formation",
+          "fission",
+          "fusion"
+        ],
+        "version": "phh_membrane_topology_event_intake_v1"
+      },
       "reaction_coupling_policy": {
         "currently_coupled_reaction_count": 0,
         "direct_rate_correction": "requires a separate reaction-specific measured correction law",
@@ -5601,6 +5688,34 @@
           "reaction_or_cell_state_coupling": false,
           "role": "deterministic renderer-only separation of track cargo from the passive aqueous projection field",
           "trajectory_intake_contract_id": "phh_active_cargo_trajectory_contract_v1"
+        },
+        "dimensionless_membrane_topology_transition_candidate": {
+          "area_integrated_density_conservation": true,
+          "automatic_event_detection": false,
+          "automatic_event_time_or_neck_threshold": false,
+          "automatic_mesh_surgery": false,
+          "biological_event_activation_enabled": false,
+          "closed_surface_topology_audit": true,
+          "cross_component_intersection_audit": true,
+          "delivered_event_record_count": 0,
+          "enabled": true,
+          "event_specific_euler_change_audit": true,
+          "evidence_intake_contract_id": "healthy_phh_membrane_topology_event_intake_v1",
+          "explicit_binding_destination_required": true,
+          "explicit_component_lineage_required": true,
+          "explicit_face_transfer_map_required": true,
+          "extensive_surface_inventory_conservation": true,
+          "fluid_domain_replacement_enabled": false,
+          "molecule_identity_resolved": false,
+          "quantitatively_authorized_event_record_count": 0,
+          "role": "offline topology audit and conservative surface-state transfer for explicitly supplied pre/post closed meshes",
+          "runtime_mesh_replacement_enabled": false,
+          "supported_event_kinds": [
+            "bud_growth",
+            "neck_formation",
+            "fission",
+            "fusion"
+          ]
         },
         "dimensionless_pressure_membrane_response_candidate": {
           "action_reaction_diagnostic": true,
@@ -5709,12 +5824,14 @@
         "analytic_obstacle_shape_count": 4,
         "biological_species_bound_count": 0,
         "compound_boundary_conservation_test_count": 1,
+        "conservative_membrane_topology_state_transfer_kernel_count": 1,
         "conservative_moving_domain_remap_count": 1,
         "conservative_passive_scalar_kernel_count": 1,
         "conservative_subgrid_boundary_treatment_count": 1,
         "cross_context_reference_count": 10,
         "delivered_phh_active_cargo_route_count": 0,
         "delivered_phh_mechanics_trajectory_count": 0,
+        "delivered_phh_membrane_topology_event_record_count": 0,
         "dimensionless_active_cargo_route_kernel_count": 1,
         "dimensionless_pressure_membrane_response_kernel_count": 1,
         "dimensionless_projection_solver_count": 1,
@@ -5729,6 +5846,9 @@
         "local_star_shaped_membrane_boundary_coupling_count": 1,
         "locally_conservative_membrane_face_flux_count": 1,
         "membrane_pressure_feedback_count": 0,
+        "membrane_topology_event_intake_contract_count": 1,
+        "membrane_topology_transition_audit_kernel_count": 1,
+        "membrane_topology_transition_candidate_transaction_count": 1,
         "moving_analytic_obstacle_layer_count": 1,
         "non_star_shaped_closed_mesh_domain_kernel_count": 1,
         "phh_mechanics_calibration_intake_contract_count": 1,
@@ -5736,6 +5856,7 @@
         "quantitative_fluid_solver_count": 0,
         "quantitatively_authorized_phh_active_cargo_route_count": 0,
         "quantitatively_authorized_phh_mechanics_parameter_count": 0,
+        "quantitatively_authorized_phh_membrane_topology_event_record_count": 0,
         "reaction_transport_coupling_count": 0,
         "renderer_geometry_boundary_adapter_count": 1,
         "renderer_geometry_boundary_class_count": 10,
@@ -5793,7 +5914,7 @@
         },
         "mode_interchange_prohibited": true
       },
-      "version": "cytosol_transport_rheology_contract_v12"
+      "version": "cytosol_transport_rheology_contract_v13"
     },
     "definition_id": "human_hepatocyte_midlobular_v1",
     "division": {
@@ -15580,12 +15701,20 @@
             "src/physics/intracellularFluid.ts",
             "src/physics/cytosolNumerics.ts",
             "src/physics/adaptiveRemeshing.ts",
-            "src/physics/membrane_mechanics.ts"
+            "src/physics/membrane_mechanics.ts",
+            "src/physics/membraneTopology.ts",
+            "src/physics/membraneTopologyTransfer.ts",
+            "src/physics/membraneTopologyTransaction.ts",
+            "engine/cell_engine/quantitative/phh_membrane_topology_event.py",
+            "data/evidence_intake/phh_membrane_topology_event_contract.v1.json"
           ],
-          "current_capability": "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. The topology-preserving edge-bisection kernel is now connected to live MembraneSim state: it transfers rest geometry, velocity, arbitrary surface fields and barycentric bindings, then rebuilds edge, face-CSR, Laplacian and normal caches. There is deliberately no automatic refinement threshold, and topology-changing events remain unsupported.",
+          "current_capability": "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. The live edge-bisection bridge preserves topology and surface state. A new offline transition candidate verifies explicit bud/neck/fission/fusion pre/post meshes, component lineage, Euler change and cross-component intersections, then conserves extensive surface inventory, area-integrated density and explicit binding identity. It has no mesh-surgery trigger or runtime/fluid-domain commit path.",
           "id": "local_non_affine_membrane_coupling",
           "observed_metrics": {
+            "authorized_phh_topology_event_record_count": 0,
             "automatic_runtime_remeshing_trigger_count": 0,
+            "conservative_topology_state_transfer_kernel_count": 1,
+            "delivered_phh_topology_event_record_count": 0,
             "local_star_shaped_surface_modes_coupled": 1,
             "local_topology_change_modes_coupled": 0,
             "locally_conservative_membrane_face_flux_count": 1,
@@ -15593,12 +15722,15 @@
             "runtime_adaptive_remeshing_coupling_count": 1,
             "surface_state_transfer_kernel_count": 1,
             "topology_change_remeshing_kernel_count": 0,
-            "topology_preserving_adaptive_remeshing_kernel_count": 1
+            "topology_event_intake_contract_count": 1,
+            "topology_preserving_adaptive_remeshing_kernel_count": 1,
+            "topology_transition_candidate_transaction_count": 1,
+            "topology_transition_representation_kernel_count": 1
           },
           "remaining_requirements": [
             "Evidence-backed runtime refinement criterion and compute budget.",
-            "Topology-change representation for buds, necks, fission and fusion.",
-            "Event-specific membrane reservoir and neck mechanics evidence."
+            "Event-specific healthy-PHH membrane reservoir, neck mechanics and cargo-partition evidence.",
+            "Runtime mesh/fluid-domain replacement after matched held-out validation."
           ],
           "scope": "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
           "status": "partial",
@@ -41403,6 +41535,7 @@
         "phh_reaction_transport_coupling_intake",
         "phh_mechanics_calibration_intake",
         "topology_preserving_adaptive_remeshing",
+        "membrane_topology_transition_candidate",
         "cytosol_transport_rheology_contract",
         "generic_constraint_numerics",
         "human_gem_sparse_fbc_loader",
@@ -42276,11 +42409,20 @@
           "status": "derived"
         },
         {
-          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise renderer-linked star-shaped motion, self-intersection-audited closed meshes, topology-preserving adaptive surface refinement, concave closed fluid domains, cut-cell geometric conservation, subgrid organelle boundaries, passive scalar transport, deterministic cargo paths and a pressure-traction membrane-response candidate only as numerical kernels; require matched healthy-PHH evidence through the mechanics intake before biological coupling",
+          "action": "audit explicitly supplied bud, neck, fission and fusion pre/post closed meshes; require complete component lineage; verify event-specific component and Euler changes plus cross-component intersections; conserve extensive surface inventory and area-integrated density through an explicit face map; preserve binding identity only through explicit target barycentric coordinates",
+          "default_snapshot_role": "offline_closed_surface_transition_and_state_conservation_firewall",
+          "drives_scientific_validation": true,
+          "id": "membrane_topology_transition_candidate",
+          "limitations": "This is an offline non-committable numerical candidate. It does not detect an event, choose a neck threshold or event time, perform mesh surgery, resolve molecule identities, replace the runtime/fluid mesh or assign a biological partition law. The 57-field healthy-PHH evidence intake contains zero records and requires checksum-matched source meshes, external QC and a repository transition-audit artifact.",
+          "source_ids": [],
+          "status": "derived"
+        },
+        {
+          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise renderer-linked star-shaped motion, self-intersection-audited closed meshes, topology-preserving adaptive surface refinement, offline topology-transition verification, concave closed fluid domains, cut-cell geometric conservation, subgrid organelle boundaries, passive scalar transport, deterministic cargo paths and a pressure-traction membrane-response candidate only as numerical kernels; require matched healthy-PHH evidence before biological coupling",
           "default_snapshot_role": "dimensionless_numerics_and_biological_coupling_firewall",
           "drives_scientific_validation": true,
           "id": "cytosol_transport_rheology_contract",
-          "limitations": "The renderer still uses the smooth star-shaped membrane path. Separate numerical paths accept concave closed meshes, and an explicit live-MembraneSim bridge preserves surface state and rebuilds mechanics caches during topology-preserving edge bisection. A pressure-response candidate checks action-reaction, work, volume and mesh validity. No microscopy-derived PHH mesh or mechanics trajectory is registered; zero biological species and reactions are coupled, automatic remeshing remains disabled, and no candidate pressure response is applied to the runtime membrane.",
+          "limitations": "The renderer still uses the smooth star-shaped membrane path. Separate numerical paths accept concave closed meshes; the topology-transition candidate validates supplied pre/post meshes and conserves explicit surface state but cannot commit them. A pressure-response candidate checks action-reaction, work, volume and mesh validity. No microscopy-derived PHH mesh, event trajectory or mechanics trajectory is registered; zero biological species and reactions are coupled, automatic remeshing remains disabled, and no candidate modifies the runtime membrane.",
           "source_ids": [
             "moeendarbary2013_poroelastic_cytoplasm",
             "kwapiszewska2020_cytoplasm_nanoviscosity",
