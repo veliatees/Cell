@@ -1499,7 +1499,7 @@
     "zone": "periportal"
   },
   "metadata": {
-    "created_at_utc": "2026-07-26T12:55:08.563778+00:00",
+    "created_at_utc": "2026-07-26T13:27:29.783933+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -5484,7 +5484,7 @@
         "advection_changes_reaction_state_via": "local reactant/product concentrations and boundary fluxes",
         "direct_viscosity_rate_multiplier": null,
         "global_crowding_multiplier_allowed": false,
-        "incompressible_visual_mapping": "det(F) = 1 for the affine contact map; smooth star-shaped non-affine residual motion is rasterized into fractional cell volumes and face apertures, and the pressure projection enforces the corresponding discrete local geometric-conservation source",
+        "incompressible_visual_mapping": "det(F) = 1 for the affine contact map; smooth star-shaped or validated non-star-shaped closed-mesh domains are rasterized into fractional cell volumes and face apertures, and the pressure projection enforces the corresponding discrete local geometric-conservation source",
         "poroelastic_scaling": "D_p scales with E*xi^2/mu; no coefficient is assigned for healthy PHH",
         "species_balance": "partial_t(c_i) + div(u*c_i) = div(D_i*grad(c_i)) + R_i(c)"
       },
@@ -5576,6 +5576,23 @@
           "role": "deterministic renderer-only separation of track cargo from the passive aqueous projection field",
           "trajectory_intake_contract_id": "phh_active_cargo_trajectory_contract_v1"
         },
+        "dimensionless_pressure_membrane_response_candidate": {
+          "action_reaction_diagnostic": true,
+          "backtracking_line_search": true,
+          "biological_compliance_assigned": false,
+          "biological_pressure_assigned": false,
+          "closed_mesh_volume_correction": true,
+          "enabled": true,
+          "force_energy_consistency_tested": true,
+          "healthy_phh_mechanics_assigned": false,
+          "pressure_work_diagnostic": true,
+          "role": "numerical candidate generation and verification only",
+          "runtime_feedback_enabled": false,
+          "self_intersection_rejection": true,
+          "surface_mean_pressure_shape_mode": true,
+          "triangle_pressure_traction": true,
+          "volume_preservation_tested": true
+        },
         "quantitative_poroelastic_solver": {
           "enabled": false,
           "reason": "healthy-PHH constitutive parameters and validation trajectories are unavailable"
@@ -5590,6 +5607,8 @@
           ],
           "biological_pressure_claim": false,
           "biological_time_or_velocity_claim": false,
+          "closed_mesh_domain_biological_registration_count": 0,
+          "closed_mesh_domain_self_intersection_audit": true,
           "enabled": true,
           "face_aperture_quadrature_channels": 4,
           "fractional_face_aperture_flux_weighting": true,
@@ -5601,8 +5620,9 @@
           "local_star_shaped_membrane_boundary_coupling": true,
           "locally_conservative_membrane_face_flux": true,
           "membrane_pressure_feedback": false,
+          "membrane_topology_change_support": false,
           "membrane_volume_mapping": "same volume-preserving affine deformation as the rendered membrane",
-          "mesh_self_intersection_detection": false,
+          "mesh_self_intersection_detection": true,
           "mesh_topology_checks": [
             "finite_vertices",
             "valid_triangle_indices",
@@ -5614,6 +5634,7 @@
           ],
           "moving_analytic_obstacle_boundaries": true,
           "multi_intersection_fold_or_topology_change_support": false,
+          "non_star_shaped_closed_mesh_domain_kernel": true,
           "outer_membrane_face_area_samples": 4,
           "outer_membrane_geometric_conservation_source": true,
           "outer_membrane_subgrid_volume_samples_per_cell": 8,
@@ -5664,7 +5685,9 @@
         "cross_context_reference_count": 10,
         "delivered_phh_active_cargo_route_count": 0,
         "dimensionless_active_cargo_route_kernel_count": 1,
+        "dimensionless_pressure_membrane_response_kernel_count": 1,
         "dimensionless_projection_solver_count": 1,
+        "force_energy_consistency_test_count": 1,
         "fractional_face_aperture_solver_count": 1,
         "full_watertight_mesh_boundary_count": 0,
         "generic_watertight_mesh_boundary_kernel_count": 1,
@@ -5676,15 +5699,18 @@
         "locally_conservative_membrane_face_flux_count": 1,
         "membrane_pressure_feedback_count": 0,
         "moving_analytic_obstacle_layer_count": 1,
+        "non_star_shaped_closed_mesh_domain_kernel_count": 1,
         "quantitative_fluid_solver_count": 0,
         "quantitatively_authorized_phh_active_cargo_route_count": 0,
         "reaction_transport_coupling_count": 0,
         "renderer_geometry_boundary_adapter_count": 1,
         "renderer_geometry_boundary_class_count": 10,
+        "repository_mesh_self_intersection_audit_count": 1,
         "rigid_body_boundary_kinematics_count": 1,
         "structurally_complete_phh_active_cargo_route_count": 0,
         "subgrid_boundary_grid_convergence_test_count": 1,
-        "visual_fluid_layer_count": 1
+        "visual_fluid_layer_count": 1,
+        "volume_preserving_fsi_candidate_test_count": 1
       },
       "transport_mode_contract": {
         "active_cargo_transport": {
@@ -5732,7 +5758,7 @@
         },
         "mode_interchange_prohibited": true
       },
-      "version": "cytosol_transport_rheology_contract_v10"
+      "version": "cytosol_transport_rheology_contract_v11"
     },
     "definition_id": "human_hepatocyte_midlobular_v1",
     "division": {
@@ -15361,7 +15387,7 @@
             "src/physics/cytosolNumerics.ts",
             "src/physics/intracellularFluid.ts"
           ],
-          "current_capability": "A 3D pressure-projection grid, four analytic obstacle shapes, rigid translation/rotation boundary kinematics, conservative subgrid thin-boundary interception and a passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
+          "current_capability": "A 3D pressure-projection grid, four analytic obstacle shapes, topology- and self-intersection-audited closed meshes, non-star-shaped closed fluid domains, rigid boundary kinematics and conservative moving-domain scalar transport are tested. The renderer still uses the star-shaped membrane path.",
           "id": "dimensionless_cytosol_numerics",
           "observed_metrics": {
             "analytic_obstacle_shape_count": 4,
@@ -15370,7 +15396,9 @@
             "conservative_scalar_kernel_count": 1,
             "fractional_face_aperture_solver_count": 1,
             "moving_analytic_obstacle_layer_count": 1,
+            "non_star_shaped_closed_mesh_domain_kernel_count": 1,
             "projection_solver_count": 1,
+            "repository_mesh_self_intersection_audit_count": 1,
             "rigid_body_boundary_kinematics_count": 1,
             "subgrid_boundary_treatment_count": 1,
             "subgrid_grid_convergence_test_count": 1
@@ -15435,17 +15463,21 @@
         },
         {
           "code_surfaces": [
+            "src/physics/dimensionlessFsi.ts",
             "src/physics/intracellularFluid.ts",
             "src/physics/cytosolNumerics.ts"
           ],
-          "current_capability": "Membrane motion drives the numerical fluid map; uncalibrated pressure cannot push the membrane.",
+          "current_capability": "A dimensionless closed-mesh pressure-traction candidate kernel now checks action-reaction balance, pressure work, volume preservation, line-search stability and self-intersection rejection. It cannot apply its candidate to the runtime membrane.",
           "id": "fluid_structure_interaction",
           "observed_metrics": {
-            "membrane_pressure_feedback_count": 0
+            "dimensionless_pressure_membrane_response_kernel_count": 1,
+            "force_energy_consistency_test_count": 1,
+            "membrane_pressure_feedback_count": 0,
+            "volume_preserving_fsi_candidate_test_count": 1
           },
           "remaining_requirements": [
             "PHH membrane/cortex mechanics and hydraulic boundary data.",
-            "A coupled stable discretization with force/energy consistency tests.",
+            "Runtime coupling of a calibrated pressure field to membrane, cortex and organelles.",
             "Matched deformation and relaxation validation."
           ],
           "scope": "Pressure/traction feedback from the aqueous/poroelastic phase to membrane, cortex and organelles.",
@@ -15460,7 +15492,7 @@
             "engine/cell_engine/quantitative/phh_3d_mesh_boundary.py",
             "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json"
           ],
-          "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. A generic consistently-wound closed triangle-mesh kernel now supplies topology-audited containment and face interception, but no microscopy-derived PHH mesh is registered. Thin ER/canalicular/Golgi structures retain deterministic subgrid occupancy and fractional face flux.",
+          "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Generic closed meshes now require both two-manifold topology and repository self-intersection audits before containment or face interception, but no microscopy-derived PHH mesh is registered. Thin ER/canalicular/Golgi structures retain deterministic subgrid occupancy and fractional face flux.",
           "id": "organelle_fluid_boundaries",
           "observed_metrics": {
             "analytic_obstacle_layer_count": 1,
@@ -15475,6 +15507,9 @@
             "mesh_target_structure_count": 11,
             "renderer_geometry_boundary_adapter_count": 1,
             "renderer_geometry_boundary_class_count": 10,
+            "repository_self_intersection_audit_kernel_count": 1,
+            "repository_self_intersection_audited_mesh_count": 0,
+            "repository_self_intersection_free_mesh_count": 0,
             "rigid_body_boundary_kinematics_count": 1,
             "self_intersection_audited_mesh_count": 0,
             "subgrid_boundary_grid_convergence_test_count": 1,
@@ -15494,12 +15529,13 @@
             "src/physics/intracellularFluid.ts",
             "src/physics/cytosolNumerics.ts"
           ],
-          "current_capability": "The fluid grid follows the global volume-preserving affine map and a dynamically rasterized reference-space residual from the current membrane mesh. Outer-membrane cut cells now carry 2x2x2 volume fractions, 2x2 face apertures and a local geometric-conservation source in the pressure projection; passive scalar mass is conservatively remapped as those fractions move. The affine component is removed before sampling, so contact deformation is not counted twice. Multi-intersection folds and topology changes remain unsupported.",
+          "current_capability": "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path now accepts a self-intersection-free non-star-shaped closed mesh, including concave domains, with the same cut-cell volume/face sampling and conservative scalar remap. Runtime remeshing and topology changes remain unsupported.",
           "id": "local_non_affine_membrane_coupling",
           "observed_metrics": {
             "local_star_shaped_surface_modes_coupled": 1,
             "local_topology_change_modes_coupled": 0,
-            "locally_conservative_membrane_face_flux_count": 1
+            "locally_conservative_membrane_face_flux_count": 1,
+            "non_star_shaped_closed_mesh_domain_kernel_count": 1
           },
           "remaining_requirements": [
             "Remeshing and topology-change representation.",
@@ -24003,7 +24039,7 @@
         "biological_mesh_registration_allowed": false,
         "generic_watertight_triangle_mesh_numerical_kernel_available": true,
         "mechanics_coupling_allowed": false,
-        "self_intersection_audit_implemented_in_repository": false,
+        "self_intersection_audit_implemented_in_repository": true,
         "topology_audit_available": true
       },
       "limitations": [
@@ -24024,6 +24060,8 @@
         "mechanics_coupled_mesh_count": 0,
         "mesh_artifact_count": 0,
         "registered_biological_mesh_boundary_count": 0,
+        "repository_self_intersection_audited_artifact_count": 0,
+        "repository_self_intersection_free_artifact_count": 0,
         "required_field_count": 31,
         "self_intersection_audited_artifact_count": 0,
         "structurally_ready_mesh_count": 0,
@@ -26734,9 +26772,10 @@
             "the 47-column donor-resolved PHH energy/redox trajectory intake covers all 38 compartment pools while zero absent or unreviewed records initialize state or rates",
             "the 48-column donor-matched receptor/signaling intake covers eight stages across all eight communication pathways while activation, execution and state coupling remain disabled",
             "the 52-column active-protein intake separates total, localized, active, denominator and functional evidence for eight proteins while all automatic conversions and rate coupling remain disabled",
-            "the 41-column PHH mesh intake and closed-triangle topology audit cover eleven structures while microscopy registration, mechanics and runtime activation remain disabled",
+            "the 41-column PHH mesh intake plus repository topology/self-intersection audits cover eleven structures while independent QC, microscopy registration, mechanics and runtime activation remain disabled",
             "the 50-column species-resolved mobility/crowding intake covers 387 stages while all diffusivity, crowding and reaction coupling authority remains zero",
             "the 51-column reaction-transport intake covers 288 stages while L^2/(D*tau) remains an audit scale and all coupling authority remains zero",
+            "self-intersection-audited closed domains and a force/volume-checked pressure-response candidate remain dimensionless while PHH mesh registration and runtime feedback stay zero",
             "external review program scopes four contexts, ten claims and six reviewer roles while biological accuracy, external validation and predictive use remain explicitly unclaimed",
             "six-batch PHH albumin ELISA evidence maps through an exact mature-protein mass operator while five hidden secretory rates remain unidentified",
             "72 batch-resolved PHH CYP SCR/MFR means remain same-format diagnostics while censored records and hidden kinetics fail closed",
@@ -26790,9 +26829,10 @@
             "the 47-column donor-resolved PHH energy/redox trajectory intake covers all 38 compartment pools while zero absent or unreviewed records initialize state or rates",
             "the 48-column donor-matched receptor/signaling intake covers eight stages across all eight communication pathways while activation, execution and state coupling remain disabled",
             "the 52-column active-protein intake separates total, localized, active, denominator and functional evidence for eight proteins while all automatic conversions and rate coupling remain disabled",
-            "the 41-column PHH mesh intake and closed-triangle topology audit cover eleven structures while microscopy registration, mechanics and runtime activation remain disabled",
+            "the 41-column PHH mesh intake plus repository topology/self-intersection audits cover eleven structures while independent QC, microscopy registration, mechanics and runtime activation remain disabled",
             "the 50-column species-resolved mobility/crowding intake covers 387 stages while all diffusivity, crowding and reaction coupling authority remains zero",
             "the 51-column reaction-transport intake covers 288 stages while L^2/(D*tau) remains an audit scale and all coupling authority remains zero",
+            "self-intersection-audited closed domains and a force/volume-checked pressure-response candidate remain dimensionless while PHH mesh registration and runtime feedback stay zero",
             "external review program scopes four contexts, ten claims and six reviewer roles while biological accuracy, external validation and predictive use remain explicitly unclaimed",
             "six-batch PHH albumin ELISA evidence maps through an exact mature-protein mass operator while five hidden secretory rates remain unidentified",
             "72 batch-resolved PHH CYP SCR/MFR means remain same-format diagnostics while censored records and hidden kinetics fail closed",
@@ -41355,11 +41395,11 @@
           "status": "source_backed"
         },
         {
-          "action": "accept only checksum-frozen canonical triangle meshes linked to exact healthy-human donors, imaging context, micrometre coordinates, frozen registration, external self-intersection audit and grid-convergence report; run the repository topology audit without repairing or activating a mesh",
+          "action": "accept only checksum-frozen canonical triangle meshes linked to exact healthy-human donors, imaging context, micrometre coordinates, frozen registration, independent external self-intersection audit and grid-convergence report; run repository topology and self-intersection audits without repairing or activating a mesh",
           "default_snapshot_role": "donor_mesh_registration_and_topology_firewall",
           "drives_scientific_validation": true,
           "id": "phh_3d_mesh_boundary_intake",
-          "limitations": "The 41-column manifest targets eleven cell/organelle boundary classes and currently contains zero records. The repository checks closed two-manifold topology, winding, connectivity and volume but does not detect geometric self-intersections. The generic numerical mesh kernel is not a microscopy-derived PHH boundary and supplies no mechanics.",
+          "limitations": "The 41-column manifest targets eleven cell/organelle boundary classes and currently contains zero records. The repository checks closed two-manifold topology, winding, connectivity, volume and non-adjacent triangle intersections; vertex-adjacent pairs are excluded and the external independent report remains mandatory. The generic numerical mesh kernel is not a microscopy-derived PHH boundary and supplies no mechanics.",
           "source_ids": [],
           "status": "derived"
         },
@@ -42039,11 +42079,11 @@
           "status": "derived"
         },
         {
-          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise renderer-linked rigid moving-boundary projection, reference-space star-shaped membrane residuals, outer-membrane cut-cell geometric conservation, conservative subgrid organelle occupancy, analytic and topology-audited mesh boundaries, fractional face apertures, passive-scalar transport and deterministic dimensionless cargo paths only as numerical kernels; require matched healthy-PHH evidence before biological coupling",
+          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise renderer-linked star-shaped motion, self-intersection-audited closed meshes, concave closed fluid domains, cut-cell geometric conservation, subgrid organelle boundaries, passive scalar transport, deterministic cargo paths and a pressure-traction membrane-response candidate only as numerical kernels; require matched healthy-PHH evidence before biological coupling",
           "default_snapshot_role": "dimensionless_numerics_and_biological_coupling_firewall",
           "drives_scientific_validation": true,
           "id": "cytosol_transport_rheology_contract",
-          "limitations": "The renderer has a smooth local star-shaped membrane boundary with 2x2x2 volume fractions, four face-area samples and a local geometric-conservation source, plus four analytic organelle-boundary shapes and one generic closed-triangle-mesh numerical kernel. The mesh kernel does not detect self-intersections and no microscopy-derived PHH mesh is registered. Thin-boundary interception, a partial-volume conservative unbound scalar kernel and deterministic route progress remain numerical-only. Zero biological species and reactions are coupled, and pressure cannot feed membrane mechanics.",
+          "limitations": "The renderer still uses the smooth star-shaped membrane path. A separate numerical path accepts concave closed meshes after topology and self-intersection checks, and a pressure-response candidate checks action-reaction, work, volume and mesh validity. No microscopy-derived PHH mesh or mechanics is registered; zero biological species and reactions are coupled, and no candidate pressure response is applied to the runtime membrane.",
           "source_ids": [
             "moeendarbary2013_poroelastic_cytoplasm",
             "kwapiszewska2020_cytoplasm_nanoviscosity",

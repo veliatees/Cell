@@ -126,6 +126,9 @@ linked to its dependencies.
 - Topology-audited generic closed-mesh cytosol boundary and 41-field PHH 3D mesh intake: `milestones/120-watertight-mesh-boundary-intake-v1.md`
 - Exact-species, size-resolved intracellular mobility and crowding intake: `milestones/121-species-resolved-intracellular-mobility-intake-v1.md`
 - Reaction-specific transport-limitation and local-coupling evidence gate: `milestones/122-reaction-transport-coupling-gate-v1.md`
+- Repository topology plus non-adjacent triangle self-intersection audit: `milestones/123-repository-mesh-self-intersection-audit-v1.md`
+- Concave, non-star-shaped closed-mesh cytosol-domain kernel: `milestones/124-non-star-shaped-closed-mesh-cytosol-domain-v1.md`
+- Force/work/volume-checked dimensionless pressure-membrane response candidate: `milestones/125-dimensionless-pressure-membrane-response-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

@@ -18,7 +18,10 @@ export type WatertightMeshAudit = {
   topologicallyWatertight: boolean;
   consistentlyOriented: boolean;
   singleConnectedComponent: boolean;
-  selfIntersectionTested: false;
+  selfIntersectionTested: true;
+  selfIntersectingTrianglePairCount: number;
+  selfIntersectionFree: boolean;
+  validClosedBoundary: boolean;
   numericalUnitsOnly: true;
 };
 
@@ -35,7 +38,10 @@ export const WATERTIGHT_MESH_BOUNDARY_CONTRACT = Object.freeze({
   ] as const,
   pointContainmentMethod: "oriented_solid_angle_winding",
   segmentIntersectionMethod: "moller_trumbore_all_triangles",
-  selfIntersectionTested: false,
+  selfIntersectionMethod: "aabb_broadphase_edge_triangle_plus_coplanar_projection",
+  adjacentTrianglePairsExcluded: true,
+  selfIntersectionTested: true,
+  boundaryAcceptanceRequiresNoSelfIntersections: true,
   biologicalMeshRegistered: false,
   biologicalUnitsAssigned: false
 });
@@ -151,6 +157,249 @@ function connectedComponentCount(
   return components;
 }
 
+type TriangleBounds = {
+  triangle: number;
+  indices: readonly [number, number, number];
+  min: MeshPoint3;
+  max: MeshPoint3;
+};
+
+function triangleBounds(
+  vertices: Float64Array,
+  triangles: Uint32Array
+): TriangleBounds[] {
+  const result: TriangleBounds[] = [];
+  for (let triangle = 0; triangle < triangles.length / 3; triangle += 1) {
+    const offset = triangle * 3;
+    const indices = [
+      triangles[offset],
+      triangles[offset + 1],
+      triangles[offset + 2]
+    ] as const;
+    const points = indices.map((index) => vertex(vertices, index));
+    result.push({
+      triangle,
+      indices,
+      min: [
+        Math.min(...points.map((point) => point[0])),
+        Math.min(...points.map((point) => point[1])),
+        Math.min(...points.map((point) => point[2]))
+      ],
+      max: [
+        Math.max(...points.map((point) => point[0])),
+        Math.max(...points.map((point) => point[1])),
+        Math.max(...points.map((point) => point[2]))
+      ]
+    });
+  }
+  return result.sort((first, second) => first.min[0] - second.min[0]);
+}
+
+function boundsOverlap(
+  first: TriangleBounds,
+  second: TriangleBounds,
+  tolerance: number
+): boolean {
+  return (
+    first.min[0] <= second.max[0] + tolerance &&
+    first.max[0] + tolerance >= second.min[0] &&
+    first.min[1] <= second.max[1] + tolerance &&
+    first.max[1] + tolerance >= second.min[1] &&
+    first.min[2] <= second.max[2] + tolerance &&
+    first.max[2] + tolerance >= second.min[2]
+  );
+}
+
+function shareVertex(
+  first: readonly number[],
+  second: readonly number[]
+): boolean {
+  return first.some((index) => second.includes(index));
+}
+
+type Point2 = readonly [number, number];
+
+function orient2d(a: Point2, b: Point2, c: Point2): number {
+  return (
+    (b[0] - a[0]) * (c[1] - a[1]) -
+    (b[1] - a[1]) * (c[0] - a[0])
+  );
+}
+
+function pointOnSegment2d(
+  point: Point2,
+  start: Point2,
+  end: Point2,
+  tolerance: number
+): boolean {
+  return (
+    Math.abs(orient2d(start, end, point)) <= tolerance &&
+    point[0] >= Math.min(start[0], end[0]) - tolerance &&
+    point[0] <= Math.max(start[0], end[0]) + tolerance &&
+    point[1] >= Math.min(start[1], end[1]) - tolerance &&
+    point[1] <= Math.max(start[1], end[1]) + tolerance
+  );
+}
+
+function segmentsIntersect2d(
+  a: Point2,
+  b: Point2,
+  c: Point2,
+  d: Point2,
+  tolerance: number
+): boolean {
+  const abC = orient2d(a, b, c);
+  const abD = orient2d(a, b, d);
+  const cdA = orient2d(c, d, a);
+  const cdB = orient2d(c, d, b);
+  if (
+    ((abC > tolerance && abD < -tolerance) ||
+      (abC < -tolerance && abD > tolerance)) &&
+    ((cdA > tolerance && cdB < -tolerance) ||
+      (cdA < -tolerance && cdB > tolerance))
+  ) {
+    return true;
+  }
+  return (
+    pointOnSegment2d(c, a, b, tolerance) ||
+    pointOnSegment2d(d, a, b, tolerance) ||
+    pointOnSegment2d(a, c, d, tolerance) ||
+    pointOnSegment2d(b, c, d, tolerance)
+  );
+}
+
+function pointInTriangle2d(
+  point: Point2,
+  a: Point2,
+  b: Point2,
+  c: Point2,
+  tolerance: number
+): boolean {
+  const first = orient2d(a, b, point);
+  const second = orient2d(b, c, point);
+  const third = orient2d(c, a, point);
+  const hasNegative = first < -tolerance || second < -tolerance || third < -tolerance;
+  const hasPositive = first > tolerance || second > tolerance || third > tolerance;
+  return !(hasNegative && hasPositive);
+}
+
+function projectPoint(point: MeshPoint3, droppedAxis: number): Point2 {
+  if (droppedAxis === 0) return [point[1], point[2]];
+  if (droppedAxis === 1) return [point[0], point[2]];
+  return [point[0], point[1]];
+}
+
+function trianglesIntersect(
+  first: readonly [MeshPoint3, MeshPoint3, MeshPoint3],
+  second: readonly [MeshPoint3, MeshPoint3, MeshPoint3],
+  tolerance: number
+): boolean {
+  const firstNormal: MeshPoint3 = [
+    (first[1][1] - first[0][1]) * (first[2][2] - first[0][2]) -
+      (first[1][2] - first[0][2]) * (first[2][1] - first[0][1]),
+    (first[1][2] - first[0][2]) * (first[2][0] - first[0][0]) -
+      (first[1][0] - first[0][0]) * (first[2][2] - first[0][2]),
+    (first[1][0] - first[0][0]) * (first[2][1] - first[0][1]) -
+      (first[1][1] - first[0][1]) * (first[2][0] - first[0][0])
+  ];
+  const normalLength = Math.hypot(...firstNormal);
+  const planeDistance = normalLength > EPSILON
+    ? Math.max(...second.map((point) => Math.abs(
+      firstNormal[0] * (point[0] - first[0][0]) +
+      firstNormal[1] * (point[1] - first[0][1]) +
+      firstNormal[2] * (point[2] - first[0][2])
+    ) / normalLength))
+    : Infinity;
+  const secondNormal: MeshPoint3 = [
+    (second[1][1] - second[0][1]) * (second[2][2] - second[0][2]) -
+      (second[1][2] - second[0][2]) * (second[2][1] - second[0][1]),
+    (second[1][2] - second[0][2]) * (second[2][0] - second[0][0]) -
+      (second[1][0] - second[0][0]) * (second[2][2] - second[0][2]),
+    (second[1][0] - second[0][0]) * (second[2][1] - second[0][1]) -
+      (second[1][1] - second[0][1]) * (second[2][0] - second[0][0])
+  ];
+  const normalCross = Math.hypot(
+    firstNormal[1] * secondNormal[2] - firstNormal[2] * secondNormal[1],
+    firstNormal[2] * secondNormal[0] - firstNormal[0] * secondNormal[2],
+    firstNormal[0] * secondNormal[1] - firstNormal[1] * secondNormal[0]
+  );
+  const coplanar = (
+    planeDistance <= tolerance &&
+    normalCross <= Math.max(EPSILON, normalLength * Math.hypot(...secondNormal) * 1e-10)
+  );
+  if (coplanar) {
+    const droppedAxis = Math.abs(firstNormal[0]) >= Math.abs(firstNormal[1])
+      ? (Math.abs(firstNormal[0]) >= Math.abs(firstNormal[2]) ? 0 : 2)
+      : (Math.abs(firstNormal[1]) >= Math.abs(firstNormal[2]) ? 1 : 2);
+    const first2d = first.map((point) => projectPoint(point, droppedAxis));
+    const second2d = second.map((point) => projectPoint(point, droppedAxis));
+    const tolerance2d = Math.max(EPSILON, tolerance * tolerance);
+    for (let firstEdge = 0; firstEdge < 3; firstEdge += 1) {
+      for (let secondEdge = 0; secondEdge < 3; secondEdge += 1) {
+        if (segmentsIntersect2d(
+          first2d[firstEdge],
+          first2d[(firstEdge + 1) % 3],
+          second2d[secondEdge],
+          second2d[(secondEdge + 1) % 3],
+          tolerance2d
+        )) return true;
+      }
+    }
+    return (
+      pointInTriangle2d(first2d[0], second2d[0], second2d[1], second2d[2], tolerance2d) ||
+      pointInTriangle2d(second2d[0], first2d[0], first2d[1], first2d[2], tolerance2d)
+    );
+  }
+
+  for (let edge = 0; edge < 3; edge += 1) {
+    if (segmentTriangleIntersects(
+      first[edge],
+      first[(edge + 1) % 3],
+      second[0],
+      second[1],
+      second[2]
+    )) return true;
+    if (segmentTriangleIntersects(
+      second[edge],
+      second[(edge + 1) % 3],
+      first[0],
+      first[1],
+      first[2]
+    )) return true;
+  }
+  return false;
+}
+
+function countSelfIntersectingTrianglePairs(
+  vertices: Float64Array,
+  triangles: Uint32Array,
+  tolerance: number
+): number {
+  const bounds = triangleBounds(vertices, triangles);
+  let count = 0;
+  for (let firstIndex = 0; firstIndex < bounds.length; firstIndex += 1) {
+    const first = bounds[firstIndex];
+    for (let secondIndex = firstIndex + 1; secondIndex < bounds.length; secondIndex += 1) {
+      const second = bounds[secondIndex];
+      if (second.min[0] > first.max[0] + tolerance) break;
+      if (!boundsOverlap(first, second, tolerance)) continue;
+      if (shareVertex(first.indices, second.indices)) continue;
+      const firstPoints: [MeshPoint3, MeshPoint3, MeshPoint3] = [
+        vertex(vertices, first.indices[0]),
+        vertex(vertices, first.indices[1]),
+        vertex(vertices, first.indices[2])
+      ];
+      const secondPoints: [MeshPoint3, MeshPoint3, MeshPoint3] = [
+        vertex(vertices, second.indices[0]),
+        vertex(vertices, second.indices[1]),
+        vertex(vertices, second.indices[2])
+      ];
+      if (trianglesIntersect(firstPoints, secondPoints, tolerance)) count += 1;
+    }
+  }
+  return count;
+}
+
 export function auditTriangleMesh(
   rawVertices: ArrayLike<number>,
   rawTriangles: ArrayLike<number>
@@ -179,6 +428,7 @@ export function auditTriangleMesh(
   );
   const areaToleranceSquared = Math.max(EPSILON, diagonal ** 4 * 1e-24);
   const volumeTolerance = Math.max(EPSILON, diagonal ** 3 * 1e-12);
+  const intersectionTolerance = Math.max(1e-10, diagonal * 1e-10);
   let degenerateTriangleCount = 0;
   let surfaceArea = 0;
   let signedVolume = 0;
@@ -240,6 +490,12 @@ export function auditTriangleMesh(
     singleConnectedComponent &&
     Math.abs(signedVolume) > volumeTolerance
   );
+  const selfIntersectingTrianglePairCount = countSelfIntersectingTrianglePairs(
+    vertices,
+    triangles,
+    intersectionTolerance
+  );
+  const selfIntersectionFree = selfIntersectingTrianglePairCount === 0;
 
   return {
     vertexCount,
@@ -259,7 +515,10 @@ export function auditTriangleMesh(
     topologicallyWatertight,
     consistentlyOriented,
     singleConnectedComponent,
-    selfIntersectionTested: false,
+    selfIntersectionTested: true,
+    selfIntersectingTrianglePairCount,
+    selfIntersectionFree,
+    validClosedBoundary: topologicallyWatertight && selfIntersectionFree,
     numericalUnitsOnly: true
   };
 }
@@ -379,9 +638,9 @@ export class WatertightTriangleMeshBoundary {
       this.vertices.length / 3
     );
     this.audit = auditTriangleMesh(this.vertices, this.triangles);
-    if (!this.audit.topologicallyWatertight) {
+    if (!this.audit.validClosedBoundary) {
       throw new RangeError(
-        "triangle mesh must be one consistently oriented, closed two-manifold with non-zero volume"
+        "triangle mesh must be one self-intersection-free, consistently oriented, closed two-manifold with non-zero volume"
       );
     }
     this.boundingRadius = this.audit.boundingRadius;
@@ -456,6 +715,16 @@ export class WatertightTriangleMeshBoundary {
       this.containsPoint(end[0], end[1], end[2])
     ) {
       return true;
+    }
+    return this.crossesSurfaceSegment(start, end);
+  }
+
+  crossesSurfaceSegment(start: MeshPoint3, end: MeshPoint3): boolean {
+    if (
+      start.some((value) => !Number.isFinite(value)) ||
+      end.some((value) => !Number.isFinite(value))
+    ) {
+      throw new RangeError("mesh segment query must contain finite coordinates");
     }
     for (let triangle = 0; triangle < this.triangles.length; triangle += 3) {
       const a = vertex(this.vertices, this.triangles[triangle]);

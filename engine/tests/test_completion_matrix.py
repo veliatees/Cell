@@ -51,6 +51,8 @@ def test_organelle_boundaries_report_geometry_adapter_without_mesh_overclaim() -
     assert boundaries["observed_metrics"]["subgrid_boundary_grid_convergence_test_count"] == 1
     assert boundaries["observed_metrics"]["fractional_face_aperture_solver_count"] == 1
     assert boundaries["observed_metrics"]["generic_watertight_mesh_boundary_kernel_count"] == 1
+    assert boundaries["observed_metrics"]["repository_self_intersection_audit_kernel_count"] == 1
+    assert boundaries["observed_metrics"]["repository_self_intersection_audited_mesh_count"] == 0
     assert boundaries["observed_metrics"]["mesh_intake_contract_count"] == 1
     assert boundaries["observed_metrics"]["mesh_target_structure_count"] == 11
     assert boundaries["observed_metrics"]["delivered_mesh_artifact_count"] == 0
@@ -81,6 +83,13 @@ def test_local_membrane_and_generative_data_planes_are_partial_or_blocked() -> N
     assert local["observed_metrics"]["local_star_shaped_surface_modes_coupled"] == 1
     assert local["observed_metrics"]["local_topology_change_modes_coupled"] == 0
     assert local["observed_metrics"]["locally_conservative_membrane_face_flux_count"] == 1
+    assert local["observed_metrics"]["non_star_shaped_closed_mesh_domain_kernel_count"] == 1
+    fsi = entries["fluid_structure_interaction"]
+    assert fsi["status"] == "blocked_missing_evidence"
+    assert fsi["observed_metrics"]["dimensionless_pressure_membrane_response_kernel_count"] == 1
+    assert fsi["observed_metrics"]["force_energy_consistency_test_count"] == 1
+    assert fsi["observed_metrics"]["volume_preserving_fsi_candidate_test_count"] == 1
+    assert fsi["observed_metrics"]["membrane_pressure_feedback_count"] == 0
     donor = entries["donor_state_model"]
     assert donor["status"] == "blocked_missing_evidence"
     assert donor["observed_metrics"]["donor_manifest_intake_contract_count"] == 1

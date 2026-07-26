@@ -63,7 +63,8 @@ export type CytosolProjectionOptions = {
   resolution: number;
   halfExtent: number;
   seed: number;
-  radiusAtDirection: (x: number, y: number, z: number) => number;
+  radiusAtDirection?: (x: number, y: number, z: number) => number;
+  closedDomainBoundary?: () => WatertightTriangleMeshBoundary;
   safetyFraction?: number;
   projectionIterations?: number;
   visualModeCount?: number;
@@ -99,6 +100,7 @@ export type CytosolProjectionDiagnostics = {
   divergenceMaxAfter: number;
   dimensionlessBoundaryPressureRms: number;
   dimensionlessBoundaryReaction: CytosolVector3;
+  closedMeshFluidDomainBoundaryCount: number;
   biologicalUnitsAssigned: false;
   membranePressureFeedbackEnabled: false;
 };
@@ -116,7 +118,7 @@ export type PassiveScalarDomainRemapDiagnostics = {
 };
 
 export const CYTOSOL_NUMERICAL_CONTRACT = Object.freeze({
-  version: "dimensionless_moving_boundary_projection_v7",
+  version: "dimensionless_moving_boundary_projection_v8",
   numericalMethod: "cell_centered_eulerian_cut_cell_projection_with_discrete_geometric_conservation",
   movingObstacleShapes: [
     "sphere",
@@ -127,8 +129,12 @@ export const CYTOSOL_NUMERICAL_CONTRACT = Object.freeze({
   ] as const,
   movingObstacleKinematics: "rigid_translation_plus_quaternion_derived_rotation",
   genericWatertightTriangleMeshBoundaryKernel: true,
+  repositorySelfIntersectionAudit: true,
+  closedMeshFluidDomainBoundaryKernel: true,
+  nonStarShapedClosedMeshDomainSupported: true,
   registeredBiologicalMeshBoundaryCount: 0,
-  meshSelfIntersectionDetection: false,
+  meshSelfIntersectionDetection: true,
+  membraneTopologyChangeSupport: false,
   passiveScalarMethod: "finite_volume_advection_diffusion_with_conservative_moving_domain_remap",
   movingDomainRemap: "face_neighbor_redistribution_with_deterministic_nearest_fluid_fallback",
   outerMembraneTreatment: "star_shaped_2x2x2_volume_fraction_plus_2x2_face_area_quadrature",
@@ -949,6 +955,9 @@ export class CytosolProjectionGrid {
   readonly velocityZ: Float32Array;
 
   private readonly radiusAtDirection: CytosolProjectionOptions["radiusAtDirection"];
+  private readonly closedDomainBoundaryProvider:
+    CytosolProjectionOptions["closedDomainBoundary"];
+  private activeClosedDomainBoundary: WatertightTriangleMeshBoundary | null = null;
   private readonly safetyFraction: number;
   private readonly projectionIterations: number;
   private readonly pressure: Float32Array;
@@ -1003,6 +1012,7 @@ export class CytosolProjectionGrid {
     divergenceMaxAfter: 0,
     dimensionlessBoundaryPressureRms: 0,
     dimensionlessBoundaryReaction: [0, 0, 0],
+    closedMeshFluidDomainBoundaryCount: 0,
     biologicalUnitsAssigned: false,
     membranePressureFeedbackEnabled: false
   };
@@ -1026,11 +1036,21 @@ export class CytosolProjectionGrid {
     if (!Number.isInteger(visualModeCount) || visualModeCount < 0) {
       throw new RangeError("cytosol visual mode count must be non-negative");
     }
+    if (
+      (options.radiusAtDirection === undefined) ===
+      (options.closedDomainBoundary === undefined)
+    ) {
+      throw new RangeError(
+        "cytosol grid requires exactly one radial or closed-mesh domain boundary"
+      );
+    }
 
     this.resolution = options.resolution;
     this.halfExtent = options.halfExtent;
     this.spacing = (2 * options.halfExtent) / options.resolution;
     this.radiusAtDirection = options.radiusAtDirection;
+    this.closedDomainBoundaryProvider = options.closedDomainBoundary;
+    this.activeClosedDomainBoundary = this.resolveClosedDomainBoundary();
     this.safetyFraction = safetyFraction;
     this.projectionIterations = projectionIterations;
     const count = options.resolution ** 3;
@@ -1127,6 +1147,8 @@ export class CytosolProjectionGrid {
       divergenceMaxAfter: after.max,
       dimensionlessBoundaryPressureRms: boundary.pressureRms,
       dimensionlessBoundaryReaction: boundary.reaction,
+      closedMeshFluidDomainBoundaryCount:
+        this.activeClosedDomainBoundary === null ? 0 : 1,
       biologicalUnitsAssigned: false,
       membranePressureFeedbackEnabled: false
     };
@@ -1222,9 +1244,17 @@ export class CytosolProjectionGrid {
     reference: Float32Array
   ): boolean {
     inverseVolumePreservingPoint(x, y, z, deformation, reference);
+    if (this.activeClosedDomainBoundary) {
+      const inverseSafety = 1 / this.safetyFraction;
+      return this.activeClosedDomainBoundary.containsPoint(
+        reference[0] * inverseSafety,
+        reference[1] * inverseSafety,
+        reference[2] * inverseSafety
+      );
+    }
     const length = Math.hypot(reference[0], reference[1], reference[2]);
     if (length <= 1e-12) return true;
-    const radius = this.radiusAtDirection(
+    const radius = this.radiusAtDirection!(
       reference[0] / length,
       reference[1] / length,
       reference[2] / length
@@ -1306,6 +1336,7 @@ export class CytosolProjectionGrid {
     obstacles?: DynamicCytosolObstacleField,
     boundaryDeltaS = 0
   ): void {
+    this.activeClosedDomainBoundary = this.resolveClosedDomainBoundary();
     const point = new Float32Array(3);
     const reference = new Float32Array(3);
     const solidVelocity = new Float32Array(3);
@@ -1425,6 +1456,22 @@ export class CytosolProjectionGrid {
     }
     this.domainInitialized = true;
     this.rebuildFaceApertures(deformation, obstacles);
+  }
+
+  private resolveClosedDomainBoundary(): WatertightTriangleMeshBoundary | null {
+    if (!this.closedDomainBoundaryProvider) return null;
+    const boundary = this.closedDomainBoundaryProvider();
+    if (!(boundary instanceof WatertightTriangleMeshBoundary)) {
+      throw new RangeError(
+        "closed cytosol domain provider must return a validated watertight boundary"
+      );
+    }
+    if (!boundary.audit.validClosedBoundary) {
+      throw new RangeError(
+        "closed cytosol domain boundary must pass topology and self-intersection audits"
+      );
+    }
+    return boundary;
   }
 
   private rebuildFaceApertures(
