@@ -23,6 +23,33 @@ const UNIT_CUBE_MESH = new WatertightTriangleMeshBoundary(
   ]
 );
 
+const CONCAVE_L_PRISM_MESH = new WatertightTriangleMeshBoundary(
+  [
+    -1, -1, -1,
+    1, -1, -1,
+    1, 0, -1,
+    0, 0, -1,
+    0, 1, -1,
+    -1, 1, -1,
+    -1, -1, 1,
+    1, -1, 1,
+    1, 0, 1,
+    0, 0, 1,
+    0, 1, 1,
+    -1, 1, 1
+  ],
+  [
+    0, 3, 1, 0, 5, 3, 1, 3, 2, 3, 5, 4,
+    6, 7, 9, 6, 9, 11, 7, 8, 9, 9, 10, 11,
+    0, 1, 7, 0, 7, 6,
+    1, 2, 8, 1, 8, 7,
+    2, 3, 9, 2, 9, 8,
+    3, 4, 10, 3, 10, 9,
+    4, 5, 11, 4, 11, 10,
+    5, 0, 6, 5, 6, 11
+  ]
+);
+
 describe("dimensionless cytosol numerical kernel", () => {
   it("uses analytic moving sphere, ellipsoid, capsule and box boundaries", () => {
     const field = new DynamicCytosolObstacleField(1);
@@ -91,6 +118,44 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(diagnostics.watertightMeshObstacleCount).toBe(1);
     expect(diagnostics.dimensionlessObstacleVolumeEstimate).toBeGreaterThan(6);
     expect(diagnostics.dimensionlessObstacleVolumeEstimate).toBeLessThan(10);
+  });
+
+  it("rasterizes a concave closed mesh as the outer fluid domain", () => {
+    const grid = new CytosolProjectionGrid({
+      resolution: 32,
+      halfExtent: 1.27,
+      seed: 14,
+      closedDomainBoundary: () => CONCAVE_L_PRISM_MESH,
+      safetyFraction: 1,
+      visualModeCount: 0
+    });
+    grid.step(0, null);
+    const diagnostics = grid.diagnostics();
+
+    expect(CONCAVE_L_PRISM_MESH.containsPoint(-0.5, 0.5, 0)).toBe(true);
+    expect(CONCAVE_L_PRISM_MESH.containsPoint(0.5, 0.5, 0)).toBe(false);
+    expect(diagnostics.closedMeshFluidDomainBoundaryCount).toBe(1);
+    expect(diagnostics.fractionalMembraneCellCount).toBeGreaterThan(0);
+    expect(
+      Math.abs(diagnostics.dimensionlessMembraneVolumeEstimate - 6) / 6
+    ).toBeLessThan(0.04);
+  });
+
+  it("requires exactly one outer-domain representation", () => {
+    expect(() => new CytosolProjectionGrid({
+      resolution: 12,
+      halfExtent: 2,
+      seed: 15,
+      visualModeCount: 0
+    })).toThrow(/exactly one radial or closed-mesh/);
+    expect(() => new CytosolProjectionGrid({
+      resolution: 12,
+      halfExtent: 2,
+      seed: 15,
+      radiusAtDirection: () => 1.5,
+      closedDomainBoundary: () => UNIT_CUBE_MESH,
+      visualModeCount: 0
+    })).toThrow(/exactly one radial or closed-mesh/);
   });
 
   it("derives rigid rotational boundary velocity from quaternion motion", () => {
@@ -555,8 +620,12 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(CYTOSOL_NUMERICAL_CONTRACT.membraneFaceApertureQuadratureSamples).toBe(4);
     expect(CYTOSOL_NUMERICAL_CONTRACT.locallyConservativeMembraneFaceFlux).toBe(true);
     expect(CYTOSOL_NUMERICAL_CONTRACT.genericWatertightTriangleMeshBoundaryKernel).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.repositorySelfIntersectionAudit).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.closedMeshFluidDomainBoundaryKernel).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.nonStarShapedClosedMeshDomainSupported).toBe(true);
     expect(CYTOSOL_NUMERICAL_CONTRACT.registeredBiologicalMeshBoundaryCount).toBe(0);
-    expect(CYTOSOL_NUMERICAL_CONTRACT.meshSelfIntersectionDetection).toBe(false);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.meshSelfIntersectionDetection).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.membraneTopologyChangeSupport).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.quantitativePoroelasticSolver).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.reactionCouplingEnabled).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.membranePressureFeedbackEnabled).toBe(false);

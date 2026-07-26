@@ -1181,6 +1181,8 @@ export type EnginePhh3dMeshBoundaryIntake = {
     mesh_artifact_count: number;
     topologically_watertight_artifact_count: number;
     self_intersection_audited_artifact_count: number;
+    repository_self_intersection_audited_artifact_count: number;
+    repository_self_intersection_free_artifact_count: number;
     grid_convergence_verified_artifact_count: number;
     structurally_ready_mesh_count: number;
     registered_biological_mesh_boundary_count: number;
@@ -1191,7 +1193,7 @@ export type EnginePhh3dMeshBoundaryIntake = {
   gates: {
     generic_watertight_triangle_mesh_numerical_kernel_available: true;
     topology_audit_available: true;
-    self_intersection_audit_implemented_in_repository: false;
+    self_intersection_audit_implemented_in_repository: true;
     biological_mesh_registration_allowed: false;
     mechanics_coupling_allowed: false;
     automatic_runtime_activation: false;
@@ -1551,7 +1553,7 @@ export type EngineReactionEvidenceIntake = {
 };
 
 export type EngineCytosolTransport = {
-  version: "cytosol_transport_rheology_contract_v10";
+  version: "cytosol_transport_rheology_contract_v11";
   status: string;
   material_model: {
     model: "poroelastic_two_phase_cytoplasm";
@@ -1638,6 +1640,10 @@ export type EngineCytosolTransport = {
       local_boundary_angular_bin_count: 512;
       affine_component_removed_before_local_boundary_sampling: true;
       multi_intersection_fold_or_topology_change_support: false;
+      non_star_shaped_closed_mesh_domain_kernel: true;
+      closed_mesh_domain_self_intersection_audit: true;
+      closed_mesh_domain_biological_registration_count: 0;
+      membrane_topology_change_support: false;
       locally_conservative_membrane_face_flux: true;
       outer_membrane_subgrid_volume_samples_per_cell: 8;
       outer_membrane_face_area_samples: 4;
@@ -1658,13 +1664,30 @@ export type EngineCytosolTransport = {
       partial_cell_volume_conservation: true;
       generic_watertight_triangle_mesh_boundary_kernel: true;
       mesh_topology_checks: string[];
-      mesh_self_intersection_detection: false;
+      mesh_self_intersection_detection: true;
       registered_biological_mesh_boundary_count: 0;
       full_watertight_mesh_boundaries: false;
       pressure_reaction_diagnostic_only: true;
       biological_time_or_velocity_claim: false;
       biological_pressure_claim: false;
       membrane_pressure_feedback: false;
+    };
+    dimensionless_pressure_membrane_response_candidate: {
+      enabled: true;
+      role: string;
+      triangle_pressure_traction: true;
+      surface_mean_pressure_shape_mode: true;
+      closed_mesh_volume_correction: true;
+      backtracking_line_search: true;
+      self_intersection_rejection: true;
+      action_reaction_diagnostic: true;
+      pressure_work_diagnostic: true;
+      force_energy_consistency_tested: true;
+      volume_preservation_tested: true;
+      runtime_feedback_enabled: false;
+      biological_pressure_assigned: false;
+      biological_compliance_assigned: false;
+      healthy_phh_mechanics_assigned: false;
     };
     conservative_passive_scalar_kernel: {
       enabled: true;
@@ -1725,6 +1748,11 @@ export type EngineCytosolTransport = {
     locally_conservative_membrane_face_flux_count: number;
     fractional_face_aperture_solver_count: number;
     generic_watertight_mesh_boundary_kernel_count: number;
+    repository_mesh_self_intersection_audit_count: number;
+    non_star_shaped_closed_mesh_domain_kernel_count: number;
+    dimensionless_pressure_membrane_response_kernel_count: number;
+    force_energy_consistency_test_count: number;
+    volume_preserving_fsi_candidate_test_count: number;
     full_watertight_mesh_boundary_count: number;
     compound_boundary_conservation_test_count: number;
     membrane_pressure_feedback_count: number;

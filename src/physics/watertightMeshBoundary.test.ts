@@ -36,7 +36,32 @@ describe("watertight triangle mesh boundary", () => {
     expect(audit.connectedComponentCount).toBe(1);
     expect(audit.surfaceArea).toBeCloseTo(24, 12);
     expect(audit.enclosedVolume).toBeCloseTo(8, 12);
-    expect(audit.selfIntersectionTested).toBe(false);
+    expect(audit.selfIntersectionTested).toBe(true);
+    expect(audit.selfIntersectingTrianglePairCount).toBe(0);
+    expect(audit.selfIntersectionFree).toBe(true);
+    expect(audit.validClosedBoundary).toBe(true);
+  });
+
+  it("detects intersections between non-adjacent triangles", () => {
+    const vertices = [
+      -1, -1, 0,
+      1, -1, 0,
+      0, 1, 0,
+      0, -0.5, -1,
+      0, -0.5, 1,
+      0, 0.5, 0
+    ];
+    const triangles = [
+      0, 1, 2,
+      3, 4, 5,
+      0, 2, 1,
+      3, 5, 4
+    ];
+    const audit = auditTriangleMesh(vertices, triangles);
+    expect(audit.selfIntersectionTested).toBe(true);
+    expect(audit.selfIntersectingTrianglePairCount).toBeGreaterThan(0);
+    expect(audit.selfIntersectionFree).toBe(false);
+    expect(audit.validClosedBoundary).toBe(false);
   });
 
   it("fails closed for an open or inconsistently wound surface", () => {
@@ -73,6 +98,9 @@ describe("watertight triangle mesh boundary", () => {
   it("keeps biological claims disabled in the numerical contract", () => {
     expect(WATERTIGHT_MESH_BOUNDARY_CONTRACT.biologicalMeshRegistered).toBe(false);
     expect(WATERTIGHT_MESH_BOUNDARY_CONTRACT.biologicalUnitsAssigned).toBe(false);
-    expect(WATERTIGHT_MESH_BOUNDARY_CONTRACT.selfIntersectionTested).toBe(false);
+    expect(WATERTIGHT_MESH_BOUNDARY_CONTRACT.selfIntersectionTested).toBe(true);
+    expect(
+      WATERTIGHT_MESH_BOUNDARY_CONTRACT.boundaryAcceptanceRequiresNoSelfIntersections
+    ).toBe(true);
   });
 });

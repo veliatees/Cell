@@ -16,7 +16,7 @@
       "title": "Dimensionless cytosol transport numerics",
       "status": "closed",
       "scope": "Numerical test-bed only; no biological pressure, velocity, time or diffusivity claim.",
-      "current_capability": "A 3D pressure-projection grid, four analytic obstacle shapes, rigid translation/rotation boundary kinematics, conservative subgrid thin-boundary interception and a passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
+      "current_capability": "A 3D pressure-projection grid, four analytic obstacle shapes, topology- and self-intersection-audited closed meshes, non-star-shaped closed fluid domains, rigid boundary kinematics and conservative moving-domain scalar transport are tested. The renderer still uses the star-shaped membrane path.",
       "observed_metrics": {
         "projection_solver_count": 1,
         "conservative_scalar_kernel_count": 1,
@@ -27,7 +27,9 @@
         "compound_boundary_conservation_test_count": 1,
         "subgrid_boundary_treatment_count": 1,
         "subgrid_grid_convergence_test_count": 1,
-        "fractional_face_aperture_solver_count": 1
+        "fractional_face_aperture_solver_count": 1,
+        "repository_mesh_self_intersection_audit_count": 1,
+        "non_star_shaped_closed_mesh_domain_kernel_count": 1
       },
       "remaining_requirements": [],
       "code_surfaces": [
@@ -93,16 +95,20 @@
       "title": "Cytosol-to-membrane fluid-structure feedback",
       "status": "blocked_missing_evidence",
       "scope": "Pressure/traction feedback from the aqueous/poroelastic phase to membrane, cortex and organelles.",
-      "current_capability": "Membrane motion drives the numerical fluid map; uncalibrated pressure cannot push the membrane.",
+      "current_capability": "A dimensionless closed-mesh pressure-traction candidate kernel now checks action-reaction balance, pressure work, volume preservation, line-search stability and self-intersection rejection. It cannot apply its candidate to the runtime membrane.",
       "observed_metrics": {
+        "dimensionless_pressure_membrane_response_kernel_count": 1,
+        "force_energy_consistency_test_count": 1,
+        "volume_preserving_fsi_candidate_test_count": 1,
         "membrane_pressure_feedback_count": 0
       },
       "remaining_requirements": [
         "PHH membrane/cortex mechanics and hydraulic boundary data.",
-        "A coupled stable discretization with force/energy consistency tests.",
+        "Runtime coupling of a calibrated pressure field to membrane, cortex and organelles.",
         "Matched deformation and relaxation validation."
       ],
       "code_surfaces": [
+        "src/physics/dimensionlessFsi.ts",
         "src/physics/intracellularFluid.ts",
         "src/physics/cytosolNumerics.ts"
       ]
@@ -112,7 +118,7 @@
       "title": "Organelle-resolved fluid boundaries",
       "status": "partial",
       "scope": "Impermeable moving organelle surfaces in the numerical cytosol domain.",
-      "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. A generic consistently-wound closed triangle-mesh kernel now supplies topology-audited containment and face interception, but no microscopy-derived PHH mesh is registered. Thin ER/canalicular/Golgi structures retain deterministic subgrid occupancy and fractional face flux.",
+      "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Generic closed meshes now require both two-manifold topology and repository self-intersection audits before containment or face interception, but no microscopy-derived PHH mesh is registered. Thin ER/canalicular/Golgi structures retain deterministic subgrid occupancy and fractional face flux.",
       "observed_metrics": {
         "analytic_obstacle_layer_count": 1,
         "analytic_obstacle_shape_count": 4,
@@ -129,6 +135,9 @@
         "delivered_mesh_artifact_count": 0,
         "topologically_watertight_delivered_mesh_count": 0,
         "self_intersection_audited_mesh_count": 0,
+        "repository_self_intersection_audit_kernel_count": 1,
+        "repository_self_intersection_audited_mesh_count": 0,
+        "repository_self_intersection_free_mesh_count": 0,
         "full_watertight_mesh_boundary_count": 0
       },
       "remaining_requirements": [
@@ -148,11 +157,12 @@
       "title": "Local non-affine membrane-to-fluid coupling",
       "status": "partial",
       "scope": "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
-      "current_capability": "The fluid grid follows the global volume-preserving affine map and a dynamically rasterized reference-space residual from the current membrane mesh. Outer-membrane cut cells now carry 2x2x2 volume fractions, 2x2 face apertures and a local geometric-conservation source in the pressure projection; passive scalar mass is conservatively remapped as those fractions move. The affine component is removed before sampling, so contact deformation is not counted twice. Multi-intersection folds and topology changes remain unsupported.",
+      "current_capability": "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path now accepts a self-intersection-free non-star-shaped closed mesh, including concave domains, with the same cut-cell volume/face sampling and conservative scalar remap. Runtime remeshing and topology changes remain unsupported.",
       "observed_metrics": {
         "local_star_shaped_surface_modes_coupled": 1,
         "local_topology_change_modes_coupled": 0,
-        "locally_conservative_membrane_face_flux_count": 1
+        "locally_conservative_membrane_face_flux_count": 1,
+        "non_star_shaped_closed_mesh_domain_kernel_count": 1
       },
       "remaining_requirements": [
         "Remeshing and topology-change representation.",

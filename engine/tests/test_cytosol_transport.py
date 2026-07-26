@@ -41,6 +41,11 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert summary["locally_conservative_membrane_face_flux_count"] == 1
     assert summary["fractional_face_aperture_solver_count"] == 1
     assert summary["generic_watertight_mesh_boundary_kernel_count"] == 1
+    assert summary["repository_mesh_self_intersection_audit_count"] == 1
+    assert summary["non_star_shaped_closed_mesh_domain_kernel_count"] == 1
+    assert summary["dimensionless_pressure_membrane_response_kernel_count"] == 1
+    assert summary["force_energy_consistency_test_count"] == 1
+    assert summary["volume_preserving_fsi_candidate_test_count"] == 1
     assert summary["full_watertight_mesh_boundary_count"] == 0
     assert summary["compound_boundary_conservation_test_count"] == 1
     assert summary["membrane_pressure_feedback_count"] == 0
@@ -74,7 +79,11 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert renderer["fractional_face_aperture_pressure_weighting"] is True
     assert renderer["partial_cell_volume_conservation"] is True
     assert renderer["generic_watertight_triangle_mesh_boundary_kernel"] is True
-    assert renderer["mesh_self_intersection_detection"] is False
+    assert renderer["mesh_self_intersection_detection"] is True
+    assert renderer["non_star_shaped_closed_mesh_domain_kernel"] is True
+    assert renderer["closed_mesh_domain_self_intersection_audit"] is True
+    assert renderer["closed_mesh_domain_biological_registration_count"] == 0
+    assert renderer["membrane_topology_change_support"] is False
     assert renderer["registered_biological_mesh_boundary_count"] == 0
     assert renderer["full_watertight_mesh_boundaries"] is False
     assert renderer["local_star_shaped_membrane_boundary_coupling"] is True
@@ -93,6 +102,14 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert active["healthy_phh_route_bound_count"] == 0
     assert active["delivered_phh_route_count"] == 0
     assert active["quantitatively_authorized_phh_route_count"] == 0
+    fsi = snapshot["solver_layers"]["dimensionless_pressure_membrane_response_candidate"]
+    assert fsi["enabled"] is True
+    assert fsi["force_energy_consistency_tested"] is True
+    assert fsi["volume_preservation_tested"] is True
+    assert fsi["self_intersection_rejection"] is True
+    assert fsi["runtime_feedback_enabled"] is False
+    assert fsi["biological_pressure_assigned"] is False
+    assert fsi["biological_compliance_assigned"] is False
 
 
 @pytest.mark.parametrize(
@@ -101,6 +118,7 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
         (("renderer_dimensionless_projection_grid", "biological_pressure_claim"), True),
         (("renderer_dimensionless_projection_grid", "membrane_pressure_feedback"), True),
         (("renderer_dimensionless_projection_grid", "full_watertight_mesh_boundaries"), True),
+        (("dimensionless_pressure_membrane_response_candidate", "runtime_feedback_enabled"), True),
         (("conservative_passive_scalar_kernel", "biological_species_bound_count"), 1),
         (("dimensionless_active_cargo_route_kernel", "biological_velocity_claim"), True),
     ),
