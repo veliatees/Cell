@@ -99,6 +99,15 @@ from cell_engine.quantitative.reaction_evidence_intake import (
 from cell_engine.quantitative.receptor_signaling_trajectory import (
     receptor_signaling_trajectory_snapshot,
 )
+from cell_engine.quantitative.phh_3d_mesh_boundary import (
+    phh_3d_mesh_boundary_intake_snapshot,
+)
+from cell_engine.quantitative.intracellular_mobility import (
+    intracellular_mobility_intake_snapshot,
+)
+from cell_engine.quantitative.reaction_transport_coupling import (
+    reaction_transport_coupling_intake_snapshot,
+)
 from cell_engine.stochastic.integrated_cell import (
     INTEGRATED_VOLUME_L,
     build_integrated_hepatocyte_network,
@@ -385,6 +394,61 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid active-protein localization intake: {exc}")
+
+    try:
+        mesh_intake = phh_3d_mesh_boundary_intake_snapshot()
+        mesh_summary = mesh_intake["summary"]
+        if (
+            mesh_summary["target_structure_count"] != 11
+            or mesh_summary["manifest_record_count"] != 0
+            or mesh_summary["registered_biological_mesh_boundary_count"] != 0
+            or mesh_summary["mechanics_coupled_mesh_count"] != 0
+            or mesh_intake["gates"]["biological_mesh_registration_allowed"] is not False
+        ):
+            raise ValueError("PHH mesh intake exceeded current authority")
+        checks.append(
+            "the 41-column PHH mesh intake and closed-triangle topology audit cover eleven structures while microscopy registration, mechanics and runtime activation remain disabled"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid PHH 3D mesh-boundary intake: {exc}")
+
+    try:
+        mobility_intake = intracellular_mobility_intake_snapshot()
+        mobility_summary = mobility_intake["summary"]
+        if (
+            mobility_summary["target_species_count"] != 43
+            or mobility_summary["required_stage_slot_count"] != 387
+            or mobility_summary["record_count"] != 0
+            or mobility_summary["apparent_diffusivity_authorized_species_count"] != 0
+            or mobility_summary["crowding_law_authorized_species_count"] != 0
+            or mobility_summary["reaction_coupled_species_count"] != 0
+            or mobility_summary["global_viscosity_multiplier_count"] != 0
+        ):
+            raise ValueError("intracellular mobility intake exceeded current authority")
+        checks.append(
+            "the 50-column species-resolved mobility/crowding intake covers 387 stages while all diffusivity, crowding and reaction coupling authority remains zero"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid intracellular mobility intake: {exc}")
+
+    try:
+        transport_intake = reaction_transport_coupling_intake_snapshot()
+        transport_summary = transport_intake["summary"]
+        if (
+            transport_summary["target_reaction_count"] != 36
+            or transport_summary["required_stage_slot_count"] != 288
+            or transport_summary["record_count"] != 0
+            or transport_summary["local_concentration_coupled_reaction_count"] != 0
+            or transport_summary["direct_rate_corrected_reaction_count"] != 0
+            or transport_summary["runtime_activated_reaction_count"] != 0
+            or transport_summary["global_fluid_multiplier_count"] != 0
+        ):
+            raise ValueError("reaction transport intake exceeded current authority")
+        checks.append(
+            "the 51-column reaction-transport intake covers 288 stages while L^2/(D*tau) remains an audit scale and all coupling authority remains zero"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid reaction transport-coupling intake: {exc}")
 
     try:
         external_validation_program = build_external_validation_program()

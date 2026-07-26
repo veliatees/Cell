@@ -19,7 +19,7 @@ from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_VOLUME_UM3
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "cytosol_transport_rheology_contract_v9"
+VERSION = "cytosol_transport_rheology_contract_v10"
 
 RENDERER_GEOMETRY_BOUNDARY_CLASSES: tuple[str, ...] = (
     "nuclear_envelope",
@@ -480,6 +480,18 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "fractional_face_aperture_flux_weighting": True,
                 "fractional_face_aperture_pressure_weighting": True,
                 "partial_cell_volume_conservation": True,
+                "generic_watertight_triangle_mesh_boundary_kernel": True,
+                "mesh_topology_checks": (
+                    "finite_vertices",
+                    "valid_triangle_indices",
+                    "nondegenerate_triangles",
+                    "two_incident_faces_per_edge",
+                    "opposite_half_edge_winding",
+                    "single_connected_component",
+                    "nonzero_enclosed_volume",
+                ),
+                "mesh_self_intersection_detection": False,
+                "registered_biological_mesh_boundary_count": 0,
                 "full_watertight_mesh_boundaries": False,
                 "pressure_reaction_diagnostic_only": True,
                 "biological_time_or_velocity_claim": False,
@@ -489,7 +501,7 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "conservative_passive_scalar_kernel": {
                 "enabled": True,
                 "role": "fixed- and moving-domain mass-conservation and non-negativity test bed",
-                "boundary_condition": "no flux through analytic solid faces",
+                "boundary_condition": "no flux through analytic or topology-validated numerical mesh faces",
                 "moving_domain_remap": "deterministic face-neighbour redistribution with nearest-fluid fallback",
                 "moving_domain_mass_conservation_tested": True,
                 "fractional_face_aperture_flux_weighting": True,
@@ -563,6 +575,7 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "local_membrane_topology_change_coupling_count": 0,
             "locally_conservative_membrane_face_flux_count": 1,
             "fractional_face_aperture_solver_count": 1,
+            "generic_watertight_mesh_boundary_kernel_count": 1,
             "full_watertight_mesh_boundary_count": 0,
             "compound_boundary_conservation_test_count": 1,
             "membrane_pressure_feedback_count": 0,
@@ -656,6 +669,12 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("conservative subgrid thin-boundary contract changed")
     if projection.get("full_watertight_mesh_boundaries") is not False:
         raise ValueError("analytic renderer boundaries were mislabelled as watertight meshes")
+    if (
+        projection.get("generic_watertight_triangle_mesh_boundary_kernel") is not True
+        or projection.get("mesh_self_intersection_detection") is not False
+        or projection.get("registered_biological_mesh_boundary_count") != 0
+    ):
+        raise ValueError("generic mesh boundary escaped its numerical-only scope")
     if not isinstance(scalar, dict) or scalar.get("enabled") is not True:
         raise ValueError("conservative passive-scalar kernel is missing")
     if scalar.get("biological_species_bound_count") != 0:

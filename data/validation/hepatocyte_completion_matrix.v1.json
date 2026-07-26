@@ -112,7 +112,7 @@
       "title": "Organelle-resolved fluid boundaries",
       "status": "partial",
       "scope": "Impermeable moving organelle surfaces in the numerical cytosol domain.",
-      "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Thin ER/canalicular/Golgi structures use deterministic 2x2x2 volume occupancy plus four analytic face-channel intersections; pressure and passive-scalar fluxes use the resulting fractional apertures while partial-cell scalar mass remains conservative. These assemblies are still not watertight biological meshes.",
+      "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. A generic consistently-wound closed triangle-mesh kernel now supplies topology-audited containment and face interception, but no microscopy-derived PHH mesh is registered. Thin ER/canalicular/Golgi structures retain deterministic subgrid occupancy and fractional face flux.",
       "observed_metrics": {
         "analytic_obstacle_layer_count": 1,
         "analytic_obstacle_shape_count": 4,
@@ -123,6 +123,12 @@
         "conservative_subgrid_boundary_treatment_count": 1,
         "subgrid_boundary_grid_convergence_test_count": 1,
         "fractional_face_aperture_solver_count": 1,
+        "generic_watertight_mesh_boundary_kernel_count": 1,
+        "mesh_intake_contract_count": 1,
+        "mesh_target_structure_count": 11,
+        "delivered_mesh_artifact_count": 0,
+        "topologically_watertight_delivered_mesh_count": 0,
+        "self_intersection_audited_mesh_count": 0,
         "full_watertight_mesh_boundary_count": 0
       },
       "remaining_requirements": [
@@ -130,8 +136,11 @@
         "Grid-convergence validation against those registered surface meshes."
       ],
       "code_surfaces": [
+        "src/physics/watertightMeshBoundary.ts",
         "src/physics/cytosolNumerics.ts",
-        "src/physics/intracellularFluid.ts"
+        "src/physics/intracellularFluid.ts",
+        "engine/cell_engine/quantitative/phh_3d_mesh_boundary.py",
+        "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json"
       ]
     },
     {
@@ -174,10 +183,19 @@
       "title": "Reaction-specific advection/diffusion coupling",
       "status": "blocked_missing_evidence",
       "scope": "Local concentration fields may influence one reaction only after its own transport gate passes.",
-      "current_capability": "The conservative scalar kernel exists, but no biological species or reaction is attached.",
+      "current_capability": "The conservative scalar kernel exists. A strict 35-required plus 16-conditional-field intake now audits matched species mobility, geometry, reaction timescale, transport perturbation, a dimensionally explicit L^2/(D*tau_reaction) scale, equation fingerprints and held-out validation across all 36 reactions; no biological species or reaction is attached.",
       "observed_metrics": {
         "biological_species_bound_count": 0,
-        "transport_coupled_reaction_count": 0
+        "transport_coupled_reaction_count": 0,
+        "transport_coupling_intake_contract_count": 1,
+        "transport_coupling_target_reaction_count": 36,
+        "transport_coupling_required_stage_slot_count": 288,
+        "transport_coupling_record_count": 0,
+        "transport_limitation_demonstrated_reaction_count": 0,
+        "structurally_complete_transport_coupling_reaction_count": 0,
+        "local_concentration_coupled_reaction_count": 0,
+        "direct_rate_corrected_reaction_count": 0,
+        "global_fluid_multiplier_count": 0
       },
       "remaining_requirements": [
         "Species-specific PHH apparent diffusivity and compartment field.",
@@ -186,7 +204,9 @@
       ],
       "code_surfaces": [
         "engine/cell_engine/quantitative/cytosol_transport.py",
-        "engine/cell_engine/validation/reaction_evidence_atlas.py"
+        "engine/cell_engine/quantitative/reaction_transport_coupling.py",
+        "engine/cell_engine/validation/reaction_evidence_atlas.py",
+        "data/evidence_intake/phh_reaction_transport_coupling_contract.v1.json"
       ]
     },
     {
@@ -194,9 +214,17 @@
       "title": "Molecule-scale crowding and channeling",
       "status": "blocked_missing_evidence",
       "scope": "Size-dependent diffusion, binding, steric exclusion and local substrate channeling.",
-      "current_capability": "Crowder/protein points are visual; a prohibited global viscosity or crowding multiplier is not applied.",
+      "current_capability": "Crowder/protein points are visual. A 43-species, nine-stage donor-resolved mobility intake now separates molecular form, compartment, probe scale, raw dynamics, local abundance, binding, perturbation and held-out evidence; a prohibited global viscosity or crowding multiplier is not applied.",
       "observed_metrics": {
-        "quantitatively_bound_crowding_laws": 0
+        "mobility_intake_contract_count": 1,
+        "target_species_count": 43,
+        "required_mobility_stage_slot_count": 387,
+        "delivered_mobility_record_count": 0,
+        "structurally_complete_mobility_species_count": 0,
+        "size_resolved_crowding_chain_count": 0,
+        "apparent_diffusivity_authorized_species_count": 0,
+        "quantitatively_bound_crowding_laws": 0,
+        "global_viscosity_multiplier_count": 0
       },
       "remaining_requirements": [
         "Species-size-resolved PHH mobility data.",
@@ -205,6 +233,8 @@
       ],
       "code_surfaces": [
         "engine/cell_engine/quantitative/cytosol_transport.py",
+        "engine/cell_engine/quantitative/intracellular_mobility.py",
+        "data/evidence_intake/phh_intracellular_mobility_contract.v1.json",
         "src/physics/intracellularFluid.ts"
       ]
     },
@@ -525,9 +555,14 @@
       "title": "Donor-resolved 3D morphology and mechanics",
       "status": "partial",
       "scope": "In-situ hepatocyte surface, organelle distribution, cortex, adhesion and membrane mechanics.",
-      "current_capability": "Human aggregate 3D volume and verified proxy geometry exist; no donor mesh or matched PHH mechanical parameter set exists.",
+      "current_capability": "Human aggregate 3D volume and verified proxy geometry exist. A checksum-frozen donor mesh manifest plus canonical triangle topology audit now exists, while external self-intersection, registration, contact-interface and grid-convergence evidence remain mandatory. No donor mesh or matched PHH mechanical parameter set is registered.",
       "observed_metrics": {
+        "mesh_intake_contract_count": 1,
+        "mesh_target_structure_count": 11,
+        "delivered_mesh_artifact_count": 0,
+        "structurally_ready_mesh_count": 0,
         "donor_resolved_in_situ_mesh_count": 0,
+        "contact_ground_truth_mesh_count": 0,
         "matched_phh_mechanical_parameter_sets": 0
       },
       "remaining_requirements": [
@@ -537,7 +572,9 @@
       ],
       "code_surfaces": [
         "engine/cell_engine/validation/physical_validation.py",
-        "engine/cell_engine/quantitative/human_hepatocyte_3d_morphometry.py"
+        "engine/cell_engine/quantitative/human_hepatocyte_3d_morphometry.py",
+        "engine/cell_engine/quantitative/phh_3d_mesh_boundary.py",
+        "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json"
       ]
     },
     {
