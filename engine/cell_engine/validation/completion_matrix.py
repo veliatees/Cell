@@ -89,7 +89,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Dimensionless cytosol transport numerics",
             "closed",
             "Numerical test-bed only; no biological pressure, velocity, time or diffusivity claim.",
-            "A 3D pressure-projection grid, four analytic obstacle shapes, rigid translation/rotation boundary kinematics and a conservative passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
+            "A 3D pressure-projection grid, four analytic obstacle shapes, rigid translation/rotation boundary kinematics, conservative subgrid thin-boundary interception and a passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
             {
                 "projection_solver_count": cytosol_summary["dimensionless_projection_solver_count"],
                 "conservative_scalar_kernel_count": cytosol_summary["conservative_passive_scalar_kernel_count"],
@@ -98,6 +98,12 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "analytic_obstacle_shape_count": cytosol_summary["analytic_obstacle_shape_count"],
                 "rigid_body_boundary_kinematics_count": cytosol_summary["rigid_body_boundary_kinematics_count"],
                 "compound_boundary_conservation_test_count": cytosol_summary["compound_boundary_conservation_test_count"],
+                "subgrid_boundary_treatment_count": cytosol_summary[
+                    "conservative_subgrid_boundary_treatment_count"
+                ],
+                "subgrid_grid_convergence_test_count": cytosol_summary[
+                    "subgrid_boundary_grid_convergence_test_count"
+                ],
             },
             (),
             ("src/physics/cytosolNumerics.ts", "src/physics/intracellularFluid.ts"),
@@ -165,7 +171,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Organelle-resolved fluid boundaries",
             "partial",
             "Impermeable moving organelle surfaces in the numerical cytosol domain.",
-            "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies now represent ten boundary classes. Nucleus and Golgi transforms plus organelle populations are refreshed during motion, and rigid rotation contributes surface velocity; these assemblies are not watertight biological meshes.",
+            "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Thin ER/canalicular/Golgi structures use deterministic 2x2x2 subgrid occupancy plus a conservative intersection fallback, with grid-refinement tests; these assemblies are still not watertight biological meshes.",
             {
                 "analytic_obstacle_layer_count": cytosol_summary["moving_analytic_obstacle_layer_count"],
                 "analytic_obstacle_shape_count": cytosol_summary["analytic_obstacle_shape_count"],
@@ -173,11 +179,20 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "renderer_geometry_boundary_class_count": cytosol_summary["renderer_geometry_boundary_class_count"],
                 "rigid_body_boundary_kinematics_count": cytosol_summary["rigid_body_boundary_kinematics_count"],
                 "compound_boundary_conservation_test_count": cytosol_summary["compound_boundary_conservation_test_count"],
+                "conservative_subgrid_boundary_treatment_count": cytosol_summary[
+                    "conservative_subgrid_boundary_treatment_count"
+                ],
+                "subgrid_boundary_grid_convergence_test_count": cytosol_summary[
+                    "subgrid_boundary_grid_convergence_test_count"
+                ],
+                "fractional_face_aperture_solver_count": cytosol_summary[
+                    "fractional_face_aperture_solver_count"
+                ],
                 "full_watertight_mesh_boundary_count": cytosol_summary["full_watertight_mesh_boundary_count"],
             },
             (
                 "Watertight donor- or microscopy-derived organelle meshes.",
-                "Cut-cell or immersed-boundary treatment for sub-grid ER/Golgi membranes.",
+                "Fractional face-aperture/cut-cell flux weighting beyond conservative binary interception.",
                 "Grid-convergence validation against those registered surface meshes.",
             ),
             ("src/physics/cytosolNumerics.ts", "src/physics/intracellularFluid.ts"),
@@ -252,14 +267,25 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Executable active intracellular transport",
             "blocked_missing_evidence",
             "Microtubule motors, actomyosin, vesicle routing and organelle-driven active mixing in healthy PHH.",
-            "Cross-context vesicle-motion observations are retained as references; no PHH numerical kernel or rate is active.",
-            {"healthy_phh_active_transport_kernels": 0},
+            "Passive aqueous tracers and directed cargo are now separate at runtime. A deterministic dimensionless path-progress kernel renders track cargo without per-frame random walks, while every PHH motor velocity, dwell, reversal, route and state-coupling parameter remains absent.",
+            {
+                "dimensionless_renderer_route_kernels": cytosol_summary[
+                    "dimensionless_active_cargo_route_kernel_count"
+                ],
+                "healthy_phh_active_transport_kernels": cytosol_summary[
+                    "healthy_phh_active_transport_kernel_count"
+                ],
+            },
             (
                 "Cargo- and route-resolved PHH trajectories.",
                 "Motor occupancy, ATP dependence, pause/reversal and fusion/fission statistics.",
                 "Independent route-level validation.",
             ),
-            ("engine/cell_engine/quantitative/cytosol_transport.py",),
+            (
+                "engine/cell_engine/quantitative/cytosol_transport.py",
+                "src/physics/transportModes.ts",
+                "src/main.ts",
+            ),
         ),
         _entry(
             "cytosol_experimental_validation",
@@ -405,18 +431,41 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Persistent cellular-memory laws",
             "partial",
             "Epigenetic, long-lived-protein, organelle-quality and metabolic-adaptation substrates.",
-            "Twelve physical substrate contracts and a provenance-preserving event log exist; events cannot silently become memory.",
+            "Twelve physical substrate contracts, a provenance-preserving event log and a 34-column donor trajectory intake now exist. The intake requires matched write, verified washout persistence, first response and rechallenge response phases and never creates a trace or response law automatically.",
             {
                 "substrate_contract_count": memory["substrate_contract_count"],
                 "required_persistence_test_count": memory["required_persistence_test_count"],
                 "quantitatively_coupled_substrate_count": memory["quantitatively_coupled_substrate_count"],
+                "trajectory_contract_column_count": memory[
+                    "trajectory_contract_column_count"
+                ],
+                "write_persist_rechallenge_gate_count": memory[
+                    "write_persist_rechallenge_gate_count"
+                ],
+                "donor_split_leakage_guard_count": memory[
+                    "donor_split_leakage_guard_count"
+                ],
+                "complete_donor_trajectory_record_count": memory[
+                    "complete_donor_trajectory_record_count"
+                ],
+                "structurally_complete_candidate_count": memory[
+                    "structurally_complete_candidate_count"
+                ],
+                "quantitatively_authorized_memory_law_count": memory[
+                    "quantitatively_authorized_memory_law_count"
+                ],
             },
             (
                 "Trigger-write-decay persistence trajectories in matched PHH context.",
                 "Readout laws showing how each retained substrate changes a future response.",
                 "Inheritance and reversibility evidence where applicable.",
             ),
-            ("engine/cell_engine/processes/cellular_memory.py", "engine/cell_engine/core/history.py"),
+            (
+                "engine/cell_engine/processes/cellular_memory.py",
+                "engine/cell_engine/core/history.py",
+                "engine/cell_engine/quantitative/cellular_memory_trajectory.py",
+                "data/evidence_intake/phh_cellular_memory_trajectory_contract.v1.json",
+            ),
         ),
         _entry(
             "damage_fate_recovery_calibration",
@@ -656,6 +705,20 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         raise ValueError("reaction evidence was promoted without review")
     if by_id["healthy_phh_cytosol_parameters"]["observed_metrics"]["filled_parameter_count"] != 0:
         raise ValueError("healthy-PHH cytosol parameters were promoted without review")
+    cytosol_metrics = by_id["dimensionless_cytosol_numerics"]["observed_metrics"]
+    if (
+        cytosol_metrics["subgrid_boundary_treatment_count"] != 1
+        or cytosol_metrics["subgrid_grid_convergence_test_count"] != 1
+    ):
+        raise ValueError("dimensionless thin-boundary numerics contract changed")
+    active_transport_metrics = by_id["active_intracellular_transport_model"][
+        "observed_metrics"
+    ]
+    if (
+        active_transport_metrics["dimensionless_renderer_route_kernels"] != 1
+        or active_transport_metrics["healthy_phh_active_transport_kernels"] != 0
+    ):
+        raise ValueError("dimensionless cargo renderer escaped into PHH transport")
     if by_id["hepatocyte_quantity_harvest"]["observed_metrics"][
         "healthy_phh_runtime_parameter_count"
     ] != 0:
@@ -687,6 +750,15 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         raise ValueError("PHH injury data-plane engineering guards changed")
     if by_id["hepatocyte_fba_execution"]["observed_metrics"]["enabled_execution_gate_count"] != 0:
         raise ValueError("FBA execution escaped its scientific gate")
+    memory_metrics = by_id["cellular_memory_laws"]["observed_metrics"]
+    if (
+        memory_metrics["trajectory_contract_column_count"] != 34
+        or memory_metrics["write_persist_rechallenge_gate_count"] != 1
+        or memory_metrics["donor_split_leakage_guard_count"] != 1
+        or memory_metrics["complete_donor_trajectory_record_count"] != 0
+        or memory_metrics["quantitatively_authorized_memory_law_count"] != 0
+    ):
+        raise ValueError("cellular-memory evidence gate changed or activated without data")
     visual_metrics = by_id["visual_regression_automation"]["observed_metrics"]
     if (
         visual_metrics["automated_visual_regression_suites"] != 1

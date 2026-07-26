@@ -16,7 +16,7 @@
       "title": "Dimensionless cytosol transport numerics",
       "status": "closed",
       "scope": "Numerical test-bed only; no biological pressure, velocity, time or diffusivity claim.",
-      "current_capability": "A 3D pressure-projection grid, four analytic obstacle shapes, rigid translation/rotation boundary kinematics and a conservative passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
+      "current_capability": "A 3D pressure-projection grid, four analytic obstacle shapes, rigid translation/rotation boundary kinematics, conservative subgrid thin-boundary interception and a passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
       "observed_metrics": {
         "projection_solver_count": 1,
         "conservative_scalar_kernel_count": 1,
@@ -24,7 +24,9 @@
         "moving_analytic_obstacle_layer_count": 1,
         "analytic_obstacle_shape_count": 4,
         "rigid_body_boundary_kinematics_count": 1,
-        "compound_boundary_conservation_test_count": 1
+        "compound_boundary_conservation_test_count": 1,
+        "subgrid_boundary_treatment_count": 1,
+        "subgrid_grid_convergence_test_count": 1
       },
       "remaining_requirements": [],
       "code_surfaces": [
@@ -109,7 +111,7 @@
       "title": "Organelle-resolved fluid boundaries",
       "status": "partial",
       "scope": "Impermeable moving organelle surfaces in the numerical cytosol domain.",
-      "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies now represent ten boundary classes. Nucleus and Golgi transforms plus organelle populations are refreshed during motion, and rigid rotation contributes surface velocity; these assemblies are not watertight biological meshes.",
+      "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Thin ER/canalicular/Golgi structures use deterministic 2x2x2 subgrid occupancy plus a conservative intersection fallback, with grid-refinement tests; these assemblies are still not watertight biological meshes.",
       "observed_metrics": {
         "analytic_obstacle_layer_count": 1,
         "analytic_obstacle_shape_count": 4,
@@ -117,11 +119,14 @@
         "renderer_geometry_boundary_class_count": 10,
         "rigid_body_boundary_kinematics_count": 1,
         "compound_boundary_conservation_test_count": 1,
+        "conservative_subgrid_boundary_treatment_count": 1,
+        "subgrid_boundary_grid_convergence_test_count": 1,
+        "fractional_face_aperture_solver_count": 0,
         "full_watertight_mesh_boundary_count": 0
       },
       "remaining_requirements": [
         "Watertight donor- or microscopy-derived organelle meshes.",
-        "Cut-cell or immersed-boundary treatment for sub-grid ER/Golgi membranes.",
+        "Fractional face-aperture/cut-cell flux weighting beyond conservative binary interception.",
         "Grid-convergence validation against those registered surface meshes."
       ],
       "code_surfaces": [
@@ -220,8 +225,9 @@
       "title": "Executable active intracellular transport",
       "status": "blocked_missing_evidence",
       "scope": "Microtubule motors, actomyosin, vesicle routing and organelle-driven active mixing in healthy PHH.",
-      "current_capability": "Cross-context vesicle-motion observations are retained as references; no PHH numerical kernel or rate is active.",
+      "current_capability": "Passive aqueous tracers and directed cargo are now separate at runtime. A deterministic dimensionless path-progress kernel renders track cargo without per-frame random walks, while every PHH motor velocity, dwell, reversal, route and state-coupling parameter remains absent.",
       "observed_metrics": {
+        "dimensionless_renderer_route_kernels": 1,
         "healthy_phh_active_transport_kernels": 0
       },
       "remaining_requirements": [
@@ -230,7 +236,9 @@
         "Independent route-level validation."
       ],
       "code_surfaces": [
-        "engine/cell_engine/quantitative/cytosol_transport.py"
+        "engine/cell_engine/quantitative/cytosol_transport.py",
+        "src/physics/transportModes.ts",
+        "src/main.ts"
       ]
     },
     {
@@ -385,11 +393,17 @@
       "title": "Persistent cellular-memory laws",
       "status": "partial",
       "scope": "Epigenetic, long-lived-protein, organelle-quality and metabolic-adaptation substrates.",
-      "current_capability": "Twelve physical substrate contracts and a provenance-preserving event log exist; events cannot silently become memory.",
+      "current_capability": "Twelve physical substrate contracts, a provenance-preserving event log and a 34-column donor trajectory intake now exist. The intake requires matched write, verified washout persistence, first response and rechallenge response phases and never creates a trace or response law automatically.",
       "observed_metrics": {
         "substrate_contract_count": 12,
         "required_persistence_test_count": 34,
-        "quantitatively_coupled_substrate_count": 0
+        "quantitatively_coupled_substrate_count": 0,
+        "trajectory_contract_column_count": 34,
+        "write_persist_rechallenge_gate_count": 1,
+        "donor_split_leakage_guard_count": 1,
+        "complete_donor_trajectory_record_count": 0,
+        "structurally_complete_candidate_count": 0,
+        "quantitatively_authorized_memory_law_count": 0
       },
       "remaining_requirements": [
         "Trigger-write-decay persistence trajectories in matched PHH context.",
@@ -398,7 +412,9 @@
       ],
       "code_surfaces": [
         "engine/cell_engine/processes/cellular_memory.py",
-        "engine/cell_engine/core/history.py"
+        "engine/cell_engine/core/history.py",
+        "engine/cell_engine/quantitative/cellular_memory_trajectory.py",
+        "data/evidence_intake/phh_cellular_memory_trajectory_contract.v1.json"
       ]
     },
     {

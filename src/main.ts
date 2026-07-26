@@ -91,6 +91,11 @@ import {
   type CytosolQuaternion
 } from "./physics/cytosolNumerics";
 import {
+  classifyTransportMode,
+  deterministicDisplayJitter,
+  dimensionlessRouteProgress
+} from "./physics/transportModes";
+import {
   engineSnapshotEndpointFromLocation,
   loadEngineSnapshot,
   type EngineDivisionCell,
@@ -861,8 +866,6 @@ type FlowPacket = {
   wander: number;
   from?: THREE.Vector3; // per-packet origin (e.g. a specific sinusoid fenestra)
   to?: THREE.Vector3;   // per-packet destination
-  walk?: THREE.Vector3; // current position (active caged subdiffusion, not route-bound)
-  cage?: THREE.Vector3; // crowding-cage centre the particle is confined to
 };
 type FlowVisual = {
   id: string;
@@ -2730,7 +2733,9 @@ const FLOW_DEFS: Record<string, { from: string; to: string; color: string; mode:
   "receptor-nucleus": { from: "receptor", to: "nucleus", color: "#ff8ed8", mode: "signal" }
 };
 
-const FLOW_MODE_SPEED: Record<CellFlow["mode"], number> = {
+// Pure animation cadence. These values are cycles per display second and cannot
+// be interpreted as micrometres/second, run lengths, dwell times, or PHH rates.
+const FLOW_DISPLAY_CYCLES_PER_SECOND: Record<CellFlow["mode"], number> = {
   carrier: 0.3,
   pore: 0.45,
   diffusion: 0.22,
@@ -2802,14 +2807,15 @@ function updateFlowLineGeometry(visual: FlowVisual) {
 }
 
 function flowPacketCount(mode: CellFlow["mode"]) {
-  if (mode === "diffusion") return 5;
+  // Passive aqueous motion is shown only by the projected cytosol field. Drawing
+  // a second set of route-following "diffusion" spheres would mix mechanisms.
+  if (mode === "diffusion") return 0;
   if (mode === "vesicle" || mode === "motor") return 3;
   if (mode === "autophagy") return 2;
   return 4;
 }
 
 function packetWander(mode: CellFlow["mode"]) {
-  if (mode === "diffusion") return 0.7;
   if (mode === "carrier" || mode === "pore") return 0.16;
   if (mode === "signal") return 0.35;
   return 0.32;
@@ -2857,9 +2863,10 @@ function buildCellFlowVisuals(parent: THREE.Group) {
         opacity: 0.78
       });
       const particle = new THREE.Mesh(new THREE.SphereGeometry(0.055 + packetIndex * 0.006, 12, 8), particleMat);
-      particle.userData.label = def.mode === "diffusion"
-        ? `Small-molecule display particle (${def.from}/${def.to}) - active caged subdiffusion; not a literal molecule count`
-        : `Directed cargo display packet (${def.from}/${def.to}, ${def.mode}) - follows a stable representative path; not a one-to-one vesicle or molecule count`;
+      const mechanismClass = classifyTransportMode(def.mode);
+      particle.userData.label =
+        `Dimensionless ${mechanismClass} display packet (${def.from}/${def.to}, ${def.mode}) - ` +
+        "renderer route progress only; not a molecule count, PHH speed, run length, or dwell-time measurement";
       parent.add(particle);
       // Spread each flow's packets across nearby fenestrae so they enter/exit
       // through a cluster of pores, not one shared point.
@@ -2902,8 +2909,8 @@ function updateFlowVisuals(s: CellSnapshot) {
     // a confusing tangle. The motion itself conveys transport; the line is just a
     // faint hint for cargo modes, none for diffusing small molecules.
     visual.lineMat.opacity = visual.mode === "diffusion" ? 0 : 0.004 + 0.012 * strength;
-    const speed = FLOW_MODE_SPEED[visual.mode] ?? 0.18;
-    const guideCycle = Math.floor(s.elapsedS * (0.18 + speed * 1.1) + visual.routeIndex);
+    const displayCycles = FLOW_DISPLAY_CYCLES_PER_SECOND[visual.mode] ?? 0.18;
+    const guideCycle = Math.floor(s.elapsedS * (0.18 + displayCycles * 1.1) + visual.routeIndex);
     const trackBound = visual.mode === "vesicle" || visual.mode === "motor" || visual.mode === "autophagy";
     if (!trackBound && guideCycle !== visual.lineCycle) {
       visual.lineCycle = guideCycle;
@@ -2915,45 +2922,22 @@ function updateFlowVisuals(s: CellSnapshot) {
       packet.particleMat.opacity = 0.12 + 0.42 * strength;
       packet.particle.scale.setScalar((0.5 + 1.1 * strength) * (0.82 + packet.wander * 0.18));
 
-      if (visual.mode === "diffusion") {
-        // SMALL MOLECULES -- active caged subdiffusion. The cytoplasm is densely
-        // crowded, so particles are caged by crowders + the actin cytoskeleton (Weiss
-        // 2004); the motion is ATP/motor-driven stirring that fluidizes an otherwise
-        // glass-like cytoplasm (Parry 2014; Guo 2014) -- low metabolism => frozen.
-        if (!packet.walk) {
-          packet.walk = packet.curve.getPointAt(packet.offset % 1).clone();
-          const ir = packet.walk.length();
-          if (ir > CELL_R * 0.8) packet.walk.multiplyScalar((CELL_R * 0.8) / ir); // seed inside
-          packet.cage = packet.walk.clone();
-        }
-        const w = packet.walk;
-        const cage = packet.cage!;
-        const metabolic = strength; // near 0 => cytoplasm glassy
-        const jiggle = CELL_R * 0.011 * (0.1 + 0.9 * metabolic) * (0.7 + packet.speedScale * 0.6);
-        w.x += (Math.random() - 0.5) * jiggle;
-        w.y += (Math.random() - 0.5) * jiggle;
-        w.z += (Math.random() - 0.5) * jiggle;
-        w.lerp(cage, 0.07); // elastic confinement to the cage centre (subdiffusion)
-        if (Math.random() < 0.006 * metabolic) { // rare metabolism-powered escape hop
-          cage.x += (Math.random() - 0.5) * CELL_R * 0.13;
-          cage.y += (Math.random() - 0.5) * CELL_R * 0.13;
-          cage.z += (Math.random() - 0.5) * CELL_R * 0.13;
-          const cr = cage.length();
-          if (cr > CELL_R * 0.8) cage.multiplyScalar((CELL_R * 0.8) / cr);
-        }
-        packet.particle.position.copy(w);
-      } else {
-        // LARGE CARGO (vesicles, motor/autophagy traffic) + transporter/channel
-        // crossings -- DIRECTED transport: motor proteins haul cargo processively
-        // ALONG a cytoskeletal track (the curve IS the track), in straight-ish runs,
-        // not by diffusion. So follow the route from source to destination.
-        const rawT = packet.offset + s.elapsedS * speed * packet.speedScale;
-        const cycle = Math.floor(rawT);
+      if (visual.mode !== "diffusion") {
+        // Directed packets are a geometry display only. The progress clock below
+        // is explicitly dimensionless; no PHH motor velocity, pause/reversal law,
+        // fusion probability, or ATP dependence has been assigned.
+        const progress = dimensionlessRouteProgress(
+          s.elapsedS,
+          displayCycles,
+          packet.offset,
+          packet.speedScale
+        );
+        const cycle = progress.cycle;
         if (cycle !== packet.lastCycle) {
           packet.lastCycle = cycle;
           packet.curve = buildFlowCurve(packet.from ?? visual.from, packet.to ?? visual.to, visual.id, packet.seed, cycle, visual.mode);
         }
-        const t = rawT % 1;
+        const t = progress.phase01;
         const pos = packet.curve.getPointAt(t);
         const tangent = packet.curve.getTangentAt(t).normalize();
         const radial = pos.lengthSq() > 1e-4 ? pos.clone().normalize() : new THREE.Vector3(0, 1, 0);
@@ -2962,10 +2946,11 @@ function updateFlowVisuals(s: CellSnapshot) {
         if (side.lengthSq() < 1e-5) side = new THREE.Vector3(1, 0, 0);
         side.normalize();
         const lift = radial.clone().cross(side).normalize();
-        // small motor "wobble"/pauses along the track (cargo doesn't glide perfectly)
-        const noiseA = Math.sin(s.elapsedS * (0.9 + packet.speedScale * 0.7) + packet.seed * 0.37 + t * 13.7);
-        const noiseB = Math.cos(s.elapsedS * (0.7 + packet.speedScale * 0.5) + packet.seed * 0.19 + t * 9.1);
-        const cp = pos.add(side.multiplyScalar(noiseA * packet.wander)).add(lift.multiplyScalar(noiseB * packet.wander * 0.55));
+        const jitter = deterministicDisplayJitter(packet.seed, s.elapsedS, packet.wander);
+        const cp = pos
+          .add(side.multiplyScalar(jitter[0]))
+          .add(lift.multiplyScalar(jitter[1]))
+          .add(tangent.multiplyScalar(jitter[2] * 0.2));
         const cr = cp.length();
         if (cr > CELL_R * 0.8) cp.multiplyScalar((CELL_R * 0.8) / cr); // never leave the cell
         packet.particle.position.copy(cp);
@@ -4126,13 +4111,13 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
   const capabilityAtlas = summary?.hepatocyteCapabilityAtlas;
   const cellularMemoryContract = summary?.cellularMemoryContract;
   const capabilityAtlasRow = capabilityAtlas && cellularMemoryContract
-    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Hepatocyte capability + memory atlas v1</b><span>coverage declared · execution gated</span></div><div class="phh-profile__grid"><span>Capability domains <b>${capabilityAtlas.summary.declared_domain_count}</b></span><span>Feature templates <b>${capabilityAtlas.summary.feature_template_count}</b></span><span>Quantitative slots <b>${capabilityAtlas.summary.parameter_slot_count}</b></span><span>Filled slots <b>${capabilityAtlas.summary.filled_parameter_slot_count}</b></span><span>Activated templates <b>${capabilityAtlas.summary.quantitatively_activated_template_count}</b></span><span>Physical memory carriers <b>${cellularMemoryContract.summary.substrate_contract_count}</b></span><span>Persistence tests required <b>${cellularMemoryContract.summary.required_persistence_test_count}</b></span><span>Memory-linked response laws <b>${cellularMemoryContract.summary.quantitatively_coupled_substrate_count}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">History firewall</span><span>An event is retained as provenance, but becomes biological memory only after a physical carrier persists after washout and changes a later measured response.</span></div>`
+    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Hepatocyte capability + memory atlas v2</b><span>trajectory intake ready · execution gated</span></div><div class="phh-profile__grid"><span>Capability domains <b>${capabilityAtlas.summary.declared_domain_count}</b></span><span>Feature templates <b>${capabilityAtlas.summary.feature_template_count}</b></span><span>Quantitative slots <b>${capabilityAtlas.summary.parameter_slot_count}</b></span><span>Filled slots <b>${capabilityAtlas.summary.filled_parameter_slot_count}</b></span><span>Activated templates <b>${capabilityAtlas.summary.quantitatively_activated_template_count}</b></span><span>Physical memory carriers <b>${cellularMemoryContract.summary.substrate_contract_count}</b></span><span>Memory evidence columns <b>${cellularMemoryContract.summary.trajectory_contract_column_count}</b></span><span>Write/persist/rechallenge gates <b>${cellularMemoryContract.summary.write_persist_rechallenge_gate_count}</b></span><span>Delivered memory records <b>${cellularMemoryContract.summary.complete_donor_trajectory_record_count}</b></span><span>Authorized response laws <b>${cellularMemoryContract.summary.quantitatively_authorized_memory_law_count}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">History firewall</span><span>An event is retained as provenance, but becomes biological memory only after a directly assayed carrier persists following verified trigger removal and changes a matched rechallenge response. No delivered record, frozen law, or held-out result exists yet.</span></div>`
     : "";
   const reactionEvidence = summary?.reactionEvidenceAtlas;
   const cytosolTransport = summary?.cytosolTransport;
   const metabolicConstraint = summary?.metabolicConstraintShell;
   const cytosolTransportRow = reactionEvidence && cytosolTransport && metabolicConstraint
-    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Cytosol transport + reaction evidence v4</b><span>geometry-linked projection · biological coupling blocked</span></div><div class="phh-profile__grid"><span>Active reactions audited <b>${reactionEvidence.summary.active_reaction_count}</b></span><span>Reaction evidence fields <b>${reactionEvidence.summary.filled_evidence_slot_count}/${reactionEvidence.summary.evidence_slot_count} filled</b></span><span>Transport-coupled reactions <b>${reactionEvidence.summary.transport_coupled_reaction_count}</b></span><span>Global fluid multipliers <b>${reactionEvidence.summary.direct_fluid_rate_multiplier_count}</b></span><span>Cross-context references <b>${cytosolTransport.summary.cross_context_reference_count}</b></span><span>Human validation targets <b>${cytosolTransport.summary.human_in_vivo_validation_target_count}</b></span><span>Dimensionless projection grids <b>${cytosolTransport.summary.dimensionless_projection_solver_count}</b></span><span>Analytic boundary shapes <b>${cytosolTransport.summary.analytic_obstacle_shape_count}</b></span><span>Renderer-linked boundary classes <b>${cytosolTransport.summary.renderer_geometry_boundary_class_count}</b></span><span>Rigid rotation kinematics <b>${cytosolTransport.summary.rigid_body_boundary_kinematics_count}</b></span><span>Compound conservation tests <b>${cytosolTransport.summary.compound_boundary_conservation_test_count}</b></span><span>Watertight mesh boundaries <b>${cytosolTransport.summary.full_watertight_mesh_boundary_count}</b></span><span>Conservative scalar kernels <b>${cytosolTransport.summary.conservative_passive_scalar_kernel_count}</b></span><span>Moving-domain remaps <b>${cytosolTransport.summary.conservative_moving_domain_remap_count}</b></span><span>Biological species bound <b>${cytosolTransport.summary.biological_species_bound_count}</b></span><span>Healthy-PHH rheology parameters <b>${cytosolTransport.summary.healthy_phh_numeric_rheology_parameter_count}</b></span><span>Membrane pressure feedback <b>${cytosolTransport.summary.membrane_pressure_feedback_count}</b></span><span>Genome-scale FBA execution <b>${metabolicConstraint.gates.fba_execution_allowed ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Transport boundary</span><span>The projected tracer field follows the deforming membrane and renderer-linked nucleus, canaliculus, ER, Golgi and organelle-population boundaries. Translation and quaternion-derived rotation contribute rigid surface velocity, and dimensionless scalar mass is conserved when compound masks move. These analytic assemblies are not watertight microscopy meshes; no PHH velocity, pressure, diffusivity, reaction or membrane-force feedback is activated.</span></div>`
+    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Cytosol transport + reaction evidence v6</b><span>subgrid boundaries · deterministic cargo · biological coupling blocked</span></div><div class="phh-profile__grid"><span>Active reactions audited <b>${reactionEvidence.summary.active_reaction_count}</b></span><span>Reaction evidence fields <b>${reactionEvidence.summary.filled_evidence_slot_count}/${reactionEvidence.summary.evidence_slot_count} filled</b></span><span>Transport-coupled reactions <b>${reactionEvidence.summary.transport_coupled_reaction_count}</b></span><span>Global fluid multipliers <b>${reactionEvidence.summary.direct_fluid_rate_multiplier_count}</b></span><span>Cross-context references <b>${cytosolTransport.summary.cross_context_reference_count}</b></span><span>Human validation targets <b>${cytosolTransport.summary.human_in_vivo_validation_target_count}</b></span><span>Dimensionless projection grids <b>${cytosolTransport.summary.dimensionless_projection_solver_count}</b></span><span>Analytic boundary shapes <b>${cytosolTransport.summary.analytic_obstacle_shape_count}</b></span><span>Renderer-linked boundary classes <b>${cytosolTransport.summary.renderer_geometry_boundary_class_count}</b></span><span>Subgrid boundary treatments <b>${cytosolTransport.summary.conservative_subgrid_boundary_treatment_count}</b></span><span>Subgrid convergence tests <b>${cytosolTransport.summary.subgrid_boundary_grid_convergence_test_count}</b></span><span>Dimensionless cargo route kernels <b>${cytosolTransport.summary.dimensionless_active_cargo_route_kernel_count}</b></span><span>Healthy-PHH cargo kernels <b>${cytosolTransport.summary.healthy_phh_active_transport_kernel_count}</b></span><span>Watertight mesh boundaries <b>${cytosolTransport.summary.full_watertight_mesh_boundary_count}</b></span><span>Conservative scalar kernels <b>${cytosolTransport.summary.conservative_passive_scalar_kernel_count}</b></span><span>Moving-domain remaps <b>${cytosolTransport.summary.conservative_moving_domain_remap_count}</b></span><span>Biological species bound <b>${cytosolTransport.summary.biological_species_bound_count}</b></span><span>Healthy-PHH rheology parameters <b>${cytosolTransport.summary.healthy_phh_numeric_rheology_parameter_count}</b></span><span>Membrane pressure feedback <b>${cytosolTransport.summary.membrane_pressure_feedback_count}</b></span><span>Genome-scale FBA execution <b>${metabolicConstraint.gates.fba_execution_allowed ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Transport boundary</span><span>The projected aqueous field follows the deforming membrane and renderer-linked organelles. Thin ER, canalicular and Golgi boundaries use conservative subgrid interception; directed cargo uses a separate deterministic dimensionless route renderer. These are not watertight microscopy meshes or PHH transport rates, and no pressure, diffusivity, reaction, or membrane-force feedback is activated.</span></div>`
     : "";
   const placeholderRow = assumptions
     ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Schematic</span><span>${assumptions.placeholder_pools.length} relative pools remain placeholders and do not drive quantitative validation.</span></div>`
@@ -6723,7 +6708,8 @@ function buildOrganelleScene() {
         `${idPrefix}-${segment}`,
         [start.x, start.y, start.z],
         [end.x, end.y, end.z],
-        radius
+        radius,
+        "conservative_subgrid"
       ));
       start = end;
     }
@@ -7738,7 +7724,8 @@ function buildOrganelleScene() {
         kind: "box",
         center: [center.x, center.y, center.z],
         orientation: [q.x, q.y, q.z, q.w],
-        halfExtents: [1.35, 0.0425, 1.05]
+        halfExtents: [1.35, 0.0425, 1.05],
+        boundarySampling: "conservative_subgrid"
       });
       tagGlow("er", sheet);
       diseaseSceneVisuals?.erMaterials.push(sheetMat);
@@ -7881,7 +7868,8 @@ function buildOrganelleScene() {
       kind: "box",
       center: [stack.position.x, stack.position.y, stack.position.z],
       orientation: [stack.quaternion.x, stack.quaternion.y, stack.quaternion.z, stack.quaternion.w],
-      halfExtents: [1.18, 0.65, 1.28]
+      halfExtents: [1.18, 0.65, 1.28],
+      boundarySampling: "conservative_subgrid"
     }));
     trackMotion(stack, pos, 0.08, 0.16 + rnd() * 0.08, 0.002);
     const nCis = 5;
@@ -8654,7 +8642,7 @@ function buildOrganelleScene() {
 
   if (sceneNote) {
     sceneNote.textContent =
-      `Source-backed visual anatomy v2 (${VISUAL_ANATOMY_COVERAGE.toFixed(0)}% of the explicit renderer rubric, not biological realism): polarized membrane domains, canalicular junction/actin/microvilli, connected ER-Golgi, three cytoskeleton layers and the LSEC-Disse interface. Cytosol transport uses a coarse dimensionless 3D pressure projection around renderer-linked analytic nucleus, canaliculus, ER, Golgi and organelle-population boundaries; rigid translation and rotation follow their current transforms. It carries no measured PHH velocity, pressure, diffusivity, concentration or reaction-rate claim; the assemblies are not watertight microscopy meshes and pressure feedback remains evidence-gated. A front cutaway changes renderer samples only. Quantitative EM registration, intracellular PHH rheology and donor-specific human morphometry remain incomplete.`;
+      `Source-backed visual anatomy v3 (${VISUAL_ANATOMY_COVERAGE.toFixed(0)}% of the explicit renderer rubric, not biological realism): polarized membrane domains, canalicular junction/actin/microvilli, connected ER-Golgi, three cytoskeleton layers and the LSEC-Disse interface. A coarse dimensionless 3D aqueous projection follows renderer-linked nucleus, canaliculus, ER, Golgi and organelle populations with rigid translation and rotation; thin ER, canalicular and Golgi boundaries use conservative subgrid interception. Passive aqueous tracers and deterministic directed-cargo displays are separate. Neither layer carries a measured PHH velocity, pressure, diffusivity, concentration, motor rate or reaction-rate claim; the assemblies are not watertight microscopy meshes and pressure feedback remains evidence-gated. A front cutaway changes renderer samples only. Quantitative EM registration, intracellular PHH rheology and donor-specific human morphometry remain incomplete.`;
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;

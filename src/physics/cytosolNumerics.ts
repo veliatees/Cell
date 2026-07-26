@@ -15,6 +15,7 @@ type CytosolObstacleBase = {
   orientation?: CytosolQuaternion;
   velocity?: CytosolVector3;
   angularVelocity?: CytosolVector3;
+  boundarySampling?: "cell_center" | "conservative_subgrid";
 };
 
 export type CytosolSphereObstacle = CytosolObstacleBase & {
@@ -70,6 +71,10 @@ export type CytosolProjectionDiagnostics = {
   solidCellCount: number;
   obstacleCount: number;
   rotatingObstacleCount: number;
+  subgridObstacleCount: number;
+  fractionalObstacleCellCount: number;
+  subgridInterceptedCellCount: number;
+  dimensionlessObstacleVolumeEstimate: number;
   divergenceRmsBefore: number;
   divergenceRmsAfter: number;
   divergenceMaxAfter: number;
@@ -92,12 +97,15 @@ export type PassiveScalarDomainRemapDiagnostics = {
 };
 
 export const CYTOSOL_NUMERICAL_CONTRACT = Object.freeze({
-  version: "dimensionless_moving_boundary_projection_v3",
+  version: "dimensionless_moving_boundary_projection_v4",
   numericalMethod: "cell_centered_eulerian_pressure_projection",
   movingObstacleShapes: ["sphere", "ellipsoid", "capsule", "box"] as const,
   movingObstacleKinematics: "rigid_translation_plus_quaternion_derived_rotation",
   passiveScalarMethod: "finite_volume_advection_diffusion_with_conservative_moving_domain_remap",
   movingDomainRemap: "face_neighbor_redistribution_with_deterministic_nearest_fluid_fallback",
+  thinBoundaryTreatment: "conservative_subgrid_2x2x2_quadrature_with_intersection_fallback",
+  subgridQuadratureSamplesPerCell: 8,
+  subgridGridConvergenceTested: true,
   rendererVelocityUnits: "world_units_per_render_second",
   rendererAngularVelocityUnits: "radians_per_render_second",
   biologicalVelocityClaim: false,
@@ -131,7 +139,8 @@ export function capsuleObstacleBetween(
   id: string,
   start: CytosolVector3,
   end: CytosolVector3,
-  radius: number
+  radius: number,
+  boundarySampling: "cell_center" | "conservative_subgrid" = "cell_center"
 ): CytosolCapsuleObstacle {
   if (!id) throw new RangeError("capsule segment id must be non-empty");
   finiteVector(start, `${id} start`);
@@ -160,7 +169,8 @@ export function capsuleObstacleBetween(
     ],
     orientation,
     radius,
-    halfLength: length * 0.5
+    halfLength: length * 0.5,
+    boundarySampling
   };
 }
 
@@ -229,6 +239,13 @@ function validateObstacle(obstacle: CytosolObstacle): void {
     finiteVector(obstacle.angularVelocity, `${obstacle.id} angular velocity`);
   }
   normalizedQuaternion(obstacle.orientation);
+  if (
+    obstacle.boundarySampling !== undefined &&
+    obstacle.boundarySampling !== "cell_center" &&
+    obstacle.boundarySampling !== "conservative_subgrid"
+  ) {
+    throw new RangeError(`${obstacle.id} boundary sampling mode is invalid`);
+  }
   if (obstacle.kind === "sphere") {
     if (!Number.isFinite(obstacle.radius) || obstacle.radius <= 0) {
       throw new RangeError(`${obstacle.id} sphere radius must be positive`);
@@ -289,6 +306,8 @@ export class DynamicCytosolObstacleField {
   private readonly buckets = new Map<string, number[]>();
   private readonly previousCenters = new Map<string, CytosolVector3>();
   private readonly previousOrientations = new Map<string, CytosolQuaternion>();
+  private readonly sampleVelocity = new Float32Array(3);
+  private subgridObstacleCount = 0;
 
   constructor(cellSize: number) {
     if (!Number.isFinite(cellSize) || cellSize <= 0) {
@@ -305,6 +324,10 @@ export class DynamicCytosolObstacleField {
     return this.obstacles.reduce((count, obstacle) => (
       Math.hypot(...obstacle.resolvedAngularVelocity) > 1e-9 ? count + 1 : count
     ), 0);
+  }
+
+  get subgridCount(): number {
+    return this.subgridObstacleCount;
   }
 
   setObstacles(obstacles: readonly CytosolObstacle[], deltaS: number): void {
@@ -351,6 +374,9 @@ export class DynamicCytosolObstacleField {
       }
     }
     this.obstacles = next;
+    this.subgridObstacleCount = next.reduce((count, obstacle) => (
+      obstacle.boundarySampling === "conservative_subgrid" ? count + 1 : count
+    ), 0);
     this.rebuildHash();
   }
 
@@ -367,6 +393,78 @@ export class DynamicCytosolObstacleField {
   ): boolean {
     const obstacle = this.findContaining(x, y, z, 0);
     if (!obstacle) return false;
+    this.writeObstacleVelocity(obstacle, x, y, z, target, offset);
+    return true;
+  }
+
+  sampleSubgridCell(
+    x: number,
+    y: number,
+    z: number,
+    cellWidth: number,
+    targetVelocity: Float32Array,
+    target: { solidFraction: number; centerContained: boolean; conservativeIntercept: boolean }
+  ): void {
+    if (![x, y, z, cellWidth].every(Number.isFinite) || cellWidth <= 0) {
+      throw new RangeError("subgrid obstacle sample must be finite with positive cell width");
+    }
+    target.solidFraction = 0;
+    target.centerContained = false;
+    target.conservativeIntercept = false;
+    targetVelocity[0] = 0;
+    targetVelocity[1] = 0;
+    targetVelocity[2] = 0;
+    if (this.subgridCount === 0) return;
+
+    const centerObstacle = this.findContaining(x, y, z, 0, true);
+    target.centerContained = centerObstacle !== null;
+    const quarter = cellWidth * 0.25;
+    let sampleCount = 0;
+    for (const dz of [-quarter, quarter]) {
+      for (const dy of [-quarter, quarter]) {
+        for (const dx of [-quarter, quarter]) {
+          const sx = x + dx;
+          const sy = y + dy;
+          const sz = z + dz;
+          const obstacle = this.findContaining(sx, sy, sz, 0, true);
+          if (!obstacle) continue;
+          this.writeObstacleVelocity(obstacle, sx, sy, sz, this.sampleVelocity, 0);
+          targetVelocity[0] += this.sampleVelocity[0];
+          targetVelocity[1] += this.sampleVelocity[1];
+          targetVelocity[2] += this.sampleVelocity[2];
+          sampleCount += 1;
+        }
+      }
+    }
+    if (sampleCount > 0) {
+      target.solidFraction = sampleCount / 8;
+      targetVelocity[0] /= sampleCount;
+      targetVelocity[1] /= sampleCount;
+      targetVelocity[2] /= sampleCount;
+      target.conservativeIntercept = !target.centerContained;
+      return;
+    }
+
+    // A membrane thinner than the quadrature spacing can still fall between all
+    // eight samples. The half-cell diagonal gives a conservative intersection
+    // test; assigning one subcell of occupancy keeps that boundary represented
+    // while its excess volume shrinks under grid refinement.
+    const halfDiagonal = Math.sqrt(3) * cellWidth * 0.5;
+    const intersecting = this.findContaining(x, y, z, halfDiagonal, true);
+    if (!intersecting) return;
+    target.solidFraction = 1 / 8;
+    target.conservativeIntercept = !target.centerContained;
+    this.writeObstacleVelocity(intersecting, x, y, z, targetVelocity, 0);
+  }
+
+  private writeObstacleVelocity(
+    obstacle: StoredObstacle,
+    x: number,
+    y: number,
+    z: number,
+    target: Float32Array,
+    offset: number
+  ): void {
     const rx = x - obstacle.center[0];
     const ry = y - obstacle.center[1];
     const rz = z - obstacle.center[2];
@@ -374,7 +472,6 @@ export class DynamicCytosolObstacleField {
     target[offset] = obstacle.resolvedVelocity[0] + wy * rz - wz * ry;
     target[offset + 1] = obstacle.resolvedVelocity[1] + wz * rx - wx * rz;
     target[offset + 2] = obstacle.resolvedVelocity[2] + wx * ry - wy * rx;
-    return true;
   }
 
   private gridCoordinate(value: number): number {
@@ -409,7 +506,13 @@ export class DynamicCytosolObstacleField {
     }
   }
 
-  private findContaining(x: number, y: number, z: number, padding: number): StoredObstacle | null {
+  private findContaining(
+    x: number,
+    y: number,
+    z: number,
+    padding: number,
+    subgridOnly = false
+  ): StoredObstacle | null {
     if (![x, y, z, padding].every(Number.isFinite) || padding < 0) {
       throw new RangeError("cytosol obstacle query must be finite with non-negative padding");
     }
@@ -427,6 +530,10 @@ export class DynamicCytosolObstacleField {
             if (visited.has(index)) continue;
             visited.add(index);
             const obstacle = this.obstacles[index];
+            if (
+              subgridOnly &&
+              obstacle.boundarySampling !== "conservative_subgrid"
+            ) continue;
             if (obstacleContains(obstacle, x, y, z, padding)) return obstacle;
           }
         }
@@ -508,6 +615,7 @@ export class CytosolProjectionGrid {
   readonly halfExtent: number;
   readonly spacing: number;
   readonly fluidMask: Uint8Array;
+  readonly obstacleSolidFraction: Float32Array;
   readonly velocityX: Float32Array;
   readonly velocityY: Float32Array;
   readonly velocityZ: Float32Array;
@@ -518,6 +626,13 @@ export class CytosolProjectionGrid {
   private readonly pressure: Float32Array;
   private readonly nextPressure: Float32Array;
   private readonly divergence: Float32Array;
+  private readonly subgridSample = {
+    solidFraction: 0,
+    centerContained: false,
+    conservativeIntercept: false
+  };
+  private fractionalObstacleCellCount = 0;
+  private subgridInterceptedCellCount = 0;
   private readonly modes: ProjectionMode[];
   private elapsedRenderS = 0;
   private currentDiagnostics: CytosolProjectionDiagnostics = {
@@ -525,6 +640,10 @@ export class CytosolProjectionGrid {
     solidCellCount: 0,
     obstacleCount: 0,
     rotatingObstacleCount: 0,
+    subgridObstacleCount: 0,
+    fractionalObstacleCellCount: 0,
+    subgridInterceptedCellCount: 0,
+    dimensionlessObstacleVolumeEstimate: 0,
     divergenceRmsBefore: 0,
     divergenceRmsAfter: 0,
     divergenceMaxAfter: 0,
@@ -562,6 +681,7 @@ export class CytosolProjectionGrid {
     this.projectionIterations = projectionIterations;
     const count = options.resolution ** 3;
     this.fluidMask = new Uint8Array(count);
+    this.obstacleSolidFraction = new Float32Array(count);
     this.velocityX = new Float32Array(count);
     this.velocityY = new Float32Array(count);
     this.velocityZ = new Float32Array(count);
@@ -614,6 +734,10 @@ export class CytosolProjectionGrid {
       solidCellCount: this.fluidMask.length - fluidCellCount,
       obstacleCount: obstacles?.count ?? 0,
       rotatingObstacleCount: obstacles?.rotatingCount ?? 0,
+      subgridObstacleCount: obstacles?.subgridCount ?? 0,
+      fractionalObstacleCellCount: this.fractionalObstacleCellCount,
+      subgridInterceptedCellCount: this.subgridInterceptedCellCount,
+      dimensionlessObstacleVolumeEstimate: this.obstacleVolumeEstimate(),
       divergenceRmsBefore: before.rms,
       divergenceRmsAfter: after.rms,
       divergenceMaxAfter: after.max,
@@ -684,6 +808,13 @@ export class CytosolProjectionGrid {
     target[offset + 2] = -this.halfExtent + (k + 0.5) * this.spacing;
   }
 
+  obstacleVolumeEstimate(): number {
+    const cellVolume = this.spacing ** 3;
+    let fractionSum = 0;
+    for (const fraction of this.obstacleSolidFraction) fractionSum += fraction;
+    return fractionSum * cellVolume;
+  }
+
   private index(i: number, j: number, k: number): number {
     return i + this.resolution * (j + this.resolution * k);
   }
@@ -699,6 +830,8 @@ export class CytosolProjectionGrid {
     const point = new Float32Array(3);
     const reference = new Float32Array(3);
     const solidVelocity = new Float32Array(3);
+    this.fractionalObstacleCellCount = 0;
+    this.subgridInterceptedCellCount = 0;
     for (let index = 0; index < this.fluidMask.length; index += 1) {
       this.cellCenter(index, point);
       inverseVolumePreservingPoint(point[0], point[1], point[2], deformation, reference);
@@ -711,9 +844,33 @@ export class CytosolProjectionGrid {
         }
         insideMembrane = length <= radius * this.safetyFraction;
       }
-      const insideObstacle = insideMembrane && Boolean(obstacles?.solidVelocityAt(
-        point[0], point[1], point[2], solidVelocity
-      ));
+      let obstacleFraction = 0;
+      let insideObstacle = false;
+      if (insideMembrane && obstacles) {
+        obstacles.sampleSubgridCell(
+          point[0],
+          point[1],
+          point[2],
+          this.spacing,
+          solidVelocity,
+          this.subgridSample
+        );
+        obstacleFraction = this.subgridSample.solidFraction;
+        insideObstacle = obstacleFraction > 0;
+        if (this.subgridSample.conservativeIntercept) {
+          this.subgridInterceptedCellCount += 1;
+        }
+        if (!insideObstacle) {
+          insideObstacle = obstacles.solidVelocityAt(
+            point[0], point[1], point[2], solidVelocity
+          );
+          obstacleFraction = insideObstacle ? 1 : 0;
+        }
+      }
+      this.obstacleSolidFraction[index] = obstacleFraction;
+      if (obstacleFraction > 0 && obstacleFraction < 1) {
+        this.fractionalObstacleCellCount += 1;
+      }
       this.fluidMask[index] = insideMembrane && !insideObstacle ? 1 : 0;
       if (!this.fluidMask[index]) {
         this.velocityX[index] = insideObstacle ? solidVelocity[0] : 0;

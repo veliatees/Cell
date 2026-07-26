@@ -47,7 +47,23 @@ def test_organelle_boundaries_report_geometry_adapter_without_mesh_overclaim() -
     assert boundaries["observed_metrics"]["analytic_obstacle_shape_count"] == 4
     assert boundaries["observed_metrics"]["renderer_geometry_boundary_class_count"] == 10
     assert boundaries["observed_metrics"]["rigid_body_boundary_kinematics_count"] == 1
+    assert boundaries["observed_metrics"]["conservative_subgrid_boundary_treatment_count"] == 1
+    assert boundaries["observed_metrics"]["subgrid_boundary_grid_convergence_test_count"] == 1
+    assert boundaries["observed_metrics"]["fractional_face_aperture_solver_count"] == 0
     assert boundaries["observed_metrics"]["full_watertight_mesh_boundary_count"] == 0
+
+
+def test_memory_and_active_cargo_engineering_remain_biologically_fail_closed() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    memory = entries["cellular_memory_laws"]["observed_metrics"]
+    assert memory["trajectory_contract_column_count"] == 34
+    assert memory["write_persist_rechallenge_gate_count"] == 1
+    assert memory["complete_donor_trajectory_record_count"] == 0
+    assert memory["quantitatively_authorized_memory_law_count"] == 0
+    cargo = entries["active_intracellular_transport_model"]["observed_metrics"]
+    assert cargo["dimensionless_renderer_route_kernels"] == 1
+    assert cargo["healthy_phh_active_transport_kernels"] == 0
 
 
 def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked() -> None:

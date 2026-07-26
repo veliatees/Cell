@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-26T09:22:03.522213+00:00",
+    "created_at_utc": "2026-07-26T10:10:14.957825+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -2198,7 +2198,7 @@
         "hcv_epigenetic_scar",
         "alberts_cell_memory_substrates"
       ],
-      "status": "physical_substrates_declared_quantitative_readout_blocked",
+      "status": "physical_substrates_and_trajectory_intake_declared_quantitative_readout_blocked",
       "substrates": [
         {
           "candidate_write_processes": [
@@ -2540,11 +2540,47 @@
         }
       ],
       "summary": {
+        "complete_donor_trajectory_record_count": 0,
+        "donor_split_leakage_guard_count": 1,
+        "quantitatively_authorized_memory_law_count": 0,
         "quantitatively_coupled_substrate_count": 0,
         "required_persistence_test_count": 34,
-        "substrate_contract_count": 12
+        "structurally_complete_candidate_count": 0,
+        "substrate_contract_count": 12,
+        "trajectory_contract_column_count": 34,
+        "write_persist_rechallenge_gate_count": 1
       },
-      "version": "cellular_memory_substrate_contract_v1"
+      "trajectory_intake": {
+        "artifact_sha256": null,
+        "automatic_future_response_coupling": false,
+        "automatic_memory_trace_creation": false,
+        "automatic_parameter_activation": false,
+        "blockers": [
+          "No donor-resolved primary-human-hepatocyte memory trajectory file was delivered.",
+          "Manual primary-source review, frozen model identity, and independent held-out results are absent."
+        ],
+        "candidate_trajectory_count": 0,
+        "conditional_column_count": 12,
+        "contract_id": "phh_cellular_memory_trajectory_contract_v1",
+        "contract_path": "data/evidence_intake/phh_cellular_memory_trajectory_contract.v1.json",
+        "contract_sha256": "a263816b826ee45e1139c23dcbe77c3295d20efbb48d5188091c3cfb513a6d69",
+        "declared_substrate_count": 12,
+        "delivery_path": "data/evidence_intake/incoming/phh_cellular_memory/latest/phh_cellular_memory_trajectories.csv",
+        "donor_count": 0,
+        "expected_header_count": 34,
+        "independent_heldout_study_guard_count": 1,
+        "quantitatively_authorized_memory_law_count": 0,
+        "record_count": 0,
+        "record_count_by_split": {},
+        "required_column_count": 22,
+        "source_study_count": 0,
+        "split_leakage_guard_count": 1,
+        "status": "awaiting_donor_resolved_phh_memory_trajectories",
+        "structurally_complete_candidate_count": 0,
+        "version": "phh_cellular_memory_trajectory_intake_v1",
+        "write_persist_rechallenge_gate_count": 1
+      },
+      "version": "cellular_memory_substrate_contract_v2"
     },
     "cellular_response": {
       "basolateral_escape_status": "not_modeled_no_identifiable_rate",
@@ -5499,6 +5535,15 @@
           "moving_domain_remap": "deterministic face-neighbour redistribution with nearest-fluid fallback",
           "role": "fixed- and moving-domain mass-conservation and non-negativity test bed"
         },
+        "dimensionless_active_cargo_route_kernel": {
+          "biological_pause_reversal_or_dwell_claim": false,
+          "biological_velocity_claim": false,
+          "enabled": true,
+          "healthy_phh_route_bound_count": 0,
+          "independent_per_frame_random_walk": false,
+          "reaction_or_cell_state_coupling": false,
+          "role": "deterministic renderer-only separation of track cargo from the passive aqueous projection field"
+        },
         "quantitative_poroelastic_solver": {
           "enabled": false,
           "reason": "healthy-PHH constitutive parameters and validation trajectories are unavailable"
@@ -5513,6 +5558,7 @@
           "biological_pressure_claim": false,
           "biological_time_or_velocity_claim": false,
           "enabled": true,
+          "fractional_face_aperture_flux_weighting": false,
           "full_watertight_mesh_boundaries": false,
           "membrane_pressure_feedback": false,
           "membrane_volume_mapping": "same volume-preserving affine deformation as the rendered membrane",
@@ -5533,7 +5579,10 @@
             "lysosomes"
           ],
           "rigid_translation_boundary_velocity": true,
-          "role": "dimensionless moving-domain visualization and numerical test bed"
+          "role": "dimensionless moving-domain visualization and numerical test bed",
+          "subgrid_grid_convergence_tested": true,
+          "subgrid_quadrature_samples_per_cell": 8,
+          "thin_boundary_treatment": "conservative subgrid 2x2x2 occupancy with intersection fallback"
         }
       },
       "source_ids": [
@@ -5553,9 +5602,13 @@
         "compound_boundary_conservation_test_count": 1,
         "conservative_moving_domain_remap_count": 1,
         "conservative_passive_scalar_kernel_count": 1,
+        "conservative_subgrid_boundary_treatment_count": 1,
         "cross_context_reference_count": 10,
+        "dimensionless_active_cargo_route_kernel_count": 1,
         "dimensionless_projection_solver_count": 1,
+        "fractional_face_aperture_solver_count": 0,
         "full_watertight_mesh_boundary_count": 0,
+        "healthy_phh_active_transport_kernel_count": 0,
         "healthy_phh_numeric_rheology_parameter_count": 0,
         "human_in_vivo_validation_target_count": 1,
         "membrane_pressure_feedback_count": 0,
@@ -5565,10 +5618,12 @@
         "renderer_geometry_boundary_adapter_count": 1,
         "renderer_geometry_boundary_class_count": 10,
         "rigid_body_boundary_kinematics_count": 1,
+        "subgrid_boundary_grid_convergence_test_count": 1,
         "visual_fluid_layer_count": 1
       },
       "transport_mode_contract": {
         "active_cargo_transport": {
+          "biological_velocity_or_dwell_time_assigned": false,
           "carriers": "vesicles and organelle-associated cargo",
           "cross_context_reference_only": true,
           "healthy_phh_rate_bound": false,
@@ -5576,7 +5631,8 @@
             "ATP-dependent motor transport on cytoskeletal tracks",
             "fusion, fission and sorting"
           ],
-          "numerical_kernel_available": false
+          "numerical_kernel_available": true,
+          "numerical_kernel_scope": "deterministic dimensionless renderer path progress only"
         },
         "aqueous_passive_transport": {
           "carriers": "ions, metabolites and soluble macromolecules",
@@ -5589,7 +5645,7 @@
         },
         "mode_interchange_prohibited": true
       },
-      "version": "cytosol_transport_rheology_contract_v4"
+      "version": "cytosol_transport_rheology_contract_v6"
     },
     "definition_id": "human_hepatocyte_midlobular_v1",
     "division": {
@@ -15190,7 +15246,7 @@
             "src/physics/cytosolNumerics.ts",
             "src/physics/intracellularFluid.ts"
           ],
-          "current_capability": "A 3D pressure-projection grid, four analytic obstacle shapes, rigid translation/rotation boundary kinematics and a conservative passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
+          "current_capability": "A 3D pressure-projection grid, four analytic obstacle shapes, rigid translation/rotation boundary kinematics, conservative subgrid thin-boundary interception and a passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
           "id": "dimensionless_cytosol_numerics",
           "observed_metrics": {
             "analytic_obstacle_shape_count": 4,
@@ -15199,7 +15255,9 @@
             "conservative_scalar_kernel_count": 1,
             "moving_analytic_obstacle_layer_count": 1,
             "projection_solver_count": 1,
-            "rigid_body_boundary_kinematics_count": 1
+            "rigid_body_boundary_kinematics_count": 1,
+            "subgrid_boundary_treatment_count": 1,
+            "subgrid_grid_convergence_test_count": 1
           },
           "remaining_requirements": [],
           "scope": "Numerical test-bed only; no biological pressure, velocity, time or diffusivity claim.",
@@ -15283,20 +15341,23 @@
             "src/physics/cytosolNumerics.ts",
             "src/physics/intracellularFluid.ts"
           ],
-          "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies now represent ten boundary classes. Nucleus and Golgi transforms plus organelle populations are refreshed during motion, and rigid rotation contributes surface velocity; these assemblies are not watertight biological meshes.",
+          "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Thin ER/canalicular/Golgi structures use deterministic 2x2x2 subgrid occupancy plus a conservative intersection fallback, with grid-refinement tests; these assemblies are still not watertight biological meshes.",
           "id": "organelle_fluid_boundaries",
           "observed_metrics": {
             "analytic_obstacle_layer_count": 1,
             "analytic_obstacle_shape_count": 4,
             "compound_boundary_conservation_test_count": 1,
+            "conservative_subgrid_boundary_treatment_count": 1,
+            "fractional_face_aperture_solver_count": 0,
             "full_watertight_mesh_boundary_count": 0,
             "renderer_geometry_boundary_adapter_count": 1,
             "renderer_geometry_boundary_class_count": 10,
-            "rigid_body_boundary_kinematics_count": 1
+            "rigid_body_boundary_kinematics_count": 1,
+            "subgrid_boundary_grid_convergence_test_count": 1
           },
           "remaining_requirements": [
             "Watertight donor- or microscopy-derived organelle meshes.",
-            "Cut-cell or immersed-boundary treatment for sub-grid ER/Golgi membranes.",
+            "Fractional face-aperture/cut-cell flux weighting beyond conservative binary interception.",
             "Grid-convergence validation against those registered surface meshes."
           ],
           "scope": "Impermeable moving organelle surfaces in the numerical cytosol domain.",
@@ -15391,11 +15452,14 @@
         },
         {
           "code_surfaces": [
-            "engine/cell_engine/quantitative/cytosol_transport.py"
+            "engine/cell_engine/quantitative/cytosol_transport.py",
+            "src/physics/transportModes.ts",
+            "src/main.ts"
           ],
-          "current_capability": "Cross-context vesicle-motion observations are retained as references; no PHH numerical kernel or rate is active.",
+          "current_capability": "Passive aqueous tracers and directed cargo are now separate at runtime. A deterministic dimensionless path-progress kernel renders track cargo without per-frame random walks, while every PHH motor velocity, dwell, reversal, route and state-coupling parameter remains absent.",
           "id": "active_intracellular_transport_model",
           "observed_metrics": {
+            "dimensionless_renderer_route_kernels": 1,
             "healthy_phh_active_transport_kernels": 0
           },
           "remaining_requirements": [
@@ -15557,14 +15621,22 @@
         {
           "code_surfaces": [
             "engine/cell_engine/processes/cellular_memory.py",
-            "engine/cell_engine/core/history.py"
+            "engine/cell_engine/core/history.py",
+            "engine/cell_engine/quantitative/cellular_memory_trajectory.py",
+            "data/evidence_intake/phh_cellular_memory_trajectory_contract.v1.json"
           ],
-          "current_capability": "Twelve physical substrate contracts and a provenance-preserving event log exist; events cannot silently become memory.",
+          "current_capability": "Twelve physical substrate contracts, a provenance-preserving event log and a 34-column donor trajectory intake now exist. The intake requires matched write, verified washout persistence, first response and rechallenge response phases and never creates a trace or response law automatically.",
           "id": "cellular_memory_laws",
           "observed_metrics": {
+            "complete_donor_trajectory_record_count": 0,
+            "donor_split_leakage_guard_count": 1,
+            "quantitatively_authorized_memory_law_count": 0,
             "quantitatively_coupled_substrate_count": 0,
             "required_persistence_test_count": 34,
-            "substrate_contract_count": 12
+            "structurally_complete_candidate_count": 0,
+            "substrate_contract_count": 12,
+            "trajectory_contract_column_count": 34,
+            "write_persist_rechallenge_gate_count": 1
           },
           "remaining_requirements": [
             "Trigger-write-decay persistence trajectories in matched PHH context.",
@@ -20939,7 +21011,7 @@
         "spatial_world",
         "physical_validation"
       ],
-      "policy": "quantitative_state wins on overlapping aggregate species; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires an assayed persistent physical substrate and never treats an event log as memory; cytosol_transport forbids a single global viscosity/crowding multiplier and reaction_evidence_atlas gates fluid coupling per reaction; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+      "policy": "quantitative_state wins on overlapping aggregate species; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires a donor-resolved write, verified-removal persistence, first-response and rechallenge-response trajectory plus a frozen held-out-validated law and never treats an event log as memory; cytosol_transport keeps passive aqueous projection separate from deterministic dimensionless cargo rendering, uses conservative subgrid interception only as a numerical boundary treatment, forbids a single global viscosity/crowding multiplier and gates fluid coupling per reaction; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
       "primary_state_path": "quantitative_state",
       "runtime_authoritative_sections": [
         "spatial_state",
@@ -37907,11 +37979,11 @@
           "status": "derived"
         },
         {
-          "action": "record history events separately from persistent biological state; promote an event to memory only when a physical substrate, write mechanism, persistence test, readout and erasure or dilution mechanism are identified",
+          "action": "record history events separately from persistent biological state; accept a candidate law only through the donor-resolved write, verified-removal persistence, first-response and rechallenge-response intake; require a frozen model and donor/study-disjoint result before coupling",
           "default_snapshot_role": "event_log_to_physical_memory_firewall",
           "drives_scientific_validation": true,
           "id": "cellular_memory_substrate_contract",
-          "limitations": "The current event ledger is provenance, not biological memory. No substrate-specific consolidation, inheritance or future-response law is numerically calibrated.",
+          "limitations": "The 34-column intake and split guards are executable, but no trajectory has been delivered. The event ledger remains provenance, not biological memory, and no substrate-specific consolidation, inheritance or future-response law is numerically calibrated.",
           "source_ids": [
             "alberts_cell_memory_substrates"
           ],
@@ -37932,11 +38004,11 @@
           "status": "derived"
         },
         {
-          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise renderer-linked rigid moving-boundary pressure projection and conservative passive-scalar transport only as dimensionless numerical kernels; keep aqueous diffusion separate from ATP-dependent motor cargo and require matched healthy-PHH evidence before biological coupling",
+          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise renderer-linked rigid moving-boundary projection, conservative subgrid thin-boundary interception, passive-scalar transport and deterministic dimensionless cargo paths only as numerical kernels; require matched healthy-PHH evidence before biological coupling",
           "default_snapshot_role": "dimensionless_numerics_and_biological_coupling_firewall",
           "drives_scientific_validation": true,
           "id": "cytosol_transport_rheology_contract",
-          "limitations": "The renderer has a dimensionless projection grid, four analytic boundary shapes, translation plus quaternion-derived rotation, renderer-linked nucleus/canaliculus/ER/Golgi/organelle assemblies and an unbound conservative scalar kernel. These are not watertight microscopy meshes. No healthy-PHH viscosity, pressure, intracellular velocity, species diffusivity, motor-cargo rate or reaction-transport validation is loaded, so zero biological species and zero reactions are coupled and pressure cannot feed membrane mechanics.",
+          "limitations": "The renderer has four analytic boundary shapes, rigid translation/rotation, conservative 2x2x2 subgrid interception for thin ER/canalicular/Golgi structures, an unbound scalar kernel and a deterministic route-progress display separated from passive aqueous tracers. These are not watertight microscopy meshes or PHH transport rates. Zero biological species and reactions are coupled, and pressure cannot feed membrane mechanics.",
           "source_ids": [
             "moeendarbary2013_poroelastic_cytoplasm",
             "kwapiszewska2020_cytoplasm_nanoviscosity",
