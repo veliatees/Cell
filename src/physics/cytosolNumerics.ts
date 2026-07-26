@@ -14,6 +14,7 @@ type CytosolObstacleBase = {
   center: CytosolVector3;
   orientation?: CytosolQuaternion;
   velocity?: CytosolVector3;
+  angularVelocity?: CytosolVector3;
 };
 
 export type CytosolSphereObstacle = CytosolObstacleBase & {
@@ -32,13 +33,20 @@ export type CytosolCapsuleObstacle = CytosolObstacleBase & {
   halfLength: number;
 };
 
+export type CytosolBoxObstacle = CytosolObstacleBase & {
+  kind: "box";
+  halfExtents: CytosolVector3;
+};
+
 export type CytosolObstacle =
   | CytosolSphereObstacle
   | CytosolEllipsoidObstacle
-  | CytosolCapsuleObstacle;
+  | CytosolCapsuleObstacle
+  | CytosolBoxObstacle;
 
 type StoredObstacle = CytosolObstacle & {
   resolvedVelocity: CytosolVector3;
+  resolvedAngularVelocity: CytosolVector3;
   boundingRadius: number;
 };
 
@@ -61,6 +69,7 @@ export type CytosolProjectionDiagnostics = {
   fluidCellCount: number;
   solidCellCount: number;
   obstacleCount: number;
+  rotatingObstacleCount: number;
   divergenceRmsBefore: number;
   divergenceRmsAfter: number;
   divergenceMaxAfter: number;
@@ -83,12 +92,14 @@ export type PassiveScalarDomainRemapDiagnostics = {
 };
 
 export const CYTOSOL_NUMERICAL_CONTRACT = Object.freeze({
-  version: "dimensionless_moving_boundary_projection_v2",
+  version: "dimensionless_moving_boundary_projection_v3",
   numericalMethod: "cell_centered_eulerian_pressure_projection",
-  movingObstacleShapes: ["sphere", "ellipsoid", "capsule"] as const,
+  movingObstacleShapes: ["sphere", "ellipsoid", "capsule", "box"] as const,
+  movingObstacleKinematics: "rigid_translation_plus_quaternion_derived_rotation",
   passiveScalarMethod: "finite_volume_advection_diffusion_with_conservative_moving_domain_remap",
   movingDomainRemap: "face_neighbor_redistribution_with_deterministic_nearest_fluid_fallback",
   rendererVelocityUnits: "world_units_per_render_second",
+  rendererAngularVelocityUnits: "radians_per_render_second",
   biologicalVelocityClaim: false,
   biologicalPressureClaim: false,
   biologicalDiffusivityClaim: false,
@@ -116,6 +127,75 @@ function normalizedQuaternion(raw?: CytosolQuaternion): CytosolQuaternion {
   return [x / length, y / length, z / length, w / length];
 }
 
+export function capsuleObstacleBetween(
+  id: string,
+  start: CytosolVector3,
+  end: CytosolVector3,
+  radius: number
+): CytosolCapsuleObstacle {
+  if (!id) throw new RangeError("capsule segment id must be non-empty");
+  finiteVector(start, `${id} start`);
+  finiteVector(end, `${id} end`);
+  if (!Number.isFinite(radius) || radius <= 0) {
+    throw new RangeError(`${id} radius must be positive`);
+  }
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  const dz = end[2] - start[2];
+  const length = Math.hypot(dx, dy, dz);
+  if (length <= 1e-12) throw new RangeError(`${id} segment length must be positive`);
+  const nx = dx / length;
+  const ny = dy / length;
+  const nz = dz / length;
+  const orientation: CytosolQuaternion = ny < -1 + 1e-12
+    ? [1, 0, 0, 0]
+    : normalizedQuaternion([nz, 0, -nx, 1 + ny]);
+  return {
+    id,
+    kind: "capsule",
+    center: [
+      (start[0] + end[0]) * 0.5,
+      (start[1] + end[1]) * 0.5,
+      (start[2] + end[2]) * 0.5
+    ],
+    orientation,
+    radius,
+    halfLength: length * 0.5
+  };
+}
+
+function quaternionDot(a: CytosolQuaternion, b: CytosolQuaternion): number {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+}
+
+function resolvedAngularVelocity(
+  previous: CytosolQuaternion | undefined,
+  current: CytosolQuaternion,
+  deltaS: number
+): CytosolVector3 {
+  if (!previous || deltaS <= 1e-9) return ZERO_VECTOR;
+  const aligned: CytosolQuaternion = quaternionDot(previous, current) < 0
+    ? [-current[0], -current[1], -current[2], -current[3]]
+    : current;
+  const [px, py, pz, pw] = previous;
+  const [cx, cy, cz, cw] = aligned;
+  let dx = cw * -px + cx * pw + cy * -pz - cz * -py;
+  let dy = cw * -py - cx * -pz + cy * pw + cz * -px;
+  let dz = cw * -pz + cx * -py - cy * -px + cz * pw;
+  let dw = cw * pw - cx * -px - cy * -py - cz * -pz;
+  if (dw < 0) {
+    dx = -dx;
+    dy = -dy;
+    dz = -dz;
+    dw = -dw;
+  }
+  const vectorLength = Math.hypot(dx, dy, dz);
+  if (vectorLength <= 1e-12) return ZERO_VECTOR;
+  const angle = 2 * Math.atan2(vectorLength, Math.max(-1, Math.min(1, dw)));
+  const scale = angle / (vectorLength * deltaS);
+  return [dx * scale, dy * scale, dz * scale];
+}
+
 function inverseRotate(
   x: number,
   y: number,
@@ -137,13 +217,17 @@ function inverseRotate(
 function obstacleBoundingRadius(obstacle: CytosolObstacle): number {
   if (obstacle.kind === "sphere") return obstacle.radius;
   if (obstacle.kind === "ellipsoid") return Math.max(...obstacle.radii);
-  return obstacle.radius + obstacle.halfLength;
+  if (obstacle.kind === "capsule") return obstacle.radius + obstacle.halfLength;
+  return Math.hypot(...obstacle.halfExtents);
 }
 
 function validateObstacle(obstacle: CytosolObstacle): void {
   if (!obstacle.id) throw new RangeError("cytosol obstacle id must be non-empty");
   finiteVector(obstacle.center, `${obstacle.id} center`);
   if (obstacle.velocity) finiteVector(obstacle.velocity, `${obstacle.id} velocity`);
+  if (obstacle.angularVelocity) {
+    finiteVector(obstacle.angularVelocity, `${obstacle.id} angular velocity`);
+  }
   normalizedQuaternion(obstacle.orientation);
   if (obstacle.kind === "sphere") {
     if (!Number.isFinite(obstacle.radius) || obstacle.radius <= 0) {
@@ -154,11 +238,16 @@ function validateObstacle(obstacle: CytosolObstacle): void {
     if (obstacle.radii.some((value) => value <= 0)) {
       throw new RangeError(`${obstacle.id} ellipsoid radii must be positive`);
     }
-  } else if (
+  } else if (obstacle.kind === "capsule" && (
     !Number.isFinite(obstacle.radius) || obstacle.radius <= 0 ||
     !Number.isFinite(obstacle.halfLength) || obstacle.halfLength < 0
-  ) {
+  )) {
     throw new RangeError(`${obstacle.id} capsule dimensions are invalid`);
+  } else if (obstacle.kind === "box") {
+    finiteVector(obstacle.halfExtents, `${obstacle.id} half extents`);
+    if (obstacle.halfExtents.some((value) => value <= 0)) {
+      throw new RangeError(`${obstacle.id} box half extents must be positive`);
+    }
   }
 }
 
@@ -183,8 +272,15 @@ function obstacleContains(
     const rz = obstacle.radii[2] + padding;
     return (lx / rx) ** 2 + (ly / ry) ** 2 + (lz / rz) ** 2 <= 1;
   }
-  const closestY = Math.max(-obstacle.halfLength, Math.min(obstacle.halfLength, ly));
-  return lx * lx + (ly - closestY) ** 2 + lz * lz <= (obstacle.radius + padding) ** 2;
+  if (obstacle.kind === "capsule") {
+    const closestY = Math.max(-obstacle.halfLength, Math.min(obstacle.halfLength, ly));
+    return lx * lx + (ly - closestY) ** 2 + lz * lz <= (obstacle.radius + padding) ** 2;
+  }
+  return (
+    Math.abs(lx) <= obstacle.halfExtents[0] + padding &&
+    Math.abs(ly) <= obstacle.halfExtents[1] + padding &&
+    Math.abs(lz) <= obstacle.halfExtents[2] + padding
+  );
 }
 
 export class DynamicCytosolObstacleField {
@@ -192,6 +288,7 @@ export class DynamicCytosolObstacleField {
   private obstacles: StoredObstacle[] = [];
   private readonly buckets = new Map<string, number[]>();
   private readonly previousCenters = new Map<string, CytosolVector3>();
+  private readonly previousOrientations = new Map<string, CytosolQuaternion>();
 
   constructor(cellSize: number) {
     if (!Number.isFinite(cellSize) || cellSize <= 0) {
@@ -202,6 +299,12 @@ export class DynamicCytosolObstacleField {
 
   get count(): number {
     return this.obstacles.length;
+  }
+
+  get rotatingCount(): number {
+    return this.obstacles.reduce((count, obstacle) => (
+      Math.hypot(...obstacle.resolvedAngularVelocity) > 1e-9 ? count + 1 : count
+    ), 0);
   }
 
   setObstacles(obstacles: readonly CytosolObstacle[], deltaS: number): void {
@@ -215,6 +318,8 @@ export class DynamicCytosolObstacleField {
       if (ids.has(obstacle.id)) throw new RangeError(`duplicate cytosol obstacle id: ${obstacle.id}`);
       ids.add(obstacle.id);
       const previous = this.previousCenters.get(obstacle.id);
+      const orientation = normalizedQuaternion(obstacle.orientation);
+      const previousOrientation = this.previousOrientations.get(obstacle.id);
       const resolvedVelocity: CytosolVector3 = obstacle.velocity ?? (
         previous && deltaS > 1e-9
           ? [
@@ -224,16 +329,26 @@ export class DynamicCytosolObstacleField {
             ]
           : ZERO_VECTOR
       );
+      const angularVelocity = obstacle.angularVelocity ?? resolvedAngularVelocity(
+        previousOrientation,
+        orientation,
+        deltaS
+      );
       next.push({
         ...obstacle,
-        orientation: normalizedQuaternion(obstacle.orientation),
+        orientation,
         resolvedVelocity,
+        resolvedAngularVelocity: angularVelocity,
         boundingRadius: obstacleBoundingRadius(obstacle)
       });
       this.previousCenters.set(obstacle.id, [...obstacle.center]);
+      this.previousOrientations.set(obstacle.id, orientation);
     }
     for (const id of this.previousCenters.keys()) {
-      if (!ids.has(id)) this.previousCenters.delete(id);
+      if (!ids.has(id)) {
+        this.previousCenters.delete(id);
+        this.previousOrientations.delete(id);
+      }
     }
     this.obstacles = next;
     this.rebuildHash();
@@ -252,9 +367,13 @@ export class DynamicCytosolObstacleField {
   ): boolean {
     const obstacle = this.findContaining(x, y, z, 0);
     if (!obstacle) return false;
-    target[offset] = obstacle.resolvedVelocity[0];
-    target[offset + 1] = obstacle.resolvedVelocity[1];
-    target[offset + 2] = obstacle.resolvedVelocity[2];
+    const rx = x - obstacle.center[0];
+    const ry = y - obstacle.center[1];
+    const rz = z - obstacle.center[2];
+    const [wx, wy, wz] = obstacle.resolvedAngularVelocity;
+    target[offset] = obstacle.resolvedVelocity[0] + wy * rz - wz * ry;
+    target[offset + 1] = obstacle.resolvedVelocity[1] + wz * rx - wx * rz;
+    target[offset + 2] = obstacle.resolvedVelocity[2] + wx * ry - wy * rx;
     return true;
   }
 
@@ -405,6 +524,7 @@ export class CytosolProjectionGrid {
     fluidCellCount: 0,
     solidCellCount: 0,
     obstacleCount: 0,
+    rotatingObstacleCount: 0,
     divergenceRmsBefore: 0,
     divergenceRmsAfter: 0,
     divergenceMaxAfter: 0,
@@ -493,6 +613,7 @@ export class CytosolProjectionGrid {
       fluidCellCount,
       solidCellCount: this.fluidMask.length - fluidCellCount,
       obstacleCount: obstacles?.count ?? 0,
+      rotatingObstacleCount: obstacles?.rotatingCount ?? 0,
       divergenceRmsBefore: before.rms,
       divergenceRmsAfter: after.rms,
       divergenceMaxAfter: after.max,

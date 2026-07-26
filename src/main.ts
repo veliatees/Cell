@@ -84,6 +84,7 @@ import {
   type IntracellularFluidDeformation
 } from "./physics/intracellularFluid";
 import {
+  capsuleObstacleBetween,
   CytosolProjectionGrid,
   DynamicCytosolObstacleField,
   type CytosolObstacle,
@@ -255,7 +256,7 @@ app.innerHTML = `
         <span>Environment</span>
       </div>
 
-      <label class="control-row">
+      <label class="control-row control-row--scene">
         <span><i data-lucide="atom"></i> Scene</span>
         <select data-control="scene">${sceneOptions}</select>
       </label>
@@ -4131,7 +4132,7 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
   const cytosolTransport = summary?.cytosolTransport;
   const metabolicConstraint = summary?.metabolicConstraintShell;
   const cytosolTransportRow = reactionEvidence && cytosolTransport && metabolicConstraint
-    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Cytosol transport + reaction evidence v3</b><span>dimensionless projection active · biological coupling blocked</span></div><div class="phh-profile__grid"><span>Active reactions audited <b>${reactionEvidence.summary.active_reaction_count}</b></span><span>Reaction evidence fields <b>${reactionEvidence.summary.filled_evidence_slot_count}/${reactionEvidence.summary.evidence_slot_count} filled</b></span><span>Transport-coupled reactions <b>${reactionEvidence.summary.transport_coupled_reaction_count}</b></span><span>Global fluid multipliers <b>${reactionEvidence.summary.direct_fluid_rate_multiplier_count}</b></span><span>Cross-context references <b>${cytosolTransport.summary.cross_context_reference_count}</b></span><span>Human validation targets <b>${cytosolTransport.summary.human_in_vivo_validation_target_count}</b></span><span>Dimensionless projection grids <b>${cytosolTransport.summary.dimensionless_projection_solver_count}</b></span><span>Conservative scalar kernels <b>${cytosolTransport.summary.conservative_passive_scalar_kernel_count}</b></span><span>Moving-domain remaps <b>${cytosolTransport.summary.conservative_moving_domain_remap_count}</b></span><span>Biological species bound <b>${cytosolTransport.summary.biological_species_bound_count}</b></span><span>Healthy-PHH rheology parameters <b>${cytosolTransport.summary.healthy_phh_numeric_rheology_parameter_count}</b></span><span>Membrane pressure feedback <b>${cytosolTransport.summary.membrane_pressure_feedback_count}</b></span><span>Genome-scale FBA execution <b>${metabolicConstraint.gates.fba_execution_allowed ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Transport boundary</span><span>The projected tracer field follows the deforming membrane and moving analytic organelle boundaries. Dimensionless scalar mass is conserved when those masks move. Velocity and pressure remain dimensionless; no molecule, PHH diffusivity, reaction, or membrane-force feedback is activated without matched measurements.</span></div>`
+    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Cytosol transport + reaction evidence v4</b><span>geometry-linked projection · biological coupling blocked</span></div><div class="phh-profile__grid"><span>Active reactions audited <b>${reactionEvidence.summary.active_reaction_count}</b></span><span>Reaction evidence fields <b>${reactionEvidence.summary.filled_evidence_slot_count}/${reactionEvidence.summary.evidence_slot_count} filled</b></span><span>Transport-coupled reactions <b>${reactionEvidence.summary.transport_coupled_reaction_count}</b></span><span>Global fluid multipliers <b>${reactionEvidence.summary.direct_fluid_rate_multiplier_count}</b></span><span>Cross-context references <b>${cytosolTransport.summary.cross_context_reference_count}</b></span><span>Human validation targets <b>${cytosolTransport.summary.human_in_vivo_validation_target_count}</b></span><span>Dimensionless projection grids <b>${cytosolTransport.summary.dimensionless_projection_solver_count}</b></span><span>Analytic boundary shapes <b>${cytosolTransport.summary.analytic_obstacle_shape_count}</b></span><span>Renderer-linked boundary classes <b>${cytosolTransport.summary.renderer_geometry_boundary_class_count}</b></span><span>Rigid rotation kinematics <b>${cytosolTransport.summary.rigid_body_boundary_kinematics_count}</b></span><span>Compound conservation tests <b>${cytosolTransport.summary.compound_boundary_conservation_test_count}</b></span><span>Watertight mesh boundaries <b>${cytosolTransport.summary.full_watertight_mesh_boundary_count}</b></span><span>Conservative scalar kernels <b>${cytosolTransport.summary.conservative_passive_scalar_kernel_count}</b></span><span>Moving-domain remaps <b>${cytosolTransport.summary.conservative_moving_domain_remap_count}</b></span><span>Biological species bound <b>${cytosolTransport.summary.biological_species_bound_count}</b></span><span>Healthy-PHH rheology parameters <b>${cytosolTransport.summary.healthy_phh_numeric_rheology_parameter_count}</b></span><span>Membrane pressure feedback <b>${cytosolTransport.summary.membrane_pressure_feedback_count}</b></span><span>Genome-scale FBA execution <b>${metabolicConstraint.gates.fba_execution_allowed ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Transport boundary</span><span>The projected tracer field follows the deforming membrane and renderer-linked nucleus, canaliculus, ER, Golgi and organelle-population boundaries. Translation and quaternion-derived rotation contribute rigid surface velocity, and dimensionless scalar mass is conserved when compound masks move. These analytic assemblies are not watertight microscopy meshes; no PHH velocity, pressure, diffusivity, reaction or membrane-force feedback is activated.</span></div>`
     : "";
   const placeholderRow = assumptions
     ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Schematic</span><span>${assumptions.placeholder_pools.length} relative pools remain placeholders and do not drive quantitative validation.</span></div>`
@@ -6708,6 +6709,25 @@ function buildOrganelleScene() {
   // small instanced radii, which is why heroes stay in the exact list.)
   const occupied: { c: THREE.Vector3; r: number }[] = [];
   const fluidSupplementalStaticObstacles: CytosolObstacle[] = [];
+  const fluidDynamicGeometryObstacles: Array<() => CytosolObstacle> = [];
+  const registerCurveFluidBoundary = (
+    idPrefix: string,
+    curve: THREE.Curve<THREE.Vector3>,
+    segmentCount: number,
+    radius: number
+  ) => {
+    let start = curve.getPointAt(0);
+    for (let segment = 0; segment < segmentCount; segment += 1) {
+      const end = curve.getPointAt((segment + 1) / segmentCount);
+      fluidSupplementalStaticObstacles.push(capsuleObstacleBetween(
+        `${idPrefix}-${segment}`,
+        [start.x, start.y, start.z],
+        [end.x, end.y, end.z],
+        radius
+      ));
+      start = end;
+    }
+  };
   const place = (orgR: number, minR: number, maxR: number): THREE.Vector3 | null => {
     for (let t = 0; t < 240; t += 1) {
       const dir = randDir();
@@ -7405,6 +7425,7 @@ function buildOrganelleScene() {
     canaliculusAnchor.clone().add(new THREE.Vector3(1.7, -0.22, 2.1))
   ];
   const canalCurve = new THREE.CatmullRomCurve3(canalPts);
+  registerCurveFluidBoundary("canalicular-apical-boundary", canalCurve, 20, 0.5);
   const canalicularMembrane = mesh(new THREE.TubeGeometry(canalCurve, 64, 0.5, 18), "#a9bd55", new THREE.Vector3(), {
     opacity: 0.18,
     emissive: 0.08,
@@ -7568,6 +7589,12 @@ function buildOrganelleScene() {
   occupied.push({ c: nuc, r: 5.1 }); // reserve the nucleus volume (incl. ER shell)
   const nucleusBody = mesh(organicSphere(4.6, 0.04), "#b07ed8", nuc, { opacity: 0.26, emissive: 0.08, label: "Nucleus — stores the DNA and controls gene expression" });
   const nuclearEnvelope = mesh(organicSphere(4.75, 0.04), "#caa3e6", nuc, { opacity: 0.12, emissive: 0.05, label: "Nuclear envelope — double membrane studded with pores" });
+  fluidDynamicGeometryObstacles.push(() => ({
+    id: "nuclear-envelope-render-boundary",
+    kind: "sphere",
+    center: [nuclearEnvelope.position.x, nuclearEnvelope.position.y, nuclearEnvelope.position.z],
+    radius: 4.75
+  }));
   const nucleolus = mesh(organicSphere(1.7, 0.12), "#6f3fa0", nuc.clone().add(new THREE.Vector3(0.7, -0.5, 0.4)), { emissive: 0.16, label: "Nucleolus — transcribes and processes rRNA and assembles ribosomal subunits; protein-coding mRNA is transcribed in the nucleoplasm" });
   const fateHalo = mesh(new THREE.SphereGeometry(5.15, 48, 32), "#7fb6ff", nuc, {
     opacity: 0.02,
@@ -7706,6 +7733,13 @@ function buildOrganelleScene() {
       sheet.quaternion.copy(q);
       sheet.userData.label = "Rough endoplasmic reticulum cisterna - a flat, ribosome-studded lamella stacked around the nucleus; the perinuclear RER where secretory and membrane proteins are synthesised and enter the secretory pathway";
       group.add(sheet);
+      fluidSupplementalStaticObstacles.push({
+        id: `rough-er-cisterna-${fluidSupplementalStaticObstacles.length}`,
+        kind: "box",
+        center: [center.x, center.y, center.z],
+        orientation: [q.x, q.y, q.z, q.w],
+        halfExtents: [1.35, 0.0425, 1.05]
+      });
       tagGlow("er", sheet);
       diseaseSceneVisuals?.erMaterials.push(sheetMat);
       addPos("er", center);
@@ -7739,6 +7773,7 @@ function buildOrganelleScene() {
       label: "Rough endoplasmic reticulum - continuous with the nuclear envelope; representative connected cisternae support protein folding and secretory-path entry"
     });
     diseaseSceneVisuals?.erMaterials.push(erTube.material as THREE.MeshStandardMaterial);
+    registerCurveFluidBoundary(`rough-er-branch-${i}`, curve, 10, 0.185);
     tagGlow("er", erTube);
     addPos("er", curve.getPointAt(0.62));
     addPos("ribosome", curve.getPointAt(0.62));
@@ -7774,6 +7809,7 @@ function buildOrganelleScene() {
       label: "Smooth endoplasmic reticulum - ribosome-free continuation of the contiguous ER network; topology shown without inferred surface area"
     });
     diseaseSceneVisuals?.erMaterials.push(smoothEr.material as THREE.MeshStandardMaterial);
+    registerCurveFluidBoundary(`smooth-er-branch-${i}`, curve, 8, 0.125);
     tagGlow("er", smoothEr);
     registerAnatomyLod(smoothEr, "cellular");
   }
@@ -7840,6 +7876,13 @@ function buildOrganelleScene() {
     stack.position.copy(pos);
     stack.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), canalPoint.clone().sub(nuc).normalize());
     group.add(stack);
+    fluidDynamicGeometryObstacles.push(() => ({
+      id: `golgi-stack-render-boundary-${g}`,
+      kind: "box",
+      center: [stack.position.x, stack.position.y, stack.position.z],
+      orientation: [stack.quaternion.x, stack.quaternion.y, stack.quaternion.z, stack.quaternion.w],
+      halfExtents: [1.18, 0.65, 1.28]
+    }));
     trackMotion(stack, pos, 0.08, 0.16 + rnd() * 0.08, 0.002);
     const nCis = 5;
     for (let i = 0; i < nCis; i += 1) {
@@ -8400,17 +8443,12 @@ function buildOrganelleScene() {
       visualModeCount: 6
     });
     const obstacles = new DynamicCytosolObstacleField(1.15);
-    const staticObstacles: CytosolObstacle[] = [
-      ...occupied.map((item, index): CytosolObstacle => ({
-        id: `anatomy-proxy-${index}`,
-        kind: "sphere",
-        center: [item.c.x, item.c.y, item.c.z],
-        radius: item.r
-      })),
-      ...fluidSupplementalStaticObstacles
-    ];
+    const staticObstacles: CytosolObstacle[] = [...fluidSupplementalStaticObstacles];
     const syncObstacles = (deltaS: number) => {
       const current: CytosolObstacle[] = [...staticObstacles];
+      for (const buildBoundary of fluidDynamicGeometryObstacles) {
+        current.push(buildBoundary());
+      }
       for (let populationIndex = 0; populationIndex < organellePopulations.length; populationIndex += 1) {
         const population = organellePopulations[populationIndex];
         for (let i = 0; i < population.scale.length; i += 1) {
@@ -8485,7 +8523,7 @@ function buildOrganelleScene() {
     points.name = "projected-intracellular-fluid-tracers";
     points.userData.hoverKind = "cytoplasm-crowd";
     points.userData.label =
-      "Intracellular aqueous-phase transport tracers - a dimensionless 3D pressure-projection field follows the same volume-preserving membrane map and rebuilds around moving sphere/capsule organelle boundaries. The boundary-pressure reaction is diagnostic only. These are not water molecules, concentrations, measured PHH velocities, PHH pressures or reaction-rate parameters.";
+      "Intracellular aqueous-phase transport tracers - a dimensionless 3D pressure-projection field follows the same volume-preserving membrane map. Nucleus, canaliculus, connected ER and Golgi boundaries are assembled from their renderer geometry; moving organelles contribute rigid translational and rotational boundary velocity. The boundary-pressure reaction is diagnostic only. These are not water molecules, concentrations, measured PHH velocities, PHH pressures or reaction-rate parameters.";
 
     const trailCount = Math.min(220, field.count);
     const trailIndices = new Uint32Array(trailCount);
@@ -8616,7 +8654,7 @@ function buildOrganelleScene() {
 
   if (sceneNote) {
     sceneNote.textContent =
-      `Source-backed visual anatomy v2 (${VISUAL_ANATOMY_COVERAGE.toFixed(0)}% of the explicit renderer rubric, not biological realism): polarized membrane domains, canalicular junction/actin/microvilli, connected ER-Golgi, three cytoskeleton layers and the LSEC-Disse interface. Cytosol transport now uses a coarse dimensionless 3D pressure projection around moving analytic organelle boundaries and follows the volume-preserving membrane map. It carries no measured PHH velocity, pressure, diffusivity, concentration or reaction-rate claim; pressure feedback to membrane mechanics remains evidence-gated. A front cutaway changes renderer samples only. Quantitative EM registration, intracellular PHH rheology and donor-specific human morphometry remain incomplete.`;
+      `Source-backed visual anatomy v2 (${VISUAL_ANATOMY_COVERAGE.toFixed(0)}% of the explicit renderer rubric, not biological realism): polarized membrane domains, canalicular junction/actin/microvilli, connected ER-Golgi, three cytoskeleton layers and the LSEC-Disse interface. Cytosol transport uses a coarse dimensionless 3D pressure projection around renderer-linked analytic nucleus, canaliculus, ER, Golgi and organelle-population boundaries; rigid translation and rotation follow their current transforms. It carries no measured PHH velocity, pressure, diffusivity, concentration or reaction-rate claim; the assemblies are not watertight microscopy meshes and pressure feedback remains evidence-gated. A front cutaway changes renderer samples only. Quantitative EM registration, intracellular PHH rheology and donor-specific human morphometry remain incomplete.`;
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;

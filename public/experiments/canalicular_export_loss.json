@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-21T23:16:51.703477+00:00",
+    "created_at_utc": "2026-07-26T09:22:03.522213+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -5504,15 +5504,36 @@
           "reason": "healthy-PHH constitutive parameters and validation trajectories are unavailable"
         },
         "renderer_dimensionless_projection_grid": {
+          "analytic_obstacle_shapes": [
+            "sphere",
+            "ellipsoid",
+            "capsule",
+            "box"
+          ],
           "biological_pressure_claim": false,
           "biological_time_or_velocity_claim": false,
           "enabled": true,
+          "full_watertight_mesh_boundaries": false,
           "membrane_pressure_feedback": false,
           "membrane_volume_mapping": "same volume-preserving affine deformation as the rendered membrane",
           "moving_analytic_obstacle_boundaries": true,
           "pressure_reaction_diagnostic_only": true,
-          "role": "dimensionless moving-domain visualization and numerical test bed",
-          "static_anatomy_proxy_boundaries": true
+          "quaternion_derived_rotation_boundary_velocity": true,
+          "renderer_geometry_boundary_adapter": true,
+          "renderer_geometry_boundary_classes": [
+            "nuclear_envelope",
+            "bile_canaliculus",
+            "rough_er_cisternae",
+            "rough_er_branches",
+            "smooth_er_branches",
+            "golgi_stacks",
+            "lipid_droplets",
+            "mitochondria",
+            "peroxisomes",
+            "lysosomes"
+          ],
+          "rigid_translation_boundary_velocity": true,
+          "role": "dimensionless moving-domain visualization and numerical test bed"
         }
       },
       "source_ids": [
@@ -5527,17 +5548,23 @@
       ],
       "status": "two_phase_transport_contract_active_healthy_phh_parameters_blocked",
       "summary": {
+        "analytic_obstacle_shape_count": 4,
         "biological_species_bound_count": 0,
+        "compound_boundary_conservation_test_count": 1,
         "conservative_moving_domain_remap_count": 1,
         "conservative_passive_scalar_kernel_count": 1,
         "cross_context_reference_count": 10,
         "dimensionless_projection_solver_count": 1,
+        "full_watertight_mesh_boundary_count": 0,
         "healthy_phh_numeric_rheology_parameter_count": 0,
         "human_in_vivo_validation_target_count": 1,
         "membrane_pressure_feedback_count": 0,
         "moving_analytic_obstacle_layer_count": 1,
         "quantitative_fluid_solver_count": 0,
         "reaction_transport_coupling_count": 0,
+        "renderer_geometry_boundary_adapter_count": 1,
+        "renderer_geometry_boundary_class_count": 10,
+        "rigid_body_boundary_kinematics_count": 1,
         "visual_fluid_layer_count": 1
       },
       "transport_mode_contract": {
@@ -5562,7 +5589,7 @@
         },
         "mode_interchange_prohibited": true
       },
-      "version": "cytosol_transport_rheology_contract_v3"
+      "version": "cytosol_transport_rheology_contract_v4"
     },
     "definition_id": "human_hepatocyte_midlobular_v1",
     "division": {
@@ -6467,6 +6494,14 @@
         "title": "Molecular Biology of the Cell",
         "url": "https://www.ncbi.nlm.nih.gov/books/NBK21054/"
       },
+      "arbuckle1996_human_glut2_oocyte": {
+        "date_verified": "2026-07-22",
+        "id": "arbuckle1996_human_glut2_oocyte",
+        "notes": "Human GLUT2 2-deoxyglucose affinity measured in Xenopus oocytes.",
+        "source_type": "primary_paper",
+        "title": "Structure-Function Analysis of Liver-Type (GLUT2) and Brain-Type (GLUT3) Glucose Transporters",
+        "url": "https://doi.org/10.1021/bi962210n"
+      },
       "atp_death_switch": {
         "date_verified": "2026-07-10",
         "id": "atp_death_switch",
@@ -6484,7 +6519,7 @@
         "url": "https://arxiv.org/abs/1312.6114"
       },
       "bi2006_human_schh_taurocholate_transport": {
-        "date_verified": "2026-07-17",
+        "date_verified": "2026-07-22",
         "id": "bi2006_human_schh_taurocholate_transport",
         "notes": "Five-lot sandwich-cultured human-hepatocyte taurocholate apparent uptake, intrinsic biliary clearance and BEI ranges. These are coupled system outputs, not individual transporter rates.",
         "source_type": "primary_paper",
@@ -6636,7 +6671,7 @@
         "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/assessing-credibility-computational-modeling-and-simulation-medical-device-submissions"
       },
       "fort2011_hepatocyte_connexin_kinesin_transport": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "fort2011_hepatocyte_connexin_kinesin_transport",
         "notes": "Reports microtubule-dependent Cx32 vesicle motion in WIF-B9 cells and ATP-dependent motility of vesicles isolated from rat liver. Neither context is a healthy primary-human-hepatocyte transport calibration.",
         "source_type": "primary_paper",
@@ -6666,6 +6701,14 @@
         "source_type": "database",
         "title": "GEO Series GSE289636: primary human hepatocyte single-cell RNA-seq",
         "url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE289636"
+      },
+      "gilibili2017_human_mrp2_probe_substrates": {
+        "date_verified": "2026-07-22",
+        "id": "gilibili2017_human_mrp2_probe_substrates",
+        "notes": "Recombinant human MRP2 E17G and coproporphyrin-I transport curves.",
+        "source_type": "primary_paper",
+        "title": "Coproporphyrin-I: A Fluorescent, Endogenous Optimal Probe Substrate for ABCC2 (MRP2) Suitable for Vesicle-Based MRP2 Inhibition Assay",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/28325716/"
       },
       "glucagon_creb_hepatic_control": {
         "date_verified": "2026-07-14",
@@ -6708,7 +6751,7 @@
         "url": "https://doi.org/10.1091/mbc.E16-06-0414"
       },
       "guo2014_motor_driven_cytoplasm": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "guo2014_motor_driven_cytoplasm",
         "notes": "Force-spectrum microscopy separates ATP-dependent active fluctuations from equilibrium thermal transport in mammalian cell systems. It does not provide a healthy-PHH active-noise parameter.",
         "source_type": "primary_paper",
@@ -6716,7 +6759,7 @@
         "url": "https://doi.org/10.1016/j.cell.2014.06.051"
       },
       "guo2017_cytoplasm_size_speed_mechanics": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "guo2017_cytoplasm_size_speed_mechanics",
         "notes": "Optical-tweezer measurements in NRK and HeLa cells distinguish viscous, viscoelastic and poroelastic regimes by probe size and strain rate.",
         "source_type": "primary_paper",
@@ -6804,7 +6847,7 @@
         "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4713390/"
       },
       "human_bsep_taurocholate_2002": {
-        "date_verified": "2026-07-17",
+        "date_verified": "2026-07-22",
         "id": "human_bsep_taurocholate_2002",
         "notes": "Recombinant human BSEP taurocholate Km and Vmax.",
         "source_type": "primary_paper",
@@ -7036,7 +7079,7 @@
         "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3336801/"
       },
       "human_mrp2_bilirubin_glucuronides_1999": {
-        "date_verified": "2026-07-17",
+        "date_verified": "2026-07-22",
         "id": "human_mrp2_bilirubin_glucuronides_1999",
         "notes": "Human MRP2 Km values and measured rates at 0.5 uM substrate; the rates are not Vmax.",
         "source_type": "primary_paper",
@@ -7076,7 +7119,7 @@
         "url": "https://doi.org/10.1073/pnas.1811064116"
       },
       "jiang2020_human_hepatocyte_diffusion_mri": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "jiang2020_human_hepatocyte_diffusion_mri",
         "notes": "IMPULSED diffusion MRI in three healthy human volunteers estimated hepatocyte restriction size and intracellular-water diffusion distributions. It is a tissue-voxel water-transport validation target, not a measurement of cytosolic viscosity, pressure, bulk flow, or metabolite diffusivity.",
         "source_type": "primary_paper",
@@ -7156,7 +7199,7 @@
         "url": "https://github.com/matthiaskoenig/glucose-model/tree/747ff4ef1f3b0159f968165bb16de022c5dc5799"
       },
       "kwapiszewska2020_cytoplasm_nanoviscosity": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "kwapiszewska2020_cytoplasm_nanoviscosity",
         "notes": "FCS with probes spanning 0.65-81 nm hydrodynamic radius in six human cell lines, including HepG2, demonstrates length-scale-dependent effective viscosity.",
         "source_type": "primary_paper",
@@ -7260,7 +7303,7 @@
         "url": "https://doi.org/10.1073/pnas.0307332101"
       },
       "moeendarbary2013_poroelastic_cytoplasm": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "moeendarbary2013_poroelastic_cytoplasm",
         "notes": "Microindentation in HeLa, HT1080 and MDCK cells supports a biphasic porous solid/interstitial-fluid description. These are not primary hepatocytes.",
         "source_type": "primary_paper",
@@ -7268,7 +7311,7 @@
         "url": "https://doi.org/10.1038/nmat3517"
       },
       "murray2008_primary_rat_hepatocyte_endosome_transport": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "murray2008_primary_rat_hepatocyte_endosome_transport",
         "notes": "Primary cultured rat hepatocytes show microtubule-based endosome motion, fusion/fission and sorting. This authorizes active/passive mode separation, not a human numerical rate.",
         "source_type": "primary_paper",
@@ -7306,6 +7349,14 @@
         "source_type": "database",
         "title": "NIST Chemistry WebBook SRD 69: Glucose",
         "url": "https://webbook.nist.gov/cgi/cbook.cgi?ID=C50997"
+      },
+      "noe2002_human_bsep_bile_salts": {
+        "date_verified": "2026-07-22",
+        "id": "noe2002_human_bsep_bile_salts",
+        "notes": "Recombinant human BSEP affinity observations for four bile salts.",
+        "source_type": "primary_paper",
+        "title": "Functional expression of the canalicular bile salt export pump of human liver",
+        "url": "https://doi.org/10.1053/gast.2002.36587"
       },
       "olander2021_human_hepatocyte_size": {
         "date_verified": "2026-07-14",
@@ -7468,7 +7519,7 @@
         "url": "https://doi.org/10.1016/0167-4889(85)90209-5"
       },
       "swaminathan1997_gfp_cytoplasmic_diffusion": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "swaminathan1997_gfp_cytoplasmic_diffusion",
         "notes": "CHO-cell GFP rotation and translation report different effective relative viscosities, supporting probe- and interaction-dependent intracellular mobility.",
         "source_type": "primary_paper",
@@ -7562,6 +7613,22 @@
         "source_type": "primary_paper",
         "title": "Conditional deletion of beta-catenin reveals its role in liver growth and regeneration",
         "url": "https://pubmed.ncbi.nlm.nih.gov/17101329/"
+      },
+      "woolbright2015_bile_acid_phh": {
+        "date_verified": "2026-07-22",
+        "id": "woolbright2015_bile_acid_phh",
+        "notes": "Primary-human-hepatocyte comparison of serum and local biliary bile-acid exposures.",
+        "source_type": "primary_paper",
+        "title": "Bile acid-induced necrosis in primary human hepatocytes and in patients with obstructive cholestasis",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4361327/"
+      },
+      "xie2014_apap_phh": {
+        "date_verified": "2026-07-22",
+        "id": "xie2014_apap_phh",
+        "notes": "Freshly isolated PHH APAP time course and delayed NAC rescue protocol.",
+        "source_type": "primary_paper",
+        "title": "Mechanisms of acetaminophen-induced cell death in primary human hepatocytes",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4171351/"
       },
       "yan2012_hbv_ntcp": {
         "date_verified": "2026-07-15",
@@ -10461,10 +10528,10 @@
       "automatic_state_coupling": false,
       "backends": [
         {
-          "available": true,
-          "error": "",
+          "available": false,
+          "error": "module_not_installed",
           "module_name": "torch",
-          "package_version": "2.12.0",
+          "package_version": null,
           "role": "tensor and autograd backend"
         },
         {
@@ -15116,20 +15183,23 @@
       "version": "hepatocyte_capability_atlas_v1"
     },
     "hepatocyte_completion_matrix": {
-      "date_verified": "2026-07-22",
+      "date_verified": "2026-07-26",
       "entries": [
         {
           "code_surfaces": [
             "src/physics/cytosolNumerics.ts",
             "src/physics/intracellularFluid.ts"
           ],
-          "current_capability": "A 3D pressure-projection grid, moving analytic obstacles and conservative passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
+          "current_capability": "A 3D pressure-projection grid, four analytic obstacle shapes, rigid translation/rotation boundary kinematics and a conservative passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
           "id": "dimensionless_cytosol_numerics",
           "observed_metrics": {
+            "analytic_obstacle_shape_count": 4,
+            "compound_boundary_conservation_test_count": 1,
             "conservative_moving_domain_remap_count": 1,
             "conservative_scalar_kernel_count": 1,
             "moving_analytic_obstacle_layer_count": 1,
-            "projection_solver_count": 1
+            "projection_solver_count": 1,
+            "rigid_body_boundary_kinematics_count": 1
           },
           "remaining_requirements": [],
           "scope": "Numerical test-bed only; no biological pressure, velocity, time or diffusivity claim.",
@@ -15213,15 +15283,21 @@
             "src/physics/cytosolNumerics.ts",
             "src/physics/intracellularFluid.ts"
           ],
-          "current_capability": "Analytic moving sphere, ellipsoid and capsule obstacles exclude flow/scalar cells, but full mitochondrial, ER and Golgi meshes are not watertight fluid boundaries.",
+          "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies now represent ten boundary classes. Nucleus and Golgi transforms plus organelle populations are refreshed during motion, and rigid rotation contributes surface velocity; these assemblies are not watertight biological meshes.",
           "id": "organelle_fluid_boundaries",
           "observed_metrics": {
-            "analytic_obstacle_layer_count": 1
+            "analytic_obstacle_layer_count": 1,
+            "analytic_obstacle_shape_count": 4,
+            "compound_boundary_conservation_test_count": 1,
+            "full_watertight_mesh_boundary_count": 0,
+            "renderer_geometry_boundary_adapter_count": 1,
+            "renderer_geometry_boundary_class_count": 10,
+            "rigid_body_boundary_kinematics_count": 1
           },
           "remaining_requirements": [
-            "Watertight organelle meshes with per-frame transforms.",
-            "No-flux and moving-boundary conditions on the actual surfaces.",
-            "Resolution/conservation tests for thin ER and Golgi structures."
+            "Watertight donor- or microscopy-derived organelle meshes.",
+            "Cut-cell or immersed-boundary treatment for sub-grid ER/Golgi membranes.",
+            "Grid-convergence validation against those registered surface meshes."
           ],
           "scope": "Impermeable moving organelle surfaces in the numerical cytosol domain.",
           "status": "partial",
@@ -15370,6 +15446,30 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/validation/hepatocyte_quantities.py",
+            "data/hepatocyte_quantities/curated/source_review.v1.json"
+          ],
+          "current_capability": "All 168 rows are retained byte-for-byte with checksums and exact species partitions; 25 rows were manually source-reviewed and 16 claims entered context-bound evidence modules without activating runtime parameters.",
+          "id": "hepatocyte_quantity_harvest",
+          "observed_metrics": {
+            "healthy_phh_runtime_parameter_count": 0,
+            "promoted_context_bound_claim_count": 16,
+            "raw_record_count": 168,
+            "reviewed_raw_record_count": 25,
+            "strict_numeric_record_count": 115,
+            "unique_primary_source_pmid_count": 91
+          },
+          "remaining_requirements": [
+            "Primary-source review of the remaining rows that address a declared model need.",
+            "Exact context, denominator, uncertainty and assay matching before any numerical activation.",
+            "Independent validation for every promoted model law."
+          ],
+          "scope": "Literature observations spanning species, experimental systems and quantitative tracks; not a homogeneous healthy-PHH parameter set.",
+          "status": "partial",
+          "title": "Provenance-strict hepatocyte quantity harvest"
+        },
+        {
+          "code_surfaces": [
             "engine/cell_engine/validation/reaction_evidence_atlas.py"
           ],
           "current_capability": "Every reaction has twelve typed evidence fields and a fail-closed transport gate; no reaction passes quantitative authority.",
@@ -15477,21 +15577,43 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/quantitative/phh_injury_validation.py",
+            "engine/cell_engine/quantitative/phh_injury_trajectory.py",
+            "engine/cell_engine/core/injury_authority.py",
             "engine/cell_engine/stochastic/apoptosis.py",
-            "engine/cell_engine/processes/cellular_response.py"
+            "engine/cell_engine/processes/cellular_response.py",
+            "data/evidence_intake/phh_injury_trajectory_contract.v1.json"
           ],
-          "current_capability": "Exploratory pathways and intervention scenarios exist, but commitment thresholds and recovery windows are not predictive.",
+          "current_capability": "Four PHH perturbation protocols and nine APAP/bile-acid observations feed a read-only exact-context operator. A strict 29-column donor trajectory intake, donor/study split-leakage guards, exact assay projection and checksum-frozen evaluation contract are executable. No donor trajectory has been delivered, so quantitative projection, held-out result and runtime authority remain zero.",
           "id": "damage_fate_recovery_calibration",
           "observed_metrics": {
-            "calibrated_fate_commitment_laws": 0
+            "audited_legacy_injury_surface_count": 3,
+            "calibrated_fate_commitment_laws": 0,
+            "complete_donor_trajectory_record_count": 0,
+            "conditional_donor_trajectory_field_count": 10,
+            "donor_split_leakage_guard_count": 1,
+            "exact_assay_projection_operator_count": 1,
+            "exact_protocol_replay_pass_count": 4,
+            "frozen_evaluation_contract_count": 1,
+            "human_phh_protocol_count": 4,
+            "independent_heldout_result_count": 0,
+            "independent_heldout_study_guard_count": 1,
+            "legacy_quantitative_authority_surface_count": 0,
+            "matching_protocol_observation_count": 9,
+            "near_miss_rejection_count": 7,
+            "necrosis_mode_observation_count": 5,
+            "numeric_measurement_projection_count": 0,
+            "required_donor_trajectory_field_count": 19,
+            "runtime_coupled_observation_count": 0,
+            "trajectory_intake_validator_count": 1
           },
           "remaining_requirements": [
-            "Time-resolved dose-response trajectories with fate labels.",
-            "Commitment-point and washout/recovery experiments.",
-            "Donor-disjoint validation for each declared injury context."
+            "Populate the 19 required plus 10 conditional fields with raw donor-resolved dose-time endpoint records.",
+            "Supply intervention, commitment-point, washout and recovery follow-up fields where applicable.",
+            "Freeze model and measurement operators before an independent donor-heldout evaluation."
           ],
           "scope": "Apoptosis, necrosis, cholestasis and proteostasis outcomes in healthy PHH perturbation contexts.",
-          "status": "blocked_missing_evidence",
+          "status": "partial",
           "title": "Damage, death and recovery calibration"
         },
         {
@@ -15576,21 +15698,23 @@
         },
         {
           "code_surfaces": [
-            "src/main.ts",
-            "artifacts/screenshots/"
+            "playwright.config.ts",
+            "tests/visual/render-integrity.spec.ts",
+            "src/main.ts"
           ],
-          "current_capability": "Manual in-app browser screenshot and console QA is possible and has been performed; a committed deterministic pixel baseline is absent.",
+          "current_capability": "A Playwright suite runs two viewports and checks canvas dimensions, luminance variance, non-dark and chromatic pixel fractions, color diversity, two-frame motion, overflow, clipped controls, console errors and page errors.",
           "id": "visual_regression_automation",
           "observed_metrics": {
-            "automated_visual_regression_suites": 0,
+            "automated_viewport_count": 2,
+            "automated_visual_regression_suites": 1,
+            "exact_cross_gpu_pixel_baseline_count": 0,
+            "exact_cross_gpu_pixel_equivalence_claim": false,
             "manual_browser_qa_available": true
           },
-          "remaining_requirements": [
-            "A stable headless-browser test with nonblank-canvas, console and approved pixel-difference criteria."
-          ],
-          "scope": "Repeatable render integrity checks for desktop/mobile browser views.",
-          "status": "partial",
-          "title": "Browser visual regression automation"
+          "remaining_requirements": [],
+          "scope": "Repeatable desktop/mobile checks for nonblank moving canvas output, layout integrity and runtime errors; exact cross-GPU design equivalence is outside this scope.",
+          "status": "closed",
+          "title": "Automated browser render-integrity regression"
         },
         {
           "code_surfaces": [
@@ -15628,14 +15752,187 @@
       },
       "summary": {
         "biological_accuracy_pct": null,
-        "blocked_missing_evidence_count": 14,
-        "closed_count": 4,
-        "entry_count": 26,
+        "blocked_missing_evidence_count": 13,
+        "closed_count": 5,
+        "entry_count": 27,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
-        "partial_count": 6
+        "partial_count": 7
       },
       "version": "hepatocyte_completion_matrix_v1"
+    },
+    "hepatocyte_quantity_harvest": {
+      "audit": {
+        "authoritative_runtime_coupling": false,
+        "automatic_parameter_activation": false,
+        "bucket_inconsistency_rows": [
+          167
+        ],
+        "distinct_free_text_usability_labels": 73,
+        "exact_duplicate_records": 0,
+        "healthy_phh_runtime_parameter_count": 0,
+        "organism_bucket_counts": {
+          "HepaRG": 1,
+          "human": 74,
+          "mouse": 8,
+          "other": 36,
+          "rat": 49
+        },
+        "promoted_context_bound_claim_count": 16,
+        "reported_error_records": 65,
+        "reported_sample_size_records": 59,
+        "reported_value_records": 144,
+        "reviewed_raw_record_count": 25,
+        "source_review_count": 7,
+        "status": "lossless_harvest_curated_claims_context_bound_runtime_activation_blocked",
+        "strict_numeric_value_records": 115,
+        "total_records": 168,
+        "track_counts": {
+          "Division probability": 24,
+          "Donor variability": 19,
+          "Fate thresholds": 19,
+          "GNG/Ketogenesis": 30,
+          "Organelle cycles": 22,
+          "Redox/ROS": 25,
+          "Transporter flux": 29
+        },
+        "unique_primary_source_pmids": 91,
+        "version": "hepatocyte_quantity_harvest_audit_v1"
+      },
+      "integration_gates": {
+        "automatic_parameter_activation": false,
+        "healthy_phh_initialization_ready": false,
+        "lossless_raw_bundle_ready": true,
+        "matching_protocol_injury_observations_ready": true,
+        "predictive_ready": false,
+        "same_assay_kinetic_evidence_ready": true,
+        "whole_cell_rate_coupling_ready": false
+      },
+      "policy": "Raw rows retain their original species, model, assay and denominator. Only explicitly reviewed claims enter context-matched evidence modules; none initializes or drives the healthy-PHH runtime.",
+      "raw_paths": [
+        "data/hepatocyte_quantities/raw/METHODS_README_quantities.md",
+        "data/hepatocyte_quantities/raw/hepatocyte_quantities_master.csv",
+        "data/hepatocyte_quantities/raw/hepatocyte_quantities_master.json",
+        "data/hepatocyte_quantities/raw/hepatocyte_quantities_human.csv",
+        "data/hepatocyte_quantities/raw/hepatocyte_quantities_HepaRG.csv",
+        "data/hepatocyte_quantities/raw/hepatocyte_quantities_mouse.csv",
+        "data/hepatocyte_quantities/raw/hepatocyte_quantities_rat.csv",
+        "data/hepatocyte_quantities/raw/hepatocyte_quantities_other.csv",
+        "data/hepatocyte_quantities/raw/manifest.v1.json"
+      ],
+      "source_reviews": [
+        {
+          "expected_pmids": [
+            "12404240"
+          ],
+          "id": "noe2002_recombinant_human_bsep",
+          "integration_target": "same_assay_protein_kinetic_evidence",
+          "limitations": "Recombinant human BSEP in Sf9 vesicles; affinity values do not identify active canalicular copies or whole-hepatocyte flux.",
+          "promoted_claim_count": 4,
+          "raw_csv_rows": [
+            79,
+            80,
+            81,
+            82
+          ],
+          "review_status": "primary_source_metadata_and_abstract_values_verified"
+        },
+        {
+          "expected_pmids": [
+            "28325716"
+          ],
+          "id": "gilibili2017_recombinant_human_mrp2",
+          "integration_target": "same_assay_protein_kinetic_evidence",
+          "limitations": "Recombinant MRP2 membrane-vesicle curves with assay-protein denominators; neither Vmax is a per-cell rate.",
+          "promoted_claim_count": 2,
+          "raw_csv_rows": [
+            93,
+            94,
+            95,
+            96
+          ],
+          "review_status": "primary_source_abstract_and_figure_caption_values_verified"
+        },
+        {
+          "expected_pmids": [
+            "8987985"
+          ],
+          "id": "arbuckle1996_heterologous_human_glut2",
+          "integration_target": "same_assay_protein_kinetic_evidence",
+          "limitations": "Human GLUT2 expressed in Xenopus oocytes with 2-deoxyglucose; not a PHH glucose-flux parameter.",
+          "promoted_claim_count": 1,
+          "raw_csv_rows": [
+            104
+          ],
+          "review_status": "primary_source_abstract_value_verified"
+        },
+        {
+          "expected_pmids": [
+            "24905542"
+          ],
+          "id": "xie2014_apap_primary_human_hepatocytes",
+          "integration_target": "matching_protocol_injury_validation",
+          "limitations": "The observations apply to freshly isolated PHH exposed to 10 mM APAP. The raw >70% GSH magnitude and 29/68% death values are not promoted into the curated protocol.",
+          "promoted_claim_count": 5,
+          "raw_csv_rows": [
+            108,
+            109,
+            110,
+            112
+          ],
+          "review_status": "primary_source_full_text_timing_and_protocol_verified"
+        },
+        {
+          "expected_pmids": [
+            "25636263"
+          ],
+          "id": "woolbright2015_bile_acid_primary_human_hepatocytes",
+          "integration_target": "matching_protocol_injury_validation",
+          "limitations": "The observations distinguish serum exposure from local biliary leakage and cannot define a universal intracellular bile-acid death threshold.",
+          "promoted_claim_count": 4,
+          "raw_csv_rows": [
+            114,
+            115,
+            116
+          ],
+          "review_status": "primary_source_full_text_protocol_and_direction_verified"
+        },
+        {
+          "expected_pmids": [
+            "24122874"
+          ],
+          "id": "prasad2014_human_liver_transporter_abundance",
+          "integration_target": "donor_variability_reference_only",
+          "limitations": "Human liver membrane-protein denominator; no membrane domain, active fraction, or copies per hepatocyte.",
+          "promoted_claim_count": 0,
+          "raw_csv_rows": [
+            127,
+            128,
+            129,
+            130
+          ],
+          "review_status": "primary_source_abstract_values_verified"
+        },
+        {
+          "expected_pmids": [
+            "25926430"
+          ],
+          "id": "prasad2015_human_liver_transporter_abundance",
+          "integration_target": "donor_variability_reference_only",
+          "limitations": "Human liver total-membrane denominator and mixed donor panel; not active surface copies or a joint donor-state model.",
+          "promoted_claim_count": 0,
+          "raw_csv_rows": [
+            131,
+            132,
+            133,
+            134,
+            135
+          ],
+          "review_status": "primary_source_abstract_values_verified"
+        }
+      ],
+      "status": "lossless_harvest_curated_claims_context_bound_runtime_activation_blocked",
+      "version": "hepatocyte_quantity_harvest_audit_v1"
     },
     "history": {
       "birth_time_s": 0.0,
@@ -20594,6 +20891,13 @@
         "cytosol_transport",
         "metabolic_constraint_shell",
         "hepatocyte_completion_matrix",
+        "hepatocyte_quantity_harvest",
+        "phh_injury_validation.protocols",
+        "phh_injury_validation.observations",
+        "phh_injury_validation.observation_operator",
+        "phh_injury_validation.runtime_authority",
+        "phh_injury_validation.validation_data_contract",
+        "phh_injury_validation.trajectory_intake",
         "phh_albumin_secretion.assay_contract",
         "phh_albumin_secretion.observed_batch_span",
         "phh_albumin_secretion.measurement_contract",
@@ -20635,7 +20939,7 @@
         "spatial_world",
         "physical_validation"
       ],
-      "policy": "quantitative_state wins on overlapping aggregate species; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; cellular memory requires an assayed persistent physical substrate and never treats an event log as memory; cytosol_transport forbids a single global viscosity/crowding multiplier and reaction_evidence_atlas gates fluid coupling per reaction; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+      "policy": "quantitative_state wins on overlapping aggregate species; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires an assayed persistent physical substrate and never treats an event log as memory; cytosol_transport forbids a single global viscosity/crowding multiplier and reaction_evidence_atlas gates fluid coupling per reaction; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
       "primary_state_path": "quantitative_state",
       "runtime_authoritative_sections": [
         "spatial_state",
@@ -23852,7 +24156,7 @@
         "whole_cell_transport_flux_ready": false
       },
       "scientific_release": {
-        "authoritative_scope": "Healthy PHH aggregate metabolic observations, nutritional glycogen contexts, and apparent Pi-to-ATP exchange retained only in its original assay space. The source-supported energy/redox compartment and process graph is authoritative as non-executable structure; all organelle initial values, ATP demand, OXPHOS, antioxidant kinetics and predictive coupling remain blocked. Human zonation, postabsorptive glucose perfusion, measured endocrine observations, exact PHH glucose/albumin/CYP/BEI operators, donor-resolved proteome references and bile-acid endpoints retain their declared assay and denominator limits. Reaction authority and kinetic-transfer firewalls keep the integrated fuel runtime exploratory. Published glucose execution remains shadow/diagnostic. Runtime contact geometry is engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, Brian2 biochemical execution and generative-state coupling remain blocked. External scientific review is organized by explicit context, claim, reviewer role and independence rules; no external report, prospective result, independent reproduction or whole-cell biological-accuracy percentage is claimed.",
+        "authoritative_scope": "Healthy PHH aggregate metabolic observations, nutritional glycogen contexts, and apparent Pi-to-ATP exchange retained only in its original assay space. The source-supported energy/redox compartment and process graph is authoritative as non-executable structure; all organelle initial values, ATP demand, OXPHOS, antioxidant kinetics and predictive coupling remain blocked. Human zonation, postabsorptive glucose perfusion, measured endocrine observations, exact PHH glucose/albumin/CYP/BEI operators, donor-resolved proteome references and bile-acid endpoints retain their declared assay and denominator limits. The quantity harvest and PHH injury observations retain species, dose, time, assay and death-mode context without automatic runtime activation. Reaction authority and kinetic-transfer firewalls keep the integrated fuel runtime exploratory. Published glucose execution remains shadow/diagnostic. Runtime contact geometry is engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, Brian2 biochemical execution and generative-state coupling remain blocked. External scientific review is organized by explicit context, claim, reviewer role and independence rules; no external report, prospective result, independent reproduction or whole-cell biological-accuracy percentage is claimed.",
         "predictive": {
           "blockers": [
             "matched donor and nutritional state",
@@ -23923,6 +24227,9 @@
             "INSR, MET and EGFR lack matched PHH receptor-binding kinetics",
             "seven-donor total abundance does not identify donor activity distributions",
             "assay kinetics lack active-surface and whole-cell flux calibration",
+            "PHH injury observations do not identify a generalized fate law",
+            "PHH injury contexts lack donor-disjoint validation",
+            "PHH injury observations are not calibrated to drive runtime fate",
             "human SCH bile-acid source lacks raw donor-level records",
             "human SCH bile-acid source lacks analyte-specific LLOQs and censoring flags",
             "paired-buffer SCH accumulation does not identify true canalicular concentration",
@@ -23948,6 +24255,7 @@
             "model surface not predictive: legacy_oxphos_kinetics",
             "model surface not predictive: integrated_fuel_pathway_rates",
             "model surface not predictive: endocrine_receptor_rate_coupling",
+            "model surface not predictive: legacy_injury_fate_runtime",
             "model surface not predictive: cell_fate_thresholds"
           ],
           "checks": [
@@ -23978,6 +24286,8 @@
             "seven-donor PHH total-protein and compartment protein-mass references are absolute while geometry, crowding and proteostasis dynamics fail closed",
             "same-cohort BSEP abundance resolves total copies only while MRP2 denominator, surface copies, active fraction and flux remain blocked",
             "eight PHH proteins retain seven-donor total abundance, localization identity, assay kinetics and response timepoints while active copies and whole-cell rates fail closed",
+            "the 168-record hepatocyte quantity harvest is checksum-audited, species-partitioned and barred from automatic parameter activation",
+            "nine primary-human-hepatocyte APAP and bile-acid injury observations retain exact dose, time, assay and death-mode context while generalized fate laws remain blocked",
             "four-donor human SCH Table 4 bile-acid compartments retain source aggregation, censoring and culture-context boundaries",
             "external PHH evidence intake is fail-closed and requires manual primary-source curation",
             "published hepatic glucose model is checksum-audited and quarantined as a non-authoritative shadow prediction",
@@ -24025,6 +24335,8 @@
             "seven-donor PHH total-protein and compartment protein-mass references are absolute while geometry, crowding and proteostasis dynamics fail closed",
             "same-cohort BSEP abundance resolves total copies only while MRP2 denominator, surface copies, active fraction and flux remain blocked",
             "eight PHH proteins retain seven-donor total abundance, localization identity, assay kinetics and response timepoints while active copies and whole-cell rates fail closed",
+            "the 168-record hepatocyte quantity harvest is checksum-audited, species-partitioned and barred from automatic parameter activation",
+            "nine primary-human-hepatocyte APAP and bile-acid injury observations retain exact dose, time, assay and death-mode context while generalized fate laws remain blocked",
             "four-donor human SCH Table 4 bile-acid compartments retain source aggregation, censoring and culture-context boundaries",
             "external PHH evidence intake is fail-closed and requires manual primary-source curation",
             "published hepatic glucose model is checksum-audited and quarantined as a non-authoritative shadow prediction",
@@ -25488,8 +25800,720 @@
       },
       "version": "phh_identity_heterogeneity_v1"
     },
+    "phh_injury_validation": {
+      "date_verified": "2026-07-22",
+      "integration_gates": {
+        "automatic_runtime_coupling": false,
+        "donor_disjoint_validation_ready": false,
+        "general_fate_law_ready": false,
+        "healthy_baseline_initialization_ready": false,
+        "matching_protocol_observations_ready": true,
+        "predictive_ready": false,
+        "senescence_commitment_ready": false
+      },
+      "observation_operator": {
+        "dose_interpolation_enabled": false,
+        "exact_protocol_replay_count": 4,
+        "exact_protocol_replay_pass_count": 4,
+        "generalization_enabled": false,
+        "match_dimensions": [
+          "species",
+          "biological_system",
+          "challenge",
+          "challenge_low",
+          "challenge_high",
+          "challenge_unit",
+          "maximum_exposure_h",
+          "temperature_c"
+        ],
+        "near_miss_probe_count": 7,
+        "near_miss_rejection_count": 7,
+        "policy": "All protocol dimensions must match exactly. Empty results represent unobserved context, endpoint or time, never an inferred absence of effect.",
+        "state_mutation_enabled": false,
+        "status": "exact_context_read_only_operator_ready",
+        "supported_result_statuses": [
+          "matching_protocol_observations_available",
+          "context_mismatch",
+          "outside_protocol_window",
+          "unobserved_endpoint",
+          "unobserved_condition",
+          "unobserved_time_window"
+        ],
+        "time_interpolation_enabled": false,
+        "unit_conversion_enabled": false,
+        "unknown_is_negative_result": false,
+        "version": "exact_phh_injury_observation_operator_v1"
+      },
+      "observations": [
+        {
+          "assay": "ALT_release_and_PI_nuclear_staining",
+          "condition": "10 mM APAP",
+          "death_mode": "necrosis",
+          "donor_count_high": 20,
+          "donor_count_low": 20,
+          "endpoint": "necrotic_cell_death",
+          "id": "apap_necrosis_onset_24h",
+          "may_drive_cell_state": false,
+          "may_generalize": false,
+          "may_validate_matching_protocol": true,
+          "protocol_id": "apap_10mM_fresh_phh_48h",
+          "result": "significant_necrosis_from_24h_with_progression_to_48h",
+          "source_id": "xie2014_apap_phh",
+          "source_locator": "Figure 1A-C and Results",
+          "time_high_h": 48.0,
+          "time_low_h": 24.0
+        },
+        {
+          "assay": "modified_Tietze_assay",
+          "condition": "10 mM APAP",
+          "death_mode": null,
+          "donor_count_high": 8,
+          "donor_count_low": 3,
+          "endpoint": "cellular_glutathione",
+          "id": "apap_gsh_depletion_first_3h",
+          "may_drive_cell_state": false,
+          "may_generalize": false,
+          "may_validate_matching_protocol": true,
+          "protocol_id": "apap_10mM_fresh_phh_48h",
+          "result": "rapid_depletion_without_promoted_magnitude",
+          "source_id": "xie2014_apap_phh",
+          "source_locator": "Abstract; Figure 3A",
+          "time_high_h": 3.0,
+          "time_low_h": 0.0
+        },
+        {
+          "assay": "JC1_red_green_ratio",
+          "condition": "10 mM APAP",
+          "death_mode": null,
+          "donor_count_high": 8,
+          "donor_count_low": 3,
+          "endpoint": "mitochondrial_membrane_potential",
+          "id": "apap_mitochondrial_potential_loss_after_12h",
+          "may_drive_cell_state": false,
+          "may_generalize": false,
+          "may_validate_matching_protocol": true,
+          "protocol_id": "apap_10mM_fresh_phh_48h",
+          "result": "loss_after_12h",
+          "source_id": "xie2014_apap_phh",
+          "source_locator": "Abstract; Figure 3B",
+          "time_high_h": 24.0,
+          "time_low_h": 12.0
+        },
+        {
+          "assay": "ALT_and_GDH_release",
+          "condition": "20 mM NAC added 6 h after 10 mM APAP",
+          "death_mode": "necrosis",
+          "donor_count_high": 7,
+          "donor_count_low": 3,
+          "endpoint": "delayed_NAC_rescue",
+          "id": "apap_nac_6h_almost_complete_protection",
+          "may_drive_cell_state": false,
+          "may_generalize": false,
+          "may_validate_matching_protocol": true,
+          "protocol_id": "apap_10mM_fresh_phh_48h",
+          "result": "almost_complete_protection",
+          "source_id": "xie2014_apap_phh",
+          "source_locator": "Abstract; Figure 7",
+          "time_high_h": 6.0,
+          "time_low_h": 6.0
+        },
+        {
+          "assay": "ALT_and_GDH_release",
+          "condition": "20 mM NAC added 15 h after 10 mM APAP",
+          "death_mode": "necrosis",
+          "donor_count_high": 7,
+          "donor_count_low": 3,
+          "endpoint": "delayed_NAC_rescue",
+          "id": "apap_nac_15h_partial_protection",
+          "may_drive_cell_state": false,
+          "may_generalize": false,
+          "may_validate_matching_protocol": true,
+          "protocol_id": "apap_10mM_fresh_phh_48h",
+          "result": "partial_protection",
+          "source_id": "xie2014_apap_phh",
+          "source_locator": "Abstract; Figure 7",
+          "time_high_h": 15.0,
+          "time_low_h": 15.0
+        },
+        {
+          "assay": "LDH_release",
+          "condition": "patient serum-context mean GCDC exposure",
+          "death_mode": null,
+          "donor_count_high": 4,
+          "donor_count_low": 4,
+          "endpoint": "cytotoxicity",
+          "id": "gcdc_serum_context_no_death_24h",
+          "may_drive_cell_state": false,
+          "may_generalize": false,
+          "may_validate_matching_protocol": true,
+          "protocol_id": "gcdc_serum_context_phh_24h",
+          "result": "no_detected_cell_death",
+          "source_id": "woolbright2015_bile_acid_phh",
+          "source_locator": "Figure 2A and Results",
+          "time_high_h": 24.0,
+          "time_low_h": 3.0
+        },
+        {
+          "assay": "LDH_PI_Hoechst_and_caspase3",
+          "condition": "GCDC at or above 1000 uM",
+          "death_mode": "necrosis",
+          "donor_count_high": 5,
+          "donor_count_low": 4,
+          "endpoint": "cytotoxicity_and_death_mode",
+          "id": "gcdc_biliary_context_necrosis",
+          "may_drive_cell_state": false,
+          "may_generalize": false,
+          "may_validate_matching_protocol": true,
+          "protocol_id": "gcdc_biliary_context_phh_24h",
+          "result": "extensive_cytotoxicity_without_caspase3_activation",
+          "source_id": "woolbright2015_bile_acid_phh",
+          "source_locator": "Figures 2-3 and Discussion",
+          "time_high_h": 24.0,
+          "time_low_h": 6.0
+        },
+        {
+          "assay": "LDH_release",
+          "condition": "serum-derived mixture up to 3x measured concentrations",
+          "death_mode": null,
+          "donor_count_high": 3,
+          "donor_count_low": 3,
+          "endpoint": "cytotoxicity",
+          "id": "serum_bile_acid_mixture_no_toxicity",
+          "may_drive_cell_state": false,
+          "may_generalize": false,
+          "may_validate_matching_protocol": true,
+          "protocol_id": "reconstituted_patient_bile_acid_milieu_phh_24h",
+          "result": "no_increase_in_LDH_release",
+          "source_id": "woolbright2015_bile_acid_phh",
+          "source_locator": "Figure 4A and Results",
+          "time_high_h": 24.0,
+          "time_low_h": 6.0
+        },
+        {
+          "assay": "LDH_release",
+          "condition": "biliary-derived mixture; significant at 0.5x and near-total LDH at 1x",
+          "death_mode": "necrosis",
+          "donor_count_high": 3,
+          "donor_count_low": 3,
+          "endpoint": "cytotoxicity",
+          "id": "biliary_bile_acid_mixture_toxicity",
+          "may_drive_cell_state": false,
+          "may_generalize": false,
+          "may_validate_matching_protocol": true,
+          "protocol_id": "reconstituted_patient_bile_acid_milieu_phh_24h",
+          "result": "local_biliary_mixture_is_cytotoxic",
+          "source_id": "woolbright2015_bile_acid_phh",
+          "source_locator": "Figure 4B and Results",
+          "time_high_h": 24.0,
+          "time_low_h": 6.0
+        }
+      ],
+      "policy": "Dose, time, culture context, assay endpoint and death mode remain inseparable. These observations may evaluate an exact matching protocol but may not initialize a healthy cell, define a universal fate threshold, or drive runtime state without a calibrated law and held-out validation.",
+      "protocols": [
+        {
+          "biological_system": "freshly_isolated_primary_human_hepatocytes",
+          "challenge": "acetaminophen",
+          "challenge_high": 10.0,
+          "challenge_low": 10.0,
+          "challenge_unit": "mM",
+          "id": "apap_10mM_fresh_phh_48h",
+          "maximum_exposure_h": 48.0,
+          "may_define_general_fate_law": false,
+          "may_drive_cell_state": false,
+          "may_initialize_healthy_baseline": false,
+          "source_id": "xie2014_apap_phh",
+          "source_locator": "Abstract; Results; Figures 1, 3, and 7",
+          "species": "Homo sapiens",
+          "temperature_c": 37.0
+        },
+        {
+          "biological_system": "primary_human_hepatocytes",
+          "challenge": "glycochenodeoxycholic_acid",
+          "challenge_high": 22.0,
+          "challenge_low": 22.0,
+          "challenge_unit": "uM_mean_patient_serum_context",
+          "id": "gcdc_serum_context_phh_24h",
+          "maximum_exposure_h": 24.0,
+          "may_define_general_fate_law": false,
+          "may_drive_cell_state": false,
+          "may_initialize_healthy_baseline": false,
+          "source_id": "woolbright2015_bile_acid_phh",
+          "source_locator": "Table 2; Figure 2; Results",
+          "species": "Homo sapiens",
+          "temperature_c": 37.0
+        },
+        {
+          "biological_system": "primary_human_hepatocytes",
+          "challenge": "glycochenodeoxycholic_acid",
+          "challenge_high": null,
+          "challenge_low": 1000.0,
+          "challenge_unit": "uM_lower_bound",
+          "id": "gcdc_biliary_context_phh_24h",
+          "maximum_exposure_h": 24.0,
+          "may_define_general_fate_law": false,
+          "may_drive_cell_state": false,
+          "may_initialize_healthy_baseline": false,
+          "source_id": "woolbright2015_bile_acid_phh",
+          "source_locator": "Figure 2; Results; Discussion",
+          "species": "Homo sapiens",
+          "temperature_c": 37.0
+        },
+        {
+          "biological_system": "primary_human_hepatocytes",
+          "challenge": "reconstituted_patient_bile_acid_mixture",
+          "challenge_high": 3.0,
+          "challenge_low": 0.5,
+          "challenge_unit": "fold_of_measured_serum_or_biliary_mixture",
+          "id": "reconstituted_patient_bile_acid_milieu_phh_24h",
+          "maximum_exposure_h": 24.0,
+          "may_define_general_fate_law": false,
+          "may_drive_cell_state": false,
+          "may_initialize_healthy_baseline": false,
+          "source_id": "woolbright2015_bile_acid_phh",
+          "source_locator": "Figure 4; Results",
+          "species": "Homo sapiens",
+          "temperature_c": 37.0
+        }
+      ],
+      "runtime_authority": {
+        "authoritative_cell_state_coupling_allowed": false,
+        "explicit_purpose_required": true,
+        "exploratory_execution_allowed": true,
+        "policy": "Legacy injury fixtures may exercise software behavior and qualitative topology. They may not validate, predict or authoritatively change a PHH state until their parameters, measurement operators and donor-disjoint validation are supplied.",
+        "predictive_execution_allowed": false,
+        "quantitative_validation_allowed": false,
+        "status": "legacy_injury_runtime_exploratory_only",
+        "summary": {
+          "audited_legacy_surface_count": 3,
+          "authoritative_state_coupling_surface_count": 0,
+          "phh_context_matched_surface_count": 0,
+          "predictive_authority_surface_count": 0,
+          "quantitative_authority_surface_count": 0
+        },
+        "surfaces": [
+          {
+            "authoritative_cell_state_coupling_allowed": false,
+            "blockers": [
+              "Default stress weights, tolerance, decay and commitment thresholds are not calibrated to a matched PHH protocol.",
+              "The ATP-dependent apoptosis-versus-necrosis literature supports mechanism direction, not the executable threshold values.",
+              "No donor-disjoint PHH fate trajectory validates the executable decision law."
+            ],
+            "code_surfaces": [
+              "engine/cell_engine/stochastic/apoptosis.py:death_drive",
+              "engine/cell_engine/stochastic/apoptosis.py:step_death",
+              "engine/cell_engine/stochastic/apoptosis.py:run_death"
+            ],
+            "current_role": "exploratory_qualitative_fate_fixture",
+            "id": "legacy_apoptosis_necrosis_switch",
+            "numerical_parameter_authority": "unresolved_legacy_defaults",
+            "phh_context_match": false,
+            "predictive_execution_allowed": false,
+            "quantitative_validation_allowed": false
+          },
+          {
+            "authoritative_cell_state_coupling_allowed": false,
+            "blockers": [
+              "ROS and adduct saturation scales are not measurements in the APAP PHH protocol.",
+              "The adapter does not preserve measured concentration, compartment or assay units.",
+              "No matched measurement operator maps its internal counts to PHH GSH, membrane-potential or necrosis endpoints."
+            ],
+            "code_surfaces": [
+              "engine/cell_engine/stochastic/apoptosis.py:signals_from_detox",
+              "engine/cell_engine/stochastic/detox.py"
+            ],
+            "current_role": "exploratory_cross_module_adapter",
+            "id": "legacy_detox_to_fate_projection",
+            "numerical_parameter_authority": "unresolved_legacy_scaling",
+            "phh_context_match": false,
+            "predictive_execution_allowed": false,
+            "quantitative_validation_allowed": false
+          },
+          {
+            "authoritative_cell_state_coupling_allowed": false,
+            "blockers": [
+              "Per-cell dose, GSH heterogeneity, exposure duration and clearance settings are not expressed in the curated PHH assay space.",
+              "The synthetic cells are not donor-resolved and do not implement a predeclared donor-disjoint split.",
+              "A monotonic software response is not an experimental dose-response validation."
+            ],
+            "code_surfaces": [
+              "engine/cell_engine/stochastic/tissue_injury.py:expose_tissue_to_toxin"
+            ],
+            "current_role": "exploratory_population_fixture",
+            "id": "legacy_tissue_injury_population",
+            "numerical_parameter_authority": "unresolved_legacy_defaults",
+            "phh_context_match": false,
+            "predictive_execution_allowed": false,
+            "quantitative_validation_allowed": false
+          }
+        ],
+        "version": "injury_runtime_authority_v1"
+      },
+      "source_ids": [
+        "xie2014_apap_phh",
+        "woolbright2015_bile_acid_phh"
+      ],
+      "status": "matching_protocol_human_phh_observations_runtime_law_blocked",
+      "summary": {
+        "apap_observation_count": 5,
+        "audited_legacy_injury_surface_count": 3,
+        "bile_acid_observation_count": 4,
+        "complete_donor_trajectory_record_count": 0,
+        "conditional_donor_trajectory_field_count": 10,
+        "donor_disjoint_validation_count": 0,
+        "donor_split_leakage_guard_count": 1,
+        "exact_assay_projection_operator_count": 1,
+        "exact_protocol_operator_count": 1,
+        "exact_protocol_replay_pass_count": 4,
+        "frozen_evaluation_contract_count": 1,
+        "general_fate_law_count": 0,
+        "healthy_baseline_parameter_count": 0,
+        "human_phh_protocol_count": 4,
+        "independent_heldout_result_count": 0,
+        "independent_heldout_study_guard_count": 1,
+        "legacy_quantitative_authority_surface_count": 0,
+        "matching_protocol_observation_count": 9,
+        "near_miss_rejection_count": 7,
+        "necrosis_mode_observation_count": 5,
+        "numeric_measurement_projection_count": 0,
+        "primary_source_count": 2,
+        "required_donor_trajectory_field_count": 19,
+        "runtime_coupled_observation_count": 0,
+        "senescence_commitment_observation_count": 0,
+        "trajectory_intake_validator_count": 1
+      },
+      "trajectory_intake": {
+        "blockers": [
+          "No donor-resolved PHH injury trajectory file has been delivered at the versioned path.",
+          "Manual primary-source review and donor-identity review have not occurred.",
+          "No frozen independent-heldout model submission exists."
+        ],
+        "contract_id": "donor_disjoint_phh_injury_trajectory_v1",
+        "contract_sha256": "d19292e25edca0a9e3cfe675ad9a2bc5fb8a2bf5b9f9fd1b4751500cb4ac001d",
+        "current_delivery": {
+          "assay_count": 0,
+          "automatic_cell_state_coupling": false,
+          "automatic_parameter_activation": false,
+          "biological_replicate_count": 0,
+          "donor_count": 0,
+          "donor_disjoint_split_count": 0,
+          "donor_resolved_raw_record_count": 0,
+          "endpoint_count": 0,
+          "general_fate_law_count": 0,
+          "independent_heldout_donor_count": 0,
+          "independent_heldout_result_count": 0,
+          "independent_heldout_trajectory_count": 0,
+          "numeric_measurement_projection_count": 0,
+          "source_study_count": 0
+        },
+        "delivery_path": "data/evidence_intake/incoming/phh_injury/latest/phh_injury_trajectories.csv",
+        "expected_header_count": 29,
+        "file_present": false,
+        "frozen_evaluation": {
+          "aggregate_score_enabled": false,
+          "automatic_cell_state_coupling": false,
+          "automatic_parameter_activation": false,
+          "contract_ready": true,
+          "descriptive_exact_assay_residuals_allowed": true,
+          "donor_identity_scope_review_required": true,
+          "evaluation_ready": false,
+          "frozen_model_required": true,
+          "independent_heldout_result_count": 0,
+          "independent_review_attestation_required": true,
+          "manual_primary_source_review_required": true,
+          "pass_fail_assignment_enabled": false,
+          "post_freeze_parameter_refit_allowed": false,
+          "required_split_role": "independent_heldout",
+          "required_submission_fields": [
+            "submission_id",
+            "model_id",
+            "model_artifact_sha256",
+            "parameter_manifest_sha256",
+            "dataset_artifact_sha256",
+            "trajectory_contract_sha256",
+            "source_review_artifact_sha256",
+            "acceptance_criteria_artifact_sha256",
+            "measurement_operator_version",
+            "split_role",
+            "frozen_before_heldout_outcome_access",
+            "parameter_refit_count_after_freeze"
+          ],
+          "source_study_disjoint_from_nonheldout_required": true,
+          "version": "donor_disjoint_phh_injury_frozen_evaluation_v1"
+        },
+        "independent_heldout_study_guard_enabled": true,
+        "measurement_operator": {
+          "aggregate_score_enabled": false,
+          "automatic_cell_state_coupling": false,
+          "censored_scalar_residual_enabled": false,
+          "dose_interpolation_enabled": false,
+          "exact_match_dimensions": [
+            "record_id",
+            "donor_id",
+            "source_study_id",
+            "split_role",
+            "species",
+            "biological_system",
+            "culture_format",
+            "challenge",
+            "challenge_concentration",
+            "challenge_concentration_unit",
+            "exposure_time_h",
+            "endpoint",
+            "assay",
+            "biological_replicate_id",
+            "technical_replicate_id",
+            "normalization_denominator",
+            "intervention",
+            "intervention_start_h",
+            "washout_time_h",
+            "recovery_followup_h"
+          ],
+          "input_quantity": "Model-predicted value of the exact reported assay readout",
+          "numeric_projection_ready": false,
+          "operator_formula": "projected_assay_value = model_predicted_assay_value",
+          "output_quantity": "Predicted assay readout in the source record's unchanged unit and normalization denominator",
+          "pass_fail_assignment_enabled": false,
+          "projectable_record_count": 0,
+          "structure_ready": true,
+          "time_interpolation_enabled": false,
+          "unit_conversion_enabled": false,
+          "version": "exact_phh_injury_assay_projection_v1"
+        },
+        "split_leakage_guard_enabled": true,
+        "status": "awaiting_donor_resolved_phh_injury_trajectories",
+        "version": "donor_disjoint_phh_injury_trajectory_intake_v1"
+      },
+      "validation_data_contract": {
+        "allowed_split_roles": [
+          "calibration",
+          "internal_validation",
+          "independent_heldout"
+        ],
+        "canonical_null_token": "null",
+        "conditional_columns": [
+          {
+            "id": "intervention",
+            "required_when": "A rescue, inhibitor, sensitizer, or co-treatment is present"
+          },
+          {
+            "id": "intervention_start_h",
+            "required_when": "An intervention is present"
+          },
+          {
+            "id": "washout_time_h",
+            "required_when": "Challenge or intervention washout is performed"
+          },
+          {
+            "id": "recovery_followup_h",
+            "required_when": "Recovery or reversibility is claimed"
+          },
+          {
+            "id": "technical_replicate_id",
+            "required_when": "Technical replicates are reported"
+          },
+          {
+            "id": "uncertainty_type",
+            "required_when": "Only a summary statistic rather than raw replicate value is available"
+          },
+          {
+            "id": "uncertainty_value",
+            "required_when": "Only a summary statistic rather than raw replicate value is available"
+          },
+          {
+            "id": "limit_of_quantification",
+            "required_when": "The assay reports an LLOQ or censoring"
+          },
+          {
+            "id": "viable_cell_count_at_measurement",
+            "required_when": "The output is normalized by seeded or viable cell count"
+          },
+          {
+            "id": "fate_label",
+            "required_when": "Apoptosis, necrosis, senescence, survival, or recovery is asserted"
+          }
+        ],
+        "contract_id": "donor_disjoint_phh_injury_trajectory_v1",
+        "current_delivery": {
+          "assay_count": 0,
+          "automatic_cell_state_coupling": false,
+          "automatic_parameter_activation": false,
+          "biological_replicate_count": 0,
+          "donor_count": 0,
+          "donor_disjoint_split_count": 0,
+          "donor_resolved_raw_record_count": 0,
+          "endpoint_count": 0,
+          "general_fate_law_count": 0,
+          "independent_heldout_donor_count": 0,
+          "independent_heldout_result_count": 0,
+          "independent_heldout_trajectory_count": 0,
+          "numeric_measurement_projection_count": 0,
+          "source_study_count": 0
+        },
+        "expected_delivery_path": "data/evidence_intake/incoming/phh_injury/latest/phh_injury_trajectories.csv",
+        "expected_record_file": "phh_injury_trajectories.csv",
+        "frozen_evaluation": {
+          "aggregate_score_enabled": false,
+          "automatic_cell_state_coupling": false,
+          "automatic_parameter_activation": false,
+          "descriptive_exact_assay_residuals_allowed": true,
+          "donor_identity_scope_review_required": true,
+          "frozen_model_required": true,
+          "independent_review_attestation_required": true,
+          "manual_primary_source_review_required": true,
+          "pass_fail_assignment_enabled": false,
+          "post_freeze_parameter_refit_allowed": false,
+          "required_split_role": "independent_heldout",
+          "required_submission_fields": [
+            "submission_id",
+            "model_id",
+            "model_artifact_sha256",
+            "parameter_manifest_sha256",
+            "dataset_artifact_sha256",
+            "trajectory_contract_sha256",
+            "source_review_artifact_sha256",
+            "acceptance_criteria_artifact_sha256",
+            "measurement_operator_version",
+            "split_role",
+            "frozen_before_heldout_outcome_access",
+            "parameter_refit_count_after_freeze"
+          ],
+          "source_study_disjoint_from_nonheldout_required": true,
+          "version": "donor_disjoint_phh_injury_frozen_evaluation_v1"
+        },
+        "header_policy": "All required and conditional columns must be present exactly once; unversioned extra columns are rejected",
+        "measurement_operator": {
+          "aggregate_score_enabled": false,
+          "automatic_cell_state_coupling": false,
+          "censored_scalar_residual_enabled": false,
+          "dose_interpolation_enabled": false,
+          "exact_match_dimensions": [
+            "record_id",
+            "donor_id",
+            "source_study_id",
+            "split_role",
+            "species",
+            "biological_system",
+            "culture_format",
+            "challenge",
+            "challenge_concentration",
+            "challenge_concentration_unit",
+            "exposure_time_h",
+            "endpoint",
+            "assay",
+            "biological_replicate_id",
+            "technical_replicate_id",
+            "normalization_denominator",
+            "intervention",
+            "intervention_start_h",
+            "washout_time_h",
+            "recovery_followup_h"
+          ],
+          "input_quantity": "Model-predicted value of the exact reported assay readout",
+          "operator_formula": "projected_assay_value = model_predicted_assay_value",
+          "output_quantity": "Predicted assay readout in the source record's unchanged unit and normalization denominator",
+          "pass_fail_assignment_enabled": false,
+          "time_interpolation_enabled": false,
+          "unit_conversion_enabled": false,
+          "version": "exact_phh_injury_assay_projection_v1"
+        },
+        "policy": {
+          "aggregate_donor_count_may_reconstruct_donor_ids": false,
+          "automatic_cell_state_coupling": false,
+          "automatic_parameter_activation": false,
+          "biological_replicate_is_independent_donor": false,
+          "donor_id_may_cross_split_roles": false,
+          "frozen_model_required_before_independent_heldout_evaluation": true,
+          "manual_primary_source_review_required": true,
+          "time_interpolation_for_validation": false,
+          "unit_conversion_without_explicit_conversion_provenance": false,
+          "unknown_endpoint_means_no_effect": false
+        },
+        "record_granularity": "One raw endpoint observation for one identified donor, biological replicate, condition, and time point",
+        "required_columns": [
+          {
+            "id": "record_id",
+            "reason": "Stable row identity and duplicate detection"
+          },
+          {
+            "id": "donor_id",
+            "reason": "Donor-disjoint calibration and validation"
+          },
+          {
+            "id": "split_role",
+            "reason": "Predeclared calibration, internal-validation, or independent-heldout assignment"
+          },
+          {
+            "id": "source_study_id",
+            "reason": "Study-level independence and provenance"
+          },
+          {
+            "id": "source_locator",
+            "reason": "Exact table, figure, supplement, repository, or raw-file location"
+          },
+          {
+            "id": "species",
+            "reason": "Cross-species records must not enter the human calibration set"
+          },
+          {
+            "id": "biological_system",
+            "reason": "Fresh PHH, plated PHH, sandwich culture, spheroid, and cell-line contexts are not interchangeable"
+          },
+          {
+            "id": "culture_format",
+            "reason": "Culture geometry and medium context affect exposure and response"
+          },
+          {
+            "id": "challenge",
+            "reason": "Exact perturbation identity"
+          },
+          {
+            "id": "challenge_concentration",
+            "reason": "Dose-response coordinate"
+          },
+          {
+            "id": "challenge_concentration_unit",
+            "reason": "No implicit dose-unit conversion"
+          },
+          {
+            "id": "exposure_time_h",
+            "reason": "Time-resolved observation coordinate"
+          },
+          {
+            "id": "endpoint",
+            "reason": "The measured biological quantity or fate label"
+          },
+          {
+            "id": "assay",
+            "reason": "Measurement operators are assay-specific"
+          },
+          {
+            "id": "raw_value",
+            "reason": "Aggregate prose cannot identify donor trajectories"
+          },
+          {
+            "id": "raw_unit",
+            "reason": "No unit-free fitting"
+          },
+          {
+            "id": "biological_replicate_id",
+            "reason": "Replicates must not be mistaken for independent donors"
+          },
+          {
+            "id": "normalization_denominator",
+            "reason": "Per-cell, per-protein, per-well, and medium-volume outputs are not interchangeable"
+          },
+          {
+            "id": "censoring_flag",
+            "reason": "Below-quantification and saturated measurements must remain explicit"
+          }
+        ],
+        "schema_version": "cell.phh-injury-trajectory-contract.v1",
+        "target": "Time-resolved APAP and cholestatic injury, intervention, washout, recovery, and fate observations in primary human hepatocytes"
+      },
+      "version": "phh_injury_validation_v1"
+    },
     "phh_protein_functional_evidence": {
-      "date_verified": "2026-07-17",
+      "date_verified": "2026-07-22",
       "functional_responses": [
         {
           "direction": "increase",
@@ -25551,6 +26575,7 @@
         {
           "biological_system": "recombinant_human_BSEP_in_insect_cell_membrane_vesicles",
           "gene": "ABCB11",
+          "hill_coefficient": null,
           "id": "bsep_taurocholate_2002",
           "interaction_type": "protein_substrate_transport",
           "kinetic_model": "michaelis_menten",
@@ -25580,6 +26605,7 @@
         {
           "biological_system": "recombinant_human_BSEP_in_inverted_Sf9_membrane_vesicles",
           "gene": "ABCB11",
+          "hill_coefficient": null,
           "id": "bsep_taurocholate_2013",
           "interaction_type": "protein_substrate_transport",
           "kinetic_model": "michaelis_menten",
@@ -25609,6 +26635,7 @@
         {
           "biological_system": "recombinant_human_MRP2_in_HEK_membrane_vesicles",
           "gene": "ABCC2",
+          "hill_coefficient": null,
           "id": "mrp2_monoglucuronosyl_bilirubin_1999",
           "interaction_type": "protein_substrate_transport",
           "kinetic_model": "michaelis_menten_affinity_with_reported_rate_point",
@@ -25638,6 +26665,7 @@
         {
           "biological_system": "recombinant_human_MRP2_in_HEK_membrane_vesicles",
           "gene": "ABCC2",
+          "hill_coefficient": null,
           "id": "mrp2_bisglucuronosyl_bilirubin_1999",
           "interaction_type": "protein_substrate_transport",
           "kinetic_model": "michaelis_menten_affinity_with_reported_rate_point",
@@ -25667,6 +26695,7 @@
         {
           "biological_system": "cryopreserved_primary_human_hepatocytes",
           "gene": "SLC10A1",
+          "hill_coefficient": null,
           "id": "ntcp_dominated_taurocholate_uptake_2003",
           "interaction_type": "whole_cell_transporter_dominated_uptake",
           "kinetic_model": "reported_michaelis_constant_range",
@@ -25691,14 +26720,203 @@
           "source_locator": "abstract and full-text kinetic analysis",
           "substrate": "taurocholate",
           "velocity": null
+        },
+        {
+          "biological_system": "recombinant_human_BSEP_in_Sf9_membrane_vesicles_noe2002",
+          "gene": "ABCB11",
+          "hill_coefficient": null,
+          "id": "bsep_taurocholate_noe2002",
+          "interaction_type": "protein_substrate_transport",
+          "kinetic_model": "michaelis_menten_affinity_only",
+          "km": {
+            "high": null,
+            "kind": "point",
+            "low": null,
+            "sd": 2.1,
+            "unit": "uM",
+            "value": 7.9
+          },
+          "may_evaluate_assay_curve": false,
+          "may_scale_whole_cell_flux": false,
+          "protein_id": "bsep",
+          "relative_activity_context": null,
+          "source_id": "noe2002_human_bsep_bile_salts",
+          "source_locator": "Abstract Results",
+          "substrate": "taurocholate",
+          "velocity": null
+        },
+        {
+          "biological_system": "recombinant_human_BSEP_in_Sf9_membrane_vesicles_noe2002",
+          "gene": "ABCB11",
+          "hill_coefficient": null,
+          "id": "bsep_glycocholate_noe2002",
+          "interaction_type": "protein_substrate_transport",
+          "kinetic_model": "michaelis_menten_affinity_only",
+          "km": {
+            "high": null,
+            "kind": "point",
+            "low": null,
+            "sd": 3.3,
+            "unit": "uM",
+            "value": 11.1
+          },
+          "may_evaluate_assay_curve": false,
+          "may_scale_whole_cell_flux": false,
+          "protein_id": "bsep",
+          "relative_activity_context": null,
+          "source_id": "noe2002_human_bsep_bile_salts",
+          "source_locator": "Abstract Results",
+          "substrate": "glycocholate",
+          "velocity": null
+        },
+        {
+          "biological_system": "recombinant_human_BSEP_in_Sf9_membrane_vesicles_noe2002",
+          "gene": "ABCB11",
+          "hill_coefficient": null,
+          "id": "bsep_taurochenodeoxycholate_noe2002",
+          "interaction_type": "protein_substrate_transport",
+          "kinetic_model": "michaelis_menten_affinity_only",
+          "km": {
+            "high": null,
+            "kind": "point",
+            "low": null,
+            "sd": 1.7,
+            "unit": "uM",
+            "value": 4.8
+          },
+          "may_evaluate_assay_curve": false,
+          "may_scale_whole_cell_flux": false,
+          "protein_id": "bsep",
+          "relative_activity_context": null,
+          "source_id": "noe2002_human_bsep_bile_salts",
+          "source_locator": "Abstract Results",
+          "substrate": "taurochenodeoxycholate",
+          "velocity": null
+        },
+        {
+          "biological_system": "recombinant_human_BSEP_in_Sf9_membrane_vesicles_noe2002",
+          "gene": "ABCB11",
+          "hill_coefficient": null,
+          "id": "bsep_tauroursodeoxycholate_noe2002",
+          "interaction_type": "protein_substrate_transport",
+          "kinetic_model": "michaelis_menten_affinity_only",
+          "km": {
+            "high": null,
+            "kind": "point",
+            "low": null,
+            "sd": 1.8,
+            "unit": "uM",
+            "value": 11.9
+          },
+          "may_evaluate_assay_curve": false,
+          "may_scale_whole_cell_flux": false,
+          "protein_id": "bsep",
+          "relative_activity_context": null,
+          "source_id": "noe2002_human_bsep_bile_salts",
+          "source_locator": "Abstract Results",
+          "substrate": "tauroursodeoxycholate",
+          "velocity": null
+        },
+        {
+          "biological_system": "recombinant_human_MRP2_in_membrane_vesicles_gilibili2017",
+          "gene": "ABCC2",
+          "hill_coefficient": {
+            "high": null,
+            "kind": "point",
+            "low": null,
+            "sd": 0.1,
+            "unit": "dimensionless",
+            "value": 2.05
+          },
+          "id": "mrp2_estradiol_17_glucuronide_2017",
+          "interaction_type": "protein_substrate_transport",
+          "kinetic_model": "hill_cooperative",
+          "km": {
+            "high": null,
+            "kind": "apparent_S50",
+            "low": null,
+            "sd": 17.0,
+            "unit": "uM",
+            "value": 170.0
+          },
+          "may_evaluate_assay_curve": true,
+          "may_scale_whole_cell_flux": false,
+          "protein_id": "mrp2",
+          "relative_activity_context": null,
+          "source_id": "gilibili2017_human_mrp2_probe_substrates",
+          "source_locator": "Figure 2A and Results; Hill coefficient 2.05 +/- 0.1",
+          "substrate": "estradiol_17beta_D_glucuronide",
+          "velocity": {
+            "kind": "vmax",
+            "sd": 137.0,
+            "substrate_concentration_uM": null,
+            "unit": "pmol_per_mg_assay_protein_per_min",
+            "value": 1447.0
+          }
+        },
+        {
+          "biological_system": "recombinant_human_MRP2_in_membrane_vesicles_gilibili2017",
+          "gene": "ABCC2",
+          "hill_coefficient": null,
+          "id": "mrp2_coproporphyrin_I_2017",
+          "interaction_type": "protein_substrate_transport",
+          "kinetic_model": "michaelis_menten",
+          "km": {
+            "high": null,
+            "kind": "point",
+            "low": null,
+            "sd": 0.7,
+            "unit": "uM",
+            "value": 7.7
+          },
+          "may_evaluate_assay_curve": true,
+          "may_scale_whole_cell_flux": false,
+          "protein_id": "mrp2",
+          "relative_activity_context": null,
+          "source_id": "gilibili2017_human_mrp2_probe_substrates",
+          "source_locator": "Figure 2B and Results",
+          "substrate": "coproporphyrin_I",
+          "velocity": {
+            "kind": "vmax",
+            "sd": 11.0,
+            "substrate_concentration_uM": null,
+            "unit": "pmol_per_mg_assay_protein_per_min",
+            "value": 48.0
+          }
+        },
+        {
+          "biological_system": "human_GLUT2_in_Xenopus_oocytes",
+          "gene": "SLC2A2",
+          "hill_coefficient": null,
+          "id": "glut2_2_deoxyglucose_oocyte_1996",
+          "interaction_type": "protein_substrate_transport",
+          "kinetic_model": "michaelis_menten_affinity_only",
+          "km": {
+            "high": null,
+            "kind": "point",
+            "low": null,
+            "sd": 1.1,
+            "unit": "mM",
+            "value": 11.2
+          },
+          "may_evaluate_assay_curve": false,
+          "may_scale_whole_cell_flux": false,
+          "protein_id": "glut2",
+          "relative_activity_context": null,
+          "source_id": "arbuckle1996_human_glut2_oocyte",
+          "source_locator": "Abstract",
+          "substrate": "2_deoxyglucose",
+          "velocity": null
         }
       ],
       "limitations": [
         "The seven-donor proteome reports total protein-group copies per nucleus, not copies per cell or active molecules.",
         "Cell-surface capture establishes identity but not membrane domain, orientation, density or active fraction.",
         "BSEP and MRP2 kinetic records are recombinant vesicle assays with assay-protein denominators.",
-        "The two BSEP assays are independent contexts and must not be averaged into one pseudo-parameter.",
+        "The independent BSEP assays and bile-salt substrates must not be averaged into one pseudo-parameter.",
         "The MRP2 values 183 and 104 are measured rates at 0.5 uM substrate, not reported Vmax values.",
+        "The 2017 MRP2 E17G and coproporphyrin-I Vmax values retain recombinant membrane-vesicle assay-protein denominators.",
+        "The GLUT2 affinity is a human protein expressed in Xenopus oocytes and cannot initialize PHH glucose transport.",
         "The NTCP-associated whole-hepatocyte uptake range is not an isolated-transporter Vmax and cryopreservation changes activity strongly.",
         "The Bi 2006 taurocholate ranges are coupled sandwich-culture system outputs and cannot identify separate NTCP, OATP or BSEP rates.",
         "The curated Bi 2006 record does not include individual-lot values, uncertainty statistics or the complete probe protocol needed for an exact model residual.",
@@ -25743,6 +26961,7 @@
             {
               "biological_system": "recombinant_human_BSEP_in_insect_cell_membrane_vesicles",
               "gene": "ABCB11",
+              "hill_coefficient": null,
               "id": "bsep_taurocholate_2002",
               "interaction_type": "protein_substrate_transport",
               "kinetic_model": "michaelis_menten",
@@ -25772,6 +26991,7 @@
             {
               "biological_system": "recombinant_human_BSEP_in_inverted_Sf9_membrane_vesicles",
               "gene": "ABCB11",
+              "hill_coefficient": null,
               "id": "bsep_taurocholate_2013",
               "interaction_type": "protein_substrate_transport",
               "kinetic_model": "michaelis_menten",
@@ -25797,6 +27017,102 @@
                 "unit": "pmol_per_mg_assay_protein_per_min",
                 "value": 286.2
               }
+            },
+            {
+              "biological_system": "recombinant_human_BSEP_in_Sf9_membrane_vesicles_noe2002",
+              "gene": "ABCB11",
+              "hill_coefficient": null,
+              "id": "bsep_taurocholate_noe2002",
+              "interaction_type": "protein_substrate_transport",
+              "kinetic_model": "michaelis_menten_affinity_only",
+              "km": {
+                "high": null,
+                "kind": "point",
+                "low": null,
+                "sd": 2.1,
+                "unit": "uM",
+                "value": 7.9
+              },
+              "may_evaluate_assay_curve": false,
+              "may_scale_whole_cell_flux": false,
+              "protein_id": "bsep",
+              "relative_activity_context": null,
+              "source_id": "noe2002_human_bsep_bile_salts",
+              "source_locator": "Abstract Results",
+              "substrate": "taurocholate",
+              "velocity": null
+            },
+            {
+              "biological_system": "recombinant_human_BSEP_in_Sf9_membrane_vesicles_noe2002",
+              "gene": "ABCB11",
+              "hill_coefficient": null,
+              "id": "bsep_glycocholate_noe2002",
+              "interaction_type": "protein_substrate_transport",
+              "kinetic_model": "michaelis_menten_affinity_only",
+              "km": {
+                "high": null,
+                "kind": "point",
+                "low": null,
+                "sd": 3.3,
+                "unit": "uM",
+                "value": 11.1
+              },
+              "may_evaluate_assay_curve": false,
+              "may_scale_whole_cell_flux": false,
+              "protein_id": "bsep",
+              "relative_activity_context": null,
+              "source_id": "noe2002_human_bsep_bile_salts",
+              "source_locator": "Abstract Results",
+              "substrate": "glycocholate",
+              "velocity": null
+            },
+            {
+              "biological_system": "recombinant_human_BSEP_in_Sf9_membrane_vesicles_noe2002",
+              "gene": "ABCB11",
+              "hill_coefficient": null,
+              "id": "bsep_taurochenodeoxycholate_noe2002",
+              "interaction_type": "protein_substrate_transport",
+              "kinetic_model": "michaelis_menten_affinity_only",
+              "km": {
+                "high": null,
+                "kind": "point",
+                "low": null,
+                "sd": 1.7,
+                "unit": "uM",
+                "value": 4.8
+              },
+              "may_evaluate_assay_curve": false,
+              "may_scale_whole_cell_flux": false,
+              "protein_id": "bsep",
+              "relative_activity_context": null,
+              "source_id": "noe2002_human_bsep_bile_salts",
+              "source_locator": "Abstract Results",
+              "substrate": "taurochenodeoxycholate",
+              "velocity": null
+            },
+            {
+              "biological_system": "recombinant_human_BSEP_in_Sf9_membrane_vesicles_noe2002",
+              "gene": "ABCB11",
+              "hill_coefficient": null,
+              "id": "bsep_tauroursodeoxycholate_noe2002",
+              "interaction_type": "protein_substrate_transport",
+              "kinetic_model": "michaelis_menten_affinity_only",
+              "km": {
+                "high": null,
+                "kind": "point",
+                "low": null,
+                "sd": 1.8,
+                "unit": "uM",
+                "value": 11.9
+              },
+              "may_evaluate_assay_curve": false,
+              "may_scale_whole_cell_flux": false,
+              "protein_id": "bsep",
+              "relative_activity_context": null,
+              "source_id": "noe2002_human_bsep_bile_salts",
+              "source_locator": "Abstract Results",
+              "substrate": "tauroursodeoxycholate",
+              "velocity": null
             }
           ],
           "physiological_compartment": "plasma_membrane",
@@ -25845,6 +27161,7 @@
             {
               "biological_system": "recombinant_human_MRP2_in_HEK_membrane_vesicles",
               "gene": "ABCC2",
+              "hill_coefficient": null,
               "id": "mrp2_monoglucuronosyl_bilirubin_1999",
               "interaction_type": "protein_substrate_transport",
               "kinetic_model": "michaelis_menten_affinity_with_reported_rate_point",
@@ -25874,6 +27191,7 @@
             {
               "biological_system": "recombinant_human_MRP2_in_HEK_membrane_vesicles",
               "gene": "ABCC2",
+              "hill_coefficient": null,
               "id": "mrp2_bisglucuronosyl_bilirubin_1999",
               "interaction_type": "protein_substrate_transport",
               "kinetic_model": "michaelis_menten_affinity_with_reported_rate_point",
@@ -25898,6 +27216,73 @@
                 "substrate_concentration_uM": 0.5,
                 "unit": "pmol_per_mg_assay_protein_per_min",
                 "value": 104.0
+              }
+            },
+            {
+              "biological_system": "recombinant_human_MRP2_in_membrane_vesicles_gilibili2017",
+              "gene": "ABCC2",
+              "hill_coefficient": {
+                "high": null,
+                "kind": "point",
+                "low": null,
+                "sd": 0.1,
+                "unit": "dimensionless",
+                "value": 2.05
+              },
+              "id": "mrp2_estradiol_17_glucuronide_2017",
+              "interaction_type": "protein_substrate_transport",
+              "kinetic_model": "hill_cooperative",
+              "km": {
+                "high": null,
+                "kind": "apparent_S50",
+                "low": null,
+                "sd": 17.0,
+                "unit": "uM",
+                "value": 170.0
+              },
+              "may_evaluate_assay_curve": true,
+              "may_scale_whole_cell_flux": false,
+              "protein_id": "mrp2",
+              "relative_activity_context": null,
+              "source_id": "gilibili2017_human_mrp2_probe_substrates",
+              "source_locator": "Figure 2A and Results; Hill coefficient 2.05 +/- 0.1",
+              "substrate": "estradiol_17beta_D_glucuronide",
+              "velocity": {
+                "kind": "vmax",
+                "sd": 137.0,
+                "substrate_concentration_uM": null,
+                "unit": "pmol_per_mg_assay_protein_per_min",
+                "value": 1447.0
+              }
+            },
+            {
+              "biological_system": "recombinant_human_MRP2_in_membrane_vesicles_gilibili2017",
+              "gene": "ABCC2",
+              "hill_coefficient": null,
+              "id": "mrp2_coproporphyrin_I_2017",
+              "interaction_type": "protein_substrate_transport",
+              "kinetic_model": "michaelis_menten",
+              "km": {
+                "high": null,
+                "kind": "point",
+                "low": null,
+                "sd": 0.7,
+                "unit": "uM",
+                "value": 7.7
+              },
+              "may_evaluate_assay_curve": true,
+              "may_scale_whole_cell_flux": false,
+              "protein_id": "mrp2",
+              "relative_activity_context": null,
+              "source_id": "gilibili2017_human_mrp2_probe_substrates",
+              "source_locator": "Figure 2B and Results",
+              "substrate": "coproporphyrin_I",
+              "velocity": {
+                "kind": "vmax",
+                "sd": 11.0,
+                "substrate_concentration_uM": null,
+                "unit": "pmol_per_mg_assay_protein_per_min",
+                "value": 48.0
               }
             }
           ],
@@ -25947,6 +27332,7 @@
             {
               "biological_system": "cryopreserved_primary_human_hepatocytes",
               "gene": "SLC10A1",
+              "hill_coefficient": null,
               "id": "ntcp_dominated_taurocholate_uptake_2003",
               "interaction_type": "whole_cell_transporter_dominated_uptake",
               "kinetic_model": "reported_michaelis_constant_range",
@@ -26184,7 +27570,32 @@
           "functional_role": "facilitated bidirectional glucose transport",
           "gene": "SLC2A2",
           "id": "SLC2A2_GLUT2",
-          "kinetic_observations": [],
+          "kinetic_observations": [
+            {
+              "biological_system": "human_GLUT2_in_Xenopus_oocytes",
+              "gene": "SLC2A2",
+              "hill_coefficient": null,
+              "id": "glut2_2_deoxyglucose_oocyte_1996",
+              "interaction_type": "protein_substrate_transport",
+              "kinetic_model": "michaelis_menten_affinity_only",
+              "km": {
+                "high": null,
+                "kind": "point",
+                "low": null,
+                "sd": 1.1,
+                "unit": "mM",
+                "value": 11.2
+              },
+              "may_evaluate_assay_curve": false,
+              "may_scale_whole_cell_flux": false,
+              "protein_id": "glut2",
+              "relative_activity_context": null,
+              "source_id": "arbuckle1996_human_glut2_oocyte",
+              "source_locator": "Abstract",
+              "substrate": "2_deoxyglucose",
+              "velocity": null
+            }
+          ],
           "physiological_compartment": "plasma_membrane",
           "physiological_domain": null,
           "protein_id": "glut2",
@@ -26247,20 +27658,24 @@
         "human_mrp2_bilirubin_glucuronides_1999",
         "human_ntcp_uptake_2003",
         "bi2006_human_schh_taurocholate_transport",
-        "kemas2021_phh_glucose"
+        "kemas2021_phh_glucose",
+        "noe2002_human_bsep_bile_salts",
+        "gilibili2017_human_mrp2_probe_substrates",
+        "arbuckle1996_human_glut2_oocyte"
       ],
       "status": "donor_abundance_and_assay_evidence_with_whole_cell_activity_blocked",
       "summary": {
         "active_fraction_observation_count": 0,
         "all_seven_donor_abundance_profile_count": 8,
-        "assay_curve_evaluable_count": 2,
-        "assay_kinetic_observation_count": 5,
+        "assay_curve_evaluable_count": 4,
+        "assay_kinetic_observation_count": 12,
         "donor_abundance_profile_count": 8,
         "donor_activity_distribution_count": 0,
         "exact_whole_cell_transport_prediction_count": 0,
         "functional_response_observation_count": 3,
         "highest_selected_abundance_cv": 1.3167874535146904,
         "highest_selected_abundance_cv_gene": "MET",
+        "hill_coefficient_observation_count": 1,
         "physiological_domain_identity_count": 3,
         "protein_count": 8,
         "quantitative_surface_localization_count": 0,
@@ -26272,7 +27687,7 @@
         "whole_cell_transport_metric_range_count": 3,
         "whole_cell_transport_validation_observation_count": 1
       },
-      "version": "phh_protein_functional_evidence_v1",
+      "version": "phh_protein_functional_evidence_v2",
       "whole_cell_transport_validations": [
         {
           "biological_system": "cryopreserved_primary_human_hepatocytes",
@@ -35733,6 +37148,8 @@
         "phh_donor_resolved_absolute_proteome",
         "hepatocyte_transporter_inventory_bridge",
         "human_sch_endogenous_bile_acid_compartments",
+        "phh_injury_exact_protocol_operator",
+        "phh_injury_donor_disjoint_evaluation_gate",
         "hepatocyte_capability_atlas",
         "cellular_memory_substrate_contract",
         "reaction_evidence_atlas",
@@ -35753,6 +37170,7 @@
         "legacy_oxphos_kinetics",
         "integrated_fuel_pathway_rates",
         "endocrine_receptor_rate_coupling",
+        "legacy_injury_fate_runtime",
         "cell_fate_thresholds"
       ],
       "policy": "Only source-backed observations and explicitly derived audit/measurement contracts may drive scientific validation. Schematic, blocked and disabled surfaces may not support quantitative claims.",
@@ -36131,6 +37549,30 @@
           "status": "source_backed"
         },
         {
+          "action": "require exact species, biological system, challenge, concentration bounds, unit, maximum exposure and temperature; filter only observed endpoint, condition and time windows; prohibit conversion, interpolation, generalization and state mutation",
+          "default_snapshot_role": "read_only_exact_context_observation_operator",
+          "drives_scientific_validation": true,
+          "id": "phh_injury_exact_protocol_operator",
+          "limitations": "Four PHH protocols and nine qualitative timing, rescue and death-mode observations are retained. They contain no general fate law, donor-resolved raw trajectories or predictive thresholds; an empty match means unobserved, not no biological effect.",
+          "source_ids": [
+            "xie2014_apap_phh",
+            "woolbright2015_bile_acid_phh"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "require the versioned 29-column raw-record schema, donor-disjoint splits, study-disjoint independent heldout data, manual source and donor-identity review, checksum-frozen model artifacts and exact assay/unit/denominator context before descriptive residual evaluation",
+          "default_snapshot_role": "strict_data_intake_and_frozen_assay_projection",
+          "drives_scientific_validation": true,
+          "id": "phh_injury_donor_disjoint_evaluation_gate",
+          "limitations": "The engineering gate is executable, but no donor-resolved PHH trajectory file or frozen heldout model submission is loaded. It performs no unit conversion, interpolation, censored-data scoring, aggregate scoring, pass/fail assignment, parameter fitting or cell-state coupling.",
+          "source_ids": [
+            "xie2014_apap_phh",
+            "woolbright2015_bile_acid_phh"
+          ],
+          "status": "derived"
+        },
+        {
           "action": "require donor-resolved PHH synthesis plus compartment-resolved ER, Golgi, medium and degradation time courses before activating a constitutive secretion model",
           "default_snapshot_role": "explicit_parameter_pulse_chase_only",
           "drives_scientific_validation": false,
@@ -36415,6 +37857,20 @@
           "status": "blocked"
         },
         {
+          "action": "permit only explicitly exploratory software execution; reject quantitative validation, prediction and authoritative cell-state coupling until matched PHH parameters, measurement operators and donor-disjoint validation exist",
+          "default_snapshot_role": "exploratory_software_fixture_only",
+          "drives_scientific_validation": false,
+          "id": "legacy_injury_fate_runtime",
+          "limitations": "The executable stress weights, saturation scales, commitment thresholds, synthetic GSH heterogeneity and exposure settings are unresolved legacy defaults. Mechanistic direction and matching-protocol observations do not authorize those numbers.",
+          "source_ids": [
+            "atp_death_switch",
+            "human_bile_acid_death_mode",
+            "xie2014_apap_phh",
+            "woolbright2015_bile_acid_phh"
+          ],
+          "status": "blocked"
+        },
+        {
           "action": "do not claim calibrated time-to-death",
           "default_snapshot_role": "evidence_labels_only",
           "drives_scientific_validation": false,
@@ -36476,11 +37932,11 @@
           "status": "derived"
         },
         {
-          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise moving-boundary pressure projection and conservative passive-scalar transport only as dimensionless numerical kernels; keep aqueous diffusion separate from ATP-dependent motor cargo and require matched healthy-PHH evidence before biological coupling",
+          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise renderer-linked rigid moving-boundary pressure projection and conservative passive-scalar transport only as dimensionless numerical kernels; keep aqueous diffusion separate from ATP-dependent motor cargo and require matched healthy-PHH evidence before biological coupling",
           "default_snapshot_role": "dimensionless_numerics_and_biological_coupling_firewall",
           "drives_scientific_validation": true,
           "id": "cytosol_transport_rheology_contract",
-          "limitations": "The renderer has a dimensionless projection grid, moving analytic organelle boundaries and an unbound conservative scalar kernel. No healthy-PHH viscosity, pressure, intracellular velocity, species diffusivity, motor-cargo rate or reaction-transport validation is loaded, so zero biological species and zero reactions are coupled and pressure cannot feed membrane mechanics.",
+          "limitations": "The renderer has a dimensionless projection grid, four analytic boundary shapes, translation plus quaternion-derived rotation, renderer-linked nucleus/canaliculus/ER/Golgi/organelle assemblies and an unbound conservative scalar kernel. These are not watertight microscopy meshes. No healthy-PHH viscosity, pressure, intracellular velocity, species diffusivity, motor-cargo rate or reaction-transport validation is loaded, so zero biological species and zero reactions are coupled and pressure cannot feed membrane mechanics.",
           "source_ids": [
             "moeendarbary2013_poroelastic_cytoplasm",
             "kwapiszewska2020_cytoplasm_nanoviscosity",

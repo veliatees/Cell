@@ -1290,7 +1290,7 @@ export type EngineReactionEvidenceAtlas = {
 };
 
 export type EngineCytosolTransport = {
-  version: "cytosol_transport_rheology_contract_v3";
+  version: "cytosol_transport_rheology_contract_v4";
   status: string;
   material_model: {
     model: "poroelastic_two_phase_cytoplasm";
@@ -1353,7 +1353,12 @@ export type EngineCytosolTransport = {
       role: string;
       membrane_volume_mapping: string;
       moving_analytic_obstacle_boundaries: true;
-      static_anatomy_proxy_boundaries: true;
+      analytic_obstacle_shapes: string[];
+      rigid_translation_boundary_velocity: true;
+      quaternion_derived_rotation_boundary_velocity: true;
+      renderer_geometry_boundary_adapter: true;
+      renderer_geometry_boundary_classes: string[];
+      full_watertight_mesh_boundaries: false;
       pressure_reaction_diagnostic_only: true;
       biological_time_or_velocity_claim: false;
       biological_pressure_claim: false;
@@ -1387,6 +1392,12 @@ export type EngineCytosolTransport = {
     conservative_moving_domain_remap_count: number;
     biological_species_bound_count: number;
     moving_analytic_obstacle_layer_count: number;
+    analytic_obstacle_shape_count: number;
+    rigid_body_boundary_kinematics_count: number;
+    renderer_geometry_boundary_adapter_count: number;
+    renderer_geometry_boundary_class_count: number;
+    full_watertight_mesh_boundary_count: number;
+    compound_boundary_conservation_test_count: number;
     membrane_pressure_feedback_count: number;
     quantitative_fluid_solver_count: number;
     reaction_transport_coupling_count: number;

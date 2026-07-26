@@ -20,12 +20,34 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
     assert summary["entry_count"] == 27
-    assert summary["closed_count"] == 4
-    assert summary["partial_count"] == 8
+    assert summary["closed_count"] == 5
+    assert summary["partial_count"] == 7
     assert summary["blocked_missing_evidence_count"] == 13
     assert summary["external_action_required_count"] == 1
     assert summary["not_applicable_at_model_scale_count"] == 1
     assert summary["biological_accuracy_pct"] is None
+
+
+def test_render_integrity_is_closed_without_claiming_cross_gpu_pixel_identity() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    visual = entries["visual_regression_automation"]
+    assert visual["status"] == "closed"
+    assert visual["observed_metrics"]["automated_visual_regression_suites"] == 1
+    assert visual["observed_metrics"]["automated_viewport_count"] == 2
+    assert visual["observed_metrics"]["exact_cross_gpu_pixel_baseline_count"] == 0
+    assert visual["observed_metrics"]["exact_cross_gpu_pixel_equivalence_claim"] is False
+
+
+def test_organelle_boundaries_report_geometry_adapter_without_mesh_overclaim() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    boundaries = entries["organelle_fluid_boundaries"]
+    assert boundaries["status"] == "partial"
+    assert boundaries["observed_metrics"]["analytic_obstacle_shape_count"] == 4
+    assert boundaries["observed_metrics"]["renderer_geometry_boundary_class_count"] == 10
+    assert boundaries["observed_metrics"]["rigid_body_boundary_kinematics_count"] == 1
+    assert boundaries["observed_metrics"]["full_watertight_mesh_boundary_count"] == 0
 
 
 def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked() -> None:
