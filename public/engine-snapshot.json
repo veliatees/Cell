@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-26T16:06:52.891375+00:00",
+    "created_at_utc": "2026-07-26T17:40:05.559666+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -6891,7 +6891,7 @@
       "fastcore": {
         "date_verified": "2026-07-26",
         "id": "fastcore",
-        "notes": "Defines FASTCC flux-consistency classification and the FASTCORE LP-7/LP-10 extraction method. FASTCC has been applied to the pinned generic reconstruction; no healthy-PHH core reaction set has been supplied or applied to Human-GEM.",
+        "notes": "Defines FASTCC flux-consistency classification and the FASTCORE LP-3/LP-7/LP-10 extraction method. FASTCC has been applied to the pinned generic reconstruction. A conservative seven-donor total-proteome core was trialed with FASTCORE, but the output failed strict consistency and the closure retained nearly the full network.",
         "source_type": "primary_paper",
         "title": "Fast Reconstruction of Compact Context-Specific Metabolic Network Models",
         "url": "https://doi.org/10.1371/journal.pcbi.1003424"
@@ -16045,6 +16045,7 @@
             "artifact_identity_verified_before_parse": true,
             "fba_execution_allowed": false,
             "gene_associated_reaction_count": 7782,
+            "gene_product_label_count": 2848,
             "healthy_phh_context_extracted": false,
             "objective_count": 1,
             "reversible_reaction_count": 5725,
@@ -16075,7 +16076,8 @@
             "epsilon": 0.0001,
             "epsilon_is_biological_parameter": false,
             "healthy_phh_context_extracted": false,
-            "lp7_solve_count": 253,
+            "lp3_solve_count": 247,
+            "lp7_solve_count": 6,
             "maximum_mass_balance_residual": 3.3518572306275897e-10
           },
           "remaining_requirements": [],
@@ -16111,6 +16113,57 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/quantitative/human_gem_gpr.py",
+            "engine/cell_engine/quantitative/human_gem_phh_proteome_context.py",
+            "scripts/audit_human_gem_phh_proteome_gpr.py",
+            "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_proteome_gpr_audit.json",
+            "engine/tests/test_human_gem_phh_proteome_context.py"
+          ],
+          "current_capability": "Every donor is evaluated independently using only single-gene MaxQuant groups with a non-null source observation and exact case-sensitive FBC labels. The all-donor reaction intersection is separated from generic FASTCC conflicts, yielding a reproducible 4,555-reaction candidate core without abundance thresholds, synonym imputation or protein-group summation.",
+          "id": "seven_donor_phh_proteome_gpr_core",
+          "observed_metrics": {
+            "active_enzyme_abundance_inferred": false,
+            "donor_count": 7,
+            "flux_consistent_core_candidate_count": 4555,
+            "flux_magnitude_inferred": false,
+            "generic_fastcc_blocked_conflict_count": 527,
+            "non_single_gene_excluded_group_count": 579,
+            "not_healthy_volunteers": true,
+            "reaction_support_intersection_count": 5082,
+            "single_gene_group_count": 8110
+          },
+          "remaining_requirements": [],
+          "scope": "Conservative Boolean support mapping from the curated seven-donor resection-PHH total proteome to exact Human-GEM FBC gene-product rules; no activity, capacity or flux claim.",
+          "status": "closed",
+          "title": "Seven-donor PHH proteome-to-GPR core evidence"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/fastcore_context.py",
+            "engine/cell_engine/quantitative/human_gem_phh_fastcore_context.py",
+            "scripts/extract_human_gem_phh_fastcore_context.py",
+            "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_proteome_fastcore_context.json",
+            "engine/tests/test_human_gem_phh_fastcore_context.py"
+          ],
+          "current_capability": "The source-defined trial selected 7,320 reactions but strict output FASTCC found 408 blocked. A parameter-free bipartite stoichiometric closure restored consistency only by retaining 11,639 of 11,641 input reactions. The trial is therefore recorded as a reproducible negative context-specificity result, not promoted to a hepatocyte model.",
+          "id": "human_gem_real_scale_fastcore_trial",
+          "observed_metrics": {
+            "closure_omitted_reaction_count": 2,
+            "closure_selected_reaction_count": 11639,
+            "context_model_accepted": false,
+            "context_specificity_established": false,
+            "core_reaction_count": 4555,
+            "source_FASTCORE_output_flux_consistent": false,
+            "source_fastcore_output_blocked_reaction_count": 408,
+            "source_fastcore_selected_reaction_count": 7320
+          },
+          "remaining_requirements": [],
+          "scope": "Reproducible offline application and fail-closed diagnosis of source-defined FASTCORE on the seven-donor Boolean proteome core; no accepted PHH context model.",
+          "status": "closed",
+          "title": "Real-scale Human-GEM FASTCORE trial"
+        },
+        {
+          "code_surfaces": [
             "engine/cell_engine/quantitative/constraint_numerics.py",
             "engine/tests/test_constraint_numerics.py"
           ],
@@ -16135,7 +16188,7 @@
             "engine/cell_engine/quantitative/fastcore_context.py",
             "engine/tests/test_fastcore_context.py"
           ],
-          "current_capability": "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon and LP10 scaling inputs, global and output flux-consistency audits, reversible-reaction orientation handling and explicit non-uniqueness. It retains a synthetic core pathway and omits an unrelated pathway; Human-GEM has not been context-extracted.",
+          "current_capability": "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon and source-pinned LP10 scaling, identity-bound input consistency certificates, original reaction-orientation restoration, strict output FASTCC and explicit non-uniqueness. Synthetic fixtures include reverse-only and subthreshold-support closure cases. Real Human-GEM application is reported separately as a rejected trial.",
           "id": "fastcore_context_extraction_numerics",
           "observed_metrics": {
             "biological_flux_authority": false,
@@ -16242,8 +16295,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 12,
-        "closed_count": 10,
-        "entry_count": 32,
+        "closed_count": 12,
+        "entry_count": 34,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
@@ -22735,8 +22788,9 @@
     "metabolic_constraint_shell": {
       "blockers": [
         "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
-        "checksum-frozen healthy-PHH context extraction bundle is not delivered",
-        "a donor/cohort-resolved healthy-PHH core reaction set is not delivered for FASTCORE",
+        "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
+        "source-defined FASTCORE selected 7,320 reactions but left 408 output reactions blocked at the declared epsilon",
+        "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
         "measured exchange bounds and explicit scale conversion are absent",
         "objective function is not linked to a matched healthy-PHH measurement",
         "structural audit exceptions require reaction-level resolution before scientific optimization",
@@ -22760,7 +22814,8 @@
           "epsilon": 0.0001,
           "epsilon_is_biological_parameter": false,
           "healthy_phh_context_extracted": false,
-          "lp7_solve_count": 253,
+          "lp3_solve_count": 247,
+          "lp7_solve_count": 6,
           "maximum_mass_balance_residual": 3.3518572306275897e-10,
           "solver_backend_version": "1.17.1",
           "solver_method": "highs-ipm"
@@ -22793,14 +22848,38 @@
         "release_date": "2026-03-30",
         "release_tag": "v2.0.0",
         "sbml_path": null,
+        "seven_donor_fastcore_trial": {
+          "audit_report": "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_proteome_fastcore_context.json",
+          "closure_omitted_reaction_count": 2,
+          "closure_selected_reaction_count": 11639,
+          "context_model_accepted": false,
+          "context_specificity_established": false,
+          "core_reaction_count": 4555,
+          "source_FASTCORE_output_flux_consistent": false,
+          "source_fastcore_output_blocked_reaction_count": 408,
+          "source_fastcore_selected_reaction_count": 7320
+        },
+        "seven_donor_proteome_gpr_audit": {
+          "active_enzyme_abundance_inferred": false,
+          "audit_report": "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_proteome_gpr_audit.json",
+          "donor_count": 7,
+          "flux_consistent_core_candidate_count": 4555,
+          "flux_magnitude_inferred": false,
+          "generic_fastcc_blocked_conflict_count": 527,
+          "non_single_gene_excluded_group_count": 579,
+          "not_healthy_volunteers": true,
+          "reaction_support_intersection_count": 5082,
+          "single_gene_group_count": 8110
+        },
         "sparse_fbc_loader_audit": {
           "active_objective_id": "obj",
           "artifact_identity_verified_before_parse": true,
           "fba_execution_allowed": false,
           "gene_associated_reaction_count": 7782,
+          "gene_product_label_count": 2848,
           "generic_human_reconstruction_loaded": true,
           "healthy_phh_context_extracted": false,
-          "loader_version": "human_gem_fbc_loader_v1",
+          "loader_version": "human_gem_fbc_loader_v2",
           "objective_count": 1,
           "parameter_count": 3,
           "reversible_reaction_count": 5725,
@@ -22808,7 +22887,8 @@
           "stoichiometric_shape": [
             8461,
             12931
-          ]
+          ],
+          "unique_gene_product_label_count": 2848
         },
         "structural_audit": {
           "active_objective_id": "obj",
@@ -22833,6 +22913,7 @@
         }
       },
       "context_extraction_kernel": {
+        "accepts_identity_bound_flux_consistency_certificate": true,
         "algorithm": "FASTCORE",
         "algorithm_role": "greedy compact flux-consistent subnetwork extraction from an already flux-consistent global reconstruction and evidence-backed core set",
         "backend": "scipy.optimize.linprog",
@@ -22844,17 +22925,21 @@
         "human_gem_context_extraction_executed": false,
         "lp10_scaling_factor_has_runtime_default": false,
         "method": "highs",
-        "official_reference_implementation": "https://github.com/opencobra/cobratoolbox/tree/master/src/dataIntegration/transcriptomics/FASTCORE",
+        "official_fixed_lp10_scaling_factor": 10000.0,
+        "official_reference_implementation": "https://github.com/opencobra/cobratoolbox/tree/67c790dbac809d9d891fdbafc33e18c21fc9bddc/src/dataIntegration/transcriptomics/FASTCORE",
+        "official_reference_implementation_commit": "67c790dbac809d9d891fdbafc33e18c21fc9bddc",
         "preserves_every_consistent_core_reaction": true,
+        "preserves_original_reaction_orientation": true,
         "primary_source": "https://doi.org/10.1371/journal.pcbi.1003424",
         "requires_explicit_core_reaction_ids": true,
         "requires_flux_consistent_input": true,
+        "support_threshold_fraction_of_epsilon": 0.99,
         "synthetic_fixture_count": 1,
         "synthetic_fixture_pass_count": 1,
         "synthetic_omitted_reaction_count": 2,
         "synthetic_selected_reaction_count": 3,
         "unique_extraction_guaranteed": false,
-        "version": "fastcore_context_kernel_v1"
+        "version": "fastcore_context_kernel_v2"
       },
       "gates": {
         "enzyme_constrained_fba_allowed": false,
@@ -22941,8 +23026,8 @@
         "human_gem_repository",
         "fastcore"
       ],
-      "status": "generic_human_gem_loaded_classified_and_native_objective_solved_phh_execution_blocked",
-      "version": "metabolic_constraint_shell_v6"
+      "status": "generic_human_gem_loaded_classified_native_objective_solved_seven_donor_proteome_FASTCORE_trial_rejected_PHH_execution_blocked",
+      "version": "metabolic_constraint_shell_v7"
     },
     "metabolic_fluxes": [
       {
@@ -41107,6 +41192,8 @@
         "human_gem_generic_flux_consistency",
         "human_gem_generic_native_fba",
         "fastcore_context_extraction_numerics",
+        "human_gem_phh_proteome_gpr_core",
+        "human_gem_real_scale_fastcore_trial",
         "phh_metabolic_execution_bundle_intake",
         "metabolic_constraint_shell",
         "hepatocyte_completion_matrix"
@@ -41994,11 +42081,11 @@
           "status": "derived"
         },
         {
-          "action": "verify the pinned Human-GEM artifact before streaming SBML/FBC compartments, species, sparse stoichiometry, bounds, reversibility, objective metadata and Boolean gene-product associations",
+          "action": "verify the pinned Human-GEM artifact before streaming SBML/FBC compartments, species, sparse stoichiometry, bounds, reversibility, objective metadata, exact gene-product labels and Boolean gene-product associations",
           "default_snapshot_role": "checksum_verified_generic_reconstruction_loader",
           "drives_scientific_validation": true,
           "id": "human_gem_sparse_fbc_loader",
-          "limitations": "The loader reproduces a generic human reconstruction and its generic biomass objective. It does not establish a healthy-PHH context, measured exchange bounds, a PHH objective or any flux.",
+          "limitations": "The loader preserves all 2,848 unique FBC gene labels and validates the strict Boolean grammar. It reproduces a generic human reconstruction and does not establish a healthy-PHH context, measured exchange bounds, a PHH objective or any flux.",
           "source_ids": [
             "human_gem_repository"
           ],
@@ -42028,12 +42115,37 @@
           "status": "derived"
         },
         {
-          "action": "implement the source-defined FASTCORE LP-7/LP-10 greedy loop with mandatory numerical inputs, flux-consistent input/output audits and explicit non-uniqueness; test only analytic synthetic networks",
-          "default_snapshot_role": "synthetic_context_extraction_verification_only",
+          "action": "implement the source-pinned FASTCORE LP-7/LP-10 greedy loop with mandatory numerical inputs, identity-bound consistency certificates, original-orientation output, strict output FASTCC and explicit non-uniqueness",
+          "default_snapshot_role": "context_extraction_kernel_and_strict_output_firewall",
           "drives_scientific_validation": true,
           "id": "fastcore_context_extraction_numerics",
-          "limitations": "No donor/cohort healthy-PHH core reaction set is loaded and FASTCORE has not been applied to Human-GEM. A future extracted network remains a computational hypothesis requiring measured boundaries and independent validation.",
+          "limitations": "Synthetic fixtures verify the kernel. Real Human-GEM application is audited separately and was rejected after the source output left blocked reactions; the kernel itself supplies no biological context authority.",
           "source_ids": [
+            "fastcore"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "map only single-gene, source-detected PHH protein groups to exact Human-GEM FBC labels; evaluate every donor independently; use no synonym imputation, abundance threshold, protein-group summation or flux inference",
+          "default_snapshot_role": "seven_donor_boolean_proteome_to_gpr_evidence",
+          "drives_scientific_validation": true,
+          "id": "human_gem_phh_proteome_gpr_core",
+          "limitations": "Seven surgical-resection PHH donors support 5,082 reactions in common; 527 generic FASTCC conflicts are quarantined and 4,555 reactions form a flux-consistent Boolean core candidate. The cohort is not healthy volunteers and total detection is not active enzyme abundance.",
+          "source_ids": [
+            "human_hepatocyte_proteome_2016",
+            "human_gem_repository"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "apply source-pinned FASTCORE to the 4,555-reaction Boolean core and accept no context unless strict output consistency and context specificity are established",
+          "default_snapshot_role": "reproducible_negative_context_specificity_result",
+          "drives_scientific_validation": true,
+          "id": "human_gem_real_scale_fastcore_trial",
+          "limitations": "The source trial selected 7,320 reactions but left 408 blocked. A parameter-free connected-component closure restored consistency only by retaining 11,639 of 11,641 reactions. No PHH context model, flux, objective, exchange state or runtime authority was accepted.",
+          "source_ids": [
+            "human_hepatocyte_proteome_2016",
+            "human_gem_repository",
             "fastcore"
           ],
           "status": "derived"
@@ -42048,15 +42160,16 @@
           "status": "derived"
         },
         {
-          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, generic LP numerics and synthetic FASTCORE kernel; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
+          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, seven-donor Boolean GPR audit and rejected real-scale FASTCORE trial; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
           "default_snapshot_role": "pinned_reconstruction_and_genome_scale_activation_firewall",
           "drives_scientific_validation": true,
           "id": "metabolic_constraint_shell",
-          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective, but it is not context-extracted for a healthy hepatocyte. No PHH bundle or biological optimization runs. Generic feasibility and biomass optimization do not identify a healthy single-hepatocyte flux state.",
+          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective. The available total proteome produced a candidate core but failed to establish a compact consistent context. No PHH bundle or biological optimization runs.",
           "source_ids": [
             "human1_metabolic_atlas",
             "human_gem_repository",
-            "fastcore"
+            "fastcore",
+            "human_hepatocyte_proteome_2016"
           ],
           "status": "derived"
         },

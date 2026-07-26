@@ -226,6 +226,10 @@ link back here or to a more specific research file.
 - Human capability and genome-scale structural references:
   - Human1 metabolism atlas: https://doi.org/10.1126/scisignal.aaz1482
   - Human-GEM repository: https://github.com/SysBioChalmers/Human-GEM
+  - Vlassis, Pacheco and Sauter, FASTCC/FASTCORE:
+    https://doi.org/10.1371/journal.pcbi.1003424
+  - Pinned COBRA Toolbox FASTCORE implementation:
+    https://github.com/opencobra/cobratoolbox/tree/67c790dbac809d9d891fdbafc33e18c21fc9bddc/src/dataIntegration/transcriptomics/FASTCORE
   - Human Protein Atlas subcellular map:
     https://doi.org/10.1126/science.aal3321
   - MacParland et al. normal human liver cell atlas:

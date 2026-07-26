@@ -9,7 +9,7 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_context() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     validate_metabolic_constraint_shell(snapshot)
-    assert snapshot["version"] == "metabolic_constraint_shell_v6"
+    assert snapshot["version"] == "metabolic_constraint_shell_v7"
     reconstruction = snapshot["candidate_reconstruction"]
     assert reconstruction["model_version"] == "2.0.0"
     assert reconstruction["release_tag"] == "v2.0.0"
@@ -38,6 +38,7 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     assert loader["stoichiometric_shape"] == [8461, 12931]
     assert loader["stoichiometric_nonzero_count"] == 55198
     assert loader["gene_associated_reaction_count"] == 7782
+    assert loader["gene_product_label_count"] == 2848
     assert loader["active_objective_id"] == "obj"
     assert loader["healthy_phh_context_extracted"] is False
     assert loader["fba_execution_allowed"] is False
@@ -45,7 +46,8 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     assert fastcc["epsilon"] == 1e-4
     assert fastcc["consistent_reaction_count"] == 11641
     assert fastcc["blocked_reaction_count"] == 1290
-    assert fastcc["lp7_solve_count"] == 253
+    assert fastcc["lp7_solve_count"] == 6
+    assert fastcc["lp3_solve_count"] == 247
     assert fastcc["maximum_mass_balance_residual"] < 1e-8
     assert fastcc["healthy_phh_context_extracted"] is False
     assert fastcc["biological_flux_authority"] is False
@@ -58,6 +60,15 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     assert generic_fba["active_reaction_count_at_1e_minus_9"] == 2566
     assert generic_fba["maximum_mass_balance_residual"] < 1e-8
     assert generic_fba["biological_flux_authority"] is False
+    proteome_gpr = reconstruction["seven_donor_proteome_gpr_audit"]
+    assert proteome_gpr["donor_count"] == 7
+    assert proteome_gpr["not_healthy_volunteers"] is True
+    assert proteome_gpr["flux_consistent_core_candidate_count"] == 4555
+    fastcore_trial = reconstruction["seven_donor_fastcore_trial"]
+    assert fastcore_trial["source_fastcore_selected_reaction_count"] == 7320
+    assert fastcore_trial["source_fastcore_output_blocked_reaction_count"] == 408
+    assert fastcore_trial["closure_selected_reaction_count"] == 11639
+    assert fastcore_trial["context_model_accepted"] is False
     assert snapshot["optimization_problem"]["objective"] is None
     assert snapshot["optimization_problem"]["boundary_fluxes"] is None
     numerics = snapshot["generic_constraint_numerics"]
@@ -84,7 +95,7 @@ def test_exact_release_pin_removed_only_the_artifact_identity_blocker() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     blockers = snapshot["blockers"]
     assert not any("release and checksum are not pinned" in item for item in blockers)
-    assert any("healthy-PHH context extraction" in item for item in blockers)
+    assert any("context specificity was not established" in item for item in blockers)
     assert any("independent flux validation" in item for item in blockers)
     assert not any("have not been audited" in item for item in blockers)
     assert any("structural audit exceptions" in item for item in blockers)

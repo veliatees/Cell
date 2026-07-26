@@ -9,25 +9,45 @@ inputs; this module does not infer either value from hepatocyte biology.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 import math
 from typing import Any, Sequence
 
 
-VERSION = "fastcore_context_kernel_v1"
+VERSION = "fastcore_context_kernel_v2"
 PINNED_SCIPY_VERSION = "1.17.1"
 SOLVER_METHOD = "highs"
 FASTCC_SOLVER_METHOD = "highs-ipm"
 SOURCE_DOI = "https://doi.org/10.1371/journal.pcbi.1003424"
+OFFICIAL_IMPLEMENTATION_COMMIT = "67c790dbac809d9d891fdbafc33e18c21fc9bddc"
 OFFICIAL_IMPLEMENTATION_URL = (
-    "https://github.com/opencobra/cobratoolbox/tree/master/"
+    "https://github.com/opencobra/cobratoolbox/tree/"
+    f"{OFFICIAL_IMPLEMENTATION_COMMIT}/"
     "src/dataIntegration/transcriptomics/FASTCORE"
 )
-SUPPORT_RELATIVE_TOLERANCE = 1e-7
+OFFICIAL_FIXED_LP10_SCALING_FACTOR = 1e4
+SUPPORT_RELATIVE_TOLERANCE = 1e-2
 SOLVER_FEASIBILITY_TOLERANCE = 1e-9
+LOGGER = logging.getLogger(__name__)
 
 
 class FastcoreError(ValueError):
     """Raised when FASTCORE preconditions or numerical invariants fail."""
+
+
+class FastcoreOutputConsistencyError(FastcoreError):
+    """Carries the unaccepted candidate network for numerical diagnosis."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        extracted_network: FluxConsistentNetwork,
+        blocked_reaction_ids: tuple[str, ...],
+    ) -> None:
+        super().__init__(message)
+        self.extracted_network = extracted_network
+        self.blocked_reaction_ids = blocked_reaction_ids
 
 
 @dataclass(frozen=True)
@@ -51,6 +71,16 @@ class FluxConsistencyAudit:
 
 
 @dataclass(frozen=True)
+class FluxConsistencyCertificate:
+    reaction_ids: tuple[str, ...]
+    epsilon: float
+    algorithm: str
+    maximum_mass_balance_residual: float
+    maximum_bound_violation: float
+    complete_consistency_classification: bool
+
+
+@dataclass(frozen=True)
 class FastcoreExtractionResult:
     reaction_ids: tuple[str, ...]
     reaction_indices: tuple[int, ...]
@@ -66,6 +96,43 @@ class FastcoreExtractionResult:
     extracted_network_flux_consistent: bool
     core_reactions_retained: bool
     unique_extraction_guaranteed: bool
+    input_consistency_algorithm: str
+    output_consistency_algorithm: str
+    original_reaction_orientation_preserved: bool
+    extracted_network: FluxConsistentNetwork
+    output_consistency_lp7_solve_count: int
+    output_consistency_lp3_solve_count: int
+    output_maximum_mass_balance_residual: float
+    output_maximum_bound_violation: float
+    output_blocked_reaction_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class FastcoreClosureIteration:
+    iteration: int
+    selected_reaction_count_before_closure: int
+    output_blocked_reaction_ids: tuple[str, ...]
+    incident_metabolite_count: int
+    added_incident_reaction_count: int
+    selected_reaction_count_after_closure: int
+
+
+@dataclass(frozen=True)
+class FastcoreClosureResult:
+    initial_core_reaction_ids: tuple[str, ...]
+    source_fastcore_extraction: FastcoreExtractionResult
+    reaction_ids: tuple[str, ...]
+    reaction_indices: tuple[int, ...]
+    added_closure_reaction_ids: tuple[str, ...]
+    omitted_reaction_ids: tuple[str, ...]
+    extracted_network: FluxConsistentNetwork
+    iterations: tuple[FastcoreClosureIteration, ...]
+    final_consistency_lp7_solve_count: int
+    final_consistency_lp3_solve_count: int
+    total_closure_consistency_solve_count: int
+    maximum_mass_balance_residual: float
+    maximum_bound_violation: float
+    converged: bool
 
 
 @dataclass(frozen=True)
@@ -78,6 +145,7 @@ class FastccConsistencyResult:
     reverse_only_witness_reaction_ids: tuple[str, ...]
     epsilon: float
     lp7_solve_count: int
+    lp3_solve_count: int
     witness_mode_count: int
     maximum_mass_balance_residual: float
     maximum_bound_violation: float
@@ -99,6 +167,7 @@ class StructuralDeadEndPruneResult:
 @dataclass
 class _SolveCounter:
     lp7: int = 0
+    lp3: int = 0
     lp10: int = 0
 
 
@@ -247,6 +316,73 @@ def audit_flux_consistency(
     )
 
 
+def audit_selected_reaction_consistency(
+    network: FluxConsistentNetwork,
+    *,
+    reaction_ids: Sequence[str],
+    epsilon: float,
+) -> FluxConsistencyAudit:
+    """Exhaustively audit a declared reaction subset in the full network."""
+
+    epsilon_value = _finite_positive(epsilon, label="epsilon")
+    stoichiometry, lower, upper = _validated_arrays(network)
+    np, *_ = _solver_modules()
+    lookup = {
+        identifier: index
+        for index, identifier in enumerate(network.reaction_ids)
+    }
+    selected_ids = tuple(reaction_ids)
+    if not selected_ids or len(set(selected_ids)) != len(selected_ids):
+        raise FastcoreError(
+            "selected consistency-audit reactions must be nonempty and unique"
+        )
+    unknown = [
+        identifier for identifier in selected_ids if identifier not in lookup
+    ]
+    if unknown:
+        raise FastcoreError(
+            f"unknown selected consistency-audit reactions: {unknown}"
+        )
+    forward: set[int] = set()
+    reverse: set[int] = set()
+    for identifier in selected_ids:
+        index = lookup[identifier]
+        selector = np.zeros(len(network.reaction_ids))
+        selector[index] = -1.0
+        maximum = _linprog(
+            selector,
+            equality=stoichiometry,
+            bounds=list(zip(lower, upper, strict=True)),
+        )
+        if maximum.success and maximum.x[index] >= epsilon_value * (
+            1.0 - SUPPORT_RELATIVE_TOLERANCE
+        ):
+            forward.add(index)
+        selector[index] = 1.0
+        minimum = _linprog(
+            selector,
+            equality=stoichiometry,
+            bounds=list(zip(lower, upper, strict=True)),
+        )
+        if minimum.success and minimum.x[index] <= -epsilon_value * (
+            1.0 - SUPPORT_RELATIVE_TOLERANCE
+        ):
+            reverse.add(index)
+    active = forward | reverse
+    blocked = tuple(
+        identifier for identifier in selected_ids if lookup[identifier] not in active
+    )
+    return FluxConsistencyAudit(
+        reaction_count=len(selected_ids),
+        forward_active_count=len(forward),
+        reverse_active_count=len(reverse),
+        bidirectionally_active_count=len(forward & reverse),
+        blocked_reaction_ids=blocked,
+        linear_program_count=2 * len(selected_ids),
+        epsilon=epsilon_value,
+    )
+
+
 def prune_sign_definite_dead_ends(
     network: FluxConsistentNetwork,
     *,
@@ -383,6 +519,33 @@ def _lp7(
     if not result.success:
         return np.zeros(reaction_count)
     return result.x[:reaction_count]
+
+
+def _lp3(
+    stoichiometry,
+    lower,
+    upper,
+    reaction_index: int,
+    *,
+    counter: _SolveCounter,
+    solver_method: str = SOLVER_METHOD,
+):
+    """Maximize one oriented reaction as FASTCC's singleton LP-3 step."""
+
+    np, *_ = _solver_modules()
+    reaction_count = stoichiometry.shape[1]
+    objective = np.zeros(reaction_count)
+    objective[reaction_index] = -1.0
+    result = _linprog(
+        objective,
+        equality=stoichiometry,
+        bounds=list(zip(lower, upper, strict=True)),
+        method=solver_method,
+    )
+    counter.lp3 += 1
+    if not result.success:
+        return np.zeros(reaction_count)
+    return result.x
 
 
 def _lp10(
@@ -546,8 +709,8 @@ def fastcc_flux_consistency(
 ) -> FastccConsistencyResult:
     """Classify the flux-consistent subset using source-defined FASTCC.
 
-    The method follows the FASTCORE paper's LP-7 consistency variant and the
-    forward/reverse orientation loop in the official COBRA implementation.
+    The method follows the official COBRA implementation's LP-7 group,
+    LP-3 singleton and forward/reverse orientation loop.
     Epsilon is mandatory because reaction consistency is threshold dependent.
     """
 
@@ -572,7 +735,7 @@ def fastcc_flux_consistency(
 
     irreversible = {
         int(index)
-        for index in np.flatnonzero(lower >= 0)
+        for index in np.flatnonzero(original_lower >= 0)
     }
     all_reactions = set(range(reaction_count))
     selected: set[int] = set()
@@ -641,15 +804,25 @@ def fastcc_flux_consistency(
         candidates = tuple(sorted(remaining))
         if singleton:
             candidates = candidates[:1]
-        mode = _lp7(
-            stoichiometry,
-            lower,
-            upper,
-            candidates,
-            epsilon=epsilon_value,
-            counter=counter,
-            solver_method=FASTCC_SOLVER_METHOD,
-        )
+        if singleton:
+            mode = _lp3(
+                stoichiometry,
+                lower,
+                upper,
+                candidates[0],
+                counter=counter,
+                solver_method=FASTCC_SOLVER_METHOD,
+            )
+        else:
+            mode = _lp7(
+                stoichiometry,
+                lower,
+                upper,
+                candidates,
+                epsilon=epsilon_value,
+                counter=counter,
+                solver_method=FASTCC_SOLVER_METHOD,
+            )
         support = record_witness(mode)
         previous_count = len(selected)
         selected |= support
@@ -706,6 +879,7 @@ def fastcc_flux_consistency(
         ),
         epsilon=epsilon_value,
         lp7_solve_count=counter.lp7,
+        lp3_solve_count=counter.lp3,
         witness_mode_count=witness_mode_count,
         maximum_mass_balance_residual=maximum_residual,
         maximum_bound_violation=maximum_bound_violation,
@@ -731,12 +905,51 @@ def _subnetwork(
     )
 
 
-def fastcore_extract(
+def _validate_flux_consistency_certificate(
+    network: FluxConsistentNetwork,
+    certificate: FluxConsistencyCertificate,
+    *,
+    epsilon: float,
+) -> None:
+    if certificate.reaction_ids != network.reaction_ids:
+        raise FastcoreError(
+            "flux-consistency certificate does not match network identity/order"
+        )
+    if certificate.epsilon != epsilon:
+        raise FastcoreError(
+            "flux-consistency certificate epsilon does not match FASTCORE"
+        )
+    if (
+        not certificate.algorithm
+        or certificate.complete_consistency_classification is not True
+    ):
+        raise FastcoreError("flux-consistency certificate is incomplete")
+    for value, label in (
+        (
+            certificate.maximum_mass_balance_residual,
+            "certificate mass-balance residual",
+        ),
+        (
+            certificate.maximum_bound_violation,
+            "certificate bound violation",
+        ),
+    ):
+        if (
+            not math.isfinite(float(value))
+            or float(value) < 0
+            or float(value) > SOLVER_FEASIBILITY_TOLERANCE * 10
+        ):
+            raise FastcoreError(f"{label} exceeds the numerical guard")
+
+
+def _fastcore_extract_once(
     network: FluxConsistentNetwork,
     *,
     core_reaction_ids: Sequence[str],
     epsilon: float,
     lp10_scaling_factor: float,
+    input_consistency_certificate: FluxConsistencyCertificate | None = None,
+    raise_on_output_inconsistency: bool,
 ) -> FastcoreExtractionResult:
     """Extract a compact consistent network containing every declared core."""
 
@@ -747,10 +960,16 @@ def fastcore_extract(
     )
     if scaling_factor < 1:
         raise FastcoreError("lp10_scaling_factor must be at least one")
-    stoichiometry, lower, upper = _validated_arrays(network)
-    stoichiometry = stoichiometry.copy()
-    lower = lower.copy()
-    upper = upper.copy()
+    if scaling_factor != OFFICIAL_FIXED_LP10_SCALING_FACTOR:
+        raise FastcoreError(
+            "lp10_scaling_factor must match the pinned official fixed value"
+        )
+    original_stoichiometry, original_lower, original_upper = _validated_arrays(
+        network
+    )
+    stoichiometry = original_stoichiometry.copy()
+    lower = original_lower.copy()
+    upper = original_upper.copy()
     reaction_lookup = {
         identifier: index
         for index, identifier in enumerate(network.reaction_ids)
@@ -762,13 +981,34 @@ def fastcore_extract(
     if unknown:
         raise FastcoreError(f"unknown FASTCORE core reactions: {unknown}")
 
-    input_audit = audit_flux_consistency(network, epsilon=epsilon_value)
-    if input_audit.blocked_reaction_ids:
-        raise FastcoreError(
-            "FASTCORE requires a globally flux-consistent input network; blocked: "
-            f"{input_audit.blocked_reaction_ids[:10]}"
+    input_solve_count = 0
+    if input_consistency_certificate is None:
+        input_audit = fastcc_flux_consistency(
+            network,
+            epsilon=epsilon_value,
         )
+        if input_audit.blocked_reaction_ids:
+            raise FastcoreError(
+                "FASTCORE requires a globally flux-consistent input network; "
+                f"blocked: {input_audit.blocked_reaction_ids[:10]}"
+            )
+        input_solve_count = (
+            input_audit.lp7_solve_count + input_audit.lp3_solve_count
+        )
+        input_algorithm = "FASTCC"
+    else:
+        _validate_flux_consistency_certificate(
+            network,
+            input_consistency_certificate,
+            epsilon=epsilon_value,
+        )
+        input_algorithm = input_consistency_certificate.algorithm
 
+    irreversible = {
+        int(index)
+        for index, lower_bound in enumerate(original_lower)
+        if lower_bound >= 0
+    }
     reverse_only = [
         index
         for index, (lower_bound, upper_bound) in enumerate(
@@ -782,11 +1022,6 @@ def fastcore_extract(
         upper,
         reverse_only,
     )
-    irreversible = {
-        index
-        for index, lower_bound in enumerate(lower)
-        if lower_bound >= 0
-    }
     core = {reaction_lookup[identifier] for identifier in core_ids}
     candidates = sorted(core & irreversible)
     penalty = set(range(len(network.reaction_ids))) - core
@@ -867,15 +1102,22 @@ def fastcore_extract(
     extracted = _subnetwork(
         network,
         ordered,
-        stoichiometry,
-        lower,
-        upper,
+        original_stoichiometry,
+        original_lower,
+        original_upper,
     )
-    output_audit = audit_flux_consistency(extracted, epsilon=epsilon_value)
-    if output_audit.blocked_reaction_ids:
-        raise FastcoreError(
-            "FASTCORE output failed flux-consistency validation: "
-            f"{output_audit.blocked_reaction_ids[:10]}"
+    output_audit = fastcc_flux_consistency(
+        extracted,
+        epsilon=epsilon_value,
+    )
+    if output_audit.blocked_reaction_ids and raise_on_output_inconsistency:
+        raise FastcoreOutputConsistencyError(
+            (
+                "FASTCORE output failed flux-consistency validation: "
+                f"{output_audit.blocked_reaction_ids[:10]}"
+            ),
+            extracted_network=extracted,
+            blocked_reaction_ids=output_audit.blocked_reaction_ids,
         )
     selected_ids = tuple(network.reaction_ids[index] for index in ordered)
     added_noncore = tuple(
@@ -897,12 +1139,227 @@ def fastcore_extract(
         lp7_solve_count=counter.lp7,
         lp10_solve_count=counter.lp10,
         consistency_solve_count=(
-            input_audit.linear_program_count + output_audit.linear_program_count
+            input_solve_count
+            + output_audit.lp7_solve_count
+            + output_audit.lp3_solve_count
         ),
         global_input_flux_consistent=True,
-        extracted_network_flux_consistent=True,
+        extracted_network_flux_consistent=not bool(
+            output_audit.blocked_reaction_ids
+        ),
         core_reactions_retained=set(core_ids).issubset(selected_ids),
         unique_extraction_guaranteed=False,
+        input_consistency_algorithm=input_algorithm,
+        output_consistency_algorithm="FASTCC",
+        original_reaction_orientation_preserved=True,
+        extracted_network=extracted,
+        output_consistency_lp7_solve_count=output_audit.lp7_solve_count,
+        output_consistency_lp3_solve_count=output_audit.lp3_solve_count,
+        output_maximum_mass_balance_residual=(
+            output_audit.maximum_mass_balance_residual
+        ),
+        output_maximum_bound_violation=(
+            output_audit.maximum_bound_violation
+        ),
+        output_blocked_reaction_ids=output_audit.blocked_reaction_ids,
+    )
+
+
+def fastcore_extract(
+    network: FluxConsistentNetwork,
+    *,
+    core_reaction_ids: Sequence[str],
+    epsilon: float,
+    lp10_scaling_factor: float,
+    input_consistency_certificate: FluxConsistencyCertificate | None = None,
+) -> FastcoreExtractionResult:
+    """Extract a compact context and reject a flux-inconsistent output."""
+
+    return _fastcore_extract_once(
+        network,
+        core_reaction_ids=core_reaction_ids,
+        epsilon=epsilon,
+        lp10_scaling_factor=lp10_scaling_factor,
+        input_consistency_certificate=input_consistency_certificate,
+        raise_on_output_inconsistency=True,
+    )
+
+
+def fastcore_extract_with_consistency_closure(
+    network: FluxConsistentNetwork,
+    *,
+    core_reaction_ids: Sequence[str],
+    epsilon: float,
+    lp10_scaling_factor: float,
+    input_consistency_certificate: FluxConsistencyCertificate,
+    maximum_iterations: int = 8,
+) -> FastcoreClosureResult:
+    """Iteratively preserve selected support until the output is consistent.
+
+    Human-scale, ill-scaled reconstructions can require reactions whose flux is
+    below FASTCORE's declared support threshold in one witness mode. For every
+    blocked output reaction, closure adds all globally consistent reactions
+    incident to the same metabolites and rechecks the enlarged subnetwork. No
+    abundance, kinetic or hand-selected biological parameter enters this
+    conservative stoichiometric graph closure.
+    """
+
+    if (
+        not isinstance(maximum_iterations, int)
+        or maximum_iterations < 1
+        or maximum_iterations > 32
+    ):
+        raise FastcoreError("FASTCORE closure iteration guard is invalid")
+    initial_core = tuple(core_reaction_ids)
+    source_extraction = _fastcore_extract_once(
+        network,
+        core_reaction_ids=initial_core,
+        epsilon=epsilon,
+        lp10_scaling_factor=lp10_scaling_factor,
+        input_consistency_certificate=input_consistency_certificate,
+        raise_on_output_inconsistency=False,
+    )
+    LOGGER.info(
+        "FASTCORE source candidate: selected=%d blocked=%d",
+        len(source_extraction.reaction_ids),
+        len(source_extraction.output_blocked_reaction_ids),
+    )
+    stoichiometry, lower, upper = _validated_arrays(network)
+    selected = set(source_extraction.reaction_indices)
+    source_selected = set(selected)
+    lookup = {
+        identifier: index
+        for index, identifier in enumerate(network.reaction_ids)
+    }
+    output_blocked = source_extraction.output_blocked_reaction_ids
+    history: list[FastcoreClosureIteration] = []
+    total_consistency_solves = (
+        source_extraction.output_consistency_lp7_solve_count
+        + source_extraction.output_consistency_lp3_solve_count
+    )
+    final_audit: FastccConsistencyResult | None = None
+
+    for iteration in range(1, maximum_iterations + 1):
+        if not output_blocked:
+            break
+        component_reactions = {
+            lookup[identifier] for identifier in output_blocked
+        }
+        incident_rows: set[int] = set()
+        rows = stoichiometry.tocsr()
+        while True:
+            previous_reaction_count = len(component_reactions)
+            previous_row_count = len(incident_rows)
+            for index in tuple(component_reactions):
+                column = stoichiometry.getcol(index)
+                incident_rows.update(int(row) for row in column.indices)
+            for row in tuple(incident_rows):
+                start = rows.indptr[row]
+                stop = rows.indptr[row + 1]
+                component_reactions.update(
+                    int(index) for index in rows.indices[start:stop]
+                )
+            if (
+                len(component_reactions) == previous_reaction_count
+                and len(incident_rows) == previous_row_count
+            ):
+                break
+        additions = component_reactions - selected
+        if not additions:
+            raise FastcoreError(
+                "FASTCORE stoichiometric consistency closure stopped growing "
+                "before reaching a flux-consistent output"
+            )
+        selected_before = len(selected)
+        selected.update(additions)
+        LOGGER.info(
+            "FASTCORE closure %d: blocked=%d metabolites=%d add=%d selected=%d",
+            iteration,
+            len(output_blocked),
+            len(incident_rows),
+            len(additions),
+            len(selected),
+        )
+        ordered = tuple(sorted(selected))
+        candidate = _subnetwork(
+            network,
+            ordered,
+            stoichiometry,
+            lower,
+            upper,
+        )
+        final_audit = fastcc_flux_consistency(candidate, epsilon=epsilon)
+        total_consistency_solves += (
+            final_audit.lp7_solve_count + final_audit.lp3_solve_count
+        )
+        history.append(
+            FastcoreClosureIteration(
+                iteration=iteration,
+                selected_reaction_count_before_closure=selected_before,
+                output_blocked_reaction_ids=output_blocked,
+                incident_metabolite_count=len(incident_rows),
+                added_incident_reaction_count=len(additions),
+                selected_reaction_count_after_closure=len(selected),
+            )
+        )
+        output_blocked = final_audit.blocked_reaction_ids
+        LOGGER.info(
+            "FASTCORE closure %d audit: blocked=%d lp7=%d lp3=%d",
+            iteration,
+            len(output_blocked),
+            final_audit.lp7_solve_count,
+            final_audit.lp3_solve_count,
+        )
+
+    if output_blocked:
+        raise FastcoreError(
+            "FASTCORE stoichiometric consistency closure exceeded its "
+            "iteration guard"
+        )
+    ordered = tuple(sorted(selected))
+    final_network = _subnetwork(
+        network,
+        ordered,
+        stoichiometry,
+        lower,
+        upper,
+    )
+    selected_ids = tuple(network.reaction_ids[index] for index in ordered)
+    if final_audit is None:
+        maximum_residual = source_extraction.output_maximum_mass_balance_residual
+        maximum_bound_violation = (
+            source_extraction.output_maximum_bound_violation
+        )
+        final_lp7 = source_extraction.output_consistency_lp7_solve_count
+        final_lp3 = source_extraction.output_consistency_lp3_solve_count
+    else:
+        maximum_residual = final_audit.maximum_mass_balance_residual
+        maximum_bound_violation = final_audit.maximum_bound_violation
+        final_lp7 = final_audit.lp7_solve_count
+        final_lp3 = final_audit.lp3_solve_count
+    return FastcoreClosureResult(
+        initial_core_reaction_ids=initial_core,
+        source_fastcore_extraction=source_extraction,
+        reaction_ids=selected_ids,
+        reaction_indices=ordered,
+        added_closure_reaction_ids=tuple(
+            network.reaction_ids[index]
+            for index in ordered
+            if index not in source_selected
+        ),
+        omitted_reaction_ids=tuple(
+            identifier
+            for index, identifier in enumerate(network.reaction_ids)
+            if index not in selected
+        ),
+        extracted_network=final_network,
+        iterations=tuple(history),
+        final_consistency_lp7_solve_count=final_lp7,
+        final_consistency_lp3_solve_count=final_lp3,
+        total_closure_consistency_solve_count=total_consistency_solves,
+        maximum_mass_balance_residual=maximum_residual,
+        maximum_bound_violation=maximum_bound_violation,
+        converged=True,
     )
 
 
@@ -924,7 +1381,7 @@ def fastcore_context_snapshot() -> dict[str, object]:
     """Run analytic software fixtures without applying FASTCORE to Human-GEM."""
 
     epsilon = 1e-6
-    scaling = 1e5
+    scaling = OFFICIAL_FIXED_LP10_SCALING_FACTOR
     extraction = fastcore_extract(
         _synthetic_context_network(),
         core_reaction_ids=("A_to_B",),
@@ -948,13 +1405,22 @@ def fastcore_context_snapshot() -> dict[str, object]:
         ),
         "primary_source": SOURCE_DOI,
         "official_reference_implementation": OFFICIAL_IMPLEMENTATION_URL,
+        "official_reference_implementation_commit": (
+            OFFICIAL_IMPLEMENTATION_COMMIT
+        ),
         "backend": "scipy.optimize.linprog",
         "backend_version": PINNED_SCIPY_VERSION,
         "method": SOLVER_METHOD,
         "epsilon_has_runtime_default": False,
         "lp10_scaling_factor_has_runtime_default": False,
+        "official_fixed_lp10_scaling_factor": scaling,
+        "support_threshold_fraction_of_epsilon": (
+            1.0 - SUPPORT_RELATIVE_TOLERANCE
+        ),
         "requires_flux_consistent_input": True,
+        "accepts_identity_bound_flux_consistency_certificate": True,
         "requires_explicit_core_reaction_ids": True,
+        "preserves_original_reaction_orientation": True,
         "preserves_every_consistent_core_reaction": True,
         "unique_extraction_guaranteed": False,
         "synthetic_fixture_count": 1,
@@ -980,8 +1446,13 @@ def validate_fastcore_context_snapshot(payload: dict[str, object]) -> None:
     if (
         payload.get("epsilon_has_runtime_default") is not False
         or payload.get("lp10_scaling_factor_has_runtime_default") is not False
+        or payload.get("official_fixed_lp10_scaling_factor") != 1e4
+        or payload.get("support_threshold_fraction_of_epsilon") != 0.99
         or payload.get("requires_flux_consistent_input") is not True
+        or payload.get("accepts_identity_bound_flux_consistency_certificate")
+        is not True
         or payload.get("requires_explicit_core_reaction_ids") is not True
+        or payload.get("preserves_original_reaction_orientation") is not True
         or payload.get("unique_extraction_guaranteed") is not False
         or payload.get("synthetic_fixture_pass_count") != 1
     ):

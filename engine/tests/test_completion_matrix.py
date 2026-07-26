@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 32
-    assert summary["closed_count"] == 10
+    assert summary["entry_count"] == 34
+    assert summary["closed_count"] == 12
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -116,6 +116,7 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
     assert loader["observed_metrics"]["stoichiometric_row_count"] == 8461
     assert loader["observed_metrics"]["stoichiometric_column_count"] == 12931
     assert loader["observed_metrics"]["stoichiometric_nonzero_count"] == 55198
+    assert loader["observed_metrics"]["gene_product_label_count"] == 2848
     assert loader["observed_metrics"]["healthy_phh_context_extracted"] is False
     assert loader["observed_metrics"]["fba_execution_allowed"] is False
     fastcc_audit = entries["human_gem_generic_flux_consistency"]
@@ -132,6 +133,26 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
     assert native_fba["observed_metrics"]["objective_value"] == 124.86814837744569
     assert native_fba["observed_metrics"]["active_reaction_count_at_1e_minus_9"] == 2566
     assert native_fba["observed_metrics"]["biological_flux_authority"] is False
+    proteome_gpr = entries["seven_donor_phh_proteome_gpr_core"]
+    assert proteome_gpr["status"] == "closed"
+    assert proteome_gpr["observed_metrics"][
+        "flux_consistent_core_candidate_count"
+    ] == 4555
+    assert proteome_gpr["observed_metrics"][
+        "active_enzyme_abundance_inferred"
+    ] is False
+    fastcore_trial = entries["human_gem_real_scale_fastcore_trial"]
+    assert fastcore_trial["status"] == "closed"
+    assert fastcore_trial["observed_metrics"][
+        "source_fastcore_selected_reaction_count"
+    ] == 7320
+    assert fastcore_trial["observed_metrics"][
+        "source_fastcore_output_blocked_reaction_count"
+    ] == 408
+    assert fastcore_trial["observed_metrics"][
+        "closure_selected_reaction_count"
+    ] == 11639
+    assert fastcore_trial["observed_metrics"]["context_model_accepted"] is False
     generic = entries["generic_fba_fva_numerics"]
     assert generic["status"] == "closed"
     assert generic["observed_metrics"]["analytic_fixture_pass_count"] == 5
