@@ -19,7 +19,7 @@ from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_VOLUME_UM3
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "cytosol_transport_rheology_contract_v10"
+VERSION = "cytosol_transport_rheology_contract_v11"
 
 RENDERER_GEOMETRY_BOUNDARY_CLASSES: tuple[str, ...] = (
     "nuclear_envelope",
@@ -372,9 +372,10 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "species_balance": "partial_t(c_i) + div(u*c_i) = div(D_i*grad(c_i)) + R_i(c)",
             "incompressible_visual_mapping": (
                 "det(F) = 1 for the affine contact map; smooth star-shaped "
-                "non-affine residual motion is rasterized into fractional cell "
-                "volumes and face apertures, and the pressure projection enforces "
-                "the corresponding discrete local geometric-conservation source"
+                "or validated non-star-shaped closed-mesh domains are rasterized "
+                "into fractional cell volumes and face apertures, and the pressure "
+                "projection enforces the corresponding discrete local "
+                "geometric-conservation source"
             ),
             "poroelastic_scaling": "D_p scales with E*xi^2/mu; no coefficient is assigned for healthy PHH",
             "advection_changes_reaction_state_via": "local reactant/product concentrations and boundary fluxes",
@@ -459,6 +460,10 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "local_boundary_angular_bin_count": 512,
                 "affine_component_removed_before_local_boundary_sampling": True,
                 "multi_intersection_fold_or_topology_change_support": False,
+                "non_star_shaped_closed_mesh_domain_kernel": True,
+                "closed_mesh_domain_self_intersection_audit": True,
+                "closed_mesh_domain_biological_registration_count": 0,
+                "membrane_topology_change_support": False,
                 "locally_conservative_membrane_face_flux": True,
                 "outer_membrane_subgrid_volume_samples_per_cell": 8,
                 "outer_membrane_face_area_samples": 4,
@@ -490,13 +495,30 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                     "single_connected_component",
                     "nonzero_enclosed_volume",
                 ),
-                "mesh_self_intersection_detection": False,
+                "mesh_self_intersection_detection": True,
                 "registered_biological_mesh_boundary_count": 0,
                 "full_watertight_mesh_boundaries": False,
                 "pressure_reaction_diagnostic_only": True,
                 "biological_time_or_velocity_claim": False,
                 "biological_pressure_claim": False,
                 "membrane_pressure_feedback": False,
+            },
+            "dimensionless_pressure_membrane_response_candidate": {
+                "enabled": True,
+                "role": "numerical candidate generation and verification only",
+                "triangle_pressure_traction": True,
+                "surface_mean_pressure_shape_mode": True,
+                "closed_mesh_volume_correction": True,
+                "backtracking_line_search": True,
+                "self_intersection_rejection": True,
+                "action_reaction_diagnostic": True,
+                "pressure_work_diagnostic": True,
+                "force_energy_consistency_tested": True,
+                "volume_preservation_tested": True,
+                "runtime_feedback_enabled": False,
+                "biological_pressure_assigned": False,
+                "biological_compliance_assigned": False,
+                "healthy_phh_mechanics_assigned": False,
             },
             "conservative_passive_scalar_kernel": {
                 "enabled": True,
@@ -576,6 +598,11 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "locally_conservative_membrane_face_flux_count": 1,
             "fractional_face_aperture_solver_count": 1,
             "generic_watertight_mesh_boundary_kernel_count": 1,
+            "repository_mesh_self_intersection_audit_count": 1,
+            "non_star_shaped_closed_mesh_domain_kernel_count": 1,
+            "dimensionless_pressure_membrane_response_kernel_count": 1,
+            "force_energy_consistency_test_count": 1,
+            "volume_preserving_fsi_candidate_test_count": 1,
             "full_watertight_mesh_boundary_count": 0,
             "compound_boundary_conservation_test_count": 1,
             "membrane_pressure_feedback_count": 0,
@@ -612,6 +639,7 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
     projection = solvers.get("renderer_dimensionless_projection_grid")
     scalar = solvers.get("conservative_passive_scalar_kernel")
     active_cargo = solvers.get("dimensionless_active_cargo_route_kernel")
+    fsi_candidate = solvers.get("dimensionless_pressure_membrane_response_candidate")
     if not isinstance(projection, dict) or projection.get("enabled") is not True:
         raise ValueError("dimensionless projection layer is missing")
     if projection.get("biological_time_or_velocity_claim") is not False:
@@ -631,8 +659,15 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
     if (
         projection.get("multi_intersection_fold_or_topology_change_support")
         is not False
+        or projection.get("membrane_topology_change_support") is not False
     ):
         raise ValueError("local membrane boundary overclaims topology support")
+    if (
+        projection.get("non_star_shaped_closed_mesh_domain_kernel") is not True
+        or projection.get("closed_mesh_domain_self_intersection_audit") is not True
+        or projection.get("closed_mesh_domain_biological_registration_count") != 0
+    ):
+        raise ValueError("closed-mesh cytosol domain escaped its numerical scope")
     if (
         projection.get("locally_conservative_membrane_face_flux") is not True
         or projection.get("outer_membrane_subgrid_volume_samples_per_cell") != 8
@@ -671,7 +706,7 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("analytic renderer boundaries were mislabelled as watertight meshes")
     if (
         projection.get("generic_watertight_triangle_mesh_boundary_kernel") is not True
-        or projection.get("mesh_self_intersection_detection") is not False
+        or projection.get("mesh_self_intersection_detection") is not True
         or projection.get("registered_biological_mesh_boundary_count") != 0
     ):
         raise ValueError("generic mesh boundary escaped its numerical-only scope")
@@ -701,6 +736,33 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         or active_cargo.get("quantitatively_authorized_phh_route_count") != 0
     ):
         raise ValueError("dimensionless active-cargo renderer escaped into PHH biology")
+    if not isinstance(fsi_candidate, dict) or fsi_candidate.get("enabled") is not True:
+        raise ValueError("dimensionless pressure-membrane candidate kernel is missing")
+    if any(
+        fsi_candidate.get(key) is not True
+        for key in (
+            "triangle_pressure_traction",
+            "surface_mean_pressure_shape_mode",
+            "closed_mesh_volume_correction",
+            "backtracking_line_search",
+            "self_intersection_rejection",
+            "action_reaction_diagnostic",
+            "pressure_work_diagnostic",
+            "force_energy_consistency_tested",
+            "volume_preservation_tested",
+        )
+    ):
+        raise ValueError("dimensionless pressure-membrane verification contract changed")
+    if any(
+        fsi_candidate.get(key) is not False
+        for key in (
+            "runtime_feedback_enabled",
+            "biological_pressure_assigned",
+            "biological_compliance_assigned",
+            "healthy_phh_mechanics_assigned",
+        )
+    ):
+        raise ValueError("dimensionless pressure-membrane candidate escaped into PHH mechanics")
     if coupling.get("currently_coupled_reaction_count") != 0:
         raise ValueError("cytosol transport contract activated a reaction")
     if conflict.get("may_parameterize_quantitative_fluid_or_reaction_model") is not False:

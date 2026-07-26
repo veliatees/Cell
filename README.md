@@ -285,6 +285,14 @@ mobility/crowding and reaction-level transport coupling have their own 50- and
 51-field contracts. They currently contain zero biological records and grant
 zero reaction-rate authority.
 
+Closed meshes now undergo a repository self-intersection audit in addition to
+edge-topology checks. A separate grid path accepts concave, non-star-shaped
+closed meshes as fluid domains, and a dimensionless pressure-traction kernel
+can propose a volume-preserving, self-intersection-free membrane response while
+reporting force balance and pressure work. The live renderer still uses the
+star-shaped membrane path; no pressure candidate is applied to it and no PHH
+mechanical coefficient has been assigned.
+
 What is still depth-work (the road ahead is depth, not a new approach):
 
 - the composed fuel network currently has 36 reaction channels and zero fully
@@ -450,6 +458,9 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 120: Watertight mesh boundary intake v1](docs/milestones/120-watertight-mesh-boundary-intake-v1.md)
 - [Milestone 121: Species-resolved intracellular mobility intake v1](docs/milestones/121-species-resolved-intracellular-mobility-intake-v1.md)
 - [Milestone 122: Reaction transport coupling gate v1](docs/milestones/122-reaction-transport-coupling-gate-v1.md)
+- [Milestone 123: Repository mesh self-intersection audit v1](docs/milestones/123-repository-mesh-self-intersection-audit-v1.md)
+- [Milestone 124: Non-star-shaped closed-mesh cytosol domain v1](docs/milestones/124-non-star-shaped-closed-mesh-cytosol-domain-v1.md)
+- [Milestone 125: Dimensionless pressure-membrane response v1](docs/milestones/125-dimensionless-pressure-membrane-response-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

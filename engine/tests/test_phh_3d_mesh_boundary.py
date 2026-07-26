@@ -106,7 +106,7 @@ def test_empty_mesh_intake_keeps_biological_registration_disabled(tmp_path: Path
     assert snapshot["summary"]["manifest_record_count"] == 0
     assert snapshot["summary"]["registered_biological_mesh_boundary_count"] == 0
     assert snapshot["gates"]["generic_watertight_triangle_mesh_numerical_kernel_available"] is True
-    assert snapshot["gates"]["self_intersection_audit_implemented_in_repository"] is False
+    assert snapshot["gates"]["self_intersection_audit_implemented_in_repository"] is True
     assert snapshot["gates"]["biological_mesh_registration_allowed"] is False
 
 
@@ -120,7 +120,42 @@ def test_canonical_mesh_topology_audit_accepts_closed_tetrahedron(tmp_path: Path
     assert audit.inconsistent_winding_edge_count == 0
     assert audit.connected_component_count == 1
     assert audit.enclosed_volume_um3 == pytest.approx(1.0 / 6.0)
-    assert audit.self_intersection_tested is False
+    assert audit.self_intersection_tested is True
+    assert audit.self_intersecting_triangle_pair_count == 0
+    assert audit.self_intersection_free is True
+    assert audit.valid_closed_boundary is True
+
+
+def test_canonical_mesh_audit_detects_nonadjacent_triangle_intersection(
+    tmp_path: Path,
+) -> None:
+    mesh_path = tmp_path / "intersecting.json"
+    _write_json(
+        mesh_path,
+        {
+            "schema_version": "cell.triangle-mesh-boundary-artifact.v1",
+            "coordinate_unit": "um",
+            "vertices_um": [
+                [-1.0, -1.0, 0.0],
+                [1.0, -1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, -0.5, -1.0],
+                [0.0, -0.5, 1.0],
+                [0.0, 0.5, 0.0],
+            ],
+            "triangles": [
+                [0, 1, 2],
+                [3, 4, 5],
+                [0, 2, 1],
+                [3, 5, 4],
+            ],
+        },
+    )
+    audit = audit_canonical_triangle_mesh_artifact(mesh_path)
+    assert audit.self_intersection_tested is True
+    assert audit.self_intersecting_triangle_pair_count > 0
+    assert audit.self_intersection_free is False
+    assert audit.valid_closed_boundary is False
 
 
 def test_canonical_mesh_topology_audit_rejects_open_surface(tmp_path: Path) -> None:

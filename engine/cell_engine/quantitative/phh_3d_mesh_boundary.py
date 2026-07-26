@@ -80,6 +80,9 @@ class TriangleMeshTopologyAudit:
     consistently_oriented: bool
     single_connected_component: bool
     self_intersection_tested: bool
+    self_intersecting_triangle_pair_count: int
+    self_intersection_free: bool
+    valid_closed_boundary: bool
 
 
 @dataclass(frozen=True)
@@ -134,6 +137,7 @@ class PHHMeshAssessment:
     split_role: str
     topology: TriangleMeshTopologyAudit
     artifact_checksum_verified: bool
+    repository_self_intersection_free: bool
     external_self_intersection_report_verified: bool
     grid_convergence_report_verified: bool
     structurally_ready: bool
@@ -293,6 +297,227 @@ def _double_area_squared(
     return sum(value * value for value in cross)
 
 
+def _bounds_overlap(
+    first: tuple[tuple[float, float, float], tuple[float, float, float]],
+    second: tuple[tuple[float, float, float], tuple[float, float, float]],
+    tolerance: float,
+) -> bool:
+    return all(
+        first[0][axis] <= second[1][axis] + tolerance
+        and first[1][axis] + tolerance >= second[0][axis]
+        for axis in range(3)
+    )
+
+
+def _orient_2d(
+    a: tuple[float, float],
+    b: tuple[float, float],
+    c: tuple[float, float],
+) -> float:
+    return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+
+
+def _point_on_segment_2d(
+    point: tuple[float, float],
+    start: tuple[float, float],
+    end: tuple[float, float],
+    tolerance: float,
+) -> bool:
+    return (
+        abs(_orient_2d(start, end, point)) <= tolerance
+        and min(start[0], end[0]) - tolerance
+        <= point[0]
+        <= max(start[0], end[0]) + tolerance
+        and min(start[1], end[1]) - tolerance
+        <= point[1]
+        <= max(start[1], end[1]) + tolerance
+    )
+
+
+def _segments_intersect_2d(
+    a: tuple[float, float],
+    b: tuple[float, float],
+    c: tuple[float, float],
+    d: tuple[float, float],
+    tolerance: float,
+) -> bool:
+    ab_c = _orient_2d(a, b, c)
+    ab_d = _orient_2d(a, b, d)
+    cd_a = _orient_2d(c, d, a)
+    cd_b = _orient_2d(c, d, b)
+    if (
+        ((ab_c > tolerance and ab_d < -tolerance) or
+         (ab_c < -tolerance and ab_d > tolerance))
+        and ((cd_a > tolerance and cd_b < -tolerance) or
+             (cd_a < -tolerance and cd_b > tolerance))
+    ):
+        return True
+    return any(
+        (
+            _point_on_segment_2d(c, a, b, tolerance),
+            _point_on_segment_2d(d, a, b, tolerance),
+            _point_on_segment_2d(a, c, d, tolerance),
+            _point_on_segment_2d(b, c, d, tolerance),
+        )
+    )
+
+
+def _point_in_triangle_2d(
+    point: tuple[float, float],
+    triangle: Sequence[tuple[float, float]],
+    tolerance: float,
+) -> bool:
+    orientations = (
+        _orient_2d(triangle[0], triangle[1], point),
+        _orient_2d(triangle[1], triangle[2], point),
+        _orient_2d(triangle[2], triangle[0], point),
+    )
+    has_negative = any(value < -tolerance for value in orientations)
+    has_positive = any(value > tolerance for value in orientations)
+    return not (has_negative and has_positive)
+
+
+def _segment_triangle_intersects(
+    start: Sequence[float],
+    end: Sequence[float],
+    triangle: Sequence[Sequence[float]],
+    tolerance: float,
+) -> bool:
+    direction = tuple(end[axis] - start[axis] for axis in range(3))
+    edge1 = tuple(triangle[1][axis] - triangle[0][axis] for axis in range(3))
+    edge2 = tuple(triangle[2][axis] - triangle[0][axis] for axis in range(3))
+    p = (
+        direction[1] * edge2[2] - direction[2] * edge2[1],
+        direction[2] * edge2[0] - direction[0] * edge2[2],
+        direction[0] * edge2[1] - direction[1] * edge2[0],
+    )
+    determinant = sum(edge1[axis] * p[axis] for axis in range(3))
+    if abs(determinant) <= tolerance:
+        return False
+    inverse = 1.0 / determinant
+    relative = tuple(start[axis] - triangle[0][axis] for axis in range(3))
+    u = sum(relative[axis] * p[axis] for axis in range(3)) * inverse
+    if u < -tolerance or u > 1.0 + tolerance:
+        return False
+    q = (
+        relative[1] * edge1[2] - relative[2] * edge1[1],
+        relative[2] * edge1[0] - relative[0] * edge1[2],
+        relative[0] * edge1[1] - relative[1] * edge1[0],
+    )
+    v = sum(direction[axis] * q[axis] for axis in range(3)) * inverse
+    if v < -tolerance or u + v > 1.0 + tolerance:
+        return False
+    parameter = sum(edge2[axis] * q[axis] for axis in range(3)) * inverse
+    return -tolerance <= parameter <= 1.0 + tolerance
+
+
+def _triangles_intersect(
+    first: Sequence[Sequence[float]],
+    second: Sequence[Sequence[float]],
+    tolerance: float,
+) -> bool:
+    first_edge1 = tuple(first[1][axis] - first[0][axis] for axis in range(3))
+    first_edge2 = tuple(first[2][axis] - first[0][axis] for axis in range(3))
+    first_normal = (
+        first_edge1[1] * first_edge2[2] - first_edge1[2] * first_edge2[1],
+        first_edge1[2] * first_edge2[0] - first_edge1[0] * first_edge2[2],
+        first_edge1[0] * first_edge2[1] - first_edge1[1] * first_edge2[0],
+    )
+    second_edge1 = tuple(second[1][axis] - second[0][axis] for axis in range(3))
+    second_edge2 = tuple(second[2][axis] - second[0][axis] for axis in range(3))
+    second_normal = (
+        second_edge1[1] * second_edge2[2] - second_edge1[2] * second_edge2[1],
+        second_edge1[2] * second_edge2[0] - second_edge1[0] * second_edge2[2],
+        second_edge1[0] * second_edge2[1] - second_edge1[1] * second_edge2[0],
+    )
+    first_normal_length = math.sqrt(sum(value * value for value in first_normal))
+    second_normal_length = math.sqrt(sum(value * value for value in second_normal))
+    plane_distance = max(
+        abs(sum(
+            first_normal[axis] * (point[axis] - first[0][axis])
+            for axis in range(3)
+        )) / first_normal_length
+        for point in second
+    )
+    normal_cross = (
+        first_normal[1] * second_normal[2] - first_normal[2] * second_normal[1],
+        first_normal[2] * second_normal[0] - first_normal[0] * second_normal[2],
+        first_normal[0] * second_normal[1] - first_normal[1] * second_normal[0],
+    )
+    coplanar = (
+        plane_distance <= tolerance
+        and math.sqrt(sum(value * value for value in normal_cross))
+        <= max(1e-12, first_normal_length * second_normal_length * 1e-10)
+    )
+    if coplanar:
+        dropped_axis = max(range(3), key=lambda axis: abs(first_normal[axis]))
+
+        def project(point: Sequence[float]) -> tuple[float, float]:
+            axes = [axis for axis in range(3) if axis != dropped_axis]
+            return (point[axes[0]], point[axes[1]])
+
+        first_2d = tuple(project(point) for point in first)
+        second_2d = tuple(project(point) for point in second)
+        tolerance_2d = max(1e-12, tolerance * tolerance)
+        for first_edge in range(3):
+            for second_edge in range(3):
+                if _segments_intersect_2d(
+                    first_2d[first_edge],
+                    first_2d[(first_edge + 1) % 3],
+                    second_2d[second_edge],
+                    second_2d[(second_edge + 1) % 3],
+                    tolerance_2d,
+                ):
+                    return True
+        return (
+            _point_in_triangle_2d(first_2d[0], second_2d, tolerance_2d)
+            or _point_in_triangle_2d(second_2d[0], first_2d, tolerance_2d)
+        )
+    return any(
+        _segment_triangle_intersects(
+            first[edge],
+            first[(edge + 1) % 3],
+            second,
+            tolerance,
+        )
+        or _segment_triangle_intersects(
+            second[edge],
+            second[(edge + 1) % 3],
+            first,
+            tolerance,
+        )
+        for edge in range(3)
+    )
+
+
+def _self_intersecting_triangle_pair_count(
+    vertices: Sequence[Sequence[float]],
+    triangles: Sequence[tuple[int, int, int]],
+    tolerance: float,
+) -> int:
+    bounds = []
+    for triangle_index, indices in enumerate(triangles):
+        points = tuple(vertices[index] for index in indices)
+        minimum = tuple(min(point[axis] for point in points) for axis in range(3))
+        maximum = tuple(max(point[axis] for point in points) for axis in range(3))
+        bounds.append((minimum[0], triangle_index, indices, (minimum, maximum)))
+    bounds.sort(key=lambda item: item[0])
+    count = 0
+    for first_index, (_, first_triangle, first_indices, first_bounds) in enumerate(bounds):
+        for _, second_triangle, second_indices, second_bounds in bounds[first_index + 1:]:
+            if second_bounds[0][0] > first_bounds[1][0] + tolerance:
+                break
+            if not _bounds_overlap(first_bounds, second_bounds, tolerance):
+                continue
+            if set(first_indices) & set(second_indices):
+                continue
+            first_points = tuple(vertices[index] for index in triangles[first_triangle])
+            second_points = tuple(vertices[index] for index in triangles[second_triangle])
+            if _triangles_intersect(first_points, second_points, tolerance):
+                count += 1
+    return count
+
+
 def audit_canonical_triangle_mesh_artifact(
     path: Path,
 ) -> TriangleMeshTopologyAudit:
@@ -322,6 +547,7 @@ def audit_canonical_triangle_mesh_artifact(
     diagonal = math.sqrt(sum((maximum[axis] - minimum[axis]) ** 2 for axis in range(3)))
     area_tolerance_squared = max(1e-24, diagonal**4 * 1e-24)
     volume_tolerance = max(1e-12, diagonal**3 * 1e-12)
+    intersection_tolerance = max(1e-10, diagonal * 1e-10)
     used: set[int] = set()
     edge_uses: dict[tuple[int, int], list[tuple[int, int]]] = defaultdict(list)
     surface_area = 0.0
@@ -375,6 +601,12 @@ def audit_canonical_triangle_mesh_artifact(
         and one_component
         and abs(signed_volume) > volume_tolerance
     )
+    self_intersecting_pair_count = _self_intersecting_triangle_pair_count(
+        vertices,
+        triangles,
+        intersection_tolerance,
+    )
+    self_intersection_free = self_intersecting_pair_count == 0
     return TriangleMeshTopologyAudit(
         vertex_count=len(vertices),
         triangle_count=len(triangles),
@@ -390,7 +622,10 @@ def audit_canonical_triangle_mesh_artifact(
         topologically_watertight=watertight,
         consistently_oriented=consistently_oriented,
         single_connected_component=one_component,
-        self_intersection_tested=False,
+        self_intersection_tested=True,
+        self_intersecting_triangle_pair_count=self_intersecting_pair_count,
+        self_intersection_free=self_intersection_free,
+        valid_closed_boundary=watertight and self_intersection_free,
     )
 
 
@@ -519,6 +754,8 @@ def assess_phh_mesh_record(record: PHHMeshManifestRecord) -> PHHMeshAssessment:
     blockers: list[str] = []
     if not topology.topologically_watertight:
         blockers.append("canonical mesh fails the repository topology audit")
+    if not topology.self_intersection_free:
+        blockers.append("canonical mesh fails the repository self-intersection audit")
     if record.topology_qc_status != "pass":
         blockers.append("supplying topology QC is not pass")
     if record.self_intersection_qc_status != "pass":
@@ -548,6 +785,7 @@ def assess_phh_mesh_record(record: PHHMeshManifestRecord) -> PHHMeshAssessment:
         split_role=record.split_role,
         topology=topology,
         artifact_checksum_verified=True,
+        repository_self_intersection_free=topology.self_intersection_free,
         external_self_intersection_report_verified=report_path.stat().st_size > 0,
         grid_convergence_report_verified=grid_verified,
         structurally_ready=structurally_ready,
@@ -597,6 +835,11 @@ def phh_3d_mesh_boundary_intake_snapshot(
                 assessment.external_self_intersection_report_verified
                 for assessment in assessments
             ),
+            "repository_self_intersection_audited_artifact_count": len(assessments),
+            "repository_self_intersection_free_artifact_count": sum(
+                assessment.repository_self_intersection_free
+                for assessment in assessments
+            ),
             "grid_convergence_verified_artifact_count": sum(
                 assessment.grid_convergence_report_verified
                 for assessment in assessments
@@ -615,7 +858,7 @@ def phh_3d_mesh_boundary_intake_snapshot(
         "gates": {
             "generic_watertight_triangle_mesh_numerical_kernel_available": True,
             "topology_audit_available": True,
-            "self_intersection_audit_implemented_in_repository": False,
+            "self_intersection_audit_implemented_in_repository": True,
             "biological_mesh_registration_allowed": False,
             "mechanics_coupling_allowed": False,
             "automatic_runtime_activation": False,

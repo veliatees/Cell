@@ -119,7 +119,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Dimensionless cytosol transport numerics",
             "closed",
             "Numerical test-bed only; no biological pressure, velocity, time or diffusivity claim.",
-            "A 3D pressure-projection grid, four analytic obstacle shapes, rigid translation/rotation boundary kinematics, conservative subgrid thin-boundary interception and a passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
+            "A 3D pressure-projection grid, four analytic obstacle shapes, topology- and self-intersection-audited closed meshes, non-star-shaped closed fluid domains, rigid boundary kinematics and conservative moving-domain scalar transport are tested. The renderer still uses the star-shaped membrane path.",
             {
                 "projection_solver_count": cytosol_summary["dimensionless_projection_solver_count"],
                 "conservative_scalar_kernel_count": cytosol_summary["conservative_passive_scalar_kernel_count"],
@@ -136,6 +136,12 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 ],
                 "fractional_face_aperture_solver_count": cytosol_summary[
                     "fractional_face_aperture_solver_count"
+                ],
+                "repository_mesh_self_intersection_audit_count": cytosol_summary[
+                    "repository_mesh_self_intersection_audit_count"
+                ],
+                "non_star_shaped_closed_mesh_domain_kernel_count": cytosol_summary[
+                    "non_star_shaped_closed_mesh_domain_kernel_count"
                 ],
             },
             (),
@@ -190,21 +196,38 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Cytosol-to-membrane fluid-structure feedback",
             "blocked_missing_evidence",
             "Pressure/traction feedback from the aqueous/poroelastic phase to membrane, cortex and organelles.",
-            "Membrane motion drives the numerical fluid map; uncalibrated pressure cannot push the membrane.",
-            {"membrane_pressure_feedback_count": cytosol_summary["membrane_pressure_feedback_count"]},
+            "A dimensionless closed-mesh pressure-traction candidate kernel now checks action-reaction balance, pressure work, volume preservation, line-search stability and self-intersection rejection. It cannot apply its candidate to the runtime membrane.",
+            {
+                "dimensionless_pressure_membrane_response_kernel_count": cytosol_summary[
+                    "dimensionless_pressure_membrane_response_kernel_count"
+                ],
+                "force_energy_consistency_test_count": cytosol_summary[
+                    "force_energy_consistency_test_count"
+                ],
+                "volume_preserving_fsi_candidate_test_count": cytosol_summary[
+                    "volume_preserving_fsi_candidate_test_count"
+                ],
+                "membrane_pressure_feedback_count": cytosol_summary[
+                    "membrane_pressure_feedback_count"
+                ],
+            },
             (
                 "PHH membrane/cortex mechanics and hydraulic boundary data.",
-                "A coupled stable discretization with force/energy consistency tests.",
+                "Runtime coupling of a calibrated pressure field to membrane, cortex and organelles.",
                 "Matched deformation and relaxation validation.",
             ),
-            ("src/physics/intracellularFluid.ts", "src/physics/cytosolNumerics.ts"),
+            (
+                "src/physics/dimensionlessFsi.ts",
+                "src/physics/intracellularFluid.ts",
+                "src/physics/cytosolNumerics.ts",
+            ),
         ),
         _entry(
             "organelle_fluid_boundaries",
             "Organelle-resolved fluid boundaries",
             "partial",
             "Impermeable moving organelle surfaces in the numerical cytosol domain.",
-            "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. A generic consistently-wound closed triangle-mesh kernel now supplies topology-audited containment and face interception, but no microscopy-derived PHH mesh is registered. Thin ER/canalicular/Golgi structures retain deterministic subgrid occupancy and fractional face flux.",
+            "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Generic closed meshes now require both two-manifold topology and repository self-intersection audits before containment or face interception, but no microscopy-derived PHH mesh is registered. Thin ER/canalicular/Golgi structures retain deterministic subgrid occupancy and fractional face flux.",
             {
                 "analytic_obstacle_layer_count": cytosol_summary["moving_analytic_obstacle_layer_count"],
                 "analytic_obstacle_shape_count": cytosol_summary["analytic_obstacle_shape_count"],
@@ -237,6 +260,15 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "self_intersection_audited_mesh_count": mesh_boundary_intake["summary"][
                     "self_intersection_audited_artifact_count"
                 ],
+                "repository_self_intersection_audit_kernel_count": cytosol_summary[
+                    "repository_mesh_self_intersection_audit_count"
+                ],
+                "repository_self_intersection_audited_mesh_count": mesh_boundary_intake[
+                    "summary"
+                ]["repository_self_intersection_audited_artifact_count"],
+                "repository_self_intersection_free_mesh_count": mesh_boundary_intake[
+                    "summary"
+                ]["repository_self_intersection_free_artifact_count"],
                 "full_watertight_mesh_boundary_count": cytosol_summary["full_watertight_mesh_boundary_count"],
             },
             (
@@ -256,7 +288,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Local non-affine membrane-to-fluid coupling",
             "partial",
             "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
-            "The fluid grid follows the global volume-preserving affine map and a dynamically rasterized reference-space residual from the current membrane mesh. Outer-membrane cut cells now carry 2x2x2 volume fractions, 2x2 face apertures and a local geometric-conservation source in the pressure projection; passive scalar mass is conservatively remapped as those fractions move. The affine component is removed before sampling, so contact deformation is not counted twice. Multi-intersection folds and topology changes remain unsupported.",
+            "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path now accepts a self-intersection-free non-star-shaped closed mesh, including concave domains, with the same cut-cell volume/face sampling and conservative scalar remap. Runtime remeshing and topology changes remain unsupported.",
             {
                 "local_star_shaped_surface_modes_coupled": cytosol_summary[
                     "local_star_shaped_membrane_boundary_coupling_count"
@@ -266,6 +298,9 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 ],
                 "locally_conservative_membrane_face_flux_count": cytosol_summary[
                     "locally_conservative_membrane_face_flux_count"
+                ],
+                "non_star_shaped_closed_mesh_domain_kernel_count": cytosol_summary[
+                    "non_star_shaped_closed_mesh_domain_kernel_count"
                 ],
             },
             (
@@ -1037,8 +1072,20 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or local_boundary_metrics["local_topology_change_modes_coupled"] != 0
         or local_boundary_metrics["locally_conservative_membrane_face_flux_count"]
         != 1
+        or local_boundary_metrics[
+            "non_star_shaped_closed_mesh_domain_kernel_count"
+        ]
+        != 1
     ):
         raise ValueError("local membrane-fluid boundary contract changed")
+    fsi_metrics = by_id["fluid_structure_interaction"]["observed_metrics"]
+    if (
+        fsi_metrics["dimensionless_pressure_membrane_response_kernel_count"] != 1
+        or fsi_metrics["force_energy_consistency_test_count"] != 1
+        or fsi_metrics["volume_preserving_fsi_candidate_test_count"] != 1
+        or fsi_metrics["membrane_pressure_feedback_count"] != 0
+    ):
+        raise ValueError("dimensionless FSI candidate escaped into membrane authority")
     organelle_boundary_metrics = by_id["organelle_fluid_boundaries"][
         "observed_metrics"
     ]
@@ -1055,6 +1102,18 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         ]
         != 0
         or organelle_boundary_metrics["self_intersection_audited_mesh_count"] != 0
+        or organelle_boundary_metrics[
+            "repository_self_intersection_audit_kernel_count"
+        ]
+        != 1
+        or organelle_boundary_metrics[
+            "repository_self_intersection_audited_mesh_count"
+        ]
+        != 0
+        or organelle_boundary_metrics[
+            "repository_self_intersection_free_mesh_count"
+        ]
+        != 0
         or organelle_boundary_metrics["full_watertight_mesh_boundary_count"] != 0
     ):
         raise ValueError("mesh boundary intake escaped into biological geometry")

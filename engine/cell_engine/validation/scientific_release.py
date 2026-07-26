@@ -108,6 +108,10 @@ from cell_engine.quantitative.intracellular_mobility import (
 from cell_engine.quantitative.reaction_transport_coupling import (
     reaction_transport_coupling_intake_snapshot,
 )
+from cell_engine.quantitative.cytosol_transport import (
+    cytosol_transport_snapshot,
+    validate_cytosol_transport_snapshot,
+)
 from cell_engine.stochastic.integrated_cell import (
     INTEGRATED_VOLUME_L,
     build_integrated_hepatocyte_network,
@@ -401,13 +405,15 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         if (
             mesh_summary["target_structure_count"] != 11
             or mesh_summary["manifest_record_count"] != 0
+            or mesh_summary["repository_self_intersection_audited_artifact_count"] != 0
             or mesh_summary["registered_biological_mesh_boundary_count"] != 0
             or mesh_summary["mechanics_coupled_mesh_count"] != 0
+            or mesh_intake["gates"]["self_intersection_audit_implemented_in_repository"] is not True
             or mesh_intake["gates"]["biological_mesh_registration_allowed"] is not False
         ):
             raise ValueError("PHH mesh intake exceeded current authority")
         checks.append(
-            "the 41-column PHH mesh intake and closed-triangle topology audit cover eleven structures while microscopy registration, mechanics and runtime activation remain disabled"
+            "the 41-column PHH mesh intake plus repository topology/self-intersection audits cover eleven structures while independent QC, microscopy registration, mechanics and runtime activation remain disabled"
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid PHH 3D mesh-boundary intake: {exc}")
@@ -449,6 +455,27 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid reaction transport-coupling intake: {exc}")
+
+    try:
+        cytosol = cytosol_transport_snapshot()
+        validate_cytosol_transport_snapshot(cytosol)
+        cytosol_summary = cytosol["summary"]
+        if (
+            cytosol_summary["repository_mesh_self_intersection_audit_count"] != 1
+            or cytosol_summary["non_star_shaped_closed_mesh_domain_kernel_count"] != 1
+            or cytosol_summary[
+                "dimensionless_pressure_membrane_response_kernel_count"
+            ]
+            != 1
+            or cytosol_summary["membrane_pressure_feedback_count"] != 0
+            or cytosol_summary["full_watertight_mesh_boundary_count"] != 0
+        ):
+            raise ValueError("dimensionless cytosol numerics exceeded current authority")
+        checks.append(
+            "self-intersection-audited closed domains and a force/volume-checked pressure-response candidate remain dimensionless while PHH mesh registration and runtime feedback stay zero"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid dimensionless cytosol numerical contract: {exc}")
 
     try:
         external_validation_program = build_external_validation_program()
