@@ -1085,6 +1085,28 @@ export type EngineEnergyRedoxValidation = {
   };
 };
 
+export type EngineEnergyRedoxTrajectoryIntake = {
+  version: "phh_energy_redox_trajectory_intake_v1";
+  contract_id: string;
+  status: string;
+  delivery_path: string;
+  contract_sha256: string;
+  artifact_sha256?: string;
+  expected_header_count: number;
+  registered_pool_count: number;
+  record_count: number;
+  donor_count: number;
+  trajectory_count: number;
+  structurally_complete_trajectory_count: number;
+  calibration_and_heldout_complete_pool_count: number;
+  compartment_initialization_allowed_count: number;
+  rate_fitting_allowed_count: number;
+  automatic_state_coupling: false;
+  record_count_by_split?: Record<string, number>;
+  trajectory_assessments?: unknown[];
+  blockers: string[];
+};
+
 export type EngineExternalValidationContext = {
   id: string;
   title: string;
@@ -1342,8 +1364,34 @@ export type EngineReactionEvidenceAtlas = {
   limitations: string[];
 };
 
+export type EngineReactionEvidenceIntake = {
+  version: "phh_reaction_evidence_intake_v1";
+  contract_id: string;
+  network_id: string;
+  status: string;
+  delivery_path: string;
+  contract_sha256: string;
+  artifact_sha256?: string;
+  expected_header_count: number;
+  active_reaction_count: number;
+  required_slot_count: number;
+  record_count: number;
+  covered_slot_count: number;
+  structurally_ready_slot_count: number;
+  structurally_complete_reaction_count: number;
+  atlas_mutation_allowed_count: number;
+  quantitative_execution_allowed_count: number;
+  predictive_execution_allowed_count: number;
+  automatic_unit_conversion: false;
+  automatic_parameter_fitting: false;
+  automatic_cell_state_coupling: false;
+  record_count_by_split?: Record<string, number>;
+  reaction_assessments?: unknown[];
+  blockers: string[];
+};
+
 export type EngineCytosolTransport = {
-  version: "cytosol_transport_rheology_contract_v7";
+  version: "cytosol_transport_rheology_contract_v8";
   status: string;
   material_model: {
     model: "poroelastic_two_phase_cytoplasm";
@@ -1439,8 +1487,11 @@ export type EngineCytosolTransport = {
       renderer_geometry_boundary_classes: string[];
       thin_boundary_treatment: string;
       subgrid_quadrature_samples_per_cell: 8;
+      face_aperture_quadrature_channels: 4;
       subgrid_grid_convergence_tested: true;
-      fractional_face_aperture_flux_weighting: false;
+      fractional_face_aperture_flux_weighting: true;
+      fractional_face_aperture_pressure_weighting: true;
+      partial_cell_volume_conservation: true;
       full_watertight_mesh_boundaries: false;
       pressure_reaction_diagnostic_only: true;
       biological_time_or_velocity_claim: false;
@@ -1453,6 +1504,8 @@ export type EngineCytosolTransport = {
       boundary_condition: string;
       moving_domain_remap: string;
       moving_domain_mass_conservation_tested: true;
+      fractional_face_aperture_flux_weighting: true;
+      partial_cell_volume_mass_conservation_tested: true;
       biological_species_bound_count: 0;
       biological_diffusivity_claim: false;
     };
@@ -1642,10 +1695,12 @@ export type EngineSnapshot = {
     phh_glucose_observability?: EnginePhhGlucoseObservability;
     compartmental_energy_redox?: EngineCompartmentalEnergyRedox;
     energy_redox_validation?: EngineEnergyRedoxValidation;
+    energy_redox_trajectory_intake?: EngineEnergyRedoxTrajectoryIntake;
     external_validation_program?: EngineExternalValidationProgram;
     hepatocyte_capability_atlas?: EngineHepatocyteCapabilityAtlas;
     cellular_memory_contract?: EngineCellularMemoryContract;
     reaction_evidence_atlas?: EngineReactionEvidenceAtlas;
+    reaction_evidence_intake?: EngineReactionEvidenceIntake;
     cytosol_transport?: EngineCytosolTransport;
     metabolic_constraint_shell?: EngineMetabolicConstraintShell;
     hepatocyte_completion_matrix?: EngineHepatocyteCompletionMatrix;
@@ -4252,10 +4307,12 @@ export type EngineSnapshotSummary = {
   phhGlucoseObservability: EnginePhhGlucoseObservability | null;
   compartmentalEnergyRedox: EngineCompartmentalEnergyRedox | null;
   energyRedoxValidation: EngineEnergyRedoxValidation | null;
+  energyRedoxTrajectoryIntake: EngineEnergyRedoxTrajectoryIntake | null;
   externalValidationProgram: EngineExternalValidationProgram | null;
   hepatocyteCapabilityAtlas: EngineHepatocyteCapabilityAtlas | null;
   cellularMemoryContract: EngineCellularMemoryContract | null;
   reactionEvidenceAtlas: EngineReactionEvidenceAtlas | null;
+  reactionEvidenceIntake: EngineReactionEvidenceIntake | null;
   cytosolTransport: EngineCytosolTransport | null;
   metabolicConstraintShell: EngineMetabolicConstraintShell | null;
   hepatocyteCompletionMatrix: EngineHepatocyteCompletionMatrix | null;
@@ -4427,10 +4484,12 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     phhGlucoseObservability: snapshot.state.phh_glucose_observability ?? null,
     compartmentalEnergyRedox: snapshot.state.compartmental_energy_redox ?? null,
     energyRedoxValidation: snapshot.state.energy_redox_validation ?? null,
+    energyRedoxTrajectoryIntake: snapshot.state.energy_redox_trajectory_intake ?? null,
     externalValidationProgram: snapshot.state.external_validation_program ?? null,
     hepatocyteCapabilityAtlas: snapshot.state.hepatocyte_capability_atlas ?? null,
     cellularMemoryContract: snapshot.state.cellular_memory_contract ?? null,
     reactionEvidenceAtlas: snapshot.state.reaction_evidence_atlas ?? null,
+    reactionEvidenceIntake: snapshot.state.reaction_evidence_intake ?? null,
     cytosolTransport: snapshot.state.cytosol_transport ?? null,
     metabolicConstraintShell: snapshot.state.metabolic_constraint_shell ?? null,
     hepatocyteCompletionMatrix: snapshot.state.hepatocyte_completion_matrix ?? null,
