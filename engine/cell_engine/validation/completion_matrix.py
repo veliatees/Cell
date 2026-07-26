@@ -15,6 +15,9 @@ from cell_engine.quantitative.compartmental_energy_redox import (
     compartmental_energy_redox_snapshot,
 )
 from cell_engine.quantitative.cytosol_transport import cytosol_transport_snapshot
+from cell_engine.quantitative.energy_redox_trajectory import (
+    energy_redox_trajectory_intake_snapshot,
+)
 from cell_engine.quantitative.metabolic_constraint_shell import (
     metabolic_constraint_shell_snapshot,
 )
@@ -22,6 +25,9 @@ from cell_engine.quantitative.phh_protein_functional_evidence import (
     phh_protein_functional_evidence_snapshot,
 )
 from cell_engine.quantitative.phh_injury_validation import phh_injury_validation_snapshot
+from cell_engine.quantitative.reaction_evidence_intake import (
+    reaction_evidence_intake_snapshot,
+)
 from cell_engine.validation.capability_atlas import hepatocyte_capability_atlas_snapshot
 from cell_engine.validation.external_review import external_validation_snapshot
 from cell_engine.validation.reaction_evidence_atlas import build_reaction_evidence_atlas
@@ -76,7 +82,9 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     cytosol_summary = cytosol["summary"]
     capability = hepatocyte_capability_atlas_snapshot()["summary"]
     reactions = build_reaction_evidence_atlas()["summary"]
+    reaction_intake = reaction_evidence_intake_snapshot()
     energy = compartmental_energy_redox_snapshot()["summary"]
+    energy_trajectory_intake = energy_redox_trajectory_intake_snapshot()
     proteins = phh_protein_functional_evidence_snapshot()["summary"]
     injury = phh_injury_validation_snapshot()["summary"]
     quantity_harvest = hepatocyte_quantity_harvest_snapshot()["audit"]
@@ -105,6 +113,9 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 ],
                 "subgrid_grid_convergence_test_count": cytosol_summary[
                     "subgrid_boundary_grid_convergence_test_count"
+                ],
+                "fractional_face_aperture_solver_count": cytosol_summary[
+                    "fractional_face_aperture_solver_count"
                 ],
             },
             (),
@@ -173,7 +184,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Organelle-resolved fluid boundaries",
             "partial",
             "Impermeable moving organelle surfaces in the numerical cytosol domain.",
-            "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Thin ER/canalicular/Golgi structures use deterministic 2x2x2 subgrid occupancy plus a conservative intersection fallback, with grid-refinement tests; these assemblies are still not watertight biological meshes.",
+            "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Thin ER/canalicular/Golgi structures use deterministic 2x2x2 volume occupancy plus four analytic face-channel intersections; pressure and passive-scalar fluxes use the resulting fractional apertures while partial-cell scalar mass remains conservative. These assemblies are still not watertight biological meshes.",
             {
                 "analytic_obstacle_layer_count": cytosol_summary["moving_analytic_obstacle_layer_count"],
                 "analytic_obstacle_shape_count": cytosol_summary["analytic_obstacle_shape_count"],
@@ -194,7 +205,6 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             },
             (
                 "Watertight donor- or microscopy-derived organelle meshes.",
-                "Fractional face-aperture/cut-cell flux weighting beyond conservative binary interception.",
                 "Grid-convergence validation against those registered surface meshes.",
             ),
             ("src/physics/cytosolNumerics.ts", "src/physics/intracellularFluid.ts"),
@@ -385,11 +395,21 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Quantitative reaction core",
             "blocked_missing_evidence",
             "The 36 reactions currently active in the exploratory integrated network.",
-            "Every reaction has twelve typed evidence fields and a fail-closed transport gate; no reaction passes quantitative authority.",
+            "Every reaction has twelve typed evidence fields and a fail-closed transport gate. A versioned 45-column PHH evidence intake now checks exact active reaction IDs, slot-specific context, units, donor/study split leakage and frozen held-out artifacts; no delivered record or reaction passes quantitative authority.",
             {
                 "reaction_count": reactions["active_reaction_count"],
                 "evidence_slot_count": reactions["evidence_slot_count"],
                 "filled_evidence_slot_count": reactions["filled_evidence_slot_count"],
+                "reaction_evidence_intake_contract_count": 1,
+                "delivered_reaction_evidence_record_count": reaction_intake[
+                    "record_count"
+                ],
+                "structurally_ready_intake_slot_count": reaction_intake[
+                    "structurally_ready_slot_count"
+                ],
+                "structurally_complete_intake_reaction_count": reaction_intake[
+                    "structurally_complete_reaction_count"
+                ],
                 "quantitative_reaction_count": reactions["quantitative_execution_allowed_count"],
             },
             (
@@ -397,27 +417,49 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "Healthy-PHH parameter context and identifiable calibration data.",
                 "Donor-disjoint validation with uncertainty.",
             ),
-            ("engine/cell_engine/validation/reaction_evidence_atlas.py",),
+            (
+                "engine/cell_engine/validation/reaction_evidence_atlas.py",
+                "engine/cell_engine/quantitative/reaction_evidence_intake.py",
+                "data/evidence_intake/phh_reaction_evidence_contract.v1.json",
+            ),
         ),
         _entry(
             "energy_redox_quantitation",
             "Compartmental energy and redox quantitation",
             "partial",
             "ATP/ADP/AMP, NAD(H), NADP(H), glutathione, ROS, oxygen and electrochemical states across six compartments.",
-            "Pool identities and 14 process topologies are explicit; aggregate observations cannot initialize any compartment or rate.",
+            "Pool identities and 14 process topologies are explicit. A versioned 47-column donor-resolved PHH trajectory intake now enforces exact pool/molecule/compartment mapping, validated targeting, same-assay calibration, oxygen/nutrient context and sealed donor/study-disjoint held-out data; aggregate observations and absent trajectories cannot initialize a compartment or rate.",
             {
                 "compartment_count": energy["compartment_count"],
                 "pool_count": energy["explicit_pool_count"],
                 "initialized_pool_count": energy["initialized_compartment_pool_count"],
                 "executable_process_count": energy["executable_process_count"],
                 "runtime_conflict_count": energy["detected_runtime_conflict_count"],
+                "trajectory_intake_contract_count": 1,
+                "delivered_trajectory_record_count": energy_trajectory_intake[
+                    "record_count"
+                ],
+                "structurally_complete_trajectory_count": energy_trajectory_intake[
+                    "structurally_complete_trajectory_count"
+                ],
+                "calibration_and_heldout_complete_pool_count": energy_trajectory_intake[
+                    "calibration_and_heldout_complete_pool_count"
+                ],
+                "trajectory_initialized_pool_count": energy_trajectory_intake[
+                    "compartment_initialization_allowed_count"
+                ],
             },
             (
                 "Compartment-resolved healthy-PHH initial states.",
                 "Matched oxygen/redox/adenylate trajectories and flux-identifying perturbations.",
                 "Resolution of legacy aggregate runtime pools.",
             ),
-            ("engine/cell_engine/quantitative/compartmental_energy_redox.py", "engine/cell_engine/validation/energy_redox_gate.py"),
+            (
+                "engine/cell_engine/quantitative/compartmental_energy_redox.py",
+                "engine/cell_engine/validation/energy_redox_gate.py",
+                "engine/cell_engine/quantitative/energy_redox_trajectory.py",
+                "data/evidence_intake/phh_energy_redox_trajectory_contract.v1.json",
+            ),
         ),
         _entry(
             "receptor_signaling_kinetics",
@@ -757,8 +799,30 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
     if (
         cytosol_metrics["subgrid_boundary_treatment_count"] != 1
         or cytosol_metrics["subgrid_grid_convergence_test_count"] != 1
+        or cytosol_metrics["fractional_face_aperture_solver_count"] != 1
     ):
         raise ValueError("dimensionless thin-boundary numerics contract changed")
+    reaction_intake_metrics = by_id["quantitative_reaction_core"][
+        "observed_metrics"
+    ]
+    if (
+        reaction_intake_metrics["reaction_evidence_intake_contract_count"] != 1
+        or reaction_intake_metrics["delivered_reaction_evidence_record_count"] != 0
+        or reaction_intake_metrics["structurally_ready_intake_slot_count"] != 0
+        or reaction_intake_metrics["structurally_complete_intake_reaction_count"] != 0
+    ):
+        raise ValueError("reaction evidence intake escaped into quantitative authority")
+    energy_intake_metrics = by_id["energy_redox_quantitation"][
+        "observed_metrics"
+    ]
+    if (
+        energy_intake_metrics["trajectory_intake_contract_count"] != 1
+        or energy_intake_metrics["delivered_trajectory_record_count"] != 0
+        or energy_intake_metrics["structurally_complete_trajectory_count"] != 0
+        or energy_intake_metrics["calibration_and_heldout_complete_pool_count"] != 0
+        or energy_intake_metrics["trajectory_initialized_pool_count"] != 0
+    ):
+        raise ValueError("energy/redox trajectory intake escaped into state authority")
     active_transport_metrics = by_id["active_intracellular_transport_model"][
         "observed_metrics"
     ]

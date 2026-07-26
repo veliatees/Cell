@@ -39,7 +39,7 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert summary["local_star_shaped_membrane_boundary_coupling_count"] == 1
     assert summary["local_membrane_topology_change_coupling_count"] == 0
     assert summary["locally_conservative_membrane_face_flux_count"] == 0
-    assert summary["fractional_face_aperture_solver_count"] == 0
+    assert summary["fractional_face_aperture_solver_count"] == 1
     assert summary["full_watertight_mesh_boundary_count"] == 0
     assert summary["compound_boundary_conservation_test_count"] == 1
     assert summary["membrane_pressure_feedback_count"] == 0
@@ -56,6 +56,8 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert target["may_parameterize_viscosity_pressure_or_bulk_flow"] is False
     scalar = snapshot["solver_layers"]["conservative_passive_scalar_kernel"]
     assert scalar["moving_domain_mass_conservation_tested"] is True
+    assert scalar["fractional_face_aperture_flux_weighting"] is True
+    assert scalar["partial_cell_volume_mass_conservation_tested"] is True
     renderer = snapshot["solver_layers"]["renderer_dimensionless_projection_grid"]
     assert renderer["analytic_obstacle_shapes"] == (
         "sphere",
@@ -66,7 +68,10 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert renderer["quaternion_derived_rotation_boundary_velocity"] is True
     assert renderer["subgrid_quadrature_samples_per_cell"] == 8
     assert renderer["subgrid_grid_convergence_tested"] is True
-    assert renderer["fractional_face_aperture_flux_weighting"] is False
+    assert renderer["face_aperture_quadrature_channels"] == 4
+    assert renderer["fractional_face_aperture_flux_weighting"] is True
+    assert renderer["fractional_face_aperture_pressure_weighting"] is True
+    assert renderer["partial_cell_volume_conservation"] is True
     assert renderer["full_watertight_mesh_boundaries"] is False
     assert renderer["local_star_shaped_membrane_boundary_coupling"] is True
     assert renderer["local_boundary_reference_space"] is True
