@@ -24,6 +24,12 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert summary["conservative_moving_domain_remap_count"] == 1
     assert summary["biological_species_bound_count"] == 0
     assert summary["moving_analytic_obstacle_layer_count"] == 1
+    assert summary["analytic_obstacle_shape_count"] == 4
+    assert summary["rigid_body_boundary_kinematics_count"] == 1
+    assert summary["renderer_geometry_boundary_adapter_count"] == 1
+    assert summary["renderer_geometry_boundary_class_count"] == 10
+    assert summary["full_watertight_mesh_boundary_count"] == 0
+    assert summary["compound_boundary_conservation_test_count"] == 1
     assert summary["membrane_pressure_feedback_count"] == 0
     assert summary["quantitative_fluid_solver_count"] == 0
     assert summary["reaction_transport_coupling_count"] == 0
@@ -38,6 +44,15 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert target["may_parameterize_viscosity_pressure_or_bulk_flow"] is False
     scalar = snapshot["solver_layers"]["conservative_passive_scalar_kernel"]
     assert scalar["moving_domain_mass_conservation_tested"] is True
+    renderer = snapshot["solver_layers"]["renderer_dimensionless_projection_grid"]
+    assert renderer["analytic_obstacle_shapes"] == (
+        "sphere",
+        "ellipsoid",
+        "capsule",
+        "box",
+    )
+    assert renderer["quaternion_derived_rotation_boundary_velocity"] is True
+    assert renderer["full_watertight_mesh_boundaries"] is False
 
 
 @pytest.mark.parametrize(
@@ -45,6 +60,7 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     (
         (("renderer_dimensionless_projection_grid", "biological_pressure_claim"), True),
         (("renderer_dimensionless_projection_grid", "membrane_pressure_feedback"), True),
+        (("renderer_dimensionless_projection_grid", "full_watertight_mesh_boundaries"), True),
         (("conservative_passive_scalar_kernel", "biological_species_bound_count"), 1),
     ),
 )

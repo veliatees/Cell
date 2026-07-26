@@ -30,7 +30,7 @@ from cell_engine.validation.hepatocyte_quantities import (
 
 
 VERSION = "hepatocyte_completion_matrix_v1"
-DATE_VERIFIED = "2026-07-22"
+DATE_VERIFIED = "2026-07-26"
 GapStatus = Literal[
     "closed",
     "partial",
@@ -89,12 +89,15 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Dimensionless cytosol transport numerics",
             "closed",
             "Numerical test-bed only; no biological pressure, velocity, time or diffusivity claim.",
-            "A 3D pressure-projection grid, moving analytic obstacles and conservative passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
+            "A 3D pressure-projection grid, four analytic obstacle shapes, rigid translation/rotation boundary kinematics and a conservative passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
             {
                 "projection_solver_count": cytosol_summary["dimensionless_projection_solver_count"],
                 "conservative_scalar_kernel_count": cytosol_summary["conservative_passive_scalar_kernel_count"],
                 "conservative_moving_domain_remap_count": cytosol_summary["conservative_moving_domain_remap_count"],
                 "moving_analytic_obstacle_layer_count": cytosol_summary["moving_analytic_obstacle_layer_count"],
+                "analytic_obstacle_shape_count": cytosol_summary["analytic_obstacle_shape_count"],
+                "rigid_body_boundary_kinematics_count": cytosol_summary["rigid_body_boundary_kinematics_count"],
+                "compound_boundary_conservation_test_count": cytosol_summary["compound_boundary_conservation_test_count"],
             },
             (),
             ("src/physics/cytosolNumerics.ts", "src/physics/intracellularFluid.ts"),
@@ -162,12 +165,20 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Organelle-resolved fluid boundaries",
             "partial",
             "Impermeable moving organelle surfaces in the numerical cytosol domain.",
-            "Analytic moving sphere, ellipsoid and capsule obstacles exclude flow/scalar cells, but full mitochondrial, ER and Golgi meshes are not watertight fluid boundaries.",
-            {"analytic_obstacle_layer_count": cytosol_summary["moving_analytic_obstacle_layer_count"]},
+            "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies now represent ten boundary classes. Nucleus and Golgi transforms plus organelle populations are refreshed during motion, and rigid rotation contributes surface velocity; these assemblies are not watertight biological meshes.",
+            {
+                "analytic_obstacle_layer_count": cytosol_summary["moving_analytic_obstacle_layer_count"],
+                "analytic_obstacle_shape_count": cytosol_summary["analytic_obstacle_shape_count"],
+                "renderer_geometry_boundary_adapter_count": cytosol_summary["renderer_geometry_boundary_adapter_count"],
+                "renderer_geometry_boundary_class_count": cytosol_summary["renderer_geometry_boundary_class_count"],
+                "rigid_body_boundary_kinematics_count": cytosol_summary["rigid_body_boundary_kinematics_count"],
+                "compound_boundary_conservation_test_count": cytosol_summary["compound_boundary_conservation_test_count"],
+                "full_watertight_mesh_boundary_count": cytosol_summary["full_watertight_mesh_boundary_count"],
+            },
             (
-                "Watertight organelle meshes with per-frame transforms.",
-                "No-flux and moving-boundary conditions on the actual surfaces.",
-                "Resolution/conservation tests for thin ER and Golgi structures.",
+                "Watertight donor- or microscopy-derived organelle meshes.",
+                "Cut-cell or immersed-boundary treatment for sub-grid ER/Golgi membranes.",
+                "Grid-convergence validation against those registered surface meshes.",
             ),
             ("src/physics/cytosolNumerics.ts", "src/physics/intracellularFluid.ts"),
         ),
@@ -547,13 +558,23 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
         ),
         _entry(
             "visual_regression_automation",
-            "Browser visual regression automation",
-            "partial",
-            "Repeatable render integrity checks for desktop/mobile browser views.",
-            "Manual in-app browser screenshot and console QA is possible and has been performed; a committed deterministic pixel baseline is absent.",
-            {"manual_browser_qa_available": True, "automated_visual_regression_suites": 0},
-            ("A stable headless-browser test with nonblank-canvas, console and approved pixel-difference criteria.",),
-            ("src/main.ts", "artifacts/screenshots/"),
+            "Automated browser render-integrity regression",
+            "closed",
+            "Repeatable desktop/mobile checks for nonblank moving canvas output, layout integrity and runtime errors; exact cross-GPU design equivalence is outside this scope.",
+            "A Playwright suite runs two viewports and checks canvas dimensions, luminance variance, non-dark and chromatic pixel fractions, color diversity, two-frame motion, overflow, clipped controls, console errors and page errors.",
+            {
+                "manual_browser_qa_available": True,
+                "automated_visual_regression_suites": 1,
+                "automated_viewport_count": 2,
+                "exact_cross_gpu_pixel_baseline_count": 0,
+                "exact_cross_gpu_pixel_equivalence_claim": False,
+            },
+            (),
+            (
+                "playwright.config.ts",
+                "tests/visual/render-integrity.spec.ts",
+                "src/main.ts",
+            ),
         ),
         _entry(
             "independent_scientific_validation",
@@ -666,6 +687,13 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         raise ValueError("PHH injury data-plane engineering guards changed")
     if by_id["hepatocyte_fba_execution"]["observed_metrics"]["enabled_execution_gate_count"] != 0:
         raise ValueError("FBA execution escaped its scientific gate")
+    visual_metrics = by_id["visual_regression_automation"]["observed_metrics"]
+    if (
+        visual_metrics["automated_visual_regression_suites"] != 1
+        or visual_metrics["automated_viewport_count"] != 2
+        or visual_metrics["exact_cross_gpu_pixel_equivalence_claim"] is not False
+    ):
+        raise ValueError("browser render-integrity automation contract changed")
     if by_id["independent_scientific_validation"]["observed_metrics"]["externally_reviewed_claim_count"] != 0:
         raise ValueError("external validation count changed without result intake")
 

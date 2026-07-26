@@ -15,8 +15,21 @@ from cell_engine.processes.hepatocyte import build_hepatocyte_definition
 from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_VOLUME_UM3
 
 
-DATE_VERIFIED = "2026-07-22"
-VERSION = "cytosol_transport_rheology_contract_v3"
+DATE_VERIFIED = "2026-07-26"
+VERSION = "cytosol_transport_rheology_contract_v4"
+
+RENDERER_GEOMETRY_BOUNDARY_CLASSES: tuple[str, ...] = (
+    "nuclear_envelope",
+    "bile_canaliculus",
+    "rough_er_cisternae",
+    "rough_er_branches",
+    "smooth_er_branches",
+    "golgi_stacks",
+    "lipid_droplets",
+    "mitochondria",
+    "peroxisomes",
+    "lysosomes",
+)
 
 CYTOSOL_TRANSPORT_SOURCES: dict[str, SourceReference] = {
     "moeendarbary2013_poroelastic_cytoplasm": SourceReference(
@@ -428,7 +441,12 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "role": "dimensionless moving-domain visualization and numerical test bed",
                 "membrane_volume_mapping": "same volume-preserving affine deformation as the rendered membrane",
                 "moving_analytic_obstacle_boundaries": True,
-                "static_anatomy_proxy_boundaries": True,
+                "analytic_obstacle_shapes": ("sphere", "ellipsoid", "capsule", "box"),
+                "rigid_translation_boundary_velocity": True,
+                "quaternion_derived_rotation_boundary_velocity": True,
+                "renderer_geometry_boundary_adapter": True,
+                "renderer_geometry_boundary_classes": RENDERER_GEOMETRY_BOUNDARY_CLASSES,
+                "full_watertight_mesh_boundaries": False,
                 "pressure_reaction_diagnostic_only": True,
                 "biological_time_or_velocity_claim": False,
                 "biological_pressure_claim": False,
@@ -468,6 +486,14 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "conservative_moving_domain_remap_count": 1,
             "biological_species_bound_count": 0,
             "moving_analytic_obstacle_layer_count": 1,
+            "analytic_obstacle_shape_count": 4,
+            "rigid_body_boundary_kinematics_count": 1,
+            "renderer_geometry_boundary_adapter_count": 1,
+            "renderer_geometry_boundary_class_count": len(
+                RENDERER_GEOMETRY_BOUNDARY_CLASSES
+            ),
+            "full_watertight_mesh_boundary_count": 0,
+            "compound_boundary_conservation_test_count": 1,
             "membrane_pressure_feedback_count": 0,
             "quantitative_fluid_solver_count": 0,
             "reaction_transport_coupling_count": 0,
@@ -509,6 +535,25 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("dimensionless pressure escaped into a biological pressure claim")
     if projection.get("membrane_pressure_feedback") is not False:
         raise ValueError("unvalidated cytosol pressure feeds the membrane")
+    if projection.get("analytic_obstacle_shapes") != (
+        "sphere",
+        "ellipsoid",
+        "capsule",
+        "box",
+    ):
+        raise ValueError("renderer obstacle-shape contract changed")
+    if projection.get("rigid_translation_boundary_velocity") is not True:
+        raise ValueError("moving boundary translation kinematics are missing")
+    if projection.get("quaternion_derived_rotation_boundary_velocity") is not True:
+        raise ValueError("moving boundary rotation kinematics are missing")
+    if projection.get("renderer_geometry_boundary_adapter") is not True:
+        raise ValueError("renderer geometry boundary adapter is missing")
+    if projection.get("renderer_geometry_boundary_classes") != (
+        RENDERER_GEOMETRY_BOUNDARY_CLASSES
+    ):
+        raise ValueError("renderer geometry boundary classes changed")
+    if projection.get("full_watertight_mesh_boundaries") is not False:
+        raise ValueError("analytic renderer boundaries were mislabelled as watertight meshes")
     if not isinstance(scalar, dict) or scalar.get("enabled") is not True:
         raise ValueError("conservative passive-scalar kernel is missing")
     if scalar.get("biological_species_bound_count") != 0:
