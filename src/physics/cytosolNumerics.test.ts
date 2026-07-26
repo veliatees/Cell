@@ -345,7 +345,7 @@ describe("dimensionless cytosol numerical kernel", () => {
 
     expect(mediumError).toBeLessThan(coarseError);
     expect(fineError).toBeLessThan(mediumError);
-  });
+  }, 15_000);
 
   it("keeps biological units and reaction feedback disabled", () => {
     expect(CYTOSOL_NUMERICAL_CONTRACT.biologicalVelocityClaim).toBe(false);

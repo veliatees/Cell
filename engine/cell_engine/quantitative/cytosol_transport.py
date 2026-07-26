@@ -12,11 +12,14 @@ from dataclasses import dataclass
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.processes.hepatocyte import build_hepatocyte_definition
+from cell_engine.quantitative.active_cargo_trajectory import (
+    active_cargo_trajectory_intake_snapshot,
+)
 from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_VOLUME_UM3
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "cytosol_transport_rheology_contract_v6"
+VERSION = "cytosol_transport_rheology_contract_v7"
 
 RENDERER_GEOMETRY_BOUNDARY_CLASSES: tuple[str, ...] = (
     "nuclear_envelope",
@@ -348,6 +351,7 @@ def cytosol_transport_snapshot() -> dict[str, object]:
         raise ValueError("legacy cytosol fraction unexpectedly disappeared without migration review")
     if any(observation.may_parameterize_healthy_phh for observation in REFERENCE_OBSERVATIONS):
         raise ValueError("cross-context rheology reference was promoted to healthy PHH")
+    active_cargo_intake = active_cargo_trajectory_intake_snapshot()
 
     return {
         "version": VERSION,
@@ -366,7 +370,11 @@ def cytosol_transport_snapshot() -> dict[str, object]:
         },
         "governing_contract": {
             "species_balance": "partial_t(c_i) + div(u*c_i) = div(D_i*grad(c_i)) + R_i(c)",
-            "incompressible_visual_mapping": "div(u) = 0 and det(F) = 1 for the affine moving-domain display map",
+            "incompressible_visual_mapping": (
+                "div(u) = 0 and det(F) = 1 for the affine contact map; a "
+                "reference-space angular field adds only smooth star-shaped "
+                "non-affine boundary residuals"
+            ),
             "poroelastic_scaling": "D_p scales with E*xi^2/mu; no coefficient is assigned for healthy PHH",
             "advection_changes_reaction_state_via": "local reactant/product concentrations and boundary fluxes",
             "direct_viscosity_rate_multiplier": None,
@@ -436,6 +444,7 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "biological_velocity_or_dwell_time_assigned": False,
                 "healthy_phh_rate_bound": False,
                 "cross_context_reference_only": True,
+                "trajectory_intake": active_cargo_intake,
             },
             "mode_interchange_prohibited": True,
         },
@@ -444,6 +453,12 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "enabled": True,
                 "role": "dimensionless moving-domain visualization and numerical test bed",
                 "membrane_volume_mapping": "same volume-preserving affine deformation as the rendered membrane",
+                "local_star_shaped_membrane_boundary_coupling": True,
+                "local_boundary_reference_space": True,
+                "local_boundary_angular_bin_count": 512,
+                "affine_component_removed_before_local_boundary_sampling": True,
+                "multi_intersection_fold_or_topology_change_support": False,
+                "locally_conservative_membrane_face_flux": False,
                 "moving_analytic_obstacle_boundaries": True,
                 "analytic_obstacle_shapes": ("sphere", "ellipsoid", "capsule", "box"),
                 "rigid_translation_boundary_velocity": True,
@@ -482,6 +497,11 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "biological_pause_reversal_or_dwell_claim": False,
                 "healthy_phh_route_bound_count": 0,
                 "reaction_or_cell_state_coupling": False,
+                "trajectory_intake_contract_id": active_cargo_intake["contract_id"],
+                "delivered_phh_route_count": active_cargo_intake["route_count"],
+                "quantitatively_authorized_phh_route_count": active_cargo_intake[
+                    "quantitatively_authorized_route_count"
+                ],
             },
             "quantitative_poroelastic_solver": {
                 "enabled": False,
@@ -508,6 +528,16 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "conservative_moving_domain_remap_count": 1,
             "dimensionless_active_cargo_route_kernel_count": 1,
             "healthy_phh_active_transport_kernel_count": 0,
+            "active_cargo_trajectory_intake_contract_count": 1,
+            "delivered_phh_active_cargo_route_count": active_cargo_intake[
+                "route_count"
+            ],
+            "structurally_complete_phh_active_cargo_route_count": active_cargo_intake[
+                "structurally_complete_route_count"
+            ],
+            "quantitatively_authorized_phh_active_cargo_route_count": active_cargo_intake[
+                "quantitatively_authorized_route_count"
+            ],
             "biological_species_bound_count": 0,
             "moving_analytic_obstacle_layer_count": 1,
             "analytic_obstacle_shape_count": 4,
@@ -518,6 +548,9 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             ),
             "conservative_subgrid_boundary_treatment_count": 1,
             "subgrid_boundary_grid_convergence_test_count": 1,
+            "local_star_shaped_membrane_boundary_coupling_count": 1,
+            "local_membrane_topology_change_coupling_count": 0,
+            "locally_conservative_membrane_face_flux_count": 0,
             "fractional_face_aperture_solver_count": 0,
             "full_watertight_mesh_boundary_count": 0,
             "compound_boundary_conservation_test_count": 1,
@@ -563,6 +596,20 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("dimensionless pressure escaped into a biological pressure claim")
     if projection.get("membrane_pressure_feedback") is not False:
         raise ValueError("unvalidated cytosol pressure feeds the membrane")
+    if (
+        projection.get("local_star_shaped_membrane_boundary_coupling") is not True
+        or projection.get("local_boundary_reference_space") is not True
+        or projection.get("local_boundary_angular_bin_count") != 512
+        or projection.get("affine_component_removed_before_local_boundary_sampling")
+        is not True
+    ):
+        raise ValueError("local star-shaped membrane boundary coupling is missing")
+    if (
+        projection.get("multi_intersection_fold_or_topology_change_support")
+        is not False
+        or projection.get("locally_conservative_membrane_face_flux") is not False
+    ):
+        raise ValueError("local membrane boundary overclaims topology or conservative flux")
     if projection.get("analytic_obstacle_shapes") != (
         "sphere",
         "ellipsoid",
@@ -605,6 +652,8 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         or active_cargo.get("biological_pause_reversal_or_dwell_claim") is not False
         or active_cargo.get("healthy_phh_route_bound_count") != 0
         or active_cargo.get("reaction_or_cell_state_coupling") is not False
+        or active_cargo.get("delivered_phh_route_count") != 0
+        or active_cargo.get("quantitatively_authorized_phh_route_count") != 0
     ):
         raise ValueError("dimensionless active-cargo renderer escaped into PHH biology")
     if coupling.get("currently_coupled_reaction_count") != 0:

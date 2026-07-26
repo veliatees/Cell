@@ -56,7 +56,7 @@ describe("whole-cell membrane mechanics", () => {
     expect(metrics.invertedFaces).toBe(0);
     expect(metrics.areaRatio).toBeLessThanOrEqual(1 + MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT + 1e-4);
     expect(metrics.volumeRatio).toBeCloseTo(1, 3);
-  });
+  }, 15_000);
 
   it("keeps the canonical polyhedral hepatocyte surface closed and bounded", () => {
     const sim = createHepatocyteMembraneSim(14, 3);

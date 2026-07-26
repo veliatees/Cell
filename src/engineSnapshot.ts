@@ -914,6 +914,21 @@ export type EngineGenerativeModelingBoundary = {
   automatic_state_coupling: boolean;
   blockers: string[];
   source_ids: string[];
+  donor_manifest_intake?: {
+    version: string;
+    contract_id: string;
+    status: string;
+    delivery_path: string;
+    contract_sha256: string;
+    sample_count: number;
+    donor_count: number;
+    feature_count: number;
+    structurally_training_data_ready: boolean;
+    validated_generative_donor_model_count: number;
+    automatic_training: false;
+    automatic_engine_coupling: false;
+    blockers: string[];
+  };
 };
 
 export type EngineCompartmentalEnergyRedox = {
@@ -1328,7 +1343,7 @@ export type EngineReactionEvidenceAtlas = {
 };
 
 export type EngineCytosolTransport = {
-  version: "cytosol_transport_rheology_contract_v6";
+  version: "cytosol_transport_rheology_contract_v7";
   status: string;
   material_model: {
     model: "poroelastic_two_phase_cytoplasm";
@@ -1384,6 +1399,24 @@ export type EngineCytosolTransport = {
       biological_velocity_or_dwell_time_assigned: false;
       healthy_phh_rate_bound: false;
       cross_context_reference_only: true;
+      trajectory_intake: {
+        version: string;
+        contract_id: string;
+        status: string;
+        delivery_path: string;
+        contract_sha256: string;
+        expected_header_count: number;
+        record_count: number;
+        donor_count: number;
+        route_count: number;
+        structurally_complete_route_count: number;
+        quantitatively_authorized_route_count: number;
+        automatic_velocity_inference: false;
+        automatic_motor_parameter_fitting: false;
+        automatic_route_activation: false;
+        automatic_cell_state_coupling: false;
+        blockers: string[];
+      };
     };
     mode_interchange_prohibited: true;
   };
@@ -1392,6 +1425,12 @@ export type EngineCytosolTransport = {
       enabled: true;
       role: string;
       membrane_volume_mapping: string;
+      local_star_shaped_membrane_boundary_coupling: true;
+      local_boundary_reference_space: true;
+      local_boundary_angular_bin_count: 512;
+      affine_component_removed_before_local_boundary_sampling: true;
+      multi_intersection_fold_or_topology_change_support: false;
+      locally_conservative_membrane_face_flux: false;
       moving_analytic_obstacle_boundaries: true;
       analytic_obstacle_shapes: string[];
       rigid_translation_boundary_velocity: true;
@@ -1425,6 +1464,9 @@ export type EngineCytosolTransport = {
       biological_pause_reversal_or_dwell_claim: false;
       healthy_phh_route_bound_count: 0;
       reaction_or_cell_state_coupling: false;
+      trajectory_intake_contract_id: string;
+      delivered_phh_route_count: 0;
+      quantitatively_authorized_phh_route_count: 0;
     };
     quantitative_poroelastic_solver: { enabled: false; reason: string };
     advection_diffusion_reaction_coupling: { enabled: false; reason: string };
@@ -1445,6 +1487,10 @@ export type EngineCytosolTransport = {
     conservative_moving_domain_remap_count: number;
     dimensionless_active_cargo_route_kernel_count: number;
     healthy_phh_active_transport_kernel_count: number;
+    active_cargo_trajectory_intake_contract_count: number;
+    delivered_phh_active_cargo_route_count: number;
+    structurally_complete_phh_active_cargo_route_count: number;
+    quantitatively_authorized_phh_active_cargo_route_count: number;
     biological_species_bound_count: number;
     moving_analytic_obstacle_layer_count: number;
     analytic_obstacle_shape_count: number;
@@ -1453,6 +1499,9 @@ export type EngineCytosolTransport = {
     renderer_geometry_boundary_class_count: number;
     conservative_subgrid_boundary_treatment_count: number;
     subgrid_boundary_grid_convergence_test_count: number;
+    local_star_shaped_membrane_boundary_coupling_count: number;
+    local_membrane_topology_change_coupling_count: number;
+    locally_conservative_membrane_face_flux_count: number;
     fractional_face_aperture_solver_count: number;
     full_watertight_mesh_boundary_count: number;
     compound_boundary_conservation_test_count: number;

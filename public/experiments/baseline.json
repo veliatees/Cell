@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-26T10:10:09.882966+00:00",
+    "created_at_utc": "2026-07-26T10:38:55.990482+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -5457,7 +5457,7 @@
         "advection_changes_reaction_state_via": "local reactant/product concentrations and boundary fluxes",
         "direct_viscosity_rate_multiplier": null,
         "global_crowding_multiplier_allowed": false,
-        "incompressible_visual_mapping": "div(u) = 0 and det(F) = 1 for the affine moving-domain display map",
+        "incompressible_visual_mapping": "div(u) = 0 and det(F) = 1 for the affine contact map; a reference-space angular field adds only smooth star-shaped non-affine boundary residuals",
         "poroelastic_scaling": "D_p scales with E*xi^2/mu; no coefficient is assigned for healthy PHH",
         "species_balance": "partial_t(c_i) + div(u*c_i) = div(D_i*grad(c_i)) + R_i(c)"
       },
@@ -5538,17 +5538,21 @@
         "dimensionless_active_cargo_route_kernel": {
           "biological_pause_reversal_or_dwell_claim": false,
           "biological_velocity_claim": false,
+          "delivered_phh_route_count": 0,
           "enabled": true,
           "healthy_phh_route_bound_count": 0,
           "independent_per_frame_random_walk": false,
+          "quantitatively_authorized_phh_route_count": 0,
           "reaction_or_cell_state_coupling": false,
-          "role": "deterministic renderer-only separation of track cargo from the passive aqueous projection field"
+          "role": "deterministic renderer-only separation of track cargo from the passive aqueous projection field",
+          "trajectory_intake_contract_id": "phh_active_cargo_trajectory_contract_v1"
         },
         "quantitative_poroelastic_solver": {
           "enabled": false,
           "reason": "healthy-PHH constitutive parameters and validation trajectories are unavailable"
         },
         "renderer_dimensionless_projection_grid": {
+          "affine_component_removed_before_local_boundary_sampling": true,
           "analytic_obstacle_shapes": [
             "sphere",
             "ellipsoid",
@@ -5560,9 +5564,14 @@
           "enabled": true,
           "fractional_face_aperture_flux_weighting": false,
           "full_watertight_mesh_boundaries": false,
+          "local_boundary_angular_bin_count": 512,
+          "local_boundary_reference_space": true,
+          "local_star_shaped_membrane_boundary_coupling": true,
+          "locally_conservative_membrane_face_flux": false,
           "membrane_pressure_feedback": false,
           "membrane_volume_mapping": "same volume-preserving affine deformation as the rendered membrane",
           "moving_analytic_obstacle_boundaries": true,
+          "multi_intersection_fold_or_topology_change_support": false,
           "pressure_reaction_diagnostic_only": true,
           "quaternion_derived_rotation_boundary_velocity": true,
           "renderer_geometry_boundary_adapter": true,
@@ -5597,6 +5606,7 @@
       ],
       "status": "two_phase_transport_contract_active_healthy_phh_parameters_blocked",
       "summary": {
+        "active_cargo_trajectory_intake_contract_count": 1,
         "analytic_obstacle_shape_count": 4,
         "biological_species_bound_count": 0,
         "compound_boundary_conservation_test_count": 1,
@@ -5604,6 +5614,7 @@
         "conservative_passive_scalar_kernel_count": 1,
         "conservative_subgrid_boundary_treatment_count": 1,
         "cross_context_reference_count": 10,
+        "delivered_phh_active_cargo_route_count": 0,
         "dimensionless_active_cargo_route_kernel_count": 1,
         "dimensionless_projection_solver_count": 1,
         "fractional_face_aperture_solver_count": 0,
@@ -5611,13 +5622,18 @@
         "healthy_phh_active_transport_kernel_count": 0,
         "healthy_phh_numeric_rheology_parameter_count": 0,
         "human_in_vivo_validation_target_count": 1,
+        "local_membrane_topology_change_coupling_count": 0,
+        "local_star_shaped_membrane_boundary_coupling_count": 1,
+        "locally_conservative_membrane_face_flux_count": 0,
         "membrane_pressure_feedback_count": 0,
         "moving_analytic_obstacle_layer_count": 1,
         "quantitative_fluid_solver_count": 0,
+        "quantitatively_authorized_phh_active_cargo_route_count": 0,
         "reaction_transport_coupling_count": 0,
         "renderer_geometry_boundary_adapter_count": 1,
         "renderer_geometry_boundary_class_count": 10,
         "rigid_body_boundary_kinematics_count": 1,
+        "structurally_complete_phh_active_cargo_route_count": 0,
         "subgrid_boundary_grid_convergence_test_count": 1,
         "visual_fluid_layer_count": 1
       },
@@ -5632,7 +5648,29 @@
             "fusion, fission and sorting"
           ],
           "numerical_kernel_available": true,
-          "numerical_kernel_scope": "deterministic dimensionless renderer path progress only"
+          "numerical_kernel_scope": "deterministic dimensionless renderer path progress only",
+          "trajectory_intake": {
+            "automatic_cell_state_coupling": false,
+            "automatic_motor_parameter_fitting": false,
+            "automatic_route_activation": false,
+            "automatic_velocity_inference": false,
+            "blockers": [
+              "versioned donor-resolved raw 3D trajectory delivery is absent",
+              "manual primary-source review is incomplete",
+              "frozen route model and independent held-out evaluation are absent"
+            ],
+            "contract_id": "phh_active_cargo_trajectory_contract_v1",
+            "contract_sha256": "0f2917f6ae414930a940f24132d1819b1482d15a135b5bbed25c2af38af30507",
+            "delivery_path": "data/evidence_intake/incoming/phh_active_cargo/latest/phh_active_cargo_trajectories.csv",
+            "donor_count": 0,
+            "expected_header_count": 39,
+            "quantitatively_authorized_route_count": 0,
+            "record_count": 0,
+            "route_count": 0,
+            "status": "awaiting_donor_resolved_3d_phh_active_cargo_trajectories",
+            "structurally_complete_route_count": 0,
+            "version": "phh_active_cargo_trajectory_intake_v1"
+          }
         },
         "aqueous_passive_transport": {
           "carriers": "ions, metabolites and soluble macromolecules",
@@ -5645,7 +5683,7 @@
         },
         "mode_interchange_prohibited": true
       },
-      "version": "cytosol_transport_rheology_contract_v6"
+      "version": "cytosol_transport_rheology_contract_v7"
     },
     "definition_id": "human_hepatocyte_midlobular_v1",
     "division": {
@@ -10581,6 +10619,26 @@
         "conditional VAE only for explicitly conditioned measured modalities",
         "scGen-like perturbation model only with held-out donor/context evaluation"
       ],
+      "donor_manifest_intake": {
+        "automatic_engine_coupling": false,
+        "automatic_training": false,
+        "blockers": [
+          "donor-linked measured data manifest is absent",
+          "donor-disjoint train, validation and test cohorts are absent",
+          "batch, technical-covariate and explicit-missingness metadata are absent",
+          "frozen model and donor-heldout evaluation are absent"
+        ],
+        "contract_id": "phh_generative_donor_manifest_contract_v1",
+        "contract_sha256": "efc26576abc24058201bc22106bf2fd346992e5584c3bce1be4a761c915a25ae",
+        "delivery_path": "data/evidence_intake/incoming/phh_generative_donor/latest/phh_generative_donor_manifest.json",
+        "donor_count": 0,
+        "feature_count": 0,
+        "sample_count": 0,
+        "status": "awaiting_donor_linked_multimodal_phh_manifest",
+        "structurally_training_data_ready": false,
+        "validated_generative_donor_model_count": 0,
+        "version": "phh_generative_donor_manifest_intake_v1"
+      },
       "inference_ready": false,
       "prohibited_training_inputs": [
         "legacy_relative_0_1_schematic_pools_as_measured_biology",
@@ -10610,7 +10668,7 @@
       "target_cell_type": "adult primary human hepatocyte",
       "target_species": "Homo sapiens",
       "training_ready": false,
-      "version": "hepatocyte_generative_modeling_boundary_v1"
+      "version": "hepatocyte_generative_modeling_boundary_v2"
     },
     "genome": {
       "all_scaffolds_length_bp": 3099734149,
@@ -15337,21 +15395,24 @@
         },
         {
           "code_surfaces": [
+            "src/physics/membraneFluidBoundary.ts",
             "src/physics/intracellularFluid.ts",
-            "src/physics/membraneMechanics.ts"
+            "src/physics/cytosolNumerics.ts"
           ],
-          "current_capability": "The fluid grid follows the global volume-preserving affine membrane map only.",
+          "current_capability": "The fluid grid now follows the global volume-preserving affine map and a dynamically rasterized reference-space residual from the current membrane mesh. The affine component is removed before sampling, so contact deformation is not counted twice. Multi-intersection folds and topology changes remain unsupported.",
           "id": "local_non_affine_membrane_coupling",
           "observed_metrics": {
-            "local_topology_change_modes_coupled": 0
+            "local_star_shaped_surface_modes_coupled": 1,
+            "local_topology_change_modes_coupled": 0,
+            "locally_conservative_membrane_face_flux_count": 0
           },
           "remaining_requirements": [
             "Remeshing and topology-change representation.",
             "Locally conservative moving-boundary coupling.",
             "Event-specific membrane reservoir and neck mechanics evidence."
           ],
-          "scope": "Local folds, buds, endocytosis, exocytosis and topology change.",
-          "status": "blocked_missing_evidence",
+          "scope": "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
+          "status": "partial",
           "title": "Local non-affine membrane-to-fluid coupling"
         },
         {
@@ -15424,14 +15485,20 @@
         {
           "code_surfaces": [
             "engine/cell_engine/quantitative/cytosol_transport.py",
+            "engine/cell_engine/quantitative/active_cargo_trajectory.py",
+            "data/evidence_intake/phh_active_cargo_trajectory_contract.v1.json",
             "src/physics/transportModes.ts",
             "src/main.ts"
           ],
           "current_capability": "Passive aqueous tracers and directed cargo are now separate at runtime. A deterministic dimensionless path-progress kernel renders track cargo without per-frame random walks, while every PHH motor velocity, dwell, reversal, route and state-coupling parameter remains absent.",
           "id": "active_intracellular_transport_model",
           "observed_metrics": {
+            "delivered_phh_route_count": 0,
             "dimensionless_renderer_route_kernels": 1,
-            "healthy_phh_active_transport_kernels": 0
+            "healthy_phh_active_transport_kernels": 0,
+            "quantitatively_authorized_phh_route_count": 0,
+            "structurally_complete_phh_route_count": 0,
+            "trajectory_intake_contract_count": 1
           },
           "remaining_requirements": [
             "Cargo- and route-resolved PHH trajectories.",
@@ -15661,11 +15728,17 @@
         },
         {
           "code_surfaces": [
-            "engine/cell_engine/ml/generative.py"
+            "engine/cell_engine/ml/generative.py",
+            "data/evidence_intake/phh_generative_donor_manifest_contract.v1.json"
           ],
-          "current_capability": "Separate donor/cohort observations exist, but cross-assay records are not fused into synthetic people and no VAE is trained.",
+          "current_capability": "A strict donor-linked multimodal manifest intake now requires explicit missingness, batch/technical covariates, donor-disjoint train/validation/test splits and a study-disjoint test set. No qualifying delivery, trained VAE or validated synthetic donor exists.",
           "id": "donor_state_model",
           "observed_metrics": {
+            "automatic_engine_coupling_count": 0,
+            "delivered_donor_count": 0,
+            "delivered_donor_manifest_sample_count": 0,
+            "donor_manifest_intake_contract_count": 1,
+            "structurally_training_data_ready_count": 0,
             "validated_generative_donor_models": 0
           },
           "remaining_requirements": [
@@ -15795,12 +15868,12 @@
       },
       "summary": {
         "biological_accuracy_pct": null,
-        "blocked_missing_evidence_count": 13,
+        "blocked_missing_evidence_count": 12,
         "closed_count": 5,
         "entry_count": 27,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
-        "partial_count": 7
+        "partial_count": 8
       },
       "version": "hepatocyte_completion_matrix_v1"
     },
@@ -37949,11 +38022,11 @@
           "status": "derived"
         },
         {
-          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise renderer-linked rigid moving-boundary projection, conservative subgrid thin-boundary interception, passive-scalar transport and deterministic dimensionless cargo paths only as numerical kernels; require matched healthy-PHH evidence before biological coupling",
+          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise renderer-linked rigid moving-boundary projection, reference-space star-shaped membrane residuals, conservative subgrid thin-boundary interception, passive-scalar transport and deterministic dimensionless cargo paths only as numerical kernels; require matched healthy-PHH evidence before biological coupling",
           "default_snapshot_role": "dimensionless_numerics_and_biological_coupling_firewall",
           "drives_scientific_validation": true,
           "id": "cytosol_transport_rheology_contract",
-          "limitations": "The renderer has four analytic boundary shapes, rigid translation/rotation, conservative 2x2x2 subgrid interception for thin ER/canalicular/Golgi structures, an unbound scalar kernel and a deterministic route-progress display separated from passive aqueous tracers. These are not watertight microscopy meshes or PHH transport rates. Zero biological species and reactions are coupled, and pressure cannot feed membrane mechanics.",
+          "limitations": "The renderer has a local star-shaped membrane boundary, four analytic organelle-boundary shapes, rigid translation/rotation, conservative 2x2x2 subgrid interception for thin ER/canalicular/Golgi structures, an unbound scalar kernel and a deterministic route-progress display separated from passive aqueous tracers. These are not topology-changing membrane mechanics, watertight microscopy meshes or PHH transport rates. The 39-field PHH cargo intake currently contains zero routes. Zero biological species and reactions are coupled, and pressure cannot feed membrane mechanics.",
           "source_ids": [
             "moeendarbary2013_poroelastic_cytoplasm",
             "kwapiszewska2020_cytoplasm_nanoviscosity",
