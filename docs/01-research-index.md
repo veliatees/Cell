@@ -120,6 +120,9 @@ linked to its dependencies.
 - Fractional face-aperture pressure/scalar weighting with partial-cell mass conservation: `milestones/114-fractional-face-aperture-cytosol-v1.md`
 - Strict 36-reaction by 12-slot PHH evidence intake: `milestones/115-phh-reaction-evidence-intake-v1.md`
 - Donor-resolved compartmental PHH energy/redox trajectory intake: `milestones/116-phh-energy-redox-trajectory-intake-v1.md`
+- Cut-cell outer-membrane volume/face rasterization and local discrete geometric conservation: `milestones/117-local-membrane-geometric-conservation-v1.md`
+- Donor-matched eight-stage PHH receptor/signaling trajectory intake: `milestones/118-phh-receptor-signaling-trajectory-intake-v1.md`
+- Donor-matched active-protein localization, denominator and function intake: `milestones/119-phh-active-protein-localization-intake-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

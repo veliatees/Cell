@@ -76,6 +76,7 @@ def test_local_membrane_and_generative_data_planes_are_partial_or_blocked() -> N
     assert local["status"] == "partial"
     assert local["observed_metrics"]["local_star_shaped_surface_modes_coupled"] == 1
     assert local["observed_metrics"]["local_topology_change_modes_coupled"] == 0
+    assert local["observed_metrics"]["locally_conservative_membrane_face_flux_count"] == 1
     donor = entries["donor_state_model"]
     assert donor["status"] == "blocked_missing_evidence"
     assert donor["observed_metrics"]["donor_manifest_intake_contract_count"] == 1
@@ -90,6 +91,22 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
     assert entries["human_gem_artifact_identity"]["observed_metrics"]["runtime_loaded"] is False
     assert entries["hepatocyte_fba_execution"]["status"] == "blocked_missing_evidence"
     assert entries["hepatocyte_fba_execution"]["observed_metrics"]["enabled_execution_gate_count"] == 0
+
+
+def test_receptor_and_active_protein_intakes_are_present_but_fail_closed() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    receptor = entries["receptor_signaling_kinetics"]["observed_metrics"]
+    assert receptor["trajectory_intake_contract_count"] == 1
+    assert receptor["target_pathway_count"] == 8
+    assert receptor["required_stage_slot_count"] == 64
+    assert receptor["delivered_trajectory_record_count"] == 0
+    assert receptor["receptor_activation_allowed_count"] == 0
+    protein = entries["active_protein_copies"]["observed_metrics"]
+    assert protein["localization_intake_contract_count"] == 1
+    assert protein["required_protein_slot_count"] == 63
+    assert protein["delivered_localization_record_count"] == 0
+    assert protein["active_copy_or_concentration_authorized_count"] == 0
     assert entries["quantitative_reaction_core"]["observed_metrics"]["filled_evidence_slot_count"] == 0
 
 

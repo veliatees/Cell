@@ -399,6 +399,67 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(barrier.diagnostics.closedObstacleFaceCount).toBeGreaterThan(0);
   });
 
+  it("rasterizes the star-shaped outer membrane with fractional volumes and faces", () => {
+    const grid = new CytosolProjectionGrid({
+      resolution: 24,
+      halfExtent: 6,
+      seed: 117,
+      radiusAtDirection: () => 4.8,
+      safetyFraction: 0.9,
+      visualModeCount: 0
+    });
+    grid.step(0, null);
+    const diagnostics = grid.diagnostics();
+    const expectedVolume = (4 / 3) * Math.PI * (4.8 * 0.9) ** 3;
+
+    expect(diagnostics.fractionalMembraneCellCount).toBeGreaterThan(0);
+    expect(diagnostics.fractionalMembraneFaceCount).toBeGreaterThan(0);
+    expect(diagnostics.meanInternalMembraneFaceOpenFraction).toBeGreaterThan(0);
+    expect(diagnostics.meanInternalMembraneFaceOpenFraction).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(diagnostics.dimensionlessMembraneVolumeEstimate - expectedVolume)
+      / expectedVolume
+    ).toBeLessThan(0.03);
+  });
+
+  it("enforces local geometric conservation when a non-affine membrane mode moves", () => {
+    let localMode = 0;
+    const grid = new CytosolProjectionGrid({
+      resolution: 24,
+      halfExtent: 6,
+      seed: 118,
+      radiusAtDirection: (x) => 4.8 * (
+        1 + localMode * 0.5 * (3 * x * x - 1)
+      ),
+      safetyFraction: 0.9,
+      projectionIterations: 48,
+      visualModeCount: 0
+    });
+    grid.step(0, null);
+    const scalar = new ConservativePassiveScalar3D(grid, {
+      id: "moving-membrane-conservation-pulse",
+      dimensionlessDiffusivity: 0
+    });
+    scalar.initialize((_x, y) => y < 0 ? 0.8 : 0.2);
+    const massBefore = scalar.totalMass();
+
+    localMode = 0.09;
+    grid.step(0.2, null);
+    scalar.step(0);
+    const diagnostics = grid.diagnostics();
+    const remap = scalar.domainRemapDiagnostics();
+
+    expect(diagnostics.movingMembraneCellCount).toBeGreaterThan(0);
+    expect(diagnostics.fractionalMembraneCellCount).toBeGreaterThan(0);
+    expect(diagnostics.divergenceRmsBefore).toBeGreaterThan(0);
+    expect(diagnostics.divergenceRmsAfter).toBeLessThan(
+      diagnostics.divergenceRmsBefore
+    );
+    expect(remap.remapCount).toBe(1);
+    expect(remap.absoluteMassResidual).toBeLessThan(1e-10);
+    expect(scalar.totalMass()).toBeCloseTo(massBefore, 10);
+  });
+
   it("reduces thin-boundary volume error under deterministic grid refinement", () => {
     const exactVolume = 3.4 * 0.12 * 2.2;
     const estimate = (resolution: number) => {
@@ -442,6 +503,9 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(CYTOSOL_NUMERICAL_CONTRACT.faceApertureScalarFluxWeighted).toBe(true);
     expect(CYTOSOL_NUMERICAL_CONTRACT.partialCellVolumeConservation).toBe(true);
     expect(CYTOSOL_NUMERICAL_CONTRACT.subgridGridConvergenceTested).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.membraneSubgridQuadratureSamplesPerCell).toBe(8);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.membraneFaceApertureQuadratureSamples).toBe(4);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.locallyConservativeMembraneFaceFlux).toBe(true);
     expect(CYTOSOL_NUMERICAL_CONTRACT.quantitativePoroelasticSolver).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.reactionCouplingEnabled).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.membranePressureFeedbackEnabled).toBe(false);
