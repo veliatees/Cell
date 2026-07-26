@@ -6,6 +6,10 @@ import json
 from pathlib import Path
 
 from cell_engine.core.provenance import SourceReference
+from cell_engine.quantitative.fastcore_context import (
+    fastcore_context_snapshot,
+    validate_fastcore_context_snapshot,
+)
 from cell_engine.quantitative.constraint_numerics import (
     constraint_numerics_snapshot,
     validate_constraint_numerics_snapshot,
@@ -13,14 +17,17 @@ from cell_engine.quantitative.constraint_numerics import (
 from cell_engine.quantitative.human_gem_structural_audit import (
     load_committed_human_gem_audit,
 )
+from cell_engine.quantitative.human_gem_fbc_loader import (
+    load_committed_fbc_loader_audit,
+)
 from cell_engine.quantitative.phh_metabolic_execution_bundle import (
     phh_metabolic_execution_bundle_intake_snapshot,
     validate_phh_metabolic_execution_bundle_intake_snapshot,
 )
 
 
-DATE_VERIFIED = "2026-07-22"
-VERSION = "metabolic_constraint_shell_v4"
+DATE_VERIFIED = "2026-07-26"
+VERSION = "metabolic_constraint_shell_v5"
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
@@ -47,6 +54,18 @@ METABOLIC_CONSTRAINT_SOURCES: dict[str, SourceReference] = {
             "A generic human reconstruction is not a healthy-PHH context model."
         ),
     ),
+    "fastcore": SourceReference(
+        id="fastcore",
+        title="Fast Reconstruction of Compact Context-Specific Metabolic Network Models",
+        url="https://doi.org/10.1371/journal.pcbi.1003424",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes=(
+            "Defines the FASTCORE LP-7/LP-10 extraction method. The repository "
+            "kernel is verified on synthetic networks only; no healthy-PHH core "
+            "reaction set has been supplied or applied to Human-GEM."
+        ),
+    ),
 }
 
 
@@ -62,11 +81,14 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
 
     manifest = _load_manifest()
     audit = load_committed_human_gem_audit()
+    loader_audit = load_committed_fbc_loader_audit()
     scope = manifest["scientific_scope"]
     verification = manifest["verification"]
     counts = manifest["structural_counts_verified_from_sbml"]
     numerics = constraint_numerics_snapshot()
     validate_constraint_numerics_snapshot(numerics)
+    context_kernel = fastcore_context_snapshot()
+    validate_fastcore_context_snapshot(context_kernel)
     execution_bundle = phh_metabolic_execution_bundle_intake_snapshot()
     validate_phh_metabolic_execution_bundle_intake_snapshot(execution_bundle)
     if not all(isinstance(item, dict) for item in (scope, verification, counts)):
@@ -74,7 +96,7 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
 
     return {
         "version": VERSION,
-        "status": "release_checksum_and_structural_audit_pinned_context_and_optimization_blocked",
+        "status": "checksum_verified_sparse_model_loading_and_context_numerics_ready_phh_execution_blocked",
         "role": (
             "Genome-scale stoichiometric feasibility shell around validated dynamic cores. "
             "It may constrain boundary-consistent flux space but cannot supply a time trajectory."
@@ -95,12 +117,17 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
             "sbml_path": None,
             "artifact_vendored_in_repository": verification["artifact_vendored_in_repository"],
             "model_loaded_by_runtime": verification["model_loaded_by_runtime"],
+            "model_loader_verified_against_pinned_artifact": True,
+            "fbc_loader_audit_report": (
+                "data/published_models/human_gem_v2.0.0.fbc_loader_audit.json"
+            ),
             "license": manifest["license"],
             "license_audited": True,
             "structural_counts_verified_from_sbml": counts,
             "structural_audit_report": verification["structural_audit_report"],
             "mass_charge_balance_audited_in_project": verification["mass_charge_audit_completed"],
             "structural_audit": {
+                "active_objective_id": audit["sbml"]["active_objective_id"],
                 "one_sided_reaction_count": audit["structure"]["one_sided_reaction_count"],
                 "two_sided_reaction_count": audit["structure"]["two_sided_reaction_count"],
                 "chemically_parseable_formula_count": audit["species_chemistry"]["chemically_parseable_formula_count"],
@@ -113,6 +140,42 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
                 "jointly_unassessable_reaction_count": audit["joint_balance"]["unassessable_reaction_count"],
                 "one_sided_reactions_excluded_from_internal_balance_claim": audit["scientific_boundary"]["one_sided_reactions_excluded_from_internal_balance_claim"],
             },
+            "sparse_fbc_loader_audit": {
+                "loader_version": loader_audit["loader_version"],
+                "artifact_identity_verified_before_parse": loader_audit[
+                    "integrity"
+                ]["artifact_identity_verified_before_parse"],
+                "stoichiometric_shape": loader_audit["loaded_structure"][
+                    "stoichiometric_shape"
+                ],
+                "stoichiometric_nonzero_count": loader_audit[
+                    "loaded_structure"
+                ]["stoichiometric_nonzero_count"],
+                "reversible_reaction_count": loader_audit["loaded_structure"][
+                    "reversible_reaction_count"
+                ],
+                "gene_associated_reaction_count": loader_audit[
+                    "loaded_structure"
+                ]["gene_associated_reaction_count"],
+                "parameter_count": loader_audit["loaded_structure"][
+                    "parameter_count"
+                ],
+                "objective_count": loader_audit["loaded_structure"][
+                    "objective_count"
+                ],
+                "active_objective_id": loader_audit["sbml_fbc"][
+                    "active_objective_id"
+                ],
+                "generic_human_reconstruction_loaded": loader_audit[
+                    "scientific_boundary"
+                ]["generic_human_reconstruction_loaded"],
+                "healthy_phh_context_extracted": loader_audit[
+                    "scientific_boundary"
+                ]["healthy_phh_context_extracted"],
+                "fba_execution_allowed": loader_audit["scientific_boundary"][
+                    "fba_execution_allowed"
+                ],
+            },
         },
         "hepatocyte_context": {
             "extraction_algorithm": None,
@@ -123,6 +186,7 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
             "proteome_input": None,
         },
         "generic_constraint_numerics": numerics,
+        "context_extraction_kernel": context_kernel,
         "phh_execution_bundle_intake": execution_bundle,
         "optimization_problem": {
             "objective": None,
@@ -149,8 +213,9 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
         },
         "source_ids": tuple(METABOLIC_CONSTRAINT_SOURCES),
         "blockers": (
-            "pinned SBML is not vendored or loaded by the runtime; use the checksum-verifying fetch tool",
+            "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
             "checksum-frozen healthy-PHH context extraction bundle is not delivered",
+            "a donor/cohort-resolved healthy-PHH core reaction set is not delivered for FASTCORE",
             "measured exchange bounds and explicit scale conversion are absent",
             "objective function is not linked to a matched healthy-PHH measurement",
             "structural audit exceptions require reaction-level resolution before scientific optimization",
@@ -167,6 +232,7 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
     optimization = payload.get("optimization_problem")
     gates = payload.get("gates")
     numerics = payload.get("generic_constraint_numerics")
+    context_kernel = payload.get("context_extraction_kernel")
     execution_bundle = payload.get("phh_execution_bundle_intake")
     if not all(
         isinstance(item, dict)
@@ -176,11 +242,13 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
             optimization,
             gates,
             numerics,
+            context_kernel,
             execution_bundle,
         )
     ):
         raise ValueError("metabolic constraint shell is malformed")
     validate_constraint_numerics_snapshot(numerics)
+    validate_fastcore_context_snapshot(context_kernel)
     validate_phh_metabolic_execution_bundle_intake_snapshot(execution_bundle)
     if any(gates.values()):
         raise ValueError("metabolic constraint shell may not execute before evidence intake")
@@ -200,6 +268,8 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
         raise ValueError("Human-GEM license audit is incomplete")
     if reconstruction.get("model_loaded_by_runtime") is not False:
         raise ValueError("Human-GEM runtime loading changed without context review")
+    if reconstruction.get("model_loader_verified_against_pinned_artifact") is not True:
+        raise ValueError("Human-GEM sparse loader verification is missing")
     if reconstruction.get("mass_charge_balance_audited_in_project") is not True:
         raise ValueError("Human-GEM mass/charge audit is missing")
     audit = reconstruction.get("structural_audit")
@@ -211,6 +281,26 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
         raise ValueError("Human-GEM elemental imbalance count changed without review")
     if audit.get("jointly_unassessable_reaction_count") != 1422:
         raise ValueError("Human-GEM unassessable reaction count changed without review")
+    if audit.get("active_objective_id") != "obj":
+        raise ValueError("Human-GEM active objective identity changed")
+    loader = reconstruction.get("sparse_fbc_loader_audit")
+    if not isinstance(loader, dict):
+        raise ValueError("Human-GEM sparse FBC loader audit is missing")
+    if (
+        loader.get("loader_version") != "human_gem_fbc_loader_v1"
+        or loader.get("artifact_identity_verified_before_parse") is not True
+        or loader.get("stoichiometric_shape") != [8461, 12931]
+        or loader.get("stoichiometric_nonzero_count") != 55198
+        or loader.get("reversible_reaction_count") != 5725
+        or loader.get("gene_associated_reaction_count") != 7782
+        or loader.get("parameter_count") != 3
+        or loader.get("objective_count") != 1
+        or loader.get("active_objective_id") != "obj"
+        or loader.get("generic_human_reconstruction_loaded") is not True
+        or loader.get("healthy_phh_context_extracted") is not False
+        or loader.get("fba_execution_allowed") is not False
+    ):
+        raise ValueError("Human-GEM sparse loader audit changed without review")
     required_nulls = (
         reconstruction.get("sbml_path"),
         context.get("extraction_algorithm"),

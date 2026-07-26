@@ -164,21 +164,27 @@
       "title": "Local non-affine membrane-to-fluid coupling",
       "status": "partial",
       "scope": "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
-      "current_capability": "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path now accepts a self-intersection-free non-star-shaped closed mesh, including concave domains, with the same cut-cell volume/face sampling and conservative scalar remap. Runtime remeshing and topology changes remain unsupported.",
+      "current_capability": "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. A topology-preserving edge-bisection kernel now conserves closed-manifold topology, area, volume, Euler characteristic, vertex/face state and barycentric surface bindings. It is not yet connected to the live MembraneSim, and topology-changing events remain unsupported.",
       "observed_metrics": {
         "local_star_shaped_surface_modes_coupled": 1,
         "local_topology_change_modes_coupled": 0,
         "locally_conservative_membrane_face_flux_count": 1,
-        "non_star_shaped_closed_mesh_domain_kernel_count": 1
+        "non_star_shaped_closed_mesh_domain_kernel_count": 1,
+        "topology_preserving_adaptive_remeshing_kernel_count": 1,
+        "surface_state_transfer_kernel_count": 1,
+        "runtime_adaptive_remeshing_coupling_count": 0,
+        "topology_change_remeshing_kernel_count": 0
       },
       "remaining_requirements": [
-        "Remeshing and topology-change representation.",
+        "Runtime integration of topology-preserving remeshing with MembraneSim caches.",
+        "Topology-change representation for buds, necks, fission and fusion.",
         "Event-specific membrane reservoir and neck mechanics evidence."
       ],
       "code_surfaces": [
         "src/physics/membraneFluidBoundary.ts",
         "src/physics/intracellularFluid.ts",
-        "src/physics/cytosolNumerics.ts"
+        "src/physics/cytosolNumerics.ts",
+        "src/physics/adaptiveRemeshing.ts"
       ]
     },
     {
@@ -605,7 +611,7 @@
       "title": "Pinned Human-GEM artifact identity",
       "status": "closed",
       "scope": "Exact generic reconstruction release identity and reproducible retrieval only.",
-      "current_capability": "Human-GEM v2.0.0 is pinned by release tag, commit, byte size and SHA-256; a streaming audit verifies structure plus scoped elemental/charge balance without vendoring 43 MB.",
+      "current_capability": "Human-GEM v2.0.0 is pinned by release tag, commit, byte size and SHA-256; streaming audits verify structure, active objective identity and scoped elemental/charge balance without vendoring 43 MB.",
       "observed_metrics": {
         "model_version": "2.0.0",
         "release_commit": "635f533152dc5f7290ce04d12700eaa882273c3e",
@@ -613,7 +619,8 @@
         "runtime_loaded": false,
         "elementally_assessable_reaction_count": 9849,
         "elementally_imbalanced_reaction_count": 17,
-        "jointly_unassessable_reaction_count": 1422
+        "jointly_unassessable_reaction_count": 1422,
+        "active_objective_id": "obj"
       },
       "remaining_requirements": [],
       "code_surfaces": [
@@ -621,6 +628,32 @@
         "data/published_models/human_gem_v2.0.0.structural_audit.json",
         "scripts/fetch_human_gem.py",
         "scripts/audit_human_gem.py"
+      ]
+    },
+    {
+      "id": "human_gem_sparse_fbc_loader",
+      "title": "Checksum-gated Human-GEM sparse FBC loader",
+      "status": "closed",
+      "scope": "Exact loading of the pinned generic SBML/FBC artifact; no PHH context or flux claim.",
+      "current_capability": "A streaming loader verifies the artifact before parsing and preserves compartments, species, sparse stoichiometry, bounds, reversible flags, FBC objective metadata and Boolean gene-product rules. A committed compact audit is regenerated from the real 43 MB artifact.",
+      "observed_metrics": {
+        "artifact_identity_verified_before_parse": true,
+        "stoichiometric_row_count": 8461,
+        "stoichiometric_column_count": 12931,
+        "stoichiometric_nonzero_count": 55198,
+        "reversible_reaction_count": 5725,
+        "gene_associated_reaction_count": 7782,
+        "objective_count": 1,
+        "active_objective_id": "obj",
+        "healthy_phh_context_extracted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_fbc_loader.py",
+        "scripts/audit_human_gem_fbc_loader.py",
+        "data/published_models/human_gem_v2.0.0.fbc_loader_audit.json",
+        "engine/tests/test_human_gem_fbc_loader.py"
       ]
     },
     {
@@ -645,6 +678,29 @@
       ]
     },
     {
+      "id": "fastcore_context_extraction_numerics",
+      "title": "FASTCORE context-extraction numerical kernel",
+      "status": "closed",
+      "scope": "Source-defined LP-7/LP-10 software behavior on analytic synthetic flux-consistent networks only.",
+      "current_capability": "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon and LP10 scaling inputs, global and output flux-consistency audits, reversible-reaction orientation handling and explicit non-uniqueness. It retains a synthetic core pathway and omits an unrelated pathway; Human-GEM has not been context-extracted.",
+      "observed_metrics": {
+        "synthetic_fixture_pass_count": 1,
+        "epsilon_has_runtime_default": false,
+        "lp10_scaling_factor_has_runtime_default": false,
+        "requires_flux_consistent_input": true,
+        "requires_explicit_core_reaction_ids": true,
+        "unique_extraction_guaranteed": false,
+        "human_gem_context_extraction_executed": false,
+        "healthy_phh_core_set_loaded": false,
+        "biological_flux_authority": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/fastcore_context.py",
+        "engine/tests/test_fastcore_context.py"
+      ]
+    },
+    {
       "id": "hepatocyte_fba_execution",
       "title": "Healthy-PHH FBA/FVA execution",
       "status": "blocked_missing_evidence",
@@ -654,6 +710,8 @@
         "execution_gate_count": 6,
         "enabled_execution_gate_count": 0,
         "generic_solver_fixture_pass_count": 5,
+        "context_extraction_fixture_pass_count": 1,
+        "human_gem_context_extraction_executed_count": 0,
         "execution_bundle_intake_contract_count": 1,
         "required_execution_bundle_artifact_count": 10,
         "delivered_execution_bundle_count": 0,
@@ -720,8 +778,8 @@
     }
   ],
   "summary": {
-    "entry_count": 28,
-    "closed_count": 6,
+    "entry_count": 30,
+    "closed_count": 8,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

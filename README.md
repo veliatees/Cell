@@ -57,13 +57,14 @@ biology rather than tuned to look right.
   checksums, same-cell mesh identity, spatial boundary conditions and
   donor/study-disjoint held-out data are required; zero mechanics trajectories
   or parameters are currently authorized.
-- **A verified constraint-model software layer** — a pinned SciPy/HiGHS
-  backend passes five analytic FBA/FVA fixtures covering mass balance, reaction
-  bounds, alternate optima and elastic infeasibility diagnosis. A separate
-  ten-artifact PHH execution-bundle gate requires deterministic Human-GEM
-  context extraction, measured exchange bounds, an explicit scale operator,
-  measured objective and independent flux validation. No Human-GEM optimization
-  or runtime flux coupling is enabled.
+- **A verified constraint-model software layer** — the checksum-pinned 43 MB
+  Human-GEM v2.0.0 SBML/FBC artifact now streams into an exact sparse model
+  representation with 55,198 stoichiometric terms, bounds, the generic biomass
+  objective and Boolean gene-product rules. A pinned SciPy/HiGHS backend passes
+  five analytic FBA/FVA fixtures, and a source-defined FASTCORE kernel passes a
+  synthetic context-extraction fixture. The healthy-PHH core set, measured
+  exchange bounds, objective, scale operator and independent validation remain
+  absent, so no Human-GEM optimization or runtime flux coupling is enabled.
 - **A stochastic reaction core** — exact Gillespie SSA for low-copy species and
   the chemical Langevin equation (an SDE) for high-copy species, the same hybrid
   the field's whole-cell models use, verified against analytic results (Poisson
@@ -177,6 +178,11 @@ Recent additions make more of the engine visible and keep it physically honest:
   Eulerian deformable mesh, while lipids, microvilli and membrane proteins use
   surface coordinates so they remain attached as the mesh bends; there is no
   second static shell or product-level second-cell demonstration.
+- **Topology-preserving surface refinement.** A separate adaptive edge-bisection
+  kernel preserves a closed two-manifold's winding, Euler characteristic, area,
+  volume, vertex/face state and exact barycentric protein/lipid positions. It is
+  verified numerical infrastructure, not yet connected to the live membrane
+  caches and not an endocytosis, fission or fusion model.
 - **Fractional intracellular boundaries.** Thin ER, canalicular and Golgi
   barriers contribute analytic open-face fractions to the dimensionless
   pressure and passive-transport solvers. Partial-cell scalar volume and moving
@@ -184,9 +190,9 @@ Recent additions make more of the engine visible and keep it physically honest:
   not healthy-PHH CFD or a measured organelle mesh.
 - **Mechanics and genome-scale execution are visible but fail closed.** The
   browser reports the mechanics trajectory/parameter queue, the analytic
-  FBA/FVA self-tests and the PHH execution-bundle requirements. These are
-  engineering readiness indicators, not biological completion or inferred
-  hepatocyte fluxes.
+  FBA/FVA and FASTCORE self-tests, exact generic Human-GEM sparse loading and
+  PHH execution-bundle requirements. These are engineering readiness
+  indicators, not biological completion or inferred hepatocyte fluxes.
 - **Contact deforms the main cell itself.** When an authoritative engine contact
   is present, the same high-resolution membrane shown in the browser compresses
   along the contact normal and expands tangentially with exact affine volume
@@ -307,9 +313,11 @@ Closed meshes now undergo a repository self-intersection audit in addition to
 edge-topology checks. A separate grid path accepts concave, non-star-shaped
 closed meshes as fluid domains, and a dimensionless pressure-traction kernel
 can propose a volume-preserving, self-intersection-free membrane response while
-reporting force balance and pressure work. The live renderer still uses the
-star-shaped membrane path; no pressure candidate is applied to it and no PHH
-mechanical coefficient has been assigned.
+reporting force balance and pressure work. Topology-preserving midpoint edge
+bisection can also transfer surface fields and barycentric tracers without
+changing area or volume. The live renderer still uses the star-shaped membrane
+path; neither pressure feedback nor adaptive remeshing is applied to it, and no
+PHH mechanical coefficient has been assigned.
 
 What is still depth-work (the road ahead is depth, not a new approach):
 
@@ -479,6 +487,12 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 123: Repository mesh self-intersection audit v1](docs/milestones/123-repository-mesh-self-intersection-audit-v1.md)
 - [Milestone 124: Non-star-shaped closed-mesh cytosol domain v1](docs/milestones/124-non-star-shaped-closed-mesh-cytosol-domain-v1.md)
 - [Milestone 125: Dimensionless pressure-membrane response v1](docs/milestones/125-dimensionless-pressure-membrane-response-v1.md)
+- [Milestone 126: Donor-resolved PHH mechanics calibration intake v1](docs/milestones/126-donor-resolved-phh-mechanics-calibration-intake-v1.md)
+- [Milestone 127: Generic FBA/FVA numerical kernel v1](docs/milestones/127-generic-fba-fva-numerical-kernel-v1.md)
+- [Milestone 128: Healthy-PHH metabolic execution bundle v1](docs/milestones/128-healthy-phh-metabolic-execution-bundle-v1.md)
+- [Milestone 129: Checksum-gated Human-GEM sparse FBC loader v1](docs/milestones/129-checksum-gated-human-gem-sparse-fbc-loader-v1.md)
+- [Milestone 130: FASTCORE context-extraction numerical kernel v1](docs/milestones/130-fastcore-context-extraction-numerical-kernel-v1.md)
+- [Milestone 131: Topology-preserving adaptive remeshing v1](docs/milestones/131-topology-preserving-adaptive-remeshing-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

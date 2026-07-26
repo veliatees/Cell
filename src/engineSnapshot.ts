@@ -1800,7 +1800,7 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v4";
+  version: "metabolic_constraint_shell_v5";
   status: string;
   role: string;
   candidate_reconstruction: {
@@ -1819,6 +1819,8 @@ export type EngineMetabolicConstraintShell = {
     sbml_path: string | null;
     artifact_vendored_in_repository: boolean;
     model_loaded_by_runtime: boolean;
+    model_loader_verified_against_pinned_artifact: boolean;
+    fbc_loader_audit_report: string;
     license: string;
     license_audited: boolean;
     structural_counts_verified_from_sbml: {
@@ -1830,6 +1832,7 @@ export type EngineMetabolicConstraintShell = {
     structural_audit_report: string;
     mass_charge_balance_audited_in_project: boolean;
     structural_audit: {
+      active_objective_id: string;
       one_sided_reaction_count: number;
       two_sided_reaction_count: number;
       chemically_parseable_formula_count: number;
@@ -1841,6 +1844,20 @@ export type EngineMetabolicConstraintShell = {
       jointly_imbalanced_reaction_count: number;
       jointly_unassessable_reaction_count: number;
       one_sided_reactions_excluded_from_internal_balance_claim: boolean;
+    };
+    sparse_fbc_loader_audit: {
+      loader_version: "human_gem_fbc_loader_v1";
+      artifact_identity_verified_before_parse: true;
+      stoichiometric_shape: [number, number];
+      stoichiometric_nonzero_count: number;
+      reversible_reaction_count: number;
+      gene_associated_reaction_count: number;
+      parameter_count: number;
+      objective_count: number;
+      active_objective_id: string;
+      generic_human_reconstruction_loaded: true;
+      healthy_phh_context_extracted: false;
+      fba_execution_allowed: false;
     };
   };
   hepatocyte_context: Record<string, string | null>;
@@ -1864,6 +1881,30 @@ export type EngineMetabolicConstraintShell = {
     healthy_phh_context_loaded: false;
     biological_objective_selected: false;
     measured_exchange_bounds_loaded: false;
+    biological_flux_authority: false;
+  };
+  context_extraction_kernel: {
+    version: "fastcore_context_kernel_v1";
+    algorithm: "FASTCORE";
+    algorithm_role: string;
+    primary_source: string;
+    official_reference_implementation: string;
+    backend: "scipy.optimize.linprog";
+    backend_version: "1.17.1";
+    method: "highs";
+    epsilon_has_runtime_default: false;
+    lp10_scaling_factor_has_runtime_default: false;
+    requires_flux_consistent_input: true;
+    requires_explicit_core_reaction_ids: true;
+    preserves_every_consistent_core_reaction: true;
+    unique_extraction_guaranteed: false;
+    synthetic_fixture_count: number;
+    synthetic_fixture_pass_count: number;
+    synthetic_selected_reaction_count: number;
+    synthetic_omitted_reaction_count: number;
+    human_gem_context_extraction_executed: false;
+    healthy_phh_core_set_loaded: false;
+    donor_omics_loaded: false;
     biological_flux_authority: false;
   };
   phh_execution_bundle_intake: {

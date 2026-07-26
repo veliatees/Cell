@@ -159,6 +159,7 @@ def audit_sbml_structure(path: str | Path) -> dict[str, Any]:
             elif local == "model" and model_id is None:
                 model_id = element.attrib.get("id")
                 model_name = element.attrib.get("name")
+            elif local == "listOfObjectives":
                 active_objective_id = _attribute(element, "activeObjective")
             continue
 
@@ -451,6 +452,8 @@ def validate_committed_human_gem_audit(
             raise ValueError(f"Human-GEM {key} does not partition assessable reactions")
     if boundary.get("fba_execution_allowed") is not False or boundary.get("healthy_phh_context_extracted") is not False:
         raise ValueError("Human-GEM structural audit escaped into a PHH/FBA claim")
+    if report.get("sbml", {}).get("active_objective_id") != "obj":
+        raise ValueError("Human-GEM active objective metadata is stale")
 
 
 def load_committed_human_gem_audit(path: Path = DEFAULT_REPORT_PATH) -> dict[str, Any]:

@@ -111,6 +111,10 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     memory = cellular_memory_contract_snapshot()["summary"]
     metabolic = metabolic_constraint_shell_snapshot()
     metabolic_numerics = metabolic["generic_constraint_numerics"]
+    metabolic_loader = metabolic["candidate_reconstruction"][
+        "sparse_fbc_loader_audit"
+    ]
+    context_extraction_kernel = metabolic["context_extraction_kernel"]
     metabolic_bundle = metabolic["phh_execution_bundle_intake"]
     external = external_validation_snapshot()["summary"]
     donor_generative = generative_donor_manifest_intake_snapshot()
@@ -307,7 +311,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Local non-affine membrane-to-fluid coupling",
             "partial",
             "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
-            "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path now accepts a self-intersection-free non-star-shaped closed mesh, including concave domains, with the same cut-cell volume/face sampling and conservative scalar remap. Runtime remeshing and topology changes remain unsupported.",
+            "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. A topology-preserving edge-bisection kernel now conserves closed-manifold topology, area, volume, Euler characteristic, vertex/face state and barycentric surface bindings. It is not yet connected to the live MembraneSim, and topology-changing events remain unsupported.",
             {
                 "local_star_shaped_surface_modes_coupled": cytosol_summary[
                     "local_star_shaped_membrane_boundary_coupling_count"
@@ -321,15 +325,21 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "non_star_shaped_closed_mesh_domain_kernel_count": cytosol_summary[
                     "non_star_shaped_closed_mesh_domain_kernel_count"
                 ],
+                "topology_preserving_adaptive_remeshing_kernel_count": 1,
+                "surface_state_transfer_kernel_count": 1,
+                "runtime_adaptive_remeshing_coupling_count": 0,
+                "topology_change_remeshing_kernel_count": 0,
             },
             (
-                "Remeshing and topology-change representation.",
+                "Runtime integration of topology-preserving remeshing with MembraneSim caches.",
+                "Topology-change representation for buds, necks, fission and fusion.",
                 "Event-specific membrane reservoir and neck mechanics evidence.",
             ),
             (
                 "src/physics/membraneFluidBoundary.ts",
                 "src/physics/intracellularFluid.ts",
                 "src/physics/cytosolNumerics.ts",
+                "src/physics/adaptiveRemeshing.ts",
             ),
         ),
         _entry(
@@ -904,7 +914,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Pinned Human-GEM artifact identity",
             "closed",
             "Exact generic reconstruction release identity and reproducible retrieval only.",
-            "Human-GEM v2.0.0 is pinned by release tag, commit, byte size and SHA-256; a streaming audit verifies structure plus scoped elemental/charge balance without vendoring 43 MB.",
+            "Human-GEM v2.0.0 is pinned by release tag, commit, byte size and SHA-256; streaming audits verify structure, active objective identity and scoped elemental/charge balance without vendoring 43 MB.",
             {
                 "model_version": metabolic["candidate_reconstruction"]["model_version"],
                 "release_commit": metabolic["candidate_reconstruction"]["release_commit"],
@@ -913,9 +923,54 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "elementally_assessable_reaction_count": metabolic["candidate_reconstruction"]["structural_audit"]["elementally_assessable_reaction_count"],
                 "elementally_imbalanced_reaction_count": metabolic["candidate_reconstruction"]["structural_audit"]["elementally_imbalanced_reaction_count"],
                 "jointly_unassessable_reaction_count": metabolic["candidate_reconstruction"]["structural_audit"]["jointly_unassessable_reaction_count"],
+                "active_objective_id": metabolic["candidate_reconstruction"][
+                    "structural_audit"
+                ]["active_objective_id"],
             },
             (),
             ("data/published_models/human_gem_v2.0.0.manifest.json", "data/published_models/human_gem_v2.0.0.structural_audit.json", "scripts/fetch_human_gem.py", "scripts/audit_human_gem.py"),
+        ),
+        _entry(
+            "human_gem_sparse_fbc_loader",
+            "Checksum-gated Human-GEM sparse FBC loader",
+            "closed",
+            "Exact loading of the pinned generic SBML/FBC artifact; no PHH context or flux claim.",
+            "A streaming loader verifies the artifact before parsing and preserves compartments, species, sparse stoichiometry, bounds, reversible flags, FBC objective metadata and Boolean gene-product rules. A committed compact audit is regenerated from the real 43 MB artifact.",
+            {
+                "artifact_identity_verified_before_parse": metabolic_loader[
+                    "artifact_identity_verified_before_parse"
+                ],
+                "stoichiometric_row_count": metabolic_loader[
+                    "stoichiometric_shape"
+                ][0],
+                "stoichiometric_column_count": metabolic_loader[
+                    "stoichiometric_shape"
+                ][1],
+                "stoichiometric_nonzero_count": metabolic_loader[
+                    "stoichiometric_nonzero_count"
+                ],
+                "reversible_reaction_count": metabolic_loader[
+                    "reversible_reaction_count"
+                ],
+                "gene_associated_reaction_count": metabolic_loader[
+                    "gene_associated_reaction_count"
+                ],
+                "objective_count": metabolic_loader["objective_count"],
+                "active_objective_id": metabolic_loader["active_objective_id"],
+                "healthy_phh_context_extracted": metabolic_loader[
+                    "healthy_phh_context_extracted"
+                ],
+                "fba_execution_allowed": metabolic_loader[
+                    "fba_execution_allowed"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/human_gem_fbc_loader.py",
+                "scripts/audit_human_gem_fbc_loader.py",
+                "data/published_models/human_gem_v2.0.0.fbc_loader_audit.json",
+                "engine/tests/test_human_gem_fbc_loader.py",
+            ),
         ),
         _entry(
             "generic_fba_fva_numerics",
@@ -951,6 +1006,47 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "fastcore_context_extraction_numerics",
+            "FASTCORE context-extraction numerical kernel",
+            "closed",
+            "Source-defined LP-7/LP-10 software behavior on analytic synthetic flux-consistent networks only.",
+            "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon and LP10 scaling inputs, global and output flux-consistency audits, reversible-reaction orientation handling and explicit non-uniqueness. It retains a synthetic core pathway and omits an unrelated pathway; Human-GEM has not been context-extracted.",
+            {
+                "synthetic_fixture_pass_count": context_extraction_kernel[
+                    "synthetic_fixture_pass_count"
+                ],
+                "epsilon_has_runtime_default": context_extraction_kernel[
+                    "epsilon_has_runtime_default"
+                ],
+                "lp10_scaling_factor_has_runtime_default": context_extraction_kernel[
+                    "lp10_scaling_factor_has_runtime_default"
+                ],
+                "requires_flux_consistent_input": context_extraction_kernel[
+                    "requires_flux_consistent_input"
+                ],
+                "requires_explicit_core_reaction_ids": context_extraction_kernel[
+                    "requires_explicit_core_reaction_ids"
+                ],
+                "unique_extraction_guaranteed": context_extraction_kernel[
+                    "unique_extraction_guaranteed"
+                ],
+                "human_gem_context_extraction_executed": context_extraction_kernel[
+                    "human_gem_context_extraction_executed"
+                ],
+                "healthy_phh_core_set_loaded": context_extraction_kernel[
+                    "healthy_phh_core_set_loaded"
+                ],
+                "biological_flux_authority": context_extraction_kernel[
+                    "biological_flux_authority"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/fastcore_context.py",
+                "engine/tests/test_fastcore_context.py",
+            ),
+        ),
+        _entry(
             "hepatocyte_fba_execution",
             "Healthy-PHH FBA/FVA execution",
             "blocked_missing_evidence",
@@ -962,6 +1058,16 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "generic_solver_fixture_pass_count": metabolic_numerics[
                     "analytic_fixture_pass_count"
                 ],
+                "context_extraction_fixture_pass_count": context_extraction_kernel[
+                    "synthetic_fixture_pass_count"
+                ],
+                "human_gem_context_extraction_executed_count": int(
+                    bool(
+                        context_extraction_kernel[
+                            "human_gem_context_extraction_executed"
+                        ]
+                    )
+                ),
                 "execution_bundle_intake_contract_count": 1,
                 "required_execution_bundle_artifact_count": metabolic_bundle[
                     "required_artifact_count"
@@ -1169,6 +1275,14 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
             "non_star_shaped_closed_mesh_domain_kernel_count"
         ]
         != 1
+        or local_boundary_metrics[
+            "topology_preserving_adaptive_remeshing_kernel_count"
+        ]
+        != 1
+        or local_boundary_metrics["surface_state_transfer_kernel_count"] != 1
+        or local_boundary_metrics["runtime_adaptive_remeshing_coupling_count"]
+        != 0
+        or local_boundary_metrics["topology_change_remeshing_kernel_count"] != 0
     ):
         raise ValueError("local membrane-fluid boundary contract changed")
     fsi_metrics = by_id["fluid_structure_interaction"]["observed_metrics"]
@@ -1311,9 +1425,40 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or generic_fba_metrics["biological_flux_authority"] is not False
     ):
         raise ValueError("generic FBA/FVA numerics escaped its software-only scope")
+    loader_metrics = by_id["human_gem_sparse_fbc_loader"]["observed_metrics"]
+    if (
+        loader_metrics["artifact_identity_verified_before_parse"] is not True
+        or loader_metrics["stoichiometric_row_count"] != 8461
+        or loader_metrics["stoichiometric_column_count"] != 12931
+        or loader_metrics["stoichiometric_nonzero_count"] != 55198
+        or loader_metrics["reversible_reaction_count"] != 5725
+        or loader_metrics["gene_associated_reaction_count"] != 7782
+        or loader_metrics["objective_count"] != 1
+        or loader_metrics["active_objective_id"] != "obj"
+        or loader_metrics["healthy_phh_context_extracted"] is not False
+        or loader_metrics["fba_execution_allowed"] is not False
+    ):
+        raise ValueError("Human-GEM sparse loader escaped its generic scope")
+    fastcore_metrics = by_id["fastcore_context_extraction_numerics"][
+        "observed_metrics"
+    ]
+    if (
+        fastcore_metrics["synthetic_fixture_pass_count"] != 1
+        or fastcore_metrics["epsilon_has_runtime_default"] is not False
+        or fastcore_metrics["lp10_scaling_factor_has_runtime_default"] is not False
+        or fastcore_metrics["requires_flux_consistent_input"] is not True
+        or fastcore_metrics["requires_explicit_core_reaction_ids"] is not True
+        or fastcore_metrics["unique_extraction_guaranteed"] is not False
+        or fastcore_metrics["human_gem_context_extraction_executed"] is not False
+        or fastcore_metrics["healthy_phh_core_set_loaded"] is not False
+        or fastcore_metrics["biological_flux_authority"] is not False
+    ):
+        raise ValueError("FASTCORE kernel escaped its synthetic software scope")
     fba_metrics = by_id["hepatocyte_fba_execution"]["observed_metrics"]
     if (
         fba_metrics["generic_solver_fixture_pass_count"] != 5
+        or fba_metrics["context_extraction_fixture_pass_count"] != 1
+        or fba_metrics["human_gem_context_extraction_executed_count"] != 0
         or fba_metrics["execution_bundle_intake_contract_count"] != 1
         or fba_metrics["required_execution_bundle_artifact_count"] != 10
         or fba_metrics["delivered_execution_bundle_count"] != 0
