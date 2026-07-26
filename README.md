@@ -46,6 +46,11 @@ biology rather than tuned to look right.
   checking reaction identity, context, units, donor/study separation and frozen
   held-out artifacts. No delivery is currently loaded and structural coverage
   cannot activate a rate.
+- **Donor-matched protein and signal-chain data planes** — a 48-column
+  receptor/signaling intake covers eight stages across all eight communication
+  pathways, while a 52-column localization/activity intake covers 63 slots for
+  BSEP, MRP2, NTCP, INSR, MET, EGFR, GLUT2, and glucokinase. Both currently
+  contain zero delivered records and grant zero automatic runtime authority.
 - **A stochastic reaction core** — exact Gillespie SSA for low-copy species and
   the chemical Langevin equation (an SDE) for high-copy species, the same hybrid
   the field's whole-cell models use, verified against analytic results (Poisson
@@ -265,6 +270,13 @@ The division module separates compressed demo timing from
 source-traced biological timing profiles, including a rat post-partial-
 hepatectomy profile that blocks fast G1/S entry.
 
+The dimensionless cytosol test bed now rasterizes the smooth star-shaped outer
+membrane as cut-cell volume fractions and face apertures. Local membrane motion
+enters the pressure projection through a discrete geometric-conservation source,
+and passive scalar mass is conservatively remapped. This is verified numerical
+engineering, not measured PHH CFD, pressure, viscosity, or fluid-structure
+interaction.
+
 What is still depth-work (the road ahead is depth, not a new approach):
 
 - the composed fuel network currently has 36 reaction channels and zero fully
@@ -421,6 +433,12 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 111: Local star-shaped membrane-fluid boundary v1](docs/milestones/111-local-star-shaped-membrane-fluid-boundary-v1.md)
 - [Milestone 112: Donor-resolved PHH active-cargo trajectory intake v1](docs/milestones/112-donor-resolved-phh-active-cargo-trajectory-intake-v1.md)
 - [Milestone 113: Donor multimodal generative-data contract v1](docs/milestones/113-donor-multimodal-generative-data-contract-v1.md)
+- [Milestone 114: Fractional face-aperture cytosol v1](docs/milestones/114-fractional-face-aperture-cytosol-v1.md)
+- [Milestone 115: PHH reaction-evidence intake v1](docs/milestones/115-phh-reaction-evidence-intake-v1.md)
+- [Milestone 116: PHH energy/redox trajectory intake v1](docs/milestones/116-phh-energy-redox-trajectory-intake-v1.md)
+- [Milestone 117: Local membrane geometric conservation v1](docs/milestones/117-local-membrane-geometric-conservation-v1.md)
+- [Milestone 118: PHH receptor/signaling trajectory intake v1](docs/milestones/118-phh-receptor-signaling-trajectory-intake-v1.md)
+- [Milestone 119: PHH active-protein localization intake v1](docs/milestones/119-phh-active-protein-localization-intake-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

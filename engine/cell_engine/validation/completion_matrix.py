@@ -11,6 +11,9 @@ from typing import Literal
 
 from cell_engine.ml.generative import generative_donor_manifest_intake_snapshot
 from cell_engine.processes.cellular_memory import cellular_memory_contract_snapshot
+from cell_engine.quantitative.active_protein_localization import (
+    active_protein_localization_snapshot,
+)
 from cell_engine.quantitative.compartmental_energy_redox import (
     compartmental_energy_redox_snapshot,
 )
@@ -27,6 +30,9 @@ from cell_engine.quantitative.phh_protein_functional_evidence import (
 from cell_engine.quantitative.phh_injury_validation import phh_injury_validation_snapshot
 from cell_engine.quantitative.reaction_evidence_intake import (
     reaction_evidence_intake_snapshot,
+)
+from cell_engine.quantitative.receptor_signaling_trajectory import (
+    receptor_signaling_trajectory_snapshot,
 )
 from cell_engine.validation.capability_atlas import hepatocyte_capability_atlas_snapshot
 from cell_engine.validation.external_review import external_validation_snapshot
@@ -86,6 +92,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     energy = compartmental_energy_redox_snapshot()["summary"]
     energy_trajectory_intake = energy_redox_trajectory_intake_snapshot()
     proteins = phh_protein_functional_evidence_snapshot()["summary"]
+    active_protein_intake = active_protein_localization_snapshot()
+    receptor_signal_intake = receptor_signaling_trajectory_snapshot()
     injury = phh_injury_validation_snapshot()["summary"]
     quantity_harvest = hepatocyte_quantity_harvest_snapshot()["audit"]
     memory = cellular_memory_contract_snapshot()["summary"]
@@ -214,7 +222,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Local non-affine membrane-to-fluid coupling",
             "partial",
             "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
-            "The fluid grid now follows the global volume-preserving affine map and a dynamically rasterized reference-space residual from the current membrane mesh. The affine component is removed before sampling, so contact deformation is not counted twice. Multi-intersection folds and topology changes remain unsupported.",
+            "The fluid grid follows the global volume-preserving affine map and a dynamically rasterized reference-space residual from the current membrane mesh. Outer-membrane cut cells now carry 2x2x2 volume fractions, 2x2 face apertures and a local geometric-conservation source in the pressure projection; passive scalar mass is conservatively remapped as those fractions move. The affine component is removed before sampling, so contact deformation is not counted twice. Multi-intersection folds and topology changes remain unsupported.",
             {
                 "local_star_shaped_surface_modes_coupled": cytosol_summary[
                     "local_star_shaped_membrane_boundary_coupling_count"
@@ -228,7 +236,6 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             },
             (
                 "Remeshing and topology-change representation.",
-                "Locally conservative moving-boundary coupling.",
                 "Event-specific membrane reservoir and neck mechanics evidence.",
             ),
             (
@@ -466,37 +473,81 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Receptor and signaling-chain kinetics",
             "blocked_missing_evidence",
             "INSR, EGFR, MET, NTCP and future contact-triggered receptor chains.",
-            "Identity and selected response observations are present, while receptor density, occupancy, binding and internalization kinetics remain absent.",
+            "Identity and selected response observations are present. A versioned 48-column intake now requires eight donor-matched stages for each of eight communication pathways, including surface density, geometry-appropriate association/dissociation, occupancy, internalization or gate turnover, proximal signal, functional response and sealed independent validation. No trajectory bundle has been delivered, so activation remains absent.",
             {
                 "functional_response_observation_count": proteins["functional_response_observation_count"],
                 "receptor_binding_kinetic_observation_count": proteins["receptor_binding_kinetic_observation_count"],
+                "trajectory_intake_contract_count": 1,
+                "target_pathway_count": receptor_signal_intake[
+                    "target_pathway_count"
+                ],
+                "required_stage_slot_count": receptor_signal_intake[
+                    "required_stage_slot_count"
+                ],
+                "delivered_trajectory_record_count": receptor_signal_intake[
+                    "record_count"
+                ],
+                "structurally_complete_pathway_count": receptor_signal_intake[
+                    "structurally_complete_pathway_count"
+                ],
+                "receptor_activation_allowed_count": receptor_signal_intake[
+                    "receptor_activation_allowed_count"
+                ],
+                "signal_execution_allowed_count": receptor_signal_intake[
+                    "signal_execution_allowed_count"
+                ],
             },
             (
                 "Domain-resolved receptor surface density and active fraction.",
                 "Two-dimensional or exposure-matched kon/koff and occupancy.",
                 "Internalization/recycling and downstream delay trajectories.",
             ),
-            ("engine/cell_engine/quantitative/phh_protein_functional_evidence.py", "engine/cell_engine/multicell/communication.py"),
+            (
+                "engine/cell_engine/quantitative/phh_protein_functional_evidence.py",
+                "engine/cell_engine/multicell/communication.py",
+                "engine/cell_engine/quantitative/receptor_signaling_trajectory.py",
+                "data/evidence_intake/phh_receptor_signaling_trajectory_contract.v1.json",
+            ),
         ),
         _entry(
             "active_protein_copies",
             "Active protein copies and domain densities",
             "blocked_missing_evidence",
             "BSEP, MRP2, NTCP, INSR, MET, EGFR, GLUT2 and glucokinase.",
-            "Seven-donor total abundance exists for all eight proteins; total per-nucleus protein groups are not active surface copies.",
+            "Seven-donor total abundance exists for all eight proteins; total per-nucleus protein groups are not active surface copies. A versioned 52-column intake now keeps total, membrane/compartment-localized, domain-localized, active, denominator-geometry and functional measurements linked within one donor/replicate and requires sealed independent validation. No localization/activity bundle has been delivered.",
             {
                 "protein_count": proteins["protein_count"],
                 "seven_donor_abundance_profile_count": proteins["all_seven_donor_abundance_profile_count"],
                 "quantitative_surface_localization_count": proteins["quantitative_surface_localization_count"],
                 "active_fraction_count": proteins["active_fraction_observation_count"],
                 "donor_activity_distribution_count": proteins["donor_activity_distribution_count"],
+                "localization_intake_contract_count": 1,
+                "required_protein_slot_count": active_protein_intake[
+                    "required_protein_slot_count"
+                ],
+                "delivered_localization_record_count": active_protein_intake[
+                    "record_count"
+                ],
+                "structurally_complete_protein_count": active_protein_intake[
+                    "structurally_complete_protein_count"
+                ],
+                "active_copy_or_concentration_authorized_count": active_protein_intake[
+                    "active_copy_or_concentration_authorized_count"
+                ],
+                "functional_rate_authorized_count": active_protein_intake[
+                    "functional_rate_authorized_count"
+                ],
             },
             (
                 "Matched total, domain-localized and functional fractions in the same PHH donors.",
                 "Surface/domain area denominator and polarity state.",
                 "Same-assay transport or signaling validation.",
             ),
-            ("engine/cell_engine/quantitative/phh_protein_functional_evidence.py",),
+            (
+                "engine/cell_engine/quantitative/phh_protein_functional_evidence.py",
+                "engine/cell_engine/quantitative/active_protein_localization.py",
+                "data/evidence_intake/phh_active_protein_localization_contract.v1.json",
+            ),
         ),
         _entry(
             "cellular_memory_laws",
@@ -823,6 +874,30 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or energy_intake_metrics["trajectory_initialized_pool_count"] != 0
     ):
         raise ValueError("energy/redox trajectory intake escaped into state authority")
+    receptor_metrics = by_id["receptor_signaling_kinetics"]["observed_metrics"]
+    if (
+        receptor_metrics["trajectory_intake_contract_count"] != 1
+        or receptor_metrics["target_pathway_count"] != 8
+        or receptor_metrics["required_stage_slot_count"] != 64
+        or receptor_metrics["delivered_trajectory_record_count"] != 0
+        or receptor_metrics["structurally_complete_pathway_count"] != 0
+        or receptor_metrics["receptor_activation_allowed_count"] != 0
+        or receptor_metrics["signal_execution_allowed_count"] != 0
+    ):
+        raise ValueError("receptor/signaling intake escaped into runtime authority")
+    active_protein_metrics = by_id["active_protein_copies"]["observed_metrics"]
+    if (
+        active_protein_metrics["localization_intake_contract_count"] != 1
+        or active_protein_metrics["required_protein_slot_count"] != 63
+        or active_protein_metrics["delivered_localization_record_count"] != 0
+        or active_protein_metrics["structurally_complete_protein_count"] != 0
+        or active_protein_metrics[
+            "active_copy_or_concentration_authorized_count"
+        ]
+        != 0
+        or active_protein_metrics["functional_rate_authorized_count"] != 0
+    ):
+        raise ValueError("active-protein intake escaped into runtime authority")
     active_transport_metrics = by_id["active_intracellular_transport_model"][
         "observed_metrics"
     ]
@@ -841,7 +916,7 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         local_boundary_metrics["local_star_shaped_surface_modes_coupled"] != 1
         or local_boundary_metrics["local_topology_change_modes_coupled"] != 0
         or local_boundary_metrics["locally_conservative_membrane_face_flux_count"]
-        != 0
+        != 1
     ):
         raise ValueError("local membrane-fluid boundary contract changed")
     donor_model_metrics = by_id["donor_state_model"]["observed_metrics"]

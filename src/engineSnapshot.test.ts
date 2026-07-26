@@ -2186,8 +2186,14 @@ describe("engine snapshot client", () => {
       expect(result.summary.reactionEvidenceAtlas?.summary.active_reaction_count).toBe(36);
       expect(result.summary.reactionEvidenceAtlas?.summary.evidence_slot_count).toBe(432);
       expect(result.summary.reactionEvidenceAtlas?.summary.transport_coupled_reaction_count).toBe(0);
+      expect(result.summary.receptorSignalingTrajectoryIntake?.target_pathway_count).toBe(8);
+      expect(result.summary.receptorSignalingTrajectoryIntake?.required_stage_slot_count).toBe(64);
+      expect(result.summary.receptorSignalingTrajectoryIntake?.receptor_activation_allowed_count).toBe(0);
+      expect(result.summary.activeProteinLocalizationIntake?.target_protein_count).toBe(8);
+      expect(result.summary.activeProteinLocalizationIntake?.required_protein_slot_count).toBe(63);
+      expect(result.summary.activeProteinLocalizationIntake?.active_copy_or_concentration_authorized_count).toBe(0);
       expect(result.summary.cytosolTransport?.material_model.model).toBe("poroelastic_two_phase_cytoplasm");
-      expect(result.summary.cytosolTransport?.version).toBe("cytosol_transport_rheology_contract_v8");
+      expect(result.summary.cytosolTransport?.version).toBe("cytosol_transport_rheology_contract_v9");
       expect(result.summary.cytosolTransport?.summary.conservative_subgrid_boundary_treatment_count).toBe(1);
       expect(result.summary.cytosolTransport?.summary.dimensionless_active_cargo_route_kernel_count).toBe(1);
       expect(result.summary.cytosolTransport?.summary.healthy_phh_active_transport_kernel_count).toBe(0);
@@ -2201,6 +2207,7 @@ describe("engine snapshot client", () => {
       expect(result.summary.cytosolTransport?.summary.renderer_geometry_boundary_class_count).toBe(10);
       expect(result.summary.cytosolTransport?.summary.full_watertight_mesh_boundary_count).toBe(0);
       expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.biological_time_or_velocity_claim).toBe(false);
+      expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.locally_conservative_membrane_face_flux).toBe(true);
       expect(result.summary.cytosolTransport?.solver_layers.renderer_dimensionless_projection_grid.membrane_pressure_feedback).toBe(false);
       expect(result.summary.cytosolTransport?.solver_layers.conservative_passive_scalar_kernel.biological_species_bound_count).toBe(0);
       expect(result.summary.cytosolTransport?.solver_layers.conservative_passive_scalar_kernel.moving_domain_mass_conservation_tested).toBe(true);

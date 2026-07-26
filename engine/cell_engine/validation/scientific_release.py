@@ -90,8 +90,14 @@ from cell_engine.quantitative.compartmental_energy_redox import (
 from cell_engine.quantitative.energy_redox_trajectory import (
     energy_redox_trajectory_intake_snapshot,
 )
+from cell_engine.quantitative.active_protein_localization import (
+    active_protein_localization_snapshot,
+)
 from cell_engine.quantitative.reaction_evidence_intake import (
     reaction_evidence_intake_snapshot,
+)
+from cell_engine.quantitative.receptor_signaling_trajectory import (
+    receptor_signaling_trajectory_snapshot,
 )
 from cell_engine.stochastic.integrated_cell import (
     INTEGRATED_VOLUME_L,
@@ -344,6 +350,41 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid energy/redox trajectory intake: {exc}")
+
+    try:
+        receptor_signal_intake = receptor_signaling_trajectory_snapshot()
+        if (
+            receptor_signal_intake["target_pathway_count"] != 8
+            or receptor_signal_intake["required_stage_slot_count"] != 64
+            or receptor_signal_intake["receptor_activation_allowed_count"] != 0
+            or receptor_signal_intake["signal_execution_allowed_count"] != 0
+            or receptor_signal_intake["cell_state_coupling_allowed_count"] != 0
+        ):
+            raise ValueError("receptor/signaling intake exceeded current authority")
+        checks.append(
+            "the 48-column donor-matched receptor/signaling intake covers eight stages across all eight communication pathways while activation, execution and state coupling remain disabled"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid receptor/signaling trajectory intake: {exc}")
+
+    try:
+        active_protein_intake = active_protein_localization_snapshot()
+        if (
+            active_protein_intake["target_protein_count"] != 8
+            or active_protein_intake["required_protein_slot_count"] != 63
+            or active_protein_intake[
+                "active_copy_or_concentration_authorized_count"
+            ]
+            != 0
+            or active_protein_intake["functional_rate_authorized_count"] != 0
+            or active_protein_intake["cell_state_coupling_allowed_count"] != 0
+        ):
+            raise ValueError("active-protein intake exceeded current authority")
+        checks.append(
+            "the 52-column active-protein intake separates total, localized, active, denominator and functional evidence for eight proteins while all automatic conversions and rate coupling remain disabled"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid active-protein localization intake: {exc}")
 
     try:
         external_validation_program = build_external_validation_program()

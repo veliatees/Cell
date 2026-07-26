@@ -139,15 +139,14 @@
       "title": "Local non-affine membrane-to-fluid coupling",
       "status": "partial",
       "scope": "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
-      "current_capability": "The fluid grid now follows the global volume-preserving affine map and a dynamically rasterized reference-space residual from the current membrane mesh. The affine component is removed before sampling, so contact deformation is not counted twice. Multi-intersection folds and topology changes remain unsupported.",
+      "current_capability": "The fluid grid follows the global volume-preserving affine map and a dynamically rasterized reference-space residual from the current membrane mesh. Outer-membrane cut cells now carry 2x2x2 volume fractions, 2x2 face apertures and a local geometric-conservation source in the pressure projection; passive scalar mass is conservatively remapped as those fractions move. The affine component is removed before sampling, so contact deformation is not counted twice. Multi-intersection folds and topology changes remain unsupported.",
       "observed_metrics": {
         "local_star_shaped_surface_modes_coupled": 1,
         "local_topology_change_modes_coupled": 0,
-        "locally_conservative_membrane_face_flux_count": 0
+        "locally_conservative_membrane_face_flux_count": 1
       },
       "remaining_requirements": [
         "Remeshing and topology-change representation.",
-        "Locally conservative moving-boundary coupling.",
         "Event-specific membrane reservoir and neck mechanics evidence."
       ],
       "code_surfaces": [
@@ -373,10 +372,17 @@
       "title": "Receptor and signaling-chain kinetics",
       "status": "blocked_missing_evidence",
       "scope": "INSR, EGFR, MET, NTCP and future contact-triggered receptor chains.",
-      "current_capability": "Identity and selected response observations are present, while receptor density, occupancy, binding and internalization kinetics remain absent.",
+      "current_capability": "Identity and selected response observations are present. A versioned 48-column intake now requires eight donor-matched stages for each of eight communication pathways, including surface density, geometry-appropriate association/dissociation, occupancy, internalization or gate turnover, proximal signal, functional response and sealed independent validation. No trajectory bundle has been delivered, so activation remains absent.",
       "observed_metrics": {
         "functional_response_observation_count": 3,
-        "receptor_binding_kinetic_observation_count": 0
+        "receptor_binding_kinetic_observation_count": 0,
+        "trajectory_intake_contract_count": 1,
+        "target_pathway_count": 8,
+        "required_stage_slot_count": 64,
+        "delivered_trajectory_record_count": 0,
+        "structurally_complete_pathway_count": 0,
+        "receptor_activation_allowed_count": 0,
+        "signal_execution_allowed_count": 0
       },
       "remaining_requirements": [
         "Domain-resolved receptor surface density and active fraction.",
@@ -385,7 +391,9 @@
       ],
       "code_surfaces": [
         "engine/cell_engine/quantitative/phh_protein_functional_evidence.py",
-        "engine/cell_engine/multicell/communication.py"
+        "engine/cell_engine/multicell/communication.py",
+        "engine/cell_engine/quantitative/receptor_signaling_trajectory.py",
+        "data/evidence_intake/phh_receptor_signaling_trajectory_contract.v1.json"
       ]
     },
     {
@@ -393,13 +401,19 @@
       "title": "Active protein copies and domain densities",
       "status": "blocked_missing_evidence",
       "scope": "BSEP, MRP2, NTCP, INSR, MET, EGFR, GLUT2 and glucokinase.",
-      "current_capability": "Seven-donor total abundance exists for all eight proteins; total per-nucleus protein groups are not active surface copies.",
+      "current_capability": "Seven-donor total abundance exists for all eight proteins; total per-nucleus protein groups are not active surface copies. A versioned 52-column intake now keeps total, membrane/compartment-localized, domain-localized, active, denominator-geometry and functional measurements linked within one donor/replicate and requires sealed independent validation. No localization/activity bundle has been delivered.",
       "observed_metrics": {
         "protein_count": 8,
         "seven_donor_abundance_profile_count": 8,
         "quantitative_surface_localization_count": 0,
         "active_fraction_count": 0,
-        "donor_activity_distribution_count": 0
+        "donor_activity_distribution_count": 0,
+        "localization_intake_contract_count": 1,
+        "required_protein_slot_count": 63,
+        "delivered_localization_record_count": 0,
+        "structurally_complete_protein_count": 0,
+        "active_copy_or_concentration_authorized_count": 0,
+        "functional_rate_authorized_count": 0
       },
       "remaining_requirements": [
         "Matched total, domain-localized and functional fractions in the same PHH donors.",
@@ -407,7 +421,9 @@
         "Same-assay transport or signaling validation."
       ],
       "code_surfaces": [
-        "engine/cell_engine/quantitative/phh_protein_functional_evidence.py"
+        "engine/cell_engine/quantitative/phh_protein_functional_evidence.py",
+        "engine/cell_engine/quantitative/active_protein_localization.py",
+        "data/evidence_intake/phh_active_protein_localization_contract.v1.json"
       ]
     },
     {
