@@ -26,6 +26,12 @@ from cell_engine.quantitative.human_gem_flux_consistency import (
 from cell_engine.quantitative.human_gem_generic_fba import (
     load_committed_human_gem_generic_fba_audit,
 )
+from cell_engine.quantitative.human_gem_phh_fastcore_context import (
+    load_committed_human_gem_phh_fastcore_context_audit,
+)
+from cell_engine.quantitative.human_gem_phh_proteome_context import (
+    load_committed_human_gem_phh_proteome_gpr_audit,
+)
 from cell_engine.quantitative.phh_metabolic_execution_bundle import (
     phh_metabolic_execution_bundle_intake_snapshot,
     validate_phh_metabolic_execution_bundle_intake_snapshot,
@@ -33,7 +39,7 @@ from cell_engine.quantitative.phh_metabolic_execution_bundle import (
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "metabolic_constraint_shell_v6"
+VERSION = "metabolic_constraint_shell_v7"
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
@@ -68,9 +74,10 @@ METABOLIC_CONSTRAINT_SOURCES: dict[str, SourceReference] = {
         date_verified=DATE_VERIFIED,
         notes=(
             "Defines FASTCC flux-consistency classification and the FASTCORE "
-            "LP-7/LP-10 extraction method. FASTCC has been applied to the pinned "
-            "generic reconstruction; no healthy-PHH core reaction set has been "
-            "supplied or applied to Human-GEM."
+            "LP-3/LP-7/LP-10 extraction method. FASTCC has been applied to the "
+            "pinned generic reconstruction. A conservative seven-donor total-"
+            "proteome core was trialed with FASTCORE, but the output failed "
+            "strict consistency and the closure retained nearly the full network."
         ),
     ),
 }
@@ -91,6 +98,12 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
     loader_audit = load_committed_fbc_loader_audit()
     fastcc_audit = load_committed_human_gem_fastcc_audit()
     generic_fba_audit = load_committed_human_gem_generic_fba_audit()
+    proteome_gpr_audit = (
+        load_committed_human_gem_phh_proteome_gpr_audit()
+    )
+    fastcore_trial_audit = (
+        load_committed_human_gem_phh_fastcore_context_audit()
+    )
     scope = manifest["scientific_scope"]
     verification = manifest["verification"]
     counts = manifest["structural_counts_verified_from_sbml"]
@@ -105,7 +118,10 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
 
     return {
         "version": VERSION,
-        "status": "generic_human_gem_loaded_classified_and_native_objective_solved_phh_execution_blocked",
+        "status": (
+            "generic_human_gem_loaded_classified_native_objective_solved_"
+            "seven_donor_proteome_FASTCORE_trial_rejected_PHH_execution_blocked"
+        ),
         "role": (
             "Genome-scale stoichiometric feasibility shell around validated dynamic cores. "
             "It may constrain boundary-consistent flux space but cannot supply a time trajectory."
@@ -166,6 +182,12 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
                 "gene_associated_reaction_count": loader_audit[
                     "loaded_structure"
                 ]["gene_associated_reaction_count"],
+                "gene_product_label_count": loader_audit[
+                    "loaded_structure"
+                ]["gene_product_label_count"],
+                "unique_gene_product_label_count": loader_audit[
+                    "loaded_structure"
+                ]["unique_gene_product_label_count"],
                 "parameter_count": loader_audit["loaded_structure"][
                     "parameter_count"
                 ],
@@ -207,6 +229,9 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
                 ],
                 "lp7_solve_count": fastcc_audit["fastcc_reduced_network"][
                     "lp7_solve_count"
+                ],
+                "lp3_solve_count": fastcc_audit["fastcc_reduced_network"][
+                    "lp3_solve_count"
                 ],
                 "maximum_mass_balance_residual": fastcc_audit[
                     "fastcc_reduced_network"
@@ -261,6 +286,76 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
                     "scientific_boundary"
                 ]["biological_flux_authority"],
             },
+            "seven_donor_proteome_gpr_audit": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_proteome_gpr_audit.json"
+                ),
+                "donor_count": proteome_gpr_audit[
+                    "phh_proteome_artifact"
+                ]["donor_count"],
+                "not_healthy_volunteers": proteome_gpr_audit[
+                    "phh_proteome_artifact"
+                ]["not_healthy_volunteers"],
+                "single_gene_group_count": proteome_gpr_audit[
+                    "protein_group_mapping"
+                ]["single_gene_group_count"],
+                "non_single_gene_excluded_group_count": proteome_gpr_audit[
+                    "protein_group_mapping"
+                ]["non_single_gene_excluded_group_count"],
+                "reaction_support_intersection_count": proteome_gpr_audit[
+                    "all_donor_support"
+                ]["reaction_support_intersection_count"],
+                "generic_fastcc_blocked_conflict_count": proteome_gpr_audit[
+                    "all_donor_support"
+                ]["generic_fastcc_blocked_conflict_count"],
+                "flux_consistent_core_candidate_count": proteome_gpr_audit[
+                    "all_donor_support"
+                ]["flux_consistent_core_candidate_count"],
+                "active_enzyme_abundance_inferred": proteome_gpr_audit[
+                    "scientific_boundary"
+                ]["protein_detection_interpreted_as_active_enzyme"],
+                "flux_magnitude_inferred": proteome_gpr_audit[
+                    "scientific_boundary"
+                ]["flux_magnitude_inferred"],
+            },
+            "seven_donor_fastcore_trial": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_proteome_"
+                    "fastcore_context.json"
+                ),
+                "core_reaction_count": fastcore_trial_audit["extraction"][
+                    "core_reaction_count"
+                ],
+                "source_fastcore_selected_reaction_count": (
+                    fastcore_trial_audit["extraction"][
+                        "source_fastcore_selected_reaction_count"
+                    ]
+                ),
+                "source_fastcore_output_blocked_reaction_count": (
+                    fastcore_trial_audit["extraction"][
+                        "source_fastcore_output_blocked_reaction_count"
+                    ]
+                ),
+                "closure_selected_reaction_count": fastcore_trial_audit[
+                    "extraction"
+                ]["selected_reaction_count"],
+                "closure_omitted_reaction_count": fastcore_trial_audit[
+                    "extraction"
+                ]["omitted_reaction_count"],
+                "source_FASTCORE_output_flux_consistent": (
+                    fastcore_trial_audit["scientific_boundary"][
+                        "source_FASTCORE_output_flux_consistent"
+                    ]
+                ),
+                "context_specificity_established": fastcore_trial_audit[
+                    "scientific_boundary"
+                ]["context_specificity_established"],
+                "context_model_accepted": fastcore_trial_audit[
+                    "scientific_boundary"
+                ]["context_model_accepted"],
+            },
         },
         "hepatocyte_context": {
             "extraction_algorithm": None,
@@ -299,8 +394,9 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
         "source_ids": tuple(METABOLIC_CONSTRAINT_SOURCES),
         "blockers": (
             "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
-            "checksum-frozen healthy-PHH context extraction bundle is not delivered",
-            "a donor/cohort-resolved healthy-PHH core reaction set is not delivered for FASTCORE",
+            "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
+            "source-defined FASTCORE selected 7,320 reactions but left 408 output reactions blocked at the declared epsilon",
+            "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
             "measured exchange bounds and explicit scale conversion are absent",
             "objective function is not linked to a matched healthy-PHH measurement",
             "structural audit exceptions require reaction-level resolution before scientific optimization",
@@ -372,12 +468,14 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
     if not isinstance(loader, dict):
         raise ValueError("Human-GEM sparse FBC loader audit is missing")
     if (
-        loader.get("loader_version") != "human_gem_fbc_loader_v1"
+        loader.get("loader_version") != "human_gem_fbc_loader_v2"
         or loader.get("artifact_identity_verified_before_parse") is not True
         or loader.get("stoichiometric_shape") != [8461, 12931]
         or loader.get("stoichiometric_nonzero_count") != 55198
         or loader.get("reversible_reaction_count") != 5725
         or loader.get("gene_associated_reaction_count") != 7782
+        or loader.get("gene_product_label_count") != 2848
+        or loader.get("unique_gene_product_label_count") != 2848
         or loader.get("parameter_count") != 3
         or loader.get("objective_count") != 1
         or loader.get("active_objective_id") != "obj"
@@ -398,7 +496,8 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
         or fastcc.get("solver_method") != "highs-ipm"
         or fastcc.get("consistent_reaction_count") != 11641
         or fastcc.get("blocked_reaction_count") != 1290
-        or fastcc.get("lp7_solve_count") != 253
+        or fastcc.get("lp7_solve_count") != 6
+        or fastcc.get("lp3_solve_count") != 247
         or not isinstance(
             fastcc.get("maximum_mass_balance_residual"),
             (int, float),
@@ -410,6 +509,44 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
     ):
         raise ValueError(
             "Human-GEM generic FASTCC audit changed without review"
+        )
+    proteome_gpr = reconstruction.get("seven_donor_proteome_gpr_audit")
+    if not isinstance(proteome_gpr, dict):
+        raise ValueError("Human-GEM PHH proteome GPR audit is missing")
+    if (
+        proteome_gpr.get("donor_count") != 7
+        or proteome_gpr.get("not_healthy_volunteers") is not True
+        or proteome_gpr.get("single_gene_group_count") != 8_110
+        or proteome_gpr.get("non_single_gene_excluded_group_count") != 579
+        or proteome_gpr.get("reaction_support_intersection_count") != 5_082
+        or proteome_gpr.get("generic_fastcc_blocked_conflict_count") != 527
+        or proteome_gpr.get("flux_consistent_core_candidate_count") != 4_555
+        or proteome_gpr.get("active_enzyme_abundance_inferred") is not False
+        or proteome_gpr.get("flux_magnitude_inferred") is not False
+    ):
+        raise ValueError(
+            "Human-GEM PHH proteome GPR audit changed without review"
+        )
+    fastcore_trial = reconstruction.get("seven_donor_fastcore_trial")
+    if not isinstance(fastcore_trial, dict):
+        raise ValueError("Human-GEM PHH FASTCORE trial audit is missing")
+    if (
+        fastcore_trial.get("core_reaction_count") != 4_555
+        or fastcore_trial.get("source_fastcore_selected_reaction_count")
+        != 7_320
+        or fastcore_trial.get(
+            "source_fastcore_output_blocked_reaction_count"
+        )
+        != 408
+        or fastcore_trial.get("closure_selected_reaction_count") != 11_639
+        or fastcore_trial.get("closure_omitted_reaction_count") != 2
+        or fastcore_trial.get("source_FASTCORE_output_flux_consistent")
+        is not False
+        or fastcore_trial.get("context_specificity_established") is not False
+        or fastcore_trial.get("context_model_accepted") is not False
+    ):
+        raise ValueError(
+            "Human-GEM PHH FASTCORE trial escaped its fail-closed boundary"
         )
     generic_fba = reconstruction.get("generic_native_objective_audit")
     if not isinstance(generic_fba, dict):

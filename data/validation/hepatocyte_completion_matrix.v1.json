@@ -645,6 +645,7 @@
         "stoichiometric_nonzero_count": 55198,
         "reversible_reaction_count": 5725,
         "gene_associated_reaction_count": 7782,
+        "gene_product_label_count": 2848,
         "objective_count": 1,
         "active_objective_id": "obj",
         "healthy_phh_context_extracted": false,
@@ -669,7 +670,8 @@
         "epsilon_is_biological_parameter": false,
         "consistent_reaction_count": 11641,
         "blocked_reaction_count": 1290,
-        "lp7_solve_count": 253,
+        "lp7_solve_count": 6,
+        "lp3_solve_count": 247,
         "maximum_mass_balance_residual": 3.3518572306275897e-10,
         "complete_at_declared_epsilon": true,
         "healthy_phh_context_extracted": false,
@@ -711,6 +713,57 @@
       ]
     },
     {
+      "id": "seven_donor_phh_proteome_gpr_core",
+      "title": "Seven-donor PHH proteome-to-GPR core evidence",
+      "status": "closed",
+      "scope": "Conservative Boolean support mapping from the curated seven-donor resection-PHH total proteome to exact Human-GEM FBC gene-product rules; no activity, capacity or flux claim.",
+      "current_capability": "Every donor is evaluated independently using only single-gene MaxQuant groups with a non-null source observation and exact case-sensitive FBC labels. The all-donor reaction intersection is separated from generic FASTCC conflicts, yielding a reproducible 4,555-reaction candidate core without abundance thresholds, synonym imputation or protein-group summation.",
+      "observed_metrics": {
+        "donor_count": 7,
+        "not_healthy_volunteers": true,
+        "single_gene_group_count": 8110,
+        "non_single_gene_excluded_group_count": 579,
+        "reaction_support_intersection_count": 5082,
+        "generic_fastcc_blocked_conflict_count": 527,
+        "flux_consistent_core_candidate_count": 4555,
+        "active_enzyme_abundance_inferred": false,
+        "flux_magnitude_inferred": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_gpr.py",
+        "engine/cell_engine/quantitative/human_gem_phh_proteome_context.py",
+        "scripts/audit_human_gem_phh_proteome_gpr.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_proteome_gpr_audit.json",
+        "engine/tests/test_human_gem_phh_proteome_context.py"
+      ]
+    },
+    {
+      "id": "human_gem_real_scale_fastcore_trial",
+      "title": "Real-scale Human-GEM FASTCORE trial",
+      "status": "closed",
+      "scope": "Reproducible offline application and fail-closed diagnosis of source-defined FASTCORE on the seven-donor Boolean proteome core; no accepted PHH context model.",
+      "current_capability": "The source-defined trial selected 7,320 reactions but strict output FASTCC found 408 blocked. A parameter-free bipartite stoichiometric closure restored consistency only by retaining 11,639 of 11,641 input reactions. The trial is therefore recorded as a reproducible negative context-specificity result, not promoted to a hepatocyte model.",
+      "observed_metrics": {
+        "core_reaction_count": 4555,
+        "source_fastcore_selected_reaction_count": 7320,
+        "source_fastcore_output_blocked_reaction_count": 408,
+        "closure_selected_reaction_count": 11639,
+        "closure_omitted_reaction_count": 2,
+        "source_FASTCORE_output_flux_consistent": false,
+        "context_specificity_established": false,
+        "context_model_accepted": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/fastcore_context.py",
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_context.py",
+        "scripts/extract_human_gem_phh_fastcore_context.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_proteome_fastcore_context.json",
+        "engine/tests/test_human_gem_phh_fastcore_context.py"
+      ]
+    },
+    {
       "id": "generic_fba_fva_numerics",
       "title": "Generic FBA/FVA numerical kernel",
       "status": "closed",
@@ -736,7 +789,7 @@
       "title": "FASTCORE context-extraction numerical kernel",
       "status": "closed",
       "scope": "Source-defined LP-7/LP-10 software behavior on analytic synthetic flux-consistent networks only.",
-      "current_capability": "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon and LP10 scaling inputs, global and output flux-consistency audits, reversible-reaction orientation handling and explicit non-uniqueness. It retains a synthetic core pathway and omits an unrelated pathway; Human-GEM has not been context-extracted.",
+      "current_capability": "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon and source-pinned LP10 scaling, identity-bound input consistency certificates, original reaction-orientation restoration, strict output FASTCC and explicit non-uniqueness. Synthetic fixtures include reverse-only and subthreshold-support closure cases. Real Human-GEM application is reported separately as a rejected trial.",
       "observed_metrics": {
         "synthetic_fixture_pass_count": 1,
         "epsilon_has_runtime_default": false,
@@ -832,8 +885,8 @@
     }
   ],
   "summary": {
-    "entry_count": 32,
-    "closed_count": 10,
+    "entry_count": 34,
+    "closed_count": 12,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

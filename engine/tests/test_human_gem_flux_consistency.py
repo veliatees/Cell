@@ -26,7 +26,8 @@ def test_committed_human_gem_fastcc_audit_is_complete_and_fail_closed() -> None:
     )
     assert prepass["blocked_reaction_count"] == 1_133
     assert fastcc["blocked_reaction_count"] == 157
-    assert fastcc["lp7_solve_count"] == 253
+    assert fastcc["lp7_solve_count"] == 6
+    assert fastcc["lp3_solve_count"] == 247
     assert fastcc["complete_consistency_classification"] is True
     assert report["scientific_boundary"]["healthy_phh_context_extracted"] is False
     assert report["scientific_boundary"]["biological_flux_authority"] is False

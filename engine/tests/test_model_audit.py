@@ -98,6 +98,18 @@ class ScientificModelAuditTests(unittest.TestCase):
             True,
         )
         self.assertEqual(
+            by_id["human_gem_phh_proteome_gpr_core"].default_snapshot_role,
+            "seven_donor_boolean_proteome_to_gpr_evidence",
+        )
+        self.assertEqual(
+            by_id["human_gem_real_scale_fastcore_trial"].default_snapshot_role,
+            "reproducible_negative_context_specificity_result",
+        )
+        self.assertIs(
+            by_id["human_gem_real_scale_fastcore_trial"].drives_scientific_validation,
+            True,
+        )
+        self.assertEqual(
             by_id["human_gem_generic_native_fba"].default_snapshot_role,
             "checksum_pinned_generic_objective_software_audit",
         )

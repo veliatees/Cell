@@ -6,11 +6,14 @@ import pytest
 
 from cell_engine.quantitative.fastcore_context import (
     FastcoreError,
+    FastcoreOutputConsistencyError,
+    FluxConsistencyCertificate,
     FluxConsistentNetwork,
     audit_flux_consistency,
     fastcc_flux_consistency,
     fastcore_context_snapshot,
     fastcore_extract,
+    fastcore_extract_with_consistency_closure,
     prune_sign_definite_dead_ends,
     validate_fastcore_context_snapshot,
 )
@@ -35,7 +38,7 @@ def test_fastcore_retains_core_and_only_its_required_support() -> None:
         _network(),
         core_reaction_ids=("A_to_B",),
         epsilon=1e-6,
-        lp10_scaling_factor=1e5,
+        lp10_scaling_factor=1e4,
     )
 
     assert result.reaction_ids == ("A_in", "A_to_B", "B_out")
@@ -67,7 +70,7 @@ def test_flux_consistency_audit_detects_a_blocked_reaction() -> None:
             network,
             core_reaction_ids=("A_out",),
             epsilon=1e-6,
-            lp10_scaling_factor=1e5,
+            lp10_scaling_factor=1e4,
         )
 
 
@@ -170,7 +173,7 @@ def test_fastcore_handles_a_reversible_core_without_splitting_it() -> None:
         network,
         core_reaction_ids=("A_reversible_boundary",),
         epsilon=1e-6,
-        lp10_scaling_factor=1e5,
+        lp10_scaling_factor=1e4,
     )
 
     assert result.reaction_ids == ("A_in", "A_reversible_boundary")
@@ -185,7 +188,7 @@ def test_fastcore_requires_explicit_valid_numerical_inputs() -> None:
             _network(),
             core_reaction_ids=("A_to_B",),
             epsilon=0,
-            lp10_scaling_factor=1e5,
+            lp10_scaling_factor=1e4,
         )
     with pytest.raises(FastcoreError, match="at least one"):
         fastcore_extract(
@@ -193,6 +196,13 @@ def test_fastcore_requires_explicit_valid_numerical_inputs() -> None:
             core_reaction_ids=("A_to_B",),
             epsilon=1e-6,
             lp10_scaling_factor=0.5,
+        )
+    with pytest.raises(FastcoreError, match="pinned official"):
+        fastcore_extract(
+            _network(),
+            core_reaction_ids=("A_to_B",),
+            epsilon=1e-6,
+            lp10_scaling_factor=1e5,
         )
 
 
@@ -208,3 +218,106 @@ def test_fastcore_snapshot_is_software_only_and_fail_closed() -> None:
     escaped["biological_flux_authority"] = True
     with pytest.raises(FastcoreError, match="biological gating"):
         validate_fastcore_context_snapshot(escaped)
+
+
+def test_fastcore_preserves_original_reverse_only_orientation() -> None:
+    network = FluxConsistentNetwork(
+        metabolite_ids=("A",),
+        reaction_ids=("A_source", "A_reverse_only_sink"),
+        stoichiometry=((1.0, 1.0),),
+        lower_bounds=(0.0, -10.0),
+        upper_bounds=(10.0, 0.0),
+    )
+
+    result = fastcore_extract(
+        network,
+        core_reaction_ids=("A_reverse_only_sink",),
+        epsilon=1e-6,
+        lp10_scaling_factor=1e4,
+    )
+
+    assert result.reaction_ids == ("A_source", "A_reverse_only_sink")
+    assert result.extracted_network.lower_bounds == (0.0, -10.0)
+    assert result.extracted_network.upper_bounds == (10.0, 0.0)
+    assert result.extracted_network.stoichiometry.toarray().tolist() == [
+        [1.0, 1.0]
+    ]
+    assert result.original_reaction_orientation_preserved is True
+
+
+def test_fastcore_certificate_is_identity_and_epsilon_bound() -> None:
+    network = _network()
+    certificate = FluxConsistencyCertificate(
+        reaction_ids=network.reaction_ids,
+        epsilon=1e-6,
+        algorithm="fixture_FASTCC",
+        maximum_mass_balance_residual=0.0,
+        maximum_bound_violation=0.0,
+        complete_consistency_classification=True,
+    )
+
+    result = fastcore_extract(
+        network,
+        core_reaction_ids=("A_to_B",),
+        epsilon=1e-6,
+        lp10_scaling_factor=1e4,
+        input_consistency_certificate=certificate,
+    )
+
+    assert result.input_consistency_algorithm == "fixture_FASTCC"
+    with pytest.raises(FastcoreError, match="network identity"):
+        fastcore_extract(
+            network,
+            core_reaction_ids=("A_to_B",),
+            epsilon=1e-6,
+            lp10_scaling_factor=1e4,
+            input_consistency_certificate=FluxConsistencyCertificate(
+                reaction_ids=tuple(reversed(network.reaction_ids)),
+                epsilon=1e-6,
+                algorithm="fixture_FASTCC",
+                maximum_mass_balance_residual=0.0,
+                maximum_bound_violation=0.0,
+                complete_consistency_classification=True,
+            ),
+        )
+
+
+def test_fastcore_stoichiometric_closure_recovers_subthreshold_support() -> None:
+    network = FluxConsistentNetwork(
+        metabolite_ids=("A",),
+        reaction_ids=("small_support", "core_out"),
+        stoichiometry=((1_000.0, -1.0),),
+        lower_bounds=(0.0, 0.0),
+        upper_bounds=(10.0, 10.0),
+    )
+    certificate = FluxConsistencyCertificate(
+        reaction_ids=network.reaction_ids,
+        epsilon=1e-4,
+        algorithm="fixture_FASTCC",
+        maximum_mass_balance_residual=0.0,
+        maximum_bound_violation=0.0,
+        complete_consistency_classification=True,
+    )
+
+    with pytest.raises(FastcoreOutputConsistencyError):
+        fastcore_extract(
+            network,
+            core_reaction_ids=("core_out",),
+            epsilon=1e-4,
+            lp10_scaling_factor=1e4,
+            input_consistency_certificate=certificate,
+        )
+
+    closure = fastcore_extract_with_consistency_closure(
+        network,
+        core_reaction_ids=("core_out",),
+        epsilon=1e-4,
+        lp10_scaling_factor=1e4,
+        input_consistency_certificate=certificate,
+    )
+
+    assert closure.reaction_ids == ("small_support", "core_out")
+    assert closure.added_closure_reaction_ids == ("small_support",)
+    assert closure.iterations[0].incident_metabolite_count == 1
+    assert closure.iterations[0].added_incident_reaction_count == 1
+    assert closure.converged is True

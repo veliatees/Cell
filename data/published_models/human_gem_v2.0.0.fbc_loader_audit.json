@@ -8,6 +8,7 @@
   },
   "integrity": {
     "all_flux_bound_parameters_resolved": true,
+    "all_gene_product_labels_preserved": true,
     "all_gene_product_references_resolved": true,
     "all_objective_reaction_references_resolved": true,
     "all_reaction_species_references_resolved": true,
@@ -20,9 +21,12 @@
     "boundary_species_count": 0,
     "compartment_count": 9,
     "compartment_id_sha256_in_file_order": "67f42692f781a2020a2015e3978bc9c120d75a3142f94be74a57a10a164d821f",
+    "duplicate_gene_product_label_count": 0,
     "gene_associated_reaction_count": 7782,
     "gene_product_count": 2848,
+    "gene_product_id_label_sha256_in_file_order": "24782358cd793c377e1c3d93c74e20293044e7da5bfe94d264f5b02f44b251c7",
     "gene_product_id_sha256_in_file_order": "287c5f835f90268c4b6a80993cd9181342835f6c5df238fdff631220bb5ff803",
+    "gene_product_label_count": 2848,
     "objective_count": 1,
     "objective_flux_term_count": 1,
     "parameter_count": 3,
@@ -37,9 +41,10 @@
       12931
     ],
     "stoichiometric_triplet_sha256": "771a80dd6bf78c530cc27ce1edfe784f78c2ca2297dd0ef4fc7174f96ac74b16",
-    "unique_bound_pair_count": 3
+    "unique_bound_pair_count": 3,
+    "unique_gene_product_label_count": 2848
   },
-  "loader_version": "human_gem_fbc_loader_v1",
+  "loader_version": "human_gem_fbc_loader_v2",
   "sbml_fbc": {
     "active_objective_id": "obj",
     "fbc_strict": true,
@@ -61,7 +66,7 @@
     ],
     "version": 1
   },
-  "schema_version": "cell.human-gem-fbc-loader-audit.v1",
+  "schema_version": "cell.human-gem-fbc-loader-audit.v2",
   "scientific_boundary": {
     "biological_objective_attached": false,
     "fba_execution_allowed": false,

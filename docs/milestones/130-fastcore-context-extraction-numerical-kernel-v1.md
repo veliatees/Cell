@@ -14,7 +14,7 @@ Vlassis, Pacheco and Sauter:
 - primary paper:
   <https://doi.org/10.1371/journal.pcbi.1003424>;
 - official COBRA Toolbox implementation:
-  <https://github.com/opencobra/cobratoolbox/tree/master/src/dataIntegration/transcriptomics/FASTCORE>.
+  <https://github.com/opencobra/cobratoolbox/tree/67c790dbac809d9d891fdbafc33e18c21fc9bddc/src/dataIntegration/transcriptomics/FASTCORE>.
 
 FASTCORE receives a flux-consistent network and a set of reactions supported by
 strong context evidence. It builds a compact, flux-consistent subnetwork that
@@ -26,8 +26,11 @@ retains the core and adds only the reactions needed to support it.
 - LP-10 L1 penalty minimization outside the core.
 - Forward and reverse handling without splitting reversible reactions.
 - Reverse-only reaction normalization.
+- Restoration of original stoichiometry and bounds in extracted output.
 - Global input and extracted-output flux-consistency audits.
+- Identity- and epsilon-bound input consistency certificates.
 - Mandatory, explicit epsilon and LP10 scaling inputs with no runtime defaults.
+- Pinned official fixed LP-10 scaling factor `1e4`.
 - Fail-closed rejection of blocked input reactions, missing core IDs and invalid
   numerical controls.
 - Explicit reporting that the greedy extraction need not be unique.
@@ -40,8 +43,9 @@ blocked-reaction fixture is rejected and a reversible core remains intact.
 
 ## Scientific Boundary
 
-Human-GEM has not been context-extracted. No healthy-PHH core reaction set,
-donor omics bundle or biological flux authority is present. Future FASTCORE
-output will be a computational model hypothesis and will still require measured
+A real Human-GEM trial is reported separately in Milestone 137. Its strict
+output failed consistency and its conservative closure retained nearly the
+entire generic network, so no PHH context model was accepted. Any future
+accepted output will remain a computational model hypothesis requiring measured
 exchange bounds, an explicit objective, uncertainty analysis and independent
 validation.
