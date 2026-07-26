@@ -29,8 +29,17 @@ from cell_engine.quantitative.human_gem_generic_fba import (
 from cell_engine.quantitative.human_gem_phh_fastcore_context import (
     load_committed_human_gem_phh_fastcore_context_audit,
 )
+from cell_engine.quantitative.human_gem_phh_fastcore_scaling import (
+    load_committed_human_gem_phh_fastcore_scaling_comparison,
+)
+from cell_engine.quantitative.human_gem_phh_donor_stability import (
+    load_committed_human_gem_phh_donor_stability_audit,
+)
 from cell_engine.quantitative.human_gem_phh_proteome_context import (
     load_committed_human_gem_phh_proteome_gpr_audit,
+)
+from cell_engine.quantitative.human_gem_phh_reaction_evidence_manifest import (
+    load_committed_human_gem_phh_reaction_evidence_manifest,
 )
 from cell_engine.quantitative.phh_metabolic_execution_bundle import (
     phh_metabolic_execution_bundle_intake_snapshot,
@@ -39,7 +48,7 @@ from cell_engine.quantitative.phh_metabolic_execution_bundle import (
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "metabolic_constraint_shell_v7"
+VERSION = "metabolic_constraint_shell_v8"
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
@@ -76,8 +85,9 @@ METABOLIC_CONSTRAINT_SOURCES: dict[str, SourceReference] = {
             "Defines FASTCC flux-consistency classification and the FASTCORE "
             "LP-3/LP-7/LP-10 extraction method. FASTCC has been applied to the "
             "pinned generic reconstruction. A conservative seven-donor total-"
-            "proteome core was trialed with FASTCORE, but the output failed "
-            "strict consistency and the closure retained nearly the full network."
+            "proteome core was trialed with both official fixed and adaptive "
+            "LP-10 scaling. Adaptive scaling reduced, but did not eliminate, "
+            "strict output inconsistency."
         ),
     ),
 }
@@ -104,6 +114,15 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
     fastcore_trial_audit = (
         load_committed_human_gem_phh_fastcore_context_audit()
     )
+    donor_stability_audit = (
+        load_committed_human_gem_phh_donor_stability_audit()
+    )
+    scaling_audit = (
+        load_committed_human_gem_phh_fastcore_scaling_comparison()
+    )
+    evidence_manifest = (
+        load_committed_human_gem_phh_reaction_evidence_manifest()
+    )
     scope = manifest["scientific_scope"]
     verification = manifest["verification"]
     counts = manifest["structural_counts_verified_from_sbml"]
@@ -120,7 +139,8 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
         "version": VERSION,
         "status": (
             "generic_human_gem_loaded_classified_native_objective_solved_"
-            "seven_donor_proteome_FASTCORE_trial_rejected_PHH_execution_blocked"
+            "seven_donor_stability_and_FASTCORE_scaling_audited_"
+            "reaction_evidence_manifest_ready_PHH_execution_blocked"
         ),
         "role": (
             "Genome-scale stoichiometric feasibility shell around validated dynamic cores. "
@@ -356,6 +376,109 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
                     "scientific_boundary"
                 ]["context_model_accepted"],
             },
+            "seven_donor_gpr_stability_audit": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_gpr_stability_audit.json"
+                ),
+                "gpr_reaction_count": donor_stability_audit["summary"][
+                    "gpr_reaction_count"
+                ],
+                "zero_donor_support_reaction_count": donor_stability_audit[
+                    "support_frequency_by_donor_count"
+                ]["0"]["gpr_reaction_count"],
+                "six_donor_support_reaction_count": donor_stability_audit[
+                    "support_frequency_by_donor_count"
+                ]["6"]["gpr_reaction_count"],
+                "seven_donor_support_reaction_count": donor_stability_audit[
+                    "support_frequency_by_donor_count"
+                ]["7"]["gpr_reaction_count"],
+                "seven_donor_flux_consistent_core_count": (
+                    donor_stability_audit["summary"][
+                        "seven_donor_flux_consistent_core_count"
+                    ]
+                ),
+                "largest_leave_one_out_core_expansion_count": max(
+                    item["added_vs_seven_donor_core_count"]
+                    for item in donor_stability_audit[
+                        "leave_one_donor_out"
+                    ]
+                ),
+                "missing_detection_interpreted_as_inactivity": (
+                    donor_stability_audit["scientific_boundary"][
+                        "missing_detection_interpreted_as_inactivity"
+                    ]
+                ),
+            },
+            "fastcore_scaling_comparison": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_"
+                    "fastcore_scaling_comparison.json"
+                ),
+                "fixed_selected_reaction_count": scaling_audit[
+                    "fixed_scaling_trial"
+                ]["selected_reaction_count"],
+                "fixed_output_blocked_reaction_count": scaling_audit[
+                    "fixed_scaling_trial"
+                ]["output_blocked_reaction_count"],
+                "adaptive_selected_reaction_count": scaling_audit[
+                    "adaptive_scaling_trial"
+                ]["selected_reaction_count"],
+                "adaptive_output_blocked_reaction_count": scaling_audit[
+                    "adaptive_scaling_trial"
+                ]["output_blocked_reaction_count"],
+                "adaptive_lp10_solve_count": scaling_audit[
+                    "adaptive_scaling_trial"
+                ]["lp10_adaptive_solve_count"],
+                "adaptive_fixed_fallback_count": scaling_audit[
+                    "adaptive_scaling_trial"
+                ]["lp10_fixed_fallback_count"],
+                "selected_jaccard": scaling_audit["comparison"][
+                    "selected_jaccard"
+                ],
+                "adaptive_output_flux_consistent": scaling_audit[
+                    "adaptive_scaling_trial"
+                ]["output_flux_consistent"],
+                "context_model_accepted": scaling_audit[
+                    "scientific_boundary"
+                ]["context_model_accepted"],
+            },
+            "reaction_evidence_manifest": {
+                "manifest_path": (
+                    "data/evidence_intake/"
+                    "human_gem_phh_reaction_evidence_manifest.v1.json"
+                ),
+                "manifest_reaction_count": evidence_manifest["summary"][
+                    "manifest_reaction_count"
+                ],
+                "adaptive_fastcore_noncore_reaction_count": (
+                    evidence_manifest["summary"][
+                        "adaptive_fastcore_noncore_reaction_count"
+                    ]
+                ),
+                "adaptive_noncore_without_gpr_count": evidence_manifest[
+                    "evidence_gap_groups"
+                ][
+                    "adaptive_fastcore_noncore_without_gpr_annotation"
+                ]["reaction_count"],
+                "adaptive_noncore_zero_donor_gpr_count": evidence_manifest[
+                    "evidence_gap_groups"
+                ][
+                    "adaptive_fastcore_noncore_zero_donor_gpr_support"
+                ]["reaction_count"],
+                "adaptive_noncore_partial_donor_gpr_count": evidence_manifest[
+                    "evidence_gap_groups"
+                ][
+                    "adaptive_fastcore_noncore_partial_donor_gpr_support"
+                ]["reaction_count"],
+                "priority_score_used": evidence_manifest["method"][
+                    "priority_score_used"
+                ],
+                "automatic_bound_change_allowed": evidence_manifest[
+                    "execution_gates"
+                ]["automatic_bound_change_allowed"],
+            },
         },
         "hepatocyte_context": {
             "extraction_algorithm": None,
@@ -395,8 +518,9 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
         "blockers": (
             "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
             "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
-            "source-defined FASTCORE selected 7,320 reactions but left 408 output reactions blocked at the declared epsilon",
+            "adaptive official LP-10 scaling selected 7,415 reactions but still left 17 output reactions blocked at the declared epsilon",
             "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
+            "2,860 adaptive non-core support reactions require reaction-level PHH evidence; 2,177 lack a GPR annotation",
             "measured exchange bounds and explicit scale conversion are absent",
             "objective function is not linked to a matched healthy-PHH measurement",
             "structural audit exceptions require reaction-level resolution before scientific optimization",
@@ -548,6 +672,62 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
         raise ValueError(
             "Human-GEM PHH FASTCORE trial escaped its fail-closed boundary"
         )
+    donor_stability = reconstruction.get(
+        "seven_donor_gpr_stability_audit"
+    )
+    if not isinstance(donor_stability, dict) or (
+        donor_stability.get("gpr_reaction_count") != 7_782
+        or donor_stability.get("zero_donor_support_reaction_count")
+        != 1_801
+        or donor_stability.get("six_donor_support_reaction_count") != 150
+        or donor_stability.get("seven_donor_support_reaction_count")
+        != 5_082
+        or donor_stability.get("seven_donor_flux_consistent_core_count")
+        != 4_555
+        or donor_stability.get(
+            "largest_leave_one_out_core_expansion_count"
+        )
+        != 62
+        or donor_stability.get(
+            "missing_detection_interpreted_as_inactivity"
+        )
+        is not False
+    ):
+        raise ValueError("PHH donor GPR stability audit changed")
+    scaling = reconstruction.get("fastcore_scaling_comparison")
+    if not isinstance(scaling, dict) or (
+        scaling.get("fixed_selected_reaction_count") != 7_320
+        or scaling.get("fixed_output_blocked_reaction_count") != 408
+        or scaling.get("adaptive_selected_reaction_count") != 7_415
+        or scaling.get("adaptive_output_blocked_reaction_count") != 17
+        or scaling.get("adaptive_lp10_solve_count") != 11
+        or scaling.get("adaptive_fixed_fallback_count") != 1
+        or scaling.get("adaptive_output_flux_consistent") is not False
+        or scaling.get("context_model_accepted") is not False
+    ):
+        raise ValueError("PHH FASTCORE scaling comparison changed")
+    evidence_manifest = reconstruction.get("reaction_evidence_manifest")
+    if not isinstance(evidence_manifest, dict) or (
+        evidence_manifest.get("manifest_reaction_count") != 4_895
+        or evidence_manifest.get(
+            "adaptive_fastcore_noncore_reaction_count"
+        )
+        != 2_860
+        or evidence_manifest.get("adaptive_noncore_without_gpr_count")
+        != 2_177
+        or evidence_manifest.get(
+            "adaptive_noncore_zero_donor_gpr_count"
+        )
+        != 401
+        or evidence_manifest.get(
+            "adaptive_noncore_partial_donor_gpr_count"
+        )
+        != 282
+        or evidence_manifest.get("priority_score_used") is not False
+        or evidence_manifest.get("automatic_bound_change_allowed")
+        is not False
+    ):
+        raise ValueError("PHH reaction-evidence manifest changed")
     generic_fba = reconstruction.get("generic_native_objective_audit")
     if not isinstance(generic_fba, dict):
         raise ValueError("Human-GEM generic FBA audit is missing")

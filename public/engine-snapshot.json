@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-26T17:40:05.559666+00:00",
+    "created_at_utc": "2026-07-26T18:32:46.177484+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -6891,7 +6891,7 @@
       "fastcore": {
         "date_verified": "2026-07-26",
         "id": "fastcore",
-        "notes": "Defines FASTCC flux-consistency classification and the FASTCORE LP-3/LP-7/LP-10 extraction method. FASTCC has been applied to the pinned generic reconstruction. A conservative seven-donor total-proteome core was trialed with FASTCORE, but the output failed strict consistency and the closure retained nearly the full network.",
+        "notes": "Defines FASTCC flux-consistency classification and the FASTCORE LP-3/LP-7/LP-10 extraction method. FASTCC has been applied to the pinned generic reconstruction. A conservative seven-donor total-proteome core was trialed with both official fixed and adaptive LP-10 scaling. Adaptive scaling reduced, but did not eliminate, strict output inconsistency.",
         "source_type": "primary_paper",
         "title": "Fast Reconstruction of Compact Context-Specific Metabolic Network Models",
         "url": "https://doi.org/10.1371/journal.pcbi.1003424"
@@ -16164,6 +16164,77 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/quantitative/human_gem_phh_donor_stability.py",
+            "scripts/audit_human_gem_phh_donor_stability.py",
+            "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_gpr_stability_audit.json",
+            "engine/tests/test_human_gem_phh_donor_stability.py"
+          ],
+          "current_capability": "All 7,782 GPR-associated Human-GEM reactions now retain their exact supporting donor identities. The audit exposes 150 six-of-seven and 1,801 zero-of-seven reactions, while leave-one-out analysis shows a maximum 62-reaction expansion of the flux-consistent core. Missing detection remains missing evidence.",
+          "id": "seven_donor_gpr_support_stability",
+          "observed_metrics": {
+            "gpr_reaction_count": 7782,
+            "largest_leave_one_out_core_expansion_count": 62,
+            "missing_detection_interpreted_as_inactivity": false,
+            "seven_donor_flux_consistent_core_count": 4555,
+            "seven_donor_support_reaction_count": 5082,
+            "six_donor_support_reaction_count": 150,
+            "zero_donor_support_reaction_count": 1801
+          },
+          "remaining_requirements": [],
+          "scope": "Exact 0/7 through 7/7 Boolean reaction-support frequencies, pairwise donor similarity and leave-one-donor-out sensitivity for the pinned resection-PHH proteome cohort; no prevalence or inactivity claim.",
+          "status": "closed",
+          "title": "Seven-donor GPR support stability"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/fastcore_context.py",
+            "engine/cell_engine/quantitative/human_gem_phh_fastcore_scaling.py",
+            "scripts/compare_human_gem_phh_fastcore_scaling.py",
+            "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_scaling_comparison.json",
+            "engine/tests/test_human_gem_phh_fastcore_scaling.py"
+          ],
+          "current_capability": "Fixed scaling selected 7,320 reactions and left 408 blocked. Official adaptive scaling selected 7,415 and reduced the strict-output blocked set to 17, using eleven adaptive solves and one fixed fallback. Because the adaptive output is still not flux-consistent, every FBA and runtime gate remains closed.",
+          "id": "human_gem_fastcore_scaling_sensitivity",
+          "observed_metrics": {
+            "adaptive_fixed_fallback_count": 1,
+            "adaptive_lp10_solve_count": 11,
+            "adaptive_output_blocked_reaction_count": 17,
+            "adaptive_output_flux_consistent": false,
+            "adaptive_selected_reaction_count": 7415,
+            "context_model_accepted": false,
+            "fixed_output_blocked_reaction_count": 408,
+            "fixed_selected_reaction_count": 7320
+          },
+          "remaining_requirements": [],
+          "scope": "Real-scale comparison of the pinned official fixed and adaptive LP-10 numerical branches on one Human-GEM network and one seven-donor core; no accepted context model.",
+          "status": "closed",
+          "title": "Human-GEM FASTCORE scaling sensitivity"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/human_gem_phh_reaction_evidence_manifest.py",
+            "scripts/build_human_gem_phh_reaction_evidence_manifest.py",
+            "data/evidence_intake/human_gem_phh_reaction_evidence_manifest.v1.json",
+            "engine/tests/test_human_gem_phh_reaction_evidence_manifest.py"
+          ],
+          "current_capability": "A 4,895-reaction machine-readable manifest now separates seven evidence-gap classes. Of 2,860 adaptive non-core support reactions, 2,177 lack a GPR annotation, 401 have zero-of-seven donor support and 282 have partial donor support. Required output fields preserve assay, donor, compartment, unit, uncertainty and exact source location.",
+          "id": "human_gem_reaction_evidence_manifest",
+          "observed_metrics": {
+            "adaptive_fastcore_noncore_reaction_count": 2860,
+            "adaptive_noncore_partial_donor_gpr_count": 282,
+            "adaptive_noncore_without_gpr_count": 2177,
+            "adaptive_noncore_zero_donor_gpr_count": 401,
+            "automatic_bound_change_allowed": false,
+            "manifest_reaction_count": 4895,
+            "priority_score_used": false
+          },
+          "remaining_requirements": [],
+          "scope": "Dependency-ordered, reaction-identity-level research tasks generated from numerical contradictions, donor missingness and adaptive non-core support; no synthetic priority score or automatic model edit.",
+          "status": "closed",
+          "title": "Human-GEM reaction evidence manifest"
+        },
+        {
+          "code_surfaces": [
             "engine/cell_engine/quantitative/constraint_numerics.py",
             "engine/tests/test_constraint_numerics.py"
           ],
@@ -16188,14 +16259,17 @@
             "engine/cell_engine/quantitative/fastcore_context.py",
             "engine/tests/test_fastcore_context.py"
           ],
-          "current_capability": "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon and source-pinned LP10 scaling, identity-bound input consistency certificates, original reaction-orientation restoration, strict output FASTCC and explicit non-uniqueness. Synthetic fixtures include reverse-only and subthreshold-support closure cases. Real Human-GEM application is reported separately as a rejected trial.",
+          "current_capability": "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon, the pinned fixed LP10 scale, the official adaptive branch with counted fixed fallback, identity-bound input consistency certificates, original reaction-orientation restoration, strict output FASTCC and explicit non-uniqueness. Synthetic fixtures include reverse-only, adaptive-fallback and subthreshold-support closure cases. Real Human-GEM applications are reported separately as fail-closed numerical audits.",
           "id": "fastcore_context_extraction_numerics",
           "observed_metrics": {
+            "adaptive_lp10_fixed_fallback_supported": true,
             "biological_flux_authority": false,
             "epsilon_has_runtime_default": false,
             "healthy_phh_core_set_loaded": false,
             "human_gem_context_extraction_executed": false,
             "lp10_scaling_factor_has_runtime_default": false,
+            "official_adaptive_lp10_core_multiplier": 10.0,
+            "official_adaptive_lp10_supported": true,
             "requires_explicit_core_reaction_ids": true,
             "requires_flux_consistent_input": true,
             "synthetic_fixture_pass_count": 1,
@@ -16295,8 +16369,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 12,
-        "closed_count": 12,
-        "entry_count": 34,
+        "closed_count": 15,
+        "entry_count": 37,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
@@ -22789,8 +22863,9 @@
       "blockers": [
         "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
         "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
-        "source-defined FASTCORE selected 7,320 reactions but left 408 output reactions blocked at the declared epsilon",
+        "adaptive official LP-10 scaling selected 7,415 reactions but still left 17 output reactions blocked at the declared epsilon",
         "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
+        "2,860 adaptive non-core support reactions require reaction-level PHH evidence; 2,177 lack a GPR annotation",
         "measured exchange bounds and explicit scale conversion are absent",
         "objective function is not linked to a matched healthy-PHH measurement",
         "structural audit exceptions require reaction-level resolution before scientific optimization",
@@ -22803,6 +22878,18 @@
         "artifact_url": "https://raw.githubusercontent.com/SysBioChalmers/Human-GEM/635f533152dc5f7290ce04d12700eaa882273c3e/model/Human-GEM.xml",
         "artifact_vendored_in_repository": false,
         "expected_local_cache_path": "data/published_models/cache/Human-GEM-v2.0.0.xml",
+        "fastcore_scaling_comparison": {
+          "adaptive_fixed_fallback_count": 1,
+          "adaptive_lp10_solve_count": 11,
+          "adaptive_output_blocked_reaction_count": 17,
+          "adaptive_output_flux_consistent": false,
+          "adaptive_selected_reaction_count": 7415,
+          "audit_report": "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_scaling_comparison.json",
+          "context_model_accepted": false,
+          "fixed_output_blocked_reaction_count": 408,
+          "fixed_selected_reaction_count": 7320,
+          "selected_jaccard": 0.940858798735511
+        },
         "fbc_loader_audit_report": "data/published_models/human_gem_v2.0.0.fbc_loader_audit.json",
         "generic_flux_consistency_audit": {
           "algorithm": "sign_definite_dead_end_prepass_plus_FASTCC",
@@ -22844,6 +22931,16 @@
         "model_loader_verified_against_pinned_artifact": true,
         "model_name": "Human 2.0.0",
         "model_version": "2.0.0",
+        "reaction_evidence_manifest": {
+          "adaptive_fastcore_noncore_reaction_count": 2860,
+          "adaptive_noncore_partial_donor_gpr_count": 282,
+          "adaptive_noncore_without_gpr_count": 2177,
+          "adaptive_noncore_zero_donor_gpr_count": 401,
+          "automatic_bound_change_allowed": false,
+          "manifest_path": "data/evidence_intake/human_gem_phh_reaction_evidence_manifest.v1.json",
+          "manifest_reaction_count": 4895,
+          "priority_score_used": false
+        },
         "release_commit": "635f533152dc5f7290ce04d12700eaa882273c3e",
         "release_date": "2026-03-30",
         "release_tag": "v2.0.0",
@@ -22858,6 +22955,16 @@
           "source_FASTCORE_output_flux_consistent": false,
           "source_fastcore_output_blocked_reaction_count": 408,
           "source_fastcore_selected_reaction_count": 7320
+        },
+        "seven_donor_gpr_stability_audit": {
+          "audit_report": "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_gpr_stability_audit.json",
+          "gpr_reaction_count": 7782,
+          "largest_leave_one_out_core_expansion_count": 62,
+          "missing_detection_interpreted_as_inactivity": false,
+          "seven_donor_flux_consistent_core_count": 4555,
+          "seven_donor_support_reaction_count": 5082,
+          "six_donor_support_reaction_count": 150,
+          "zero_donor_support_reaction_count": 1801
         },
         "seven_donor_proteome_gpr_audit": {
           "active_enzyme_abundance_inferred": false,
@@ -22913,18 +23020,23 @@
         }
       },
       "context_extraction_kernel": {
+        "accepting_output_rejects_blocked_identities": true,
         "accepts_identity_bound_flux_consistency_certificate": true,
+        "adaptive_lp10_fixed_fallback_supported": true,
         "algorithm": "FASTCORE",
         "algorithm_role": "greedy compact flux-consistent subnetwork extraction from an already flux-consistent global reconstruction and evidence-backed core set",
         "backend": "scipy.optimize.linprog",
         "backend_version": "1.17.1",
         "biological_flux_authority": false,
+        "diagnostic_output_can_retain_blocked_identities": true,
         "donor_omics_loaded": false,
         "epsilon_has_runtime_default": false,
         "healthy_phh_core_set_loaded": false,
         "human_gem_context_extraction_executed": false,
         "lp10_scaling_factor_has_runtime_default": false,
         "method": "highs",
+        "official_adaptive_lp10_core_multiplier": 10.0,
+        "official_adaptive_lp10_supported": true,
         "official_fixed_lp10_scaling_factor": 10000.0,
         "official_reference_implementation": "https://github.com/opencobra/cobratoolbox/tree/67c790dbac809d9d891fdbafc33e18c21fc9bddc/src/dataIntegration/transcriptomics/FASTCORE",
         "official_reference_implementation_commit": "67c790dbac809d9d891fdbafc33e18c21fc9bddc",
@@ -23026,8 +23138,8 @@
         "human_gem_repository",
         "fastcore"
       ],
-      "status": "generic_human_gem_loaded_classified_native_objective_solved_seven_donor_proteome_FASTCORE_trial_rejected_PHH_execution_blocked",
-      "version": "metabolic_constraint_shell_v7"
+      "status": "generic_human_gem_loaded_classified_native_objective_solved_seven_donor_stability_and_FASTCORE_scaling_audited_reaction_evidence_manifest_ready_PHH_execution_blocked",
+      "version": "metabolic_constraint_shell_v8"
     },
     "metabolic_fluxes": [
       {
@@ -41194,6 +41306,9 @@
         "fastcore_context_extraction_numerics",
         "human_gem_phh_proteome_gpr_core",
         "human_gem_real_scale_fastcore_trial",
+        "human_gem_phh_donor_gpr_stability",
+        "human_gem_fastcore_scaling_sensitivity",
+        "human_gem_phh_reaction_evidence_manifest",
         "phh_metabolic_execution_bundle_intake",
         "metabolic_constraint_shell",
         "hepatocyte_completion_matrix"
@@ -42151,6 +42266,44 @@
           "status": "derived"
         },
         {
+          "action": "retain exact 0/7 through 7/7 reaction support, pairwise donor Jaccard indices and leave-one-donor-out intersections; interpret no missing detection as inactivity or population prevalence",
+          "default_snapshot_role": "exact_donor_support_and_leave_one_out_audit",
+          "drives_scientific_validation": true,
+          "id": "human_gem_phh_donor_gpr_stability",
+          "limitations": "The seven surgical-resection donors provide a finite cohort and total-proteome detection only. The audit identifies 150 six-of-seven and 1,801 zero-of-seven GPR reactions, but neither class proves active or inactive biology.",
+          "source_ids": [
+            "human_hepatocyte_proteome_2016",
+            "human_gem_repository"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "compare the pinned official fixed and adaptive LP-10 branches on the identical 11,641-reaction input and 4,555-reaction core; retain strict output FASTCC and reject inconsistent candidates",
+          "default_snapshot_role": "official_lp10_numerical_sensitivity_audit",
+          "drives_scientific_validation": true,
+          "id": "human_gem_fastcore_scaling_sensitivity",
+          "limitations": "Adaptive scaling reduces the blocked output from 408 to 17 while changing the selected reaction set. The adaptive output remains inconsistent, and numerical improvement supplies no active-enzyme, exchange-flux or objective evidence.",
+          "source_ids": [
+            "human_hepatocyte_proteome_2016",
+            "human_gem_repository",
+            "fastcore"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "retain dependency-ordered reaction gap codes and exact requested result fields; use no synthetic priority score and permit no automatic bound, inclusion or exclusion change",
+          "default_snapshot_role": "reaction_identity_level_research_intake",
+          "drives_scientific_validation": true,
+          "id": "human_gem_phh_reaction_evidence_manifest",
+          "limitations": "The manifest covers 4,895 reactions, including 2,860 adaptive non-core supports. It is a research queue, not a context model, and every FBA/runtime gate stays closed.",
+          "source_ids": [
+            "human_hepatocyte_proteome_2016",
+            "human_gem_repository",
+            "fastcore"
+          ],
+          "status": "derived"
+        },
+        {
           "action": "require a ten-artifact bundle containing deterministic Human-GEM context extraction, measured exchange bounds, explicit scale operator, measured objective, pinned solver, FBA/FVA/infeasibility reports and donor/study-disjoint validation",
           "default_snapshot_role": "checksum_frozen_context_and_flux_validation_firewall",
           "drives_scientific_validation": true,
@@ -42160,11 +42313,11 @@
           "status": "derived"
         },
         {
-          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, seven-donor Boolean GPR audit and rejected real-scale FASTCORE trial; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
+          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, seven-donor GPR stability, fixed/adaptive FASTCORE sensitivity and reaction evidence manifest; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
           "default_snapshot_role": "pinned_reconstruction_and_genome_scale_activation_firewall",
           "drives_scientific_validation": true,
           "id": "metabolic_constraint_shell",
-          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective. The available total proteome produced a candidate core but failed to establish a compact consistent context. No PHH bundle or biological optimization runs.",
+          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective. Adaptive FASTCORE narrows but does not eliminate output inconsistency, and the available total proteome does not establish active enzyme capacities. No PHH bundle or biological optimization runs.",
           "source_ids": [
             "human1_metabolic_atlas",
             "human_gem_repository",

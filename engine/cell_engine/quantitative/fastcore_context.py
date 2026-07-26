@@ -26,6 +26,9 @@ OFFICIAL_IMPLEMENTATION_URL = (
     "src/dataIntegration/transcriptomics/FASTCORE"
 )
 OFFICIAL_FIXED_LP10_SCALING_FACTOR = 1e4
+OFFICIAL_ADAPTIVE_LP10_CORE_MULTIPLIER = 10.0
+FIXED_LP10_STRATEGY = "official_fixed_1e4"
+ADAPTIVE_LP10_STRATEGY = "official_adaptive_with_fixed_fallback"
 SUPPORT_RELATIVE_TOLERANCE = 1e-2
 SOLVER_FEASIBILITY_TOLERANCE = 1e-9
 LOGGER = logging.getLogger(__name__)
@@ -89,8 +92,12 @@ class FastcoreExtractionResult:
     omitted_reaction_ids: tuple[str, ...]
     epsilon: float
     lp10_scaling_factor: float
+    lp10_strategy: str
     lp7_solve_count: int
     lp10_solve_count: int
+    lp10_adaptive_solve_count: int
+    lp10_fixed_solve_count: int
+    lp10_fixed_fallback_count: int
     consistency_solve_count: int
     global_input_flux_consistent: bool
     extracted_network_flux_consistent: bool
@@ -169,6 +176,9 @@ class _SolveCounter:
     lp7: int = 0
     lp3: int = 0
     lp10: int = 0
+    lp10_adaptive: int = 0
+    lp10_fixed: int = 0
+    lp10_fixed_fallback: int = 0
 
 
 def _solver_modules():
@@ -555,8 +565,10 @@ def _lp10(
     active_core_indices: Sequence[int],
     penalty_indices: Sequence[int],
     *,
+    preceding_dense_mode,
     epsilon: float,
     scaling_factor: float,
+    adaptive_scaling: bool,
     counter: _SolveCounter,
 ):
     np, _, _, csr_matrix, hstack, _ = _solver_modules()
@@ -570,17 +582,6 @@ def _lp10(
         ],
         format="csr",
     )
-    objective = np.concatenate(
-        [np.zeros(reaction_count), np.ones(auxiliary_count)]
-    )
-    scaled_lower = lower * scaling_factor
-    scaled_upper = upper * scaling_factor
-    required_flux = epsilon * scaling_factor
-    for index in active_core_indices:
-        scaled_lower[index] = max(scaled_lower[index], required_flux)
-    bounds = list(zip(scaled_lower, scaled_upper, strict=True))
-    bounds.extend((0.0, None) for _ in penalty)
-
     inequality = None
     inequality_rhs = None
     if penalty:
@@ -604,17 +605,82 @@ def _lp10(
             shape=(2 * auxiliary_count, reaction_count + auxiliary_count),
         )
         inequality_rhs = np.zeros(2 * auxiliary_count)
-    result = _linprog(
-        objective,
-        equality=equality,
-        bounds=bounds,
-        inequality=inequality,
-        inequality_rhs=inequality_rhs,
+    objective = np.concatenate(
+        [np.zeros(reaction_count), np.ones(auxiliary_count)]
     )
-    counter.lp10 += 1
-    if not result.success:
+
+    def solve(
+        *,
+        lower_bounds,
+        upper_bounds,
+        required_flux: float,
+        output_divisor: float,
+        adaptive: bool,
+    ):
+        flux_lower = lower_bounds.copy()
+        for index in active_core_indices:
+            flux_lower[index] = max(
+                flux_lower[index],
+                required_flux,
+            )
+        bounds = list(
+            zip(flux_lower, upper_bounds, strict=True)
+        )
+        bounds.extend(
+            (
+                0.0,
+                max(
+                    abs(float(lower_bounds[index])),
+                    abs(float(upper_bounds[index])),
+                ),
+            )
+            for index in penalty
+        )
+        result = _linprog(
+            objective,
+            equality=equality,
+            bounds=bounds,
+            inequality=inequality,
+            inequality_rhs=inequality_rhs,
+        )
+        counter.lp10 += 1
+        if adaptive:
+            counter.lp10_adaptive += 1
+        else:
+            counter.lp10_fixed += 1
+        if not result.success:
+            return None
+        return result.x[:reaction_count] / output_divisor
+
+    if adaptive_scaling:
+        adaptive_required_flux = (
+            min(
+                float(preceding_dense_mode[index])
+                for index in active_core_indices
+            )
+            * OFFICIAL_ADAPTIVE_LP10_CORE_MULTIPLIER
+        )
+        adaptive_result = solve(
+            lower_bounds=lower,
+            upper_bounds=upper,
+            required_flux=adaptive_required_flux,
+            output_divisor=1.0,
+            adaptive=True,
+        )
+        if adaptive_result is not None:
+            return adaptive_result
+        counter.lp10_fixed_fallback += 1
+
+    fixed_result = solve(
+        lower_bounds=lower * scaling_factor,
+        upper_bounds=upper * scaling_factor,
+        required_flux=epsilon * scaling_factor,
+        output_divisor=scaling_factor,
+        adaptive=False,
+    )
+    if fixed_result is None:
         return np.zeros(reaction_count)
-    return result.x[:reaction_count] / scaling_factor
+    return fixed_result
 
 
 def _find_sparse_mode(
@@ -627,6 +693,7 @@ def _find_sparse_mode(
     singleton: bool,
     epsilon: float,
     scaling_factor: float,
+    adaptive_scaling: bool,
     counter: _SolveCounter,
 ) -> set[int]:
     candidates = tuple(core_candidates[:1] if singleton else core_candidates)
@@ -654,8 +721,10 @@ def _find_sparse_mode(
         upper,
         active_core,
         penalty_indices,
+        preceding_dense_mode=dense_mode,
         epsilon=epsilon,
         scaling_factor=scaling_factor,
+        adaptive_scaling=adaptive_scaling,
         counter=counter,
     )
     mask = _support_mask(sparse_mode, epsilon)
@@ -948,6 +1017,7 @@ def _fastcore_extract_once(
     core_reaction_ids: Sequence[str],
     epsilon: float,
     lp10_scaling_factor: float,
+    adaptive_lp10: bool,
     input_consistency_certificate: FluxConsistencyCertificate | None = None,
     raise_on_output_inconsistency: bool,
 ) -> FastcoreExtractionResult:
@@ -964,6 +1034,8 @@ def _fastcore_extract_once(
         raise FastcoreError(
             "lp10_scaling_factor must match the pinned official fixed value"
         )
+    if not isinstance(adaptive_lp10, bool):
+        raise FastcoreError("adaptive_lp10 must be a Boolean source-method flag")
     original_stoichiometry, original_lower, original_upper = _validated_arrays(
         network
     )
@@ -1035,6 +1107,7 @@ def _fastcore_extract_once(
         singleton=False,
         epsilon=epsilon_value,
         scaling_factor=scaling_factor,
+        adaptive_scaling=adaptive_lp10,
         counter=counter,
     )
     missing_irreversible = (core & irreversible) - selected
@@ -1066,6 +1139,7 @@ def _fastcore_extract_once(
             singleton=singleton,
             epsilon=epsilon_value,
             scaling_factor=scaling_factor,
+            adaptive_scaling=adaptive_lp10,
             counter=counter,
         )
         selected |= support
@@ -1136,8 +1210,16 @@ def _fastcore_extract_once(
         omitted_reaction_ids=omitted,
         epsilon=epsilon_value,
         lp10_scaling_factor=scaling_factor,
+        lp10_strategy=(
+            ADAPTIVE_LP10_STRATEGY
+            if adaptive_lp10
+            else FIXED_LP10_STRATEGY
+        ),
         lp7_solve_count=counter.lp7,
         lp10_solve_count=counter.lp10,
+        lp10_adaptive_solve_count=counter.lp10_adaptive,
+        lp10_fixed_solve_count=counter.lp10_fixed,
+        lp10_fixed_fallback_count=counter.lp10_fixed_fallback,
         consistency_solve_count=(
             input_solve_count
             + output_audit.lp7_solve_count
@@ -1171,6 +1253,7 @@ def fastcore_extract(
     core_reaction_ids: Sequence[str],
     epsilon: float,
     lp10_scaling_factor: float,
+    adaptive_lp10: bool = False,
     input_consistency_certificate: FluxConsistencyCertificate | None = None,
 ) -> FastcoreExtractionResult:
     """Extract a compact context and reject a flux-inconsistent output."""
@@ -1180,8 +1263,31 @@ def fastcore_extract(
         core_reaction_ids=core_reaction_ids,
         epsilon=epsilon,
         lp10_scaling_factor=lp10_scaling_factor,
+        adaptive_lp10=adaptive_lp10,
         input_consistency_certificate=input_consistency_certificate,
         raise_on_output_inconsistency=True,
+    )
+
+
+def fastcore_extract_diagnostic(
+    network: FluxConsistentNetwork,
+    *,
+    core_reaction_ids: Sequence[str],
+    epsilon: float,
+    lp10_scaling_factor: float,
+    adaptive_lp10: bool = False,
+    input_consistency_certificate: FluxConsistencyCertificate | None = None,
+) -> FastcoreExtractionResult:
+    """Return a source FASTCORE trial while retaining fail-closed diagnostics."""
+
+    return _fastcore_extract_once(
+        network,
+        core_reaction_ids=core_reaction_ids,
+        epsilon=epsilon,
+        lp10_scaling_factor=lp10_scaling_factor,
+        adaptive_lp10=adaptive_lp10,
+        input_consistency_certificate=input_consistency_certificate,
+        raise_on_output_inconsistency=False,
     )
 
 
@@ -1191,6 +1297,7 @@ def fastcore_extract_with_consistency_closure(
     core_reaction_ids: Sequence[str],
     epsilon: float,
     lp10_scaling_factor: float,
+    adaptive_lp10: bool = False,
     input_consistency_certificate: FluxConsistencyCertificate,
     maximum_iterations: int = 8,
 ) -> FastcoreClosureResult:
@@ -1216,6 +1323,7 @@ def fastcore_extract_with_consistency_closure(
         core_reaction_ids=initial_core,
         epsilon=epsilon,
         lp10_scaling_factor=lp10_scaling_factor,
+        adaptive_lp10=adaptive_lp10,
         input_consistency_certificate=input_consistency_certificate,
         raise_on_output_inconsistency=False,
     )
@@ -1414,6 +1522,13 @@ def fastcore_context_snapshot() -> dict[str, object]:
         "epsilon_has_runtime_default": False,
         "lp10_scaling_factor_has_runtime_default": False,
         "official_fixed_lp10_scaling_factor": scaling,
+        "official_adaptive_lp10_supported": True,
+        "official_adaptive_lp10_core_multiplier": (
+            OFFICIAL_ADAPTIVE_LP10_CORE_MULTIPLIER
+        ),
+        "adaptive_lp10_fixed_fallback_supported": True,
+        "diagnostic_output_can_retain_blocked_identities": True,
+        "accepting_output_rejects_blocked_identities": True,
         "support_threshold_fraction_of_epsilon": (
             1.0 - SUPPORT_RELATIVE_TOLERANCE
         ),
@@ -1447,6 +1562,15 @@ def validate_fastcore_context_snapshot(payload: dict[str, object]) -> None:
         payload.get("epsilon_has_runtime_default") is not False
         or payload.get("lp10_scaling_factor_has_runtime_default") is not False
         or payload.get("official_fixed_lp10_scaling_factor") != 1e4
+        or payload.get("official_adaptive_lp10_supported") is not True
+        or payload.get("official_adaptive_lp10_core_multiplier") != 10.0
+        or payload.get("adaptive_lp10_fixed_fallback_supported") is not True
+        or payload.get(
+            "diagnostic_output_can_retain_blocked_identities"
+        )
+        is not True
+        or payload.get("accepting_output_rejects_blocked_identities")
+        is not True
         or payload.get("support_threshold_fraction_of_epsilon") != 0.99
         or payload.get("requires_flux_consistent_input") is not True
         or payload.get("accepts_identity_bound_flux_consistency_certificate")

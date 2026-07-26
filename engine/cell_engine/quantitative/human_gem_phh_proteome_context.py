@@ -42,8 +42,8 @@ DEFAULT_AUDIT_PATH = (
     / "data/phh_baseline/derived"
     / "human_gem_v2.0.0.seven_donor_proteome_gpr_audit.json"
 )
-SCHEMA_VERSION = "cell.human-gem-phh-proteome-gpr-audit.v1"
-AUDIT_VERSION = "human_gem_phh_proteome_gpr_audit_v1"
+SCHEMA_VERSION = "cell.human-gem-phh-proteome-gpr-audit.v2"
+AUDIT_VERSION = "human_gem_phh_proteome_gpr_audit_v2"
 
 
 class HumanGemPhhProteomeContextError(ValueError):
@@ -341,6 +341,11 @@ def build_human_gem_phh_proteome_gpr_audit(
                 "gpr_supported_reaction_count": len(
                     donor_supported_reactions[donor]
                 ),
+                "gpr_supported_reaction_ids_in_model_order": [
+                    identifier
+                    for identifier in reaction_order
+                    if identifier in donor_supported_reactions[donor]
+                ],
                 "detected_single_gene_group_id_sha256": _protein_group_digest(
                     donor_single_gene_group_ids[donor]
                 ),
@@ -534,6 +539,24 @@ def validate_human_gem_phh_proteome_gpr_audit(
         if tuple(observed.get(key) for key in keys) != expected:
             raise HumanGemPhhProteomeContextError(
                 f"PHH donor {donor} support counts changed"
+            )
+        supported_ids = observed.get(
+            "gpr_supported_reaction_ids_in_model_order"
+        )
+        if (
+            not isinstance(supported_ids, list)
+            or not all(
+                isinstance(identifier, str) for identifier in supported_ids
+            )
+            or len(supported_ids) != expected[-1]
+            or len(set(supported_ids)) != len(supported_ids)
+            or _identifier_digest(supported_ids)
+            != observed.get(
+                "gpr_supported_reaction_id_sha256_in_model_order"
+            )
+        ):
+            raise HumanGemPhhProteomeContextError(
+                f"PHH donor {donor} reaction identities changed"
             )
     reaction_ids = consensus.get(
         "reaction_support_intersection_ids_in_model_order"

@@ -126,6 +126,15 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     fastcore_trial = metabolic["candidate_reconstruction"][
         "seven_donor_fastcore_trial"
     ]
+    donor_gpr_stability = metabolic["candidate_reconstruction"][
+        "seven_donor_gpr_stability_audit"
+    ]
+    fastcore_scaling = metabolic["candidate_reconstruction"][
+        "fastcore_scaling_comparison"
+    ]
+    reaction_evidence_manifest = metabolic["candidate_reconstruction"][
+        "reaction_evidence_manifest"
+    ]
     context_extraction_kernel = metabolic["context_extraction_kernel"]
     metabolic_bundle = metabolic["phh_execution_bundle_intake"]
     external = external_validation_snapshot()["summary"]
@@ -1154,6 +1163,139 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "seven_donor_gpr_support_stability",
+            "Seven-donor GPR support stability",
+            "closed",
+            "Exact 0/7 through 7/7 Boolean reaction-support frequencies, pairwise donor similarity and leave-one-donor-out sensitivity for the pinned resection-PHH proteome cohort; no prevalence or inactivity claim.",
+            "All 7,782 GPR-associated Human-GEM reactions now retain their exact supporting donor identities. The audit exposes 150 six-of-seven and 1,801 zero-of-seven reactions, while leave-one-out analysis shows a maximum 62-reaction expansion of the flux-consistent core. Missing detection remains missing evidence.",
+            {
+                "gpr_reaction_count": donor_gpr_stability[
+                    "gpr_reaction_count"
+                ],
+                "zero_donor_support_reaction_count": donor_gpr_stability[
+                    "zero_donor_support_reaction_count"
+                ],
+                "six_donor_support_reaction_count": donor_gpr_stability[
+                    "six_donor_support_reaction_count"
+                ],
+                "seven_donor_support_reaction_count": donor_gpr_stability[
+                    "seven_donor_support_reaction_count"
+                ],
+                "seven_donor_flux_consistent_core_count": (
+                    donor_gpr_stability[
+                        "seven_donor_flux_consistent_core_count"
+                    ]
+                ),
+                "largest_leave_one_out_core_expansion_count": (
+                    donor_gpr_stability[
+                        "largest_leave_one_out_core_expansion_count"
+                    ]
+                ),
+                "missing_detection_interpreted_as_inactivity": (
+                    donor_gpr_stability[
+                        "missing_detection_interpreted_as_inactivity"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/human_gem_phh_donor_stability.py",
+                "scripts/audit_human_gem_phh_donor_stability.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_gpr_stability_audit.json",
+                "engine/tests/test_human_gem_phh_donor_stability.py",
+            ),
+        ),
+        _entry(
+            "human_gem_fastcore_scaling_sensitivity",
+            "Human-GEM FASTCORE scaling sensitivity",
+            "closed",
+            "Real-scale comparison of the pinned official fixed and adaptive LP-10 numerical branches on one Human-GEM network and one seven-donor core; no accepted context model.",
+            "Fixed scaling selected 7,320 reactions and left 408 blocked. Official adaptive scaling selected 7,415 and reduced the strict-output blocked set to 17, using eleven adaptive solves and one fixed fallback. Because the adaptive output is still not flux-consistent, every FBA and runtime gate remains closed.",
+            {
+                "fixed_selected_reaction_count": fastcore_scaling[
+                    "fixed_selected_reaction_count"
+                ],
+                "fixed_output_blocked_reaction_count": fastcore_scaling[
+                    "fixed_output_blocked_reaction_count"
+                ],
+                "adaptive_selected_reaction_count": fastcore_scaling[
+                    "adaptive_selected_reaction_count"
+                ],
+                "adaptive_output_blocked_reaction_count": (
+                    fastcore_scaling[
+                        "adaptive_output_blocked_reaction_count"
+                    ]
+                ),
+                "adaptive_lp10_solve_count": fastcore_scaling[
+                    "adaptive_lp10_solve_count"
+                ],
+                "adaptive_fixed_fallback_count": fastcore_scaling[
+                    "adaptive_fixed_fallback_count"
+                ],
+                "adaptive_output_flux_consistent": fastcore_scaling[
+                    "adaptive_output_flux_consistent"
+                ],
+                "context_model_accepted": fastcore_scaling[
+                    "context_model_accepted"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/fastcore_context.py",
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_scaling.py",
+                "scripts/compare_human_gem_phh_fastcore_scaling.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_scaling_comparison.json",
+                "engine/tests/test_human_gem_phh_fastcore_scaling.py",
+            ),
+        ),
+        _entry(
+            "human_gem_reaction_evidence_manifest",
+            "Human-GEM reaction evidence manifest",
+            "closed",
+            "Dependency-ordered, reaction-identity-level research tasks generated from numerical contradictions, donor missingness and adaptive non-core support; no synthetic priority score or automatic model edit.",
+            "A 4,895-reaction machine-readable manifest now separates seven evidence-gap classes. Of 2,860 adaptive non-core support reactions, 2,177 lack a GPR annotation, 401 have zero-of-seven donor support and 282 have partial donor support. Required output fields preserve assay, donor, compartment, unit, uncertainty and exact source location.",
+            {
+                "manifest_reaction_count": reaction_evidence_manifest[
+                    "manifest_reaction_count"
+                ],
+                "adaptive_fastcore_noncore_reaction_count": (
+                    reaction_evidence_manifest[
+                        "adaptive_fastcore_noncore_reaction_count"
+                    ]
+                ),
+                "adaptive_noncore_without_gpr_count": (
+                    reaction_evidence_manifest[
+                        "adaptive_noncore_without_gpr_count"
+                    ]
+                ),
+                "adaptive_noncore_zero_donor_gpr_count": (
+                    reaction_evidence_manifest[
+                        "adaptive_noncore_zero_donor_gpr_count"
+                    ]
+                ),
+                "adaptive_noncore_partial_donor_gpr_count": (
+                    reaction_evidence_manifest[
+                        "adaptive_noncore_partial_donor_gpr_count"
+                    ]
+                ),
+                "priority_score_used": reaction_evidence_manifest[
+                    "priority_score_used"
+                ],
+                "automatic_bound_change_allowed": (
+                    reaction_evidence_manifest[
+                        "automatic_bound_change_allowed"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/human_gem_phh_reaction_evidence_manifest.py",
+                "scripts/build_human_gem_phh_reaction_evidence_manifest.py",
+                "data/evidence_intake/human_gem_phh_reaction_evidence_manifest.v1.json",
+                "engine/tests/test_human_gem_phh_reaction_evidence_manifest.py",
+            ),
+        ),
+        _entry(
             "generic_fba_fva_numerics",
             "Generic FBA/FVA numerical kernel",
             "closed",
@@ -1191,7 +1333,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "FASTCORE context-extraction numerical kernel",
             "closed",
             "Source-defined LP-7/LP-10 software behavior on analytic synthetic flux-consistent networks only.",
-            "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon and source-pinned LP10 scaling, identity-bound input consistency certificates, original reaction-orientation restoration, strict output FASTCC and explicit non-uniqueness. Synthetic fixtures include reverse-only and subthreshold-support closure cases. Real Human-GEM application is reported separately as a rejected trial.",
+            "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon, the pinned fixed LP10 scale, the official adaptive branch with counted fixed fallback, identity-bound input consistency certificates, original reaction-orientation restoration, strict output FASTCC and explicit non-uniqueness. Synthetic fixtures include reverse-only, adaptive-fallback and subthreshold-support closure cases. Real Human-GEM applications are reported separately as fail-closed numerical audits.",
             {
                 "synthetic_fixture_pass_count": context_extraction_kernel[
                     "synthetic_fixture_pass_count"
@@ -1202,6 +1344,21 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "lp10_scaling_factor_has_runtime_default": context_extraction_kernel[
                     "lp10_scaling_factor_has_runtime_default"
                 ],
+                "official_adaptive_lp10_supported": (
+                    context_extraction_kernel[
+                        "official_adaptive_lp10_supported"
+                    ]
+                ),
+                "official_adaptive_lp10_core_multiplier": (
+                    context_extraction_kernel[
+                        "official_adaptive_lp10_core_multiplier"
+                    ]
+                ),
+                "adaptive_lp10_fixed_fallback_supported": (
+                    context_extraction_kernel[
+                        "adaptive_lp10_fixed_fallback_supported"
+                    ]
+                ),
                 "requires_flux_consistent_input": context_extraction_kernel[
                     "requires_flux_consistent_input"
                 ],
@@ -1701,6 +1858,65 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or fastcore_trial_metrics["context_model_accepted"] is not False
     ):
         raise ValueError("real-scale FASTCORE trial escaped fail-closed scope")
+    donor_stability_metrics = by_id[
+        "seven_donor_gpr_support_stability"
+    ]["observed_metrics"]
+    if (
+        donor_stability_metrics["gpr_reaction_count"] != 7_782
+        or donor_stability_metrics["zero_donor_support_reaction_count"]
+        != 1_801
+        or donor_stability_metrics["six_donor_support_reaction_count"]
+        != 150
+        or donor_stability_metrics[
+            "seven_donor_flux_consistent_core_count"
+        ]
+        != 4_555
+        or donor_stability_metrics[
+            "largest_leave_one_out_core_expansion_count"
+        ]
+        != 62
+        or donor_stability_metrics[
+            "missing_detection_interpreted_as_inactivity"
+        ]
+        is not False
+    ):
+        raise ValueError("PHH donor GPR stability escaped its evidence scope")
+    scaling_metrics = by_id[
+        "human_gem_fastcore_scaling_sensitivity"
+    ]["observed_metrics"]
+    if (
+        scaling_metrics["fixed_selected_reaction_count"] != 7_320
+        or scaling_metrics["fixed_output_blocked_reaction_count"] != 408
+        or scaling_metrics["adaptive_selected_reaction_count"] != 7_415
+        or scaling_metrics["adaptive_output_blocked_reaction_count"] != 17
+        or scaling_metrics["adaptive_lp10_solve_count"] != 11
+        or scaling_metrics["adaptive_fixed_fallback_count"] != 1
+        or scaling_metrics["adaptive_output_flux_consistent"] is not False
+        or scaling_metrics["context_model_accepted"] is not False
+    ):
+        raise ValueError("FASTCORE scaling sensitivity escaped fail-closed scope")
+    evidence_metrics = by_id[
+        "human_gem_reaction_evidence_manifest"
+    ]["observed_metrics"]
+    if (
+        evidence_metrics["manifest_reaction_count"] != 4_895
+        or evidence_metrics[
+            "adaptive_fastcore_noncore_reaction_count"
+        ]
+        != 2_860
+        or evidence_metrics["adaptive_noncore_without_gpr_count"] != 2_177
+        or evidence_metrics[
+            "adaptive_noncore_zero_donor_gpr_count"
+        ]
+        != 401
+        or evidence_metrics[
+            "adaptive_noncore_partial_donor_gpr_count"
+        ]
+        != 282
+        or evidence_metrics["priority_score_used"] is not False
+        or evidence_metrics["automatic_bound_change_allowed"] is not False
+    ):
+        raise ValueError("reaction-evidence manifest escaped its intake scope")
     fastcore_metrics = by_id["fastcore_context_extraction_numerics"][
         "observed_metrics"
     ]
@@ -1708,6 +1924,10 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         fastcore_metrics["synthetic_fixture_pass_count"] != 1
         or fastcore_metrics["epsilon_has_runtime_default"] is not False
         or fastcore_metrics["lp10_scaling_factor_has_runtime_default"] is not False
+        or fastcore_metrics["official_adaptive_lp10_supported"] is not True
+        or fastcore_metrics["official_adaptive_lp10_core_multiplier"] != 10.0
+        or fastcore_metrics["adaptive_lp10_fixed_fallback_supported"]
+        is not True
         or fastcore_metrics["requires_flux_consistent_input"] is not True
         or fastcore_metrics["requires_explicit_core_reaction_ids"] is not True
         or fastcore_metrics["unique_extraction_guaranteed"] is not False

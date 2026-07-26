@@ -13,6 +13,7 @@ from cell_engine.quantitative.fastcore_context import (
     fastcc_flux_consistency,
     fastcore_context_snapshot,
     fastcore_extract,
+    fastcore_extract_diagnostic,
     fastcore_extract_with_consistency_closure,
     prune_sign_definite_dead_ends,
     validate_fastcore_context_snapshot,
@@ -50,6 +51,33 @@ def test_fastcore_retains_core_and_only_its_required_support() -> None:
     assert result.unique_extraction_guaranteed is False
     assert result.lp7_solve_count > 0
     assert result.lp10_solve_count > 0
+    assert result.lp10_strategy == "official_fixed_1e4"
+    assert result.lp10_adaptive_solve_count == 0
+    assert result.lp10_fixed_solve_count == result.lp10_solve_count
+    assert result.lp10_fixed_fallback_count == 0
+
+
+def test_fastcore_adaptive_lp10_records_official_fixed_fallback() -> None:
+    result = fastcore_extract(
+        _network(),
+        core_reaction_ids=("A_to_B",),
+        epsilon=1e-6,
+        lp10_scaling_factor=1e4,
+        adaptive_lp10=True,
+    )
+
+    assert result.reaction_ids == ("A_in", "A_to_B", "B_out")
+    assert (
+        result.lp10_strategy
+        == "official_adaptive_with_fixed_fallback"
+    )
+    assert result.lp10_adaptive_solve_count > 0
+    assert result.lp10_fixed_solve_count > 0
+    assert result.lp10_fixed_fallback_count > 0
+    assert result.lp10_solve_count == (
+        result.lp10_adaptive_solve_count
+        + result.lp10_fixed_solve_count
+    )
 
 
 def test_flux_consistency_audit_detects_a_blocked_reaction() -> None:
@@ -204,6 +232,14 @@ def test_fastcore_requires_explicit_valid_numerical_inputs() -> None:
             epsilon=1e-6,
             lp10_scaling_factor=1e5,
         )
+    with pytest.raises(FastcoreError, match="Boolean"):
+        fastcore_extract(
+            _network(),
+            core_reaction_ids=("A_to_B",),
+            epsilon=1e-6,
+            lp10_scaling_factor=1e4,
+            adaptive_lp10="yes",  # type: ignore[arg-type]
+        )
 
 
 def test_fastcore_snapshot_is_software_only_and_fail_closed() -> None:
@@ -213,6 +249,10 @@ def test_fastcore_snapshot_is_software_only_and_fail_closed() -> None:
     assert snapshot["human_gem_context_extraction_executed"] is False
     assert snapshot["healthy_phh_core_set_loaded"] is False
     assert snapshot["biological_flux_authority"] is False
+    assert snapshot["official_adaptive_lp10_supported"] is True
+    assert snapshot["official_adaptive_lp10_core_multiplier"] == 10.0
+    assert snapshot["adaptive_lp10_fixed_fallback_supported"] is True
+    assert snapshot["accepting_output_rejects_blocked_identities"] is True
 
     escaped = deepcopy(snapshot)
     escaped["biological_flux_authority"] = True
@@ -307,6 +347,16 @@ def test_fastcore_stoichiometric_closure_recovers_subthreshold_support() -> None
             lp10_scaling_factor=1e4,
             input_consistency_certificate=certificate,
         )
+
+    diagnostic = fastcore_extract_diagnostic(
+        network,
+        core_reaction_ids=("core_out",),
+        epsilon=1e-4,
+        lp10_scaling_factor=1e4,
+        input_consistency_certificate=certificate,
+    )
+    assert diagnostic.extracted_network_flux_consistent is False
+    assert diagnostic.output_blocked_reaction_ids == ("core_out",)
 
     closure = fastcore_extract_with_consistency_closure(
         network,

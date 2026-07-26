@@ -47,7 +47,7 @@ DEFAULT_AUDIT_PATH = (
 SCHEMA_VERSION = "cell.human-gem-phh-fastcore-context.v1"
 AUDIT_VERSION = "human_gem_phh_fastcore_context_v1"
 FASTCC_AUDIT_VERSION = "human_gem_fastcc_audit_v2"
-GPR_AUDIT_VERSION = "human_gem_phh_proteome_gpr_audit_v1"
+GPR_AUDIT_VERSION = "human_gem_phh_proteome_gpr_audit_v2"
 EXPECTED_FASTCC_CONSISTENT_DIGEST = (
     "1a0f34e5b599d245e8f625264fe0808212580beb2f59b7a4eb2b14fffbcad1b1"
 )
@@ -138,7 +138,7 @@ def _compact_network(
     )
 
 
-def _consistent_network_and_certificate(
+def consistent_human_gem_network_and_certificate(
     model: HumanGemFbcModel,
     fastcc_audit: dict[str, Any],
 ) -> tuple[FluxConsistentNetwork, FluxConsistencyCertificate]:
@@ -188,7 +188,7 @@ def build_human_gem_phh_fastcore_context_audit(
     manifest: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     manifest = manifest or load_human_gem_manifest()
-    consistent, certificate = _consistent_network_and_certificate(
+    consistent, certificate = consistent_human_gem_network_and_certificate(
         model,
         fastcc_audit,
     )

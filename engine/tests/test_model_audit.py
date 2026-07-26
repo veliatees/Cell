@@ -110,6 +110,22 @@ class ScientificModelAuditTests(unittest.TestCase):
             True,
         )
         self.assertEqual(
+            by_id["human_gem_phh_donor_gpr_stability"].default_snapshot_role,
+            "exact_donor_support_and_leave_one_out_audit",
+        )
+        self.assertEqual(
+            by_id[
+                "human_gem_fastcore_scaling_sensitivity"
+            ].default_snapshot_role,
+            "official_lp10_numerical_sensitivity_audit",
+        )
+        self.assertEqual(
+            by_id[
+                "human_gem_phh_reaction_evidence_manifest"
+            ].default_snapshot_role,
+            "reaction_identity_level_research_intake",
+        )
+        self.assertEqual(
             by_id["human_gem_generic_native_fba"].default_snapshot_role,
             "checksum_pinned_generic_objective_software_audit",
         )

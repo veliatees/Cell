@@ -1800,7 +1800,7 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v7";
+  version: "metabolic_constraint_shell_v8";
   status: string;
   role: string;
   candidate_reconstruction: {
@@ -1915,6 +1915,38 @@ export type EngineMetabolicConstraintShell = {
       context_specificity_established: false;
       context_model_accepted: false;
     };
+    seven_donor_gpr_stability_audit: {
+      audit_report: string;
+      gpr_reaction_count: number;
+      zero_donor_support_reaction_count: number;
+      six_donor_support_reaction_count: number;
+      seven_donor_support_reaction_count: number;
+      seven_donor_flux_consistent_core_count: number;
+      largest_leave_one_out_core_expansion_count: number;
+      missing_detection_interpreted_as_inactivity: false;
+    };
+    fastcore_scaling_comparison: {
+      audit_report: string;
+      fixed_selected_reaction_count: number;
+      fixed_output_blocked_reaction_count: number;
+      adaptive_selected_reaction_count: number;
+      adaptive_output_blocked_reaction_count: number;
+      adaptive_lp10_solve_count: number;
+      adaptive_fixed_fallback_count: number;
+      selected_jaccard: number;
+      adaptive_output_flux_consistent: false;
+      context_model_accepted: false;
+    };
+    reaction_evidence_manifest: {
+      manifest_path: string;
+      manifest_reaction_count: number;
+      adaptive_fastcore_noncore_reaction_count: number;
+      adaptive_noncore_without_gpr_count: number;
+      adaptive_noncore_zero_donor_gpr_count: number;
+      adaptive_noncore_partial_donor_gpr_count: number;
+      priority_score_used: false;
+      automatic_bound_change_allowed: false;
+    };
   };
   hepatocyte_context: Record<string, string | null>;
   generic_constraint_numerics: {
@@ -1952,6 +1984,11 @@ export type EngineMetabolicConstraintShell = {
     epsilon_has_runtime_default: false;
     lp10_scaling_factor_has_runtime_default: false;
     official_fixed_lp10_scaling_factor: number;
+    official_adaptive_lp10_supported: true;
+    official_adaptive_lp10_core_multiplier: number;
+    adaptive_lp10_fixed_fallback_supported: true;
+    diagnostic_output_can_retain_blocked_identities: true;
+    accepting_output_rejects_blocked_identities: true;
     support_threshold_fraction_of_epsilon: number;
     requires_flux_consistent_input: true;
     accepts_identity_bound_flux_consistency_certificate: true;
