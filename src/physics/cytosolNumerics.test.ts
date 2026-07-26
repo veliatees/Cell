@@ -313,7 +313,90 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(diagnostics.subgridObstacleCount).toBe(1);
     expect(diagnostics.subgridInterceptedCellCount).toBeGreaterThan(0);
     expect(diagnostics.fractionalObstacleCellCount).toBeGreaterThan(0);
+    expect(diagnostics.fractionalOpenFaceCount + diagnostics.closedObstacleFaceCount).toBeGreaterThan(0);
+    expect(diagnostics.meanInternalFaceOpenFraction).toBeGreaterThan(0);
+    expect(diagnostics.meanInternalFaceOpenFraction).toBeLessThan(1);
     expect(diagnostics.dimensionlessObstacleVolumeEstimate).toBeGreaterThan(0);
+  });
+
+  it("computes deterministic fractional apertures from analytic face-channel intersections", () => {
+    const obstacles = new DynamicCytosolObstacleField(0.5);
+    obstacles.setObstacles([
+      {
+        id: "thin-face-barrier",
+        kind: "box",
+        center: [0, 0.08, 0],
+        halfExtents: [1, 0.015, 1],
+        boundarySampling: "conservative_subgrid"
+      }
+    ], 0);
+    expect(obstacles.sampleFaceOpenFraction([0, -0.5, 0], [0, 0.5, 0], 1, 1)).toBe(0);
+
+    obstacles.setObstacles([
+      {
+        id: "centerline-feature",
+        kind: "sphere",
+        center: [0, 0, 0],
+        radius: 0.05,
+        boundarySampling: "conservative_subgrid"
+      }
+    ], 0);
+    expect(obstacles.sampleFaceOpenFraction([-0.5, 0, 0], [0.5, 0, 0], 0, 1)).toBe(0.75);
+  });
+
+  it("weights passive-scalar transport by open face area while conserving partial-cell mass", () => {
+    const build = (withBarrier: boolean) => {
+      const obstacles = new DynamicCytosolObstacleField(0.5);
+      obstacles.setObstacles(withBarrier ? [
+        {
+          id: "diffusion-barrier",
+          kind: "box" as const,
+          center: [0, 0.08, 0] as const,
+          halfExtents: [3, 0.015, 3] as const,
+          boundarySampling: "conservative_subgrid" as const
+        }
+      ] : [], 0);
+      const grid = new CytosolProjectionGrid({
+        resolution: 16,
+        halfExtent: 4,
+        seed: 72,
+        radiusAtDirection: () => 3.7,
+        visualModeCount: 0
+      });
+      grid.step(0, null, obstacles);
+      const scalar = new ConservativePassiveScalar3D(grid, {
+        id: withBarrier ? "barrier-pulse" : "control-pulse",
+        dimensionlessDiffusivity: 0.05
+      });
+      scalar.initialize((_x, y) => y < 0 ? 1 : 0);
+      const before = scalar.totalMass();
+      scalar.step(0.4);
+      const point = new Float32Array(3);
+      let positiveYMass = 0;
+      const cellVolume = grid.spacing ** 3;
+      for (let index = 0; index < scalar.values.length; index += 1) {
+        grid.cellCenter(index, point);
+        if (point[1] <= 0) continue;
+        positiveYMass += (
+          scalar.values[index] *
+          grid.fluidVolumeFraction[index] *
+          cellVolume
+        );
+      }
+      return {
+        before,
+        after: scalar.totalMass(),
+        positiveYMass,
+        diagnostics: grid.diagnostics()
+      };
+    };
+
+    const control = build(false);
+    const barrier = build(true);
+    expect(control.after).toBeCloseTo(control.before, 10);
+    expect(barrier.after).toBeCloseTo(barrier.before, 10);
+    expect(barrier.positiveYMass).toBeLessThan(control.positiveYMass);
+    expect(barrier.diagnostics.closedObstacleFaceCount).toBeGreaterThan(0);
   });
 
   it("reduces thin-boundary volume error under deterministic grid refinement", () => {
@@ -354,6 +437,10 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(CYTOSOL_NUMERICAL_CONTRACT.movingDomainRemap).toContain("deterministic_nearest_fluid");
     expect(CYTOSOL_NUMERICAL_CONTRACT.thinBoundaryTreatment).toContain("conservative_subgrid");
     expect(CYTOSOL_NUMERICAL_CONTRACT.subgridQuadratureSamplesPerCell).toBe(8);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.faceApertureQuadratureChannels).toBe(4);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.faceAperturePressureWeighted).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.faceApertureScalarFluxWeighted).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.partialCellVolumeConservation).toBe(true);
     expect(CYTOSOL_NUMERICAL_CONTRACT.subgridGridConvergenceTested).toBe(true);
     expect(CYTOSOL_NUMERICAL_CONTRACT.quantitativePoroelasticSolver).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.reactionCouplingEnabled).toBe(false);

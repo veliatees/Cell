@@ -117,6 +117,9 @@ linked to its dependencies.
 - Reference-space local star-shaped membrane-to-fluid boundary coupling: `milestones/111-local-star-shaped-membrane-fluid-boundary-v1.md`
 - Donor-resolved raw 3D PHH active-cargo trajectory intake: `milestones/112-donor-resolved-phh-active-cargo-trajectory-intake-v1.md`
 - Donor-linked multimodal PHH generative-model data contract: `milestones/113-donor-multimodal-generative-data-contract-v1.md`
+- Fractional face-aperture pressure/scalar weighting with partial-cell mass conservation: `milestones/114-fractional-face-aperture-cytosol-v1.md`
+- Strict 36-reaction by 12-slot PHH evidence intake: `milestones/115-phh-reaction-evidence-intake-v1.md`
+- Donor-resolved compartmental PHH energy/redox trajectory intake: `milestones/116-phh-energy-redox-trajectory-intake-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

@@ -2187,7 +2187,7 @@ describe("engine snapshot client", () => {
       expect(result.summary.reactionEvidenceAtlas?.summary.evidence_slot_count).toBe(432);
       expect(result.summary.reactionEvidenceAtlas?.summary.transport_coupled_reaction_count).toBe(0);
       expect(result.summary.cytosolTransport?.material_model.model).toBe("poroelastic_two_phase_cytoplasm");
-      expect(result.summary.cytosolTransport?.version).toBe("cytosol_transport_rheology_contract_v7");
+      expect(result.summary.cytosolTransport?.version).toBe("cytosol_transport_rheology_contract_v8");
       expect(result.summary.cytosolTransport?.summary.conservative_subgrid_boundary_treatment_count).toBe(1);
       expect(result.summary.cytosolTransport?.summary.dimensionless_active_cargo_route_kernel_count).toBe(1);
       expect(result.summary.cytosolTransport?.summary.healthy_phh_active_transport_kernel_count).toBe(0);

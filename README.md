@@ -41,6 +41,11 @@ biology rather than tuned to look right.
   related candidates and three share exact aliased stoichiometry, but zero pass
   the full MathML, compartment, per-cell-unit, PHH-context, and validation gates;
   therefore zero fitted publication parameters are imported.
+- **A typed reaction-evidence data plane** — a strict 45-column intake maps
+  source records to the active network's `36 x 12 = 432` evidence slots while
+  checking reaction identity, context, units, donor/study separation and frozen
+  held-out artifacts. No delivery is currently loaded and structural coverage
+  cannot activate a rate.
 - **A stochastic reaction core** — exact Gillespie SSA for low-copy species and
   the chemical Langevin equation (an SDE) for high-copy species, the same hybrid
   the field's whole-cell models use, verified against analytic results (Poisson
@@ -52,7 +57,10 @@ biology rather than tuned to look right.
   oxidative-phosphorylation topology with explicit reaction authority. The new
   energy/redox contract separates 38 ATP, adenylate, nicotinamide, glutathione,
   oxygen and ROS pools across six compartments and 14 process systems. All
-  unmeasured organelle values and rates remain null.
+  unmeasured organelle values and rates remain null. A 47-column trajectory
+  intake now requires donor-resolved, compartment-targeted, calibrated PHH time
+  series with oxygen context and sealed held-out data before those nulls can
+  even be considered for review.
 - **Nitrogen & redox** — the **urea cycle** and the **glutathione/NADPH** couple,
   with software conservation tests. Legacy glutathione and OXPHOS kinetics are
   explicitly placeholder fixtures, not healthy-PHH predictions.
@@ -151,6 +159,11 @@ Recent additions make more of the engine visible and keep it physically honest:
   Eulerian deformable mesh, while lipids, microvilli and membrane proteins use
   surface coordinates so they remain attached as the mesh bends; there is no
   second static shell or product-level second-cell demonstration.
+- **Fractional intracellular boundaries.** Thin ER, canalicular and Golgi
+  barriers contribute analytic open-face fractions to the dimensionless
+  pressure and passive-transport solvers. Partial-cell scalar volume and moving
+  boundary remaps conserve numerical mass; this remains a numerical test bed,
+  not healthy-PHH CFD or a measured organelle mesh.
 - **Contact deforms the main cell itself.** When an authoritative engine contact
   is present, the same high-resolution membrane shown in the browser compresses
   along the contact normal and expands tangentially with exact affine volume

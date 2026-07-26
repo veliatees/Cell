@@ -87,6 +87,12 @@ from cell_engine.quantitative.compartmental_energy_redox import (
     build_compartmental_energy_redox_contract,
     validate_compartmental_energy_redox_contract,
 )
+from cell_engine.quantitative.energy_redox_trajectory import (
+    energy_redox_trajectory_intake_snapshot,
+)
+from cell_engine.quantitative.reaction_evidence_intake import (
+    reaction_evidence_intake_snapshot,
+)
 from cell_engine.stochastic.integrated_cell import (
     INTEGRATED_VOLUME_L,
     build_integrated_hepatocyte_network,
@@ -326,6 +332,20 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         blockers.append(f"invalid energy/redox calibration and validation gate: {exc}")
 
     try:
+        energy_trajectory_intake = energy_redox_trajectory_intake_snapshot()
+        if (
+            energy_trajectory_intake["registered_pool_count"] != 38
+            or energy_trajectory_intake["compartment_initialization_allowed_count"] != 0
+            or energy_trajectory_intake["rate_fitting_allowed_count"] != 0
+        ):
+            raise ValueError("energy/redox trajectory intake exceeded current authority")
+        checks.append(
+            "the 47-column donor-resolved PHH energy/redox trajectory intake covers all 38 compartment pools while zero absent or unreviewed records initialize state or rates"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid energy/redox trajectory intake: {exc}")
+
+    try:
         external_validation_program = build_external_validation_program()
         validate_external_validation_program(external_validation_program)
         checks.append(
@@ -524,6 +544,21 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except ValueError as exc:
         blockers.append(f"invalid published kinetic-transfer audit: {exc}")
+
+    try:
+        reaction_intake = reaction_evidence_intake_snapshot()
+        if (
+            reaction_intake["active_reaction_count"] != 36
+            or reaction_intake["required_slot_count"] != 432
+            or reaction_intake["quantitative_execution_allowed_count"] != 0
+            or reaction_intake["predictive_execution_allowed_count"] != 0
+        ):
+            raise ValueError("reaction-evidence intake exceeded current authority")
+        checks.append(
+            "the 45-column reaction-evidence intake addresses all 432 typed slots while exact IDs, context, units, donor splits and held-out provenance remain fail-closed"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid reaction-evidence intake: {exc}")
 
     invalid_drivers = tuple(
         surface.id

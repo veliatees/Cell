@@ -26,7 +26,8 @@
         "rigid_body_boundary_kinematics_count": 1,
         "compound_boundary_conservation_test_count": 1,
         "subgrid_boundary_treatment_count": 1,
-        "subgrid_grid_convergence_test_count": 1
+        "subgrid_grid_convergence_test_count": 1,
+        "fractional_face_aperture_solver_count": 1
       },
       "remaining_requirements": [],
       "code_surfaces": [
@@ -111,7 +112,7 @@
       "title": "Organelle-resolved fluid boundaries",
       "status": "partial",
       "scope": "Impermeable moving organelle surfaces in the numerical cytosol domain.",
-      "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Thin ER/canalicular/Golgi structures use deterministic 2x2x2 subgrid occupancy plus a conservative intersection fallback, with grid-refinement tests; these assemblies are still not watertight biological meshes.",
+      "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Thin ER/canalicular/Golgi structures use deterministic 2x2x2 volume occupancy plus four analytic face-channel intersections; pressure and passive-scalar fluxes use the resulting fractional apertures while partial-cell scalar mass remains conservative. These assemblies are still not watertight biological meshes.",
       "observed_metrics": {
         "analytic_obstacle_layer_count": 1,
         "analytic_obstacle_shape_count": 4,
@@ -121,12 +122,11 @@
         "compound_boundary_conservation_test_count": 1,
         "conservative_subgrid_boundary_treatment_count": 1,
         "subgrid_boundary_grid_convergence_test_count": 1,
-        "fractional_face_aperture_solver_count": 0,
+        "fractional_face_aperture_solver_count": 1,
         "full_watertight_mesh_boundary_count": 0
       },
       "remaining_requirements": [
         "Watertight donor- or microscopy-derived organelle meshes.",
-        "Fractional face-aperture/cut-cell flux weighting beyond conservative binary interception.",
         "Grid-convergence validation against those registered surface meshes."
       ],
       "code_surfaces": [
@@ -316,11 +316,15 @@
       "title": "Quantitative reaction core",
       "status": "blocked_missing_evidence",
       "scope": "The 36 reactions currently active in the exploratory integrated network.",
-      "current_capability": "Every reaction has twelve typed evidence fields and a fail-closed transport gate; no reaction passes quantitative authority.",
+      "current_capability": "Every reaction has twelve typed evidence fields and a fail-closed transport gate. A versioned 45-column PHH evidence intake now checks exact active reaction IDs, slot-specific context, units, donor/study split leakage and frozen held-out artifacts; no delivered record or reaction passes quantitative authority.",
       "observed_metrics": {
         "reaction_count": 36,
         "evidence_slot_count": 432,
         "filled_evidence_slot_count": 0,
+        "reaction_evidence_intake_contract_count": 1,
+        "delivered_reaction_evidence_record_count": 0,
+        "structurally_ready_intake_slot_count": 0,
+        "structurally_complete_intake_reaction_count": 0,
         "quantitative_reaction_count": 0
       },
       "remaining_requirements": [
@@ -329,7 +333,9 @@
         "Donor-disjoint validation with uncertainty."
       ],
       "code_surfaces": [
-        "engine/cell_engine/validation/reaction_evidence_atlas.py"
+        "engine/cell_engine/validation/reaction_evidence_atlas.py",
+        "engine/cell_engine/quantitative/reaction_evidence_intake.py",
+        "data/evidence_intake/phh_reaction_evidence_contract.v1.json"
       ]
     },
     {
@@ -337,13 +343,18 @@
       "title": "Compartmental energy and redox quantitation",
       "status": "partial",
       "scope": "ATP/ADP/AMP, NAD(H), NADP(H), glutathione, ROS, oxygen and electrochemical states across six compartments.",
-      "current_capability": "Pool identities and 14 process topologies are explicit; aggregate observations cannot initialize any compartment or rate.",
+      "current_capability": "Pool identities and 14 process topologies are explicit. A versioned 47-column donor-resolved PHH trajectory intake now enforces exact pool/molecule/compartment mapping, validated targeting, same-assay calibration, oxygen/nutrient context and sealed donor/study-disjoint held-out data; aggregate observations and absent trajectories cannot initialize a compartment or rate.",
       "observed_metrics": {
         "compartment_count": 6,
         "pool_count": 38,
         "initialized_pool_count": 0,
         "executable_process_count": 0,
-        "runtime_conflict_count": 6
+        "runtime_conflict_count": 6,
+        "trajectory_intake_contract_count": 1,
+        "delivered_trajectory_record_count": 0,
+        "structurally_complete_trajectory_count": 0,
+        "calibration_and_heldout_complete_pool_count": 0,
+        "trajectory_initialized_pool_count": 0
       },
       "remaining_requirements": [
         "Compartment-resolved healthy-PHH initial states.",
@@ -352,7 +363,9 @@
       ],
       "code_surfaces": [
         "engine/cell_engine/quantitative/compartmental_energy_redox.py",
-        "engine/cell_engine/validation/energy_redox_gate.py"
+        "engine/cell_engine/validation/energy_redox_gate.py",
+        "engine/cell_engine/quantitative/energy_redox_trajectory.py",
+        "data/evidence_intake/phh_energy_redox_trajectory_contract.v1.json"
       ]
     },
     {

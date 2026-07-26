@@ -49,7 +49,7 @@ def test_organelle_boundaries_report_geometry_adapter_without_mesh_overclaim() -
     assert boundaries["observed_metrics"]["rigid_body_boundary_kinematics_count"] == 1
     assert boundaries["observed_metrics"]["conservative_subgrid_boundary_treatment_count"] == 1
     assert boundaries["observed_metrics"]["subgrid_boundary_grid_convergence_test_count"] == 1
-    assert boundaries["observed_metrics"]["fractional_face_aperture_solver_count"] == 0
+    assert boundaries["observed_metrics"]["fractional_face_aperture_solver_count"] == 1
     assert boundaries["observed_metrics"]["full_watertight_mesh_boundary_count"] == 0
 
 

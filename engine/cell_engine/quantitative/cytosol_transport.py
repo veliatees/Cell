@@ -19,7 +19,7 @@ from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_VOLUME_UM3
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "cytosol_transport_rheology_contract_v7"
+VERSION = "cytosol_transport_rheology_contract_v8"
 
 RENDERER_GEOMETRY_BOUNDARY_CLASSES: tuple[str, ...] = (
     "nuclear_envelope",
@@ -466,11 +466,15 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "renderer_geometry_boundary_adapter": True,
                 "renderer_geometry_boundary_classes": RENDERER_GEOMETRY_BOUNDARY_CLASSES,
                 "thin_boundary_treatment": (
-                    "conservative subgrid 2x2x2 occupancy with intersection fallback"
+                    "conservative 2x2x2 volume occupancy plus four analytic "
+                    "center-to-center face-channel intersections"
                 ),
                 "subgrid_quadrature_samples_per_cell": 8,
+                "face_aperture_quadrature_channels": 4,
                 "subgrid_grid_convergence_tested": True,
-                "fractional_face_aperture_flux_weighting": False,
+                "fractional_face_aperture_flux_weighting": True,
+                "fractional_face_aperture_pressure_weighting": True,
+                "partial_cell_volume_conservation": True,
                 "full_watertight_mesh_boundaries": False,
                 "pressure_reaction_diagnostic_only": True,
                 "biological_time_or_velocity_claim": False,
@@ -483,6 +487,8 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "boundary_condition": "no flux through analytic solid faces",
                 "moving_domain_remap": "deterministic face-neighbour redistribution with nearest-fluid fallback",
                 "moving_domain_mass_conservation_tested": True,
+                "fractional_face_aperture_flux_weighting": True,
+                "partial_cell_volume_mass_conservation_tested": True,
                 "biological_species_bound_count": 0,
                 "biological_diffusivity_claim": False,
             },
@@ -551,7 +557,7 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "local_star_shaped_membrane_boundary_coupling_count": 1,
             "local_membrane_topology_change_coupling_count": 0,
             "locally_conservative_membrane_face_flux_count": 0,
-            "fractional_face_aperture_solver_count": 0,
+            "fractional_face_aperture_solver_count": 1,
             "full_watertight_mesh_boundary_count": 0,
             "compound_boundary_conservation_test_count": 1,
             "membrane_pressure_feedback_count": 0,
@@ -629,8 +635,11 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("renderer geometry boundary classes changed")
     if (
         projection.get("subgrid_quadrature_samples_per_cell") != 8
+        or projection.get("face_aperture_quadrature_channels") != 4
         or projection.get("subgrid_grid_convergence_tested") is not True
-        or projection.get("fractional_face_aperture_flux_weighting") is not False
+        or projection.get("fractional_face_aperture_flux_weighting") is not True
+        or projection.get("fractional_face_aperture_pressure_weighting") is not True
+        or projection.get("partial_cell_volume_conservation") is not True
     ):
         raise ValueError("conservative subgrid thin-boundary contract changed")
     if projection.get("full_watertight_mesh_boundaries") is not False:
@@ -643,6 +652,11 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("dimensionless scalar diffusion escaped into a biological claim")
     if scalar.get("moving_domain_mass_conservation_tested") is not True:
         raise ValueError("moving-domain scalar conservation guard is missing")
+    if (
+        scalar.get("fractional_face_aperture_flux_weighting") is not True
+        or scalar.get("partial_cell_volume_mass_conservation_tested") is not True
+    ):
+        raise ValueError("fractional-aperture scalar conservation guard is missing")
     if not isinstance(active_cargo, dict) or active_cargo.get("enabled") is not True:
         raise ValueError("dimensionless active-cargo route kernel is missing")
     if active_cargo.get("independent_per_frame_random_walk") is not False:
