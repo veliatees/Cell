@@ -60,11 +60,14 @@ biology rather than tuned to look right.
 - **A verified constraint-model software layer** — the checksum-pinned 43 MB
   Human-GEM v2.0.0 SBML/FBC artifact now streams into an exact sparse model
   representation with 55,198 stoichiometric terms, bounds, the generic biomass
-  objective and Boolean gene-product rules. A pinned SciPy/HiGHS backend passes
-  five analytic FBA/FVA fixtures, and a source-defined FASTCORE kernel passes a
-  synthetic context-extraction fixture. The healthy-PHH core set, measured
-  exchange bounds, objective, scale operator and independent validation remain
-  absent, so no Human-GEM optimization or runtime flux coupling is enabled.
+  objective and Boolean gene-product rules. Source-defined FASTCC classifies
+  11,641 reactions as flux-consistent and 1,290 as blocked at the explicit
+  numerical threshold `1e-4`; the model's own generic biomass objective also
+  solves with pinned sparse numerics. Five analytic FBA/FVA fixtures and a
+  synthetic FASTCORE extraction fixture remain as software checks. The
+  healthy-PHH core set, measured exchange bounds, PHH objective, scale operator
+  and independent validation remain absent, so no PHH optimization or runtime
+  flux coupling is enabled.
 - **A stochastic reaction core** — exact Gillespie SSA for low-copy species and
   the chemical Langevin equation (an SDE) for high-copy species, the same hybrid
   the field's whole-cell models use, verified against analytic results (Poisson
@@ -180,19 +183,21 @@ Recent additions make more of the engine visible and keep it physically honest:
   second static shell or product-level second-cell demonstration.
 - **Topology-preserving surface refinement.** A separate adaptive edge-bisection
   kernel preserves a closed two-manifold's winding, Euler characteristic, area,
-  volume, vertex/face state and exact barycentric protein/lipid positions. It is
-  verified numerical infrastructure, not yet connected to the live membrane
-  caches and not an endocytosis, fission or fusion model.
+  volume, vertex/face state and exact barycentric protein/lipid positions. An
+  explicit bridge now transfers live rest geometry and velocity, then rebuilds
+  all `MembraneSim` topology caches. It has no automatic threshold and is not an
+  endocytosis, fission or fusion model.
 - **Fractional intracellular boundaries.** Thin ER, canalicular and Golgi
   barriers contribute analytic open-face fractions to the dimensionless
   pressure and passive-transport solvers. Partial-cell scalar volume and moving
   boundary remaps conserve numerical mass; this remains a numerical test bed,
   not healthy-PHH CFD or a measured organelle mesh.
 - **Mechanics and genome-scale execution are visible but fail closed.** The
-  browser reports the mechanics trajectory/parameter queue, the analytic
-  FBA/FVA and FASTCORE self-tests, exact generic Human-GEM sparse loading and
-  PHH execution-bundle requirements. These are engineering readiness
-  indicators, not biological completion or inferred hepatocyte fluxes.
+  browser reports the mechanics trajectory/parameter queue, exact generic
+  Human-GEM sparse loading, FASTCC classification, generic native-objective
+  solve, analytic FBA/FVA and FASTCORE self-tests, and PHH execution-bundle
+  requirements. These are engineering readiness indicators, not biological
+  completion or inferred hepatocyte fluxes.
 - **Contact deforms the main cell itself.** When an authoritative engine contact
   is present, the same high-resolution membrane shown in the browser compresses
   along the contact normal and expands tangentially with exact affine volume
@@ -493,6 +498,9 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 129: Checksum-gated Human-GEM sparse FBC loader v1](docs/milestones/129-checksum-gated-human-gem-sparse-fbc-loader-v1.md)
 - [Milestone 130: FASTCORE context-extraction numerical kernel v1](docs/milestones/130-fastcore-context-extraction-numerical-kernel-v1.md)
 - [Milestone 131: Topology-preserving adaptive remeshing v1](docs/milestones/131-topology-preserving-adaptive-remeshing-v1.md)
+- [Milestone 132: Source-defined FASTCC Human-GEM consistency v1](docs/milestones/132-source-defined-fastcc-human-gem-consistency-v1.md)
+- [Milestone 133: Pinned Human-GEM generic sparse FBA v1](docs/milestones/133-pinned-human-gem-generic-sparse-fba-v1.md)
+- [Milestone 134: Live membrane remesh cache bridge v1](docs/milestones/134-live-membrane-remesh-cache-bridge-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

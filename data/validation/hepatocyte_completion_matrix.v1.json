@@ -164,7 +164,7 @@
       "title": "Local non-affine membrane-to-fluid coupling",
       "status": "partial",
       "scope": "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
-      "current_capability": "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. A topology-preserving edge-bisection kernel now conserves closed-manifold topology, area, volume, Euler characteristic, vertex/face state and barycentric surface bindings. It is not yet connected to the live MembraneSim, and topology-changing events remain unsupported.",
+      "current_capability": "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. The topology-preserving edge-bisection kernel is now connected to live MembraneSim state: it transfers rest geometry, velocity, arbitrary surface fields and barycentric bindings, then rebuilds edge, face-CSR, Laplacian and normal caches. There is deliberately no automatic refinement threshold, and topology-changing events remain unsupported.",
       "observed_metrics": {
         "local_star_shaped_surface_modes_coupled": 1,
         "local_topology_change_modes_coupled": 0,
@@ -172,11 +172,12 @@
         "non_star_shaped_closed_mesh_domain_kernel_count": 1,
         "topology_preserving_adaptive_remeshing_kernel_count": 1,
         "surface_state_transfer_kernel_count": 1,
-        "runtime_adaptive_remeshing_coupling_count": 0,
+        "runtime_adaptive_remeshing_coupling_count": 1,
+        "automatic_runtime_remeshing_trigger_count": 0,
         "topology_change_remeshing_kernel_count": 0
       },
       "remaining_requirements": [
-        "Runtime integration of topology-preserving remeshing with MembraneSim caches.",
+        "Evidence-backed runtime refinement criterion and compute budget.",
         "Topology-change representation for buds, necks, fission and fusion.",
         "Event-specific membrane reservoir and neck mechanics evidence."
       ],
@@ -184,7 +185,8 @@
         "src/physics/membraneFluidBoundary.ts",
         "src/physics/intracellularFluid.ts",
         "src/physics/cytosolNumerics.ts",
-        "src/physics/adaptiveRemeshing.ts"
+        "src/physics/adaptiveRemeshing.ts",
+        "src/physics/membrane_mechanics.ts"
       ]
     },
     {
@@ -657,6 +659,58 @@
       ]
     },
     {
+      "id": "human_gem_generic_flux_consistency",
+      "title": "Pinned Human-GEM generic flux consistency",
+      "status": "closed",
+      "scope": "Complete FASTCC classification of the checksum-pinned generic reconstruction at an explicit numerical epsilon; no healthy-PHH context or flux claim.",
+      "current_capability": "A sound sign-definite dead-end prepass and the source-defined FASTCC LP-7 orientation loop classify every Human-GEM v2.0.0 reaction. Witnesses are checked against steady-state mass balance and original bounds; the epsilon is recorded as a numerical threshold rather than a biological parameter.",
+      "observed_metrics": {
+        "epsilon": 0.0001,
+        "epsilon_is_biological_parameter": false,
+        "consistent_reaction_count": 11641,
+        "blocked_reaction_count": 1290,
+        "lp7_solve_count": 253,
+        "maximum_mass_balance_residual": 3.3518572306275897e-10,
+        "complete_at_declared_epsilon": true,
+        "healthy_phh_context_extracted": false,
+        "biological_flux_authority": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/fastcore_context.py",
+        "engine/cell_engine/quantitative/human_gem_flux_consistency.py",
+        "scripts/audit_human_gem_fastcc.py",
+        "data/published_models/human_gem_v2.0.0.fastcc_audit.json",
+        "engine/tests/test_human_gem_flux_consistency.py"
+      ]
+    },
+    {
+      "id": "human_gem_generic_native_fba",
+      "title": "Pinned Human-GEM generic native-objective FBA",
+      "status": "closed",
+      "scope": "Reproducible sparse execution of the exact generic SBML/FBC objective and bounds; no healthy-PHH objective, exchange context or dynamic rate claim.",
+      "current_capability": "The checksum-verified model's own Generic human cell biomass reaction is optimized with pinned SciPy/HiGHS. The optimum, active-flux count, residuals and selected-vector digest are committed while non-uniqueness and all biological-authority gates remain explicit.",
+      "observed_metrics": {
+        "objective_id": "obj",
+        "objective_reaction_id": "MAR13082",
+        "objective_is_healthy_phh_measurement": false,
+        "status": "optimal",
+        "objective_value": 124.86814837744569,
+        "active_reaction_count_at_1e_minus_9": 2566,
+        "maximum_mass_balance_residual": 5.229594535194337e-12,
+        "optimum_uniqueness_established": false,
+        "healthy_phh_context_extracted": false,
+        "biological_flux_authority": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_generic_fba.py",
+        "scripts/audit_human_gem_generic_fba.py",
+        "data/published_models/human_gem_v2.0.0.generic_fba_audit.json",
+        "engine/tests/test_human_gem_generic_fba.py"
+      ]
+    },
+    {
       "id": "generic_fba_fva_numerics",
       "title": "Generic FBA/FVA numerical kernel",
       "status": "closed",
@@ -778,8 +832,8 @@
     }
   ],
   "summary": {
-    "entry_count": 30,
-    "closed_count": 8,
+    "entry_count": 32,
+    "closed_count": 10,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

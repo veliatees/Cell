@@ -76,7 +76,9 @@ export const ADAPTIVE_REMESHING_CONTRACT = Object.freeze({
   topologyChangeAllowed: false,
   endocytosisOrFissionImplemented: false,
   biologicalMechanicsAssigned: false,
-  runtimeMembraneCouplingEnabled: false
+  runtimeMembraneCouplingEnabled: true,
+  runtimeMembraneCoupling: "explicit_MembraneSim_remesh_bridge_with_cache_rebuild",
+  automaticRuntimeTriggerEnabled: false
 });
 
 type MutableMeshState = {

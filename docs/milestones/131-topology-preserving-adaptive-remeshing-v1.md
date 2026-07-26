@@ -35,6 +35,7 @@ On a closed cube mesh, one edge split adds one vertex and two faces while:
 
 This is surface-discretization infrastructure, not a membrane-mechanics law.
 It supplies no PHH stiffness, tension, bending modulus, viscosity or remodeling
-rate. It is not yet connected to the live `MembraneSim` topology caches.
-Endocytosis, exocytosis, neck formation, fission, fusion and other topology
-changes remain disabled.
+rate. Milestone 134 connects it to the live `MembraneSim` topology caches
+through an explicit, tested bridge; no automatic refinement threshold is
+assigned. Endocytosis, exocytosis, neck formation, fission, fusion and other
+topology changes remain disabled.

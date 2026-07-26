@@ -20,6 +20,12 @@ from cell_engine.quantitative.human_gem_structural_audit import (
 from cell_engine.quantitative.human_gem_fbc_loader import (
     load_committed_fbc_loader_audit,
 )
+from cell_engine.quantitative.human_gem_flux_consistency import (
+    load_committed_human_gem_fastcc_audit,
+)
+from cell_engine.quantitative.human_gem_generic_fba import (
+    load_committed_human_gem_generic_fba_audit,
+)
 from cell_engine.quantitative.phh_metabolic_execution_bundle import (
     phh_metabolic_execution_bundle_intake_snapshot,
     validate_phh_metabolic_execution_bundle_intake_snapshot,
@@ -27,7 +33,7 @@ from cell_engine.quantitative.phh_metabolic_execution_bundle import (
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "metabolic_constraint_shell_v5"
+VERSION = "metabolic_constraint_shell_v6"
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
@@ -61,9 +67,10 @@ METABOLIC_CONSTRAINT_SOURCES: dict[str, SourceReference] = {
         source_type="primary_paper",
         date_verified=DATE_VERIFIED,
         notes=(
-            "Defines the FASTCORE LP-7/LP-10 extraction method. The repository "
-            "kernel is verified on synthetic networks only; no healthy-PHH core "
-            "reaction set has been supplied or applied to Human-GEM."
+            "Defines FASTCC flux-consistency classification and the FASTCORE "
+            "LP-7/LP-10 extraction method. FASTCC has been applied to the pinned "
+            "generic reconstruction; no healthy-PHH core reaction set has been "
+            "supplied or applied to Human-GEM."
         ),
     ),
 }
@@ -82,6 +89,8 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
     manifest = _load_manifest()
     audit = load_committed_human_gem_audit()
     loader_audit = load_committed_fbc_loader_audit()
+    fastcc_audit = load_committed_human_gem_fastcc_audit()
+    generic_fba_audit = load_committed_human_gem_generic_fba_audit()
     scope = manifest["scientific_scope"]
     verification = manifest["verification"]
     counts = manifest["structural_counts_verified_from_sbml"]
@@ -96,7 +105,7 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
 
     return {
         "version": VERSION,
-        "status": "checksum_verified_sparse_model_loading_and_context_numerics_ready_phh_execution_blocked",
+        "status": "generic_human_gem_loaded_classified_and_native_objective_solved_phh_execution_blocked",
         "role": (
             "Genome-scale stoichiometric feasibility shell around validated dynamic cores. "
             "It may constrain boundary-consistent flux space but cannot supply a time trajectory."
@@ -175,6 +184,82 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
                 "fba_execution_allowed": loader_audit["scientific_boundary"][
                     "fba_execution_allowed"
                 ],
+            },
+            "generic_flux_consistency_audit": {
+                "audit_report": (
+                    "data/published_models/"
+                    "human_gem_v2.0.0.fastcc_audit.json"
+                ),
+                "algorithm": fastcc_audit["method"]["algorithm"],
+                "epsilon": fastcc_audit["method"]["epsilon"],
+                "epsilon_is_biological_parameter": fastcc_audit["method"][
+                    "epsilon_is_biological_parameter"
+                ],
+                "solver_backend_version": fastcc_audit["method"][
+                    "solver_backend_version"
+                ],
+                "solver_method": fastcc_audit["method"]["solver_method"],
+                "consistent_reaction_count": fastcc_audit["classification"][
+                    "consistent_reaction_count"
+                ],
+                "blocked_reaction_count": fastcc_audit["classification"][
+                    "blocked_reaction_count"
+                ],
+                "lp7_solve_count": fastcc_audit["fastcc_reduced_network"][
+                    "lp7_solve_count"
+                ],
+                "maximum_mass_balance_residual": fastcc_audit[
+                    "fastcc_reduced_network"
+                ]["maximum_mass_balance_residual"],
+                "complete_at_declared_epsilon": fastcc_audit[
+                    "classification"
+                ]["complete_at_declared_epsilon"],
+                "healthy_phh_context_extracted": fastcc_audit[
+                    "scientific_boundary"
+                ]["healthy_phh_context_extracted"],
+                "biological_flux_authority": fastcc_audit[
+                    "scientific_boundary"
+                ]["biological_flux_authority"],
+            },
+            "generic_native_objective_audit": {
+                "audit_report": (
+                    "data/published_models/"
+                    "human_gem_v2.0.0.generic_fba_audit.json"
+                ),
+                "objective_id": generic_fba_audit["native_fbc_objective"][
+                    "objective_id"
+                ],
+                "objective_type": generic_fba_audit[
+                    "native_fbc_objective"
+                ]["objective_type"],
+                "objective_reaction_id": generic_fba_audit[
+                    "native_fbc_objective"
+                ]["terms"][0]["reaction_id"],
+                "objective_reaction_name": generic_fba_audit[
+                    "native_fbc_objective"
+                ]["terms"][0]["reaction_name"],
+                "objective_is_healthy_phh_measurement": generic_fba_audit[
+                    "native_fbc_objective"
+                ]["objective_is_healthy_phh_measurement"],
+                "status": generic_fba_audit["generic_solve"]["status"],
+                "objective_value": generic_fba_audit["generic_solve"][
+                    "objective_value"
+                ],
+                "active_reaction_count_at_1e_minus_9": generic_fba_audit[
+                    "generic_solve"
+                ]["active_reaction_count_at_1e_minus_9"],
+                "maximum_mass_balance_residual": generic_fba_audit[
+                    "generic_solve"
+                ]["maximum_mass_balance_residual"],
+                "optimum_uniqueness_established": generic_fba_audit[
+                    "generic_solve"
+                ]["optimum_uniqueness_established"],
+                "healthy_phh_context_extracted": generic_fba_audit[
+                    "scientific_boundary"
+                ]["healthy_phh_context_extracted"],
+                "biological_flux_authority": generic_fba_audit[
+                    "scientific_boundary"
+                ]["biological_flux_authority"],
             },
         },
         "hepatocyte_context": {
@@ -301,6 +386,57 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
         or loader.get("fba_execution_allowed") is not False
     ):
         raise ValueError("Human-GEM sparse loader audit changed without review")
+    fastcc = reconstruction.get("generic_flux_consistency_audit")
+    if not isinstance(fastcc, dict):
+        raise ValueError("Human-GEM generic FASTCC audit is missing")
+    if (
+        fastcc.get("algorithm")
+        != "sign_definite_dead_end_prepass_plus_FASTCC"
+        or fastcc.get("epsilon") != 1e-4
+        or fastcc.get("epsilon_is_biological_parameter") is not False
+        or fastcc.get("solver_backend_version") != "1.17.1"
+        or fastcc.get("solver_method") != "highs-ipm"
+        or fastcc.get("consistent_reaction_count") != 11641
+        or fastcc.get("blocked_reaction_count") != 1290
+        or fastcc.get("lp7_solve_count") != 253
+        or not isinstance(
+            fastcc.get("maximum_mass_balance_residual"),
+            (int, float),
+        )
+        or fastcc["maximum_mass_balance_residual"] > 1e-8
+        or fastcc.get("complete_at_declared_epsilon") is not True
+        or fastcc.get("healthy_phh_context_extracted") is not False
+        or fastcc.get("biological_flux_authority") is not False
+    ):
+        raise ValueError(
+            "Human-GEM generic FASTCC audit changed without review"
+        )
+    generic_fba = reconstruction.get("generic_native_objective_audit")
+    if not isinstance(generic_fba, dict):
+        raise ValueError("Human-GEM generic FBA audit is missing")
+    if (
+        generic_fba.get("objective_id") != "obj"
+        or generic_fba.get("objective_type") != "maximize"
+        or generic_fba.get("objective_reaction_id") != "MAR13082"
+        or generic_fba.get("objective_reaction_name")
+        != "Generic human cell biomass reaction"
+        or generic_fba.get("objective_is_healthy_phh_measurement") is not False
+        or generic_fba.get("status") != "optimal"
+        or not isinstance(generic_fba.get("objective_value"), (int, float))
+        or abs(generic_fba["objective_value"] - 124.86814837744569) > 1e-9
+        or generic_fba.get("active_reaction_count_at_1e_minus_9") != 2566
+        or not isinstance(
+            generic_fba.get("maximum_mass_balance_residual"),
+            (int, float),
+        )
+        or generic_fba["maximum_mass_balance_residual"] > 1e-8
+        or generic_fba.get("optimum_uniqueness_established") is not False
+        or generic_fba.get("healthy_phh_context_extracted") is not False
+        or generic_fba.get("biological_flux_authority") is not False
+    ):
+        raise ValueError(
+            "Human-GEM generic native-objective audit changed without review"
+        )
     required_nulls = (
         reconstruction.get("sbml_path"),
         context.get("extraction_algorithm"),

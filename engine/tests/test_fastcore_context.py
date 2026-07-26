@@ -8,8 +8,10 @@ from cell_engine.quantitative.fastcore_context import (
     FastcoreError,
     FluxConsistentNetwork,
     audit_flux_consistency,
+    fastcc_flux_consistency,
     fastcore_context_snapshot,
     fastcore_extract,
+    prune_sign_definite_dead_ends,
     validate_fastcore_context_snapshot,
 )
 
@@ -69,6 +71,92 @@ def test_flux_consistency_audit_detects_a_blocked_reaction() -> None:
         )
 
 
+def test_fastcc_matches_exhaustive_audit_and_preserves_reverse_witnesses() -> None:
+    network = FluxConsistentNetwork(
+        metabolite_ids=("A", "B", "X"),
+        reaction_ids=(
+            "A_in",
+            "A_out",
+            "A_to_dead_B",
+            "X_source",
+            "X_reverse_only_sink",
+        ),
+        stoichiometry=(
+            (1.0, -1.0, -1.0, 0.0, 0.0),
+            (0.0, 0.0, 1.0, 0.0, 0.0),
+            (0.0, 0.0, 0.0, 1.0, 1.0),
+        ),
+        lower_bounds=(0.0, 0.0, -10.0, 0.0, -10.0),
+        upper_bounds=(10.0, 10.0, 10.0, 10.0, 0.0),
+    )
+
+    result = fastcc_flux_consistency(network, epsilon=1e-6)
+    exhaustive = audit_flux_consistency(network, epsilon=1e-6)
+
+    assert result.consistent_reaction_ids == (
+        "A_in",
+        "A_out",
+        "X_source",
+        "X_reverse_only_sink",
+    )
+    assert result.blocked_reaction_ids == exhaustive.blocked_reaction_ids == (
+        "A_to_dead_B",
+    )
+    assert result.reverse_only_witness_reaction_ids == (
+        "X_reverse_only_sink",
+    )
+    assert result.complete_consistency_classification is True
+    assert result.biological_context_assigned is False
+    assert result.lp7_solve_count < exhaustive.linear_program_count
+    assert result.maximum_mass_balance_residual <= 1e-8
+    assert result.maximum_bound_violation <= 1e-8
+
+
+def test_sign_definite_pruning_is_sound_but_not_claimed_complete() -> None:
+    network = FluxConsistentNetwork(
+        metabolite_ids=("A", "B", "C"),
+        reaction_ids=("A_in", "A_to_B", "B_out", "C_orphan", "fixed_zero"),
+        stoichiometry=(
+            (1.0, -1.0, 0.0, 0.0, 0.0),
+            (0.0, 1.0, -1.0, 0.0, 0.0),
+            (0.0, 0.0, 0.0, 1.0, -1.0),
+        ),
+        lower_bounds=(0.0, 0.0, 0.0, -10.0, 0.0),
+        upper_bounds=(10.0, 10.0, 10.0, 10.0, 0.0),
+    )
+
+    pruned = prune_sign_definite_dead_ends(network, epsilon=1e-6)
+    exhaustive = audit_flux_consistency(network, epsilon=1e-6)
+
+    assert set(pruned.blocked_reaction_ids).issubset(
+        exhaustive.blocked_reaction_ids
+    )
+    assert pruned.blocked_reaction_ids == ("C_orphan", "fixed_zero")
+    assert pruned.initially_subthreshold_reaction_count == 1
+    assert pruned.complete_flux_consistency_classification is False
+    assert pruned.biological_context_assigned is False
+
+
+def test_fastcc_dense_and_sparse_inputs_have_identical_classification() -> None:
+    scipy_sparse = pytest.importorskip("scipy.sparse")
+    dense = _network()
+    sparse = FluxConsistentNetwork(
+        metabolite_ids=dense.metabolite_ids,
+        reaction_ids=dense.reaction_ids,
+        stoichiometry=scipy_sparse.csc_matrix(list(dense.stoichiometry)),
+        lower_bounds=dense.lower_bounds,
+        upper_bounds=dense.upper_bounds,
+    )
+
+    dense_result = fastcc_flux_consistency(dense, epsilon=1e-6)
+    sparse_result = fastcc_flux_consistency(sparse, epsilon=1e-6)
+
+    assert sparse_result.consistent_reaction_ids == dense_result.consistent_reaction_ids
+    assert sparse_result.blocked_reaction_ids == dense_result.blocked_reaction_ids
+    assert sparse_result.forward_witness_reaction_ids == dense_result.forward_witness_reaction_ids
+    assert sparse_result.reverse_witness_reaction_ids == dense_result.reverse_witness_reaction_ids
+
+
 def test_fastcore_handles_a_reversible_core_without_splitting_it() -> None:
     network = FluxConsistentNetwork(
         metabolite_ids=("A",),
@@ -90,6 +178,8 @@ def test_fastcore_handles_a_reversible_core_without_splitting_it() -> None:
 
 
 def test_fastcore_requires_explicit_valid_numerical_inputs() -> None:
+    with pytest.raises(FastcoreError, match="epsilon"):
+        fastcc_flux_consistency(_network(), epsilon=0)
     with pytest.raises(FastcoreError, match="epsilon"):
         fastcore_extract(
             _network(),
