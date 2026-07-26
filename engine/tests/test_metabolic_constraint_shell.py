@@ -9,7 +9,7 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_context() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     validate_metabolic_constraint_shell(snapshot)
-    assert snapshot["version"] == "metabolic_constraint_shell_v8"
+    assert snapshot["version"] == "metabolic_constraint_shell_v9"
     reconstruction = snapshot["candidate_reconstruction"]
     assert reconstruction["model_version"] == "2.0.0"
     assert reconstruction["release_tag"] == "v2.0.0"
@@ -79,6 +79,22 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     assert scaling["adaptive_output_blocked_reaction_count"] == 17
     assert scaling["adaptive_fixed_fallback_count"] == 1
     assert scaling["context_model_accepted"] is False
+    diagnostics = reconstruction["fastcore_blocker_diagnostics"]
+    assert diagnostics["diagnosed_blocker_count"] == 17
+    assert diagnostics["full_network_active_blocker_count"] == 17
+    assert diagnostics["candidate_blocked_reaction_count"] == 17
+    assert diagnostics["minimum_reaction_support_proven"] is False
+    repair = reconstruction["fastcore_support_repair"]
+    assert repair["direction_milp_solve_count"] == 34
+    assert repair["added_reaction_union_count"] == 65
+    assert repair["repaired_candidate_reaction_count"] == 7480
+    assert repair["strict_fastcc_blocked_reaction_count"] == 0
+    assert repair["added_reaction_without_gpr_count"] == 8
+    assert repair["added_reaction_zero_donor_gpr_count"] == 57
+    assert repair["union_strictly_flux_consistent"] is True
+    assert repair["reaction_activity_in_phh_established"] is False
+    assert repair["context_model_accepted"] is False
+    assert repair["fba_execution_allowed"] is False
     evidence = reconstruction["reaction_evidence_manifest"]
     assert evidence["manifest_reaction_count"] == 4895
     assert evidence["adaptive_fastcore_noncore_reaction_count"] == 2860
@@ -111,7 +127,8 @@ def test_exact_release_pin_removed_only_the_artifact_identity_blocker() -> None:
     blockers = snapshot["blockers"]
     assert not any("release and checksum are not pinned" in item for item in blockers)
     assert any("context specificity was not established" in item for item in blockers)
-    assert any("17 output reactions blocked" in item for item in blockers)
+    assert any("raw output left 17 reactions blocked" in item for item in blockers)
+    assert any("65-reaction union repairs strict structural" in item for item in blockers)
     assert any("independent flux validation" in item for item in blockers)
     assert not any("have not been audited" in item for item in blockers)
     assert any("structural audit exceptions" in item for item in blockers)
