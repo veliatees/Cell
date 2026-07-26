@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-25T21:41:48.022883+00:00",
+    "created_at_utc": "2026-07-26T09:21:58.320222+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -5504,15 +5504,36 @@
           "reason": "healthy-PHH constitutive parameters and validation trajectories are unavailable"
         },
         "renderer_dimensionless_projection_grid": {
+          "analytic_obstacle_shapes": [
+            "sphere",
+            "ellipsoid",
+            "capsule",
+            "box"
+          ],
           "biological_pressure_claim": false,
           "biological_time_or_velocity_claim": false,
           "enabled": true,
+          "full_watertight_mesh_boundaries": false,
           "membrane_pressure_feedback": false,
           "membrane_volume_mapping": "same volume-preserving affine deformation as the rendered membrane",
           "moving_analytic_obstacle_boundaries": true,
           "pressure_reaction_diagnostic_only": true,
-          "role": "dimensionless moving-domain visualization and numerical test bed",
-          "static_anatomy_proxy_boundaries": true
+          "quaternion_derived_rotation_boundary_velocity": true,
+          "renderer_geometry_boundary_adapter": true,
+          "renderer_geometry_boundary_classes": [
+            "nuclear_envelope",
+            "bile_canaliculus",
+            "rough_er_cisternae",
+            "rough_er_branches",
+            "smooth_er_branches",
+            "golgi_stacks",
+            "lipid_droplets",
+            "mitochondria",
+            "peroxisomes",
+            "lysosomes"
+          ],
+          "rigid_translation_boundary_velocity": true,
+          "role": "dimensionless moving-domain visualization and numerical test bed"
         }
       },
       "source_ids": [
@@ -5527,17 +5548,23 @@
       ],
       "status": "two_phase_transport_contract_active_healthy_phh_parameters_blocked",
       "summary": {
+        "analytic_obstacle_shape_count": 4,
         "biological_species_bound_count": 0,
+        "compound_boundary_conservation_test_count": 1,
         "conservative_moving_domain_remap_count": 1,
         "conservative_passive_scalar_kernel_count": 1,
         "cross_context_reference_count": 10,
         "dimensionless_projection_solver_count": 1,
+        "full_watertight_mesh_boundary_count": 0,
         "healthy_phh_numeric_rheology_parameter_count": 0,
         "human_in_vivo_validation_target_count": 1,
         "membrane_pressure_feedback_count": 0,
         "moving_analytic_obstacle_layer_count": 1,
         "quantitative_fluid_solver_count": 0,
         "reaction_transport_coupling_count": 0,
+        "renderer_geometry_boundary_adapter_count": 1,
+        "renderer_geometry_boundary_class_count": 10,
+        "rigid_body_boundary_kinematics_count": 1,
         "visual_fluid_layer_count": 1
       },
       "transport_mode_contract": {
@@ -5562,7 +5589,7 @@
         },
         "mode_interchange_prohibited": true
       },
-      "version": "cytosol_transport_rheology_contract_v3"
+      "version": "cytosol_transport_rheology_contract_v4"
     },
     "definition_id": "human_hepatocyte_midlobular_v1",
     "division": {
@@ -6644,7 +6671,7 @@
         "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/assessing-credibility-computational-modeling-and-simulation-medical-device-submissions"
       },
       "fort2011_hepatocyte_connexin_kinesin_transport": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "fort2011_hepatocyte_connexin_kinesin_transport",
         "notes": "Reports microtubule-dependent Cx32 vesicle motion in WIF-B9 cells and ATP-dependent motility of vesicles isolated from rat liver. Neither context is a healthy primary-human-hepatocyte transport calibration.",
         "source_type": "primary_paper",
@@ -6724,7 +6751,7 @@
         "url": "https://doi.org/10.1091/mbc.E16-06-0414"
       },
       "guo2014_motor_driven_cytoplasm": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "guo2014_motor_driven_cytoplasm",
         "notes": "Force-spectrum microscopy separates ATP-dependent active fluctuations from equilibrium thermal transport in mammalian cell systems. It does not provide a healthy-PHH active-noise parameter.",
         "source_type": "primary_paper",
@@ -6732,7 +6759,7 @@
         "url": "https://doi.org/10.1016/j.cell.2014.06.051"
       },
       "guo2017_cytoplasm_size_speed_mechanics": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "guo2017_cytoplasm_size_speed_mechanics",
         "notes": "Optical-tweezer measurements in NRK and HeLa cells distinguish viscous, viscoelastic and poroelastic regimes by probe size and strain rate.",
         "source_type": "primary_paper",
@@ -7092,7 +7119,7 @@
         "url": "https://doi.org/10.1073/pnas.1811064116"
       },
       "jiang2020_human_hepatocyte_diffusion_mri": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "jiang2020_human_hepatocyte_diffusion_mri",
         "notes": "IMPULSED diffusion MRI in three healthy human volunteers estimated hepatocyte restriction size and intracellular-water diffusion distributions. It is a tissue-voxel water-transport validation target, not a measurement of cytosolic viscosity, pressure, bulk flow, or metabolite diffusivity.",
         "source_type": "primary_paper",
@@ -7172,7 +7199,7 @@
         "url": "https://github.com/matthiaskoenig/glucose-model/tree/747ff4ef1f3b0159f968165bb16de022c5dc5799"
       },
       "kwapiszewska2020_cytoplasm_nanoviscosity": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "kwapiszewska2020_cytoplasm_nanoviscosity",
         "notes": "FCS with probes spanning 0.65-81 nm hydrodynamic radius in six human cell lines, including HepG2, demonstrates length-scale-dependent effective viscosity.",
         "source_type": "primary_paper",
@@ -7276,7 +7303,7 @@
         "url": "https://doi.org/10.1073/pnas.0307332101"
       },
       "moeendarbary2013_poroelastic_cytoplasm": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "moeendarbary2013_poroelastic_cytoplasm",
         "notes": "Microindentation in HeLa, HT1080 and MDCK cells supports a biphasic porous solid/interstitial-fluid description. These are not primary hepatocytes.",
         "source_type": "primary_paper",
@@ -7284,7 +7311,7 @@
         "url": "https://doi.org/10.1038/nmat3517"
       },
       "murray2008_primary_rat_hepatocyte_endosome_transport": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "murray2008_primary_rat_hepatocyte_endosome_transport",
         "notes": "Primary cultured rat hepatocytes show microtubule-based endosome motion, fusion/fission and sorting. This authorizes active/passive mode separation, not a human numerical rate.",
         "source_type": "primary_paper",
@@ -7492,7 +7519,7 @@
         "url": "https://doi.org/10.1016/0167-4889(85)90209-5"
       },
       "swaminathan1997_gfp_cytoplasmic_diffusion": {
-        "date_verified": "2026-07-22",
+        "date_verified": "2026-07-26",
         "id": "swaminathan1997_gfp_cytoplasmic_diffusion",
         "notes": "CHO-cell GFP rotation and translation report different effective relative viscosities, supporting probe- and interaction-dependent intracellular mobility.",
         "source_type": "primary_paper",
@@ -15127,20 +15154,23 @@
       "version": "hepatocyte_capability_atlas_v1"
     },
     "hepatocyte_completion_matrix": {
-      "date_verified": "2026-07-22",
+      "date_verified": "2026-07-26",
       "entries": [
         {
           "code_surfaces": [
             "src/physics/cytosolNumerics.ts",
             "src/physics/intracellularFluid.ts"
           ],
-          "current_capability": "A 3D pressure-projection grid, moving analytic obstacles and conservative passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
+          "current_capability": "A 3D pressure-projection grid, four analytic obstacle shapes, rigid translation/rotation boundary kinematics and a conservative passive-scalar kernel with moving-domain remapping are tested and active in the renderer.",
           "id": "dimensionless_cytosol_numerics",
           "observed_metrics": {
+            "analytic_obstacle_shape_count": 4,
+            "compound_boundary_conservation_test_count": 1,
             "conservative_moving_domain_remap_count": 1,
             "conservative_scalar_kernel_count": 1,
             "moving_analytic_obstacle_layer_count": 1,
-            "projection_solver_count": 1
+            "projection_solver_count": 1,
+            "rigid_body_boundary_kinematics_count": 1
           },
           "remaining_requirements": [],
           "scope": "Numerical test-bed only; no biological pressure, velocity, time or diffusivity claim.",
@@ -15224,15 +15254,21 @@
             "src/physics/cytosolNumerics.ts",
             "src/physics/intracellularFluid.ts"
           ],
-          "current_capability": "Analytic moving sphere, ellipsoid and capsule obstacles exclude flow/scalar cells, but full mitochondrial, ER and Golgi meshes are not watertight fluid boundaries.",
+          "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies now represent ten boundary classes. Nucleus and Golgi transforms plus organelle populations are refreshed during motion, and rigid rotation contributes surface velocity; these assemblies are not watertight biological meshes.",
           "id": "organelle_fluid_boundaries",
           "observed_metrics": {
-            "analytic_obstacle_layer_count": 1
+            "analytic_obstacle_layer_count": 1,
+            "analytic_obstacle_shape_count": 4,
+            "compound_boundary_conservation_test_count": 1,
+            "full_watertight_mesh_boundary_count": 0,
+            "renderer_geometry_boundary_adapter_count": 1,
+            "renderer_geometry_boundary_class_count": 10,
+            "rigid_body_boundary_kinematics_count": 1
           },
           "remaining_requirements": [
-            "Watertight organelle meshes with per-frame transforms.",
-            "No-flux and moving-boundary conditions on the actual surfaces.",
-            "Resolution/conservation tests for thin ER and Golgi structures."
+            "Watertight donor- or microscopy-derived organelle meshes.",
+            "Cut-cell or immersed-boundary treatment for sub-grid ER/Golgi membranes.",
+            "Grid-convergence validation against those registered surface meshes."
           ],
           "scope": "Impermeable moving organelle surfaces in the numerical cytosol domain.",
           "status": "partial",
@@ -15633,21 +15669,23 @@
         },
         {
           "code_surfaces": [
-            "src/main.ts",
-            "artifacts/screenshots/"
+            "playwright.config.ts",
+            "tests/visual/render-integrity.spec.ts",
+            "src/main.ts"
           ],
-          "current_capability": "Manual in-app browser screenshot and console QA is possible and has been performed; a committed deterministic pixel baseline is absent.",
+          "current_capability": "A Playwright suite runs two viewports and checks canvas dimensions, luminance variance, non-dark and chromatic pixel fractions, color diversity, two-frame motion, overflow, clipped controls, console errors and page errors.",
           "id": "visual_regression_automation",
           "observed_metrics": {
-            "automated_visual_regression_suites": 0,
+            "automated_viewport_count": 2,
+            "automated_visual_regression_suites": 1,
+            "exact_cross_gpu_pixel_baseline_count": 0,
+            "exact_cross_gpu_pixel_equivalence_claim": false,
             "manual_browser_qa_available": true
           },
-          "remaining_requirements": [
-            "A stable headless-browser test with nonblank-canvas, console and approved pixel-difference criteria."
-          ],
-          "scope": "Repeatable render integrity checks for desktop/mobile browser views.",
-          "status": "partial",
-          "title": "Browser visual regression automation"
+          "remaining_requirements": [],
+          "scope": "Repeatable desktop/mobile checks for nonblank moving canvas output, layout integrity and runtime errors; exact cross-GPU design equivalence is outside this scope.",
+          "status": "closed",
+          "title": "Automated browser render-integrity regression"
         },
         {
           "code_surfaces": [
@@ -15686,11 +15724,11 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 13,
-        "closed_count": 4,
+        "closed_count": 5,
         "entry_count": 27,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
-        "partial_count": 8
+        "partial_count": 7
       },
       "version": "hepatocyte_completion_matrix_v1"
     },
@@ -37839,11 +37877,11 @@
           "status": "derived"
         },
         {
-          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise moving-boundary pressure projection and conservative passive-scalar transport only as dimensionless numerical kernels; keep aqueous diffusion separate from ATP-dependent motor cargo and require matched healthy-PHH evidence before biological coupling",
+          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise renderer-linked rigid moving-boundary pressure projection and conservative passive-scalar transport only as dimensionless numerical kernels; keep aqueous diffusion separate from ATP-dependent motor cargo and require matched healthy-PHH evidence before biological coupling",
           "default_snapshot_role": "dimensionless_numerics_and_biological_coupling_firewall",
           "drives_scientific_validation": true,
           "id": "cytosol_transport_rheology_contract",
-          "limitations": "The renderer has a dimensionless projection grid, moving analytic organelle boundaries and an unbound conservative scalar kernel. No healthy-PHH viscosity, pressure, intracellular velocity, species diffusivity, motor-cargo rate or reaction-transport validation is loaded, so zero biological species and zero reactions are coupled and pressure cannot feed membrane mechanics.",
+          "limitations": "The renderer has a dimensionless projection grid, four analytic boundary shapes, translation plus quaternion-derived rotation, renderer-linked nucleus/canaliculus/ER/Golgi/organelle assemblies and an unbound conservative scalar kernel. These are not watertight microscopy meshes. No healthy-PHH viscosity, pressure, intracellular velocity, species diffusivity, motor-cargo rate or reaction-transport validation is loaded, so zero biological species and zero reactions are coupled and pressure cannot feed membrane mechanics.",
           "source_ids": [
             "moeendarbary2013_poroelastic_cytoplasm",
             "kwapiszewska2020_cytoplasm_nanoviscosity",

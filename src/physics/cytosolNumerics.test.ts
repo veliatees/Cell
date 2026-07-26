@@ -5,17 +5,25 @@ import {
   ConservativePassiveScalar3D,
   CytosolProjectionGrid,
   DynamicCytosolObstacleField,
+  capsuleObstacleBetween,
   inverseVolumePreservingPoint,
   type CytosolObstacle
 } from "./cytosolNumerics";
 
 describe("dimensionless cytosol numerical kernel", () => {
-  it("uses analytic moving sphere, ellipsoid and capsule boundaries", () => {
+  it("uses analytic moving sphere, ellipsoid, capsule and box boundaries", () => {
     const field = new DynamicCytosolObstacleField(1);
     const obstacles: CytosolObstacle[] = [
       { id: "sphere", kind: "sphere", center: [0, 0, 0], radius: 1 },
       { id: "ellipsoid", kind: "ellipsoid", center: [4, 0, 0], radii: [2, 1, 0.5] },
-      { id: "capsule", kind: "capsule", center: [-4, 0, 0], radius: 0.5, halfLength: 1.5 }
+      { id: "capsule", kind: "capsule", center: [-4, 0, 0], radius: 0.5, halfLength: 1.5 },
+      {
+        id: "box",
+        kind: "box",
+        center: [0, 4, 0],
+        orientation: [0, 0, Math.sin(Math.PI / 4), Math.cos(Math.PI / 4)],
+        halfExtents: [1.5, 0.25, 0.5]
+      }
     ];
     field.setObstacles(obstacles, 0);
 
@@ -25,6 +33,8 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(field.collides(4, 0, 0.6)).toBe(false);
     expect(field.collides(-4, 1.8, 0)).toBe(true);
     expect(field.collides(-4, 2.1, 0)).toBe(false);
+    expect(field.collides(0, 5.3, 0)).toBe(true);
+    expect(field.collides(0.4, 5.3, 0)).toBe(false);
 
     field.setObstacles(obstacles.map((obstacle) => (
       obstacle.id === "sphere" ? { ...obstacle, center: [0.2, 0, 0] as const } : obstacle
@@ -33,6 +43,53 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(field.solidVelocityAt(0.2, 0, 0, velocity)).toBe(true);
     expect(velocity[0]).toBeCloseTo(2, 6);
     expect(velocity[1]).toBe(0);
+  });
+
+  it("derives rigid rotational boundary velocity from quaternion motion", () => {
+    const field = new DynamicCytosolObstacleField(1);
+    field.setObstacles([
+      {
+        id: "rotating-capsule",
+        kind: "capsule",
+        center: [0, 0, 0],
+        orientation: [0, 0, 0, 1],
+        radius: 0.4,
+        halfLength: 1.2
+      }
+    ], 0);
+    const halfTurnAboutZ = Math.sin(-Math.PI / 4);
+    field.setObstacles([
+      {
+        id: "rotating-capsule",
+        kind: "capsule",
+        center: [0, 0, 0],
+        orientation: [0, 0, halfTurnAboutZ, Math.cos(-Math.PI / 4)],
+        radius: 0.4,
+        halfLength: 1.2
+      }
+    ], 0.5);
+
+    const velocity = new Float32Array(3);
+    expect(field.solidVelocityAt(0.8, 0, 0, velocity)).toBe(true);
+    expect(velocity[0]).toBeCloseTo(0, 6);
+    expect(velocity[1]).toBeCloseTo(-Math.PI * 0.8, 5);
+    expect(velocity[2]).toBeCloseTo(0, 6);
+    expect(field.rotatingCount).toBe(1);
+  });
+
+  it("treats opposite quaternion signs as the same orientation", () => {
+    const field = new DynamicCytosolObstacleField(1);
+    field.setObstacles([
+      { id: "sign-stable", kind: "ellipsoid", center: [0, 0, 0], orientation: [0, 0, 0, 1], radii: [1, 2, 1] }
+    ], 0);
+    field.setObstacles([
+      { id: "sign-stable", kind: "ellipsoid", center: [0, 0, 0], orientation: [0, 0, 0, -1], radii: [1, 2, 1] }
+    ], 0.1);
+
+    const velocity = new Float32Array(3);
+    expect(field.solidVelocityAt(0, 1, 0, velocity)).toBe(true);
+    expect(Array.from(velocity)).toEqual([0, 0, 0]);
+    expect(field.rotatingCount).toBe(0);
   });
 
   it("inverts the exact volume-preserving membrane map", () => {
@@ -45,6 +102,22 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(restored[0]).toBeCloseTo(2.5, 5);
     expect(restored[1]).toBeCloseTo(-1.2, 5);
     expect(restored[2]).toBeCloseTo(0.8, 5);
+  });
+
+  it("builds a capsule chain segment on the supplied renderer centerline", () => {
+    const obstacle = capsuleObstacleBetween(
+      "er-segment",
+      [1, -2, 0.5],
+      [4, -2, 4.5],
+      0.2
+    );
+    const field = new DynamicCytosolObstacleField(1);
+    field.setObstacles([obstacle], 0);
+
+    expect(obstacle.center).toEqual([2.5, -2, 2.5]);
+    expect(obstacle.halfLength).toBeCloseTo(2.5, 12);
+    expect(field.collides(2.5, -2, 2.5)).toBe(true);
+    expect(field.collides(2.5, -1.7, 2.5)).toBe(false);
   });
 
   it("projects a seeded bounded field and reports numerical divergence", () => {
@@ -70,6 +143,7 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(Array.from(first.velocityX)).toEqual(Array.from(second.velocityX));
     expect(diagnostics.fluidCellCount).toBeGreaterThan(0);
     expect(diagnostics.solidCellCount).toBeGreaterThan(0);
+    expect(diagnostics.rotatingObstacleCount).toBe(0);
     expect(diagnostics.divergenceRmsAfter).toBeLessThan(diagnostics.divergenceRmsBefore);
     expect(diagnostics.divergenceMaxAfter).toBeGreaterThanOrEqual(0);
     expect(diagnostics.biologicalUnitsAssigned).toBe(false);
@@ -159,6 +233,58 @@ describe("dimensionless cytosol numerical kernel", () => {
     );
     expect(diagnostics.absoluteMassResidual).toBeLessThan(1e-10);
     expect(after).toBeCloseTo(before, 12);
+    expect(Math.min(...scalar.values)).toBeGreaterThanOrEqual(0);
+  });
+
+  it("conserves scalar mass around a translating and rotating compound boundary", () => {
+    const obstacles = new DynamicCytosolObstacleField(0.75);
+    obstacles.setObstacles([
+      {
+        id: "golgi-envelope",
+        kind: "box",
+        center: [-1.2, 0, 0],
+        orientation: [0, 0, 0, 1],
+        halfExtents: [1.1, 0.45, 0.8]
+      },
+      capsuleObstacleBetween("er-branch", [0.2, -1.8, 0], [0.2, 1.8, 0], 0.28)
+    ], 0);
+    const grid = new CytosolProjectionGrid({
+      resolution: 18,
+      halfExtent: 6,
+      seed: 44,
+      radiusAtDirection: () => 5.2,
+      visualModeCount: 0
+    });
+    grid.step(1 / 60, null, obstacles);
+    const scalar = new ConservativePassiveScalar3D(grid, {
+      id: "compound_boundary_validation_pulse",
+      dimensionlessDiffusivity: 0
+    });
+    scalar.initialize((x) => x < 0 ? 0.8 : 0.2);
+    const before = scalar.totalMass();
+
+    const quarterTurn = Math.PI / 4;
+    obstacles.setObstacles([
+      {
+        id: "golgi-envelope",
+        kind: "box",
+        center: [1.2, 0, 0],
+        orientation: [0, 0, Math.sin(quarterTurn), Math.cos(quarterTurn)],
+        halfExtents: [1.1, 0.45, 0.8]
+      },
+      {
+        ...capsuleObstacleBetween("er-branch", [-1.8, 0.2, 0], [1.8, 0.2, 0], 0.28)
+      }
+    ], 0.2);
+    grid.step(0.2, null, obstacles);
+    scalar.step(0);
+
+    const diagnostics = scalar.domainRemapDiagnostics();
+    expect(obstacles.rotatingCount).toBe(2);
+    expect(diagnostics.displacedCellCount).toBeGreaterThan(0);
+    expect(diagnostics.exposedCellCount).toBeGreaterThan(0);
+    expect(diagnostics.absoluteMassResidual).toBeLessThan(1e-10);
+    expect(scalar.totalMass()).toBeCloseTo(before, 11);
     expect(Math.min(...scalar.values)).toBeGreaterThanOrEqual(0);
   });
 
