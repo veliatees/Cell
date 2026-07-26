@@ -123,6 +123,9 @@ linked to its dependencies.
 - Cut-cell outer-membrane volume/face rasterization and local discrete geometric conservation: `milestones/117-local-membrane-geometric-conservation-v1.md`
 - Donor-matched eight-stage PHH receptor/signaling trajectory intake: `milestones/118-phh-receptor-signaling-trajectory-intake-v1.md`
 - Donor-matched active-protein localization, denominator and function intake: `milestones/119-phh-active-protein-localization-intake-v1.md`
+- Topology-audited generic closed-mesh cytosol boundary and 41-field PHH 3D mesh intake: `milestones/120-watertight-mesh-boundary-intake-v1.md`
+- Exact-species, size-resolved intracellular mobility and crowding intake: `milestones/121-species-resolved-intracellular-mobility-intake-v1.md`
+- Reaction-specific transport-limitation and local-coupling evidence gate: `milestones/122-reaction-transport-coupling-gate-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

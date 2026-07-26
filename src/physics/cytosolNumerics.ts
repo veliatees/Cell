@@ -6,6 +6,8 @@
 // diffusivity or reaction-rate parameters. Those biological units remain
 // evidence-gated by the Python engine.
 
+import { WatertightTriangleMeshBoundary } from "./watertightMeshBoundary";
+
 export type CytosolVector3 = readonly [number, number, number];
 export type CytosolQuaternion = readonly [number, number, number, number];
 
@@ -39,11 +41,17 @@ export type CytosolBoxObstacle = CytosolObstacleBase & {
   halfExtents: CytosolVector3;
 };
 
+export type CytosolMeshObstacle = CytosolObstacleBase & {
+  kind: "watertight_triangle_mesh";
+  boundary: WatertightTriangleMeshBoundary;
+};
+
 export type CytosolObstacle =
   | CytosolSphereObstacle
   | CytosolEllipsoidObstacle
   | CytosolCapsuleObstacle
-  | CytosolBoxObstacle;
+  | CytosolBoxObstacle
+  | CytosolMeshObstacle;
 
 type StoredObstacle = CytosolObstacle & {
   resolvedVelocity: CytosolVector3;
@@ -72,6 +80,7 @@ export type CytosolProjectionDiagnostics = {
   obstacleCount: number;
   rotatingObstacleCount: number;
   subgridObstacleCount: number;
+  watertightMeshObstacleCount: number;
   fractionalMembraneCellCount: number;
   fractionalObstacleCellCount: number;
   subgridInterceptedCellCount: number;
@@ -107,10 +116,19 @@ export type PassiveScalarDomainRemapDiagnostics = {
 };
 
 export const CYTOSOL_NUMERICAL_CONTRACT = Object.freeze({
-  version: "dimensionless_moving_boundary_projection_v6",
+  version: "dimensionless_moving_boundary_projection_v7",
   numericalMethod: "cell_centered_eulerian_cut_cell_projection_with_discrete_geometric_conservation",
-  movingObstacleShapes: ["sphere", "ellipsoid", "capsule", "box"] as const,
+  movingObstacleShapes: [
+    "sphere",
+    "ellipsoid",
+    "capsule",
+    "box",
+    "watertight_triangle_mesh"
+  ] as const,
   movingObstacleKinematics: "rigid_translation_plus_quaternion_derived_rotation",
+  genericWatertightTriangleMeshBoundaryKernel: true,
+  registeredBiologicalMeshBoundaryCount: 0,
+  meshSelfIntersectionDetection: false,
   passiveScalarMethod: "finite_volume_advection_diffusion_with_conservative_moving_domain_remap",
   movingDomainRemap: "face_neighbor_redistribution_with_deterministic_nearest_fluid_fallback",
   outerMembraneTreatment: "star_shaped_2x2x2_volume_fraction_plus_2x2_face_area_quadrature",
@@ -247,7 +265,8 @@ function obstacleBoundingRadius(obstacle: CytosolObstacle): number {
   if (obstacle.kind === "sphere") return obstacle.radius;
   if (obstacle.kind === "ellipsoid") return Math.max(...obstacle.radii);
   if (obstacle.kind === "capsule") return obstacle.radius + obstacle.halfLength;
-  return Math.hypot(...obstacle.halfExtents);
+  if (obstacle.kind === "box") return Math.hypot(...obstacle.halfExtents);
+  return obstacle.boundary.boundingRadius;
 }
 
 function validateObstacle(obstacle: CytosolObstacle): void {
@@ -274,16 +293,23 @@ function validateObstacle(obstacle: CytosolObstacle): void {
     if (obstacle.radii.some((value) => value <= 0)) {
       throw new RangeError(`${obstacle.id} ellipsoid radii must be positive`);
     }
-  } else if (obstacle.kind === "capsule" && (
-    !Number.isFinite(obstacle.radius) || obstacle.radius <= 0 ||
-    !Number.isFinite(obstacle.halfLength) || obstacle.halfLength < 0
-  )) {
-    throw new RangeError(`${obstacle.id} capsule dimensions are invalid`);
+  } else if (obstacle.kind === "capsule") {
+    if (
+      !Number.isFinite(obstacle.radius) || obstacle.radius <= 0 ||
+      !Number.isFinite(obstacle.halfLength) || obstacle.halfLength < 0
+    ) {
+      throw new RangeError(`${obstacle.id} capsule dimensions are invalid`);
+    }
   } else if (obstacle.kind === "box") {
     finiteVector(obstacle.halfExtents, `${obstacle.id} half extents`);
     if (obstacle.halfExtents.some((value) => value <= 0)) {
       throw new RangeError(`${obstacle.id} box half extents must be positive`);
     }
+  } else if (
+    !(obstacle.boundary instanceof WatertightTriangleMeshBoundary) ||
+    !obstacle.boundary.audit.topologicallyWatertight
+  ) {
+    throw new RangeError(`${obstacle.id} mesh boundary must pass the watertight audit`);
   }
 }
 
@@ -312,11 +338,14 @@ function obstacleContains(
     const closestY = Math.max(-obstacle.halfLength, Math.min(obstacle.halfLength, ly));
     return lx * lx + (ly - closestY) ** 2 + lz * lz <= (obstacle.radius + padding) ** 2;
   }
-  return (
-    Math.abs(lx) <= obstacle.halfExtents[0] + padding &&
-    Math.abs(ly) <= obstacle.halfExtents[1] + padding &&
-    Math.abs(lz) <= obstacle.halfExtents[2] + padding
-  );
+  if (obstacle.kind === "box") {
+    return (
+      Math.abs(lx) <= obstacle.halfExtents[0] + padding &&
+      Math.abs(ly) <= obstacle.halfExtents[1] + padding &&
+      Math.abs(lz) <= obstacle.halfExtents[2] + padding
+    );
+  }
+  return obstacle.boundary.containsPoint(lx, ly, lz, padding);
 }
 
 function dot3(a: CytosolVector3, b: CytosolVector3): number {
@@ -493,12 +522,15 @@ function obstacleIntersectsSegment(
   if (obstacle.kind === "box") {
     return segmentIntersectsBox(localStart, localEnd, obstacle.halfExtents);
   }
-  return segmentSegmentDistanceSquared(
-    localStart,
-    localEnd,
-    [0, -obstacle.halfLength, 0],
-    [0, obstacle.halfLength, 0]
-  ) <= obstacle.radius ** 2;
+  if (obstacle.kind === "capsule") {
+    return segmentSegmentDistanceSquared(
+      localStart,
+      localEnd,
+      [0, -obstacle.halfLength, 0],
+      [0, obstacle.halfLength, 0]
+    ) <= obstacle.radius ** 2;
+  }
+  return obstacle.boundary.intersectsSegment(localStart, localEnd);
 }
 
 export class DynamicCytosolObstacleField {
@@ -529,6 +561,12 @@ export class DynamicCytosolObstacleField {
 
   get subgridCount(): number {
     return this.subgridObstacleCount;
+  }
+
+  get watertightMeshCount(): number {
+    return this.obstacles.reduce((count, obstacle) => (
+      obstacle.kind === "watertight_triangle_mesh" ? count + 1 : count
+    ), 0);
   }
 
   setObstacles(obstacles: readonly CytosolObstacle[], deltaS: number): void {
@@ -946,6 +984,7 @@ export class CytosolProjectionGrid {
     obstacleCount: 0,
     rotatingObstacleCount: 0,
     subgridObstacleCount: 0,
+    watertightMeshObstacleCount: 0,
     fractionalMembraneCellCount: 0,
     fractionalObstacleCellCount: 0,
     subgridInterceptedCellCount: 0,
@@ -1067,6 +1106,7 @@ export class CytosolProjectionGrid {
       obstacleCount: obstacles?.count ?? 0,
       rotatingObstacleCount: obstacles?.rotatingCount ?? 0,
       subgridObstacleCount: obstacles?.subgridCount ?? 0,
+      watertightMeshObstacleCount: obstacles?.watertightMeshCount ?? 0,
       fractionalMembraneCellCount: this.fractionalMembraneCellCount,
       fractionalObstacleCellCount: this.fractionalObstacleCellCount,
       subgridInterceptedCellCount: this.subgridInterceptedCellCount,

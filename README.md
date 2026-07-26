@@ -277,6 +277,14 @@ and passive scalar mass is conservatively remapped. This is verified numerical
 engineering, not measured PHH CFD, pressure, viscosity, or fluid-structure
 interaction.
 
+The same numerical layer can now audit and consume generic closed triangle
+meshes. A separate 41-field intake requires donor-linked microscopy geometry,
+scale, frozen transforms, external self-intersection evidence and
+grid-convergence evidence before any PHH mesh can be registered. Species-level
+mobility/crowding and reaction-level transport coupling have their own 50- and
+51-field contracts. They currently contain zero biological records and grant
+zero reaction-rate authority.
+
 What is still depth-work (the road ahead is depth, not a new approach):
 
 - the composed fuel network currently has 36 reaction channels and zero fully
@@ -439,6 +447,9 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 117: Local membrane geometric conservation v1](docs/milestones/117-local-membrane-geometric-conservation-v1.md)
 - [Milestone 118: PHH receptor/signaling trajectory intake v1](docs/milestones/118-phh-receptor-signaling-trajectory-intake-v1.md)
 - [Milestone 119: PHH active-protein localization intake v1](docs/milestones/119-phh-active-protein-localization-intake-v1.md)
+- [Milestone 120: Watertight mesh boundary intake v1](docs/milestones/120-watertight-mesh-boundary-intake-v1.md)
+- [Milestone 121: Species-resolved intracellular mobility intake v1](docs/milestones/121-species-resolved-intracellular-mobility-intake-v1.md)
+- [Milestone 122: Reaction transport coupling gate v1](docs/milestones/122-reaction-transport-coupling-gate-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

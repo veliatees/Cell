@@ -40,6 +40,7 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert summary["local_membrane_topology_change_coupling_count"] == 0
     assert summary["locally_conservative_membrane_face_flux_count"] == 1
     assert summary["fractional_face_aperture_solver_count"] == 1
+    assert summary["generic_watertight_mesh_boundary_kernel_count"] == 1
     assert summary["full_watertight_mesh_boundary_count"] == 0
     assert summary["compound_boundary_conservation_test_count"] == 1
     assert summary["membrane_pressure_feedback_count"] == 0
@@ -72,6 +73,9 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert renderer["fractional_face_aperture_flux_weighting"] is True
     assert renderer["fractional_face_aperture_pressure_weighting"] is True
     assert renderer["partial_cell_volume_conservation"] is True
+    assert renderer["generic_watertight_triangle_mesh_boundary_kernel"] is True
+    assert renderer["mesh_self_intersection_detection"] is False
+    assert renderer["registered_biological_mesh_boundary_count"] == 0
     assert renderer["full_watertight_mesh_boundaries"] is False
     assert renderer["local_star_shaped_membrane_boundary_coupling"] is True
     assert renderer["local_boundary_reference_space"] is True
