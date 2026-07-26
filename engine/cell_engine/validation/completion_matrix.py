@@ -110,6 +110,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     quantity_harvest = hepatocyte_quantity_harvest_snapshot()["audit"]
     memory = cellular_memory_contract_snapshot()["summary"]
     metabolic = metabolic_constraint_shell_snapshot()
+    metabolic_numerics = metabolic["generic_constraint_numerics"]
+    metabolic_bundle = metabolic["phh_execution_bundle_intake"]
     external = external_validation_snapshot()["summary"]
     donor_generative = generative_donor_manifest_intake_snapshot()
 
@@ -196,7 +198,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Cytosol-to-membrane fluid-structure feedback",
             "blocked_missing_evidence",
             "Pressure/traction feedback from the aqueous/poroelastic phase to membrane, cortex and organelles.",
-            "A dimensionless closed-mesh pressure-traction candidate kernel now checks action-reaction balance, pressure work, volume preservation, line-search stability and self-intersection rejection. It cannot apply its candidate to the runtime membrane.",
+            "A dimensionless closed-mesh pressure-traction candidate kernel checks action-reaction balance, pressure work, volume preservation, line-search stability and self-intersection rejection. A 48-column donor-resolved PHH mechanics intake now gates raw deformation/relaxation trajectories, reported constitutive parameters, same-cell meshes and spatial boundary conditions. No mechanics record is delivered and the candidate cannot modify the runtime membrane.",
             {
                 "dimensionless_pressure_membrane_response_kernel_count": cytosol_summary[
                     "dimensionless_pressure_membrane_response_kernel_count"
@@ -210,6 +212,21 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "membrane_pressure_feedback_count": cytosol_summary[
                     "membrane_pressure_feedback_count"
                 ],
+                "mechanics_calibration_intake_contract_count": cytosol_summary[
+                    "phh_mechanics_calibration_intake_contract_count"
+                ],
+                "mechanics_target_quantity_count": cytosol_summary[
+                    "phh_mechanics_target_quantity_count"
+                ],
+                "delivered_mechanics_trajectory_count": cytosol_summary[
+                    "delivered_phh_mechanics_trajectory_count"
+                ],
+                "spatial_fsi_ready_trajectory_count": cytosol_summary[
+                    "spatial_fsi_ready_phh_mechanics_trajectory_count"
+                ],
+                "quantitatively_authorized_mechanics_parameter_count": cytosol_summary[
+                    "quantitatively_authorized_phh_mechanics_parameter_count"
+                ],
             },
             (
                 "PHH membrane/cortex mechanics and hydraulic boundary data.",
@@ -220,6 +237,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "src/physics/dimensionlessFsi.ts",
                 "src/physics/intracellularFluid.ts",
                 "src/physics/cytosolNumerics.ts",
+                "engine/cell_engine/quantitative/phh_mechanics_calibration.py",
+                "data/evidence_intake/phh_mechanics_calibration_contract.v1.json",
             ),
         ),
         _entry(
@@ -832,7 +851,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Donor-resolved 3D morphology and mechanics",
             "partial",
             "In-situ hepatocyte surface, organelle distribution, cortex, adhesion and membrane mechanics.",
-            "Human aggregate 3D volume and verified proxy geometry exist. A checksum-frozen donor mesh manifest plus canonical triangle topology audit now exists, while external self-intersection, registration, contact-interface and grid-convergence evidence remain mandatory. No donor mesh or matched PHH mechanical parameter set is registered.",
+            "Human aggregate 3D volume and verified proxy geometry exist. Checksum-frozen donor mesh and mechanics contracts now share cell/mesh identifiers and require raw loading-relaxation trajectories, spatial boundary conditions and held-out donors. No donor mesh, mechanics trajectory or matched PHH parameter set is registered.",
             {
                 "mesh_intake_contract_count": 1,
                 "mesh_target_structure_count": mesh_boundary_intake["summary"][
@@ -853,6 +872,18 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "matched_phh_mechanical_parameter_sets": mesh_boundary_intake["summary"][
                     "mechanics_coupled_mesh_count"
                 ],
+                "mechanics_calibration_intake_contract_count": cytosol_summary[
+                    "phh_mechanics_calibration_intake_contract_count"
+                ],
+                "mechanics_target_quantity_count": cytosol_summary[
+                    "phh_mechanics_target_quantity_count"
+                ],
+                "delivered_mechanics_trajectory_count": cytosol_summary[
+                    "delivered_phh_mechanics_trajectory_count"
+                ],
+                "spatial_fsi_ready_trajectory_count": cytosol_summary[
+                    "spatial_fsi_ready_phh_mechanics_trajectory_count"
+                ],
             },
             (
                 "Donor-resolved in-situ membrane and organelle meshes.",
@@ -863,7 +894,9 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "engine/cell_engine/validation/physical_validation.py",
                 "engine/cell_engine/quantitative/human_hepatocyte_3d_morphometry.py",
                 "engine/cell_engine/quantitative/phh_3d_mesh_boundary.py",
+                "engine/cell_engine/quantitative/phh_mechanics_calibration.py",
                 "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json",
+                "data/evidence_intake/phh_mechanics_calibration_contract.v1.json",
             ),
         ),
         _entry(
@@ -885,21 +918,81 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ("data/published_models/human_gem_v2.0.0.manifest.json", "data/published_models/human_gem_v2.0.0.structural_audit.json", "scripts/fetch_human_gem.py", "scripts/audit_human_gem.py"),
         ),
         _entry(
+            "generic_fba_fva_numerics",
+            "Generic FBA/FVA numerical kernel",
+            "closed",
+            "Linear-programming software verification on analytic synthetic stoichiometric fixtures only.",
+            "A pinned SciPy/HiGHS backend solves steady-state FBA, objective-constrained FVA, alternate-optimum audits and elastic infeasibility diagnosis. Five analytic fixture checks cover mass balance, reaction bounds and solver failure states without loading Human-GEM or claiming a biological flux.",
+            {
+                "synthetic_fba_fixture_count": metabolic_numerics[
+                    "synthetic_fba_fixture_count"
+                ],
+                "synthetic_fva_fixture_count": metabolic_numerics[
+                    "synthetic_fva_fixture_count"
+                ],
+                "analytic_fixture_pass_count": metabolic_numerics[
+                    "analytic_fixture_pass_count"
+                ],
+                "alternate_optimum_audit_count": metabolic_numerics[
+                    "alternate_optimum_audit_count"
+                ],
+                "elastic_infeasibility_diagnosis_count": metabolic_numerics[
+                    "elastic_infeasibility_diagnosis_count"
+                ],
+                "human_gem_loaded": metabolic_numerics["human_gem_loaded"],
+                "biological_flux_authority": metabolic_numerics[
+                    "biological_flux_authority"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/constraint_numerics.py",
+                "engine/tests/test_constraint_numerics.py",
+            ),
+        ),
+        _entry(
             "hepatocyte_fba_execution",
             "Healthy-PHH FBA/FVA execution",
             "blocked_missing_evidence",
             "A context-extracted and independently validated healthy-hepatocyte constraint model.",
-            "The generic reconstruction is pinned, but every optimization and scientific-coupling gate remains false.",
+            "The generic reconstruction and LP backend are pinned. A checksum-frozen ten-artifact execution-bundle intake now requires deterministic context extraction, measured exchange bounds, an explicit scale operator, measured objective, FBA/FVA/infeasibility reports and donor/study-disjoint validation. No PHH bundle is delivered, so every biological execution and coupling gate remains false.",
             {
                 "execution_gate_count": len(metabolic["gates"]),
                 "enabled_execution_gate_count": sum(bool(value) for value in metabolic["gates"].values()),
+                "generic_solver_fixture_pass_count": metabolic_numerics[
+                    "analytic_fixture_pass_count"
+                ],
+                "execution_bundle_intake_contract_count": 1,
+                "required_execution_bundle_artifact_count": metabolic_bundle[
+                    "required_artifact_count"
+                ],
+                "delivered_execution_bundle_count": metabolic_bundle[
+                    "delivered_bundle_count"
+                ],
+                "structurally_complete_execution_bundle_count": metabolic_bundle[
+                    "structurally_complete_bundle_count"
+                ],
+                "measured_exchange_bound_count": metabolic_bundle[
+                    "measured_exchange_bound_count"
+                ],
+                "independent_validation_record_count": metabolic_bundle[
+                    "independent_validation_record_count"
+                ],
+                "runtime_flux_coupling_allowed_count": int(
+                    bool(metabolic_bundle["runtime_flux_coupling_allowed"])
+                ),
             },
             (
                 "Declared PHH context-extraction algorithm and donor/cohort inputs.",
                 "Measured exchange bounds, defensible objective and pinned solver.",
                 "FVA, infeasibility, reaction-level structural-audit exception resolution and independent flux validation.",
             ),
-            ("engine/cell_engine/quantitative/metabolic_constraint_shell.py",),
+            (
+                "engine/cell_engine/quantitative/metabolic_constraint_shell.py",
+                "engine/cell_engine/quantitative/constraint_numerics.py",
+                "engine/cell_engine/quantitative/phh_metabolic_execution_bundle.py",
+                "data/evidence_intake/phh_metabolic_execution_bundle_contract.v1.json",
+            ),
         ),
         _entry(
             "visual_regression_automation",
@@ -1084,6 +1177,12 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or fsi_metrics["force_energy_consistency_test_count"] != 1
         or fsi_metrics["volume_preserving_fsi_candidate_test_count"] != 1
         or fsi_metrics["membrane_pressure_feedback_count"] != 0
+        or fsi_metrics["mechanics_calibration_intake_contract_count"] != 1
+        or fsi_metrics["mechanics_target_quantity_count"] != 15
+        or fsi_metrics["delivered_mechanics_trajectory_count"] != 0
+        or fsi_metrics["spatial_fsi_ready_trajectory_count"] != 0
+        or fsi_metrics["quantitatively_authorized_mechanics_parameter_count"]
+        != 0
     ):
         raise ValueError("dimensionless FSI candidate escaped into membrane authority")
     organelle_boundary_metrics = by_id["organelle_fluid_boundaries"][
@@ -1201,6 +1300,40 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         raise ValueError("PHH injury data-plane engineering guards changed")
     if by_id["hepatocyte_fba_execution"]["observed_metrics"]["enabled_execution_gate_count"] != 0:
         raise ValueError("FBA execution escaped its scientific gate")
+    generic_fba_metrics = by_id["generic_fba_fva_numerics"]["observed_metrics"]
+    if (
+        generic_fba_metrics["synthetic_fba_fixture_count"] != 3
+        or generic_fba_metrics["synthetic_fva_fixture_count"] != 2
+        or generic_fba_metrics["analytic_fixture_pass_count"] != 5
+        or generic_fba_metrics["alternate_optimum_audit_count"] != 1
+        or generic_fba_metrics["elastic_infeasibility_diagnosis_count"] != 1
+        or generic_fba_metrics["human_gem_loaded"] is not False
+        or generic_fba_metrics["biological_flux_authority"] is not False
+    ):
+        raise ValueError("generic FBA/FVA numerics escaped its software-only scope")
+    fba_metrics = by_id["hepatocyte_fba_execution"]["observed_metrics"]
+    if (
+        fba_metrics["generic_solver_fixture_pass_count"] != 5
+        or fba_metrics["execution_bundle_intake_contract_count"] != 1
+        or fba_metrics["required_execution_bundle_artifact_count"] != 10
+        or fba_metrics["delivered_execution_bundle_count"] != 0
+        or fba_metrics["structurally_complete_execution_bundle_count"] != 0
+        or fba_metrics["measured_exchange_bound_count"] != 0
+        or fba_metrics["independent_validation_record_count"] != 0
+        or fba_metrics["runtime_flux_coupling_allowed_count"] != 0
+    ):
+        raise ValueError("PHH metabolic bundle escaped into FBA authority")
+    mechanics_metrics = by_id["donor_3d_morphology_mechanics"][
+        "observed_metrics"
+    ]
+    if (
+        mechanics_metrics["mechanics_calibration_intake_contract_count"] != 1
+        or mechanics_metrics["mechanics_target_quantity_count"] != 15
+        or mechanics_metrics["delivered_mechanics_trajectory_count"] != 0
+        or mechanics_metrics["spatial_fsi_ready_trajectory_count"] != 0
+        or mechanics_metrics["matched_phh_mechanical_parameter_sets"] != 0
+    ):
+        raise ValueError("PHH mechanics intake escaped into morphology authority")
     memory_metrics = by_id["cellular_memory_laws"]["observed_metrics"]
     if (
         memory_metrics["trajectory_contract_column_count"] != 34

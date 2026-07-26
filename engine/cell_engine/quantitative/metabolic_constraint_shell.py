@@ -6,13 +6,21 @@ import json
 from pathlib import Path
 
 from cell_engine.core.provenance import SourceReference
+from cell_engine.quantitative.constraint_numerics import (
+    constraint_numerics_snapshot,
+    validate_constraint_numerics_snapshot,
+)
 from cell_engine.quantitative.human_gem_structural_audit import (
     load_committed_human_gem_audit,
+)
+from cell_engine.quantitative.phh_metabolic_execution_bundle import (
+    phh_metabolic_execution_bundle_intake_snapshot,
+    validate_phh_metabolic_execution_bundle_intake_snapshot,
 )
 
 
 DATE_VERIFIED = "2026-07-22"
-VERSION = "metabolic_constraint_shell_v3"
+VERSION = "metabolic_constraint_shell_v4"
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
@@ -57,6 +65,10 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
     scope = manifest["scientific_scope"]
     verification = manifest["verification"]
     counts = manifest["structural_counts_verified_from_sbml"]
+    numerics = constraint_numerics_snapshot()
+    validate_constraint_numerics_snapshot(numerics)
+    execution_bundle = phh_metabolic_execution_bundle_intake_snapshot()
+    validate_phh_metabolic_execution_bundle_intake_snapshot(execution_bundle)
     if not all(isinstance(item, dict) for item in (scope, verification, counts)):
         raise ValueError("Human-GEM manifest sections are malformed")
 
@@ -110,6 +122,8 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
             "transcriptome_input": None,
             "proteome_input": None,
         },
+        "generic_constraint_numerics": numerics,
+        "phh_execution_bundle_intake": execution_bundle,
         "optimization_problem": {
             "objective": None,
             "objective_is_biological_measurement": False,
@@ -136,9 +150,9 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
         "source_ids": tuple(METABOLIC_CONSTRAINT_SOURCES),
         "blockers": (
             "pinned SBML is not vendored or loaded by the runtime; use the checksum-verifying fetch tool",
-            "healthy-PHH context extraction is not defined",
-            "measured boundary fluxes are insufficient for the declared contexts",
-            "objective function is not identified as a healthy-hepatocyte measurement",
+            "checksum-frozen healthy-PHH context extraction bundle is not delivered",
+            "measured exchange bounds and explicit scale conversion are absent",
+            "objective function is not linked to a matched healthy-PHH measurement",
             "structural audit exceptions require reaction-level resolution before scientific optimization",
             "independent flux validation is absent",
         ),
@@ -152,8 +166,22 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
     context = payload.get("hepatocyte_context")
     optimization = payload.get("optimization_problem")
     gates = payload.get("gates")
-    if not all(isinstance(item, dict) for item in (reconstruction, context, optimization, gates)):
+    numerics = payload.get("generic_constraint_numerics")
+    execution_bundle = payload.get("phh_execution_bundle_intake")
+    if not all(
+        isinstance(item, dict)
+        for item in (
+            reconstruction,
+            context,
+            optimization,
+            gates,
+            numerics,
+            execution_bundle,
+        )
+    ):
         raise ValueError("metabolic constraint shell is malformed")
+    validate_constraint_numerics_snapshot(numerics)
+    validate_phh_metabolic_execution_bundle_intake_snapshot(execution_bundle)
     if any(gates.values()):
         raise ValueError("metabolic constraint shell may not execute before evidence intake")
     if reconstruction.get("model_version") != "2.0.0":
@@ -191,3 +219,10 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
     )
     if any(value is not None for value in required_nulls):
         raise ValueError("constraint-shell inputs changed without a versioned evidence review")
+    if (
+        execution_bundle.get("delivered_bundle_count") != 0
+        or execution_bundle.get("structurally_complete_bundle_count") != 0
+        or execution_bundle.get("fba_execution_allowed") is not False
+        or execution_bundle.get("runtime_flux_coupling_allowed") is not False
+    ):
+        raise ValueError("PHH metabolic execution escaped the empty intake gate")

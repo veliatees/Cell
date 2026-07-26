@@ -95,12 +95,17 @@
       "title": "Cytosol-to-membrane fluid-structure feedback",
       "status": "blocked_missing_evidence",
       "scope": "Pressure/traction feedback from the aqueous/poroelastic phase to membrane, cortex and organelles.",
-      "current_capability": "A dimensionless closed-mesh pressure-traction candidate kernel now checks action-reaction balance, pressure work, volume preservation, line-search stability and self-intersection rejection. It cannot apply its candidate to the runtime membrane.",
+      "current_capability": "A dimensionless closed-mesh pressure-traction candidate kernel checks action-reaction balance, pressure work, volume preservation, line-search stability and self-intersection rejection. A 48-column donor-resolved PHH mechanics intake now gates raw deformation/relaxation trajectories, reported constitutive parameters, same-cell meshes and spatial boundary conditions. No mechanics record is delivered and the candidate cannot modify the runtime membrane.",
       "observed_metrics": {
         "dimensionless_pressure_membrane_response_kernel_count": 1,
         "force_energy_consistency_test_count": 1,
         "volume_preserving_fsi_candidate_test_count": 1,
-        "membrane_pressure_feedback_count": 0
+        "membrane_pressure_feedback_count": 0,
+        "mechanics_calibration_intake_contract_count": 1,
+        "mechanics_target_quantity_count": 15,
+        "delivered_mechanics_trajectory_count": 0,
+        "spatial_fsi_ready_trajectory_count": 0,
+        "quantitatively_authorized_mechanics_parameter_count": 0
       },
       "remaining_requirements": [
         "PHH membrane/cortex mechanics and hydraulic boundary data.",
@@ -110,7 +115,9 @@
       "code_surfaces": [
         "src/physics/dimensionlessFsi.ts",
         "src/physics/intracellularFluid.ts",
-        "src/physics/cytosolNumerics.ts"
+        "src/physics/cytosolNumerics.ts",
+        "engine/cell_engine/quantitative/phh_mechanics_calibration.py",
+        "data/evidence_intake/phh_mechanics_calibration_contract.v1.json"
       ]
     },
     {
@@ -565,7 +572,7 @@
       "title": "Donor-resolved 3D morphology and mechanics",
       "status": "partial",
       "scope": "In-situ hepatocyte surface, organelle distribution, cortex, adhesion and membrane mechanics.",
-      "current_capability": "Human aggregate 3D volume and verified proxy geometry exist. A checksum-frozen donor mesh manifest plus canonical triangle topology audit now exists, while external self-intersection, registration, contact-interface and grid-convergence evidence remain mandatory. No donor mesh or matched PHH mechanical parameter set is registered.",
+      "current_capability": "Human aggregate 3D volume and verified proxy geometry exist. Checksum-frozen donor mesh and mechanics contracts now share cell/mesh identifiers and require raw loading-relaxation trajectories, spatial boundary conditions and held-out donors. No donor mesh, mechanics trajectory or matched PHH parameter set is registered.",
       "observed_metrics": {
         "mesh_intake_contract_count": 1,
         "mesh_target_structure_count": 11,
@@ -573,7 +580,11 @@
         "structurally_ready_mesh_count": 0,
         "donor_resolved_in_situ_mesh_count": 0,
         "contact_ground_truth_mesh_count": 0,
-        "matched_phh_mechanical_parameter_sets": 0
+        "matched_phh_mechanical_parameter_sets": 0,
+        "mechanics_calibration_intake_contract_count": 1,
+        "mechanics_target_quantity_count": 15,
+        "delivered_mechanics_trajectory_count": 0,
+        "spatial_fsi_ready_trajectory_count": 0
       },
       "remaining_requirements": [
         "Donor-resolved in-situ membrane and organelle meshes.",
@@ -584,7 +595,9 @@
         "engine/cell_engine/validation/physical_validation.py",
         "engine/cell_engine/quantitative/human_hepatocyte_3d_morphometry.py",
         "engine/cell_engine/quantitative/phh_3d_mesh_boundary.py",
-        "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json"
+        "engine/cell_engine/quantitative/phh_mechanics_calibration.py",
+        "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json",
+        "data/evidence_intake/phh_mechanics_calibration_contract.v1.json"
       ]
     },
     {
@@ -611,14 +624,43 @@
       ]
     },
     {
+      "id": "generic_fba_fva_numerics",
+      "title": "Generic FBA/FVA numerical kernel",
+      "status": "closed",
+      "scope": "Linear-programming software verification on analytic synthetic stoichiometric fixtures only.",
+      "current_capability": "A pinned SciPy/HiGHS backend solves steady-state FBA, objective-constrained FVA, alternate-optimum audits and elastic infeasibility diagnosis. Five analytic fixture checks cover mass balance, reaction bounds and solver failure states without loading Human-GEM or claiming a biological flux.",
+      "observed_metrics": {
+        "synthetic_fba_fixture_count": 3,
+        "synthetic_fva_fixture_count": 2,
+        "analytic_fixture_pass_count": 5,
+        "alternate_optimum_audit_count": 1,
+        "elastic_infeasibility_diagnosis_count": 1,
+        "human_gem_loaded": false,
+        "biological_flux_authority": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/constraint_numerics.py",
+        "engine/tests/test_constraint_numerics.py"
+      ]
+    },
+    {
       "id": "hepatocyte_fba_execution",
       "title": "Healthy-PHH FBA/FVA execution",
       "status": "blocked_missing_evidence",
       "scope": "A context-extracted and independently validated healthy-hepatocyte constraint model.",
-      "current_capability": "The generic reconstruction is pinned, but every optimization and scientific-coupling gate remains false.",
+      "current_capability": "The generic reconstruction and LP backend are pinned. A checksum-frozen ten-artifact execution-bundle intake now requires deterministic context extraction, measured exchange bounds, an explicit scale operator, measured objective, FBA/FVA/infeasibility reports and donor/study-disjoint validation. No PHH bundle is delivered, so every biological execution and coupling gate remains false.",
       "observed_metrics": {
         "execution_gate_count": 6,
-        "enabled_execution_gate_count": 0
+        "enabled_execution_gate_count": 0,
+        "generic_solver_fixture_pass_count": 5,
+        "execution_bundle_intake_contract_count": 1,
+        "required_execution_bundle_artifact_count": 10,
+        "delivered_execution_bundle_count": 0,
+        "structurally_complete_execution_bundle_count": 0,
+        "measured_exchange_bound_count": 0,
+        "independent_validation_record_count": 0,
+        "runtime_flux_coupling_allowed_count": 0
       },
       "remaining_requirements": [
         "Declared PHH context-extraction algorithm and donor/cohort inputs.",
@@ -626,7 +668,10 @@
         "FVA, infeasibility, reaction-level structural-audit exception resolution and independent flux validation."
       ],
       "code_surfaces": [
-        "engine/cell_engine/quantitative/metabolic_constraint_shell.py"
+        "engine/cell_engine/quantitative/metabolic_constraint_shell.py",
+        "engine/cell_engine/quantitative/constraint_numerics.py",
+        "engine/cell_engine/quantitative/phh_metabolic_execution_bundle.py",
+        "data/evidence_intake/phh_metabolic_execution_bundle_contract.v1.json"
       ]
     },
     {
@@ -675,8 +720,8 @@
     }
   ],
   "summary": {
-    "entry_count": 27,
-    "closed_count": 5,
+    "entry_count": 28,
+    "closed_count": 6,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,
