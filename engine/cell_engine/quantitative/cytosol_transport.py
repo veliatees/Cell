@@ -20,10 +20,14 @@ from cell_engine.quantitative.phh_mechanics_calibration import (
     phh_mechanics_calibration_intake_snapshot,
     validate_phh_mechanics_calibration_intake_snapshot,
 )
+from cell_engine.quantitative.phh_membrane_topology_event import (
+    phh_membrane_topology_event_intake_snapshot,
+    validate_phh_membrane_topology_event_intake_snapshot,
+)
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "cytosol_transport_rheology_contract_v12"
+VERSION = "cytosol_transport_rheology_contract_v13"
 
 RENDERER_GEOMETRY_BOUNDARY_CLASSES: tuple[str, ...] = (
     "nuclear_envelope",
@@ -358,6 +362,10 @@ def cytosol_transport_snapshot() -> dict[str, object]:
     active_cargo_intake = active_cargo_trajectory_intake_snapshot()
     mechanics_intake = phh_mechanics_calibration_intake_snapshot()
     validate_phh_mechanics_calibration_intake_snapshot(mechanics_intake)
+    topology_event_intake = phh_membrane_topology_event_intake_snapshot()
+    validate_phh_membrane_topology_event_intake_snapshot(
+        topology_event_intake
+    )
 
     return {
         "version": VERSION,
@@ -433,6 +441,7 @@ def cytosol_transport_snapshot() -> dict[str, object]:
         },
         "cross_context_reference_observations": REFERENCE_OBSERVATIONS,
         "phh_mechanics_calibration_intake": mechanics_intake,
+        "phh_membrane_topology_event_intake": topology_event_intake,
         "transport_mode_contract": {
             "aqueous_passive_transport": {
                 "carriers": "ions, metabolites and soluble macromolecules",
@@ -539,6 +548,45 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                     "quantitatively_authorized_parameter_count"
                 ],
             },
+            "dimensionless_membrane_topology_transition_candidate": {
+                "enabled": True,
+                "role": (
+                    "offline topology audit and conservative surface-state "
+                    "transfer for explicitly supplied pre/post closed meshes"
+                ),
+                "supported_event_kinds": (
+                    "bud_growth",
+                    "neck_formation",
+                    "fission",
+                    "fusion",
+                ),
+                "closed_surface_topology_audit": True,
+                "cross_component_intersection_audit": True,
+                "event_specific_euler_change_audit": True,
+                "explicit_component_lineage_required": True,
+                "explicit_face_transfer_map_required": True,
+                "extensive_surface_inventory_conservation": True,
+                "area_integrated_density_conservation": True,
+                "explicit_binding_destination_required": True,
+                "molecule_identity_resolved": False,
+                "automatic_event_detection": False,
+                "automatic_mesh_surgery": False,
+                "automatic_event_time_or_neck_threshold": False,
+                "runtime_mesh_replacement_enabled": False,
+                "fluid_domain_replacement_enabled": False,
+                "biological_event_activation_enabled": False,
+                "evidence_intake_contract_id": topology_event_intake[
+                    "contract_id"
+                ],
+                "delivered_event_record_count": topology_event_intake[
+                    "record_count"
+                ],
+                "quantitatively_authorized_event_record_count": (
+                    topology_event_intake[
+                        "quantitatively_authorized_record_count"
+                    ]
+                ),
+            },
             "conservative_passive_scalar_kernel": {
                 "enabled": True,
                 "role": "fixed- and moving-domain mass-conservation and non-negativity test bed",
@@ -614,6 +662,18 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "subgrid_boundary_grid_convergence_test_count": 1,
             "local_star_shaped_membrane_boundary_coupling_count": 1,
             "local_membrane_topology_change_coupling_count": 0,
+            "membrane_topology_transition_audit_kernel_count": 1,
+            "conservative_membrane_topology_state_transfer_kernel_count": 1,
+            "membrane_topology_transition_candidate_transaction_count": 1,
+            "membrane_topology_event_intake_contract_count": 1,
+            "delivered_phh_membrane_topology_event_record_count": (
+                topology_event_intake["record_count"]
+            ),
+            "quantitatively_authorized_phh_membrane_topology_event_record_count": (
+                topology_event_intake[
+                    "quantitatively_authorized_record_count"
+                ]
+            ),
             "locally_conservative_membrane_face_flux_count": 1,
             "fractional_face_aperture_solver_count": 1,
             "generic_watertight_mesh_boundary_kernel_count": 1,
@@ -649,6 +709,7 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "Species-specific apparent diffusion and reaction-specific diffusion limitation are missing.",
             "Healthy-PHH motor-cargo rates and route-resolved validation trajectories are missing.",
             "Membrane pressure feedback requires measured PHH permeability, modulus and hydraulic boundary data.",
+            "Runtime membrane topology change requires event-resolved healthy-PHH meshes, neck mechanics, surface partition measurements and held-out validation.",
         ),
     }
 
@@ -673,6 +734,9 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
     active_cargo = solvers.get("dimensionless_active_cargo_route_kernel")
     fsi_candidate = solvers.get("dimensionless_pressure_membrane_response_candidate")
     mechanics_intake = payload.get("phh_mechanics_calibration_intake")
+    topology_event_intake = payload.get(
+        "phh_membrane_topology_event_intake"
+    )
     if not isinstance(projection, dict) or projection.get("enabled") is not True:
         raise ValueError("dimensionless projection layer is missing")
     if projection.get("biological_time_or_velocity_claim") is not False:
@@ -774,6 +838,11 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
     if not isinstance(mechanics_intake, dict):
         raise ValueError("PHH mechanics calibration intake is missing")
     validate_phh_mechanics_calibration_intake_snapshot(mechanics_intake)
+    if not isinstance(topology_event_intake, dict):
+        raise ValueError("PHH membrane topology event intake is missing")
+    validate_phh_membrane_topology_event_intake_snapshot(
+        topology_event_intake
+    )
     if any(
         fsi_candidate.get(key) is not True
         for key in (
@@ -807,6 +876,49 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         or fsi_candidate.get("quantitatively_authorized_parameter_count") != 0
     ):
         raise ValueError("dimensionless FSI candidate bypassed the PHH mechanics gate")
+    topology_candidate = solvers.get(
+        "dimensionless_membrane_topology_transition_candidate"
+    )
+    if not isinstance(topology_candidate, dict):
+        raise ValueError("dimensionless membrane topology candidate is missing")
+    if any(
+        topology_candidate.get(key) is not True
+        for key in (
+            "enabled",
+            "closed_surface_topology_audit",
+            "cross_component_intersection_audit",
+            "event_specific_euler_change_audit",
+            "explicit_component_lineage_required",
+            "explicit_face_transfer_map_required",
+            "extensive_surface_inventory_conservation",
+            "area_integrated_density_conservation",
+            "explicit_binding_destination_required",
+        )
+    ):
+        raise ValueError("membrane topology numerical verification contract changed")
+    if any(
+        topology_candidate.get(key) is not False
+        for key in (
+            "molecule_identity_resolved",
+            "automatic_event_detection",
+            "automatic_mesh_surgery",
+            "automatic_event_time_or_neck_threshold",
+            "runtime_mesh_replacement_enabled",
+            "fluid_domain_replacement_enabled",
+            "biological_event_activation_enabled",
+        )
+    ):
+        raise ValueError("membrane topology candidate escaped into PHH biology")
+    if (
+        topology_candidate.get("evidence_intake_contract_id")
+        != topology_event_intake.get("contract_id")
+        or topology_candidate.get("delivered_event_record_count") != 0
+        or topology_candidate.get(
+            "quantitatively_authorized_event_record_count"
+        )
+        != 0
+    ):
+        raise ValueError("membrane topology candidate bypassed its evidence gate")
     if coupling.get("currently_coupled_reaction_count") != 0:
         raise ValueError("cytosol transport contract activated a reaction")
     if conflict.get("may_parameterize_quantitative_fluid_or_reaction_model") is not False:
