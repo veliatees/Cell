@@ -112,6 +112,10 @@ from cell_engine.quantitative.cytosol_transport import (
     cytosol_transport_snapshot,
     validate_cytosol_transport_snapshot,
 )
+from cell_engine.quantitative.metabolic_constraint_shell import (
+    metabolic_constraint_shell_snapshot,
+    validate_metabolic_constraint_shell,
+)
 from cell_engine.stochastic.integrated_cell import (
     INTEGRATED_VOLUME_L,
     build_integrated_hepatocyte_network,
@@ -467,15 +471,51 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
                 "dimensionless_pressure_membrane_response_kernel_count"
             ]
             != 1
+            or cytosol_summary[
+                "phh_mechanics_calibration_intake_contract_count"
+            ]
+            != 1
+            or cytosol_summary["phh_mechanics_target_quantity_count"] != 15
+            or cytosol_summary["delivered_phh_mechanics_trajectory_count"] != 0
+            or cytosol_summary[
+                "spatial_fsi_ready_phh_mechanics_trajectory_count"
+            ]
+            != 0
+            or cytosol_summary[
+                "quantitatively_authorized_phh_mechanics_parameter_count"
+            ]
+            != 0
             or cytosol_summary["membrane_pressure_feedback_count"] != 0
             or cytosol_summary["full_watertight_mesh_boundary_count"] != 0
         ):
             raise ValueError("dimensionless cytosol numerics exceeded current authority")
         checks.append(
-            "self-intersection-audited closed domains and a force/volume-checked pressure-response candidate remain dimensionless while PHH mesh registration and runtime feedback stay zero"
+            "self-intersection-audited closed domains and a force/volume-checked pressure-response candidate remain dimensionless while the 48-column PHH mechanics intake, mesh registration and runtime feedback stay fail closed"
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid dimensionless cytosol numerical contract: {exc}")
+
+    try:
+        metabolic = metabolic_constraint_shell_snapshot()
+        validate_metabolic_constraint_shell(metabolic)
+        numerics = metabolic["generic_constraint_numerics"]
+        bundle = metabolic["phh_execution_bundle_intake"]
+        if (
+            numerics["analytic_fixture_pass_count"] != 5
+            or numerics["human_gem_loaded"] is not False
+            or numerics["biological_flux_authority"] is not False
+            or bundle["required_artifact_count"] != 10
+            or bundle["delivered_bundle_count"] != 0
+            or bundle["structurally_complete_bundle_count"] != 0
+            or bundle["fba_execution_allowed"] is not False
+            or bundle["runtime_flux_coupling_allowed"] is not False
+        ):
+            raise ValueError("constraint numerics or PHH execution bundle exceeded authority")
+        checks.append(
+            "five analytic FBA/FVA fixtures verify the pinned LP backend while the ten-artifact PHH execution bundle, Human-GEM loading and biological flux coupling remain absent"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid metabolic constraint execution contract: {exc}")
 
     try:
         external_validation_program = build_external_validation_program()

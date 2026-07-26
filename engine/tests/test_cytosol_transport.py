@@ -46,6 +46,11 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert summary["dimensionless_pressure_membrane_response_kernel_count"] == 1
     assert summary["force_energy_consistency_test_count"] == 1
     assert summary["volume_preserving_fsi_candidate_test_count"] == 1
+    assert summary["phh_mechanics_calibration_intake_contract_count"] == 1
+    assert summary["phh_mechanics_target_quantity_count"] == 15
+    assert summary["delivered_phh_mechanics_trajectory_count"] == 0
+    assert summary["spatial_fsi_ready_phh_mechanics_trajectory_count"] == 0
+    assert summary["quantitatively_authorized_phh_mechanics_parameter_count"] == 0
     assert summary["full_watertight_mesh_boundary_count"] == 0
     assert summary["compound_boundary_conservation_test_count"] == 1
     assert summary["membrane_pressure_feedback_count"] == 0
@@ -110,6 +115,13 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert fsi["runtime_feedback_enabled"] is False
     assert fsi["biological_pressure_assigned"] is False
     assert fsi["biological_compliance_assigned"] is False
+    assert fsi["delivered_mechanics_trajectory_count"] == 0
+    assert fsi["spatial_fsi_ready_trajectory_count"] == 0
+    assert fsi["quantitatively_authorized_parameter_count"] == 0
+    mechanics = snapshot["phh_mechanics_calibration_intake"]
+    assert mechanics["expected_header_count"] == 48
+    assert mechanics["target_quantity_count"] == 15
+    assert mechanics["mechanics_coupling_allowed"] is False
 
 
 @pytest.mark.parametrize(
@@ -152,6 +164,13 @@ def test_missing_transport_evidence_cannot_modify_a_reaction() -> None:
     assert decision.local_concentration_coupling_allowed is False
     assert decision.direct_rate_correction_allowed is False
     assert decision.direct_rate_multiplier is None
+
+
+def test_phh_mechanics_intake_cannot_enable_runtime_feedback_by_mutation() -> None:
+    snapshot = deepcopy(cytosol_transport_snapshot())
+    snapshot["phh_mechanics_calibration_intake"]["mechanics_coupling_allowed"] = True
+    with pytest.raises(ValueError):
+        validate_cytosol_transport_snapshot(snapshot)
 
 
 def test_complete_synthetic_evidence_computes_timescale_but_never_infers_multiplier() -> None:

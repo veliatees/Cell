@@ -1552,8 +1552,34 @@ export type EngineReactionEvidenceIntake = {
   blockers: string[];
 };
 
+export type EnginePHHMechanicsCalibrationIntake = {
+  version: "phh_mechanics_calibration_intake_v1";
+  contract_id: string;
+  status: string;
+  delivery_path: string;
+  contract_sha256: string;
+  artifact_sha256?: string;
+  expected_header_count: number;
+  target_quantity_count: number;
+  record_count: number;
+  donor_count: number;
+  raw_trajectory_count: number;
+  reported_parameter_record_count: number;
+  structurally_complete_trajectory_count: number;
+  spatial_fsi_ready_trajectory_count: number;
+  independent_heldout_trajectory_count: number;
+  quantitatively_authorized_parameter_count: number;
+  mechanics_coupling_allowed: false;
+  automatic_parameter_fitting: false;
+  automatic_unit_conversion: false;
+  automatic_runtime_coupling: false;
+  record_count_by_split?: Record<string, number>;
+  trajectory_assessments?: unknown[];
+  blockers: string[];
+};
+
 export type EngineCytosolTransport = {
-  version: "cytosol_transport_rheology_contract_v11";
+  version: "cytosol_transport_rheology_contract_v12";
   status: string;
   material_model: {
     model: "poroelastic_two_phase_cytoplasm";
@@ -1594,6 +1620,7 @@ export type EngineCytosolTransport = {
     may_parameterize_healthy_phh: false;
     source_ids: string[];
   }[];
+  phh_mechanics_calibration_intake: EnginePHHMechanicsCalibrationIntake;
   transport_mode_contract: {
     aqueous_passive_transport: {
       carriers: string;
@@ -1688,6 +1715,10 @@ export type EngineCytosolTransport = {
       biological_pressure_assigned: false;
       biological_compliance_assigned: false;
       healthy_phh_mechanics_assigned: false;
+      mechanics_calibration_intake_contract_id: string;
+      delivered_mechanics_trajectory_count: 0;
+      spatial_fsi_ready_trajectory_count: 0;
+      quantitatively_authorized_parameter_count: 0;
     };
     conservative_passive_scalar_kernel: {
       enabled: true;
@@ -1753,6 +1784,11 @@ export type EngineCytosolTransport = {
     dimensionless_pressure_membrane_response_kernel_count: number;
     force_energy_consistency_test_count: number;
     volume_preserving_fsi_candidate_test_count: number;
+    phh_mechanics_calibration_intake_contract_count: number;
+    phh_mechanics_target_quantity_count: number;
+    delivered_phh_mechanics_trajectory_count: number;
+    spatial_fsi_ready_phh_mechanics_trajectory_count: number;
+    quantitatively_authorized_phh_mechanics_parameter_count: number;
     full_watertight_mesh_boundary_count: number;
     compound_boundary_conservation_test_count: number;
     membrane_pressure_feedback_count: number;
@@ -1764,7 +1800,7 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v3";
+  version: "metabolic_constraint_shell_v4";
   status: string;
   role: string;
   candidate_reconstruction: {
@@ -1808,6 +1844,52 @@ export type EngineMetabolicConstraintShell = {
     };
   };
   hepatocyte_context: Record<string, string | null>;
+  generic_constraint_numerics: {
+    version: "constraint_numerics_v1";
+    scope: string;
+    backend: "scipy.optimize.linprog";
+    backend_version: "1.17.1";
+    method: "highs";
+    primal_feasibility_tolerance: number;
+    dual_feasibility_tolerance: number;
+    objective_absolute_tolerance: number;
+    synthetic_fba_fixture_count: number;
+    synthetic_fva_fixture_count: number;
+    mass_balance_residual_check_count: number;
+    bound_violation_check_count: number;
+    alternate_optimum_audit_count: number;
+    elastic_infeasibility_diagnosis_count: number;
+    analytic_fixture_pass_count: number;
+    human_gem_loaded: false;
+    healthy_phh_context_loaded: false;
+    biological_objective_selected: false;
+    measured_exchange_bounds_loaded: false;
+    biological_flux_authority: false;
+  };
+  phh_execution_bundle_intake: {
+    version: "phh_metabolic_execution_bundle_intake_v1";
+    contract_id: string;
+    status: string;
+    delivery_path: string;
+    bundle_id?: string;
+    bundle_sha256?: string;
+    contract_sha256: string;
+    required_artifact_count: number;
+    delivered_bundle_count: number;
+    verified_artifact_count: number;
+    measured_exchange_bound_count: number;
+    independent_validation_record_count: number;
+    structurally_complete_bundle_count: number;
+    generic_solver_fixture_pass_count: number;
+    fba_execution_allowed: false;
+    fva_execution_allowed: false;
+    runtime_flux_coupling_allowed: false;
+    automatic_context_extraction: false;
+    automatic_bound_imputation: false;
+    automatic_objective_selection: false;
+    automatic_unit_conversion: false;
+    blockers: string[];
+  };
   optimization_problem: Record<string, string | number | boolean | null>;
   required_outputs: string[];
   gates: Record<string, boolean>;

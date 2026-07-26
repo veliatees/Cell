@@ -51,6 +51,19 @@ biology rather than tuned to look right.
   pathways, while a 52-column localization/activity intake covers 63 slots for
   BSEP, MRP2, NTCP, INSR, MET, EGFR, GLUT2, and glucokinase. Both currently
   contain zero delivered records and grant zero automatic runtime authority.
+- **A donor-resolved PHH mechanics data plane** — a strict 48-column intake
+  preserves raw loading, hold, relaxation and washout observations separately
+  from source-reported constitutive parameters. Canonical units, raw-artifact
+  checksums, same-cell mesh identity, spatial boundary conditions and
+  donor/study-disjoint held-out data are required; zero mechanics trajectories
+  or parameters are currently authorized.
+- **A verified constraint-model software layer** — a pinned SciPy/HiGHS
+  backend passes five analytic FBA/FVA fixtures covering mass balance, reaction
+  bounds, alternate optima and elastic infeasibility diagnosis. A separate
+  ten-artifact PHH execution-bundle gate requires deterministic Human-GEM
+  context extraction, measured exchange bounds, an explicit scale operator,
+  measured objective and independent flux validation. No Human-GEM optimization
+  or runtime flux coupling is enabled.
 - **A stochastic reaction core** — exact Gillespie SSA for low-copy species and
   the chemical Langevin equation (an SDE) for high-copy species, the same hybrid
   the field's whole-cell models use, verified against analytic results (Poisson
@@ -169,6 +182,11 @@ Recent additions make more of the engine visible and keep it physically honest:
   pressure and passive-transport solvers. Partial-cell scalar volume and moving
   boundary remaps conserve numerical mass; this remains a numerical test bed,
   not healthy-PHH CFD or a measured organelle mesh.
+- **Mechanics and genome-scale execution are visible but fail closed.** The
+  browser reports the mechanics trajectory/parameter queue, the analytic
+  FBA/FVA self-tests and the PHH execution-bundle requirements. These are
+  engineering readiness indicators, not biological completion or inferred
+  hepatocyte fluxes.
 - **Contact deforms the main cell itself.** When an authoritative engine contact
   is present, the same high-resolution membrane shown in the browser compresses
   along the contact normal and expands tangentially with exact affine volume

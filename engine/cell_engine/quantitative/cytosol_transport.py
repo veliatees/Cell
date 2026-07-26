@@ -16,10 +16,14 @@ from cell_engine.quantitative.active_cargo_trajectory import (
     active_cargo_trajectory_intake_snapshot,
 )
 from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_VOLUME_UM3
+from cell_engine.quantitative.phh_mechanics_calibration import (
+    phh_mechanics_calibration_intake_snapshot,
+    validate_phh_mechanics_calibration_intake_snapshot,
+)
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "cytosol_transport_rheology_contract_v11"
+VERSION = "cytosol_transport_rheology_contract_v12"
 
 RENDERER_GEOMETRY_BOUNDARY_CLASSES: tuple[str, ...] = (
     "nuclear_envelope",
@@ -352,6 +356,8 @@ def cytosol_transport_snapshot() -> dict[str, object]:
     if any(observation.may_parameterize_healthy_phh for observation in REFERENCE_OBSERVATIONS):
         raise ValueError("cross-context rheology reference was promoted to healthy PHH")
     active_cargo_intake = active_cargo_trajectory_intake_snapshot()
+    mechanics_intake = phh_mechanics_calibration_intake_snapshot()
+    validate_phh_mechanics_calibration_intake_snapshot(mechanics_intake)
 
     return {
         "version": VERSION,
@@ -426,6 +432,7 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "migration_required": True,
         },
         "cross_context_reference_observations": REFERENCE_OBSERVATIONS,
+        "phh_mechanics_calibration_intake": mechanics_intake,
         "transport_mode_contract": {
             "aqueous_passive_transport": {
                 "carriers": "ions, metabolites and soluble macromolecules",
@@ -519,6 +526,18 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "biological_pressure_assigned": False,
                 "biological_compliance_assigned": False,
                 "healthy_phh_mechanics_assigned": False,
+                "mechanics_calibration_intake_contract_id": mechanics_intake[
+                    "contract_id"
+                ],
+                "delivered_mechanics_trajectory_count": mechanics_intake[
+                    "raw_trajectory_count"
+                ],
+                "spatial_fsi_ready_trajectory_count": mechanics_intake[
+                    "spatial_fsi_ready_trajectory_count"
+                ],
+                "quantitatively_authorized_parameter_count": mechanics_intake[
+                    "quantitatively_authorized_parameter_count"
+                ],
             },
             "conservative_passive_scalar_kernel": {
                 "enabled": True,
@@ -603,6 +622,19 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "dimensionless_pressure_membrane_response_kernel_count": 1,
             "force_energy_consistency_test_count": 1,
             "volume_preserving_fsi_candidate_test_count": 1,
+            "phh_mechanics_calibration_intake_contract_count": 1,
+            "phh_mechanics_target_quantity_count": mechanics_intake[
+                "target_quantity_count"
+            ],
+            "delivered_phh_mechanics_trajectory_count": mechanics_intake[
+                "raw_trajectory_count"
+            ],
+            "spatial_fsi_ready_phh_mechanics_trajectory_count": mechanics_intake[
+                "spatial_fsi_ready_trajectory_count"
+            ],
+            "quantitatively_authorized_phh_mechanics_parameter_count": mechanics_intake[
+                "quantitatively_authorized_parameter_count"
+            ],
             "full_watertight_mesh_boundary_count": 0,
             "compound_boundary_conservation_test_count": 1,
             "membrane_pressure_feedback_count": 0,
@@ -640,6 +672,7 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
     scalar = solvers.get("conservative_passive_scalar_kernel")
     active_cargo = solvers.get("dimensionless_active_cargo_route_kernel")
     fsi_candidate = solvers.get("dimensionless_pressure_membrane_response_candidate")
+    mechanics_intake = payload.get("phh_mechanics_calibration_intake")
     if not isinstance(projection, dict) or projection.get("enabled") is not True:
         raise ValueError("dimensionless projection layer is missing")
     if projection.get("biological_time_or_velocity_claim") is not False:
@@ -738,6 +771,9 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("dimensionless active-cargo renderer escaped into PHH biology")
     if not isinstance(fsi_candidate, dict) or fsi_candidate.get("enabled") is not True:
         raise ValueError("dimensionless pressure-membrane candidate kernel is missing")
+    if not isinstance(mechanics_intake, dict):
+        raise ValueError("PHH mechanics calibration intake is missing")
+    validate_phh_mechanics_calibration_intake_snapshot(mechanics_intake)
     if any(
         fsi_candidate.get(key) is not True
         for key in (
@@ -763,6 +799,14 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         )
     ):
         raise ValueError("dimensionless pressure-membrane candidate escaped into PHH mechanics")
+    if (
+        fsi_candidate.get("mechanics_calibration_intake_contract_id")
+        != mechanics_intake.get("contract_id")
+        or fsi_candidate.get("delivered_mechanics_trajectory_count") != 0
+        or fsi_candidate.get("spatial_fsi_ready_trajectory_count") != 0
+        or fsi_candidate.get("quantitatively_authorized_parameter_count") != 0
+    ):
+        raise ValueError("dimensionless FSI candidate bypassed the PHH mechanics gate")
     if coupling.get("currently_coupled_reaction_count") != 0:
         raise ValueError("cytosol transport contract activated a reaction")
     if conflict.get("may_parameterize_quantitative_fluid_or_reaction_model") is not False:

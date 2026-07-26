@@ -81,6 +81,18 @@ class ScientificModelAuditTests(unittest.TestCase):
             by_id["external_validation_readiness_program"].drives_scientific_validation,
             True,
         )
+        self.assertEqual(
+            by_id["phh_mechanics_calibration_intake"].default_snapshot_role,
+            "donor_resolved_mechanics_and_fsi_firewall",
+        )
+        self.assertEqual(
+            by_id["generic_constraint_numerics"].default_snapshot_role,
+            "synthetic_linear_programming_verification_only",
+        )
+        self.assertEqual(
+            by_id["phh_metabolic_execution_bundle_intake"].default_snapshot_role,
+            "checksum_frozen_context_and_flux_validation_firewall",
+        )
 
 
 if __name__ == "__main__":
