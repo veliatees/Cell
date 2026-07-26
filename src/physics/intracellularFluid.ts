@@ -231,10 +231,14 @@ export class IntracellularFluidField {
     deformation: IntracellularFluidDeformation | null,
     collides?: IntracellularFluidCollision,
     obstacles?: DynamicCytosolObstacleField,
-    refreshNumericalGrid = true
+    refreshNumericalGrid = true,
+    numericalGridDeltaS = realDeltaS
   ): void {
     if (!Number.isFinite(realDeltaS) || realDeltaS < 0) {
       throw new RangeError("fluid renderer delta must be finite and non-negative");
+    }
+    if (!Number.isFinite(numericalGridDeltaS) || numericalGridDeltaS < 0) {
+      throw new RangeError("numerical-grid delta must be finite and non-negative");
     }
     this.previousPositions.set(this.positions);
     if (realDeltaS === 0) {
@@ -245,7 +249,13 @@ export class IntracellularFluidField {
 
     const dt = Math.min(realDeltaS, 0.05);
     this.elapsedRenderS += dt;
-    if (refreshNumericalGrid) this.numericalGrid?.step(dt, deformation, obstacles);
+    if (refreshNumericalGrid) {
+      this.numericalGrid?.step(
+        numericalGridDeltaS,
+        deformation,
+        obstacles
+      );
+    }
     const candidate = new Float32Array(3);
     const renderedSource = new Float32Array(3);
     const renderedCandidate = new Float32Array(3);

@@ -19,7 +19,7 @@ from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_VOLUME_UM3
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "cytosol_transport_rheology_contract_v8"
+VERSION = "cytosol_transport_rheology_contract_v9"
 
 RENDERER_GEOMETRY_BOUNDARY_CLASSES: tuple[str, ...] = (
     "nuclear_envelope",
@@ -371,9 +371,10 @@ def cytosol_transport_snapshot() -> dict[str, object]:
         "governing_contract": {
             "species_balance": "partial_t(c_i) + div(u*c_i) = div(D_i*grad(c_i)) + R_i(c)",
             "incompressible_visual_mapping": (
-                "div(u) = 0 and det(F) = 1 for the affine contact map; a "
-                "reference-space angular field adds only smooth star-shaped "
-                "non-affine boundary residuals"
+                "det(F) = 1 for the affine contact map; smooth star-shaped "
+                "non-affine residual motion is rasterized into fractional cell "
+                "volumes and face apertures, and the pressure projection enforces "
+                "the corresponding discrete local geometric-conservation source"
             ),
             "poroelastic_scaling": "D_p scales with E*xi^2/mu; no coefficient is assigned for healthy PHH",
             "advection_changes_reaction_state_via": "local reactant/product concentrations and boundary fluxes",
@@ -458,7 +459,11 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "local_boundary_angular_bin_count": 512,
                 "affine_component_removed_before_local_boundary_sampling": True,
                 "multi_intersection_fold_or_topology_change_support": False,
-                "locally_conservative_membrane_face_flux": False,
+                "locally_conservative_membrane_face_flux": True,
+                "outer_membrane_subgrid_volume_samples_per_cell": 8,
+                "outer_membrane_face_area_samples": 4,
+                "outer_membrane_geometric_conservation_source": True,
+                "outer_membrane_volume_fraction_mass_remap": True,
                 "moving_analytic_obstacle_boundaries": True,
                 "analytic_obstacle_shapes": ("sphere", "ellipsoid", "capsule", "box"),
                 "rigid_translation_boundary_velocity": True,
@@ -556,7 +561,7 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "subgrid_boundary_grid_convergence_test_count": 1,
             "local_star_shaped_membrane_boundary_coupling_count": 1,
             "local_membrane_topology_change_coupling_count": 0,
-            "locally_conservative_membrane_face_flux_count": 0,
+            "locally_conservative_membrane_face_flux_count": 1,
             "fractional_face_aperture_solver_count": 1,
             "full_watertight_mesh_boundary_count": 0,
             "compound_boundary_conservation_test_count": 1,
@@ -613,9 +618,16 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
     if (
         projection.get("multi_intersection_fold_or_topology_change_support")
         is not False
-        or projection.get("locally_conservative_membrane_face_flux") is not False
     ):
-        raise ValueError("local membrane boundary overclaims topology or conservative flux")
+        raise ValueError("local membrane boundary overclaims topology support")
+    if (
+        projection.get("locally_conservative_membrane_face_flux") is not True
+        or projection.get("outer_membrane_subgrid_volume_samples_per_cell") != 8
+        or projection.get("outer_membrane_face_area_samples") != 4
+        or projection.get("outer_membrane_geometric_conservation_source") is not True
+        or projection.get("outer_membrane_volume_fraction_mass_remap") is not True
+    ):
+        raise ValueError("local membrane geometric-conservation coupling is missing")
     if projection.get("analytic_obstacle_shapes") != (
         "sphere",
         "ellipsoid",

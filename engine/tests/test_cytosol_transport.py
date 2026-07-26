@@ -38,7 +38,7 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert summary["subgrid_boundary_grid_convergence_test_count"] == 1
     assert summary["local_star_shaped_membrane_boundary_coupling_count"] == 1
     assert summary["local_membrane_topology_change_coupling_count"] == 0
-    assert summary["locally_conservative_membrane_face_flux_count"] == 0
+    assert summary["locally_conservative_membrane_face_flux_count"] == 1
     assert summary["fractional_face_aperture_solver_count"] == 1
     assert summary["full_watertight_mesh_boundary_count"] == 0
     assert summary["compound_boundary_conservation_test_count"] == 1
@@ -76,6 +76,11 @@ def test_cytosol_contract_exposes_real_cross_context_data_without_promoting_it_t
     assert renderer["local_star_shaped_membrane_boundary_coupling"] is True
     assert renderer["local_boundary_reference_space"] is True
     assert renderer["local_boundary_angular_bin_count"] == 512
+    assert renderer["locally_conservative_membrane_face_flux"] is True
+    assert renderer["outer_membrane_subgrid_volume_samples_per_cell"] == 8
+    assert renderer["outer_membrane_face_area_samples"] == 4
+    assert renderer["outer_membrane_geometric_conservation_source"] is True
+    assert renderer["outer_membrane_volume_fraction_mass_remap"] is True
     assert renderer["multi_intersection_fold_or_topology_change_support"] is False
     active = snapshot["solver_layers"]["dimensionless_active_cargo_route_kernel"]
     assert active["enabled"] is True

@@ -1499,12 +1499,39 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-26T11:32:01.935235+00:00",
+    "created_at_utc": "2026-07-26T12:10:35.879861+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
   "schema_version": "cell-engine.snapshot.v1",
   "state": {
+    "active_protein_localization_intake": {
+      "active_copy_or_concentration_authorized_count": 0,
+      "automatic_flux_scaling": false,
+      "automatic_surface_to_active_conversion": false,
+      "automatic_total_to_surface_conversion": false,
+      "blockers": [
+        "versioned active-protein localization delivery is absent",
+        "all 63 donor-matched localization/activity slots remain unfilled",
+        "independent held-out PHH validation is absent"
+      ],
+      "cell_state_coupling_allowed_count": 0,
+      "complete_calibration_donor_protein_count": 0,
+      "contract_id": "phh_active_protein_localization_intake_v1",
+      "contract_sha256": "37ef7d4ec6b0d586e96e81ec3f8910af090280211bbf5711715011cba11247a9",
+      "covered_protein_slot_count": 0,
+      "delivery_path": "data/evidence_intake/incoming/phh_active_protein_localization/latest/phh_active_protein_localization.csv",
+      "expected_header_count": 52,
+      "functional_rate_authorized_count": 0,
+      "protein_panel_id": "phh_protein_functional_evidence_v2",
+      "record_count": 0,
+      "required_protein_slot_count": 63,
+      "status": "awaiting_active_protein_localization_bundle",
+      "structurally_complete_protein_count": 0,
+      "structurally_ready_protein_slot_count": 0,
+      "target_protein_count": 8,
+      "version": "phh_active_protein_localization_intake_v1"
+    },
     "assumption_report": {
       "counts": {
         "fitted": 0,
@@ -5457,7 +5484,7 @@
         "advection_changes_reaction_state_via": "local reactant/product concentrations and boundary fluxes",
         "direct_viscosity_rate_multiplier": null,
         "global_crowding_multiplier_allowed": false,
-        "incompressible_visual_mapping": "div(u) = 0 and det(F) = 1 for the affine contact map; a reference-space angular field adds only smooth star-shaped non-affine boundary residuals",
+        "incompressible_visual_mapping": "det(F) = 1 for the affine contact map; smooth star-shaped non-affine residual motion is rasterized into fractional cell volumes and face apertures, and the pressure projection enforces the corresponding discrete local geometric-conservation source",
         "poroelastic_scaling": "D_p scales with E*xi^2/mu; no coefficient is assigned for healthy PHH",
         "species_balance": "partial_t(c_i) + div(u*c_i) = div(D_i*grad(c_i)) + R_i(c)"
       },
@@ -5571,11 +5598,15 @@
           "local_boundary_angular_bin_count": 512,
           "local_boundary_reference_space": true,
           "local_star_shaped_membrane_boundary_coupling": true,
-          "locally_conservative_membrane_face_flux": false,
+          "locally_conservative_membrane_face_flux": true,
           "membrane_pressure_feedback": false,
           "membrane_volume_mapping": "same volume-preserving affine deformation as the rendered membrane",
           "moving_analytic_obstacle_boundaries": true,
           "multi_intersection_fold_or_topology_change_support": false,
+          "outer_membrane_face_area_samples": 4,
+          "outer_membrane_geometric_conservation_source": true,
+          "outer_membrane_subgrid_volume_samples_per_cell": 8,
+          "outer_membrane_volume_fraction_mass_remap": true,
           "partial_cell_volume_conservation": true,
           "pressure_reaction_diagnostic_only": true,
           "quaternion_derived_rotation_boundary_velocity": true,
@@ -5629,7 +5660,7 @@
         "human_in_vivo_validation_target_count": 1,
         "local_membrane_topology_change_coupling_count": 0,
         "local_star_shaped_membrane_boundary_coupling_count": 1,
-        "locally_conservative_membrane_face_flux_count": 0,
+        "locally_conservative_membrane_face_flux_count": 1,
         "membrane_pressure_feedback_count": 0,
         "moving_analytic_obstacle_layer_count": 1,
         "quantitative_fluid_solver_count": 0,
@@ -5688,7 +5719,7 @@
         },
         "mode_interchange_prohibited": true
       },
-      "version": "cytosol_transport_rheology_contract_v8"
+      "version": "cytosol_transport_rheology_contract_v9"
     },
     "definition_id": "human_hepatocyte_midlobular_v1",
     "division": {
@@ -15436,16 +15467,15 @@
             "src/physics/intracellularFluid.ts",
             "src/physics/cytosolNumerics.ts"
           ],
-          "current_capability": "The fluid grid now follows the global volume-preserving affine map and a dynamically rasterized reference-space residual from the current membrane mesh. The affine component is removed before sampling, so contact deformation is not counted twice. Multi-intersection folds and topology changes remain unsupported.",
+          "current_capability": "The fluid grid follows the global volume-preserving affine map and a dynamically rasterized reference-space residual from the current membrane mesh. Outer-membrane cut cells now carry 2x2x2 volume fractions, 2x2 face apertures and a local geometric-conservation source in the pressure projection; passive scalar mass is conservatively remapped as those fractions move. The affine component is removed before sampling, so contact deformation is not counted twice. Multi-intersection folds and topology changes remain unsupported.",
           "id": "local_non_affine_membrane_coupling",
           "observed_metrics": {
             "local_star_shaped_surface_modes_coupled": 1,
             "local_topology_change_modes_coupled": 0,
-            "locally_conservative_membrane_face_flux_count": 0
+            "locally_conservative_membrane_face_flux_count": 1
           },
           "remaining_requirements": [
             "Remeshing and topology-change representation.",
-            "Locally conservative moving-boundary coupling.",
             "Event-specific membrane reservoir and neck mechanics evidence."
           ],
           "scope": "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
@@ -15667,13 +15697,22 @@
         {
           "code_surfaces": [
             "engine/cell_engine/quantitative/phh_protein_functional_evidence.py",
-            "engine/cell_engine/multicell/communication.py"
+            "engine/cell_engine/multicell/communication.py",
+            "engine/cell_engine/quantitative/receptor_signaling_trajectory.py",
+            "data/evidence_intake/phh_receptor_signaling_trajectory_contract.v1.json"
           ],
-          "current_capability": "Identity and selected response observations are present, while receptor density, occupancy, binding and internalization kinetics remain absent.",
+          "current_capability": "Identity and selected response observations are present. A versioned 48-column intake now requires eight donor-matched stages for each of eight communication pathways, including surface density, geometry-appropriate association/dissociation, occupancy, internalization or gate turnover, proximal signal, functional response and sealed independent validation. No trajectory bundle has been delivered, so activation remains absent.",
           "id": "receptor_signaling_kinetics",
           "observed_metrics": {
+            "delivered_trajectory_record_count": 0,
             "functional_response_observation_count": 3,
-            "receptor_binding_kinetic_observation_count": 0
+            "receptor_activation_allowed_count": 0,
+            "receptor_binding_kinetic_observation_count": 0,
+            "required_stage_slot_count": 64,
+            "signal_execution_allowed_count": 0,
+            "structurally_complete_pathway_count": 0,
+            "target_pathway_count": 8,
+            "trajectory_intake_contract_count": 1
           },
           "remaining_requirements": [
             "Domain-resolved receptor surface density and active fraction.",
@@ -15686,16 +15725,24 @@
         },
         {
           "code_surfaces": [
-            "engine/cell_engine/quantitative/phh_protein_functional_evidence.py"
+            "engine/cell_engine/quantitative/phh_protein_functional_evidence.py",
+            "engine/cell_engine/quantitative/active_protein_localization.py",
+            "data/evidence_intake/phh_active_protein_localization_contract.v1.json"
           ],
-          "current_capability": "Seven-donor total abundance exists for all eight proteins; total per-nucleus protein groups are not active surface copies.",
+          "current_capability": "Seven-donor total abundance exists for all eight proteins; total per-nucleus protein groups are not active surface copies. A versioned 52-column intake now keeps total, membrane/compartment-localized, domain-localized, active, denominator-geometry and functional measurements linked within one donor/replicate and requires sealed independent validation. No localization/activity bundle has been delivered.",
           "id": "active_protein_copies",
           "observed_metrics": {
+            "active_copy_or_concentration_authorized_count": 0,
             "active_fraction_count": 0,
+            "delivered_localization_record_count": 0,
             "donor_activity_distribution_count": 0,
+            "functional_rate_authorized_count": 0,
+            "localization_intake_contract_count": 1,
             "protein_count": 8,
             "quantitative_surface_localization_count": 0,
-            "seven_donor_abundance_profile_count": 8
+            "required_protein_slot_count": 63,
+            "seven_donor_abundance_profile_count": 8,
+            "structurally_complete_protein_count": 0
           },
           "remaining_requirements": [
             "Matched total, domain-localized and functional fractions in the same PHH donors.",
@@ -21007,6 +21054,8 @@
         "energy_redox_validation.observation_use_audit",
         "energy_redox_validation.validation_requirements",
         "energy_redox_trajectory_intake",
+        "receptor_signaling_trajectory_intake",
+        "active_protein_localization_intake",
         "external_validation_program.contexts",
         "external_validation_program.claims",
         "external_validation_program.reviewer_roles",
@@ -21067,7 +21116,7 @@
         "spatial_world",
         "physical_validation"
       ],
-      "policy": "quantitative_state wins on overlapping aggregate species; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires a donor-resolved write, verified-removal persistence, first-response and rechallenge-response trajectory plus a frozen held-out-validated law and never treats an event log as memory; cytosol_transport keeps passive aqueous projection separate from deterministic dimensionless cargo rendering, uses conservative subgrid interception only as a numerical boundary treatment, forbids a single global viscosity/crowding multiplier and gates fluid coupling per reaction; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+      "policy": "quantitative_state wins on overlapping aggregate species; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires a donor-resolved write, verified-removal persistence, first-response and rechallenge-response trajectory plus a frozen held-out-validated law and never treats an event log as memory; cytosol_transport keeps passive aqueous projection separate from deterministic dimensionless cargo rendering, applies outer-membrane cut-cell geometric conservation and subgrid organelle interception only as numerical boundary treatments, forbids a single global viscosity/crowding multiplier and gates fluid coupling per reaction; receptor_signaling_trajectory_intake requires donor-matched density, binding, occupancy, trafficking, response and frozen heldout stages but cannot activate a receptor or signal; active_protein_localization_intake requires donor-matched total, localized, active, denominator and functional measurements but cannot infer active copies or scale rates; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
       "primary_state_path": "quantitative_state",
       "runtime_authoritative_sections": [
         "spatial_state",
@@ -24208,6 +24257,8 @@
             "ATP, adenylate, nicotinamide, glutathione, oxygen and ROS pools are separated across cytosol, both mitochondrial boundaries, ER and peroxisome while all unmeasured values remain null",
             "all nine legacy ATP/redox/OXPHOS reactions are quarantined as placeholders and zero energy/redox fits, state couplings or predictive activations are permitted",
             "the 47-column donor-resolved PHH energy/redox trajectory intake covers all 38 compartment pools while zero absent or unreviewed records initialize state or rates",
+            "the 48-column donor-matched receptor/signaling intake covers eight stages across all eight communication pathways while activation, execution and state coupling remain disabled",
+            "the 52-column active-protein intake separates total, localized, active, denominator and functional evidence for eight proteins while all automatic conversions and rate coupling remain disabled",
             "external review program scopes four contexts, ten claims and six reviewer roles while biological accuracy, external validation and predictive use remain explicitly unclaimed",
             "six-batch PHH albumin ELISA evidence maps through an exact mature-protein mass operator while five hidden secretory rates remain unidentified",
             "72 batch-resolved PHH CYP SCR/MFR means remain same-format diagnostics while censored records and hidden kinetics fail closed",
@@ -24259,6 +24310,8 @@
             "ATP, adenylate, nicotinamide, glutathione, oxygen and ROS pools are separated across cytosol, both mitochondrial boundaries, ER and peroxisome while all unmeasured values remain null",
             "all nine legacy ATP/redox/OXPHOS reactions are quarantined as placeholders and zero energy/redox fits, state couplings or predictive activations are permitted",
             "the 47-column donor-resolved PHH energy/redox trajectory intake covers all 38 compartment pools while zero absent or unreviewed records initialize state or rates",
+            "the 48-column donor-matched receptor/signaling intake covers eight stages across all eight communication pathways while activation, execution and state coupling remain disabled",
+            "the 52-column active-protein intake separates total, localized, active, denominator and functional evidence for eight proteins while all automatic conversions and rate coupling remain disabled",
             "external review program scopes four contexts, ten claims and six reviewer roles while biological accuracy, external validation and predictive use remain explicitly unclaimed",
             "six-batch PHH albumin ELISA evidence maps through an exact mature-protein mass operator while five hidden secretory rates remain unidentified",
             "72 batch-resolved PHH CYP SCR/MFR means remain same-format diagnostics while censored records and hidden kinetics fail closed",
@@ -36738,6 +36791,32 @@
       "structurally_ready_slot_count": 0,
       "version": "phh_reaction_evidence_intake_v1"
     },
+    "receptor_signaling_trajectory_intake": {
+      "atlas_id": "hepatocyte_communication_atlas_v1",
+      "automatic_kinetic_fitting": false,
+      "automatic_unit_conversion": false,
+      "blockers": [
+        "versioned receptor/signaling trajectory delivery is absent",
+        "all 64 donor-matched signal-chain evidence slots remain unfilled",
+        "independent held-out PHH validation is absent"
+      ],
+      "cell_state_coupling_allowed_count": 0,
+      "complete_calibration_donor_pathway_count": 0,
+      "contract_id": "phh_receptor_signaling_trajectory_intake_v1",
+      "contract_sha256": "b58011697d67d0c16cc94916086f214653cafc2b0b0004a4cdd4f3800000721e",
+      "covered_stage_slot_count": 0,
+      "delivery_path": "data/evidence_intake/incoming/phh_receptor_signaling/latest/phh_receptor_signaling_trajectories.csv",
+      "expected_header_count": 48,
+      "receptor_activation_allowed_count": 0,
+      "record_count": 0,
+      "required_stage_slot_count": 64,
+      "signal_execution_allowed_count": 0,
+      "status": "awaiting_receptor_signaling_trajectory_bundle",
+      "structurally_complete_pathway_count": 0,
+      "structurally_ready_stage_slot_count": 0,
+      "target_pathway_count": 8,
+      "version": "phh_receptor_signaling_trajectory_intake_v1"
+    },
     "regeneration_context": {
       "decision": {
         "anti_proliferative_brake_active": false,
@@ -37057,6 +37136,8 @@
         "human_sch_endogenous_bile_acid_compartments",
         "phh_injury_exact_protocol_operator",
         "phh_injury_donor_disjoint_evaluation_gate",
+        "phh_receptor_signaling_trajectory_intake",
+        "phh_active_protein_localization_intake",
         "hepatocyte_capability_atlas",
         "cellular_memory_substrate_contract",
         "reaction_evidence_atlas",
@@ -37590,6 +37671,15 @@
           "status": "source_backed"
         },
         {
+          "action": "accept only exact communication-atlas pathway IDs and eight typed stages; require one donor-matched healthy-PHH chain, geometry-appropriate association/dissociation, dynamic occupancy/internalization/signaling, and frozen donor/study-disjoint validation",
+          "default_snapshot_role": "donor_matched_signal_chain_data_firewall",
+          "drives_scientific_validation": true,
+          "id": "phh_receptor_signaling_trajectory_intake",
+          "limitations": "The 48-column contract covers 64 pathway-stage slots but currently has zero delivered records. It performs no automatic unit conversion, kinetic fitting, receptor activation, signal execution or cell-state coupling.",
+          "source_ids": [],
+          "status": "derived"
+        },
+        {
           "action": "use engine-owned convex surfaces for signed gap, broad contact-patch geometry, membrane-domain labels, enter/stay/exit inputs and volume-preserving contact deformation; enforce the explicit 1% cross-system area-strain cap; do not use elapsed contact time as a causal parameter; keep force, adhesion, junction gating and biochemical activation blocked",
           "default_snapshot_role": "geometry_authoritative_runtime_spatial_state",
           "drives_scientific_validation": false,
@@ -37691,6 +37781,15 @@
             "kemas2021_phh_glucose"
           ],
           "status": "source_backed"
+        },
+        {
+          "action": "keep total, compartment-localized, domain-localized, active, geometry-denominator and functional measurements separate; require one matched donor/replicate plus frozen donor/study-disjoint validation for each of eight target proteins",
+          "default_snapshot_role": "donor_matched_localization_activity_firewall",
+          "drives_scientific_validation": true,
+          "id": "phh_active_protein_localization_intake",
+          "limitations": "The 52-column contract covers 63 protein slots but currently has zero delivered records. Copies per nucleus, surface-capture identity and tissue membrane fractions cannot be converted into active copies, densities, concentrations or rates automatically.",
+          "source_ids": [],
+          "status": "derived"
         },
         {
           "action": "require active surface copies and matched turnover",
@@ -37858,11 +37957,11 @@
           "status": "derived"
         },
         {
-          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise renderer-linked rigid moving-boundary projection, reference-space star-shaped membrane residuals, conservative subgrid thin-boundary volume occupancy, analytic fractional face apertures, passive-scalar transport and deterministic dimensionless cargo paths only as numerical kernels; require matched healthy-PHH evidence before biological coupling",
+          "action": "represent cytoplasm as an aqueous mobile phase coupled to a porous viscoelastic scaffold; exercise renderer-linked rigid moving-boundary projection, reference-space star-shaped membrane residuals, outer-membrane cut-cell geometric conservation, conservative subgrid organelle occupancy, analytic fractional face apertures, passive-scalar transport and deterministic dimensionless cargo paths only as numerical kernels; require matched healthy-PHH evidence before biological coupling",
           "default_snapshot_role": "dimensionless_numerics_and_biological_coupling_firewall",
           "drives_scientific_validation": true,
           "id": "cytosol_transport_rheology_contract",
-          "limitations": "The renderer has a local star-shaped membrane boundary, four analytic organelle-boundary shapes, rigid translation/rotation, 2x2x2 volume occupancy and four analytic face channels for thin ER/canalicular/Golgi structures, a partial-volume conservative unbound scalar kernel and a deterministic route-progress display. These are not topology-changing membrane mechanics, watertight microscopy meshes or PHH transport rates. The 39-field PHH cargo intake currently contains zero routes. Zero biological species and reactions are coupled, and pressure cannot feed membrane mechanics.",
+          "limitations": "The renderer has a smooth local star-shaped membrane boundary with 2x2x2 volume fractions, four face-area samples and a local geometric-conservation source, plus four analytic organelle-boundary shapes, rigid translation/rotation, thin-boundary interception, a partial-volume conservative unbound scalar kernel and a deterministic route-progress display. These are not topology-changing membrane mechanics, watertight microscopy meshes or PHH transport rates. The 39-field PHH cargo intake currently contains zero routes. Zero biological species and reactions are coupled, and pressure cannot feed membrane mechanics.",
           "source_ids": [
             "moeendarbary2013_poroelastic_cytoplasm",
             "kwapiszewska2020_cytoplasm_nanoviscosity",

@@ -72,11 +72,18 @@ export type CytosolProjectionDiagnostics = {
   obstacleCount: number;
   rotatingObstacleCount: number;
   subgridObstacleCount: number;
+  fractionalMembraneCellCount: number;
   fractionalObstacleCellCount: number;
   subgridInterceptedCellCount: number;
+  fractionalMembraneFaceCount: number;
+  closedMembraneFaceCount: number;
   fractionalOpenFaceCount: number;
   closedObstacleFaceCount: number;
+  meanInternalMembraneFaceOpenFraction: number;
   meanInternalFaceOpenFraction: number;
+  dimensionlessMembraneVolumeEstimate: number;
+  dimensionlessMembraneVolumeChangeRate: number;
+  movingMembraneCellCount: number;
   dimensionlessObstacleVolumeEstimate: number;
   divergenceRmsBefore: number;
   divergenceRmsAfter: number;
@@ -100,12 +107,17 @@ export type PassiveScalarDomainRemapDiagnostics = {
 };
 
 export const CYTOSOL_NUMERICAL_CONTRACT = Object.freeze({
-  version: "dimensionless_moving_boundary_projection_v5",
-  numericalMethod: "cell_centered_eulerian_pressure_projection_with_fractional_face_apertures",
+  version: "dimensionless_moving_boundary_projection_v6",
+  numericalMethod: "cell_centered_eulerian_cut_cell_projection_with_discrete_geometric_conservation",
   movingObstacleShapes: ["sphere", "ellipsoid", "capsule", "box"] as const,
   movingObstacleKinematics: "rigid_translation_plus_quaternion_derived_rotation",
   passiveScalarMethod: "finite_volume_advection_diffusion_with_conservative_moving_domain_remap",
   movingDomainRemap: "face_neighbor_redistribution_with_deterministic_nearest_fluid_fallback",
+  outerMembraneTreatment: "star_shaped_2x2x2_volume_fraction_plus_2x2_face_area_quadrature",
+  outerMembraneGeometricConservation: "cell_local_volume_change_source_in_pressure_projection",
+  membraneSubgridQuadratureSamplesPerCell: 8,
+  membraneFaceApertureQuadratureSamples: 4,
+  locallyConservativeMembraneFaceFlux: true,
   thinBoundaryTreatment: "conservative_subgrid_2x2x2_volume_quadrature_plus_2x2_analytic_face_channel_intersections",
   subgridQuadratureSamplesPerCell: 8,
   faceApertureQuadratureChannels: 4,
@@ -886,7 +898,11 @@ export class CytosolProjectionGrid {
   readonly spacing: number;
   readonly fluidMask: Uint8Array;
   readonly fluidVolumeFraction: Float32Array;
+  readonly membraneFluidFraction: Float32Array;
   readonly obstacleSolidFraction: Float32Array;
+  readonly membraneFaceOpenFractionX: Float32Array;
+  readonly membraneFaceOpenFractionY: Float32Array;
+  readonly membraneFaceOpenFractionZ: Float32Array;
   readonly faceOpenFractionX: Float32Array;
   readonly faceOpenFractionY: Float32Array;
   readonly faceOpenFractionZ: Float32Array;
@@ -900,6 +916,8 @@ export class CytosolProjectionGrid {
   private readonly pressure: Float32Array;
   private readonly nextPressure: Float32Array;
   private readonly divergence: Float32Array;
+  private readonly previousMembraneFluidFraction: Float32Array;
+  private readonly membraneTargetDivergence: Float32Array;
   private readonly obstacleVelocityX: Float32Array;
   private readonly obstacleVelocityY: Float32Array;
   private readonly obstacleVelocityZ: Float32Array;
@@ -908,11 +926,18 @@ export class CytosolProjectionGrid {
     centerContained: false,
     conservativeIntercept: false
   };
+  private domainInitialized = false;
+  private fractionalMembraneCellCount = 0;
   private fractionalObstacleCellCount = 0;
   private subgridInterceptedCellCount = 0;
+  private fractionalMembraneFaceCount = 0;
+  private closedMembraneFaceCount = 0;
   private fractionalOpenFaceCount = 0;
   private closedObstacleFaceCount = 0;
+  private meanInternalMembraneFaceOpenFraction = 0;
   private meanInternalFaceOpenFraction = 0;
+  private dimensionlessMembraneVolumeChangeRate = 0;
+  private movingMembraneCellCount = 0;
   private readonly modes: ProjectionMode[];
   private elapsedRenderS = 0;
   private currentDiagnostics: CytosolProjectionDiagnostics = {
@@ -921,11 +946,18 @@ export class CytosolProjectionGrid {
     obstacleCount: 0,
     rotatingObstacleCount: 0,
     subgridObstacleCount: 0,
+    fractionalMembraneCellCount: 0,
     fractionalObstacleCellCount: 0,
     subgridInterceptedCellCount: 0,
+    fractionalMembraneFaceCount: 0,
+    closedMembraneFaceCount: 0,
     fractionalOpenFaceCount: 0,
     closedObstacleFaceCount: 0,
+    meanInternalMembraneFaceOpenFraction: 0,
     meanInternalFaceOpenFraction: 0,
+    dimensionlessMembraneVolumeEstimate: 0,
+    dimensionlessMembraneVolumeChangeRate: 0,
+    movingMembraneCellCount: 0,
     dimensionlessObstacleVolumeEstimate: 0,
     divergenceRmsBefore: 0,
     divergenceRmsAfter: 0,
@@ -965,7 +997,11 @@ export class CytosolProjectionGrid {
     const count = options.resolution ** 3;
     this.fluidMask = new Uint8Array(count);
     this.fluidVolumeFraction = new Float32Array(count);
+    this.membraneFluidFraction = new Float32Array(count);
     this.obstacleSolidFraction = new Float32Array(count);
+    this.membraneFaceOpenFractionX = new Float32Array(count);
+    this.membraneFaceOpenFractionY = new Float32Array(count);
+    this.membraneFaceOpenFractionZ = new Float32Array(count);
     this.faceOpenFractionX = new Float32Array(count);
     this.faceOpenFractionY = new Float32Array(count);
     this.faceOpenFractionZ = new Float32Array(count);
@@ -978,6 +1014,8 @@ export class CytosolProjectionGrid {
     this.pressure = new Float32Array(count);
     this.nextPressure = new Float32Array(count);
     this.divergence = new Float32Array(count);
+    this.previousMembraneFluidFraction = new Float32Array(count);
+    this.membraneTargetDivergence = new Float32Array(count);
 
     const random = seededRandom(options.seed);
     this.modes = Array.from({ length: visualModeCount }, () => {
@@ -1013,7 +1051,11 @@ export class CytosolProjectionGrid {
     validateDeformation(deformation);
     const dt = Math.min(renderDeltaS, 0.05);
     this.elapsedRenderS += dt;
-    this.rebuildDomainAndTentativeVelocity(deformation, obstacles);
+    this.rebuildDomainAndTentativeVelocity(
+      deformation,
+      obstacles,
+      renderDeltaS
+    );
     const before = this.measureAndStoreDivergence();
     this.projectVelocity();
     const after = this.measureAndStoreDivergence();
@@ -1025,11 +1067,20 @@ export class CytosolProjectionGrid {
       obstacleCount: obstacles?.count ?? 0,
       rotatingObstacleCount: obstacles?.rotatingCount ?? 0,
       subgridObstacleCount: obstacles?.subgridCount ?? 0,
+      fractionalMembraneCellCount: this.fractionalMembraneCellCount,
       fractionalObstacleCellCount: this.fractionalObstacleCellCount,
       subgridInterceptedCellCount: this.subgridInterceptedCellCount,
+      fractionalMembraneFaceCount: this.fractionalMembraneFaceCount,
+      closedMembraneFaceCount: this.closedMembraneFaceCount,
       fractionalOpenFaceCount: this.fractionalOpenFaceCount,
       closedObstacleFaceCount: this.closedObstacleFaceCount,
+      meanInternalMembraneFaceOpenFraction:
+        this.meanInternalMembraneFaceOpenFraction,
       meanInternalFaceOpenFraction: this.meanInternalFaceOpenFraction,
+      dimensionlessMembraneVolumeEstimate: this.membraneVolumeEstimate(),
+      dimensionlessMembraneVolumeChangeRate:
+        this.dimensionlessMembraneVolumeChangeRate,
+      movingMembraneCellCount: this.movingMembraneCellCount,
       dimensionlessObstacleVolumeEstimate: this.obstacleVolumeEstimate(),
       divergenceRmsBefore: before.rms,
       divergenceRmsAfter: after.rms,
@@ -1108,6 +1159,13 @@ export class CytosolProjectionGrid {
     return fractionSum * cellVolume;
   }
 
+  membraneVolumeEstimate(): number {
+    const cellVolume = this.spacing ** 3;
+    let fractionSum = 0;
+    for (const fraction of this.membraneFluidFraction) fractionSum += fraction;
+    return fractionSum * cellVolume;
+  }
+
   private index(i: number, j: number, k: number): number {
     return i + this.resolution * (j + this.resolution * k);
   }
@@ -1116,33 +1174,130 @@ export class CytosolProjectionGrid {
     return i >= 0 && j >= 0 && k >= 0 && i < this.resolution && j < this.resolution && k < this.resolution;
   }
 
+  private membraneContainsPoint(
+    x: number,
+    y: number,
+    z: number,
+    deformation: CytosolProjectionDeformation | null,
+    reference: Float32Array
+  ): boolean {
+    inverseVolumePreservingPoint(x, y, z, deformation, reference);
+    const length = Math.hypot(reference[0], reference[1], reference[2]);
+    if (length <= 1e-12) return true;
+    const radius = this.radiusAtDirection(
+      reference[0] / length,
+      reference[1] / length,
+      reference[2] / length
+    );
+    if (!Number.isFinite(radius) || radius <= 0) {
+      throw new RangeError("cytosol domain radius must be finite and positive");
+    }
+    return length <= radius * this.safetyFraction;
+  }
+
+  private sampleMembraneCellFluidFraction(
+    x: number,
+    y: number,
+    z: number,
+    deformation: CytosolProjectionDeformation | null,
+    reference: Float32Array
+  ): number {
+    const offset = this.spacing * 0.25;
+    let insideCount = 0;
+    for (const dz of [-offset, offset]) {
+      for (const dy of [-offset, offset]) {
+        for (const dx of [-offset, offset]) {
+          if (this.membraneContainsPoint(
+            x + dx,
+            y + dy,
+            z + dz,
+            deformation,
+            reference
+          )) {
+            insideCount += 1;
+          }
+        }
+      }
+    }
+    return insideCount / 8;
+  }
+
+  private sampleMembraneFaceOpenFraction(
+    first: Float32Array,
+    second: Float32Array,
+    axis: 0 | 1 | 2,
+    deformation: CytosolProjectionDeformation | null,
+    reference: Float32Array
+  ): number {
+    const center: CytosolVector3 = [
+      (first[0] + second[0]) * 0.5,
+      (first[1] + second[1]) * 0.5,
+      (first[2] + second[2]) * 0.5
+    ];
+    const offset = this.spacing * 0.25;
+    const tangentA = axis === 0 ? 1 : 0;
+    const tangentB = axis === 2 ? 1 : 2;
+    let insideCount = 0;
+    for (const firstOffset of [-offset, offset]) {
+      for (const secondOffset of [-offset, offset]) {
+        const point: [number, number, number] = [
+          center[0],
+          center[1],
+          center[2]
+        ];
+        point[tangentA] += firstOffset;
+        point[tangentB] += secondOffset;
+        if (this.membraneContainsPoint(
+          point[0],
+          point[1],
+          point[2],
+          deformation,
+          reference
+        )) {
+          insideCount += 1;
+        }
+      }
+    }
+    return insideCount / 4;
+  }
+
   private rebuildDomainAndTentativeVelocity(
     deformation: CytosolProjectionDeformation | null,
-    obstacles?: DynamicCytosolObstacleField
+    obstacles?: DynamicCytosolObstacleField,
+    boundaryDeltaS = 0
   ): void {
     const point = new Float32Array(3);
     const reference = new Float32Array(3);
     const solidVelocity = new Float32Array(3);
+    if (this.domainInitialized) {
+      this.previousMembraneFluidFraction.set(this.membraneFluidFraction);
+    }
+    this.fractionalMembraneCellCount = 0;
     this.fractionalObstacleCellCount = 0;
     this.subgridInterceptedCellCount = 0;
+    this.dimensionlessMembraneVolumeChangeRate = 0;
+    this.movingMembraneCellCount = 0;
+    this.membraneTargetDivergence.fill(0);
+    const cellVolume = this.spacing ** 3;
     for (let index = 0; index < this.fluidMask.length; index += 1) {
       this.cellCenter(index, point);
-      inverseVolumePreservingPoint(point[0], point[1], point[2], deformation, reference);
-      const length = Math.hypot(reference[0], reference[1], reference[2]);
-      let insideMembrane = length <= 1e-12;
-      if (!insideMembrane) {
-        const radius = this.radiusAtDirection(reference[0] / length, reference[1] / length, reference[2] / length);
-        if (!Number.isFinite(radius) || radius <= 0) {
-          throw new RangeError("cytosol domain radius must be finite and positive");
-        }
-        insideMembrane = length <= radius * this.safetyFraction;
+      const membraneFraction = this.sampleMembraneCellFluidFraction(
+        point[0],
+        point[1],
+        point[2],
+        deformation,
+        reference
+      );
+      this.membraneFluidFraction[index] = membraneFraction;
+      if (membraneFraction > 1e-9 && membraneFraction < 1 - 1e-9) {
+        this.fractionalMembraneCellCount += 1;
       }
       let obstacleFraction = 0;
       let insideObstacle = false;
       solidVelocity[0] = 0;
       solidVelocity[1] = 0;
       solidVelocity[2] = 0;
-      if (insideMembrane && obstacles) {
+      if (membraneFraction > 1e-9 && obstacles) {
         obstacles.sampleSubgridCell(
           point[0],
           point[1],
@@ -1167,9 +1322,10 @@ export class CytosolProjectionGrid {
       if (obstacleFraction > 0 && obstacleFraction < 1) {
         this.fractionalObstacleCellCount += 1;
       }
-      const fluidVolumeFraction = insideMembrane
-        ? Math.max(0, Math.min(1, 1 - obstacleFraction))
-        : 0;
+      const fluidVolumeFraction = Math.max(
+        0,
+        Math.min(1, membraneFraction * (1 - obstacleFraction))
+      );
       this.fluidVolumeFraction[index] = fluidVolumeFraction;
       this.fluidMask[index] = fluidVolumeFraction > 1e-9 && !insideObstacle ? 1 : 0;
       this.obstacleVelocityX[index] = solidVelocity[0];
@@ -1199,45 +1355,105 @@ export class CytosolProjectionGrid {
       this.velocityY[index] = vy;
       this.velocityZ[index] = vz;
     }
-    this.rebuildFaceApertures(obstacles);
+    if (this.domainInitialized && boundaryDeltaS > 1e-9) {
+      for (let index = 0; index < this.fluidMask.length; index += 1) {
+        const membraneVolumeFractionChange = (
+          this.membraneFluidFraction[index] -
+          this.previousMembraneFluidFraction[index]
+        );
+        if (Math.abs(membraneVolumeFractionChange) <= 1e-9) continue;
+        this.movingMembraneCellCount += 1;
+        const availableFraction = Math.max(
+          0,
+          1 - this.obstacleSolidFraction[index]
+        );
+        const availableVolumeChangeRate = (
+          membraneVolumeFractionChange *
+          availableFraction /
+          boundaryDeltaS
+        );
+        this.dimensionlessMembraneVolumeChangeRate += (
+          availableVolumeChangeRate * cellVolume
+        );
+        if (this.fluidVolumeFraction[index] > 1e-9) {
+          this.membraneTargetDivergence[index] = (
+            -availableVolumeChangeRate /
+            this.fluidVolumeFraction[index]
+          );
+        }
+      }
+    }
+    this.domainInitialized = true;
+    this.rebuildFaceApertures(deformation, obstacles);
   }
 
-  private rebuildFaceApertures(obstacles?: DynamicCytosolObstacleField): void {
+  private rebuildFaceApertures(
+    deformation: CytosolProjectionDeformation | null,
+    obstacles?: DynamicCytosolObstacleField
+  ): void {
+    this.membraneFaceOpenFractionX.fill(0);
+    this.membraneFaceOpenFractionY.fill(0);
+    this.membraneFaceOpenFractionZ.fill(0);
     this.faceOpenFractionX.fill(0);
     this.faceOpenFractionY.fill(0);
     this.faceOpenFractionZ.fill(0);
+    this.fractionalMembraneFaceCount = 0;
+    this.closedMembraneFaceCount = 0;
     this.fractionalOpenFaceCount = 0;
     this.closedObstacleFaceCount = 0;
+    this.meanInternalMembraneFaceOpenFraction = 0;
     this.meanInternalFaceOpenFraction = 0;
     const n = this.resolution;
     const first = new Float32Array(3);
     const second = new Float32Array(3);
+    const reference = new Float32Array(3);
     let internalFaceCount = 0;
+    let membraneOpenFractionSum = 0;
     let openFractionSum = 0;
     const sample = (
       index: number,
       neighbor: number,
       axis: 0 | 1 | 2,
+      membraneTarget: Float32Array,
       target: Float32Array
     ) => {
       if (!this.fluidMask[index] || !this.fluidMask[neighbor]) return;
-      let openFraction = 1;
+      this.cellCenter(index, first);
+      this.cellCenter(neighbor, second);
+      const membraneOpenFraction = this.sampleMembraneFaceOpenFraction(
+        first,
+        second,
+        axis,
+        deformation,
+        reference
+      );
+      membraneTarget[index] = membraneOpenFraction;
+      let obstacleOpenFraction = 1;
       if (obstacles && obstacles.count > 0) {
-        this.cellCenter(index, first);
-        this.cellCenter(neighbor, second);
-        openFraction = obstacles.sampleFaceOpenFraction(
+        obstacleOpenFraction = obstacles.sampleFaceOpenFraction(
           [first[0], first[1], first[2]],
           [second[0], second[1], second[2]],
           axis,
           this.spacing
         );
       }
+      const openFraction = membraneOpenFraction * obstacleOpenFraction;
       target[index] = openFraction;
       internalFaceCount += 1;
+      membraneOpenFractionSum += membraneOpenFraction;
       openFractionSum += openFraction;
+      if (
+        membraneOpenFraction > 1e-9 &&
+        membraneOpenFraction < 1 - 1e-9
+      ) {
+        this.fractionalMembraneFaceCount += 1;
+      } else if (membraneOpenFraction <= 1e-9) {
+        this.closedMembraneFaceCount += 1;
+      }
       if (openFraction > 1e-9 && openFraction < 1 - 1e-9) {
         this.fractionalOpenFaceCount += 1;
-      } else if (openFraction <= 1e-9) {
+      }
+      if (obstacleOpenFraction <= 1e-9) {
         this.closedObstacleFaceCount += 1;
       }
     };
@@ -1245,12 +1461,33 @@ export class CytosolProjectionGrid {
       for (let j = 0; j < n; j += 1) {
         for (let i = 0; i < n; i += 1) {
           const index = this.index(i, j, k);
-          if (i + 1 < n) sample(index, index + 1, 0, this.faceOpenFractionX);
-          if (j + 1 < n) sample(index, index + n, 1, this.faceOpenFractionY);
-          if (k + 1 < n) sample(index, index + n * n, 2, this.faceOpenFractionZ);
+          if (i + 1 < n) sample(
+            index,
+            index + 1,
+            0,
+            this.membraneFaceOpenFractionX,
+            this.faceOpenFractionX
+          );
+          if (j + 1 < n) sample(
+            index,
+            index + n,
+            1,
+            this.membraneFaceOpenFractionY,
+            this.faceOpenFractionY
+          );
+          if (k + 1 < n) sample(
+            index,
+            index + n * n,
+            2,
+            this.membraneFaceOpenFractionZ,
+            this.faceOpenFractionZ
+          );
         }
       }
     }
+    this.meanInternalMembraneFaceOpenFraction = internalFaceCount > 0
+      ? membraneOpenFractionSum / internalFaceCount
+      : 0;
     this.meanInternalFaceOpenFraction = internalFaceCount > 0
       ? openFractionSum / internalFaceCount
       : 0;
@@ -1331,7 +1568,7 @@ export class CytosolProjectionGrid {
             continue;
           }
           const fluidVolume = Math.max(this.fluidVolumeFraction[index], 1e-6);
-          const div = (
+          const rawDivergence = (
             this.faceNormalVelocity(i, j, k, 0, 1) -
             this.faceNormalVelocity(i, j, k, 0, -1) +
             this.faceNormalVelocity(i, j, k, 1, 1) -
@@ -1339,6 +1576,7 @@ export class CytosolProjectionGrid {
             this.faceNormalVelocity(i, j, k, 2, 1) -
             this.faceNormalVelocity(i, j, k, 2, -1)
           ) / (this.spacing * fluidVolume);
+          const div = rawDivergence - this.membraneTargetDivergence[index];
           this.divergence[index] = div;
           const absolute = Math.abs(div);
           sumSquares += div * div;
