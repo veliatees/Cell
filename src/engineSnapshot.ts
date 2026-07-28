@@ -1850,7 +1850,7 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v12";
+  version: "metabolic_constraint_shell_v13";
   status: string;
   role: string;
   candidate_reconstruction: {
@@ -2090,6 +2090,28 @@ export type EngineMetabolicConstraintShell = {
       global_minimum_support_set_unique: false;
       global_universal_reaction_membership_established: false;
       additional_global_minimum_search_required: true;
+      reaction_activity_in_phh_established: false;
+      context_model_accepted: false;
+      fba_execution_allowed: false;
+    };
+    fastcore_fixed_core_completion_enumeration: {
+      audit_report: string;
+      fixed_common_reaction_count: number;
+      conditioned_retained_reaction_count: number;
+      remaining_candidate_reaction_count: number;
+      known_singleton_completion_count: number;
+      known_singleton_completion_ids_in_model_order: string[];
+      terminal_infeasibility_proven: true;
+      terminal_solver_attempt_count: number;
+      terminal_accepted_solve_used_presolve: false;
+      terminal_infeasibility_confirmed_without_presolve: true;
+      exact_singleton_completion_count_given_fixed_core: number;
+      fixed_core_singleton_completion_enumeration_complete: true;
+      fourth_singleton_completion_with_same_fixed_core_exists: false;
+      global_minimum_identity_enumeration_complete: false;
+      fixed_common_reactions_proven_globally_universal: false;
+      multi_replacement_global_optima_excluded: false;
+      additional_unconditioned_global_search_required: true;
       reaction_activity_in_phh_established: false;
       context_model_accepted: false;
       fba_execution_allowed: false;

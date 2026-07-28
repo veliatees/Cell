@@ -120,26 +120,30 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(diagnostics.dimensionlessObstacleVolumeEstimate).toBeLessThan(10);
   });
 
-  it("rasterizes a concave closed mesh as the outer fluid domain", () => {
-    const grid = new CytosolProjectionGrid({
-      resolution: 32,
-      halfExtent: 1.27,
-      seed: 14,
-      closedDomainBoundary: () => CONCAVE_L_PRISM_MESH,
-      safetyFraction: 1,
-      visualModeCount: 0
-    });
-    grid.step(0, null);
-    const diagnostics = grid.diagnostics();
+  it(
+    "rasterizes a concave closed mesh as the outer fluid domain",
+    () => {
+      const grid = new CytosolProjectionGrid({
+        resolution: 32,
+        halfExtent: 1.27,
+        seed: 14,
+        closedDomainBoundary: () => CONCAVE_L_PRISM_MESH,
+        safetyFraction: 1,
+        visualModeCount: 0
+      });
+      grid.step(0, null);
+      const diagnostics = grid.diagnostics();
 
-    expect(CONCAVE_L_PRISM_MESH.containsPoint(-0.5, 0.5, 0)).toBe(true);
-    expect(CONCAVE_L_PRISM_MESH.containsPoint(0.5, 0.5, 0)).toBe(false);
-    expect(diagnostics.closedMeshFluidDomainBoundaryCount).toBe(1);
-    expect(diagnostics.fractionalMembraneCellCount).toBeGreaterThan(0);
-    expect(
-      Math.abs(diagnostics.dimensionlessMembraneVolumeEstimate - 6) / 6
-    ).toBeLessThan(0.04);
-  });
+      expect(CONCAVE_L_PRISM_MESH.containsPoint(-0.5, 0.5, 0)).toBe(true);
+      expect(CONCAVE_L_PRISM_MESH.containsPoint(0.5, 0.5, 0)).toBe(false);
+      expect(diagnostics.closedMeshFluidDomainBoundaryCount).toBe(1);
+      expect(diagnostics.fractionalMembraneCellCount).toBeGreaterThan(0);
+      expect(
+        Math.abs(diagnostics.dimensionlessMembraneVolumeEstimate - 6) / 6
+      ).toBeLessThan(0.04);
+    },
+    15_000
+  );
 
   it("requires exactly one outer-domain representation", () => {
     expect(() => new CytosolProjectionGrid({

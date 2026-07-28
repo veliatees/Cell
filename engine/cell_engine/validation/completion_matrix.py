@@ -150,6 +150,9 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     fastcore_global_support_counterexample = metabolic[
         "candidate_reconstruction"
     ]["fastcore_global_support_counterexample"]
+    fastcore_fixed_core_completion = metabolic[
+        "candidate_reconstruction"
+    ]["fastcore_fixed_core_completion_enumeration"]
     reaction_evidence_manifest = metabolic["candidate_reconstruction"][
         "reaction_evidence_manifest"
     ]
@@ -1776,6 +1779,112 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "human_gem_fastcore_fixed_core_completion_enumeration",
+            "Human-GEM fixed-core completion enumeration",
+            "closed",
+            "Exact singleton-completion enumeration conditional on the 58 identities shared by three certified global minima, with three no-good cuts and terminal no-presolve infeasibility over the remaining 4,168 candidates.",
+            "MAR00494, MAR02308 and MAR10035 are exactly the three one-reaction completions when the known common 58-reaction core is fixed. This closes the conditioned subspace only; global optima replacing two or more core identities, PHH reaction activity and runtime flux authority remain open.",
+            {
+                "fixed_common_reaction_count": (
+                    fastcore_fixed_core_completion[
+                        "fixed_common_reaction_count"
+                    ]
+                ),
+                "conditioned_retained_reaction_count": (
+                    fastcore_fixed_core_completion[
+                        "conditioned_retained_reaction_count"
+                    ]
+                ),
+                "remaining_candidate_reaction_count": (
+                    fastcore_fixed_core_completion[
+                        "remaining_candidate_reaction_count"
+                    ]
+                ),
+                "known_singleton_completion_count": (
+                    fastcore_fixed_core_completion[
+                        "known_singleton_completion_count"
+                    ]
+                ),
+                "known_singleton_completion_ids_in_model_order": (
+                    fastcore_fixed_core_completion[
+                        "known_singleton_completion_ids_in_model_order"
+                    ]
+                ),
+                "terminal_infeasibility_proven": (
+                    fastcore_fixed_core_completion[
+                        "terminal_infeasibility_proven"
+                    ]
+                ),
+                "terminal_solver_attempt_count": (
+                    fastcore_fixed_core_completion[
+                        "terminal_solver_attempt_count"
+                    ]
+                ),
+                "terminal_infeasibility_confirmed_without_presolve": (
+                    fastcore_fixed_core_completion[
+                        "terminal_infeasibility_confirmed_without_presolve"
+                    ]
+                ),
+                "exact_singleton_completion_count_given_fixed_core": (
+                    fastcore_fixed_core_completion[
+                        "exact_singleton_completion_count_given_fixed_core"
+                    ]
+                ),
+                "fixed_core_singleton_completion_enumeration_complete": (
+                    fastcore_fixed_core_completion[
+                        "fixed_core_singleton_completion_enumeration_complete"
+                    ]
+                ),
+                "fourth_singleton_completion_with_same_fixed_core_exists": (
+                    fastcore_fixed_core_completion[
+                        "fourth_singleton_completion_with_same_fixed_core_exists"
+                    ]
+                ),
+                "global_minimum_identity_enumeration_complete": (
+                    fastcore_fixed_core_completion[
+                        "global_minimum_identity_enumeration_complete"
+                    ]
+                ),
+                "fixed_common_reactions_proven_globally_universal": (
+                    fastcore_fixed_core_completion[
+                        "fixed_common_reactions_proven_globally_universal"
+                    ]
+                ),
+                "multi_replacement_global_optima_excluded": (
+                    fastcore_fixed_core_completion[
+                        "multi_replacement_global_optima_excluded"
+                    ]
+                ),
+                "additional_unconditioned_global_search_required": (
+                    fastcore_fixed_core_completion[
+                        "additional_unconditioned_global_search_required"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    fastcore_fixed_core_completion[
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": (
+                    fastcore_fixed_core_completion[
+                        "context_model_accepted"
+                    ]
+                ),
+                "fba_execution_allowed": (
+                    fastcore_fixed_core_completion[
+                        "fba_execution_allowed"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_fixed_core_completion_enumeration.py",
+                "scripts/audit_human_gem_phh_fastcore_fixed_core_completion_enumeration.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_fixed_core_completion_enumeration.json",
+                "engine/tests/test_human_gem_phh_fastcore_fixed_core_completion_enumeration.py",
+            ),
+        ),
+        _entry(
             "human_gem_reaction_evidence_manifest",
             "Human-GEM reaction evidence manifest",
             "closed",
@@ -2719,6 +2828,79 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
     ):
         raise ValueError(
             "FASTCORE global support counterexample escaped scope"
+        )
+    fixed_core_completion_metrics = by_id[
+        "human_gem_fastcore_fixed_core_completion_enumeration"
+    ]["observed_metrics"]
+    if (
+        fixed_core_completion_metrics["fixed_common_reaction_count"] != 58
+        or fixed_core_completion_metrics[
+            "conditioned_retained_reaction_count"
+        ]
+        != 7_473
+        or fixed_core_completion_metrics[
+            "remaining_candidate_reaction_count"
+        ]
+        != 4_168
+        or fixed_core_completion_metrics[
+            "known_singleton_completion_count"
+        ]
+        != 3
+        or fixed_core_completion_metrics[
+            "known_singleton_completion_ids_in_model_order"
+        ]
+        != ["MAR00494", "MAR02308", "MAR10035"]
+        or fixed_core_completion_metrics[
+            "terminal_infeasibility_proven"
+        ]
+        is not True
+        or fixed_core_completion_metrics[
+            "terminal_solver_attempt_count"
+        ]
+        != 2
+        or fixed_core_completion_metrics[
+            "terminal_infeasibility_confirmed_without_presolve"
+        ]
+        is not True
+        or fixed_core_completion_metrics[
+            "exact_singleton_completion_count_given_fixed_core"
+        ]
+        != 3
+        or fixed_core_completion_metrics[
+            "fixed_core_singleton_completion_enumeration_complete"
+        ]
+        is not True
+        or fixed_core_completion_metrics[
+            "fourth_singleton_completion_with_same_fixed_core_exists"
+        ]
+        is not False
+        or fixed_core_completion_metrics[
+            "global_minimum_identity_enumeration_complete"
+        ]
+        is not False
+        or fixed_core_completion_metrics[
+            "fixed_common_reactions_proven_globally_universal"
+        ]
+        is not False
+        or fixed_core_completion_metrics[
+            "multi_replacement_global_optima_excluded"
+        ]
+        is not False
+        or fixed_core_completion_metrics[
+            "additional_unconditioned_global_search_required"
+        ]
+        is not True
+        or fixed_core_completion_metrics[
+            "reaction_activity_in_phh_established"
+        ]
+        is not False
+        or fixed_core_completion_metrics["context_model_accepted"]
+        is not False
+        or fixed_core_completion_metrics["fba_execution_allowed"]
+        is not False
+    ):
+        raise ValueError(
+            "FASTCORE fixed-core completion enumeration escaped scope"
         )
     evidence_metrics = by_id[
         "human_gem_reaction_evidence_manifest"

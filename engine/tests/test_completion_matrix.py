@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 43
-    assert summary["closed_count"] == 21
+    assert summary["entry_count"] == 44
+    assert summary["closed_count"] == 22
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -301,6 +301,37 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
         "global_minimum_support_set_unique"
     ] is False
     assert global_counterexample["observed_metrics"][
+        "reaction_activity_in_phh_established"
+    ] is False
+    fixed_core_completion = entries[
+        "human_gem_fastcore_fixed_core_completion_enumeration"
+    ]
+    assert fixed_core_completion["status"] == "closed"
+    assert fixed_core_completion["observed_metrics"][
+        "fixed_common_reaction_count"
+    ] == 58
+    assert fixed_core_completion["observed_metrics"][
+        "remaining_candidate_reaction_count"
+    ] == 4168
+    assert fixed_core_completion["observed_metrics"][
+        "known_singleton_completion_ids_in_model_order"
+    ] == ["MAR00494", "MAR02308", "MAR10035"]
+    assert fixed_core_completion["observed_metrics"][
+        "terminal_infeasibility_confirmed_without_presolve"
+    ] is True
+    assert fixed_core_completion["observed_metrics"][
+        "exact_singleton_completion_count_given_fixed_core"
+    ] == 3
+    assert fixed_core_completion["observed_metrics"][
+        "fixed_core_singleton_completion_enumeration_complete"
+    ] is True
+    assert fixed_core_completion["observed_metrics"][
+        "global_minimum_identity_enumeration_complete"
+    ] is False
+    assert fixed_core_completion["observed_metrics"][
+        "multi_replacement_global_optima_excluded"
+    ] is False
+    assert fixed_core_completion["observed_metrics"][
         "reaction_activity_in_phh_established"
     ] is False
     evidence = entries["human_gem_reaction_evidence_manifest"]
