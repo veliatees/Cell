@@ -1,14 +1,19 @@
+import json
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
 from cell_engine.io.brian2 import BRIAN2_PINNED_VERSION, Brian2Adapter
 from cell_engine.ml.generative import (
     DatasetSplit,
+    GenerativeDonorManifestError,
     GenerativeDatasetManifest,
     GenerativeModelCard,
     SyntheticCellCandidate,
+    audit_generative_donor_manifest,
     build_generative_modeling_boundary,
+    generative_donor_manifest_intake_snapshot,
     sha256_text,
     validate_dataset_manifest,
     validate_model_card,
@@ -45,6 +50,127 @@ def test_generative_boundary_is_ready_for_infrastructure_not_training() -> None:
     assert "donor-disjoint" in boundary.split_policy
     assert len(boundary.backends) == 2
     assert any("scVI" in family for family in boundary.candidate_model_families)
+
+
+def _donor_manifest_payload() -> dict[str, object]:
+    feature = {
+        "feature_id": "software_ALB",
+        "modality": "raw_single_cell_rna_counts",
+        "biological_entity": "software gene feature",
+        "value_semantics": "raw integer count",
+        "original_unit": "count",
+        "assay": "software assay",
+        "missingness_semantics": "observed_value_only_no_imputation",
+        "source_id": "software-study-train",
+        "may_initialize_engine": False,
+    }
+    samples = []
+    for split, suffix in (
+        ("train", "train"),
+        ("validation", "validation"),
+        ("test", "test"),
+    ):
+        study = f"software-study-{suffix}"
+        samples.append(
+            {
+                "sample_id": f"software-sample-{suffix}",
+                "donor_id": f"software-donor-{suffix}",
+                "split_role": split,
+                "source_study_id": study,
+                "source_locator": "software fixture",
+                "assay_batch_id": f"software-batch-{suffix}",
+                "modality": "raw_single_cell_rna_counts",
+                "biological_system": "primary_human_hepatocyte_software_fixture",
+                "culture_format": "software culture",
+                "health_context": "software healthy context",
+                "nutrition_or_exposure_context": "software context",
+                "measured_record_count": 10,
+                "donor_covariates": {"sex": "software reported"},
+                "missing_donor_covariates": [
+                    "age",
+                    "genotype",
+                    "zonation",
+                    "nutrition_state",
+                    "disease_history",
+                ],
+                "technical_covariates": {"software_depth": 10},
+                "missing_feature_ids": [],
+            }
+        )
+    return {
+        "schema_version": "cell.phh-generative-donor-manifest.v1",
+        "dataset_id": "software-donor-manifest",
+        "species": "Homo sapiens",
+        "cell_type": "adult primary human hepatocyte",
+        "measurement_artifact_sha256": sha256_text("software-measurements"),
+        "feature_matrix_sha256": sha256_text("software-feature-matrix"),
+        "source_ids": [
+            "software-study-train",
+            "software-study-validation",
+            "software-study-test",
+        ],
+        "samples": samples,
+        "features": [feature],
+        "manual_primary_source_review_complete": False,
+        "generated_record_count": 0,
+        "automatic_training": False,
+        "automatic_engine_coupling": False,
+    }
+
+
+def _write_donor_manifest(path: Path, payload: dict[str, object]) -> None:
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def test_absent_donor_manifest_keeps_training_and_coupling_disabled(
+    tmp_path: Path,
+) -> None:
+    snapshot = generative_donor_manifest_intake_snapshot(tmp_path / "missing.json")
+    assert snapshot["structurally_training_data_ready"] is False
+    assert snapshot["validated_generative_donor_model_count"] == 0
+    assert snapshot["automatic_training"] is False
+    assert snapshot["automatic_engine_coupling"] is False
+
+
+def test_structural_donor_manifest_tracks_missingness_without_training_authority(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "manifest.json"
+    _write_donor_manifest(path, _donor_manifest_payload())
+    audit = audit_generative_donor_manifest(path)
+    assert audit.donor_count == 3
+    assert audit.donor_disjoint_split is True
+    assert audit.test_study_disjoint is True
+    assert audit.explicit_missing_donor_covariate_count == 15
+    assert audit.structurally_training_data_ready is True
+    assert audit.automatic_training is False
+    assert audit.automatic_engine_coupling is False
+
+
+def test_donor_manifest_rejects_leakage_and_silent_missingness(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "manifest.json"
+    payload = _donor_manifest_payload()
+    payload["samples"][2]["donor_id"] = payload["samples"][0]["donor_id"]
+    _write_donor_manifest(path, payload)
+    with pytest.raises(GenerativeDonorManifestError, match="donor leakage"):
+        audit_generative_donor_manifest(path)
+
+    payload = _donor_manifest_payload()
+    payload["samples"][0]["missing_donor_covariates"].remove("age")
+    _write_donor_manifest(path, payload)
+    with pytest.raises(GenerativeDonorManifestError, match="account for every"):
+        audit_generative_donor_manifest(path)
+
+
+def test_donor_manifest_features_cannot_initialize_engine(tmp_path: Path) -> None:
+    path = tmp_path / "manifest.json"
+    payload = _donor_manifest_payload()
+    payload["features"][0]["may_initialize_engine"] = True
+    _write_donor_manifest(path, payload)
+    with pytest.raises(GenerativeDonorManifestError, match="cannot initialize"):
+        audit_generative_donor_manifest(path)
 
 
 def test_dataset_manifest_accepts_donor_disjoint_measured_splits() -> None:

@@ -5,17 +5,65 @@ import {
   ConservativePassiveScalar3D,
   CytosolProjectionGrid,
   DynamicCytosolObstacleField,
+  capsuleObstacleBetween,
   inverseVolumePreservingPoint,
   type CytosolObstacle
 } from "./cytosolNumerics";
+import { WatertightTriangleMeshBoundary } from "./watertightMeshBoundary";
+
+const UNIT_CUBE_MESH = new WatertightTriangleMeshBoundary(
+  [
+    -1, -1, -1, 1, -1, -1, 1, 1, -1, -1, 1, -1,
+    -1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1
+  ],
+  [
+    0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7,
+    0, 1, 5, 0, 5, 4, 3, 7, 6, 3, 6, 2,
+    0, 4, 7, 0, 7, 3, 1, 2, 6, 1, 6, 5
+  ]
+);
+
+const CONCAVE_L_PRISM_MESH = new WatertightTriangleMeshBoundary(
+  [
+    -1, -1, -1,
+    1, -1, -1,
+    1, 0, -1,
+    0, 0, -1,
+    0, 1, -1,
+    -1, 1, -1,
+    -1, -1, 1,
+    1, -1, 1,
+    1, 0, 1,
+    0, 0, 1,
+    0, 1, 1,
+    -1, 1, 1
+  ],
+  [
+    0, 3, 1, 0, 5, 3, 1, 3, 2, 3, 5, 4,
+    6, 7, 9, 6, 9, 11, 7, 8, 9, 9, 10, 11,
+    0, 1, 7, 0, 7, 6,
+    1, 2, 8, 1, 8, 7,
+    2, 3, 9, 2, 9, 8,
+    3, 4, 10, 3, 10, 9,
+    4, 5, 11, 4, 11, 10,
+    5, 0, 6, 5, 6, 11
+  ]
+);
 
 describe("dimensionless cytosol numerical kernel", () => {
-  it("uses analytic moving sphere, ellipsoid and capsule boundaries", () => {
+  it("uses analytic moving sphere, ellipsoid, capsule and box boundaries", () => {
     const field = new DynamicCytosolObstacleField(1);
     const obstacles: CytosolObstacle[] = [
       { id: "sphere", kind: "sphere", center: [0, 0, 0], radius: 1 },
       { id: "ellipsoid", kind: "ellipsoid", center: [4, 0, 0], radii: [2, 1, 0.5] },
-      { id: "capsule", kind: "capsule", center: [-4, 0, 0], radius: 0.5, halfLength: 1.5 }
+      { id: "capsule", kind: "capsule", center: [-4, 0, 0], radius: 0.5, halfLength: 1.5 },
+      {
+        id: "box",
+        kind: "box",
+        center: [0, 4, 0],
+        orientation: [0, 0, Math.sin(Math.PI / 4), Math.cos(Math.PI / 4)],
+        halfExtents: [1.5, 0.25, 0.5]
+      }
     ];
     field.setObstacles(obstacles, 0);
 
@@ -25,6 +73,8 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(field.collides(4, 0, 0.6)).toBe(false);
     expect(field.collides(-4, 1.8, 0)).toBe(true);
     expect(field.collides(-4, 2.1, 0)).toBe(false);
+    expect(field.collides(0, 5.3, 0)).toBe(true);
+    expect(field.collides(0.4, 5.3, 0)).toBe(false);
 
     field.setObstacles(obstacles.map((obstacle) => (
       obstacle.id === "sphere" ? { ...obstacle, center: [0.2, 0, 0] as const } : obstacle
@@ -33,6 +83,126 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(field.solidVelocityAt(0.2, 0, 0, velocity)).toBe(true);
     expect(velocity[0]).toBeCloseTo(2, 6);
     expect(velocity[1]).toBe(0);
+  });
+
+  it("rasterizes a validated watertight triangle mesh as a moving boundary", () => {
+    const field = new DynamicCytosolObstacleField(0.5);
+    field.setObstacles([
+      {
+        id: "mesh-cube",
+        kind: "watertight_triangle_mesh",
+        center: [0, 0, 0],
+        boundary: UNIT_CUBE_MESH,
+        boundarySampling: "conservative_subgrid"
+      }
+    ], 0);
+    expect(field.watertightMeshCount).toBe(1);
+    expect(field.collides(0, 0, 0)).toBe(true);
+    expect(field.collides(1.2, 0, 0)).toBe(false);
+    expect(field.sampleFaceOpenFraction(
+      [-1.5, 0, 0],
+      [1.5, 0, 0],
+      0,
+      0.5
+    )).toBe(0);
+
+    const grid = new CytosolProjectionGrid({
+      resolution: 20,
+      halfExtent: 3,
+      seed: 13,
+      radiusAtDirection: () => 2.8,
+      visualModeCount: 0
+    });
+    grid.step(0, null, field);
+    const diagnostics = grid.diagnostics();
+    expect(diagnostics.watertightMeshObstacleCount).toBe(1);
+    expect(diagnostics.dimensionlessObstacleVolumeEstimate).toBeGreaterThan(6);
+    expect(diagnostics.dimensionlessObstacleVolumeEstimate).toBeLessThan(10);
+  });
+
+  it("rasterizes a concave closed mesh as the outer fluid domain", () => {
+    const grid = new CytosolProjectionGrid({
+      resolution: 32,
+      halfExtent: 1.27,
+      seed: 14,
+      closedDomainBoundary: () => CONCAVE_L_PRISM_MESH,
+      safetyFraction: 1,
+      visualModeCount: 0
+    });
+    grid.step(0, null);
+    const diagnostics = grid.diagnostics();
+
+    expect(CONCAVE_L_PRISM_MESH.containsPoint(-0.5, 0.5, 0)).toBe(true);
+    expect(CONCAVE_L_PRISM_MESH.containsPoint(0.5, 0.5, 0)).toBe(false);
+    expect(diagnostics.closedMeshFluidDomainBoundaryCount).toBe(1);
+    expect(diagnostics.fractionalMembraneCellCount).toBeGreaterThan(0);
+    expect(
+      Math.abs(diagnostics.dimensionlessMembraneVolumeEstimate - 6) / 6
+    ).toBeLessThan(0.04);
+  });
+
+  it("requires exactly one outer-domain representation", () => {
+    expect(() => new CytosolProjectionGrid({
+      resolution: 12,
+      halfExtent: 2,
+      seed: 15,
+      visualModeCount: 0
+    })).toThrow(/exactly one radial or closed-mesh/);
+    expect(() => new CytosolProjectionGrid({
+      resolution: 12,
+      halfExtent: 2,
+      seed: 15,
+      radiusAtDirection: () => 1.5,
+      closedDomainBoundary: () => UNIT_CUBE_MESH,
+      visualModeCount: 0
+    })).toThrow(/exactly one radial or closed-mesh/);
+  });
+
+  it("derives rigid rotational boundary velocity from quaternion motion", () => {
+    const field = new DynamicCytosolObstacleField(1);
+    field.setObstacles([
+      {
+        id: "rotating-capsule",
+        kind: "capsule",
+        center: [0, 0, 0],
+        orientation: [0, 0, 0, 1],
+        radius: 0.4,
+        halfLength: 1.2
+      }
+    ], 0);
+    const halfTurnAboutZ = Math.sin(-Math.PI / 4);
+    field.setObstacles([
+      {
+        id: "rotating-capsule",
+        kind: "capsule",
+        center: [0, 0, 0],
+        orientation: [0, 0, halfTurnAboutZ, Math.cos(-Math.PI / 4)],
+        radius: 0.4,
+        halfLength: 1.2
+      }
+    ], 0.5);
+
+    const velocity = new Float32Array(3);
+    expect(field.solidVelocityAt(0.8, 0, 0, velocity)).toBe(true);
+    expect(velocity[0]).toBeCloseTo(0, 6);
+    expect(velocity[1]).toBeCloseTo(-Math.PI * 0.8, 5);
+    expect(velocity[2]).toBeCloseTo(0, 6);
+    expect(field.rotatingCount).toBe(1);
+  });
+
+  it("treats opposite quaternion signs as the same orientation", () => {
+    const field = new DynamicCytosolObstacleField(1);
+    field.setObstacles([
+      { id: "sign-stable", kind: "ellipsoid", center: [0, 0, 0], orientation: [0, 0, 0, 1], radii: [1, 2, 1] }
+    ], 0);
+    field.setObstacles([
+      { id: "sign-stable", kind: "ellipsoid", center: [0, 0, 0], orientation: [0, 0, 0, -1], radii: [1, 2, 1] }
+    ], 0.1);
+
+    const velocity = new Float32Array(3);
+    expect(field.solidVelocityAt(0, 1, 0, velocity)).toBe(true);
+    expect(Array.from(velocity)).toEqual([0, 0, 0]);
+    expect(field.rotatingCount).toBe(0);
   });
 
   it("inverts the exact volume-preserving membrane map", () => {
@@ -45,6 +215,22 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(restored[0]).toBeCloseTo(2.5, 5);
     expect(restored[1]).toBeCloseTo(-1.2, 5);
     expect(restored[2]).toBeCloseTo(0.8, 5);
+  });
+
+  it("builds a capsule chain segment on the supplied renderer centerline", () => {
+    const obstacle = capsuleObstacleBetween(
+      "er-segment",
+      [1, -2, 0.5],
+      [4, -2, 4.5],
+      0.2
+    );
+    const field = new DynamicCytosolObstacleField(1);
+    field.setObstacles([obstacle], 0);
+
+    expect(obstacle.center).toEqual([2.5, -2, 2.5]);
+    expect(obstacle.halfLength).toBeCloseTo(2.5, 12);
+    expect(field.collides(2.5, -2, 2.5)).toBe(true);
+    expect(field.collides(2.5, -1.7, 2.5)).toBe(false);
   });
 
   it("projects a seeded bounded field and reports numerical divergence", () => {
@@ -70,6 +256,7 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(Array.from(first.velocityX)).toEqual(Array.from(second.velocityX));
     expect(diagnostics.fluidCellCount).toBeGreaterThan(0);
     expect(diagnostics.solidCellCount).toBeGreaterThan(0);
+    expect(diagnostics.rotatingObstacleCount).toBe(0);
     expect(diagnostics.divergenceRmsAfter).toBeLessThan(diagnostics.divergenceRmsBefore);
     expect(diagnostics.divergenceMaxAfter).toBeGreaterThanOrEqual(0);
     expect(diagnostics.biologicalUnitsAssigned).toBe(false);
@@ -121,10 +308,324 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(Math.max(...scalar.values)).toBeLessThan(1);
   });
 
+  it("conservatively remaps scalar mass when a moving organelle changes the fluid mask", () => {
+    const obstacles = new DynamicCytosolObstacleField(1);
+    obstacles.setObstacles([
+      { id: "moving-organelle", kind: "sphere", center: [-1.8, 0, 0], radius: 1.35 }
+    ], 0);
+    const grid = new CytosolProjectionGrid({
+      resolution: 16,
+      halfExtent: 6,
+      seed: 12,
+      radiusAtDirection: () => 5,
+      visualModeCount: 0
+    });
+    grid.step(1 / 60, null, obstacles);
+    const scalar = new ConservativePassiveScalar3D(grid, {
+      id: "moving_domain_validation_pulse",
+      dimensionlessDiffusivity: 0
+    });
+    scalar.initialize(() => 1);
+    const before = scalar.totalMass();
+
+    obstacles.setObstacles([
+      { id: "moving-organelle", kind: "sphere", center: [1.8, 0, 0], radius: 1.35 }
+    ], 0.1);
+    grid.step(0.1, null, obstacles);
+    scalar.step(0);
+
+    const after = scalar.totalMass();
+    const diagnostics = scalar.domainRemapDiagnostics();
+    expect(diagnostics.remapCount).toBe(1);
+    expect(diagnostics.displacedCellCount).toBeGreaterThan(0);
+    expect(diagnostics.exposedCellCount).toBeGreaterThan(0);
+    expect(diagnostics.displacedDimensionlessMass).toBeGreaterThan(0);
+    expect(diagnostics.redistributedDimensionlessMass).toBeCloseTo(
+      diagnostics.displacedDimensionlessMass,
+      12
+    );
+    expect(diagnostics.absoluteMassResidual).toBeLessThan(1e-10);
+    expect(after).toBeCloseTo(before, 12);
+    expect(Math.min(...scalar.values)).toBeGreaterThanOrEqual(0);
+  });
+
+  it("conserves scalar mass around a translating and rotating compound boundary", () => {
+    const obstacles = new DynamicCytosolObstacleField(0.75);
+    obstacles.setObstacles([
+      {
+        id: "golgi-envelope",
+        kind: "box",
+        center: [-1.2, 0, 0],
+        orientation: [0, 0, 0, 1],
+        halfExtents: [1.1, 0.45, 0.8]
+      },
+      capsuleObstacleBetween("er-branch", [0.2, -1.8, 0], [0.2, 1.8, 0], 0.28)
+    ], 0);
+    const grid = new CytosolProjectionGrid({
+      resolution: 18,
+      halfExtent: 6,
+      seed: 44,
+      radiusAtDirection: () => 5.2,
+      visualModeCount: 0
+    });
+    grid.step(1 / 60, null, obstacles);
+    const scalar = new ConservativePassiveScalar3D(grid, {
+      id: "compound_boundary_validation_pulse",
+      dimensionlessDiffusivity: 0
+    });
+    scalar.initialize((x) => x < 0 ? 0.8 : 0.2);
+    const before = scalar.totalMass();
+
+    const quarterTurn = Math.PI / 4;
+    obstacles.setObstacles([
+      {
+        id: "golgi-envelope",
+        kind: "box",
+        center: [1.2, 0, 0],
+        orientation: [0, 0, Math.sin(quarterTurn), Math.cos(quarterTurn)],
+        halfExtents: [1.1, 0.45, 0.8]
+      },
+      {
+        ...capsuleObstacleBetween("er-branch", [-1.8, 0.2, 0], [1.8, 0.2, 0], 0.28)
+      }
+    ], 0.2);
+    grid.step(0.2, null, obstacles);
+    scalar.step(0);
+
+    const diagnostics = scalar.domainRemapDiagnostics();
+    expect(obstacles.rotatingCount).toBe(2);
+    expect(diagnostics.displacedCellCount).toBeGreaterThan(0);
+    expect(diagnostics.exposedCellCount).toBeGreaterThan(0);
+    expect(diagnostics.absoluteMassResidual).toBeLessThan(1e-10);
+    expect(scalar.totalMass()).toBeCloseTo(before, 11);
+    expect(Math.min(...scalar.values)).toBeGreaterThanOrEqual(0);
+  });
+
+  it("retains a membrane thinner than one grid cell with conservative subgrid sampling", () => {
+    const obstacles = new DynamicCytosolObstacleField(1);
+    obstacles.setObstacles([
+      {
+        id: "subgrid-cisterna",
+        kind: "box",
+        center: [0, 0.23, 0],
+        halfExtents: [2, 0.015, 1],
+        boundarySampling: "conservative_subgrid"
+      }
+    ], 0);
+    const grid = new CytosolProjectionGrid({
+      resolution: 12,
+      halfExtent: 6,
+      seed: 55,
+      radiusAtDirection: () => 5.5,
+      visualModeCount: 0
+    });
+    grid.step(1 / 60, null, obstacles);
+    const diagnostics = grid.diagnostics();
+
+    expect(obstacles.collides(0, 0.5, 0)).toBe(false);
+    expect(diagnostics.subgridObstacleCount).toBe(1);
+    expect(diagnostics.subgridInterceptedCellCount).toBeGreaterThan(0);
+    expect(diagnostics.fractionalObstacleCellCount).toBeGreaterThan(0);
+    expect(diagnostics.fractionalOpenFaceCount + diagnostics.closedObstacleFaceCount).toBeGreaterThan(0);
+    expect(diagnostics.meanInternalFaceOpenFraction).toBeGreaterThan(0);
+    expect(diagnostics.meanInternalFaceOpenFraction).toBeLessThan(1);
+    expect(diagnostics.dimensionlessObstacleVolumeEstimate).toBeGreaterThan(0);
+  });
+
+  it("computes deterministic fractional apertures from analytic face-channel intersections", () => {
+    const obstacles = new DynamicCytosolObstacleField(0.5);
+    obstacles.setObstacles([
+      {
+        id: "thin-face-barrier",
+        kind: "box",
+        center: [0, 0.08, 0],
+        halfExtents: [1, 0.015, 1],
+        boundarySampling: "conservative_subgrid"
+      }
+    ], 0);
+    expect(obstacles.sampleFaceOpenFraction([0, -0.5, 0], [0, 0.5, 0], 1, 1)).toBe(0);
+
+    obstacles.setObstacles([
+      {
+        id: "centerline-feature",
+        kind: "sphere",
+        center: [0, 0, 0],
+        radius: 0.05,
+        boundarySampling: "conservative_subgrid"
+      }
+    ], 0);
+    expect(obstacles.sampleFaceOpenFraction([-0.5, 0, 0], [0.5, 0, 0], 0, 1)).toBe(0.75);
+  });
+
+  it("weights passive-scalar transport by open face area while conserving partial-cell mass", () => {
+    const build = (withBarrier: boolean) => {
+      const obstacles = new DynamicCytosolObstacleField(0.5);
+      obstacles.setObstacles(withBarrier ? [
+        {
+          id: "diffusion-barrier",
+          kind: "box" as const,
+          center: [0, 0.08, 0] as const,
+          halfExtents: [3, 0.015, 3] as const,
+          boundarySampling: "conservative_subgrid" as const
+        }
+      ] : [], 0);
+      const grid = new CytosolProjectionGrid({
+        resolution: 16,
+        halfExtent: 4,
+        seed: 72,
+        radiusAtDirection: () => 3.7,
+        visualModeCount: 0
+      });
+      grid.step(0, null, obstacles);
+      const scalar = new ConservativePassiveScalar3D(grid, {
+        id: withBarrier ? "barrier-pulse" : "control-pulse",
+        dimensionlessDiffusivity: 0.05
+      });
+      scalar.initialize((_x, y) => y < 0 ? 1 : 0);
+      const before = scalar.totalMass();
+      scalar.step(0.4);
+      const point = new Float32Array(3);
+      let positiveYMass = 0;
+      const cellVolume = grid.spacing ** 3;
+      for (let index = 0; index < scalar.values.length; index += 1) {
+        grid.cellCenter(index, point);
+        if (point[1] <= 0) continue;
+        positiveYMass += (
+          scalar.values[index] *
+          grid.fluidVolumeFraction[index] *
+          cellVolume
+        );
+      }
+      return {
+        before,
+        after: scalar.totalMass(),
+        positiveYMass,
+        diagnostics: grid.diagnostics()
+      };
+    };
+
+    const control = build(false);
+    const barrier = build(true);
+    expect(control.after).toBeCloseTo(control.before, 10);
+    expect(barrier.after).toBeCloseTo(barrier.before, 10);
+    expect(barrier.positiveYMass).toBeLessThan(control.positiveYMass);
+    expect(barrier.diagnostics.closedObstacleFaceCount).toBeGreaterThan(0);
+  });
+
+  it("rasterizes the star-shaped outer membrane with fractional volumes and faces", () => {
+    const grid = new CytosolProjectionGrid({
+      resolution: 24,
+      halfExtent: 6,
+      seed: 117,
+      radiusAtDirection: () => 4.8,
+      safetyFraction: 0.9,
+      visualModeCount: 0
+    });
+    grid.step(0, null);
+    const diagnostics = grid.diagnostics();
+    const expectedVolume = (4 / 3) * Math.PI * (4.8 * 0.9) ** 3;
+
+    expect(diagnostics.fractionalMembraneCellCount).toBeGreaterThan(0);
+    expect(diagnostics.fractionalMembraneFaceCount).toBeGreaterThan(0);
+    expect(diagnostics.meanInternalMembraneFaceOpenFraction).toBeGreaterThan(0);
+    expect(diagnostics.meanInternalMembraneFaceOpenFraction).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(diagnostics.dimensionlessMembraneVolumeEstimate - expectedVolume)
+      / expectedVolume
+    ).toBeLessThan(0.03);
+  });
+
+  it("enforces local geometric conservation when a non-affine membrane mode moves", () => {
+    let localMode = 0;
+    const grid = new CytosolProjectionGrid({
+      resolution: 24,
+      halfExtent: 6,
+      seed: 118,
+      radiusAtDirection: (x) => 4.8 * (
+        1 + localMode * 0.5 * (3 * x * x - 1)
+      ),
+      safetyFraction: 0.9,
+      projectionIterations: 48,
+      visualModeCount: 0
+    });
+    grid.step(0, null);
+    const scalar = new ConservativePassiveScalar3D(grid, {
+      id: "moving-membrane-conservation-pulse",
+      dimensionlessDiffusivity: 0
+    });
+    scalar.initialize((_x, y) => y < 0 ? 0.8 : 0.2);
+    const massBefore = scalar.totalMass();
+
+    localMode = 0.09;
+    grid.step(0.2, null);
+    scalar.step(0);
+    const diagnostics = grid.diagnostics();
+    const remap = scalar.domainRemapDiagnostics();
+
+    expect(diagnostics.movingMembraneCellCount).toBeGreaterThan(0);
+    expect(diagnostics.fractionalMembraneCellCount).toBeGreaterThan(0);
+    expect(diagnostics.divergenceRmsBefore).toBeGreaterThan(0);
+    expect(diagnostics.divergenceRmsAfter).toBeLessThan(
+      diagnostics.divergenceRmsBefore
+    );
+    expect(remap.remapCount).toBe(1);
+    expect(remap.absoluteMassResidual).toBeLessThan(1e-10);
+    expect(scalar.totalMass()).toBeCloseTo(massBefore, 10);
+  });
+
+  it("reduces thin-boundary volume error under deterministic grid refinement", () => {
+    const exactVolume = 3.4 * 0.12 * 2.2;
+    const estimate = (resolution: number) => {
+      const obstacles = new DynamicCytosolObstacleField(0.5);
+      obstacles.setObstacles([
+        {
+          id: "refined-cisterna",
+          kind: "box",
+          center: [0, 0.23, 0],
+          halfExtents: [1.7, 0.06, 1.1],
+          boundarySampling: "conservative_subgrid"
+        }
+      ], 0);
+      const grid = new CytosolProjectionGrid({
+        resolution,
+        halfExtent: 4,
+        seed: 91,
+        radiusAtDirection: () => 3.8,
+        visualModeCount: 0
+      });
+      grid.step(0, null, obstacles);
+      return grid.obstacleVolumeEstimate();
+    };
+    const coarseError = Math.abs(estimate(12) - exactVolume);
+    const mediumError = Math.abs(estimate(24) - exactVolume);
+    const fineError = Math.abs(estimate(48) - exactVolume);
+
+    expect(mediumError).toBeLessThan(coarseError);
+    expect(fineError).toBeLessThan(mediumError);
+  }, 15_000);
+
   it("keeps biological units and reaction feedback disabled", () => {
     expect(CYTOSOL_NUMERICAL_CONTRACT.biologicalVelocityClaim).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.biologicalPressureClaim).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.biologicalDiffusivityClaim).toBe(false);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.movingDomainRemap).toContain("deterministic_nearest_fluid");
+    expect(CYTOSOL_NUMERICAL_CONTRACT.thinBoundaryTreatment).toContain("conservative_subgrid");
+    expect(CYTOSOL_NUMERICAL_CONTRACT.subgridQuadratureSamplesPerCell).toBe(8);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.faceApertureQuadratureChannels).toBe(4);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.faceAperturePressureWeighted).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.faceApertureScalarFluxWeighted).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.partialCellVolumeConservation).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.subgridGridConvergenceTested).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.membraneSubgridQuadratureSamplesPerCell).toBe(8);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.membraneFaceApertureQuadratureSamples).toBe(4);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.locallyConservativeMembraneFaceFlux).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.genericWatertightTriangleMeshBoundaryKernel).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.repositorySelfIntersectionAudit).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.closedMeshFluidDomainBoundaryKernel).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.nonStarShapedClosedMeshDomainSupported).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.registeredBiologicalMeshBoundaryCount).toBe(0);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.meshSelfIntersectionDetection).toBe(true);
+    expect(CYTOSOL_NUMERICAL_CONTRACT.membraneTopologyChangeSupport).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.quantitativePoroelasticSolver).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.reactionCouplingEnabled).toBe(false);
     expect(CYTOSOL_NUMERICAL_CONTRACT.membranePressureFeedbackEnabled).toBe(false);

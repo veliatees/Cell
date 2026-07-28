@@ -1,0 +1,104 @@
+{
+  "schema_version": "cell.phh-generative-donor-manifest-contract.v1",
+  "delivery_schema_version": "cell.phh-generative-donor-manifest.v1",
+  "contract_id": "phh_generative_donor_manifest_contract_v1",
+  "allowed_split_roles": [
+    "train",
+    "validation",
+    "test"
+  ],
+  "allowed_modalities": [
+    "raw_single_cell_rna_counts",
+    "single_cell_protein_counts_with_assay_model",
+    "matched_multimodal_single_cell_measurements",
+    "source_backed_engine_observation_vectors",
+    "donor_resolved_3d_morphology"
+  ],
+  "required_root_fields": [
+    "schema_version",
+    "dataset_id",
+    "species",
+    "cell_type",
+    "measurement_artifact_sha256",
+    "feature_matrix_sha256",
+    "source_ids",
+    "samples",
+    "features",
+    "manual_primary_source_review_complete",
+    "generated_record_count",
+    "automatic_training",
+    "automatic_engine_coupling"
+  ],
+  "required_sample_fields": [
+    "sample_id",
+    "donor_id",
+    "split_role",
+    "source_study_id",
+    "source_locator",
+    "assay_batch_id",
+    "modality",
+    "biological_system",
+    "culture_format",
+    "health_context",
+    "nutrition_or_exposure_context",
+    "measured_record_count",
+    "donor_covariates",
+    "missing_donor_covariates",
+    "technical_covariates",
+    "missing_feature_ids"
+  ],
+  "required_donor_covariate_keys": [
+    "age",
+    "sex",
+    "genotype",
+    "zonation",
+    "nutrition_state",
+    "disease_history"
+  ],
+  "required_feature_fields": [
+    "feature_id",
+    "modality",
+    "biological_entity",
+    "value_semantics",
+    "original_unit",
+    "assay",
+    "missingness_semantics",
+    "source_id",
+    "may_initialize_engine"
+  ],
+  "allowed_missingness_semantics": [
+    "not_measured",
+    "below_detection",
+    "assay_structural_zero",
+    "observed_value_only_no_imputation"
+  ],
+  "split_policy": {
+    "split_before_preprocessing_required": true,
+    "donor_disjoint_required": true,
+    "test_study_disjoint_required": true,
+    "batch_covariates_required": true,
+    "explicit_missingness_required": true,
+    "generated_records_in_training_allowed": false
+  },
+  "evaluation_contract": {
+    "frozen_model_before_test_access_required": true,
+    "donor_heldout_evaluation_required": true,
+    "posterior_predictive_checks_required": true,
+    "batch_effect_diagnostic_required": true,
+    "within_donor_variance_preservation_required": true,
+    "mechanistic_constraint_violation_report_required": true,
+    "synthetic_to_measured_provenance_required": true,
+    "single_aggregate_accuracy_score_allowed": false,
+    "automatic_engine_coupling": false
+  },
+  "policy": {
+    "legacy_relative_pools_are_measured_features": false,
+    "browser_visual_state_is_training_data": false,
+    "unknown_covariates_may_be_silently_imputed": false,
+    "missing_features_may_be_interpreted_as_zero": false,
+    "synthetic_records_may_be_relabelled_as_measured": false,
+    "generated_candidates_may_initialize_engine": false,
+    "automatic_training": false,
+    "automatic_engine_coupling": false
+  }
+}

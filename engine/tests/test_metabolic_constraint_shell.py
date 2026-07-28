@@ -6,11 +6,155 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 )
 
 
-def test_constraint_shell_stays_non_executable_until_artifact_and_context_are_pinned() -> None:
+def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_context() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     validate_metabolic_constraint_shell(snapshot)
-    assert snapshot["candidate_reconstruction"]["model_version"] is None
-    assert snapshot["candidate_reconstruction"]["artifact_sha256"] is None
+    assert snapshot["version"] == "metabolic_constraint_shell_v10"
+    reconstruction = snapshot["candidate_reconstruction"]
+    assert reconstruction["model_version"] == "2.0.0"
+    assert reconstruction["release_tag"] == "v2.0.0"
+    assert reconstruction["release_commit"] == "635f533152dc5f7290ce04d12700eaa882273c3e"
+    assert reconstruction["artifact_sha256"] == "cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a"
+    assert reconstruction["artifact_size_bytes"] == 43115559
+    assert reconstruction["structural_counts_verified_from_sbml"] == {
+        "compartments": 9,
+        "metabolites": 8461,
+        "reactions": 12931,
+        "genes": 2848,
+    }
+    assert reconstruction["sbml_path"] is None
+    assert reconstruction["model_loaded_by_runtime"] is False
+    assert reconstruction["model_loader_verified_against_pinned_artifact"] is True
+    assert reconstruction["mass_charge_balance_audited_in_project"] is True
+    audit = reconstruction["structural_audit"]
+    assert audit["one_sided_reaction_count"] == 1660
+    assert audit["two_sided_reaction_count"] == 11271
+    assert audit["elementally_assessable_reaction_count"] == 9849
+    assert audit["elementally_balanced_reaction_count"] == 9832
+    assert audit["elementally_imbalanced_reaction_count"] == 17
+    assert audit["jointly_unassessable_reaction_count"] == 1422
+    assert audit["active_objective_id"] == "obj"
+    loader = reconstruction["sparse_fbc_loader_audit"]
+    assert loader["stoichiometric_shape"] == [8461, 12931]
+    assert loader["stoichiometric_nonzero_count"] == 55198
+    assert loader["gene_associated_reaction_count"] == 7782
+    assert loader["gene_product_label_count"] == 2848
+    assert loader["active_objective_id"] == "obj"
+    assert loader["healthy_phh_context_extracted"] is False
+    assert loader["fba_execution_allowed"] is False
+    fastcc = reconstruction["generic_flux_consistency_audit"]
+    assert fastcc["epsilon"] == 1e-4
+    assert fastcc["consistent_reaction_count"] == 11641
+    assert fastcc["blocked_reaction_count"] == 1290
+    assert fastcc["lp7_solve_count"] == 6
+    assert fastcc["lp3_solve_count"] == 247
+    assert fastcc["maximum_mass_balance_residual"] < 1e-8
+    assert fastcc["healthy_phh_context_extracted"] is False
+    assert fastcc["biological_flux_authority"] is False
+    generic_fba = reconstruction["generic_native_objective_audit"]
+    assert generic_fba["objective_id"] == "obj"
+    assert generic_fba["objective_reaction_id"] == "MAR13082"
+    assert generic_fba["objective_is_healthy_phh_measurement"] is False
+    assert generic_fba["status"] == "optimal"
+    assert generic_fba["objective_value"] == 124.86814837744569
+    assert generic_fba["active_reaction_count_at_1e_minus_9"] == 2566
+    assert generic_fba["maximum_mass_balance_residual"] < 1e-8
+    assert generic_fba["biological_flux_authority"] is False
+    proteome_gpr = reconstruction["seven_donor_proteome_gpr_audit"]
+    assert proteome_gpr["donor_count"] == 7
+    assert proteome_gpr["not_healthy_volunteers"] is True
+    assert proteome_gpr["flux_consistent_core_candidate_count"] == 4555
+    fastcore_trial = reconstruction["seven_donor_fastcore_trial"]
+    assert fastcore_trial["source_fastcore_selected_reaction_count"] == 7320
+    assert fastcore_trial["source_fastcore_output_blocked_reaction_count"] == 408
+    assert fastcore_trial["closure_selected_reaction_count"] == 11639
+    assert fastcore_trial["context_model_accepted"] is False
+    donor_stability = reconstruction["seven_donor_gpr_stability_audit"]
+    assert donor_stability["zero_donor_support_reaction_count"] == 1801
+    assert donor_stability["six_donor_support_reaction_count"] == 150
+    assert donor_stability["largest_leave_one_out_core_expansion_count"] == 62
+    scaling = reconstruction["fastcore_scaling_comparison"]
+    assert scaling["fixed_output_blocked_reaction_count"] == 408
+    assert scaling["adaptive_selected_reaction_count"] == 7415
+    assert scaling["adaptive_output_blocked_reaction_count"] == 17
+    assert scaling["adaptive_fixed_fallback_count"] == 1
+    assert scaling["context_model_accepted"] is False
+    diagnostics = reconstruction["fastcore_blocker_diagnostics"]
+    assert diagnostics["diagnosed_blocker_count"] == 17
+    assert diagnostics["full_network_active_blocker_count"] == 17
+    assert diagnostics["candidate_blocked_reaction_count"] == 17
+    assert diagnostics["minimum_reaction_support_proven"] is False
+    repair = reconstruction["fastcore_support_repair"]
+    assert repair["direction_milp_solve_count"] == 34
+    assert repair["added_reaction_union_count"] == 65
+    assert repair["repaired_candidate_reaction_count"] == 7480
+    assert repair["strict_fastcc_blocked_reaction_count"] == 0
+    assert repair["added_reaction_without_gpr_count"] == 8
+    assert repair["added_reaction_zero_donor_gpr_count"] == 57
+    assert repair["union_strictly_flux_consistent"] is True
+    assert repair["reaction_activity_in_phh_established"] is False
+    assert repair["context_model_accepted"] is False
+    assert repair["fba_execution_allowed"] is False
+    shared = reconstruction["fastcore_shared_support"]
+    assert shared["input_candidate_union_count"] == 65
+    assert shared["minimum_shared_added_reaction_count"] == 59
+    assert shared["removed_from_per_target_union_count"] == 6
+    assert shared["repaired_candidate_reaction_count"] == 7474
+    assert shared["strict_fastcc_blocked_reaction_count"] == 0
+    assert shared["selected_reaction_without_gpr_count"] == 4
+    assert shared["selected_reaction_zero_donor_gpr_count"] == 55
+    assert (
+        shared["minimum_cardinality_within_65_reaction_union_proven"]
+        is True
+    )
+    assert shared["reaction_activity_in_phh_established"] is False
+    optimality = reconstruction["fastcore_support_optimality"]
+    assert optimality["minimum_support_set_count"] == 2
+    assert optimality["minimum_support_identity_enumeration_complete"] is True
+    assert optimality[
+        "reactions_present_in_every_minimum_support_count"
+    ] == 58
+    assert optimality["optional_reaction_count"] == 2
+    assert optimality["optional_reaction_ids_in_input_order"] == [
+        "MAR02308",
+        "MAR10035",
+    ]
+    assert optimality["terminal_infeasibility_proven"] is True
+    assert optimality["reaction_activity_in_phh_established"] is False
+    evidence = reconstruction["reaction_evidence_manifest"]
+    assert evidence["manifest_reaction_count"] == 4895
+    assert evidence["adaptive_fastcore_noncore_reaction_count"] == 2860
+    assert evidence["adaptive_noncore_without_gpr_count"] == 2177
+    assert evidence["automatic_bound_change_allowed"] is False
     assert snapshot["optimization_problem"]["objective"] is None
     assert snapshot["optimization_problem"]["boundary_fluxes"] is None
+    numerics = snapshot["generic_constraint_numerics"]
+    assert numerics["backend"] == "scipy.optimize.linprog"
+    assert numerics["backend_version"] == "1.17.1"
+    assert numerics["analytic_fixture_pass_count"] == 5
+    assert numerics["human_gem_loaded"] is False
+    assert numerics["biological_flux_authority"] is False
+    context_kernel = snapshot["context_extraction_kernel"]
+    assert context_kernel["algorithm"] == "FASTCORE"
+    assert context_kernel["synthetic_fixture_pass_count"] == 1
+    assert context_kernel["epsilon_has_runtime_default"] is False
+    assert context_kernel["human_gem_context_extraction_executed"] is False
+    assert context_kernel["biological_flux_authority"] is False
+    bundle = snapshot["phh_execution_bundle_intake"]
+    assert bundle["required_artifact_count"] == 10
+    assert bundle["delivered_bundle_count"] == 0
+    assert bundle["structurally_complete_bundle_count"] == 0
+    assert bundle["runtime_flux_coupling_allowed"] is False
     assert not any(snapshot["gates"].values())
+
+
+def test_exact_release_pin_removed_only_the_artifact_identity_blocker() -> None:
+    snapshot = metabolic_constraint_shell_snapshot()
+    blockers = snapshot["blockers"]
+    assert not any("release and checksum are not pinned" in item for item in blockers)
+    assert any("context specificity was not established" in item for item in blockers)
+    assert any("raw output left 17 reactions blocked" in item for item in blockers)
+    assert any("reduced to a proven 59-reaction minimum" in item for item in blockers)
+    assert any("independent flux validation" in item for item in blockers)
+    assert not any("have not been audited" in item for item in blockers)
+    assert any("structural audit exceptions" in item for item in blockers)

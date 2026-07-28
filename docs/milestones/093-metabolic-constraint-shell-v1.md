@@ -1,4 +1,4 @@
-# Milestone 093: Metabolic Constraint Shell v1
+# Milestone 093: Metabolic Constraint Shell v2
 
 ## Goal
 
@@ -9,7 +9,15 @@ rates or time trajectories.
 ## Implemented
 
 - Fail-closed Human-GEM/Human1 artifact contract.
-- Required model release, checksum, SBML path, license and mass/charge audit.
+- Official Human-GEM `v2.0.0` release pinned to commit `635f533`.
+- Official 43,115,559-byte SBML artifact pinned to SHA-256
+  `cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a`.
+- Namespace-aware inspection of the pinned SBML verified 9 compartments,
+  8,461 metabolites, 12,931 reactions and 2,848 genes.
+- Manifest and checksum-verifying fetch tool; the 43 MB model is not vendored.
+- Streaming SBML chemistry audit: one-sided exchange/demand reactions are
+  separated from internal candidates; generic R/X formulas remain unassessable.
+- Required SBML runtime loading, context extraction and optimization checks remain explicit.
 - Required hepatocyte extraction algorithm, donor/cohort, nutrition, zonation,
   transcriptome and proteome context.
 - Required objective, measured exchange bounds, thermodynamic constraints,
@@ -19,9 +27,16 @@ rates or time trajectories.
 
 ## Current Result
 
-FBA, FVA, thermodynamic FBA, enzyme-constrained FBA, dynamic-rate
-initialization and scientific-validation coupling are all disabled. No model
-artifact has been downloaded or silently pinned by this milestone.
+The generic reconstruction's identity and structural audit are reproducibly
+pinned, but it is not loaded by runtime. Of 11,271 two-sided reactions, 9,849
+have fully chemical formulas for elemental assessment; 9,832 are elementally
+balanced and 17 are not. Joint element/charge assessment leaves 1,422 reactions
+unassessable because of missing or generic formulas. These are audit results,
+not repairs. FBA, FVA, thermodynamic FBA, enzyme-constrained FBA, dynamic-rate
+initialization and scientific-validation coupling remain disabled. Healthy-PHH
+context extraction, measured exchange bounds, a defensible objective,
+reaction-level audit exception resolution and independent flux validation are
+still absent.
 
 ## Scientific Boundary
 
@@ -42,3 +57,5 @@ are frozen.
 
 - `engine/cell_engine/quantitative/metabolic_constraint_shell.py`
 - `engine/tests/test_metabolic_constraint_shell.py`
+- `data/published_models/human_gem_v2.0.0.manifest.json`
+- `scripts/fetch_human_gem.py`

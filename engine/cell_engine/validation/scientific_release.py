@@ -75,6 +75,10 @@ from cell_engine.quantitative.phh_protein_functional_evidence import (
     build_phh_protein_functional_evidence,
     validate_phh_protein_functional_evidence,
 )
+from cell_engine.quantitative.phh_injury_validation import (
+    build_phh_injury_validation,
+    validate_phh_injury_validation,
+)
 from cell_engine.quantitative.human_sch_bile_acids import (
     build_human_sch_bile_acids,
     validate_human_sch_bile_acids,
@@ -82,6 +86,35 @@ from cell_engine.quantitative.human_sch_bile_acids import (
 from cell_engine.quantitative.compartmental_energy_redox import (
     build_compartmental_energy_redox_contract,
     validate_compartmental_energy_redox_contract,
+)
+from cell_engine.quantitative.energy_redox_trajectory import (
+    energy_redox_trajectory_intake_snapshot,
+)
+from cell_engine.quantitative.active_protein_localization import (
+    active_protein_localization_snapshot,
+)
+from cell_engine.quantitative.reaction_evidence_intake import (
+    reaction_evidence_intake_snapshot,
+)
+from cell_engine.quantitative.receptor_signaling_trajectory import (
+    receptor_signaling_trajectory_snapshot,
+)
+from cell_engine.quantitative.phh_3d_mesh_boundary import (
+    phh_3d_mesh_boundary_intake_snapshot,
+)
+from cell_engine.quantitative.intracellular_mobility import (
+    intracellular_mobility_intake_snapshot,
+)
+from cell_engine.quantitative.reaction_transport_coupling import (
+    reaction_transport_coupling_intake_snapshot,
+)
+from cell_engine.quantitative.cytosol_transport import (
+    cytosol_transport_snapshot,
+    validate_cytosol_transport_snapshot,
+)
+from cell_engine.quantitative.metabolic_constraint_shell import (
+    metabolic_constraint_shell_snapshot,
+    validate_metabolic_constraint_shell,
 )
 from cell_engine.stochastic.integrated_cell import (
     INTEGRATED_VOLUME_L,
@@ -118,6 +151,7 @@ from cell_engine.validation.hepatic_flux import (
     validate_unified_nutritional_context,
 )
 from cell_engine.validation.evidence_intake import evidence_intake_snapshot
+from cell_engine.validation.hepatocyte_quantities import validate_quantity_harvest
 from cell_engine.io.brian2 import brian2_communication_snapshot
 from cell_engine.ml.generative import (
     build_generative_modeling_boundary,
@@ -167,6 +201,7 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
     phh_proteome_budget = None
     phh_transporter_inventory = None
     phh_protein_functional_evidence = None
+    phh_injury_validation = None
     human_sch_bile_acids = None
     integrated_reaction_authority = None
     kinetic_transfer = None
@@ -320,6 +355,192 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         blockers.append(f"invalid energy/redox calibration and validation gate: {exc}")
 
     try:
+        energy_trajectory_intake = energy_redox_trajectory_intake_snapshot()
+        if (
+            energy_trajectory_intake["registered_pool_count"] != 38
+            or energy_trajectory_intake["compartment_initialization_allowed_count"] != 0
+            or energy_trajectory_intake["rate_fitting_allowed_count"] != 0
+        ):
+            raise ValueError("energy/redox trajectory intake exceeded current authority")
+        checks.append(
+            "the 47-column donor-resolved PHH energy/redox trajectory intake covers all 38 compartment pools while zero absent or unreviewed records initialize state or rates"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid energy/redox trajectory intake: {exc}")
+
+    try:
+        receptor_signal_intake = receptor_signaling_trajectory_snapshot()
+        if (
+            receptor_signal_intake["target_pathway_count"] != 8
+            or receptor_signal_intake["required_stage_slot_count"] != 64
+            or receptor_signal_intake["receptor_activation_allowed_count"] != 0
+            or receptor_signal_intake["signal_execution_allowed_count"] != 0
+            or receptor_signal_intake["cell_state_coupling_allowed_count"] != 0
+        ):
+            raise ValueError("receptor/signaling intake exceeded current authority")
+        checks.append(
+            "the 48-column donor-matched receptor/signaling intake covers eight stages across all eight communication pathways while activation, execution and state coupling remain disabled"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid receptor/signaling trajectory intake: {exc}")
+
+    try:
+        active_protein_intake = active_protein_localization_snapshot()
+        if (
+            active_protein_intake["target_protein_count"] != 8
+            or active_protein_intake["required_protein_slot_count"] != 63
+            or active_protein_intake[
+                "active_copy_or_concentration_authorized_count"
+            ]
+            != 0
+            or active_protein_intake["functional_rate_authorized_count"] != 0
+            or active_protein_intake["cell_state_coupling_allowed_count"] != 0
+        ):
+            raise ValueError("active-protein intake exceeded current authority")
+        checks.append(
+            "the 52-column active-protein intake separates total, localized, active, denominator and functional evidence for eight proteins while all automatic conversions and rate coupling remain disabled"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid active-protein localization intake: {exc}")
+
+    try:
+        mesh_intake = phh_3d_mesh_boundary_intake_snapshot()
+        mesh_summary = mesh_intake["summary"]
+        if (
+            mesh_summary["target_structure_count"] != 11
+            or mesh_summary["manifest_record_count"] != 0
+            or mesh_summary["repository_self_intersection_audited_artifact_count"] != 0
+            or mesh_summary["registered_biological_mesh_boundary_count"] != 0
+            or mesh_summary["mechanics_coupled_mesh_count"] != 0
+            or mesh_intake["gates"]["self_intersection_audit_implemented_in_repository"] is not True
+            or mesh_intake["gates"]["biological_mesh_registration_allowed"] is not False
+        ):
+            raise ValueError("PHH mesh intake exceeded current authority")
+        checks.append(
+            "the 41-column PHH mesh intake plus repository topology/self-intersection audits cover eleven structures while independent QC, microscopy registration, mechanics and runtime activation remain disabled"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid PHH 3D mesh-boundary intake: {exc}")
+
+    try:
+        mobility_intake = intracellular_mobility_intake_snapshot()
+        mobility_summary = mobility_intake["summary"]
+        if (
+            mobility_summary["target_species_count"] != 43
+            or mobility_summary["required_stage_slot_count"] != 387
+            or mobility_summary["record_count"] != 0
+            or mobility_summary["apparent_diffusivity_authorized_species_count"] != 0
+            or mobility_summary["crowding_law_authorized_species_count"] != 0
+            or mobility_summary["reaction_coupled_species_count"] != 0
+            or mobility_summary["global_viscosity_multiplier_count"] != 0
+        ):
+            raise ValueError("intracellular mobility intake exceeded current authority")
+        checks.append(
+            "the 50-column species-resolved mobility/crowding intake covers 387 stages while all diffusivity, crowding and reaction coupling authority remains zero"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid intracellular mobility intake: {exc}")
+
+    try:
+        transport_intake = reaction_transport_coupling_intake_snapshot()
+        transport_summary = transport_intake["summary"]
+        if (
+            transport_summary["target_reaction_count"] != 36
+            or transport_summary["required_stage_slot_count"] != 288
+            or transport_summary["record_count"] != 0
+            or transport_summary["local_concentration_coupled_reaction_count"] != 0
+            or transport_summary["direct_rate_corrected_reaction_count"] != 0
+            or transport_summary["runtime_activated_reaction_count"] != 0
+            or transport_summary["global_fluid_multiplier_count"] != 0
+        ):
+            raise ValueError("reaction transport intake exceeded current authority")
+        checks.append(
+            "the 51-column reaction-transport intake covers 288 stages while L^2/(D*tau) remains an audit scale and all coupling authority remains zero"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid reaction transport-coupling intake: {exc}")
+
+    try:
+        cytosol = cytosol_transport_snapshot()
+        validate_cytosol_transport_snapshot(cytosol)
+        cytosol_summary = cytosol["summary"]
+        if (
+            cytosol_summary["repository_mesh_self_intersection_audit_count"] != 1
+            or cytosol_summary["non_star_shaped_closed_mesh_domain_kernel_count"] != 1
+            or cytosol_summary[
+                "dimensionless_pressure_membrane_response_kernel_count"
+            ]
+            != 1
+            or cytosol_summary[
+                "phh_mechanics_calibration_intake_contract_count"
+            ]
+            != 1
+            or cytosol_summary["phh_mechanics_target_quantity_count"] != 15
+            or cytosol_summary["delivered_phh_mechanics_trajectory_count"] != 0
+            or cytosol_summary[
+                "spatial_fsi_ready_phh_mechanics_trajectory_count"
+            ]
+            != 0
+            or cytosol_summary[
+                "quantitatively_authorized_phh_mechanics_parameter_count"
+            ]
+            != 0
+            or cytosol_summary["membrane_pressure_feedback_count"] != 0
+            or cytosol_summary["full_watertight_mesh_boundary_count"] != 0
+        ):
+            raise ValueError("dimensionless cytosol numerics exceeded current authority")
+        checks.append(
+            "self-intersection-audited closed domains and a force/volume-checked pressure-response candidate remain dimensionless while the 48-column PHH mechanics intake, mesh registration and runtime feedback stay fail closed"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid dimensionless cytosol numerical contract: {exc}")
+
+    try:
+        metabolic = metabolic_constraint_shell_snapshot()
+        validate_metabolic_constraint_shell(metabolic)
+        numerics = metabolic["generic_constraint_numerics"]
+        reconstruction = metabolic["candidate_reconstruction"]
+        loader = reconstruction["sparse_fbc_loader_audit"]
+        fastcc = reconstruction["generic_flux_consistency_audit"]
+        native_fba = reconstruction["generic_native_objective_audit"]
+        context_kernel = metabolic["context_extraction_kernel"]
+        bundle = metabolic["phh_execution_bundle_intake"]
+        if (
+            numerics["analytic_fixture_pass_count"] != 5
+            or numerics["human_gem_loaded"] is not False
+            or numerics["biological_flux_authority"] is not False
+            or loader["artifact_identity_verified_before_parse"] is not True
+            or loader["stoichiometric_nonzero_count"] != 55198
+            or loader["healthy_phh_context_extracted"] is not False
+            or loader["fba_execution_allowed"] is not False
+            or fastcc["consistent_reaction_count"] != 11641
+            or fastcc["blocked_reaction_count"] != 1290
+            or fastcc["maximum_mass_balance_residual"] > 1e-8
+            or fastcc["healthy_phh_context_extracted"] is not False
+            or fastcc["biological_flux_authority"] is not False
+            or native_fba["status"] != "optimal"
+            or native_fba["objective_reaction_id"] != "MAR13082"
+            or native_fba["objective_is_healthy_phh_measurement"] is not False
+            or native_fba["maximum_mass_balance_residual"] > 1e-8
+            or native_fba["healthy_phh_context_extracted"] is not False
+            or native_fba["biological_flux_authority"] is not False
+            or context_kernel["synthetic_fixture_pass_count"] != 1
+            or context_kernel["human_gem_context_extraction_executed"] is not False
+            or context_kernel["biological_flux_authority"] is not False
+            or bundle["required_artifact_count"] != 10
+            or bundle["delivered_bundle_count"] != 0
+            or bundle["structurally_complete_bundle_count"] != 0
+            or bundle["fba_execution_allowed"] is not False
+            or bundle["runtime_flux_coupling_allowed"] is not False
+        ):
+            raise ValueError("constraint numerics or PHH execution bundle exceeded authority")
+        checks.append(
+            "the checksum-pinned Human-GEM sparse loader, complete generic FASTCC classification, native generic-biomass solve, five analytic FBA/FVA checks and one synthetic FASTCORE extraction pass while healthy-PHH context extraction, the ten-artifact execution bundle and biological flux coupling remain absent"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid metabolic constraint execution contract: {exc}")
+
+    try:
         external_validation_program = build_external_validation_program()
         validate_external_validation_program(external_validation_program)
         checks.append(
@@ -391,6 +612,23 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid PHH protein-functional evidence: {exc}")
+
+    try:
+        quantity_harvest = validate_quantity_harvest()
+        checks.append(
+            f"the {quantity_harvest.total_records}-record hepatocyte quantity harvest is checksum-audited, species-partitioned and barred from automatic parameter activation"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid hepatocyte quantity harvest: {exc}")
+
+    try:
+        phh_injury_validation = build_phh_injury_validation()
+        validate_phh_injury_validation(phh_injury_validation)
+        checks.append(
+            "nine primary-human-hepatocyte APAP and bile-acid injury observations retain exact dose, time, assay and death-mode context while generalized fate laws remain blocked"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid PHH injury-validation evidence: {exc}")
 
     try:
         human_sch_bile_acids = build_human_sch_bile_acids()
@@ -501,6 +739,21 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except ValueError as exc:
         blockers.append(f"invalid published kinetic-transfer audit: {exc}")
+
+    try:
+        reaction_intake = reaction_evidence_intake_snapshot()
+        if (
+            reaction_intake["active_reaction_count"] != 36
+            or reaction_intake["required_slot_count"] != 432
+            or reaction_intake["quantitative_execution_allowed_count"] != 0
+            or reaction_intake["predictive_execution_allowed_count"] != 0
+        ):
+            raise ValueError("reaction-evidence intake exceeded current authority")
+        checks.append(
+            "the 45-column reaction-evidence intake addresses all 432 typed slots while exact IDs, context, units, donor splits and held-out provenance remain fail-closed"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid reaction-evidence intake: {exc}")
 
     invalid_drivers = tuple(
         surface.id
@@ -693,6 +946,15 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
                 blockers.append("seven-donor total abundance does not identify donor activity distributions")
             if not phh_protein_functional_evidence.integration_gates["whole_cell_flux_coupling_ready"]:
                 blockers.append("assay kinetics lack active-surface and whole-cell flux calibration")
+        if phh_injury_validation is None:
+            blockers.append("PHH injury-validation evidence is unavailable")
+        else:
+            if not phh_injury_validation.integration_gates["general_fate_law_ready"]:
+                blockers.append("PHH injury observations do not identify a generalized fate law")
+            if not phh_injury_validation.integration_gates["donor_disjoint_validation_ready"]:
+                blockers.append("PHH injury contexts lack donor-disjoint validation")
+            if not phh_injury_validation.integration_gates["automatic_runtime_coupling"]:
+                blockers.append("PHH injury observations are not calibrated to drive runtime fate")
         if human_sch_bile_acids is None:
             blockers.append("human SCH endogenous bile-acid reference is unavailable")
         else:
@@ -747,7 +1009,9 @@ def scientific_release_snapshot() -> dict[str, object]:
             "antioxidant kinetics and predictive coupling remain blocked. Human zonation, "
             "postabsorptive glucose perfusion, measured endocrine observations, exact PHH "
             "glucose/albumin/CYP/BEI operators, donor-resolved proteome references and bile-acid "
-            "endpoints retain their declared assay and denominator limits. Reaction authority "
+            "endpoints retain their declared assay and denominator limits. The quantity harvest "
+            "and PHH injury observations retain species, dose, time, assay and death-mode context "
+            "without automatic runtime activation. Reaction authority "
             "and kinetic-transfer firewalls keep the integrated fuel runtime exploratory. "
             "Published glucose execution remains shadow/diagnostic. Runtime contact geometry is "
             "engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, "

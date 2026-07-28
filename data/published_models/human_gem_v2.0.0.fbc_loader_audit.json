@@ -1,0 +1,80 @@
+{
+  "artifact": {
+    "byte_size": 43115559,
+    "model_version": "2.0.0",
+    "path": "data/published_models/cache/Human-GEM-v2.0.0.xml",
+    "release_commit": "635f533152dc5f7290ce04d12700eaa882273c3e",
+    "sha256": "cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a"
+  },
+  "integrity": {
+    "all_flux_bound_parameters_resolved": true,
+    "all_gene_product_labels_preserved": true,
+    "all_gene_product_references_resolved": true,
+    "all_objective_reaction_references_resolved": true,
+    "all_reaction_species_references_resolved": true,
+    "all_species_compartments_resolved": true,
+    "artifact_identity_verified_before_parse": true,
+    "finite_stoichiometry_and_bounds": true,
+    "lower_bounds_not_above_upper_bounds": true
+  },
+  "loaded_structure": {
+    "boundary_species_count": 0,
+    "compartment_count": 9,
+    "compartment_id_sha256_in_file_order": "67f42692f781a2020a2015e3978bc9c120d75a3142f94be74a57a10a164d821f",
+    "duplicate_gene_product_label_count": 0,
+    "gene_associated_reaction_count": 7782,
+    "gene_product_count": 2848,
+    "gene_product_id_label_sha256_in_file_order": "24782358cd793c377e1c3d93c74e20293044e7da5bfe94d264f5b02f44b251c7",
+    "gene_product_id_sha256_in_file_order": "287c5f835f90268c4b6a80993cd9181342835f6c5df238fdff631220bb5ff803",
+    "gene_product_label_count": 2848,
+    "objective_count": 1,
+    "objective_flux_term_count": 1,
+    "parameter_count": 3,
+    "reaction_count": 12931,
+    "reaction_id_sha256_in_file_order": "53b7a238fa929d4582c2abdacf0e651c88bbfcf9a5c0d554f2512d7e419c95a8",
+    "reversible_reaction_count": 5725,
+    "species_count": 8461,
+    "species_id_sha256_in_file_order": "81b7eb02cdbacdce62a53610cc3e8bab0f9c12789390d0b70b87e553bc21eb7e",
+    "stoichiometric_nonzero_count": 55198,
+    "stoichiometric_shape": [
+      8461,
+      12931
+    ],
+    "stoichiometric_triplet_sha256": "771a80dd6bf78c530cc27ce1edfe784f78c2ca2297dd0ef4fc7174f96ac74b16",
+    "unique_bound_pair_count": 3,
+    "unique_gene_product_label_count": 2848
+  },
+  "loader_version": "human_gem_fbc_loader_v2",
+  "sbml_fbc": {
+    "active_objective_id": "obj",
+    "fbc_strict": true,
+    "fbc_version": 2,
+    "level": 3,
+    "model_id": "HumanGEM",
+    "model_name": "Generic genome-scale metabolic model of Homo sapiens",
+    "objectives": [
+      {
+        "flux_terms": [
+          {
+            "coefficient": 1.0,
+            "reaction_id": "MAR13082"
+          }
+        ],
+        "id": "obj",
+        "type": "maximize"
+      }
+    ],
+    "version": 1
+  },
+  "schema_version": "cell.human-gem-fbc-loader-audit.v2",
+  "scientific_boundary": {
+    "biological_objective_attached": false,
+    "fba_execution_allowed": false,
+    "fluxes_computed": false,
+    "generic_human_reconstruction_loaded": true,
+    "healthy_phh_context_extracted": false,
+    "measured_exchange_bounds_attached": false,
+    "missing_sbml_objective_treated_as_zero_objective": false,
+    "runtime_flux_coupling_allowed": false
+  }
+}

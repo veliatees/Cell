@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from cell_engine.core.provenance import SourceReference
+from cell_engine.core.injury_authority import (
+    InjuryRuntimePurpose,
+    assert_injury_runtime_authority,
+)
 
 DATE_VERIFIED = "2026-06-20"
 
@@ -99,6 +103,8 @@ def death_drive(signals: StressSignals, params: ApoptosisParams = ApoptosisParam
 def step_death(
     state: DeathState, signals: StressSignals, dt_s: float,
     params: ApoptosisParams = ApoptosisParams(),
+    *,
+    purpose: InjuryRuntimePurpose,
 ) -> DeathState:
     """Advance the death decision by dt, returning the (latched) outcome.
 
@@ -109,6 +115,8 @@ def step_death(
     - **Apoptosis** if the caspase program reaches commitment with ATP intact.
     Both are irreversible once entered.
     """
+    if purpose != "exploratory_execution":
+        assert_injury_runtime_authority(purpose)
     if state.committed:
         return state  # commitment is irreversible
 
@@ -128,13 +136,22 @@ def step_death(
 
 
 def run_death(
-    signals: StressSignals, t_end_s: float, *, dt_s: float = 1.0,
+    signals: StressSignals, t_end_s: float, *, purpose: InjuryRuntimePurpose,
+    dt_s: float = 1.0,
     params: ApoptosisParams = ApoptosisParams(), state: DeathState | None = None,
 ) -> DeathState:
+    if purpose != "exploratory_execution":
+        assert_injury_runtime_authority(purpose)
     state = state or DeathState()
     t = 0.0
     while t < t_end_s:
-        state = step_death(state, signals, dt_s, params)
+        state = step_death(
+            state,
+            signals,
+            dt_s,
+            params,
+            purpose="exploratory_execution",
+        )
         if state.committed:
             break
         t += dt_s

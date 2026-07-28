@@ -96,10 +96,43 @@ linked to its dependencies.
 - Bounded hepatocyte feature scope and physical-substrate cellular-memory contract: `milestones/090-hepatocyte-capability-memory-atlas-v1.md`
 - Per-reaction kinetic, abundance, compartment, transport and validation evidence queue: `milestones/091-reaction-evidence-atlas-v1.md`
 - Evidence-gated two-phase cytoplasm contract and membrane-consistent qualitative transport tracers: `milestones/092-cytosol-transport-rheology-v1.md`
-- Fail-closed Human-GEM/Human1 genome-scale constraint shell: `milestones/093-metabolic-constraint-shell-v1.md`
+- Checksum-pinned Human-GEM v2.0.0 candidate and fail-closed genome-scale constraint shell: `milestones/093-metabolic-constraint-shell-v1.md`
 - Dimensionless three-dimensional cytosol projection with deforming membrane coordinates and moving analytic organelle boundaries: `milestones/094-moving-boundary-cytosol-projection-v1.md`
 - Conservative passive-scalar test kernel with zero biological species bound: `milestones/095-conservative-cytosol-species-transport-v1.md`
 - Healthy-human restricted-water validation target and strict passive-fluid versus active-cargo separation: `milestones/096-cytosol-validation-active-transport-separation-v1.md`
+- Scoped 26-item completion ledger and immutable Human-GEM retrieval: `milestones/097-pinned-human-gem-and-completion-ledger-v1.md`
+- Quantitative concentration claim firewall and retired pseudo-concentrations: `milestones/098-quantitative-concentration-claim-firewall-v1.md`
+- Conservative moving-domain remap for the numerical cytosol: `milestones/099-conservative-moving-domain-remap-v1.md`
+- Pinned Human-GEM reaction-level structural chemistry audit: `milestones/100-human-gem-structural-chemistry-audit-v1.md`
+- Lossless hepatocyte quantity harvest, primary-source curation, transporter kinetics, and context-bound PHH injury observations: `milestones/101-provenance-strict-hepatocyte-quantity-harvest-v1.md`
+- Exact-context PHH injury observation operator: `milestones/102-exact-phh-injury-observation-operator-v1.md`
+- Donor-disjoint PHH injury trajectory intake: `milestones/103-donor-disjoint-phh-injury-intake-v1.md`
+- Frozen held-out PHH injury assay evaluation: `milestones/104-frozen-phh-injury-assay-evaluation-v1.md`
+- Automated desktop/mobile browser render-integrity regression: `milestones/105-automated-browser-render-integrity-v1.md`
+- Quaternion-derived rigid organelle boundary kinematics: `milestones/106-rigid-organelle-boundary-kinematics-v1.md`
+- Renderer-linked organelle fluid boundaries: `milestones/107-renderer-linked-organelle-fluid-boundaries-v1.md`
+- Donor-resolved write/persist/rechallenge cellular-memory intake: `milestones/108-donor-resolved-cellular-memory-intake-v1.md`
+- Deterministic passive-fluid versus active-cargo runtime separation: `milestones/109-deterministic-active-cargo-separation-v1.md`
+- Conservative subgrid treatment for thin organelle boundaries: `milestones/110-conservative-subgrid-organelle-boundaries-v1.md`
+- Reference-space local star-shaped membrane-to-fluid boundary coupling: `milestones/111-local-star-shaped-membrane-fluid-boundary-v1.md`
+- Donor-resolved raw 3D PHH active-cargo trajectory intake: `milestones/112-donor-resolved-phh-active-cargo-trajectory-intake-v1.md`
+- Donor-linked multimodal PHH generative-model data contract: `milestones/113-donor-multimodal-generative-data-contract-v1.md`
+- Fractional face-aperture pressure/scalar weighting with partial-cell mass conservation: `milestones/114-fractional-face-aperture-cytosol-v1.md`
+- Strict 36-reaction by 12-slot PHH evidence intake: `milestones/115-phh-reaction-evidence-intake-v1.md`
+- Donor-resolved compartmental PHH energy/redox trajectory intake: `milestones/116-phh-energy-redox-trajectory-intake-v1.md`
+- Cut-cell outer-membrane volume/face rasterization and local discrete geometric conservation: `milestones/117-local-membrane-geometric-conservation-v1.md`
+- Donor-matched eight-stage PHH receptor/signaling trajectory intake: `milestones/118-phh-receptor-signaling-trajectory-intake-v1.md`
+- Donor-matched active-protein localization, denominator and function intake: `milestones/119-phh-active-protein-localization-intake-v1.md`
+- Topology-audited generic closed-mesh cytosol boundary and 41-field PHH 3D mesh intake: `milestones/120-watertight-mesh-boundary-intake-v1.md`
+- Exact-species, size-resolved intracellular mobility and crowding intake: `milestones/121-species-resolved-intracellular-mobility-intake-v1.md`
+- Reaction-specific transport-limitation and local-coupling evidence gate: `milestones/122-reaction-transport-coupling-gate-v1.md`
+- Repository topology plus non-adjacent triangle self-intersection audit: `milestones/123-repository-mesh-self-intersection-audit-v1.md`
+- Concave, non-star-shaped closed-mesh cytosol-domain kernel: `milestones/124-non-star-shaped-closed-mesh-cytosol-domain-v1.md`
+- Force/work/volume-checked dimensionless pressure-membrane response candidate: `milestones/125-dimensionless-pressure-membrane-response-v1.md`
+- Donor-resolved raw PHH mechanics and constitutive-parameter intake: `milestones/126-donor-resolved-phh-mechanics-calibration-intake-v1.md`
+- Pinned LP backend with analytic FBA/FVA and infeasibility verification: `milestones/127-generic-fba-fva-numerical-kernel-v1.md`
+- Checksum-frozen healthy-PHH Human-GEM execution-bundle gate: `milestones/128-healthy-phh-metabolic-execution-bundle-v1.md`
+- Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`
 

@@ -1,0 +1,118 @@
+{
+  "schema_version": "cell.phh-energy-redox-trajectory-contract.v1",
+  "contract_id": "phh_energy_redox_trajectory_contract_v1",
+  "energy_redox_contract_version": "compartment_resolved_energy_redox_contract_v1",
+  "canonical_null_token": "null",
+  "allowed_split_roles": [
+    "calibration",
+    "internal_validation",
+    "independent_heldout"
+  ],
+  "allowed_measurement_kinds": [
+    "absolute_concentration",
+    "calibrated_ratio",
+    "calibrated_fluorescence",
+    "partial_pressure",
+    "redox_potential",
+    "membrane_potential"
+  ],
+  "allowed_targeting_methods": [
+    "genetically_encoded_compartment_sensor",
+    "validated_organelle_targeted_probe",
+    "validated_subcellular_fractionation",
+    "validated_spatial_mass_spectrometry",
+    "validated_microelectrode_or_optode"
+  ],
+  "allowed_targeting_validation": [
+    "directly_validated",
+    "reported_not_independently_validated"
+  ],
+  "allowed_sensor_calibration_status": [
+    "same_assay_calibrated",
+    "source_calibration_reported",
+    "uncalibrated"
+  ],
+  "allowed_data_access_states": [
+    "development_open",
+    "sealed_heldout"
+  ],
+  "required_columns": [
+    {"id": "record_id", "description": "Globally unique raw time-point identifier."},
+    {"id": "donor_id", "description": "Study-scoped primary-human-hepatocyte donor identifier."},
+    {"id": "split_role", "description": "Calibration, internal validation, or independent held-out assignment."},
+    {"id": "source_study_id", "description": "Stable DOI, PMID, accession, or repository identifier."},
+    {"id": "source_locator", "description": "Exact figure, table, raw-file row, well, field, and time-point locator."},
+    {"id": "raw_artifact_sha256", "description": "SHA-256 digest of the source raw-data artifact."},
+    {"id": "predeclared_split_manifest_sha256", "description": "SHA-256 digest of the split manifest fixed before model evaluation."},
+    {"id": "data_access_state", "description": "Development-open or sealed-heldout state."},
+    {"id": "species", "description": "Must be Homo sapiens."},
+    {"id": "biological_system", "description": "Exact primary-human-hepatocyte preparation."},
+    {"id": "culture_format", "description": "Exact 2D, sandwich, spheroid, organoid, perfused, or in-situ context."},
+    {"id": "health_state", "description": "Healthy donor and exclusion context."},
+    {"id": "biological_replicate_id", "description": "Biological replicate identifier; not a synthetic donor."},
+    {"id": "trajectory_id", "description": "Identifier joining one pool's time course in one biological replicate."},
+    {"id": "pool_id", "description": "Exact ID from the compartment-resolved energy/redox pool registry."},
+    {"id": "molecule", "description": "Exact molecule token declared by the selected pool."},
+    {"id": "compartment_id", "description": "Exact compartment token declared by the selected pool."},
+    {"id": "compartment_targeting_method", "description": "Direct compartment-targeting or validated fractionation method."},
+    {"id": "compartment_targeting_validation", "description": "Directly validated or explicitly not independently validated."},
+    {"id": "assay", "description": "Exact acquisition and analysis assay."},
+    {"id": "sensor_or_probe", "description": "Exact sensor, probe, mass-spectrometry method, electrode, or optode."},
+    {"id": "sensor_calibration_status", "description": "Same-assay calibrated, source calibration reported, or uncalibrated."},
+    {"id": "time_from_trajectory_start_s", "description": "Finite non-negative elapsed seconds."},
+    {"id": "reported_value", "description": "Finite source-reported value without inferred conversion."},
+    {"id": "reported_unit", "description": "Original source unit."},
+    {"id": "measurement_kind", "description": "Concentration, calibrated signal/ratio, pressure, redox, or membrane potential."},
+    {"id": "reported_statistic", "description": "Raw, mean, median, fitted estimate, or exact source statistic."},
+    {"id": "uncertainty_value", "description": "Finite non-negative source-reported uncertainty."},
+    {"id": "uncertainty_unit", "description": "Original uncertainty unit."},
+    {"id": "uncertainty_type", "description": "SD, SEM, CI, range, posterior interval, or exact definition."},
+    {"id": "sample_size", "description": "Non-negative integer source sample size."},
+    {"id": "extracellular_oxygen_value", "description": "Finite non-negative oxygen context measured or controlled for the same record."},
+    {"id": "extracellular_oxygen_unit", "description": "Original oxygen-context unit."},
+    {"id": "nutrient_context", "description": "Complete glucose, amino-acid, lipid, hormone, and medium context."},
+    {"id": "cell_viability_context", "description": "Viability and phenotype context at this time point."},
+    {"id": "position_or_region_context", "description": "Cell region, zonation, field, or spatial coordinate context."}
+  ],
+  "conditional_columns": [
+    {"id": "assay_temperature_c", "description": "Finite assay temperature in degrees Celsius when reported."},
+    {"id": "assay_ph", "description": "Finite assay pH when reported."},
+    {"id": "perturbation_identity", "description": "Exact perturbation identity and timing."},
+    {"id": "perturbation_value", "description": "Finite perturbation magnitude when applicable."},
+    {"id": "perturbation_unit", "description": "Original perturbation unit."},
+    {"id": "baseline_definition", "description": "Exact baseline or normalization definition; null for absolute values."},
+    {"id": "censoring_or_missingness", "description": "Detection limit, censoring, exclusion, or missingness statement."},
+    {"id": "simultaneous_measurement_group_id", "description": "ID joining simultaneously acquired pools in the same cell."},
+    {"id": "intracellular_volume_value", "description": "Matched compartment volume when directly measured."},
+    {"id": "intracellular_volume_unit", "description": "Original matched compartment-volume unit."},
+    {"id": "notes", "description": "Source-qualified limitations."}
+  ],
+  "trajectory_gate": {
+    "version": "phh_energy_redox_trajectory_gate_v1",
+    "minimum_raw_timepoint_count": 3,
+    "strictly_increasing_time_required": true,
+    "exact_pool_molecule_compartment_match_required": true,
+    "direct_compartment_targeting_validation_required": true,
+    "same_assay_calibration_required": true,
+    "donor_disjoint_validation_required": true,
+    "independent_heldout_study_required": true,
+    "predeclared_sealed_heldout_required": true,
+    "automatic_unit_conversion": false,
+    "automatic_compartment_initialization": false,
+    "automatic_rate_fitting": false,
+    "automatic_state_coupling": false,
+    "automatic_predictive_activation": false
+  },
+  "policy": {
+    "manual_primary_source_review_required": true,
+    "whole_tissue_value_may_be_allocated_to_compartments": false,
+    "cross_species_transfer_allowed": false,
+    "cell_line_transfer_to_healthy_phh_allowed": false,
+    "uncalibrated_signal_is_absolute_concentration": false,
+    "reported_mean_may_replace_raw_donor_trajectory": false,
+    "missing_timepoint_means_zero": false,
+    "renderer_signal_is_measurement": false,
+    "automatic_parameter_activation": false,
+    "automatic_cell_state_coupling": false
+  }
+}

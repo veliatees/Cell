@@ -56,7 +56,9 @@ export const INTRACELLULAR_FLUID_VISUAL_CONTRACT = Object.freeze({
   concentrationClaim: false,
   moleculeCountClaim: false,
   reactionRateCoupling: false,
-  membraneMapping: "volume_preserving_affine_contact_map",
+  membraneMapping: "volume_preserving_affine_contact_map_plus_reference_space_star_shaped_residual",
+  localStarShapedBoundaryCoupling: true,
+  topologyChangeSupported: false,
   dimensionlessProjectionSolver: true,
   movingAnalyticObstacleBoundaries: true,
   quantitativePoroelasticSolver: false,
@@ -229,10 +231,14 @@ export class IntracellularFluidField {
     deformation: IntracellularFluidDeformation | null,
     collides?: IntracellularFluidCollision,
     obstacles?: DynamicCytosolObstacleField,
-    refreshNumericalGrid = true
+    refreshNumericalGrid = true,
+    numericalGridDeltaS = realDeltaS
   ): void {
     if (!Number.isFinite(realDeltaS) || realDeltaS < 0) {
       throw new RangeError("fluid renderer delta must be finite and non-negative");
+    }
+    if (!Number.isFinite(numericalGridDeltaS) || numericalGridDeltaS < 0) {
+      throw new RangeError("numerical-grid delta must be finite and non-negative");
     }
     this.previousPositions.set(this.positions);
     if (realDeltaS === 0) {
@@ -243,7 +249,13 @@ export class IntracellularFluidField {
 
     const dt = Math.min(realDeltaS, 0.05);
     this.elapsedRenderS += dt;
-    if (refreshNumericalGrid) this.numericalGrid?.step(dt, deformation, obstacles);
+    if (refreshNumericalGrid) {
+      this.numericalGrid?.step(
+        numericalGridDeltaS,
+        deformation,
+        obstacles
+      );
+    }
     const candidate = new Float32Array(3);
     const renderedSource = new Float32Array(3);
     const renderedCandidate = new Float32Array(3);

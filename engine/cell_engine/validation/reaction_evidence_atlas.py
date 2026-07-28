@@ -130,6 +130,7 @@ _SLOT_SPECS: tuple[tuple[str, str, str, str], ...] = (
     ("intracellular_flux", "reaction-resolved intracellular flux", "mol/(cell s)", "matched human hepatocyte isotope/flux experiment"),
     ("heldout_validation", "independent same-format held-out result", "validation_result", "donor-disjoint frozen-model evaluation"),
 )
+REACTION_EVIDENCE_SLOT_SPECS = _SLOT_SPECS
 
 
 def _empty_slots() -> tuple[ReactionEvidenceSlot, ...]:
