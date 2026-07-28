@@ -27,6 +27,9 @@ from cell_engine.quantitative.fastcore_context import (
 
 VERSION = "minimum_reaction_support_milp_v1"
 SHARED_SUPPORT_VERSION = "minimum_shared_reaction_support_milp_v1"
+SHARED_SUPPORT_INFEASIBILITY_CONFIRMATION_VERSION = (
+    "minimum_shared_reaction_support_milp_v2"
+)
 SOLVER_BACKEND = "scipy.optimize.milp"
 SOLVER_METHOD = "HiGHS"
 MIP_RELATIVE_GAP = 0.0
@@ -150,6 +153,10 @@ class MinimumSharedReactionSupportResult:
     post_milp_lp_certificate_count: int
     maximum_added_reaction_count_constraint: int | None
     forbidden_candidate_superset_count: int
+    milp_solver_attempt_count: int
+    milp_presolve: bool
+    presolve_infeasibility_disagreed: bool
+    infeasibility_confirmed_without_presolve: bool
     solver_status: int
     solver_message: str
     biological_context_established: bool
@@ -1402,26 +1409,51 @@ def minimum_shared_reaction_support(
     ] = 1.0
     integrality = np.zeros(variable_count, dtype=np.uint8)
     integrality[forward_binary_start:] = 1
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="Unrecognized options detected:.*",
-            category=RuntimeWarning,
-        )
-        result = milp(
-            objective,
-            integrality=integrality,
-            bounds=Bounds(variable_lower, variable_upper),
-            constraints=constraints,
-            options={
-                "presolve": True,
-                "mip_rel_gap": MIP_RELATIVE_GAP,
-                "mip_feasibility_tolerance": (
-                    HIGHS_MIP_FEASIBILITY_TOLERANCE
-                ),
-            },
-        )
+    def solve_milp(*, presolve: bool):
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="Unrecognized options detected:.*",
+                category=RuntimeWarning,
+            )
+            return milp(
+                objective,
+                integrality=integrality,
+                bounds=Bounds(variable_lower, variable_upper),
+                constraints=constraints,
+                options={
+                    "presolve": presolve,
+                    "mip_rel_gap": MIP_RELATIVE_GAP,
+                    "mip_feasibility_tolerance": (
+                        HIGHS_MIP_FEASIBILITY_TOLERANCE
+                    ),
+                },
+            )
+
+    result = solve_milp(presolve=True)
+    milp_solver_attempt_count = 1
+    milp_presolve = True
+    presolve_infeasibility_disagreed = False
+    infeasibility_confirmed_without_presolve = False
     solver_status = int(result.status)
+    if not result.success and solver_status == 2:
+        confirmation = solve_milp(presolve=False)
+        milp_solver_attempt_count = 2
+        milp_presolve = False
+        confirmation_status = int(confirmation.status)
+        if confirmation.success:
+            result = confirmation
+            solver_status = confirmation_status
+            presolve_infeasibility_disagreed = True
+        elif confirmation_status == 2:
+            result = confirmation
+            solver_status = confirmation_status
+            infeasibility_confirmed_without_presolve = True
+        else:
+            raise MinimumReactionSupportError(
+                "shared-support infeasibility confirmation ended without "
+                f"an optimum or proof: {confirmation.message}"
+            )
     if not result.success:
         if solver_status != 2:
             raise MinimumReactionSupportError(
@@ -1453,6 +1485,14 @@ def minimum_shared_reaction_support(
                 maximum_added_reaction_count
             ),
             forbidden_candidate_superset_count=len(forbidden_inputs),
+            milp_solver_attempt_count=milp_solver_attempt_count,
+            milp_presolve=milp_presolve,
+            presolve_infeasibility_disagreed=(
+                presolve_infeasibility_disagreed
+            ),
+            infeasibility_confirmed_without_presolve=(
+                infeasibility_confirmed_without_presolve
+            ),
             solver_status=solver_status,
             solver_message=str(result.message),
             biological_context_established=False,
@@ -1728,6 +1768,14 @@ def minimum_shared_reaction_support(
             maximum_added_reaction_count
         ),
         forbidden_candidate_superset_count=len(forbidden_inputs),
+        milp_solver_attempt_count=milp_solver_attempt_count,
+        milp_presolve=milp_presolve,
+        presolve_infeasibility_disagreed=(
+            presolve_infeasibility_disagreed
+        ),
+        infeasibility_confirmed_without_presolve=(
+            infeasibility_confirmed_without_presolve
+        ),
         solver_status=solver_status,
         solver_message=str(result.message),
         biological_context_established=False,

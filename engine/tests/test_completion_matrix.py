@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 42
-    assert summary["closed_count"] == 20
+    assert summary["entry_count"] == 43
+    assert summary["closed_count"] == 21
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -267,6 +267,40 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
         "global_minimum_support_set_unique"
     ] is None
     assert global_support["observed_metrics"][
+        "reaction_activity_in_phh_established"
+    ] is False
+    global_counterexample = entries[
+        "human_gem_fastcore_global_support_counterexample"
+    ]
+    assert global_counterexample["status"] == "closed"
+    assert global_counterexample["observed_metrics"][
+        "global_minimum_cardinality"
+    ] == 59
+    assert global_counterexample["observed_metrics"][
+        "known_distinct_global_minimum_support_set_count_lower_bound"
+    ] == 3
+    assert global_counterexample["observed_metrics"][
+        "presolve_infeasibility_disagreed"
+    ] is True
+    assert global_counterexample["observed_metrics"][
+        "counterexample_only_reaction_ids_in_input_order"
+    ] == ["MAR00494"]
+    assert global_counterexample["observed_metrics"][
+        "outside_scoped_pool_reaction_ids_in_input_order"
+    ] == ["MAR00494"]
+    assert global_counterexample["observed_metrics"][
+        "all_target_lp_certificate_count"
+    ] == 17
+    assert global_counterexample["observed_metrics"][
+        "strict_fastcc_blocked_reaction_count"
+    ] == 0
+    assert global_counterexample["observed_metrics"][
+        "global_minimum_identity_enumeration_complete"
+    ] is False
+    assert global_counterexample["observed_metrics"][
+        "global_minimum_support_set_unique"
+    ] is False
+    assert global_counterexample["observed_metrics"][
         "reaction_activity_in_phh_established"
     ] is False
     evidence = entries["human_gem_reaction_evidence_manifest"]
