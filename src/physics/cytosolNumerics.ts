@@ -105,6 +105,17 @@ export type CytosolProjectionDiagnostics = {
   membranePressureFeedbackEnabled: false;
 };
 
+export type CytosolProjectionPerformanceDiagnostics = {
+  rebuildDomainMs: number;
+  domainCellSamplingMs: number;
+  faceApertureSamplingMs: number;
+  divergenceBeforeMs: number;
+  projectionMs: number;
+  divergenceAfterMs: number;
+  boundaryDiagnosticMs: number;
+  totalMs: number;
+};
+
 export type PassiveScalarDomainRemapDiagnostics = {
   remapCount: number;
   displacedCellCount: number;
@@ -249,22 +260,24 @@ function resolvedAngularVelocity(
   return [dx * scale, dy * scale, dz * scale];
 }
 
-function inverseRotate(
+function inverseRotateInto(
   x: number,
   y: number,
   z: number,
-  quaternion?: CytosolQuaternion
-): CytosolVector3 {
-  const [qx, qy, qz, qw] = normalizedQuaternion(quaternion);
+  quaternion: CytosolQuaternion,
+  target: [number, number, number]
+): void {
+  const qx = quaternion[0];
+  const qy = quaternion[1];
+  const qz = quaternion[2];
+  const qw = quaternion[3];
   // q^-1 * v * q, expanded to avoid renderer-library dependencies.
   const tx = 2 * (-qy * z + qz * y);
   const ty = 2 * (-qz * x + qx * z);
   const tz = 2 * (-qx * y + qy * x);
-  return [
-    x + qw * tx + (-qy * tz + qz * ty),
-    y + qw * ty + (-qz * tx + qx * tz),
-    z + qw * tz + (-qx * ty + qy * tx)
-  ];
+  target[0] = x + qw * tx + (-qy * tz + qz * ty);
+  target[1] = y + qw * ty + (-qz * tx + qx * tz);
+  target[2] = z + qw * tz + (-qx * ty + qy * tx);
 }
 
 function obstacleBoundingRadius(obstacle: CytosolObstacle): number {
@@ -324,13 +337,17 @@ function obstacleContains(
   x: number,
   y: number,
   z: number,
-  padding: number
+  padding: number,
+  localPoint: [number, number, number]
 ): boolean {
   const dx = x - obstacle.center[0];
   const dy = y - obstacle.center[1];
   const dz = z - obstacle.center[2];
   if (dx * dx + dy * dy + dz * dz > (obstacle.boundingRadius + padding) ** 2) return false;
-  const [lx, ly, lz] = inverseRotate(dx, dy, dz, obstacle.orientation);
+  inverseRotateInto(dx, dy, dz, obstacle.orientation ?? IDENTITY_QUATERNION, localPoint);
+  const lx = localPoint[0];
+  const ly = localPoint[1];
+  const lz = localPoint[2];
   if (obstacle.kind === "sphere") {
     return lx * lx + ly * ly + lz * lz <= (obstacle.radius + padding) ** 2;
   }
@@ -354,38 +371,64 @@ function obstacleContains(
   return obstacle.boundary.containsPoint(lx, ly, lz, padding);
 }
 
-function dot3(a: CytosolVector3, b: CytosolVector3): number {
-  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
-
-function subtract3(a: CytosolVector3, b: CytosolVector3): CytosolVector3 {
-  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-}
-
 function pointSegmentDistanceSquared(
   point: CytosolVector3,
   start: CytosolVector3,
   end: CytosolVector3
 ): number {
-  const segment = subtract3(end, start);
-  const relative = subtract3(point, start);
-  const denominator = dot3(segment, segment);
+  const segmentX = end[0] - start[0];
+  const segmentY = end[1] - start[1];
+  const segmentZ = end[2] - start[2];
+  const relativeX = point[0] - start[0];
+  const relativeY = point[1] - start[1];
+  const relativeZ = point[2] - start[2];
+  const denominator = segmentX * segmentX + segmentY * segmentY + segmentZ * segmentZ;
   const t = denominator > 1e-18
-    ? Math.max(0, Math.min(1, dot3(relative, segment) / denominator))
+    ? Math.max(
+        0,
+        Math.min(
+          1,
+          (relativeX * segmentX + relativeY * segmentY + relativeZ * segmentZ) / denominator
+        )
+      )
     : 0;
-  const dx = start[0] + segment[0] * t - point[0];
-  const dy = start[1] + segment[1] * t - point[1];
-  const dz = start[2] + segment[2] * t - point[2];
+  const dx = start[0] + segmentX * t - point[0];
+  const dy = start[1] + segmentY * t - point[1];
+  const dz = start[2] + segmentZ * t - point[2];
   return dx * dx + dy * dy + dz * dz;
 }
 
-function segmentIntersectsUnitSphere(start: CytosolVector3, end: CytosolVector3): boolean {
-  if (dot3(start, start) <= 1 || dot3(end, end) <= 1) return true;
-  const direction = subtract3(end, start);
-  const a = dot3(direction, direction);
+function segmentIntersectsScaledSphere(
+  start: CytosolVector3,
+  end: CytosolVector3,
+  radiusX: number,
+  radiusY: number,
+  radiusZ: number
+): boolean {
+  const startX = start[0] / radiusX;
+  const startY = start[1] / radiusY;
+  const startZ = start[2] / radiusZ;
+  const endX = end[0] / radiusX;
+  const endY = end[1] / radiusY;
+  const endZ = end[2] / radiusZ;
+  const startLengthSquared = startX * startX + startY * startY + startZ * startZ;
+  const endLengthSquared = endX * endX + endY * endY + endZ * endZ;
+  if (startLengthSquared <= 1 || endLengthSquared <= 1) return true;
+  const directionX = endX - startX;
+  const directionY = endY - startY;
+  const directionZ = endZ - startZ;
+  const a = (
+    directionX * directionX +
+    directionY * directionY +
+    directionZ * directionZ
+  );
   if (a <= 1e-18) return false;
-  const b = 2 * dot3(start, direction);
-  const c = dot3(start, start) - 1;
+  const b = 2 * (
+    startX * directionX +
+    startY * directionY +
+    startZ * directionZ
+  );
+  const c = startLengthSquared - 1;
   const discriminant = b * b - 4 * a * c;
   if (discriminant < 0) return false;
   const root = Math.sqrt(discriminant);
@@ -411,7 +454,11 @@ function segmentIntersectsBox(
     }
     let first = (-extent - start[axis]) / direction;
     let second = (extent - start[axis]) / direction;
-    if (first > second) [first, second] = [second, first];
+    if (first > second) {
+      const swap = first;
+      first = second;
+      second = swap;
+    }
     minimum = Math.max(minimum, first);
     maximum = Math.min(maximum, second);
     if (minimum > maximum) return false;
@@ -419,32 +466,43 @@ function segmentIntersectsBox(
   return true;
 }
 
-function segmentSegmentDistanceSquared(
+function segmentYAxisDistanceSquared(
   firstStart: CytosolVector3,
   firstEnd: CytosolVector3,
-  secondStart: CytosolVector3,
-  secondEnd: CytosolVector3
+  halfLength: number
 ): number {
-  const firstDirection = subtract3(firstEnd, firstStart);
-  const secondDirection = subtract3(secondEnd, secondStart);
-  const relative = subtract3(firstStart, secondStart);
-  const firstLengthSquared = dot3(firstDirection, firstDirection);
-  const secondLengthSquared = dot3(secondDirection, secondDirection);
-  const secondProjection = dot3(secondDirection, relative);
+  const firstDirectionX = firstEnd[0] - firstStart[0];
+  const firstDirectionY = firstEnd[1] - firstStart[1];
+  const firstDirectionZ = firstEnd[2] - firstStart[2];
+  const secondDirectionY = halfLength * 2;
+  const relativeX = firstStart[0];
+  const relativeY = firstStart[1] + halfLength;
+  const relativeZ = firstStart[2];
+  const firstLengthSquared = (
+    firstDirectionX * firstDirectionX +
+    firstDirectionY * firstDirectionY +
+    firstDirectionZ * firstDirectionZ
+  );
+  const secondLengthSquared = secondDirectionY * secondDirectionY;
+  const secondProjection = secondDirectionY * relativeY;
   let firstParameter = 0;
   let secondParameter = 0;
 
   if (firstLengthSquared <= 1e-18 && secondLengthSquared <= 1e-18) {
-    return dot3(relative, relative);
+    return relativeX * relativeX + relativeY * relativeY + relativeZ * relativeZ;
   }
   if (firstLengthSquared <= 1e-18) {
     secondParameter = Math.max(0, Math.min(1, secondProjection / secondLengthSquared));
   } else {
-    const firstProjection = dot3(firstDirection, relative);
+    const firstProjection = (
+      firstDirectionX * relativeX +
+      firstDirectionY * relativeY +
+      firstDirectionZ * relativeZ
+    );
     if (secondLengthSquared <= 1e-18) {
       firstParameter = Math.max(0, Math.min(1, -firstProjection / firstLengthSquared));
     } else {
-      const crossProjection = dot3(firstDirection, secondDirection);
+      const crossProjection = firstDirectionY * secondDirectionY;
       const denominator = firstLengthSquared * secondLengthSquared - crossProjection * crossProjection;
       firstParameter = denominator !== 0
         ? Math.max(0, Math.min(1, (
@@ -468,16 +526,14 @@ function segmentSegmentDistanceSquared(
   }
 
   const dx = (
-    firstStart[0] + firstDirection[0] * firstParameter -
-    secondStart[0] - secondDirection[0] * secondParameter
+    firstStart[0] + firstDirectionX * firstParameter
   );
   const dy = (
-    firstStart[1] + firstDirection[1] * firstParameter -
-    secondStart[1] - secondDirection[1] * secondParameter
+    firstStart[1] + firstDirectionY * firstParameter +
+    halfLength - secondDirectionY * secondParameter
   );
   const dz = (
-    firstStart[2] + firstDirection[2] * firstParameter -
-    secondStart[2] - secondDirection[2] * secondParameter
+    firstStart[2] + firstDirectionZ * firstParameter
   );
   return dx * dx + dy * dy + dz * dz;
 }
@@ -485,7 +541,9 @@ function segmentSegmentDistanceSquared(
 function obstacleIntersectsSegment(
   obstacle: StoredObstacle,
   start: CytosolVector3,
-  end: CytosolVector3
+  end: CytosolVector3,
+  localStart: [number, number, number],
+  localEnd: [number, number, number]
 ): boolean {
   if (
     pointSegmentDistanceSquared(obstacle.center, start, end) >
@@ -493,47 +551,46 @@ function obstacleIntersectsSegment(
   ) {
     return false;
   }
-  const localStart = inverseRotate(
+  inverseRotateInto(
     start[0] - obstacle.center[0],
     start[1] - obstacle.center[1],
     start[2] - obstacle.center[2],
-    obstacle.orientation
+    obstacle.orientation ?? IDENTITY_QUATERNION,
+    localStart
   );
-  const localEnd = inverseRotate(
+  inverseRotateInto(
     end[0] - obstacle.center[0],
     end[1] - obstacle.center[1],
     end[2] - obstacle.center[2],
-    obstacle.orientation
+    obstacle.orientation ?? IDENTITY_QUATERNION,
+    localEnd
   );
   if (obstacle.kind === "sphere") {
-    return segmentIntersectsUnitSphere(
-      [localStart[0] / obstacle.radius, localStart[1] / obstacle.radius, localStart[2] / obstacle.radius],
-      [localEnd[0] / obstacle.radius, localEnd[1] / obstacle.radius, localEnd[2] / obstacle.radius]
+    return segmentIntersectsScaledSphere(
+      localStart,
+      localEnd,
+      obstacle.radius,
+      obstacle.radius,
+      obstacle.radius
     );
   }
   if (obstacle.kind === "ellipsoid") {
-    return segmentIntersectsUnitSphere(
-      [
-        localStart[0] / obstacle.radii[0],
-        localStart[1] / obstacle.radii[1],
-        localStart[2] / obstacle.radii[2]
-      ],
-      [
-        localEnd[0] / obstacle.radii[0],
-        localEnd[1] / obstacle.radii[1],
-        localEnd[2] / obstacle.radii[2]
-      ]
+    return segmentIntersectsScaledSphere(
+      localStart,
+      localEnd,
+      obstacle.radii[0],
+      obstacle.radii[1],
+      obstacle.radii[2]
     );
   }
   if (obstacle.kind === "box") {
     return segmentIntersectsBox(localStart, localEnd, obstacle.halfExtents);
   }
   if (obstacle.kind === "capsule") {
-    return segmentSegmentDistanceSquared(
+    return segmentYAxisDistanceSquared(
       localStart,
       localEnd,
-      [0, -obstacle.halfLength, 0],
-      [0, obstacle.halfLength, 0]
+      obstacle.halfLength
     ) <= obstacle.radius ** 2;
   }
   return obstacle.boundary.intersectsSegment(localStart, localEnd);
@@ -542,10 +599,18 @@ function obstacleIntersectsSegment(
 export class DynamicCytosolObstacleField {
   readonly cellSize: number;
   private obstacles: StoredObstacle[] = [];
-  private readonly buckets = new Map<string, number[]>();
+  private readonly buckets = new Map<number | string, number[]>();
   private readonly previousCenters = new Map<string, CytosolVector3>();
   private readonly previousOrientations = new Map<string, CytosolQuaternion>();
   private readonly sampleVelocity = new Float32Array(3);
+  private readonly localPoint: [number, number, number] = [0, 0, 0];
+  private readonly localSegmentStart: [number, number, number] = [0, 0, 0];
+  private readonly localSegmentEnd: [number, number, number] = [0, 0, 0];
+  private readonly shiftedFaceStart: [number, number, number] = [0, 0, 0];
+  private readonly shiftedFaceEnd: [number, number, number] = [0, 0, 0];
+  private readonly queryCandidates: number[] = [];
+  private visitedMarks = new Uint32Array(0);
+  private visitEpoch = 0;
   private subgridObstacleCount = 0;
 
   constructor(cellSize: number) {
@@ -619,6 +684,10 @@ export class DynamicCytosolObstacleField {
       }
     }
     this.obstacles = next;
+    if (this.visitedMarks.length < next.length) {
+      this.visitedMarks = new Uint32Array(next.length);
+      this.visitEpoch = 0;
+    }
     this.subgridObstacleCount = next.reduce((count, obstacle) => (
       obstacle.boundarySampling === "conservative_subgrid" ? count + 1 : count
     ), 0);
@@ -674,17 +743,27 @@ export class DynamicCytosolObstacleField {
     targetVelocity[2] = 0;
     if (this.subgridCount === 0) return;
 
-    const centerObstacle = this.findContaining(x, y, z, 0, "subgrid");
+    const halfDiagonal = Math.sqrt(3) * cellWidth * 0.5;
+    const candidates = this.collectCandidates(
+      x - halfDiagonal,
+      x + halfDiagonal,
+      y - halfDiagonal,
+      y + halfDiagonal,
+      z - halfDiagonal,
+      z + halfDiagonal,
+      "subgrid"
+    );
+    const centerObstacle = this.findContainingCandidate(candidates, x, y, z, 0);
     target.centerContained = centerObstacle !== null;
     const quarter = cellWidth * 0.25;
     let sampleCount = 0;
-    for (const dz of [-quarter, quarter]) {
-      for (const dy of [-quarter, quarter]) {
-        for (const dx of [-quarter, quarter]) {
-          const sx = x + dx;
-          const sy = y + dy;
-          const sz = z + dz;
-          const obstacle = this.findContaining(sx, sy, sz, 0, "subgrid");
+    for (let zSign = -1; zSign <= 1; zSign += 2) {
+      for (let ySign = -1; ySign <= 1; ySign += 2) {
+        for (let xSign = -1; xSign <= 1; xSign += 2) {
+          const sx = x + xSign * quarter;
+          const sy = y + ySign * quarter;
+          const sz = z + zSign * quarter;
+          const obstacle = this.findContainingCandidate(candidates, sx, sy, sz, 0);
           if (!obstacle) continue;
           this.writeObstacleVelocity(obstacle, sx, sy, sz, this.sampleVelocity, 0);
           targetVelocity[0] += this.sampleVelocity[0];
@@ -707,8 +786,13 @@ export class DynamicCytosolObstacleField {
     // eight samples. The half-cell diagonal gives a conservative intersection
     // test; assigning one subcell of occupancy keeps that boundary represented
     // while its excess volume shrinks under grid refinement.
-    const halfDiagonal = Math.sqrt(3) * cellWidth * 0.5;
-    const intersecting = this.findContaining(x, y, z, halfDiagonal, "subgrid");
+    const intersecting = this.findContainingCandidate(
+      candidates,
+      x,
+      y,
+      z,
+      halfDiagonal
+    );
     if (!intersecting) return;
     target.solidFraction = 1 / 8;
     target.conservativeIntercept = !target.centerContained;
@@ -728,23 +812,43 @@ export class DynamicCytosolObstacleField {
     }
     if (this.obstacles.length === 0) return 1;
 
-    const tangentialAxes = axis === 0 ? [1, 2] : axis === 1 ? [0, 2] : [0, 1];
+    const firstTangentialAxis = axis === 0 ? 1 : 0;
+    const secondTangentialAxis = axis === 2 ? 1 : 2;
     const quarter = cellWidth * 0.25;
+    const candidates = this.collectCandidates(
+      Math.min(start[0], end[0]) - quarter,
+      Math.max(start[0], end[0]) + quarter,
+      Math.min(start[1], end[1]) - quarter,
+      Math.max(start[1], end[1]) + quarter,
+      Math.min(start[2], end[2]) - quarter,
+      Math.max(start[2], end[2]) + quarter,
+      "all"
+    );
     let blockedChannels = 0;
-    for (const firstOffset of [-quarter, quarter]) {
-      for (const secondOffset of [-quarter, quarter]) {
-        const shiftedStart: [number, number, number] = [...start];
-        const shiftedEnd: [number, number, number] = [...end];
-        shiftedStart[tangentialAxes[0]] += firstOffset;
-        shiftedEnd[tangentialAxes[0]] += firstOffset;
-        shiftedStart[tangentialAxes[1]] += secondOffset;
-        shiftedEnd[tangentialAxes[1]] += secondOffset;
-        if (this.segmentIntersectsObstacle(shiftedStart, shiftedEnd)) {
+    for (let firstSign = -1; firstSign <= 1; firstSign += 2) {
+      for (let secondSign = -1; secondSign <= 1; secondSign += 2) {
+        this.shiftedFaceStart[0] = start[0];
+        this.shiftedFaceStart[1] = start[1];
+        this.shiftedFaceStart[2] = start[2];
+        this.shiftedFaceEnd[0] = end[0];
+        this.shiftedFaceEnd[1] = end[1];
+        this.shiftedFaceEnd[2] = end[2];
+        const firstOffset = firstSign * quarter;
+        const secondOffset = secondSign * quarter;
+        this.shiftedFaceStart[firstTangentialAxis] += firstOffset;
+        this.shiftedFaceEnd[firstTangentialAxis] += firstOffset;
+        this.shiftedFaceStart[secondTangentialAxis] += secondOffset;
+        this.shiftedFaceEnd[secondTangentialAxis] += secondOffset;
+        if (this.segmentIntersectsCandidates(
+          candidates,
+          this.shiftedFaceStart,
+          this.shiftedFaceEnd
+        )) {
           blockedChannels += 1;
         }
       }
     }
-    if (blockedChannels === 0 && this.segmentIntersectsObstacle(start, end)) {
+    if (blockedChannels === 0 && this.segmentIntersectsCandidates(candidates, start, end)) {
       // The centerline catches a feature narrower than the four midpoint
       // channels. One quarter-face is the conservative unresolved aperture.
       blockedChannels = 1;
@@ -773,7 +877,23 @@ export class DynamicCytosolObstacleField {
     return Math.floor(value / this.cellSize);
   }
 
-  private key(ix: number, iy: number, iz: number): string {
+  private key(ix: number, iy: number, iz: number): number | string {
+    // Three signed 17-bit coordinates fit exactly in a JavaScript number.
+    // Cytosol coordinates are normally within a few dozen cells; the string
+    // fallback keeps the field correct for unusually large generic tests.
+    const offset = 65_536;
+    const stride = 131_072;
+    if (
+      ix >= -offset && ix < offset &&
+      iy >= -offset && iy < offset &&
+      iz >= -offset && iz < offset
+    ) {
+      return (
+        (ix + offset) * stride * stride +
+        (iy + offset) * stride +
+        (iz + offset)
+      );
+    }
     return `${ix}:${iy}:${iz}`;
   }
 
@@ -801,56 +921,49 @@ export class DynamicCytosolObstacleField {
     }
   }
 
-  private segmentIntersectsObstacle(
+  private segmentIntersectsCandidates(
+    candidates: readonly number[],
     start: CytosolVector3,
     end: CytosolVector3
   ): boolean {
-    const minX = this.gridCoordinate(Math.min(start[0], end[0]));
-    const maxX = this.gridCoordinate(Math.max(start[0], end[0]));
-    const minY = this.gridCoordinate(Math.min(start[1], end[1]));
-    const maxY = this.gridCoordinate(Math.max(start[1], end[1]));
-    const minZ = this.gridCoordinate(Math.min(start[2], end[2]));
-    const maxZ = this.gridCoordinate(Math.max(start[2], end[2]));
-    const visited = new Set<number>();
-    for (let iz = minZ; iz <= maxZ; iz += 1) {
-      for (let iy = minY; iy <= maxY; iy += 1) {
-        for (let ix = minX; ix <= maxX; ix += 1) {
-          const bucket = this.buckets.get(this.key(ix, iy, iz));
-          if (!bucket) continue;
-          for (const index of bucket) {
-            if (visited.has(index)) continue;
-            visited.add(index);
-            if (obstacleIntersectsSegment(this.obstacles[index], start, end)) return true;
-          }
-        }
-      }
+    for (const index of candidates) {
+      if (obstacleIntersectsSegment(
+        this.obstacles[index],
+        start,
+        end,
+        this.localSegmentStart,
+        this.localSegmentEnd
+      )) return true;
     }
     return false;
   }
 
-  private findContaining(
-    x: number,
-    y: number,
-    z: number,
-    padding: number,
-    samplingFilter: "all" | "subgrid" | "cell_center" = "all"
-  ): StoredObstacle | null {
-    if (![x, y, z, padding].every(Number.isFinite) || padding < 0) {
-      throw new RangeError("cytosol obstacle query must be finite with non-negative padding");
-    }
-    const range = Math.max(0, Math.ceil(padding / this.cellSize));
-    const cx = this.gridCoordinate(x);
-    const cy = this.gridCoordinate(y);
-    const cz = this.gridCoordinate(z);
-    const visited = new Set<number>();
-    for (let dz = -range; dz <= range; dz += 1) {
-      for (let dy = -range; dy <= range; dy += 1) {
-        for (let dx = -range; dx <= range; dx += 1) {
-          const bucket = this.buckets.get(this.key(cx + dx, cy + dy, cz + dz));
+  private collectCandidates(
+    minX: number,
+    maxX: number,
+    minY: number,
+    maxY: number,
+    minZ: number,
+    maxZ: number,
+    samplingFilter: "all" | "subgrid" | "cell_center"
+  ): number[] {
+    const candidates = this.queryCandidates;
+    candidates.length = 0;
+    const visitEpoch = this.nextVisitEpoch();
+    const ix0 = this.gridCoordinate(minX);
+    const ix1 = this.gridCoordinate(maxX);
+    const iy0 = this.gridCoordinate(minY);
+    const iy1 = this.gridCoordinate(maxY);
+    const iz0 = this.gridCoordinate(minZ);
+    const iz1 = this.gridCoordinate(maxZ);
+    for (let iz = iz0; iz <= iz1; iz += 1) {
+      for (let iy = iy0; iy <= iy1; iy += 1) {
+        for (let ix = ix0; ix <= ix1; ix += 1) {
+          const bucket = this.buckets.get(this.key(ix, iy, iz));
           if (!bucket) continue;
           for (const index of bucket) {
-            if (visited.has(index)) continue;
-            visited.add(index);
+            if (this.visitedMarks[index] === visitEpoch) continue;
+            this.visitedMarks[index] = visitEpoch;
             const obstacle = this.obstacles[index];
             if (
               samplingFilter === "subgrid" &&
@@ -860,12 +973,81 @@ export class DynamicCytosolObstacleField {
               samplingFilter === "cell_center" &&
               obstacle.boundarySampling === "conservative_subgrid"
             ) continue;
-            if (obstacleContains(obstacle, x, y, z, padding)) return obstacle;
+            candidates.push(index);
+          }
+        }
+      }
+    }
+    return candidates;
+  }
+
+  private findContainingCandidate(
+    candidates: readonly number[],
+    x: number,
+    y: number,
+    z: number,
+    padding: number
+  ): StoredObstacle | null {
+    for (const index of candidates) {
+      const obstacle = this.obstacles[index];
+      if (obstacleContains(obstacle, x, y, z, padding, this.localPoint)) return obstacle;
+    }
+    return null;
+  }
+
+  private findContaining(
+    x: number,
+    y: number,
+    z: number,
+    padding: number,
+    samplingFilter: "all" | "subgrid" | "cell_center" = "all"
+  ): StoredObstacle | null {
+    if (
+      !Number.isFinite(x) ||
+      !Number.isFinite(y) ||
+      !Number.isFinite(z) ||
+      !Number.isFinite(padding) ||
+      padding < 0
+    ) {
+      throw new RangeError("cytosol obstacle query must be finite with non-negative padding");
+    }
+    const range = Math.max(0, Math.ceil(padding / this.cellSize));
+    const cx = this.gridCoordinate(x);
+    const cy = this.gridCoordinate(y);
+    const cz = this.gridCoordinate(z);
+    const visitEpoch = this.nextVisitEpoch();
+    for (let dz = -range; dz <= range; dz += 1) {
+      for (let dy = -range; dy <= range; dy += 1) {
+        for (let dx = -range; dx <= range; dx += 1) {
+          const bucket = this.buckets.get(this.key(cx + dx, cy + dy, cz + dz));
+          if (!bucket) continue;
+          for (const index of bucket) {
+            if (this.visitedMarks[index] === visitEpoch) continue;
+            this.visitedMarks[index] = visitEpoch;
+            const obstacle = this.obstacles[index];
+            if (
+              samplingFilter === "subgrid" &&
+              obstacle.boundarySampling !== "conservative_subgrid"
+            ) continue;
+            if (
+              samplingFilter === "cell_center" &&
+              obstacle.boundarySampling === "conservative_subgrid"
+            ) continue;
+            if (obstacleContains(obstacle, x, y, z, padding, this.localPoint)) return obstacle;
           }
         }
       }
     }
     return null;
+  }
+
+  private nextVisitEpoch(): number {
+    this.visitEpoch = (this.visitEpoch + 1) >>> 0;
+    if (this.visitEpoch === 0) {
+      this.visitedMarks.fill(0);
+      this.visitEpoch = 1;
+    }
+    return this.visitEpoch;
   }
 }
 
@@ -1016,6 +1198,18 @@ export class CytosolProjectionGrid {
     biologicalUnitsAssigned: false,
     membranePressureFeedbackEnabled: false
   };
+  private currentPerformanceDiagnostics: CytosolProjectionPerformanceDiagnostics = {
+    rebuildDomainMs: 0,
+    domainCellSamplingMs: 0,
+    faceApertureSamplingMs: 0,
+    divergenceBeforeMs: 0,
+    projectionMs: 0,
+    divergenceAfterMs: 0,
+    boundaryDiagnosticMs: 0,
+    totalMs: 0
+  };
+  private domainCellSamplingMs = 0;
+  private faceApertureSamplingMs = 0;
 
   constructor(options: CytosolProjectionOptions) {
     if (!Number.isInteger(options.resolution) || options.resolution < 6 || options.resolution > 64) {
@@ -1099,6 +1293,10 @@ export class CytosolProjectionGrid {
     return { ...this.currentDiagnostics };
   }
 
+  performanceDiagnostics(): CytosolProjectionPerformanceDiagnostics {
+    return { ...this.currentPerformanceDiagnostics };
+  }
+
   step(
     renderDeltaS: number,
     deformation: CytosolProjectionDeformation | null,
@@ -1108,17 +1306,24 @@ export class CytosolProjectionGrid {
       throw new RangeError("cytosol projection delta must be finite and non-negative");
     }
     validateDeformation(deformation);
+    const totalStartedAt = performance.now();
     const dt = Math.min(renderDeltaS, 0.05);
     this.elapsedRenderS += dt;
+    const rebuildStartedAt = performance.now();
     this.rebuildDomainAndTentativeVelocity(
       deformation,
       obstacles,
       renderDeltaS
     );
+    const rebuildFinishedAt = performance.now();
     const before = this.measureAndStoreDivergence();
+    const beforeFinishedAt = performance.now();
     this.projectVelocity();
+    const projectionFinishedAt = performance.now();
     const after = this.measureAndStoreDivergence();
+    const afterFinishedAt = performance.now();
     const boundary = this.boundaryReactionDiagnostic();
+    const boundaryFinishedAt = performance.now();
     const fluidCellCount = this.fluidMask.reduce((sum, value) => sum + value, 0);
     this.currentDiagnostics = {
       fluidCellCount,
@@ -1151,6 +1356,16 @@ export class CytosolProjectionGrid {
         this.activeClosedDomainBoundary === null ? 0 : 1,
       biologicalUnitsAssigned: false,
       membranePressureFeedbackEnabled: false
+    };
+    this.currentPerformanceDiagnostics = {
+      rebuildDomainMs: rebuildFinishedAt - rebuildStartedAt,
+      domainCellSamplingMs: this.domainCellSamplingMs,
+      faceApertureSamplingMs: this.faceApertureSamplingMs,
+      divergenceBeforeMs: beforeFinishedAt - rebuildFinishedAt,
+      projectionMs: projectionFinishedAt - beforeFinishedAt,
+      divergenceAfterMs: afterFinishedAt - projectionFinishedAt,
+      boundaryDiagnosticMs: boundaryFinishedAt - afterFinishedAt,
+      totalMs: boundaryFinishedAt - totalStartedAt
     };
   }
 
@@ -1336,6 +1551,7 @@ export class CytosolProjectionGrid {
     obstacles?: DynamicCytosolObstacleField,
     boundaryDeltaS = 0
   ): void {
+    const domainCellSamplingStartedAt = performance.now();
     this.activeClosedDomainBoundary = this.resolveClosedDomainBoundary();
     const point = new Float32Array(3);
     const reference = new Float32Array(3);
@@ -1455,7 +1671,10 @@ export class CytosolProjectionGrid {
       }
     }
     this.domainInitialized = true;
+    const faceApertureSamplingStartedAt = performance.now();
+    this.domainCellSamplingMs = faceApertureSamplingStartedAt - domainCellSamplingStartedAt;
     this.rebuildFaceApertures(deformation, obstacles);
+    this.faceApertureSamplingMs = performance.now() - faceApertureSamplingStartedAt;
   }
 
   private resolveClosedDomainBoundary(): WatertightTriangleMeshBoundary | null {
@@ -1493,6 +1712,8 @@ export class CytosolProjectionGrid {
     const n = this.resolution;
     const first = new Float32Array(3);
     const second = new Float32Array(3);
+    const firstVector: [number, number, number] = [0, 0, 0];
+    const secondVector: [number, number, number] = [0, 0, 0];
     const reference = new Float32Array(3);
     let internalFaceCount = 0;
     let membraneOpenFractionSum = 0;
@@ -1507,6 +1728,12 @@ export class CytosolProjectionGrid {
       if (!this.fluidMask[index] || !this.fluidMask[neighbor]) return;
       this.cellCenter(index, first);
       this.cellCenter(neighbor, second);
+      firstVector[0] = first[0];
+      firstVector[1] = first[1];
+      firstVector[2] = first[2];
+      secondVector[0] = second[0];
+      secondVector[1] = second[1];
+      secondVector[2] = second[2];
       const membraneOpenFraction = this.sampleMembraneFaceOpenFraction(
         first,
         second,
@@ -1518,8 +1745,8 @@ export class CytosolProjectionGrid {
       let obstacleOpenFraction = 1;
       if (obstacles && obstacles.count > 0) {
         obstacleOpenFraction = obstacles.sampleFaceOpenFraction(
-          [first[0], first[1], first[2]],
-          [second[0], second[1], second[2]],
+          firstVector,
+          secondVector,
           axis,
           this.spacing
         );
@@ -1680,6 +1907,11 @@ export class CytosolProjectionGrid {
     this.nextPressure.fill(0);
     const n = this.resolution;
     const h2 = this.spacing * this.spacing;
+    const neighborDirections = [
+      [-1, 0, 0, 0, -1], [1, 0, 0, 0, 1],
+      [0, -1, 0, 1, -1], [0, 1, 0, 1, 1],
+      [0, 0, -1, 2, -1], [0, 0, 1, 2, 1]
+    ] as const;
     let pressure = this.pressure;
     let next = this.nextPressure;
     for (let iteration = 0; iteration < this.projectionIterations; iteration += 1) {
@@ -1693,12 +1925,10 @@ export class CytosolProjectionGrid {
             }
             let weightedPressure = 0;
             let apertureSum = 0;
-            const neighbors = [
-              [i - 1, j, k, 0, -1], [i + 1, j, k, 0, 1],
-              [i, j - 1, k, 1, -1], [i, j + 1, k, 1, 1],
-              [i, j, k - 1, 2, -1], [i, j, k + 1, 2, 1]
-            ] as const;
-            for (const [ni, nj, nk, axis, direction] of neighbors) {
+            for (const [di, dj, dk, axis, direction] of neighborDirections) {
+              const ni = i + di;
+              const nj = j + dj;
+              const nk = k + dk;
               if (!this.insideGrid(ni, nj, nk)) continue;
               const neighbor = this.index(ni, nj, nk);
               if (!this.fluidMask[neighbor]) continue;
@@ -1722,42 +1952,57 @@ export class CytosolProjectionGrid {
     }
     if (pressure !== this.pressure) this.pressure.set(pressure);
 
+    const weightedGradient = (
+      index: number,
+      minusIndex: number,
+      plusIndex: number,
+      minusAperture: number,
+      plusAperture: number
+    ): number => {
+      const center = this.pressure[index];
+      const minus = minusAperture > 0 ? this.pressure[minusIndex] : center;
+      const plus = plusAperture > 0 ? this.pressure[plusIndex] : center;
+      const denominator = minusAperture + plusAperture;
+      return denominator > 0
+        ? (
+            plusAperture * (plus - center) +
+            minusAperture * (center - minus)
+          ) / (this.spacing * denominator)
+        : 0;
+    };
+    const n2 = n * n;
     for (let k = 0; k < n; k += 1) {
       for (let j = 0; j < n; j += 1) {
         for (let i = 0; i < n; i += 1) {
           const index = this.index(i, j, k);
           if (!this.fluidMask[index]) continue;
-          const center = this.pressure[index];
-          const weightedGradient = (axis: 0 | 1 | 2): number => {
-            const minusAperture = this.faceAperture(i, j, k, axis, -1);
-            const plusAperture = this.faceAperture(i, j, k, axis, 1);
-            const minusCoordinates: [number, number, number] = [
-              i - (axis === 0 ? 1 : 0),
-              j - (axis === 1 ? 1 : 0),
-              k - (axis === 2 ? 1 : 0)
-            ];
-            const plusCoordinates: [number, number, number] = [
-              i + (axis === 0 ? 1 : 0),
-              j + (axis === 1 ? 1 : 0),
-              k + (axis === 2 ? 1 : 0)
-            ];
-            const minus = minusAperture > 0
-              ? this.pressure[this.index(...minusCoordinates)]
-              : center;
-            const plus = plusAperture > 0
-              ? this.pressure[this.index(...plusCoordinates)]
-              : center;
-            const denominator = minusAperture + plusAperture;
-            return denominator > 0
-              ? (
-                  plusAperture * (plus - center) +
-                  minusAperture * (center - minus)
-                ) / (this.spacing * denominator)
-              : 0;
-          };
-          this.velocityX[index] -= weightedGradient(0);
-          this.velocityY[index] -= weightedGradient(1);
-          this.velocityZ[index] -= weightedGradient(2);
+          const xMinus = i > 0 ? index - 1 : index;
+          const xPlus = i + 1 < n ? index + 1 : index;
+          const yMinus = j > 0 ? index - n : index;
+          const yPlus = j + 1 < n ? index + n : index;
+          const zMinus = k > 0 ? index - n2 : index;
+          const zPlus = k + 1 < n ? index + n2 : index;
+          this.velocityX[index] -= weightedGradient(
+            index,
+            xMinus,
+            xPlus,
+            this.faceAperture(i, j, k, 0, -1),
+            this.faceAperture(i, j, k, 0, 1)
+          );
+          this.velocityY[index] -= weightedGradient(
+            index,
+            yMinus,
+            yPlus,
+            this.faceAperture(i, j, k, 1, -1),
+            this.faceAperture(i, j, k, 1, 1)
+          );
+          this.velocityZ[index] -= weightedGradient(
+            index,
+            zMinus,
+            zPlus,
+            this.faceAperture(i, j, k, 2, -1),
+            this.faceAperture(i, j, k, 2, 1)
+          );
         }
       }
     }
