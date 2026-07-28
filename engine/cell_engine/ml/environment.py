@@ -130,7 +130,13 @@ class CellPolicyEnvironment:
 
     def step(self, action: Mapping[str, float] | None = None) -> EnvStep:
         application = apply_policy_action(self._state, action or {}, self.action_bounds)
-        next_state = step_cell(self.definition, application.state, self.dt_s, rng=self._rng)
+        next_state = step_cell(
+            self.definition,
+            application.state,
+            self.dt_s,
+            purpose="exploratory_execution",
+            rng=self._rng,
+        )
         self._state = next_state
         self._step_index += 1
 

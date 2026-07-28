@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from cell_engine.core.runtime_authority import (
+    WholeCellRuntimePurpose,
+    assert_whole_cell_runtime_authority,
+)
 from cell_engine.quantitative.geometry import (
     HEPATOCYTE_CELL_VOLUME_L,
     hepatocyte_geometry_reference_snapshot,
@@ -147,11 +151,27 @@ def quantitative_phh_state_snapshot(
     }
 
 
-def schematic_visual_state_snapshot(pool_ids: tuple[str, ...]) -> dict[str, object]:
+def schematic_visual_state_snapshot(
+    pool_ids: tuple[str, ...],
+    *,
+    runtime_purpose: WholeCellRuntimePurpose,
+    executed_step_count: int,
+    elapsed_s: float,
+) -> dict[str, object]:
+    assert_whole_cell_runtime_authority(runtime_purpose)
+    if executed_step_count < 0 or elapsed_s < 0:
+        raise ValueError("schematic execution counts and time must be non-negative")
     return {
         "authority": "schematic_visual_only",
         "source_path": "state.pools",
         "unit": "relative_pool_0_1",
         "pool_ids": pool_ids,
+        "runtime_purpose": runtime_purpose,
+        "dynamics_executed": executed_step_count > 0,
+        "executed_step_count": executed_step_count,
+        "elapsed_s": elapsed_s,
+        "biological_parameter_authority": False,
         "may_drive_quantitative_validation": False,
+        "may_drive_predictive_execution": False,
+        "may_authoritatively_couple_cell_state": False,
     }

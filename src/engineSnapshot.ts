@@ -2347,6 +2347,7 @@ export type EngineSnapshot = {
     physical_validation?: EnginePhysicalValidation;
     brian2_communication?: EngineBrian2Communication;
     generative_modeling?: EngineGenerativeModelingBoundary;
+    whole_cell_runtime_authority?: EngineWholeCellRuntimeAuthority;
     schematic_visual_state?: EngineSchematicVisualState;
     phh_baseline?: EnginePhhBaseline;
     cellular_response?: EngineCellularResponse;
@@ -2402,6 +2403,10 @@ export type EngineModelAuthority = {
   status: string;
   primary_state_path?: string;
   schematic_state_path?: string;
+  runtime_execution_purpose?: string;
+  schematic_dynamics_executed?: boolean;
+  quantitative_biochemical_dynamics_executed?: boolean;
+  authoritative_biochemical_state_coupling_executed?: boolean;
   authoritative_sections: string[];
   runtime_authoritative_sections?: string[];
   shadow_sections?: string[];
@@ -2606,7 +2611,44 @@ export type EngineSchematicVisualState = {
   source_path: string;
   unit: "relative_pool_0_1";
   pool_ids: string[];
+  runtime_purpose?: "schematic_visualization" | "exploratory_execution";
+  dynamics_executed?: boolean;
+  executed_step_count?: number;
+  elapsed_s?: number;
+  biological_parameter_authority?: false;
   may_drive_quantitative_validation: false;
+  may_drive_predictive_execution?: false;
+  may_authoritatively_couple_cell_state?: false;
+};
+
+export type EngineWholeCellRuntimeAuthority = {
+  version: "whole_cell_runtime_authority_v1";
+  status: "schematic_and_exploratory_execution_only";
+  surfaces: {
+    id: string;
+    code_surfaces: string[];
+    current_role: string;
+    numerical_parameter_authority: string;
+    phh_context_match: false;
+    quantitative_validation_allowed: false;
+    predictive_execution_allowed: false;
+    authoritative_cell_state_coupling_allowed: false;
+    blockers: string[];
+  }[];
+  explicit_purpose_required: true;
+  schematic_visualization_allowed: true;
+  exploratory_execution_allowed: true;
+  quantitative_validation_allowed: false;
+  predictive_execution_allowed: false;
+  authoritative_cell_state_coupling_allowed: false;
+  policy: string;
+  summary: {
+    audited_legacy_surface_count: number;
+    phh_context_matched_surface_count: 0;
+    quantitative_authority_surface_count: 0;
+    predictive_authority_surface_count: 0;
+    authoritative_state_coupling_surface_count: 0;
+  };
 };
 
 export type EngineZonationMarker = {
@@ -4964,6 +5006,7 @@ export type EngineSnapshotSummary = {
   physicalValidation: EnginePhysicalValidation | null;
   brian2Communication: EngineBrian2Communication | null;
   generativeModeling: EngineGenerativeModelingBoundary | null;
+  wholeCellRuntimeAuthority: EngineWholeCellRuntimeAuthority | null;
   schematicVisualState: EngineSchematicVisualState | null;
   phhBaseline: EnginePhhBaseline | null;
   modelAuthority: EngineModelAuthority | null;
@@ -5151,6 +5194,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     physicalValidation: snapshot.state.physical_validation ?? null,
     brian2Communication: snapshot.state.brian2_communication ?? null,
     generativeModeling: snapshot.state.generative_modeling ?? null,
+    wholeCellRuntimeAuthority: snapshot.state.whole_cell_runtime_authority ?? null,
     schematicVisualState: snapshot.state.schematic_visual_state ?? null,
     phhBaseline: snapshot.state.phh_baseline ?? null,
     modelAuthority: snapshot.state.model_authority ?? null,

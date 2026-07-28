@@ -1293,12 +1293,48 @@ const snapshot: EngineSnapshot = {
       blockers: ["no audited donor-resolved training dataset manifest is loaded"],
       source_ids: ["autoencoding_variational_bayes", "scvi_single_cell_generative_model"]
     },
+    whole_cell_runtime_authority: {
+      version: "whole_cell_runtime_authority_v1",
+      status: "schematic_and_exploratory_execution_only",
+      surfaces: [{
+        id: "normalized_pool_initial_state",
+        code_surfaces: ["engine/cell_engine/processes/hepatocyte.py"],
+        current_role: "schematic_visual_initial_state",
+        numerical_parameter_authority: "relative_pool_placeholders",
+        phh_context_match: false,
+        quantitative_validation_allowed: false,
+        predictive_execution_allowed: false,
+        authoritative_cell_state_coupling_allowed: false,
+        blockers: ["not calibrated"]
+      }],
+      explicit_purpose_required: true,
+      schematic_visualization_allowed: true,
+      exploratory_execution_allowed: true,
+      quantitative_validation_allowed: false,
+      predictive_execution_allowed: false,
+      authoritative_cell_state_coupling_allowed: false,
+      policy: "schematic only",
+      summary: {
+        audited_legacy_surface_count: 4,
+        phh_context_matched_surface_count: 0,
+        quantitative_authority_surface_count: 0,
+        predictive_authority_surface_count: 0,
+        authoritative_state_coupling_surface_count: 0
+      }
+    },
     schematic_visual_state: {
       authority: "schematic_visual_only",
       source_path: "state.pools",
       unit: "relative_pool_0_1",
       pool_ids: ["ATP", "albumin"],
-      may_drive_quantitative_validation: false
+      runtime_purpose: "schematic_visualization",
+      dynamics_executed: true,
+      executed_step_count: 8,
+      elapsed_s: 960,
+      biological_parameter_authority: false,
+      may_drive_quantitative_validation: false,
+      may_drive_predictive_execution: false,
+      may_authoritatively_couple_cell_state: false
     },
     stress: { energy: 0.1, oxidative: 0.2 },
     organelles: {
@@ -1656,6 +1692,10 @@ describe("engine snapshot client", () => {
     expect(summary.phhBaseline?.readiness.whole_cell_transport_flux_ready).toBe(false);
     expect(summary.quantitativeState?.authority).toBe("authoritative_research_preview");
     expect(summary.quantitativeState?.pools.ATP.value).toBeCloseTo(2.19232);
+    expect(summary.wholeCellRuntimeAuthority?.explicit_purpose_required).toBe(true);
+    expect(summary.wholeCellRuntimeAuthority?.summary.quantitative_authority_surface_count).toBe(0);
+    expect(summary.schematicVisualState?.runtime_purpose).toBe("schematic_visualization");
+    expect(summary.schematicVisualState?.biological_parameter_authority).toBe(false);
     expect(summary.reactionAuthority?.runtime_role).toBe("exploratory");
     expect(summary.reactionAuthority?.source_backed_parameterization_count).toBe(0);
     expect(summary.reactionAuthority?.scientific_validation_ready).toBe(false);
@@ -2344,8 +2384,8 @@ describe("engine snapshot client", () => {
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.delivered_bundle_count).toBe(0);
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.runtime_flux_coupling_allowed).toBe(false);
       expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(45);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(23);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(46);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(24);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.partial_count).toBe(8);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(12);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.biological_accuracy_pct).toBeNull();

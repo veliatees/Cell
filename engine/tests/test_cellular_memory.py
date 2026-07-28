@@ -26,8 +26,20 @@ class CellularMemoryTests(unittest.TestCase):
 
     def test_explicit_experiment_is_recorded_but_not_silently_consolidated(self) -> None:
         exposed = apply_scenario(self.initial, BSEP_LOSS_SCENARIO)
-        first = step_cell(self.definition, exposed, 120.0, rng=EngineRng(71))
-        second = step_cell(self.definition, first, 120.0, rng=EngineRng(71))
+        first = step_cell(
+            self.definition,
+            exposed,
+            120.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(71),
+        )
+        second = step_cell(
+            self.definition,
+            first,
+            120.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(71),
+        )
         history = second.history
         self.assertIsNotNone(history)
         assert history is not None

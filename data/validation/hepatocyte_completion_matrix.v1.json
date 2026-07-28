@@ -12,6 +12,27 @@
   },
   "entries": [
     {
+      "id": "whole_cell_runtime_authority_firewall",
+      "title": "Whole-cell runtime authority firewall",
+      "status": "closed",
+      "scope": "Code-level prevention of legacy relative-pool dynamics being used for quantitative validation, prediction or authoritative PHH state coupling.",
+      "current_capability": "Every public whole-cell step and run requires an explicit purpose. Schematic visualization and exploratory execution remain available; all three scientific-authority purposes fail closed.",
+      "observed_metrics": {
+        "explicit_purpose_guard_count": 1,
+        "audited_legacy_surface_count": 4,
+        "phh_context_matched_surface_count": 0,
+        "quantitative_authority_surface_count": 0,
+        "predictive_authority_surface_count": 0,
+        "authoritative_state_coupling_surface_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/core/runtime_authority.py",
+        "engine/cell_engine/core/engine.py",
+        "engine/tests/test_runtime_authority.py"
+      ]
+    },
+    {
       "id": "dimensionless_cytosol_numerics",
       "title": "Dimensionless cytosol transport numerics",
       "status": "closed",
@@ -408,13 +429,16 @@
       "title": "Compartmental energy and redox quantitation",
       "status": "partial",
       "scope": "ATP/ADP/AMP, NAD(H), NADP(H), glutathione, ROS, oxygen and electrochemical states across six compartments.",
-      "current_capability": "Pool identities and 14 process topologies are explicit. A versioned 47-column donor-resolved PHH trajectory intake now enforces exact pool/molecule/compartment mapping, validated targeting, same-assay calibration, oxygen/nutrient context and sealed donor/study-disjoint held-out data; aggregate observations and absent trajectories cannot initialize a compartment or rate.",
+      "current_capability": "Pool identities and 14 process topologies are explicit. A versioned 47-column donor-resolved PHH trajectory intake enforces exact pool/molecule/compartment mapping, validated targeting, same-assay calibration, oxygen/nutrient context and sealed donor/study-disjoint held-out data. Six legacy conflicts remain visible, but an explicit-purpose firewall gives them zero quantitative, predictive or authoritative state-coupling permission.",
       "observed_metrics": {
         "compartment_count": 6,
         "pool_count": 38,
         "initialized_pool_count": 0,
         "executable_process_count": 0,
-        "runtime_conflict_count": 6,
+        "detected_legacy_runtime_conflict_count": 6,
+        "legacy_runtime_quantitative_authority_violation_count": 0,
+        "legacy_runtime_predictive_authority_violation_count": 0,
+        "legacy_runtime_authoritative_coupling_violation_count": 0,
         "trajectory_intake_contract_count": 1,
         "delivered_trajectory_record_count": 0,
         "structurally_complete_trajectory_count": 0,
@@ -424,11 +448,12 @@
       "remaining_requirements": [
         "Compartment-resolved healthy-PHH initial states.",
         "Matched oxygen/redox/adenylate trajectories and flux-identifying perturbations.",
-        "Resolution of legacy aggregate runtime pools."
+        "Replacement of quarantined aggregate pools by a validated compartment state."
       ],
       "code_surfaces": [
         "engine/cell_engine/quantitative/compartmental_energy_redox.py",
         "engine/cell_engine/validation/energy_redox_gate.py",
+        "engine/cell_engine/core/runtime_authority.py",
         "engine/cell_engine/quantitative/energy_redox_trajectory.py",
         "data/evidence_intake/phh_energy_redox_trajectory_contract.v1.json"
       ]
@@ -1243,8 +1268,8 @@
     }
   ],
   "summary": {
-    "entry_count": 45,
-    "closed_count": 23,
+    "entry_count": 46,
+    "closed_count": 24,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

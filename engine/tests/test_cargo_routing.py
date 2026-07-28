@@ -52,7 +52,13 @@ class CargoRoutingTests(unittest.TestCase):
         self.assertLess(stressed_p, 0.12)
 
     def test_step_cell_routes_packets_without_guaranteed_delivery(self) -> None:
-        next_state = step_cell(self.definition, self.state, 240.0, rng=EngineRng(4))
+        next_state = step_cell(
+            self.definition,
+            self.state,
+            240.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(4),
+        )
         validate_state(self.definition, next_state)
         before = {packet.id: packet for packet in self.state.cargo_packets}
         changed_count = sum(
@@ -95,7 +101,13 @@ class CargoRoutingTests(unittest.TestCase):
         self.assertEqual(len(routed.events), 1)
 
     def test_snapshot_exposes_cargo_packets_for_the_ui(self) -> None:
-        next_state = step_cell(self.definition, self.state, 60.0, rng=EngineRng(9))
+        next_state = step_cell(
+            self.definition,
+            self.state,
+            60.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(9),
+        )
         snapshot = build_snapshot(self.definition, next_state)
         packets = snapshot["state"]["cargo_packets"]
         self.assertIsInstance(packets, list)
