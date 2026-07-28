@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
-from typing import Literal, Sequence
+from typing import Any, Literal, Mapping, Sequence
 import warnings
 
 from cell_engine.quantitative.fastcore_context import (
@@ -26,6 +26,7 @@ from cell_engine.quantitative.fastcore_context import (
 
 
 VERSION = "minimum_reaction_support_milp_v1"
+SHARED_SUPPORT_VERSION = "minimum_shared_reaction_support_milp_v1"
 SOLVER_BACKEND = "scipy.optimize.milp"
 SOLVER_METHOD = "HiGHS"
 MIP_RELATIVE_GAP = 0.0
@@ -106,6 +107,51 @@ class MinimumReactionSupportResult:
     added_reaction_ids: tuple[str, ...]
     minimum_cardinality_proven: bool
     minimum_support_unique_guaranteed: bool
+    biological_context_established: bool
+
+
+@dataclass(frozen=True)
+class SharedTargetSupportCertificate:
+    target_reaction_id: str
+    direction: Direction
+    target_flux: float
+    support_reaction_ids: tuple[str, ...]
+    maximum_mass_balance_residual: float
+    maximum_bound_violation: float
+    lp_solver_method: str
+    lp_presolve: bool
+    lp_solver_attempt_count: int
+    valid: bool
+
+
+@dataclass(frozen=True)
+class MinimumSharedReactionSupportResult:
+    target_reaction_ids: tuple[str, ...]
+    retained_reaction_ids: tuple[str, ...]
+    candidate_reaction_ids: tuple[str, ...]
+    unavailable_reaction_ids: tuple[str, ...]
+    epsilon: float
+    feasible: bool
+    infeasibility_proven: bool
+    minimum_added_reaction_count: int | None
+    added_reaction_ids: tuple[str, ...]
+    target_directions: tuple[tuple[str, Direction], ...]
+    target_direction_options: tuple[
+        tuple[str, tuple[Direction, ...]], ...
+    ]
+    target_certificates: tuple[SharedTargetSupportCertificate, ...]
+    minimum_cardinality_proven: bool
+    minimum_support_unique_guaranteed: bool
+    mip_relative_gap: float | None
+    mip_node_count: int | None
+    maximum_integrality_residual: float | None
+    maximum_mass_balance_residual: float | None
+    maximum_bound_violation: float | None
+    post_milp_lp_certificate_count: int
+    maximum_added_reaction_count_constraint: int | None
+    forbidden_candidate_superset_count: int
+    solver_status: int
+    solver_message: str
     biological_context_established: bool
 
 
@@ -229,7 +275,9 @@ def _witness_quality(stoichiometry, lower, upper, fluxes):
         or violation > MILP_CERTIFICATE_TOLERANCE
     ):
         raise MinimumReactionSupportError(
-            "reaction-support witness violates mass balance or bounds"
+            "reaction-support witness violates mass balance or bounds: "
+            f"residual={residual!r}, bound_violation={violation!r}, "
+            f"tolerance={MILP_CERTIFICATE_TOLERANCE!r}"
         )
     return residual, violation
 
@@ -887,5 +935,800 @@ def minimum_added_reaction_support(
             for result in direction_results
         ),
         minimum_support_unique_guaranteed=False,
+        biological_context_established=False,
+    )
+
+
+def minimum_shared_reaction_support(
+    network: FluxConsistentNetwork,
+    *,
+    retained_reaction_ids: Sequence[str],
+    candidate_reaction_ids: Sequence[str],
+    target_reaction_ids: Sequence[str],
+    epsilon: float,
+    maximum_added_reaction_count: int | None = None,
+    forbidden_candidate_supersets: Sequence[Sequence[str]] = (),
+    target_direction_options: Mapping[
+        str, Sequence[Direction]
+    ] | None = None,
+) -> MinimumSharedReactionSupportResult:
+    """Find a proven minimum candidate union supporting every target.
+
+    Each target receives an independent steady-state flux vector and a binary
+    forward/reverse choice. Candidate-identity binaries are shared by all
+    target scenarios, so a reaction selected for several witnesses contributes
+    only once to the objective. The candidate universe is caller supplied.
+    Optional cardinality and no-good constraints support exact alternate-
+    optimum audits without changing the unconstrained default solve.
+    """
+
+    epsilon_value = _finite_positive(epsilon, label="epsilon")
+    stoichiometry, lower, upper = _validated_network_arrays(network)
+    targets_input = tuple(target_reaction_ids)
+    if (
+        not targets_input
+        or len(set(targets_input)) != len(targets_input)
+    ):
+        raise MinimumReactionSupportError(
+            "shared-support target identifiers must be nonempty and unique"
+        )
+    retained_input = tuple(retained_reaction_ids)
+    candidate_input = tuple(candidate_reaction_ids)
+    if (
+        not retained_input
+        or len(set(retained_input)) != len(retained_input)
+        or len(set(candidate_input)) != len(candidate_input)
+    ):
+        raise MinimumReactionSupportError(
+            "shared retained and candidate identifiers must be unique"
+        )
+    retained_set = set(retained_input)
+    candidate_set = set(candidate_input)
+    if retained_set & candidate_set:
+        raise MinimumReactionSupportError(
+            "shared retained and candidate reactions must be disjoint"
+        )
+    known = set(network.reaction_ids)
+    unknown = (retained_set | candidate_set) - known
+    if unknown:
+        raise MinimumReactionSupportError(
+            f"unknown shared-support reactions: {sorted(unknown)}"
+        )
+    if any(target not in retained_set for target in targets_input):
+        raise MinimumReactionSupportError(
+            "every shared-support target must belong to the retained network"
+        )
+    if target_direction_options is None:
+        direction_option_lookup: dict[str, tuple[Direction, ...]] = {
+            target: ("forward", "reverse") for target in targets_input
+        }
+    else:
+        if set(target_direction_options) != set(targets_input):
+            raise MinimumReactionSupportError(
+                "shared-support direction options must cover every target "
+                "exactly"
+            )
+        direction_option_lookup = {}
+        for target in targets_input:
+            options = tuple(target_direction_options[target])
+            if (
+                not options
+                or len(set(options)) != len(options)
+                or any(
+                    option not in {"forward", "reverse"}
+                    for option in options
+                )
+            ):
+                raise MinimumReactionSupportError(
+                    "shared-support target directions must be a nonempty "
+                    "subset of forward and reverse"
+                )
+            direction_option_lookup[target] = options
+    if maximum_added_reaction_count is not None and (
+        isinstance(maximum_added_reaction_count, bool)
+        or not isinstance(maximum_added_reaction_count, int)
+        or maximum_added_reaction_count < 0
+        or maximum_added_reaction_count > len(candidate_input)
+    ):
+        raise MinimumReactionSupportError(
+            "maximum shared-support cardinality must be an integer inside "
+            "the candidate universe"
+        )
+    forbidden_inputs = tuple(
+        tuple(identifier for identifier in identifiers)
+        for identifiers in forbidden_candidate_supersets
+    )
+    if len(set(forbidden_inputs)) != len(forbidden_inputs):
+        raise MinimumReactionSupportError(
+            "forbidden shared-support supersets must be unique"
+        )
+    for identifiers in forbidden_inputs:
+        if (
+            not identifiers
+            or len(set(identifiers)) != len(identifiers)
+            or not set(identifiers) <= candidate_set
+        ):
+            raise MinimumReactionSupportError(
+                "each forbidden shared-support superset must be a nonempty "
+                "unique subset of the candidate universe"
+            )
+    retained = tuple(
+        identifier
+        for identifier in network.reaction_ids
+        if identifier in retained_set
+    )
+    candidates = tuple(
+        identifier
+        for identifier in network.reaction_ids
+        if identifier in candidate_set
+    )
+    targets = tuple(
+        identifier
+        for identifier in network.reaction_ids
+        if identifier in set(targets_input)
+    )
+    ordered_direction_options = tuple(
+        (identifier, direction_option_lookup[identifier])
+        for identifier in targets
+    )
+    unavailable = tuple(
+        identifier
+        for identifier in network.reaction_ids
+        if identifier not in retained_set | candidate_set
+    )
+    (
+        np,
+        Bounds,
+        LinearConstraint,
+        linprog,
+        milp,
+        coo_matrix,
+        csr_matrix,
+        hstack,
+        _,
+    ) = _solver_modules()
+    from scipy.sparse import block_diag
+
+    nonzero_rows = np.flatnonzero(
+        np.asarray(stoichiometry.getnnz(axis=1) > 0).ravel()
+    )
+    compact_stoichiometry = stoichiometry[nonzero_rows, :].tocsc()
+    reaction_ids = network.reaction_ids
+    reaction_count = len(reaction_ids)
+    target_count = len(targets)
+    candidate_count = len(candidates)
+    lookup = {
+        identifier: index
+        for index, identifier in enumerate(reaction_ids)
+    }
+    target_indices = tuple(lookup[identifier] for identifier in targets)
+    candidate_indices = tuple(
+        lookup[identifier] for identifier in candidates
+    )
+    unavailable_indices = tuple(
+        lookup[identifier] for identifier in unavailable
+    )
+    flux_variable_count = target_count * reaction_count
+    scenario_candidate_count = target_count * candidate_count
+    forward_binary_start = flux_variable_count
+    reverse_binary_start = (
+        forward_binary_start + scenario_candidate_count
+    )
+    candidate_binary_start = (
+        reverse_binary_start + scenario_candidate_count
+    )
+    direction_binary_start = candidate_binary_start + candidate_count
+    variable_count = direction_binary_start + target_count
+
+    flux_lower_blocks: list[Any] = []
+    flux_upper_blocks: list[Any] = []
+    for _target_offset in range(target_count):
+        scenario_lower = lower.copy()
+        scenario_upper = upper.copy()
+        for reaction_index in candidate_indices:
+            scenario_lower[reaction_index] = min(
+                scenario_lower[reaction_index],
+                0.0,
+            )
+            scenario_upper[reaction_index] = max(
+                scenario_upper[reaction_index],
+                0.0,
+            )
+        for reaction_index in unavailable_indices:
+            scenario_lower[reaction_index] = 0.0
+            scenario_upper[reaction_index] = 0.0
+        flux_lower_blocks.append(scenario_lower)
+        flux_upper_blocks.append(scenario_upper)
+    direction_lower = np.asarray(
+        [
+            1.0 if options == ("forward",) else 0.0
+            for _, options in ordered_direction_options
+        ]
+    )
+    direction_upper = np.asarray(
+        [
+            0.0 if options == ("reverse",) else 1.0
+            for _, options in ordered_direction_options
+        ]
+    )
+    variable_lower = np.concatenate(
+        (
+            *flux_lower_blocks,
+            np.zeros(2 * scenario_candidate_count),
+            np.zeros(candidate_count),
+            direction_lower,
+        )
+    )
+    variable_upper = np.concatenate(
+        (
+            *flux_upper_blocks,
+            np.ones(2 * scenario_candidate_count),
+            np.ones(candidate_count),
+            direction_upper,
+        )
+    )
+    threshold = epsilon_value * (1.0 - SUPPORT_RELATIVE_TOLERANCE)
+    for target_offset in range(target_count):
+        scenario_binary_offset = target_offset * candidate_count
+        for candidate_offset, reaction_index in enumerate(
+            candidate_indices
+        ):
+            if upper[reaction_index] < threshold:
+                variable_upper[
+                    forward_binary_start
+                    + scenario_binary_offset
+                    + candidate_offset
+                ] = 0.0
+            if lower[reaction_index] > -threshold:
+                variable_upper[
+                    reverse_binary_start
+                    + scenario_binary_offset
+                    + candidate_offset
+                ] = 0.0
+
+    mass_balance_flux = block_diag(
+        [compact_stoichiometry] * target_count,
+        format="csr",
+    )
+    mass_balance_matrix = hstack(
+        (
+            mass_balance_flux,
+            csr_matrix(
+                (
+                    mass_balance_flux.shape[0],
+                    2 * scenario_candidate_count
+                    + candidate_count
+                    + target_count,
+                )
+            ),
+        ),
+        format="csr",
+    )
+    constraints: list[LinearConstraint] = [
+        LinearConstraint(
+            mass_balance_matrix,
+            np.zeros(mass_balance_matrix.shape[0]),
+            np.zeros(mass_balance_matrix.shape[0]),
+        )
+    ]
+
+    link_rows: list[int] = []
+    link_columns: list[int] = []
+    link_values: list[float] = []
+    link_lower: list[float] = []
+    link_upper: list[float] = []
+    link_row = 0
+    for target_offset in range(target_count):
+        flux_start = target_offset * reaction_count
+        scenario_binary_offset = target_offset * candidate_count
+        for candidate_offset, reaction_index in enumerate(
+            candidate_indices
+        ):
+            forward_binary = (
+                forward_binary_start
+                + scenario_binary_offset
+                + candidate_offset
+            )
+            reverse_binary = (
+                reverse_binary_start
+                + scenario_binary_offset
+                + candidate_offset
+            )
+            identity_binary = (
+                candidate_binary_start + candidate_offset
+            )
+            flux_index = flux_start + reaction_index
+            forward_floor = max(
+                epsilon_value,
+                lower[reaction_index],
+            )
+            reverse_ceiling = min(
+                -epsilon_value,
+                upper[reaction_index],
+            )
+
+            link_rows.extend((link_row, link_row, link_row))
+            link_columns.extend(
+                (flux_index, forward_binary, reverse_binary)
+            )
+            link_values.extend(
+                (1.0, -forward_floor, -lower[reaction_index])
+            )
+            link_lower.append(0.0)
+            link_upper.append(np.inf)
+            link_row += 1
+
+            link_rows.extend((link_row, link_row, link_row))
+            link_columns.extend(
+                (flux_index, forward_binary, reverse_binary)
+            )
+            link_values.extend(
+                (1.0, -upper[reaction_index], -reverse_ceiling)
+            )
+            link_lower.append(-np.inf)
+            link_upper.append(0.0)
+            link_row += 1
+
+            link_rows.extend((link_row, link_row, link_row))
+            link_columns.extend(
+                (forward_binary, reverse_binary, identity_binary)
+            )
+            link_values.extend((1.0, 1.0, -1.0))
+            link_lower.append(-np.inf)
+            link_upper.append(0.0)
+            link_row += 1
+    for candidate_offset in range(candidate_count):
+        identity_binary = candidate_binary_start + candidate_offset
+        link_rows.append(link_row)
+        link_columns.append(identity_binary)
+        link_values.append(1.0)
+        for target_offset in range(target_count):
+            scenario_binary_offset = target_offset * candidate_count
+            link_rows.extend((link_row, link_row))
+            link_columns.extend(
+                (
+                    forward_binary_start
+                    + scenario_binary_offset
+                    + candidate_offset,
+                    reverse_binary_start
+                    + scenario_binary_offset
+                    + candidate_offset,
+                )
+            )
+            link_values.extend((-1.0, -1.0))
+        link_lower.append(-np.inf)
+        link_upper.append(0.0)
+        link_row += 1
+    if link_row:
+        link_matrix = coo_matrix(
+            (link_values, (link_rows, link_columns)),
+            shape=(link_row, variable_count),
+        ).tocsr()
+        constraints.append(
+            LinearConstraint(
+                link_matrix,
+                np.asarray(link_lower),
+                np.asarray(link_upper),
+            )
+        )
+
+    target_rows: list[int] = []
+    target_columns: list[int] = []
+    target_values: list[float] = []
+    target_lower: list[float] = []
+    target_upper: list[float] = []
+    for target_offset, target_index in enumerate(target_indices):
+        flux_index = target_offset * reaction_count + target_index
+        direction_index = direction_binary_start + target_offset
+        row = 2 * target_offset
+
+        target_rows.extend((row, row))
+        target_columns.extend((flux_index, direction_index))
+        target_values.extend(
+            (1.0, -(epsilon_value - lower[target_index]))
+        )
+        target_lower.append(lower[target_index])
+        target_upper.append(np.inf)
+
+        target_rows.extend((row + 1, row + 1))
+        target_columns.extend((flux_index, direction_index))
+        target_values.extend(
+            (1.0, -(upper[target_index] + epsilon_value))
+        )
+        target_lower.append(-np.inf)
+        target_upper.append(-epsilon_value)
+    target_matrix = coo_matrix(
+        (target_values, (target_rows, target_columns)),
+        shape=(2 * target_count, variable_count),
+    ).tocsr()
+    constraints.append(
+        LinearConstraint(
+            target_matrix,
+            np.asarray(target_lower),
+            np.asarray(target_upper),
+        )
+    )
+    if maximum_added_reaction_count is not None:
+        cardinality_columns = np.arange(
+            candidate_binary_start,
+            direction_binary_start,
+        )
+        cardinality_matrix = coo_matrix(
+            (
+                np.ones(candidate_count),
+                (
+                    np.zeros(candidate_count, dtype=int),
+                    cardinality_columns,
+                ),
+            ),
+            shape=(1, variable_count),
+        ).tocsr()
+        constraints.append(
+            LinearConstraint(
+                cardinality_matrix,
+                np.asarray([-np.inf]),
+                np.asarray([float(maximum_added_reaction_count)]),
+            )
+        )
+    for identifiers in forbidden_inputs:
+        forbidden_columns = np.asarray(
+            [
+                candidate_binary_start + candidates.index(identifier)
+                for identifier in identifiers
+            ],
+            dtype=int,
+        )
+        forbidden_matrix = coo_matrix(
+            (
+                np.ones(len(forbidden_columns)),
+                (
+                    np.zeros(len(forbidden_columns), dtype=int),
+                    forbidden_columns,
+                ),
+            ),
+            shape=(1, variable_count),
+        ).tocsr()
+        constraints.append(
+            LinearConstraint(
+                forbidden_matrix,
+                np.asarray([-np.inf]),
+                np.asarray([float(len(identifiers) - 1)]),
+            )
+        )
+
+    objective = np.zeros(variable_count)
+    objective[
+        candidate_binary_start:direction_binary_start
+    ] = 1.0
+    integrality = np.zeros(variable_count, dtype=np.uint8)
+    integrality[forward_binary_start:] = 1
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Unrecognized options detected:.*",
+            category=RuntimeWarning,
+        )
+        result = milp(
+            objective,
+            integrality=integrality,
+            bounds=Bounds(variable_lower, variable_upper),
+            constraints=constraints,
+            options={
+                "presolve": True,
+                "mip_rel_gap": MIP_RELATIVE_GAP,
+                "mip_feasibility_tolerance": (
+                    HIGHS_MIP_FEASIBILITY_TOLERANCE
+                ),
+            },
+        )
+    solver_status = int(result.status)
+    if not result.success:
+        if solver_status != 2:
+            raise MinimumReactionSupportError(
+                "shared-support MILP ended without an optimum or a proof of "
+                f"infeasibility: {result.message}"
+            )
+        return MinimumSharedReactionSupportResult(
+            target_reaction_ids=targets,
+            retained_reaction_ids=retained,
+            candidate_reaction_ids=candidates,
+            unavailable_reaction_ids=unavailable,
+            epsilon=epsilon_value,
+            feasible=False,
+            infeasibility_proven=True,
+            minimum_added_reaction_count=None,
+            added_reaction_ids=(),
+            target_directions=(),
+            target_direction_options=ordered_direction_options,
+            target_certificates=(),
+            minimum_cardinality_proven=False,
+            minimum_support_unique_guaranteed=False,
+            mip_relative_gap=None,
+            mip_node_count=None,
+            maximum_integrality_residual=None,
+            maximum_mass_balance_residual=None,
+            maximum_bound_violation=None,
+            post_milp_lp_certificate_count=0,
+            maximum_added_reaction_count_constraint=(
+                maximum_added_reaction_count
+            ),
+            forbidden_candidate_superset_count=len(forbidden_inputs),
+            solver_status=solver_status,
+            solver_message=str(result.message),
+            biological_context_established=False,
+        )
+    if solver_status != 0 or result.fun is None or result.x is None:
+        raise MinimumReactionSupportError(
+            "shared-support MILP returned an unproven solution"
+        )
+    mip_gap = float(getattr(result, "mip_gap", math.inf))
+    if not math.isfinite(mip_gap) or mip_gap != MIP_RELATIVE_GAP:
+        raise MinimumReactionSupportError(
+            "shared-support MILP did not prove the zero-gap optimum"
+        )
+    binary_values = np.asarray(
+        result.x[forward_binary_start:],
+        dtype=float,
+    )
+    rounded_binaries = np.rint(binary_values)
+    maximum_integrality_residual = float(
+        np.max(np.abs(binary_values - rounded_binaries))
+    ) if binary_values.size else 0.0
+    if (
+        maximum_integrality_residual
+        > HIGHS_MIP_FEASIBILITY_TOLERANCE
+    ):
+        raise MinimumReactionSupportError(
+            "shared-support binary residual exceeds the documented HiGHS "
+            "MIP feasibility tolerance"
+        )
+    rounded_forward = np.rint(
+        result.x[forward_binary_start:reverse_binary_start]
+    ).reshape(target_count, candidate_count)
+    rounded_reverse = np.rint(
+        result.x[reverse_binary_start:candidate_binary_start]
+    ).reshape(target_count, candidate_count)
+    selected_binary_values = np.rint(
+        result.x[candidate_binary_start:direction_binary_start]
+    )
+    rounded_direction = np.rint(
+        result.x[direction_binary_start:]
+    )
+    scenario_activity = rounded_forward + rounded_reverse
+    if (
+        np.any(scenario_activity > 1.0)
+        or np.any(
+            np.max(scenario_activity, axis=0)
+            != selected_binary_values
+        )
+    ):
+        raise MinimumReactionSupportError(
+            "shared-support identity binaries disagree with scenario "
+            "direction activity"
+        )
+    minimum_count = int(np.sum(selected_binary_values))
+    aggregate_objective_tolerance = max(
+        HIGHS_MIP_FEASIBILITY_TOLERANCE,
+        max(candidate_count, 1) * HIGHS_MIP_FEASIBILITY_TOLERANCE,
+    )
+    if (
+        abs(float(result.fun) - minimum_count)
+        > aggregate_objective_tolerance
+    ):
+        raise MinimumReactionSupportError(
+            "shared-support objective disagrees with the selected count"
+        )
+    added_reaction_ids = tuple(
+        identifier
+        for offset, identifier in enumerate(candidates)
+        if selected_binary_values[offset] > 0.5
+    )
+    if len(added_reaction_ids) != minimum_count:
+        raise MinimumReactionSupportError(
+            "shared-support selected identities disagree with the objective"
+        )
+    target_directions = tuple(
+        (
+            identifier,
+            "forward"
+            if rounded_direction[offset] > 0.5
+            else "reverse",
+        )
+        for offset, identifier in enumerate(targets)
+    )
+
+    selected_set = set(added_reaction_ids)
+    certificates: list[SharedTargetSupportCertificate] = []
+    maximum_residual = 0.0
+    maximum_violation = 0.0
+    threshold = epsilon_value * (1.0 - SUPPORT_RELATIVE_TOLERANCE)
+    for target_offset, (
+        target_identifier,
+        direction,
+    ) in enumerate(target_directions):
+        certificate_lower = lower.copy()
+        certificate_upper = upper.copy()
+        for reaction_index in unavailable_indices:
+            certificate_lower[reaction_index] = 0.0
+            certificate_upper[reaction_index] = 0.0
+        for reaction_index in candidate_indices:
+            identifier = reaction_ids[reaction_index]
+            if identifier not in selected_set:
+                certificate_lower[reaction_index] = 0.0
+                certificate_upper[reaction_index] = 0.0
+        target_index = lookup[target_identifier]
+        if direction == "forward":
+            certificate_lower[target_index] = max(
+                certificate_lower[target_index],
+                epsilon_value,
+            )
+        else:
+            certificate_upper[target_index] = min(
+                certificate_upper[target_index],
+                -epsilon_value,
+            )
+        raw_fluxes = np.asarray(
+            result.x[
+                target_offset
+                * reaction_count:(target_offset + 1)
+                * reaction_count
+            ],
+            dtype=float,
+        )
+        try:
+            _witness_quality(
+                compact_stoichiometry,
+                certificate_lower,
+                certificate_upper,
+                raw_fluxes,
+            )
+        except MinimumReactionSupportError as exc:
+            raise MinimumReactionSupportError(
+                "raw shared-support MILP witness failed certification for "
+                f"{target_identifier}: {exc}"
+            ) from exc
+        for candidate_offset, reaction_index in enumerate(
+            candidate_indices
+        ):
+            flux = float(raw_fluxes[reaction_index])
+            if (
+                rounded_forward[target_offset, candidate_offset] > 0.5
+                and flux < threshold
+            ) or (
+                rounded_reverse[target_offset, candidate_offset] > 0.5
+                and flux > -threshold
+            ) or (
+                scenario_activity[target_offset, candidate_offset] < 0.5
+                and abs(flux) > MILP_CERTIFICATE_TOLERANCE
+            ):
+                raise MinimumReactionSupportError(
+                    "raw shared-support candidate direction disagrees with "
+                    f"its certified flux: {target_identifier}, "
+                    f"{reaction_ids[reaction_index]}"
+                )
+        certificate = None
+        certificate_attempts = (
+            ("highs", True),
+            ("highs-ds", False),
+            ("highs-ipm", False),
+        )
+        used_method = ""
+        used_presolve = False
+        used_attempt_count = 0
+        failure_messages: list[str] = []
+        for used_attempt_count, (
+            method,
+            presolve,
+        ) in enumerate(certificate_attempts, start=1):
+            attempt = linprog(
+                np.zeros(reaction_count),
+                A_eq=compact_stoichiometry,
+                b_eq=np.zeros(compact_stoichiometry.shape[0]),
+                bounds=list(
+                    zip(
+                        certificate_lower,
+                        certificate_upper,
+                        strict=True,
+                    )
+                ),
+                method=method,
+                options={
+                    "primal_feasibility_tolerance": (
+                        SOLVER_FEASIBILITY_TOLERANCE
+                    ),
+                    "dual_feasibility_tolerance": (
+                        SOLVER_FEASIBILITY_TOLERANCE
+                    ),
+                    "presolve": presolve,
+                },
+            )
+            if attempt.success:
+                certificate = attempt
+                used_method = method
+                used_presolve = presolve
+                break
+            failure_messages.append(f"{method}/{presolve}: {attempt.message}")
+        if certificate is None:
+            raise MinimumReactionSupportError(
+                "rounded shared support failed a post-MILP LP certificate: "
+                f"{target_identifier}; raw_target_flux="
+                f"{float(raw_fluxes[target_index])!r}; selected="
+                f"{added_reaction_ids!r}: {' | '.join(failure_messages)}"
+            )
+        fluxes = np.asarray(certificate.x, dtype=float)
+        residual, violation = _witness_quality(
+            compact_stoichiometry,
+            certificate_lower,
+            certificate_upper,
+            fluxes,
+        )
+        target_flux = float(fluxes[target_index])
+        if (
+            direction == "forward"
+            and target_flux < threshold
+        ) or (
+            direction == "reverse"
+            and target_flux > -threshold
+        ):
+            raise MinimumReactionSupportError(
+                "certified shared-support target missed its threshold"
+            )
+        for reaction_index in candidate_indices:
+            if (
+                reaction_ids[reaction_index] not in selected_set
+                and abs(float(fluxes[reaction_index]))
+                > MILP_CERTIFICATE_TOLERANCE
+            ):
+                raise MinimumReactionSupportError(
+                    "shared-support certificate gives flux to an unselected "
+                    "candidate"
+                )
+        maximum_residual = max(maximum_residual, residual)
+        maximum_violation = max(maximum_violation, violation)
+        certificates.append(
+            SharedTargetSupportCertificate(
+                target_reaction_id=target_identifier,
+                direction=direction,
+                target_flux=target_flux,
+                support_reaction_ids=_support_ids(
+                    reaction_ids,
+                    fluxes,
+                    epsilon=epsilon_value,
+                ),
+                maximum_mass_balance_residual=residual,
+                maximum_bound_violation=violation,
+                lp_solver_method=used_method,
+                lp_presolve=used_presolve,
+                lp_solver_attempt_count=used_attempt_count,
+                valid=True,
+            )
+        )
+    return MinimumSharedReactionSupportResult(
+        target_reaction_ids=targets,
+        retained_reaction_ids=retained,
+        candidate_reaction_ids=candidates,
+        unavailable_reaction_ids=unavailable,
+        epsilon=epsilon_value,
+        feasible=True,
+        infeasibility_proven=False,
+        minimum_added_reaction_count=minimum_count,
+        added_reaction_ids=added_reaction_ids,
+        target_directions=target_directions,
+        target_direction_options=ordered_direction_options,
+        target_certificates=tuple(certificates),
+        minimum_cardinality_proven=True,
+        minimum_support_unique_guaranteed=False,
+        mip_relative_gap=mip_gap,
+        mip_node_count=int(getattr(result, "mip_node_count", 0)),
+        maximum_integrality_residual=maximum_integrality_residual,
+        maximum_mass_balance_residual=maximum_residual,
+        maximum_bound_violation=maximum_violation,
+        post_milp_lp_certificate_count=len(certificates),
+        maximum_added_reaction_count_constraint=(
+            maximum_added_reaction_count
+        ),
+        forbidden_candidate_superset_count=len(forbidden_inputs),
+        solver_status=solver_status,
+        solver_message=str(result.message),
         biological_context_established=False,
     )

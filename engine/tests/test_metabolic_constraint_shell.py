@@ -9,7 +9,7 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_context() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     validate_metabolic_constraint_shell(snapshot)
-    assert snapshot["version"] == "metabolic_constraint_shell_v9"
+    assert snapshot["version"] == "metabolic_constraint_shell_v10"
     reconstruction = snapshot["candidate_reconstruction"]
     assert reconstruction["model_version"] == "2.0.0"
     assert reconstruction["release_tag"] == "v2.0.0"
@@ -95,6 +95,32 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     assert repair["reaction_activity_in_phh_established"] is False
     assert repair["context_model_accepted"] is False
     assert repair["fba_execution_allowed"] is False
+    shared = reconstruction["fastcore_shared_support"]
+    assert shared["input_candidate_union_count"] == 65
+    assert shared["minimum_shared_added_reaction_count"] == 59
+    assert shared["removed_from_per_target_union_count"] == 6
+    assert shared["repaired_candidate_reaction_count"] == 7474
+    assert shared["strict_fastcc_blocked_reaction_count"] == 0
+    assert shared["selected_reaction_without_gpr_count"] == 4
+    assert shared["selected_reaction_zero_donor_gpr_count"] == 55
+    assert (
+        shared["minimum_cardinality_within_65_reaction_union_proven"]
+        is True
+    )
+    assert shared["reaction_activity_in_phh_established"] is False
+    optimality = reconstruction["fastcore_support_optimality"]
+    assert optimality["minimum_support_set_count"] == 2
+    assert optimality["minimum_support_identity_enumeration_complete"] is True
+    assert optimality[
+        "reactions_present_in_every_minimum_support_count"
+    ] == 58
+    assert optimality["optional_reaction_count"] == 2
+    assert optimality["optional_reaction_ids_in_input_order"] == [
+        "MAR02308",
+        "MAR10035",
+    ]
+    assert optimality["terminal_infeasibility_proven"] is True
+    assert optimality["reaction_activity_in_phh_established"] is False
     evidence = reconstruction["reaction_evidence_manifest"]
     assert evidence["manifest_reaction_count"] == 4895
     assert evidence["adaptive_fastcore_noncore_reaction_count"] == 2860
@@ -128,7 +154,7 @@ def test_exact_release_pin_removed_only_the_artifact_identity_blocker() -> None:
     assert not any("release and checksum are not pinned" in item for item in blockers)
     assert any("context specificity was not established" in item for item in blockers)
     assert any("raw output left 17 reactions blocked" in item for item in blockers)
-    assert any("65-reaction union repairs strict structural" in item for item in blockers)
+    assert any("reduced to a proven 59-reaction minimum" in item for item in blockers)
     assert any("independent flux validation" in item for item in blockers)
     assert not any("have not been audited" in item for item in blockers)
     assert any("structural audit exceptions" in item for item in blockers)

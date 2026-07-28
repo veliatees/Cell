@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 39
-    assert summary["closed_count"] == 17
+    assert summary["entry_count"] == 41
+    assert summary["closed_count"] == 19
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -209,6 +209,37 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
         "reaction_activity_in_phh_established"
     ] is False
     assert repair["observed_metrics"]["context_model_accepted"] is False
+    shared = entries["human_gem_fastcore_minimum_shared_support"]
+    assert shared["status"] == "closed"
+    assert shared["observed_metrics"][
+        "minimum_shared_added_reaction_count"
+    ] == 59
+    assert shared["observed_metrics"][
+        "removed_from_per_target_union_count"
+    ] == 6
+    assert shared["observed_metrics"][
+        "repaired_candidate_reaction_count"
+    ] == 7474
+    assert shared["observed_metrics"][
+        "strict_fastcc_blocked_reaction_count"
+    ] == 0
+    assert shared["observed_metrics"][
+        "reaction_activity_in_phh_established"
+    ] is False
+    optimality = entries["human_gem_fastcore_support_optimality"]
+    assert optimality["status"] == "closed"
+    assert optimality["observed_metrics"][
+        "minimum_support_set_count"
+    ] == 2
+    assert optimality["observed_metrics"][
+        "reactions_present_in_every_minimum_support_count"
+    ] == 58
+    assert optimality["observed_metrics"][
+        "optional_reaction_ids_in_input_order"
+    ] == ["MAR02308", "MAR10035"]
+    assert optimality["observed_metrics"][
+        "terminal_infeasibility_proven"
+    ] is True
     evidence = entries["human_gem_reaction_evidence_manifest"]
     assert evidence["status"] == "closed"
     assert evidence["observed_metrics"]["manifest_reaction_count"] == 4895

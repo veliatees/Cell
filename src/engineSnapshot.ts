@@ -1850,7 +1850,7 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v9";
+  version: "metabolic_constraint_shell_v10";
   status: string;
   role: string;
   candidate_reconstruction: {
@@ -2011,6 +2011,37 @@ export type EngineMetabolicConstraintShell = {
       per_target_minimum_cardinality_proven: true;
       union_strictly_flux_consistent: true;
       union_global_minimum_guaranteed: false;
+      reaction_activity_in_phh_established: false;
+      context_model_accepted: false;
+      fba_execution_allowed: false;
+    };
+    fastcore_shared_support: {
+      audit_report: string;
+      input_candidate_union_count: number;
+      target_blocker_count: number;
+      minimum_shared_added_reaction_count: number;
+      removed_from_per_target_union_count: number;
+      repaired_candidate_reaction_count: number;
+      strict_fastcc_blocked_reaction_count: number;
+      selected_reaction_without_gpr_count: number;
+      selected_reaction_zero_donor_gpr_count: number;
+      minimum_cardinality_within_65_reaction_union_proven: true;
+      selected_subset_strictly_flux_consistent: true;
+      global_minimum_over_all_omitted_reactions_guaranteed: false;
+      reaction_activity_in_phh_established: false;
+      context_model_accepted: false;
+      fba_execution_allowed: false;
+    };
+    fastcore_support_optimality: {
+      audit_report: string;
+      minimum_support_set_count: number;
+      minimum_support_identity_enumeration_complete: true;
+      reactions_present_in_every_minimum_support_count: number;
+      optional_reaction_count: number;
+      optional_reaction_ids_in_input_order: string[];
+      terminal_infeasibility_proven: true;
+      all_minimum_support_identities_enumerated: true;
+      global_minimum_over_all_omitted_reactions_guaranteed: false;
       reaction_activity_in_phh_established: false;
       context_model_accepted: false;
       fba_execution_allowed: false;

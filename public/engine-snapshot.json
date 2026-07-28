@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-26T20:08:06.133282+00:00",
+    "created_at_utc": "2026-07-26T21:29:25.632763+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -16418,6 +16418,67 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/quantitative/minimum_reaction_support.py",
+            "engine/cell_engine/quantitative/human_gem_phh_fastcore_shared_support.py",
+            "scripts/minimize_human_gem_phh_fastcore_shared_support.py",
+            "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_shared_support.json",
+            "engine/tests/test_minimum_reaction_support.py",
+            "engine/tests/test_human_gem_phh_fastcore_shared_support.py"
+          ],
+          "current_capability": "The per-target union contracts from 65 to a proven 59-reaction minimum inside that candidate pool. The resulting 7,474-reaction candidate is strict FASTCC consistent. Four selected additions lack a GPR and 55 have zero-of-seven donor GPR support, so this remains structural rather than a PHH activity model.",
+          "id": "human_gem_fastcore_minimum_shared_support",
+          "observed_metrics": {
+            "context_model_accepted": false,
+            "fba_execution_allowed": false,
+            "global_minimum_over_all_omitted_reactions_guaranteed": false,
+            "input_candidate_union_count": 65,
+            "minimum_cardinality_within_65_reaction_union_proven": true,
+            "minimum_shared_added_reaction_count": 59,
+            "reaction_activity_in_phh_established": false,
+            "removed_from_per_target_union_count": 6,
+            "repaired_candidate_reaction_count": 7474,
+            "selected_reaction_without_gpr_count": 4,
+            "selected_reaction_zero_donor_gpr_count": 55,
+            "strict_fastcc_blocked_reaction_count": 0,
+            "target_blocker_count": 17
+          },
+          "remaining_requirements": [],
+          "scope": "Zero-gap shared-identity MILP with an independent steady-state scenario per target, explicit per-scenario candidate direction thresholds, post-MILP LP certificates and strict FASTCC; exact only inside the committed 65-reaction repair union.",
+          "status": "closed",
+          "title": "Human-GEM minimum shared FASTCORE support"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/quantitative/human_gem_phh_fastcore_support_optimality.py",
+            "scripts/audit_human_gem_phh_fastcore_support_optimality.py",
+            "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_support_optimality.json",
+            "engine/tests/test_human_gem_phh_fastcore_support_optimality.py"
+          ],
+          "current_capability": "Exactly two minimum identity sets exist in the scoped pool. They share 58 reactions and differ only by MAR02308 versus MAR10035. A terminal infeasibility proof excludes a third 59-reaction set; larger nonminimum supports and the wider 4,226-reaction universe are outside this claim.",
+          "id": "human_gem_fastcore_support_optimality",
+          "observed_metrics": {
+            "all_minimum_support_identities_enumerated": true,
+            "context_model_accepted": false,
+            "fba_execution_allowed": false,
+            "global_minimum_over_all_omitted_reactions_guaranteed": false,
+            "minimum_support_identity_enumeration_complete": true,
+            "minimum_support_set_count": 2,
+            "optional_reaction_count": 2,
+            "optional_reaction_ids_in_input_order": [
+              "MAR02308",
+              "MAR10035"
+            ],
+            "reaction_activity_in_phh_established": false,
+            "reactions_present_in_every_minimum_support_count": 58,
+            "terminal_infeasibility_proven": true
+          },
+          "remaining_requirements": [],
+          "scope": "Exact no-good MILP enumeration at the proven 59-reaction cardinality inside the committed 65-reaction pool, with terminal infeasibility and strict FASTCC checks for every identity set.",
+          "status": "closed",
+          "title": "Human-GEM FASTCORE support optimum enumeration"
+        },
+        {
+          "code_surfaces": [
             "engine/cell_engine/quantitative/human_gem_phh_reaction_evidence_manifest.py",
             "scripts/build_human_gem_phh_reaction_evidence_manifest.py",
             "data/evidence_intake/human_gem_phh_reaction_evidence_manifest.v1.json",
@@ -16575,8 +16636,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 12,
-        "closed_count": 17,
-        "entry_count": 39,
+        "closed_count": 19,
+        "entry_count": 41,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
@@ -23070,7 +23131,7 @@
         "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
         "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
         "adaptive official LP-10 scaling selected 7,415 reactions but its raw output left 17 reactions blocked at the declared epsilon",
-        "a source-limited 65-reaction union repairs strict structural consistency to 7,480 of 7,480 reactions, but all 65 additions still lack sufficient PHH activity evidence",
+        "the 65-reaction per-target union was reduced to a proven 59-reaction minimum inside that pool; both minimum identity sets produce 7,474 of 7,474 strict-consistent reactions, but all additions still lack sufficient PHH activity evidence",
         "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
         "2,860 adaptive non-core support reactions require reaction-level PHH evidence; 2,177 lack a GPR annotation",
         "measured exchange bounds and explicit scale conversion are absent",
@@ -23106,6 +23167,40 @@
           "fixed_output_blocked_reaction_count": 408,
           "fixed_selected_reaction_count": 7320,
           "selected_jaccard": 0.940858798735511
+        },
+        "fastcore_shared_support": {
+          "audit_report": "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_shared_support.json",
+          "context_model_accepted": false,
+          "fba_execution_allowed": false,
+          "global_minimum_over_all_omitted_reactions_guaranteed": false,
+          "input_candidate_union_count": 65,
+          "minimum_cardinality_within_65_reaction_union_proven": true,
+          "minimum_shared_added_reaction_count": 59,
+          "reaction_activity_in_phh_established": false,
+          "removed_from_per_target_union_count": 6,
+          "repaired_candidate_reaction_count": 7474,
+          "selected_reaction_without_gpr_count": 4,
+          "selected_reaction_zero_donor_gpr_count": 55,
+          "selected_subset_strictly_flux_consistent": true,
+          "strict_fastcc_blocked_reaction_count": 0,
+          "target_blocker_count": 17
+        },
+        "fastcore_support_optimality": {
+          "all_minimum_support_identities_enumerated": true,
+          "audit_report": "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_support_optimality.json",
+          "context_model_accepted": false,
+          "fba_execution_allowed": false,
+          "global_minimum_over_all_omitted_reactions_guaranteed": false,
+          "minimum_support_identity_enumeration_complete": true,
+          "minimum_support_set_count": 2,
+          "optional_reaction_count": 2,
+          "optional_reaction_ids_in_input_order": [
+            "MAR02308",
+            "MAR10035"
+          ],
+          "reaction_activity_in_phh_established": false,
+          "reactions_present_in_every_minimum_support_count": 58,
+          "terminal_infeasibility_proven": true
         },
         "fastcore_support_repair": {
           "added_reaction_union_count": 65,
@@ -23375,8 +23470,8 @@
         "gapfill",
         "fast_gap_filling"
       ],
-      "status": "generic_human_gem_loaded_classified_native_objective_solved_seven_donor_stability_FASTCORE_scaling_and_source_limited_support_repair_audited_reaction_evidence_pending_PHH_execution_blocked",
-      "version": "metabolic_constraint_shell_v9"
+      "status": "generic_human_gem_loaded_classified_native_objective_solved_seven_donor_stability_FASTCORE_scaling_and_source_limited_support_repair_minimized_optima_enumerated_reaction_evidence_pending_PHH_execution_blocked",
+      "version": "metabolic_constraint_shell_v10"
     },
     "metabolic_fluxes": [
       {
@@ -41548,6 +41643,9 @@
         "human_gem_fastcore_scaling_sensitivity",
         "human_gem_fastcore_blocker_diagnostics",
         "human_gem_fastcore_source_limited_support_repair",
+        "minimum_shared_reaction_support_numerics",
+        "human_gem_fastcore_minimum_shared_support",
+        "human_gem_fastcore_support_optimality",
         "human_gem_phh_reaction_evidence_manifest",
         "phh_metabolic_execution_bundle_intake",
         "metabolic_constraint_shell",
@@ -42568,6 +42666,48 @@
           "status": "derived"
         },
         {
+          "action": "give every target an independent steady-state scenario; require every active candidate direction to reach epsilon; count a candidate identity once across scenarios; support exact cardinality caps and no-good cuts; independently LP-certify every rounded scenario",
+          "default_snapshot_role": "multi_target_shared_identity_milp_kernel",
+          "drives_scientific_validation": true,
+          "id": "minimum_shared_reaction_support_numerics",
+          "limitations": "Synthetic tests include shared, disjoint, reverse-only, positive-lower-bound, no-good and subthreshold-amplification cases. This is a structural solver kernel with no biological parameter, context, objective, flux magnitude or runtime authority.",
+          "source_ids": [
+            "gapfill",
+            "fast_gap_filling"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "minimize one shared candidate-identity set across all 17 blocker scenarios inside the committed 65-reaction union; preserve proven direction restrictions; require zero MIP gap, per-target LP certificates and strict FASTCC on the selected subset",
+          "default_snapshot_role": "exact_scoped_shared_support_and_biological_firewall",
+          "drives_scientific_validation": true,
+          "id": "human_gem_fastcore_minimum_shared_support",
+          "limitations": "A 59-reaction minimum reduces the candidate to 7,474 strict-consistent reactions. Four additions lack a GPR and 55 have zero-of-seven donor GPR support. The optimum is exact only inside the 65-reaction pool; wider-universe minimality, PHH activity, objective, exchange bounds and runtime authority remain absent.",
+          "source_ids": [
+            "human_hepatocyte_proteome_2016",
+            "human_gem_repository",
+            "fastcore",
+            "gapfill",
+            "fast_gap_filling"
+          ],
+          "status": "derived"
+        },
+        {
+          "action": "enumerate minimum shared-support identities with cumulative no-good cuts at the proven cardinality; strict-FASTCC certify every set and stop only on proven infeasibility",
+          "default_snapshot_role": "complete_scoped_minimum_identity_enumeration",
+          "drives_scientific_validation": true,
+          "id": "human_gem_fastcore_support_optimality",
+          "limitations": "Exactly two 59-reaction optima exist inside the 65-reaction pool. They share 58 reactions and differ by MAR02308 versus MAR10035. This proves minimum-set membership only in the scoped pool, not essentiality at larger support sizes or biological activity.",
+          "source_ids": [
+            "human_hepatocyte_proteome_2016",
+            "human_gem_repository",
+            "fastcore",
+            "gapfill",
+            "fast_gap_filling"
+          ],
+          "status": "derived"
+        },
+        {
           "action": "retain dependency-ordered reaction gap codes and exact requested result fields; use no synthetic priority score and permit no automatic bound, inclusion or exclusion change",
           "default_snapshot_role": "reaction_identity_level_research_intake",
           "drives_scientific_validation": true,
@@ -42590,11 +42730,11 @@
           "status": "derived"
         },
         {
-          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, seven-donor GPR stability, FASTCORE sensitivity, source-limited structural repair and reaction evidence manifest; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
+          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, seven-donor GPR stability, FASTCORE sensitivity, source-limited structural repair, exact scoped support minimization and reaction evidence manifest; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
           "default_snapshot_role": "pinned_reconstruction_and_genome_scale_activation_firewall",
           "drives_scientific_validation": true,
           "id": "metabolic_constraint_shell",
-          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective. A 65-reaction source-limited union repairs the adaptive candidate numerically, but all additions lack sufficient PHH activity evidence and the available total proteome does not establish active enzyme capacities. No PHH bundle or biological optimization runs.",
+          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective. The per-target 65-reaction repair union contracts to two fully enumerated 59-reaction optima, each yielding 7,474 strict-consistent reactions, but all additions lack sufficient PHH activity evidence and the available total proteome does not establish active enzyme capacities. No PHH bundle or biological optimization runs.",
           "source_ids": [
             "human1_metabolic_atlas",
             "human_gem_repository",
