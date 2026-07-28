@@ -138,6 +138,12 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     fastcore_support_repair = metabolic["candidate_reconstruction"][
         "fastcore_support_repair"
     ]
+    fastcore_shared_support = metabolic["candidate_reconstruction"][
+        "fastcore_shared_support"
+    ]
+    fastcore_support_optimality = metabolic[
+        "candidate_reconstruction"
+    ]["fastcore_support_optimality"]
     reaction_evidence_manifest = metabolic["candidate_reconstruction"][
         "reaction_evidence_manifest"
     ]
@@ -1414,6 +1420,146 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "human_gem_fastcore_minimum_shared_support",
+            "Human-GEM minimum shared FASTCORE support",
+            "closed",
+            "Zero-gap shared-identity MILP with an independent steady-state scenario per target, explicit per-scenario candidate direction thresholds, post-MILP LP certificates and strict FASTCC; exact only inside the committed 65-reaction repair union.",
+            "The per-target union contracts from 65 to a proven 59-reaction minimum inside that candidate pool. The resulting 7,474-reaction candidate is strict FASTCC consistent. Four selected additions lack a GPR and 55 have zero-of-seven donor GPR support, so this remains structural rather than a PHH activity model.",
+            {
+                "input_candidate_union_count": fastcore_shared_support[
+                    "input_candidate_union_count"
+                ],
+                "target_blocker_count": fastcore_shared_support[
+                    "target_blocker_count"
+                ],
+                "minimum_shared_added_reaction_count": (
+                    fastcore_shared_support[
+                        "minimum_shared_added_reaction_count"
+                    ]
+                ),
+                "removed_from_per_target_union_count": (
+                    fastcore_shared_support[
+                        "removed_from_per_target_union_count"
+                    ]
+                ),
+                "repaired_candidate_reaction_count": (
+                    fastcore_shared_support[
+                        "repaired_candidate_reaction_count"
+                    ]
+                ),
+                "strict_fastcc_blocked_reaction_count": (
+                    fastcore_shared_support[
+                        "strict_fastcc_blocked_reaction_count"
+                    ]
+                ),
+                "selected_reaction_without_gpr_count": (
+                    fastcore_shared_support[
+                        "selected_reaction_without_gpr_count"
+                    ]
+                ),
+                "selected_reaction_zero_donor_gpr_count": (
+                    fastcore_shared_support[
+                        "selected_reaction_zero_donor_gpr_count"
+                    ]
+                ),
+                "minimum_cardinality_within_65_reaction_union_proven": (
+                    fastcore_shared_support[
+                        "minimum_cardinality_within_65_reaction_union_proven"
+                    ]
+                ),
+                "global_minimum_over_all_omitted_reactions_guaranteed": (
+                    fastcore_shared_support[
+                        "global_minimum_over_all_omitted_reactions_guaranteed"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    fastcore_shared_support[
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": fastcore_shared_support[
+                    "context_model_accepted"
+                ],
+                "fba_execution_allowed": fastcore_shared_support[
+                    "fba_execution_allowed"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/minimum_reaction_support.py",
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_shared_support.py",
+                "scripts/minimize_human_gem_phh_fastcore_shared_support.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_shared_support.json",
+                "engine/tests/test_minimum_reaction_support.py",
+                "engine/tests/test_human_gem_phh_fastcore_shared_support.py",
+            ),
+        ),
+        _entry(
+            "human_gem_fastcore_support_optimality",
+            "Human-GEM FASTCORE support optimum enumeration",
+            "closed",
+            "Exact no-good MILP enumeration at the proven 59-reaction cardinality inside the committed 65-reaction pool, with terminal infeasibility and strict FASTCC checks for every identity set.",
+            "Exactly two minimum identity sets exist in the scoped pool. They share 58 reactions and differ only by MAR02308 versus MAR10035. A terminal infeasibility proof excludes a third 59-reaction set; larger nonminimum supports and the wider 4,226-reaction universe are outside this claim.",
+            {
+                "minimum_support_set_count": (
+                    fastcore_support_optimality[
+                        "minimum_support_set_count"
+                    ]
+                ),
+                "minimum_support_identity_enumeration_complete": (
+                    fastcore_support_optimality[
+                        "minimum_support_identity_enumeration_complete"
+                    ]
+                ),
+                "reactions_present_in_every_minimum_support_count": (
+                    fastcore_support_optimality[
+                        "reactions_present_in_every_minimum_support_count"
+                    ]
+                ),
+                "optional_reaction_count": fastcore_support_optimality[
+                    "optional_reaction_count"
+                ],
+                "optional_reaction_ids_in_input_order": (
+                    fastcore_support_optimality[
+                        "optional_reaction_ids_in_input_order"
+                    ]
+                ),
+                "terminal_infeasibility_proven": (
+                    fastcore_support_optimality[
+                        "terminal_infeasibility_proven"
+                    ]
+                ),
+                "all_minimum_support_identities_enumerated": (
+                    fastcore_support_optimality[
+                        "all_minimum_support_identities_enumerated"
+                    ]
+                ),
+                "global_minimum_over_all_omitted_reactions_guaranteed": (
+                    fastcore_support_optimality[
+                        "global_minimum_over_all_omitted_reactions_guaranteed"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    fastcore_support_optimality[
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": fastcore_support_optimality[
+                    "context_model_accepted"
+                ],
+                "fba_execution_allowed": fastcore_support_optimality[
+                    "fba_execution_allowed"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_support_optimality.py",
+                "scripts/audit_human_gem_phh_fastcore_support_optimality.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_support_optimality.json",
+                "engine/tests/test_human_gem_phh_fastcore_support_optimality.py",
+            ),
+        ),
+        _entry(
             "human_gem_reaction_evidence_manifest",
             "Human-GEM reaction evidence manifest",
             "closed",
@@ -2151,6 +2297,86 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or support_repair_metrics["fba_execution_allowed"] is not False
     ):
         raise ValueError("FASTCORE support repair escaped scope")
+    shared_support_metrics = by_id[
+        "human_gem_fastcore_minimum_shared_support"
+    ]["observed_metrics"]
+    if (
+        shared_support_metrics["input_candidate_union_count"] != 65
+        or shared_support_metrics["target_blocker_count"] != 17
+        or shared_support_metrics[
+            "minimum_shared_added_reaction_count"
+        ]
+        != 59
+        or shared_support_metrics[
+            "removed_from_per_target_union_count"
+        ]
+        != 6
+        or shared_support_metrics[
+            "repaired_candidate_reaction_count"
+        ]
+        != 7_474
+        or shared_support_metrics[
+            "strict_fastcc_blocked_reaction_count"
+        ]
+        != 0
+        or shared_support_metrics[
+            "selected_reaction_without_gpr_count"
+        ]
+        != 4
+        or shared_support_metrics[
+            "selected_reaction_zero_donor_gpr_count"
+        ]
+        != 55
+        or shared_support_metrics[
+            "minimum_cardinality_within_65_reaction_union_proven"
+        ]
+        is not True
+        or shared_support_metrics[
+            "global_minimum_over_all_omitted_reactions_guaranteed"
+        ]
+        is not False
+        or shared_support_metrics[
+            "reaction_activity_in_phh_established"
+        ]
+        is not False
+        or shared_support_metrics["context_model_accepted"] is not False
+        or shared_support_metrics["fba_execution_allowed"] is not False
+    ):
+        raise ValueError("FASTCORE shared support escaped scope")
+    optimality_metrics = by_id[
+        "human_gem_fastcore_support_optimality"
+    ]["observed_metrics"]
+    if (
+        optimality_metrics["minimum_support_set_count"] != 2
+        or optimality_metrics[
+            "minimum_support_identity_enumeration_complete"
+        ]
+        is not True
+        or optimality_metrics[
+            "reactions_present_in_every_minimum_support_count"
+        ]
+        != 58
+        or optimality_metrics["optional_reaction_count"] != 2
+        or optimality_metrics["optional_reaction_ids_in_input_order"]
+        != ["MAR02308", "MAR10035"]
+        or optimality_metrics["terminal_infeasibility_proven"]
+        is not True
+        or optimality_metrics[
+            "all_minimum_support_identities_enumerated"
+        ]
+        is not True
+        or optimality_metrics[
+            "global_minimum_over_all_omitted_reactions_guaranteed"
+        ]
+        is not False
+        or optimality_metrics[
+            "reaction_activity_in_phh_established"
+        ]
+        is not False
+        or optimality_metrics["context_model_accepted"] is not False
+        or optimality_metrics["fba_execution_allowed"] is not False
+    ):
+        raise ValueError("FASTCORE support optimality escaped scope")
     evidence_metrics = by_id[
         "human_gem_reaction_evidence_manifest"
     ]["observed_metrics"]

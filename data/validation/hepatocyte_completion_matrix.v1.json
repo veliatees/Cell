@@ -881,6 +881,67 @@
       ]
     },
     {
+      "id": "human_gem_fastcore_minimum_shared_support",
+      "title": "Human-GEM minimum shared FASTCORE support",
+      "status": "closed",
+      "scope": "Zero-gap shared-identity MILP with an independent steady-state scenario per target, explicit per-scenario candidate direction thresholds, post-MILP LP certificates and strict FASTCC; exact only inside the committed 65-reaction repair union.",
+      "current_capability": "The per-target union contracts from 65 to a proven 59-reaction minimum inside that candidate pool. The resulting 7,474-reaction candidate is strict FASTCC consistent. Four selected additions lack a GPR and 55 have zero-of-seven donor GPR support, so this remains structural rather than a PHH activity model.",
+      "observed_metrics": {
+        "input_candidate_union_count": 65,
+        "target_blocker_count": 17,
+        "minimum_shared_added_reaction_count": 59,
+        "removed_from_per_target_union_count": 6,
+        "repaired_candidate_reaction_count": 7474,
+        "strict_fastcc_blocked_reaction_count": 0,
+        "selected_reaction_without_gpr_count": 4,
+        "selected_reaction_zero_donor_gpr_count": 55,
+        "minimum_cardinality_within_65_reaction_union_proven": true,
+        "global_minimum_over_all_omitted_reactions_guaranteed": false,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/minimum_reaction_support.py",
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_shared_support.py",
+        "scripts/minimize_human_gem_phh_fastcore_shared_support.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_shared_support.json",
+        "engine/tests/test_minimum_reaction_support.py",
+        "engine/tests/test_human_gem_phh_fastcore_shared_support.py"
+      ]
+    },
+    {
+      "id": "human_gem_fastcore_support_optimality",
+      "title": "Human-GEM FASTCORE support optimum enumeration",
+      "status": "closed",
+      "scope": "Exact no-good MILP enumeration at the proven 59-reaction cardinality inside the committed 65-reaction pool, with terminal infeasibility and strict FASTCC checks for every identity set.",
+      "current_capability": "Exactly two minimum identity sets exist in the scoped pool. They share 58 reactions and differ only by MAR02308 versus MAR10035. A terminal infeasibility proof excludes a third 59-reaction set; larger nonminimum supports and the wider 4,226-reaction universe are outside this claim.",
+      "observed_metrics": {
+        "minimum_support_set_count": 2,
+        "minimum_support_identity_enumeration_complete": true,
+        "reactions_present_in_every_minimum_support_count": 58,
+        "optional_reaction_count": 2,
+        "optional_reaction_ids_in_input_order": [
+          "MAR02308",
+          "MAR10035"
+        ],
+        "terminal_infeasibility_proven": true,
+        "all_minimum_support_identities_enumerated": true,
+        "global_minimum_over_all_omitted_reactions_guaranteed": false,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_support_optimality.py",
+        "scripts/audit_human_gem_phh_fastcore_support_optimality.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_support_optimality.json",
+        "engine/tests/test_human_gem_phh_fastcore_support_optimality.py"
+      ]
+    },
+    {
       "id": "human_gem_reaction_evidence_manifest",
       "title": "Human-GEM reaction evidence manifest",
       "status": "closed",
@@ -1028,8 +1089,8 @@
     }
   ],
   "summary": {
-    "entry_count": 39,
-    "closed_count": 17,
+    "entry_count": 41,
+    "closed_count": 19,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,
