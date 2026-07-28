@@ -9,6 +9,9 @@ from __future__ import annotations
 from collections import Counter
 from typing import Literal
 
+from cell_engine.core.runtime_authority import (
+    whole_cell_runtime_authority_snapshot,
+)
 from cell_engine.ml.generative import generative_donor_manifest_intake_snapshot
 from cell_engine.processes.cellular_memory import cellular_memory_contract_snapshot
 from cell_engine.quantitative.active_protein_localization import (
@@ -93,6 +96,8 @@ def _entry(
 
 
 def build_hepatocyte_completion_matrix() -> dict[str, object]:
+    runtime_authority = whole_cell_runtime_authority_snapshot()
+    runtime_authority_summary = runtime_authority["summary"]
     cytosol = cytosol_transport_snapshot()
     cytosol_summary = cytosol["summary"]
     capability = hepatocyte_capability_atlas_snapshot()["summary"]
@@ -165,6 +170,41 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     donor_generative = generative_donor_manifest_intake_snapshot()
 
     entries = (
+        _entry(
+            "whole_cell_runtime_authority_firewall",
+            "Whole-cell runtime authority firewall",
+            "closed",
+            "Code-level prevention of legacy relative-pool dynamics being used for quantitative validation, prediction or authoritative PHH state coupling.",
+            "Every public whole-cell step and run requires an explicit purpose. Schematic visualization and exploratory execution remain available; all three scientific-authority purposes fail closed.",
+            {
+                "explicit_purpose_guard_count": int(
+                    bool(runtime_authority["explicit_purpose_required"])
+                ),
+                "audited_legacy_surface_count": runtime_authority_summary[
+                    "audited_legacy_surface_count"
+                ],
+                "phh_context_matched_surface_count": runtime_authority_summary[
+                    "phh_context_matched_surface_count"
+                ],
+                "quantitative_authority_surface_count": runtime_authority_summary[
+                    "quantitative_authority_surface_count"
+                ],
+                "predictive_authority_surface_count": runtime_authority_summary[
+                    "predictive_authority_surface_count"
+                ],
+                "authoritative_state_coupling_surface_count": (
+                    runtime_authority_summary[
+                        "authoritative_state_coupling_surface_count"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/core/runtime_authority.py",
+                "engine/cell_engine/core/engine.py",
+                "engine/tests/test_runtime_authority.py",
+            ),
+        ),
         _entry(
             "dimensionless_cytosol_numerics",
             "Dimensionless cytosol transport numerics",
@@ -664,13 +704,28 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Compartmental energy and redox quantitation",
             "partial",
             "ATP/ADP/AMP, NAD(H), NADP(H), glutathione, ROS, oxygen and electrochemical states across six compartments.",
-            "Pool identities and 14 process topologies are explicit. A versioned 47-column donor-resolved PHH trajectory intake now enforces exact pool/molecule/compartment mapping, validated targeting, same-assay calibration, oxygen/nutrient context and sealed donor/study-disjoint held-out data; aggregate observations and absent trajectories cannot initialize a compartment or rate.",
+            "Pool identities and 14 process topologies are explicit. A versioned 47-column donor-resolved PHH trajectory intake enforces exact pool/molecule/compartment mapping, validated targeting, same-assay calibration, oxygen/nutrient context and sealed donor/study-disjoint held-out data. Six legacy conflicts remain visible, but an explicit-purpose firewall gives them zero quantitative, predictive or authoritative state-coupling permission.",
             {
                 "compartment_count": energy["compartment_count"],
                 "pool_count": energy["explicit_pool_count"],
                 "initialized_pool_count": energy["initialized_compartment_pool_count"],
                 "executable_process_count": energy["executable_process_count"],
-                "runtime_conflict_count": energy["detected_runtime_conflict_count"],
+                "detected_legacy_runtime_conflict_count": energy[
+                    "detected_runtime_conflict_count"
+                ],
+                "legacy_runtime_quantitative_authority_violation_count": (
+                    runtime_authority_summary[
+                        "quantitative_authority_surface_count"
+                    ]
+                ),
+                "legacy_runtime_predictive_authority_violation_count": (
+                    runtime_authority_summary["predictive_authority_surface_count"]
+                ),
+                "legacy_runtime_authoritative_coupling_violation_count": (
+                    runtime_authority_summary[
+                        "authoritative_state_coupling_surface_count"
+                    ]
+                ),
                 "trajectory_intake_contract_count": 1,
                 "delivered_trajectory_record_count": energy_trajectory_intake[
                     "record_count"
@@ -688,11 +743,12 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             (
                 "Compartment-resolved healthy-PHH initial states.",
                 "Matched oxygen/redox/adenylate trajectories and flux-identifying perturbations.",
-                "Resolution of legacy aggregate runtime pools.",
+                "Replacement of quarantined aggregate pools by a validated compartment state.",
             ),
             (
                 "engine/cell_engine/quantitative/compartmental_energy_redox.py",
                 "engine/cell_engine/validation/energy_redox_gate.py",
+                "engine/cell_engine/core/runtime_authority.py",
                 "engine/cell_engine/quantitative/energy_redox_trajectory.py",
                 "data/evidence_intake/phh_energy_redox_trajectory_contract.v1.json",
             ),
@@ -2274,6 +2330,21 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         raise ValueError("completion matrix may not invent a biological accuracy percentage")
 
     by_id = {str(entry["id"]): entry for entry in entries}
+    runtime_authority_metrics = by_id["whole_cell_runtime_authority_firewall"][
+        "observed_metrics"
+    ]
+    if (
+        runtime_authority_metrics["explicit_purpose_guard_count"] != 1
+        or runtime_authority_metrics["audited_legacy_surface_count"] != 4
+        or runtime_authority_metrics["phh_context_matched_surface_count"] != 0
+        or runtime_authority_metrics["quantitative_authority_surface_count"] != 0
+        or runtime_authority_metrics["predictive_authority_surface_count"] != 0
+        or runtime_authority_metrics[
+            "authoritative_state_coupling_surface_count"
+        ]
+        != 0
+    ):
+        raise ValueError("whole-cell runtime escaped its authority firewall")
     if by_id["quantitative_reaction_core"]["observed_metrics"]["filled_evidence_slot_count"] != 0:
         raise ValueError("reaction evidence was promoted without review")
     if by_id["healthy_phh_cytosol_parameters"]["observed_metrics"]["filled_parameter_count"] != 0:
@@ -2304,6 +2375,18 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or energy_intake_metrics["structurally_complete_trajectory_count"] != 0
         or energy_intake_metrics["calibration_and_heldout_complete_pool_count"] != 0
         or energy_intake_metrics["trajectory_initialized_pool_count"] != 0
+        or energy_intake_metrics[
+            "legacy_runtime_quantitative_authority_violation_count"
+        ]
+        != 0
+        or energy_intake_metrics[
+            "legacy_runtime_predictive_authority_violation_count"
+        ]
+        != 0
+        or energy_intake_metrics[
+            "legacy_runtime_authoritative_coupling_violation_count"
+        ]
+        != 0
     ):
         raise ValueError("energy/redox trajectory intake escaped into state authority")
     receptor_metrics = by_id["receptor_signaling_kinetics"]["observed_metrics"]
