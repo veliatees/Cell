@@ -518,6 +518,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 149: Human-GEM support optimum enumeration v1](docs/milestones/149-human-gem-support-optimum-enumeration-v1.md)
 - [Milestone 150: Human-GEM global support cardinality v1](docs/milestones/150-human-gem-global-support-cardinality-v1.md)
 - [Milestone 151: Human-GEM global support counterexample v1](docs/milestones/151-human-gem-global-support-counterexample-v1.md)
+- [Milestone 152: Human-GEM fixed-core completion enumeration v1](docs/milestones/152-human-gem-fixed-core-completion-enumeration-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
