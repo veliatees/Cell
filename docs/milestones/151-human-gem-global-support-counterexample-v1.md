@@ -55,9 +55,10 @@ result and scientific boundary.
 
 ## Scientific Boundary
 
-This is a counterexample to global identity uniqueness, not a complete global
-enumeration. Milestone 152 subsequently proves that the three known
-single-reaction completions are exhaustive when their shared 58-reaction core
-is fixed; optima replacing multiple core identities remain unexcluded. No
-active enzyme abundance, measured exchange bound, biological objective,
+This is a counterexample to global identity uniqueness, not by itself a
+complete global enumeration. Milestone 152 subsequently proves that the three
+known single-reaction completions are exhaustive when their shared
+58-reaction core is fixed. Milestone 153 then excludes every minimum set that
+breaks that common core, completing the global minimum identity enumeration.
+No active enzyme abundance, measured exchange bound, biological objective,
 healthy-PHH context, FBA execution or runtime flux coupling is authorized.

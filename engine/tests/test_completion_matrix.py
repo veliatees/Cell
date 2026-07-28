@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 44
-    assert summary["closed_count"] == 22
+    assert summary["entry_count"] == 45
+    assert summary["closed_count"] == 23
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -332,6 +332,37 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
         "multi_replacement_global_optima_excluded"
     ] is False
     assert fixed_core_completion["observed_metrics"][
+        "reaction_activity_in_phh_established"
+    ] is False
+    global_identity = entries[
+        "human_gem_fastcore_global_support_identity_completeness"
+    ]
+    assert global_identity["status"] == "closed"
+    assert global_identity["observed_metrics"][
+        "global_minimum_added_reaction_count"
+    ] == 59
+    assert global_identity["observed_metrics"][
+        "global_minimum_support_set_count"
+    ] == 3
+    assert global_identity["observed_metrics"][
+        "global_minimum_support_identity_enumeration_complete"
+    ] is True
+    assert global_identity["observed_metrics"][
+        "global_universal_minimum_support_reaction_count"
+    ] == 58
+    assert global_identity["observed_metrics"][
+        "global_optional_minimum_support_reaction_ids_in_model_order"
+    ] == ["MAR00494", "MAR02308", "MAR10035"]
+    assert global_identity["observed_metrics"][
+        "multi_replacement_global_optima_excluded"
+    ] is True
+    assert global_identity["observed_metrics"][
+        "additional_global_minimum_identity_search_required"
+    ] is False
+    assert global_identity["observed_metrics"][
+        "structural_essentiality_at_larger_support_sizes_established"
+    ] is False
+    assert global_identity["observed_metrics"][
         "reaction_activity_in_phh_established"
     ] is False
     evidence = entries["human_gem_reaction_evidence_manifest"]
