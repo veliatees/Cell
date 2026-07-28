@@ -38,6 +38,12 @@ from cell_engine.quantitative.human_gem_phh_fastcore_blocker_diagnostics import 
 from cell_engine.quantitative.human_gem_phh_fastcore_support_repair import (
     load_committed_human_gem_phh_fastcore_support_repair,
 )
+from cell_engine.quantitative.human_gem_phh_fastcore_shared_support import (
+    load_committed_human_gem_phh_fastcore_shared_support,
+)
+from cell_engine.quantitative.human_gem_phh_fastcore_support_optimality import (
+    load_committed_human_gem_phh_fastcore_support_optimality,
+)
 from cell_engine.quantitative.human_gem_phh_donor_stability import (
     load_committed_human_gem_phh_donor_stability_audit,
 )
@@ -54,7 +60,7 @@ from cell_engine.quantitative.phh_metabolic_execution_bundle import (
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "metabolic_constraint_shell_v9"
+VERSION = "metabolic_constraint_shell_v10"
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
@@ -158,6 +164,12 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
     support_repair = (
         load_committed_human_gem_phh_fastcore_support_repair()
     )
+    shared_support = (
+        load_committed_human_gem_phh_fastcore_shared_support()
+    )
+    support_optimality = (
+        load_committed_human_gem_phh_fastcore_support_optimality()
+    )
     scope = manifest["scientific_scope"]
     verification = manifest["verification"]
     counts = manifest["structural_counts_verified_from_sbml"]
@@ -175,7 +187,8 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
         "status": (
             "generic_human_gem_loaded_classified_native_objective_solved_"
             "seven_donor_stability_FASTCORE_scaling_and_source_limited_"
-            "support_repair_audited_reaction_evidence_pending_"
+            "support_repair_minimized_optima_enumerated_"
+            "reaction_evidence_pending_"
             "PHH_execution_blocked"
         ),
         "role": (
@@ -570,6 +583,109 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
                     "scientific_boundary"
                 ]["fba_execution_allowed"],
             },
+            "fastcore_shared_support": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_"
+                    "fastcore_shared_support.json"
+                ),
+                "input_candidate_union_count": shared_support["summary"][
+                    "input_candidate_union_count"
+                ],
+                "target_blocker_count": shared_support["summary"][
+                    "target_blocker_count"
+                ],
+                "minimum_shared_added_reaction_count": shared_support[
+                    "summary"
+                ]["minimum_shared_added_reaction_count"],
+                "removed_from_per_target_union_count": shared_support[
+                    "summary"
+                ]["removed_from_per_target_union_count"],
+                "repaired_candidate_reaction_count": shared_support[
+                    "summary"
+                ]["repaired_candidate_reaction_count"],
+                "strict_fastcc_blocked_reaction_count": shared_support[
+                    "summary"
+                ]["strict_fastcc_blocked_reaction_count"],
+                "selected_reaction_without_gpr_count": shared_support[
+                    "summary"
+                ]["selected_reaction_without_gpr_count"],
+                "selected_reaction_zero_donor_gpr_count": shared_support[
+                    "summary"
+                ]["selected_reaction_zero_donor_gpr_count"],
+                "minimum_cardinality_within_65_reaction_union_proven": (
+                    shared_support["scientific_boundary"][
+                        "minimum_cardinality_within_65_reaction_union_proven"
+                    ]
+                ),
+                "selected_subset_strictly_flux_consistent": (
+                    shared_support["scientific_boundary"][
+                        "selected_subset_strictly_flux_consistent"
+                    ]
+                ),
+                "global_minimum_over_all_omitted_reactions_guaranteed": (
+                    shared_support["scientific_boundary"][
+                        "global_minimum_over_all_omitted_reactions_guaranteed"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": shared_support[
+                    "scientific_boundary"
+                ]["reaction_activity_in_phh_established"],
+                "context_model_accepted": shared_support[
+                    "scientific_boundary"
+                ]["context_model_accepted"],
+                "fba_execution_allowed": shared_support[
+                    "scientific_boundary"
+                ]["fba_execution_allowed"],
+            },
+            "fastcore_support_optimality": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_"
+                    "fastcore_support_optimality.json"
+                ),
+                "minimum_support_set_count": support_optimality["summary"][
+                    "minimum_support_set_count"
+                ],
+                "minimum_support_identity_enumeration_complete": (
+                    support_optimality["summary"][
+                        "minimum_support_identity_enumeration_complete"
+                    ]
+                ),
+                "reactions_present_in_every_minimum_support_count": (
+                    support_optimality["summary"][
+                        "reactions_proven_present_in_every_minimum_support_count"
+                    ]
+                ),
+                "optional_reaction_count": support_optimality["summary"][
+                    "minimum_support_optional_reaction_count"
+                ],
+                "optional_reaction_ids_in_input_order": support_optimality[
+                    "summary"
+                ]["minimum_support_optional_reaction_ids_in_input_order"],
+                "terminal_infeasibility_proven": support_optimality[
+                    "summary"
+                ]["enumeration_terminal_infeasibility_proven"],
+                "all_minimum_support_identities_enumerated": (
+                    support_optimality["scientific_boundary"][
+                        "all_minimum_support_identities_enumerated_within_65_pool"
+                    ]
+                ),
+                "global_minimum_over_all_omitted_reactions_guaranteed": (
+                    support_optimality["scientific_boundary"][
+                        "global_minimum_over_all_omitted_reactions_guaranteed"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": support_optimality[
+                    "scientific_boundary"
+                ]["reaction_activity_in_phh_established"],
+                "context_model_accepted": support_optimality[
+                    "scientific_boundary"
+                ]["context_model_accepted"],
+                "fba_execution_allowed": support_optimality[
+                    "scientific_boundary"
+                ]["fba_execution_allowed"],
+            },
             "reaction_evidence_manifest": {
                 "manifest_path": (
                     "data/evidence_intake/"
@@ -645,7 +761,7 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
             "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
             "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
             "adaptive official LP-10 scaling selected 7,415 reactions but its raw output left 17 reactions blocked at the declared epsilon",
-            "a source-limited 65-reaction union repairs strict structural consistency to 7,480 of 7,480 reactions, but all 65 additions still lack sufficient PHH activity evidence",
+            "the 65-reaction per-target union was reduced to a proven 59-reaction minimum inside that pool; both minimum identity sets produce 7,474 of 7,474 strict-consistent reactions, but all additions still lack sufficient PHH activity evidence",
             "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
             "2,860 adaptive non-core support reactions require reaction-level PHH evidence; 2,177 lack a GPR annotation",
             "measured exchange bounds and explicit scale conversion are absent",
@@ -887,6 +1003,76 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
         or support_repair.get("fba_execution_allowed") is not False
     ):
         raise ValueError("PHH FASTCORE support-repair audit changed")
+    shared_support = reconstruction.get("fastcore_shared_support")
+    if not isinstance(shared_support, dict) or (
+        shared_support.get("input_candidate_union_count") != 65
+        or shared_support.get("target_blocker_count") != 17
+        or shared_support.get("minimum_shared_added_reaction_count")
+        != 59
+        or shared_support.get("removed_from_per_target_union_count")
+        != 6
+        or shared_support.get("repaired_candidate_reaction_count")
+        != 7_474
+        or shared_support.get("strict_fastcc_blocked_reaction_count")
+        != 0
+        or shared_support.get("selected_reaction_without_gpr_count")
+        != 4
+        or shared_support.get("selected_reaction_zero_donor_gpr_count")
+        != 55
+        or shared_support.get(
+            "minimum_cardinality_within_65_reaction_union_proven"
+        )
+        is not True
+        or shared_support.get(
+            "selected_subset_strictly_flux_consistent"
+        )
+        is not True
+        or shared_support.get(
+            "global_minimum_over_all_omitted_reactions_guaranteed"
+        )
+        is not False
+        or shared_support.get("reaction_activity_in_phh_established")
+        is not False
+        or shared_support.get("context_model_accepted") is not False
+        or shared_support.get("fba_execution_allowed") is not False
+    ):
+        raise ValueError("PHH FASTCORE shared-support audit changed")
+    support_optimality = reconstruction.get(
+        "fastcore_support_optimality"
+    )
+    if not isinstance(support_optimality, dict) or (
+        support_optimality.get("minimum_support_set_count") != 2
+        or support_optimality.get(
+            "minimum_support_identity_enumeration_complete"
+        )
+        is not True
+        or support_optimality.get(
+            "reactions_present_in_every_minimum_support_count"
+        )
+        != 58
+        or support_optimality.get("optional_reaction_count") != 2
+        or support_optimality.get(
+            "optional_reaction_ids_in_input_order"
+        )
+        != ["MAR02308", "MAR10035"]
+        or support_optimality.get("terminal_infeasibility_proven")
+        is not True
+        or support_optimality.get(
+            "all_minimum_support_identities_enumerated"
+        )
+        is not True
+        or support_optimality.get(
+            "global_minimum_over_all_omitted_reactions_guaranteed"
+        )
+        is not False
+        or support_optimality.get(
+            "reaction_activity_in_phh_established"
+        )
+        is not False
+        or support_optimality.get("context_model_accepted") is not False
+        or support_optimality.get("fba_execution_allowed") is not False
+    ):
+        raise ValueError("PHH FASTCORE support-optimality audit changed")
     evidence_manifest = reconstruction.get("reaction_evidence_manifest")
     if not isinstance(evidence_manifest, dict) or (
         evidence_manifest.get("manifest_reaction_count") != 4_895
