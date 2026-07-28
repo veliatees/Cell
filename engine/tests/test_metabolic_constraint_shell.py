@@ -9,7 +9,7 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_context() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     validate_metabolic_constraint_shell(snapshot)
-    assert snapshot["version"] == "metabolic_constraint_shell_v11"
+    assert snapshot["version"] == "metabolic_constraint_shell_v12"
     reconstruction = snapshot["candidate_reconstruction"]
     assert reconstruction["model_version"] == "2.0.0"
     assert reconstruction["release_tag"] == "v2.0.0"
@@ -152,6 +152,41 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     assert global_optimality["reaction_activity_in_phh_established"] is False
     assert global_optimality["context_model_accepted"] is False
     assert global_optimality["fba_execution_allowed"] is False
+    global_counterexample = reconstruction[
+        "fastcore_global_support_counterexample"
+    ]
+    assert global_counterexample["global_candidate_reaction_count"] == 4226
+    assert global_counterexample["global_minimum_cardinality"] == 59
+    assert (
+        global_counterexample[
+            "known_distinct_global_minimum_support_set_count_lower_bound"
+        ]
+        == 3
+    )
+    assert global_counterexample["presolve_infeasibility_disagreed"] is True
+    assert global_counterexample["solver_attempt_count"] == 2
+    assert global_counterexample["accepted_solve_used_presolve"] is False
+    assert global_counterexample[
+        "counterexample_only_reaction_ids_in_input_order"
+    ] == ["MAR00494"]
+    assert global_counterexample[
+        "outside_scoped_pool_reaction_ids_in_input_order"
+    ] == ["MAR00494"]
+    assert global_counterexample["all_target_lp_certificate_count"] == 17
+    assert global_counterexample[
+        "strict_fastcc_blocked_reaction_count"
+    ] == 0
+    assert (
+        global_counterexample[
+            "global_minimum_identity_enumeration_complete"
+        ]
+        is False
+    )
+    assert global_counterexample["global_minimum_support_set_unique"] is False
+    assert global_counterexample[
+        "additional_global_minimum_search_required"
+    ] is True
+    assert global_counterexample["reaction_activity_in_phh_established"] is False
     evidence = reconstruction["reaction_evidence_manifest"]
     assert evidence["manifest_reaction_count"] == 4895
     assert evidence["adaptive_fastcore_noncore_reaction_count"] == 2860
@@ -186,8 +221,8 @@ def test_exact_release_pin_removed_only_the_artifact_identity_blocker() -> None:
     assert any("context specificity was not established" in item for item in blockers)
     assert any("raw output left 17 reactions blocked" in item for item in blockers)
     assert any(
-        "proving global cardinality" in item
-        and "global minimum identity sets remain unenumerated" in item
+        "at least three distinct all-target identity sets" in item
+        and "complete global identity enumeration" in item
         for item in blockers
     )
     assert any("independent flux validation" in item for item in blockers)

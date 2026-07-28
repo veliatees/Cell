@@ -24,6 +24,14 @@ def test_committed_optimality_audit_resolves_only_the_scoped_question() -> None:
     assert summary["minimum_support_identity_enumeration_complete"] is True
     assert summary["no_good_milp_solve_count"] == 2
     assert summary["enumeration_terminal_infeasibility_proven"] is True
+    assert summary["enumeration_terminal_solver_attempt_count"] == 2
+    assert summary["enumeration_terminal_presolve"] is False
+    assert (
+        summary[
+            "enumeration_terminal_infeasibility_confirmed_without_presolve"
+        ]
+        is True
+    )
     assert (
         summary[
             "reactions_proven_present_in_every_minimum_support_count"

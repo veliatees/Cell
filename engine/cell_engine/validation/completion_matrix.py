@@ -147,6 +147,9 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     fastcore_global_support_optimality = metabolic[
         "candidate_reconstruction"
     ]["fastcore_global_support_optimality"]
+    fastcore_global_support_counterexample = metabolic[
+        "candidate_reconstruction"
+    ]["fastcore_global_support_counterexample"]
     reaction_evidence_manifest = metabolic["candidate_reconstruction"][
         "reaction_evidence_manifest"
     ]
@@ -1650,6 +1653,129 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "human_gem_fastcore_global_support_counterexample",
+            "Human-GEM global FASTCORE support counterexample",
+            "closed",
+            "Presolve-cross-checked no-good MILP search over all 4,226 omitted reactions, followed by all-17-target LP certificates and strict FASTCC validation for one identity outside the scoped 65-reaction pool.",
+            "At least three distinct globally minimum 59-reaction support sets are now certified. The new set replaces MAR10035 with MAR00494 outside the scoped pool, proving global non-uniqueness. Complete global identity enumeration, universal reaction membership, PHH activity and runtime authority remain open.",
+            {
+                "global_candidate_reaction_count": (
+                    fastcore_global_support_counterexample[
+                        "global_candidate_reaction_count"
+                    ]
+                ),
+                "global_minimum_cardinality": (
+                    fastcore_global_support_counterexample[
+                        "global_minimum_cardinality"
+                    ]
+                ),
+                "known_distinct_global_minimum_support_set_count_lower_bound": (
+                    fastcore_global_support_counterexample[
+                        "known_distinct_global_minimum_support_set_count_lower_bound"
+                    ]
+                ),
+                "presolve_infeasibility_disagreed": (
+                    fastcore_global_support_counterexample[
+                        "presolve_infeasibility_disagreed"
+                    ]
+                ),
+                "solver_attempt_count": (
+                    fastcore_global_support_counterexample[
+                        "solver_attempt_count"
+                    ]
+                ),
+                "accepted_solve_used_presolve": (
+                    fastcore_global_support_counterexample[
+                        "accepted_solve_used_presolve"
+                    ]
+                ),
+                "counterexample_added_reaction_count": (
+                    fastcore_global_support_counterexample[
+                        "counterexample_added_reaction_count"
+                    ]
+                ),
+                "primary_overlap_count": (
+                    fastcore_global_support_counterexample[
+                        "primary_overlap_count"
+                    ]
+                ),
+                "primary_only_reaction_ids_in_input_order": (
+                    fastcore_global_support_counterexample[
+                        "primary_only_reaction_ids_in_input_order"
+                    ]
+                ),
+                "counterexample_only_reaction_ids_in_input_order": (
+                    fastcore_global_support_counterexample[
+                        "counterexample_only_reaction_ids_in_input_order"
+                    ]
+                ),
+                "outside_scoped_pool_reaction_ids_in_input_order": (
+                    fastcore_global_support_counterexample[
+                        "outside_scoped_pool_reaction_ids_in_input_order"
+                    ]
+                ),
+                "all_target_lp_certificate_count": (
+                    fastcore_global_support_counterexample[
+                        "all_target_lp_certificate_count"
+                    ]
+                ),
+                "strict_fastcc_consistent_reaction_count": (
+                    fastcore_global_support_counterexample[
+                        "strict_fastcc_consistent_reaction_count"
+                    ]
+                ),
+                "strict_fastcc_blocked_reaction_count": (
+                    fastcore_global_support_counterexample[
+                        "strict_fastcc_blocked_reaction_count"
+                    ]
+                ),
+                "global_minimum_identity_enumeration_complete": (
+                    fastcore_global_support_counterexample[
+                        "global_minimum_identity_enumeration_complete"
+                    ]
+                ),
+                "global_minimum_support_set_unique": (
+                    fastcore_global_support_counterexample[
+                        "global_minimum_support_set_unique"
+                    ]
+                ),
+                "global_universal_reaction_membership_established": (
+                    fastcore_global_support_counterexample[
+                        "global_universal_reaction_membership_established"
+                    ]
+                ),
+                "additional_global_minimum_search_required": (
+                    fastcore_global_support_counterexample[
+                        "additional_global_minimum_search_required"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    fastcore_global_support_counterexample[
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": (
+                    fastcore_global_support_counterexample[
+                        "context_model_accepted"
+                    ]
+                ),
+                "fba_execution_allowed": (
+                    fastcore_global_support_counterexample[
+                        "fba_execution_allowed"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/minimum_reaction_support.py",
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_counterexample.py",
+                "scripts/audit_human_gem_phh_fastcore_global_support_counterexample.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_counterexample.json",
+                "engine/tests/test_minimum_reaction_support.py",
+                "engine/tests/test_human_gem_phh_fastcore_global_support_counterexample.py",
+            ),
+        ),
+        _entry(
             "human_gem_reaction_evidence_manifest",
             "Human-GEM reaction evidence manifest",
             "closed",
@@ -2515,6 +2641,85 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or global_support_metrics["fba_execution_allowed"] is not False
     ):
         raise ValueError("FASTCORE global support cardinality escaped scope")
+    global_counterexample_metrics = by_id[
+        "human_gem_fastcore_global_support_counterexample"
+    ]["observed_metrics"]
+    if (
+        global_counterexample_metrics[
+            "global_candidate_reaction_count"
+        ]
+        != 4_226
+        or global_counterexample_metrics["global_minimum_cardinality"] != 59
+        or global_counterexample_metrics[
+            "known_distinct_global_minimum_support_set_count_lower_bound"
+        ]
+        != 3
+        or global_counterexample_metrics[
+            "presolve_infeasibility_disagreed"
+        ]
+        is not True
+        or global_counterexample_metrics["solver_attempt_count"] != 2
+        or global_counterexample_metrics[
+            "accepted_solve_used_presolve"
+        ]
+        is not False
+        or global_counterexample_metrics[
+            "counterexample_added_reaction_count"
+        ]
+        != 59
+        or global_counterexample_metrics["primary_overlap_count"] != 58
+        or global_counterexample_metrics[
+            "primary_only_reaction_ids_in_input_order"
+        ]
+        != ["MAR10035"]
+        or global_counterexample_metrics[
+            "counterexample_only_reaction_ids_in_input_order"
+        ]
+        != ["MAR00494"]
+        or global_counterexample_metrics[
+            "outside_scoped_pool_reaction_ids_in_input_order"
+        ]
+        != ["MAR00494"]
+        or global_counterexample_metrics[
+            "all_target_lp_certificate_count"
+        ]
+        != 17
+        or global_counterexample_metrics[
+            "strict_fastcc_consistent_reaction_count"
+        ]
+        != 7_474
+        or global_counterexample_metrics[
+            "strict_fastcc_blocked_reaction_count"
+        ]
+        != 0
+        or global_counterexample_metrics[
+            "global_minimum_identity_enumeration_complete"
+        ]
+        is not False
+        or global_counterexample_metrics[
+            "global_minimum_support_set_unique"
+        ]
+        is not False
+        or global_counterexample_metrics[
+            "global_universal_reaction_membership_established"
+        ]
+        is not False
+        or global_counterexample_metrics[
+            "additional_global_minimum_search_required"
+        ]
+        is not True
+        or global_counterexample_metrics[
+            "reaction_activity_in_phh_established"
+        ]
+        is not False
+        or global_counterexample_metrics["context_model_accepted"]
+        is not False
+        or global_counterexample_metrics["fba_execution_allowed"]
+        is not False
+    ):
+        raise ValueError(
+            "FASTCORE global support counterexample escaped scope"
+        )
     evidence_metrics = by_id[
         "human_gem_reaction_evidence_manifest"
     ]["observed_metrics"]

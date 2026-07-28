@@ -4146,25 +4146,29 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
     : "";
   const metabolicSupportRepairRow = metabolicConstraint
     ? `<div class="phh-profile phh-profile--mechanics-execution">
-        <div class="phh-profile__head"><b>PHH structural support audit v4</b><span>global cardinality · scoped identity enumeration · strict FASTCC</span></div>
+        <div class="phh-profile__head"><b>PHH structural support audit v5</b><span>global cardinality · alternate identities · strict FASTCC</span></div>
         <div class="phh-profile__grid">
           <span>Raw adaptive selected / blocked <b>${metabolicConstraint.candidate_reconstruction.fastcore_scaling_comparison.adaptive_selected_reaction_count.toLocaleString()} / ${metabolicConstraint.candidate_reconstruction.fastcore_scaling_comparison.adaptive_output_blocked_reaction_count}</b></span>
           <span>Global omitted candidate universe <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.global_candidate_reaction_count.toLocaleString()}</b></span>
           <span>Global lower-bound targets <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.lower_bound_target_ids_in_input_order.join(" / ")}</b></span>
           <span>Global lower / upper bound <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.lower_bound_exact_minimum_added_reaction_count} / ${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.upper_bound_feasible_added_reaction_count}</b></span>
           <span>Global minimum additions <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.global_minimum_added_reaction_count}</b></span>
+          <span>Known global minimum sets <b>&ge;${metabolicConstraint.candidate_reconstruction.fastcore_global_support_counterexample.known_distinct_global_minimum_support_set_count_lower_bound}</b></span>
+          <span>New outside-pool identity <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_counterexample.outside_scoped_pool_reaction_ids_in_input_order.join(" / ")}</b></span>
+          <span>Presolve cross-check <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_counterexample.presolve_infeasibility_disagreed ? "disagreed · no-presolve accepted" : "agreed"}</b></span>
           <span>Repaired candidate reactions <b>${metabolicConstraint.candidate_reconstruction.fastcore_shared_support.repaired_candidate_reaction_count.toLocaleString()}</b></span>
           <span>Strict FASTCC consistent / blocked <b>${metabolicConstraint.candidate_reconstruction.fastcore_shared_support.repaired_candidate_reaction_count.toLocaleString()} / ${metabolicConstraint.candidate_reconstruction.fastcore_shared_support.strict_fastcc_blocked_reaction_count}</b></span>
           <span>65-pool minimum identity sets <b>${metabolicConstraint.candidate_reconstruction.fastcore_support_optimality.minimum_support_set_count}</b></span>
           <span>65-pool common identities <b>${metabolicConstraint.candidate_reconstruction.fastcore_support_optimality.reactions_present_in_every_minimum_support_count}</b></span>
           <span>65-pool optional pair <b>${metabolicConstraint.candidate_reconstruction.fastcore_support_optimality.optional_reaction_ids_in_input_order.join(" / ")}</b></span>
-          <span>Global identity sets enumerated <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.global_minimum_identity_sets_enumerated ? "yes" : "no"}</b></span>
+          <span>Global identity enumeration complete <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_counterexample.global_minimum_identity_enumeration_complete ? "yes" : "no"}</b></span>
+          <span>Global minimum unique <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_counterexample.global_minimum_support_set_unique ? "yes" : "no"}</b></span>
           <span>Selected no-GPR / zero-donor GPR <b>${metabolicConstraint.candidate_reconstruction.fastcore_shared_support.selected_reaction_without_gpr_count} / ${metabolicConstraint.candidate_reconstruction.fastcore_shared_support.selected_reaction_zero_donor_gpr_count}</b></span>
           <span>PHH activity established <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.reaction_activity_in_phh_established ? "yes" : "no"}</b></span>
           <span>Context accepted / PHH FBA <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.context_model_accepted ? "yes" : "no"} / ${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.fba_execution_allowed ? "enabled" : "blocked"}</b></span>
         </div>
       </div>
-      <div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Structural, not biological</span><span>An exact two-target lower bound over all 4,226 omitted reactions matches the feasible 17-target upper bound at 59, proving global minimum cardinality. The two identity sets, 58 common reactions and MAR02308/MAR10035 interchangeability are complete only inside the 65-reaction pool; global identity alternatives remain unenumerated. No active PHH enzyme, exchange bound, biological objective, FBA output or runtime rate is established.</span></div>`
+      <div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Structural, not biological</span><span>An exact two-target lower bound over all 4,226 omitted reactions matches the feasible 17-target upper bound at 59, proving global minimum cardinality. A presolve cross-check exposed and corrected a false infeasibility result; the resulting MAR00494 alternative is valid for all 17 targets and proves at least three distinct global minimum sets. Complete global identity enumeration remains open. No active PHH enzyme, exchange bound, biological objective, FBA output or runtime rate is established.</span></div>`
     : "";
   const spatialTransportDataPlaneRow =
     meshBoundaryIntake && intracellularMobilityIntake && reactionTransportIntake

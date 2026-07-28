@@ -976,6 +976,51 @@
       ]
     },
     {
+      "id": "human_gem_fastcore_global_support_counterexample",
+      "title": "Human-GEM global FASTCORE support counterexample",
+      "status": "closed",
+      "scope": "Presolve-cross-checked no-good MILP search over all 4,226 omitted reactions, followed by all-17-target LP certificates and strict FASTCC validation for one identity outside the scoped 65-reaction pool.",
+      "current_capability": "At least three distinct globally minimum 59-reaction support sets are now certified. The new set replaces MAR10035 with MAR00494 outside the scoped pool, proving global non-uniqueness. Complete global identity enumeration, universal reaction membership, PHH activity and runtime authority remain open.",
+      "observed_metrics": {
+        "global_candidate_reaction_count": 4226,
+        "global_minimum_cardinality": 59,
+        "known_distinct_global_minimum_support_set_count_lower_bound": 3,
+        "presolve_infeasibility_disagreed": true,
+        "solver_attempt_count": 2,
+        "accepted_solve_used_presolve": false,
+        "counterexample_added_reaction_count": 59,
+        "primary_overlap_count": 58,
+        "primary_only_reaction_ids_in_input_order": [
+          "MAR10035"
+        ],
+        "counterexample_only_reaction_ids_in_input_order": [
+          "MAR00494"
+        ],
+        "outside_scoped_pool_reaction_ids_in_input_order": [
+          "MAR00494"
+        ],
+        "all_target_lp_certificate_count": 17,
+        "strict_fastcc_consistent_reaction_count": 7474,
+        "strict_fastcc_blocked_reaction_count": 0,
+        "global_minimum_identity_enumeration_complete": false,
+        "global_minimum_support_set_unique": false,
+        "global_universal_reaction_membership_established": false,
+        "additional_global_minimum_search_required": true,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/minimum_reaction_support.py",
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_counterexample.py",
+        "scripts/audit_human_gem_phh_fastcore_global_support_counterexample.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_counterexample.json",
+        "engine/tests/test_minimum_reaction_support.py",
+        "engine/tests/test_human_gem_phh_fastcore_global_support_counterexample.py"
+      ]
+    },
+    {
       "id": "human_gem_reaction_evidence_manifest",
       "title": "Human-GEM reaction evidence manifest",
       "status": "closed",
@@ -1123,8 +1168,8 @@
     }
   ],
   "summary": {
-    "entry_count": 42,
-    "closed_count": 20,
+    "entry_count": 43,
+    "closed_count": 21,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

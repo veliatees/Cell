@@ -58,8 +58,9 @@ PYTHONPATH=engine python3 scripts/audit_human_gem_phh_fastcore_global_support_op
 ## Scientific Boundary
 
 Global cardinality does not imply global identity uniqueness. Milestone 149
-enumerated exactly two minimum sets only inside the `65`-reaction pool; other
-`59`-reaction sets using the wider `4,226` candidates have not been
-enumerated. The result also establishes no active PHH enzyme, measured
-exchange bound, biological objective, donor-specific flux, healthy-PHH FBA or
-runtime rate.
+enumerated exactly two minimum sets only inside the `65`-reaction pool.
+Milestone 151 subsequently certified a third all-target minimum set using
+`MAR00494` outside that pool, so global uniqueness is false while complete
+global identity enumeration remains open. The result also establishes no
+active PHH enzyme, measured exchange bound, biological objective,
+donor-specific flux, healthy-PHH FBA or runtime rate.
