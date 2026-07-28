@@ -1,0 +1,49 @@
+{
+  "artifact": {
+    "byte_size": 43115559,
+    "model_version": "2.0.0",
+    "path": "data/published_models/cache/Human-GEM-v2.0.0.xml",
+    "release_commit": "635f533152dc5f7290ce04d12700eaa882273c3e",
+    "sha256": "cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a"
+  },
+  "audit_version": "human_gem_generic_sparse_fba_v1",
+  "generic_solve": {
+    "active_reaction_count_at_1e_minus_9": 2566,
+    "flux_vector_sha256_in_reaction_order": "c0a8ec658416d974206c26899c95ebce8b9a3bd4d1e4835977b09d20b5883dab",
+    "maximum_bound_violation": 1.9895196601282805e-13,
+    "maximum_mass_balance_residual": 5.229594535194337e-12,
+    "objective_value": 124.86814837744569,
+    "optimum_uniqueness_established": false,
+    "solver_backend": "scipy.optimize.linprog",
+    "solver_backend_version": "1.17.1",
+    "solver_message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+    "solver_method": "highs",
+    "solver_status_code": 0,
+    "status": "optimal"
+  },
+  "native_fbc_objective": {
+    "objective_id": "obj",
+    "objective_is_healthy_phh_measurement": false,
+    "objective_is_project_selected": false,
+    "objective_type": "maximize",
+    "terms": [
+      {
+        "coefficient": 1.0,
+        "reaction_id": "MAR13082",
+        "reaction_name": "Generic human cell biomass reaction"
+      }
+    ]
+  },
+  "schema_version": "cell.human-gem-generic-fba-audit.v1",
+  "scientific_boundary": {
+    "biological_flux_authority": false,
+    "generic_native_objective_optimized": true,
+    "generic_solver_selected_flux_vector_is_measurement": false,
+    "healthy_phh_context_extracted": false,
+    "healthy_phh_objective_attached": false,
+    "independent_flux_validation_attached": false,
+    "may_initialize_dynamic_reaction_rates": false,
+    "measured_exchange_bounds_attached": false,
+    "runtime_flux_coupling_allowed": false
+  }
+}

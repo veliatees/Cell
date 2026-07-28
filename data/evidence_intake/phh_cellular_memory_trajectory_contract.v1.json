@@ -1,0 +1,204 @@
+{
+  "schema_version": "cell.phh-cellular-memory-trajectory-contract.v1",
+  "contract_id": "phh_cellular_memory_trajectory_contract_v1",
+  "canonical_null_token": "null",
+  "allowed_split_roles": [
+    "calibration",
+    "internal_validation",
+    "independent_heldout"
+  ],
+  "allowed_trajectory_phases": [
+    "baseline",
+    "write",
+    "washout",
+    "persistence_followup",
+    "first_challenge_response",
+    "rechallenge_response",
+    "division_followup",
+    "erasure_followup"
+  ],
+  "allowed_measurement_roles": [
+    "physical_substrate",
+    "future_response",
+    "inheritance",
+    "erasure"
+  ],
+  "required_columns": [
+    {
+      "id": "record_id",
+      "description": "Globally unique raw observation identifier."
+    },
+    {
+      "id": "donor_id",
+      "description": "Study-scoped primary-human-hepatocyte donor identifier."
+    },
+    {
+      "id": "split_role",
+      "description": "Calibration, internal validation, or independent held-out assignment."
+    },
+    {
+      "id": "source_study_id",
+      "description": "Stable primary-study identifier such as DOI, PMID, or repository accession."
+    },
+    {
+      "id": "source_locator",
+      "description": "Exact table, figure, supplement, repository file, and row locator."
+    },
+    {
+      "id": "species",
+      "description": "Must be Homo sapiens for this intake."
+    },
+    {
+      "id": "biological_system",
+      "description": "Exact primary-human-hepatocyte preparation and donor context."
+    },
+    {
+      "id": "culture_format",
+      "description": "Exact 2D, sandwich, spheroid, organoid, precision-cut, or in-situ context."
+    },
+    {
+      "id": "substrate_contract_id",
+      "description": "One declared physical memory substrate contract identifier."
+    },
+    {
+      "id": "compartment",
+      "description": "Measured physical compartment or membrane domain."
+    },
+    {
+      "id": "locus_or_entity",
+      "description": "Locus, protein, organelle state, metabolite store, or other directly assayed carrier."
+    },
+    {
+      "id": "trajectory_id",
+      "description": "Identifier joining matched phases of one donor-resolved experiment."
+    },
+    {
+      "id": "trajectory_phase",
+      "description": "Baseline, write, washout, persistence, response, division, or erasure phase."
+    },
+    {
+      "id": "measurement_role",
+      "description": "Physical substrate, future response, inheritance, or erasure readout."
+    },
+    {
+      "id": "trigger_identity",
+      "description": "Exact exposure, perturbation, infection, diet, injury, or state transition."
+    },
+    {
+      "id": "elapsed_from_trigger_start_h",
+      "description": "Non-negative elapsed hours from the declared trigger start."
+    },
+    {
+      "id": "assay",
+      "description": "Exact assay and processing pipeline."
+    },
+    {
+      "id": "readout",
+      "description": "Exact measured molecular or functional endpoint."
+    },
+    {
+      "id": "raw_value",
+      "description": "One finite raw numeric observation, never a reconstructed cohort mean."
+    },
+    {
+      "id": "raw_unit",
+      "description": "Original source unit without implicit conversion."
+    },
+    {
+      "id": "biological_replicate_id",
+      "description": "Biological replicate identifier; it must not be treated as a new donor."
+    },
+    {
+      "id": "normalization_denominator",
+      "description": "Exact cell, viable-cell, protein, DNA, area, volume, or other denominator."
+    }
+  ],
+  "conditional_columns": [
+    {
+      "id": "trigger_value",
+      "description": "Numeric trigger amount when the trigger has a quantitative magnitude."
+    },
+    {
+      "id": "trigger_unit",
+      "description": "Original trigger unit; required whenever trigger_value is present."
+    },
+    {
+      "id": "trigger_removal_time_h",
+      "description": "Elapsed hours at verified trigger removal or washout."
+    },
+    {
+      "id": "elapsed_from_trigger_removal_h",
+      "description": "Elapsed hours after verified trigger removal; required for persistence follow-up."
+    },
+    {
+      "id": "rechallenge_identity",
+      "description": "Exact second challenge; required for rechallenge-response observations."
+    },
+    {
+      "id": "rechallenge_value",
+      "description": "Numeric second-challenge amount when applicable."
+    },
+    {
+      "id": "rechallenge_unit",
+      "description": "Original second-challenge unit; required whenever rechallenge_value is present."
+    },
+    {
+      "id": "cell_generation",
+      "description": "Measured lineage generation for a division-follow-up observation."
+    },
+    {
+      "id": "parent_cell_id",
+      "description": "Measured parent identifier for lineage-resolved inheritance."
+    },
+    {
+      "id": "uncertainty_type",
+      "description": "Original uncertainty definition."
+    },
+    {
+      "id": "uncertainty_value",
+      "description": "Original finite non-negative uncertainty value."
+    },
+    {
+      "id": "censoring_flag",
+      "description": "Original censoring or limit-of-detection status."
+    }
+  ],
+  "candidate_law_gate": {
+    "version": "phh_memory_write_persist_rechallenge_gate_v1",
+    "required_physical_substrate_phases": [
+      "baseline",
+      "write",
+      "persistence_followup"
+    ],
+    "required_future_response_phases": [
+      "first_challenge_response",
+      "rechallenge_response"
+    ],
+    "same_donor_required": true,
+    "same_trajectory_required": true,
+    "same_physical_carrier_assay_required": true,
+    "same_response_assay_required": true,
+    "verified_trigger_removal_required": true,
+    "donor_disjoint_validation_required": true,
+    "independent_heldout_study_required": true,
+    "frozen_model_before_heldout_access_required": true,
+    "automatic_parameter_fitting": false,
+    "automatic_memory_trace_creation": false,
+    "automatic_future_response_coupling": false,
+    "automatic_cell_state_coupling": false
+  },
+  "policy": {
+    "manual_primary_source_review_required": true,
+    "event_duration_alone_is_memory": false,
+    "post_trigger_measurement_without_verified_removal_is_persistence": false,
+    "different_donors_may_form_one_memory_trajectory": false,
+    "whole_liver_average_may_initialize_single_cell_memory": false,
+    "cross_species_rate_transfer_allowed": false,
+    "unit_conversion_without_explicit_provenance": false,
+    "interpolation_for_validation": false,
+    "missing_phase_means_no_memory": false,
+    "universal_memory_decay_law_allowed": false,
+    "automatic_parameter_activation": false,
+    "automatic_cell_state_coupling": false
+  }
+}

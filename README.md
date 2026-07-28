@@ -41,6 +41,33 @@ biology rather than tuned to look right.
   related candidates and three share exact aliased stoichiometry, but zero pass
   the full MathML, compartment, per-cell-unit, PHH-context, and validation gates;
   therefore zero fitted publication parameters are imported.
+- **A typed reaction-evidence data plane** — a strict 45-column intake maps
+  source records to the active network's `36 x 12 = 432` evidence slots while
+  checking reaction identity, context, units, donor/study separation and frozen
+  held-out artifacts. No delivery is currently loaded and structural coverage
+  cannot activate a rate.
+- **Donor-matched protein and signal-chain data planes** — a 48-column
+  receptor/signaling intake covers eight stages across all eight communication
+  pathways, while a 52-column localization/activity intake covers 63 slots for
+  BSEP, MRP2, NTCP, INSR, MET, EGFR, GLUT2, and glucokinase. Both currently
+  contain zero delivered records and grant zero automatic runtime authority.
+- **A donor-resolved PHH mechanics data plane** — a strict 48-column intake
+  preserves raw loading, hold, relaxation and washout observations separately
+  from source-reported constitutive parameters. Canonical units, raw-artifact
+  checksums, same-cell mesh identity, spatial boundary conditions and
+  donor/study-disjoint held-out data are required; zero mechanics trajectories
+  or parameters are currently authorized.
+- **A verified constraint-model software layer** — the checksum-pinned 43 MB
+  Human-GEM v2.0.0 SBML/FBC artifact now streams into an exact sparse model
+  representation with 55,198 stoichiometric terms, bounds, the generic biomass
+  objective and Boolean gene-product rules. Source-defined FASTCC classifies
+  11,641 reactions as flux-consistent and 1,290 as blocked at the explicit
+  numerical threshold `1e-4`; the model's own generic biomass objective also
+  solves with pinned sparse numerics. Five analytic FBA/FVA fixtures and a
+  synthetic FASTCORE extraction fixture remain as software checks. The
+  healthy-PHH core set, measured exchange bounds, PHH objective, scale operator
+  and independent validation remain absent, so no PHH optimization or runtime
+  flux coupling is enabled.
 - **A stochastic reaction core** — exact Gillespie SSA for low-copy species and
   the chemical Langevin equation (an SDE) for high-copy species, the same hybrid
   the field's whole-cell models use, verified against analytic results (Poisson
@@ -52,7 +79,10 @@ biology rather than tuned to look right.
   oxidative-phosphorylation topology with explicit reaction authority. The new
   energy/redox contract separates 38 ATP, adenylate, nicotinamide, glutathione,
   oxygen and ROS pools across six compartments and 14 process systems. All
-  unmeasured organelle values and rates remain null.
+  unmeasured organelle values and rates remain null. A 47-column trajectory
+  intake now requires donor-resolved, compartment-targeted, calibrated PHH time
+  series with oxygen context and sealed held-out data before those nulls can
+  even be considered for review.
 - **Nitrogen & redox** — the **urea cycle** and the **glutathione/NADPH** couple,
   with software conservation tests. Legacy glutathione and OXPHOS kinetics are
   explicitly placeholder fixtures, not healthy-PHH predictions.
@@ -107,9 +137,10 @@ biology rather than tuned to look right.
   a multicellular tissue where coupled hepatocytes clear ammonia collectively and
   suffer **dose-dependent drug injury** (paracetamol overdose → centrilobular-style
   necrosis as cells die).
-- **Spatial reaction–diffusion** — the real reaction network run on a voxel grid
-  with grounded cytoplasmic diffusion coefficients; reproduces the analytic
-  morphogen gradient `λ = √(D/k)` and mitochondrial ATP microdomains.
+- **Spatial reaction–diffusion numerics** — tested voxel diffusion, no-flux mass
+  conservation and analytic `λ = √(D/k)` behaviour. The numerical kernels are
+  not labelled as glucose, ATP or another PHH species until species-specific
+  transport and validation evidence passes the quantitative gate.
 
 ### Validation & calibration
 
@@ -150,6 +181,23 @@ Recent additions make more of the engine visible and keep it physically honest:
   Eulerian deformable mesh, while lipids, microvilli and membrane proteins use
   surface coordinates so they remain attached as the mesh bends; there is no
   second static shell or product-level second-cell demonstration.
+- **Topology-preserving surface refinement.** A separate adaptive edge-bisection
+  kernel preserves a closed two-manifold's winding, Euler characteristic, area,
+  volume, vertex/face state and exact barycentric protein/lipid positions. An
+  explicit bridge now transfers live rest geometry and velocity, then rebuilds
+  all `MembraneSim` topology caches. It has no automatic threshold and is not an
+  endocytosis, fission or fusion model.
+- **Fractional intracellular boundaries.** Thin ER, canalicular and Golgi
+  barriers contribute analytic open-face fractions to the dimensionless
+  pressure and passive-transport solvers. Partial-cell scalar volume and moving
+  boundary remaps conserve numerical mass; this remains a numerical test bed,
+  not healthy-PHH CFD or a measured organelle mesh.
+- **Mechanics and genome-scale execution are visible but fail closed.** The
+  browser reports the mechanics trajectory/parameter queue, exact generic
+  Human-GEM sparse loading, FASTCC classification, generic native-objective
+  solve, analytic FBA/FVA and FASTCORE self-tests, and PHH execution-bundle
+  requirements. These are engineering readiness indicators, not biological
+  completion or inferred hepatocyte fluxes.
 - **Contact deforms the main cell itself.** When an authoritative engine contact
   is present, the same high-resolution membrane shown in the browser compresses
   along the contact normal and expands tangentially with exact affine volume
@@ -165,19 +213,20 @@ Recent additions make more of the engine visible and keep it physically honest:
   engineering guard, not as a healthy-PHH material measurement; PHH membrane
   tension, bending modulus, cortex adhesion and rupture strain remain null.
 
-**Concentration fields from the spatial engine.** The scientific-view controls
-in the current organelle scene load the exported RDME voxel field on the same
-real-unit cell geometry used by the engine. Glucose and ATP values come from the
-deterministic mean-field steady state generated by
-`scripts/export_concentration_field.py`; the renderer does not substitute a
-separate illustrative cell.
+**Quantitative concentration fields are currently gated off.** The former
+glucose/ATP browser fields were retired because their millimolar values depended
+on order-of-magnitude coefficients rather than a complete healthy-PHH evidence
+and validation package. `scripts/export_concentration_field.py` now has no
+biological defaults and no public output path. A future field must carry
+parameter-level provenance, held-out same-context validation and independent
+review authorization before the renderer can expose it.
 
 This is **not** a predictive digital twin, and it does not pretend to be. It is an
 early-stage, source-grounded model whose architecture is now field-aligned and
 whose individual behaviours are tested. Coverage is still a fraction of a real
-hepatocyte and some rate constants are still provisional — every such value is
-flagged as an assumption, never dressed up as measured. See the honest accounting
-under "Status".
+hepatocyte. Exploratory or cross-context numbers are kept behind explicit
+scientific gates and cannot authorize a quantitative PHH claim. See the honest
+accounting under "Status".
 
 ## Run The Prototype
 
@@ -249,6 +298,31 @@ it does not infer organelle concentrations or kinetics from whole-liver values.
 The division module separates compressed demo timing from
 source-traced biological timing profiles, including a rat post-partial-
 hepatectomy profile that blocks fast G1/S entry.
+
+The dimensionless cytosol test bed now rasterizes the smooth star-shaped outer
+membrane as cut-cell volume fractions and face apertures. Local membrane motion
+enters the pressure projection through a discrete geometric-conservation source,
+and passive scalar mass is conservatively remapped. This is verified numerical
+engineering, not measured PHH CFD, pressure, viscosity, or fluid-structure
+interaction.
+
+The same numerical layer can now audit and consume generic closed triangle
+meshes. A separate 41-field intake requires donor-linked microscopy geometry,
+scale, frozen transforms, external self-intersection evidence and
+grid-convergence evidence before any PHH mesh can be registered. Species-level
+mobility/crowding and reaction-level transport coupling have their own 50- and
+51-field contracts. They currently contain zero biological records and grant
+zero reaction-rate authority.
+
+Closed meshes now undergo a repository self-intersection audit in addition to
+edge-topology checks. A separate grid path accepts concave, non-star-shaped
+closed meshes as fluid domains, and a dimensionless pressure-traction kernel
+can propose a volume-preserving, self-intersection-free membrane response while
+reporting force balance and pressure work. Topology-preserving midpoint edge
+bisection can also transfer surface fields and barycentric tracers without
+changing area or volume. The live renderer still uses the star-shaped membrane
+path; neither pressure feedback nor adaptive remeshing is applied to it, and no
+PHH mechanical coefficient has been assigned.
 
 What is still depth-work (the road ahead is depth, not a new approach):
 
@@ -382,6 +456,66 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 087: Compartment-resolved energy and redox contract v1](docs/milestones/087-compartment-resolved-energy-redox-contract-v1.md)
 - [Milestone 088: Energy/redox calibration and validation firewall v1](docs/milestones/088-energy-redox-calibration-validation-firewall-v1.md)
 - [Milestone 089: External scientific review readiness v1](docs/milestones/089-external-scientific-review-readiness-v1.md)
+- [Milestone 090: Hepatocyte capability and memory atlas v1](docs/milestones/090-hepatocyte-capability-memory-atlas-v1.md)
+- [Milestone 091: Reaction evidence atlas v1](docs/milestones/091-reaction-evidence-atlas-v1.md)
+- [Milestone 092: Cytosol transport and rheology v1](docs/milestones/092-cytosol-transport-rheology-v1.md)
+- [Milestone 093: Metabolic constraint shell v1](docs/milestones/093-metabolic-constraint-shell-v1.md)
+- [Milestone 094: Moving-boundary cytosol projection v1](docs/milestones/094-moving-boundary-cytosol-projection-v1.md)
+- [Milestone 095: Conservative cytosol species transport v1](docs/milestones/095-conservative-cytosol-species-transport-v1.md)
+- [Milestone 096: Cytosol validation and active-transport separation v1](docs/milestones/096-cytosol-validation-active-transport-separation-v1.md)
+- [Milestone 097: Pinned Human-GEM and completion ledger v1](docs/milestones/097-pinned-human-gem-and-completion-ledger-v1.md)
+- [Milestone 098: Quantitative concentration claim firewall v1](docs/milestones/098-quantitative-concentration-claim-firewall-v1.md)
+- [Milestone 099: Conservative moving-domain remap v1](docs/milestones/099-conservative-moving-domain-remap-v1.md)
+- [Milestone 100: Human-GEM structural chemistry audit v1](docs/milestones/100-human-gem-structural-chemistry-audit-v1.md)
+- [Milestone 101: Provenance-strict hepatocyte quantity harvest v1](docs/milestones/101-provenance-strict-hepatocyte-quantity-harvest-v1.md)
+- [Milestone 102: Exact PHH injury observation operator v1](docs/milestones/102-exact-phh-injury-observation-operator-v1.md)
+- [Milestone 103: Donor-disjoint PHH injury intake v1](docs/milestones/103-donor-disjoint-phh-injury-intake-v1.md)
+- [Milestone 104: Frozen PHH injury assay evaluation v1](docs/milestones/104-frozen-phh-injury-assay-evaluation-v1.md)
+- [Milestone 105: Automated browser render integrity v1](docs/milestones/105-automated-browser-render-integrity-v1.md)
+- [Milestone 106: Rigid organelle boundary kinematics v1](docs/milestones/106-rigid-organelle-boundary-kinematics-v1.md)
+- [Milestone 107: Renderer-linked organelle fluid boundaries v1](docs/milestones/107-renderer-linked-organelle-fluid-boundaries-v1.md)
+- [Milestone 108: Donor-resolved cellular-memory intake v1](docs/milestones/108-donor-resolved-cellular-memory-intake-v1.md)
+- [Milestone 109: Deterministic active-cargo separation v1](docs/milestones/109-deterministic-active-cargo-separation-v1.md)
+- [Milestone 110: Conservative subgrid organelle boundaries v1](docs/milestones/110-conservative-subgrid-organelle-boundaries-v1.md)
+- [Milestone 111: Local star-shaped membrane-fluid boundary v1](docs/milestones/111-local-star-shaped-membrane-fluid-boundary-v1.md)
+- [Milestone 112: Donor-resolved PHH active-cargo trajectory intake v1](docs/milestones/112-donor-resolved-phh-active-cargo-trajectory-intake-v1.md)
+- [Milestone 113: Donor multimodal generative-data contract v1](docs/milestones/113-donor-multimodal-generative-data-contract-v1.md)
+- [Milestone 114: Fractional face-aperture cytosol v1](docs/milestones/114-fractional-face-aperture-cytosol-v1.md)
+- [Milestone 115: PHH reaction-evidence intake v1](docs/milestones/115-phh-reaction-evidence-intake-v1.md)
+- [Milestone 116: PHH energy/redox trajectory intake v1](docs/milestones/116-phh-energy-redox-trajectory-intake-v1.md)
+- [Milestone 117: Local membrane geometric conservation v1](docs/milestones/117-local-membrane-geometric-conservation-v1.md)
+- [Milestone 118: PHH receptor/signaling trajectory intake v1](docs/milestones/118-phh-receptor-signaling-trajectory-intake-v1.md)
+- [Milestone 119: PHH active-protein localization intake v1](docs/milestones/119-phh-active-protein-localization-intake-v1.md)
+- [Milestone 120: Watertight mesh boundary intake v1](docs/milestones/120-watertight-mesh-boundary-intake-v1.md)
+- [Milestone 121: Species-resolved intracellular mobility intake v1](docs/milestones/121-species-resolved-intracellular-mobility-intake-v1.md)
+- [Milestone 122: Reaction transport coupling gate v1](docs/milestones/122-reaction-transport-coupling-gate-v1.md)
+- [Milestone 123: Repository mesh self-intersection audit v1](docs/milestones/123-repository-mesh-self-intersection-audit-v1.md)
+- [Milestone 124: Non-star-shaped closed-mesh cytosol domain v1](docs/milestones/124-non-star-shaped-closed-mesh-cytosol-domain-v1.md)
+- [Milestone 125: Dimensionless pressure-membrane response v1](docs/milestones/125-dimensionless-pressure-membrane-response-v1.md)
+- [Milestone 126: Donor-resolved PHH mechanics calibration intake v1](docs/milestones/126-donor-resolved-phh-mechanics-calibration-intake-v1.md)
+- [Milestone 127: Generic FBA/FVA numerical kernel v1](docs/milestones/127-generic-fba-fva-numerical-kernel-v1.md)
+- [Milestone 128: Healthy-PHH metabolic execution bundle v1](docs/milestones/128-healthy-phh-metabolic-execution-bundle-v1.md)
+- [Milestone 129: Checksum-gated Human-GEM sparse FBC loader v1](docs/milestones/129-checksum-gated-human-gem-sparse-fbc-loader-v1.md)
+- [Milestone 130: FASTCORE context-extraction numerical kernel v1](docs/milestones/130-fastcore-context-extraction-numerical-kernel-v1.md)
+- [Milestone 131: Topology-preserving adaptive remeshing v1](docs/milestones/131-topology-preserving-adaptive-remeshing-v1.md)
+- [Milestone 132: Source-defined FASTCC Human-GEM consistency v1](docs/milestones/132-source-defined-fastcc-human-gem-consistency-v1.md)
+- [Milestone 133: Pinned Human-GEM generic sparse FBA v1](docs/milestones/133-pinned-human-gem-generic-sparse-fba-v1.md)
+- [Milestone 134: Live membrane remesh cache bridge v1](docs/milestones/134-live-membrane-remesh-cache-bridge-v1.md)
+- [Milestone 135: Human-GEM FBC gene labels and strict GPR evaluation v1](docs/milestones/135-human-gem-fbc-gene-label-gpr-v1.md)
+- [Milestone 136: Seven-donor PHH proteome-to-GPR core evidence v1](docs/milestones/136-seven-donor-phh-proteome-gpr-core-v1.md)
+- [Milestone 137: Real-scale Human-GEM FASTCORE trial v1](docs/milestones/137-real-scale-human-gem-fastcore-trial-v1.md)
+- [Milestone 138: Seven-donor GPR support stability v1](docs/milestones/138-seven-donor-gpr-support-stability-v1.md)
+- [Milestone 139: Human-GEM FASTCORE scaling sensitivity v1](docs/milestones/139-human-gem-fastcore-scaling-sensitivity-v1.md)
+- [Milestone 140: Reaction-level PHH evidence manifest v1](docs/milestones/140-reaction-level-phh-evidence-manifest-v1.md)
+- [Milestone 141: Human-GEM FASTCORE blocker diagnostics v1](docs/milestones/141-human-gem-fastcore-blocker-diagnostics-v1.md)
+- [Milestone 142: Source-limited minimum-reaction support kernel v1](docs/milestones/142-source-limited-minimum-reaction-support-kernel-v1.md)
+- [Milestone 143: Human-GEM source-limited support repair v1](docs/milestones/143-human-gem-source-limited-support-repair-v1.md)
+- [Milestone 144: Closed membrane topology transition audit v1](docs/milestones/144-closed-membrane-topology-transition-audit-v1.md)
+- [Milestone 145: Conservative membrane topology state transfer v1](docs/milestones/145-conservative-membrane-topology-state-transfer-v1.md)
+- [Milestone 146: Evidence-gated membrane topology transaction v1](docs/milestones/146-evidence-gated-membrane-topology-transaction-v1.md)
+- [Milestone 147: Multi-target shared reaction-support kernel v1](docs/milestones/147-multi-target-shared-reaction-support-kernel-v1.md)
+- [Milestone 148: Human-GEM minimum shared support v1](docs/milestones/148-human-gem-minimum-shared-support-v1.md)
+- [Milestone 149: Human-GEM support optimum enumeration v1](docs/milestones/149-human-gem-support-optimum-enumeration-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

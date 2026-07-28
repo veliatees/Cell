@@ -96,6 +96,11 @@ class MemoryTrace:
     source_ids: tuple[str, ...]
     experimental_system: str
     uncertainty: str
+    direct_substrate_assay: str
+    persistence_evidence_ids: tuple[str, ...]
+    future_response_evidence_ids: tuple[str, ...]
+    response_coupling_law_id: str | None
+    quantitative_coupling_allowed: bool
     notes: str = ""
 
 
@@ -171,11 +176,21 @@ def record_or_extend_event(history: CellHistoryState, event: ExperienceEvent) ->
 
 
 def consolidate_memory_trace(history: CellHistoryState, trace: MemoryTrace) -> CellHistoryState:
-    """Store only a source-backed persistent trace linked to a recorded event."""
+    """Store an observed trace without granting it quantitative response authority."""
     if not trace.source_ids:
         raise ValueError("a memory trace requires at least one source")
     if not trace.experimental_system:
         raise ValueError("a memory trace requires its experimental system")
+    if not trace.direct_substrate_assay:
+        raise ValueError("a memory trace requires a direct physical-substrate assay")
+    if not trace.persistence_evidence_ids:
+        raise ValueError("a memory trace requires persistence evidence record ids")
+    if trace.response_coupling_law_id and not trace.future_response_evidence_ids:
+        raise ValueError("a response-coupling law requires future-response evidence")
+    if trace.quantitative_coupling_allowed:
+        raise ValueError(
+            "memory traces cannot activate quantitative coupling without a frozen validated law"
+        )
     if trace.written_by_event_id not in {event.id for event in history.event_log}:
         raise ValueError("memory trace must reference an existing event")
     if any(existing.id == trace.id for existing in history.memory_traces):

@@ -27,6 +27,8 @@ class ScientificModelAuditTests(unittest.TestCase):
         self.assertIn("compartmental_energy_redox_contract", {surface.id for surface in drivers})
         self.assertIn("energy_redox_calibration_validation_gate", {surface.id for surface in drivers})
         self.assertIn("external_validation_readiness_program", {surface.id for surface in drivers})
+        self.assertIn("phh_injury_exact_protocol_operator", {surface.id for surface in drivers})
+        self.assertIn("phh_injury_donor_disjoint_evaluation_gate", {surface.id for surface in drivers})
         self.assertNotIn("published_hepatic_glucose_shadow_model", {surface.id for surface in drivers})
 
     def test_known_unsupported_surfaces_are_blocked_or_disabled(self) -> None:
@@ -40,6 +42,7 @@ class ScientificModelAuditTests(unittest.TestCase):
             "legacy_oxphos_kinetics",
             "integrated_fuel_pathway_rates",
             "endocrine_receptor_rate_coupling",
+            "legacy_injury_fate_runtime",
             "albumin_secretory_pathway_kinetics",
             "integrated_fuel_pathway_rates",
         ):
@@ -77,6 +80,78 @@ class ScientificModelAuditTests(unittest.TestCase):
         self.assertIs(
             by_id["external_validation_readiness_program"].drives_scientific_validation,
             True,
+        )
+        self.assertEqual(
+            by_id["phh_mechanics_calibration_intake"].default_snapshot_role,
+            "donor_resolved_mechanics_and_fsi_firewall",
+        )
+        self.assertEqual(
+            by_id["membrane_topology_transition_candidate"].default_snapshot_role,
+            "offline_closed_surface_transition_and_state_conservation_firewall",
+        )
+        self.assertIn(
+            "non-committable",
+            by_id["membrane_topology_transition_candidate"].limitations,
+        )
+        self.assertEqual(
+            by_id["generic_constraint_numerics"].default_snapshot_role,
+            "synthetic_linear_programming_verification_only",
+        )
+        self.assertEqual(
+            by_id["human_gem_generic_flux_consistency"].default_snapshot_role,
+            "checksum_pinned_generic_fastcc_classification",
+        )
+        self.assertIs(
+            by_id["human_gem_generic_flux_consistency"].drives_scientific_validation,
+            True,
+        )
+        self.assertEqual(
+            by_id["human_gem_phh_proteome_gpr_core"].default_snapshot_role,
+            "seven_donor_boolean_proteome_to_gpr_evidence",
+        )
+        self.assertEqual(
+            by_id["human_gem_real_scale_fastcore_trial"].default_snapshot_role,
+            "reproducible_negative_context_specificity_result",
+        )
+        self.assertIs(
+            by_id["human_gem_real_scale_fastcore_trial"].drives_scientific_validation,
+            True,
+        )
+        self.assertEqual(
+            by_id["human_gem_phh_donor_gpr_stability"].default_snapshot_role,
+            "exact_donor_support_and_leave_one_out_audit",
+        )
+        self.assertEqual(
+            by_id[
+                "human_gem_fastcore_scaling_sensitivity"
+            ].default_snapshot_role,
+            "official_lp10_numerical_sensitivity_audit",
+        )
+        self.assertEqual(
+            by_id[
+                "human_gem_fastcore_blocker_diagnostics"
+            ].default_snapshot_role,
+            "reaction_level_generic_flux_witness_audit",
+        )
+        self.assertEqual(
+            by_id[
+                "human_gem_fastcore_source_limited_support_repair"
+            ].default_snapshot_role,
+            "exact_structural_repair_and_biological_firewall",
+        )
+        self.assertEqual(
+            by_id[
+                "human_gem_phh_reaction_evidence_manifest"
+            ].default_snapshot_role,
+            "reaction_identity_level_research_intake",
+        )
+        self.assertEqual(
+            by_id["human_gem_generic_native_fba"].default_snapshot_role,
+            "checksum_pinned_generic_objective_software_audit",
+        )
+        self.assertEqual(
+            by_id["phh_metabolic_execution_bundle_intake"].default_snapshot_role,
+            "checksum_frozen_context_and_flux_validation_firewall",
         )
 
 

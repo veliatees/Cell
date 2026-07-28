@@ -13,6 +13,15 @@
 // viscosity or time parameter. Local folds, buds, membrane reservoirs and
 // topology changes remain disabled until their inputs are identified.
 
+import {
+  evaluateSurfaceBinding,
+  topologyPreservingAdaptiveRemesh,
+  type AdaptiveRemeshResult,
+  type FaceField,
+  type SurfaceBinding,
+  type VertexField
+} from "./adaptiveRemeshing";
+
 export type MembraneSim = {
   n: number; // vertex count
   radius: number;
@@ -44,6 +53,19 @@ export type MembraneSim = {
   kBend: number;
   kVolume: number;
   gamma: number;
+};
+
+export type MembraneSimRemeshResult = {
+  sim: MembraneSim;
+  remesh: AdaptiveRemeshResult;
+  runtimeCachesRebuilt: true;
+  mechanicalReferenceAreaPreserved: true;
+  mechanicalReferenceVolumePreserved: true;
+  maximumRuntimeBindingPositionError: number;
+  relativeRuntimeSurfaceAreaError: number;
+  relativeRuntimeEnclosedVolumeError: number;
+  automaticTriggerEnabled: false;
+  biologicalMechanicsAssigned: false;
 };
 
 // Evans et al. reported 2-4% human red-cell membrane area expansion at lysis.
@@ -116,110 +138,208 @@ function canonicalHepatocyteRadius(radius: number, x: number, y: number, z: numb
   );
 }
 
+function buildMembraneSimFromMesh(
+  radius: number,
+  restShape: MembraneSim["restShape"],
+  currentPositions: ArrayLike<number>,
+  restPositions: ArrayLike<number>,
+  rawFaces: ArrayLike<number>,
+  velocity?: ArrayLike<number>,
+  reference?: {
+    area: number;
+    volume: number;
+    kStretch: number;
+    kBend: number;
+    kVolume: number;
+    gamma: number;
+  }
+): MembraneSim {
+  if (
+    currentPositions.length < 12 ||
+    currentPositions.length % 3 !== 0 ||
+    restPositions.length !== currentPositions.length ||
+    rawFaces.length < 12 ||
+    rawFaces.length % 3 !== 0 ||
+    (velocity !== undefined && velocity.length !== currentPositions.length)
+  ) {
+    throw new RangeError("membrane mesh arrays have incompatible dimensions");
+  }
+  const n = currentPositions.length / 3;
+  const current = Float32Array.from(currentPositions);
+  const restPos = Float32Array.from(restPositions);
+  if (
+    !Array.from(current).every(Number.isFinite) ||
+    !Array.from(restPos).every(Number.isFinite)
+  ) {
+    throw new RangeError("membrane mesh positions must be finite");
+  }
+  const faces = Int32Array.from(rawFaces);
+  for (const vertex of faces) {
+    if (!Number.isInteger(vertex) || vertex < 0 || vertex >= n) {
+      throw new RangeError("membrane face references an invalid vertex");
+    }
+  }
+
+  const restDir = new Float32Array(restPos.length);
+  const restRadius = new Float32Array(n);
+  for (let vertex = 0; vertex < n; vertex += 1) {
+    const offset = vertex * 3;
+    const localRadius = Math.hypot(
+      restPos[offset],
+      restPos[offset + 1],
+      restPos[offset + 2]
+    );
+    if (!Number.isFinite(localRadius) || localRadius <= 0) {
+      throw new RangeError("membrane rest vertices must have positive radius");
+    }
+    restRadius[vertex] = localRadius;
+    restDir[offset] = restPos[offset] / localRadius;
+    restDir[offset + 1] = restPos[offset + 1] / localRadius;
+    restDir[offset + 2] = restPos[offset + 2] / localRadius;
+  }
+
+  const faceCount = faces.length / 3;
+  const edgeMap = new Map<string, { a: number; b: number; opp: number[] }>();
+  const addEdge = (a: number, b: number, opposite: number): void => {
+    const first = Math.min(a, b);
+    const second = Math.max(a, b);
+    const edgeKey = `${first}:${second}`;
+    const existing = edgeMap.get(edgeKey);
+    if (existing) existing.opp.push(opposite);
+    else edgeMap.set(edgeKey, { a: first, b: second, opp: [opposite] });
+  };
+  for (let face = 0; face < faceCount; face += 1) {
+    const i = faces[face * 3];
+    const j = faces[face * 3 + 1];
+    const k = faces[face * 3 + 2];
+    if (i === j || j === k || k === i) {
+      throw new RangeError("membrane mesh contains a degenerate face");
+    }
+    addEdge(i, j, k);
+    addEdge(j, k, i);
+    addEdge(k, i, j);
+  }
+
+  const edgeCount = edgeMap.size;
+  const edgeA = new Int32Array(edgeCount);
+  const edgeB = new Int32Array(edgeCount);
+  const edgeOpp1 = new Int32Array(edgeCount);
+  const edgeOpp2 = new Int32Array(edgeCount);
+  const restLen = new Float32Array(edgeCount);
+  let edgeIndex = 0;
+  for (const edge of edgeMap.values()) {
+    if (edge.opp.length !== 2) {
+      throw new RangeError("membrane mesh must be a closed two-manifold");
+    }
+    edgeA[edgeIndex] = edge.a;
+    edgeB[edgeIndex] = edge.b;
+    edgeOpp1[edgeIndex] = edge.opp[0];
+    edgeOpp2[edgeIndex] = edge.opp[1];
+    const a = edge.a * 3;
+    const b = edge.b * 3;
+    restLen[edgeIndex] = Math.hypot(
+      restPos[a] - restPos[b],
+      restPos[a + 1] - restPos[b + 1],
+      restPos[a + 2] - restPos[b + 2]
+    );
+    edgeIndex += 1;
+  }
+
+  const counts = new Int32Array(n);
+  for (const vertex of faces) counts[vertex] += 1;
+  const vertFaceStart = new Int32Array(n + 1);
+  for (let vertex = 0; vertex < n; vertex += 1) {
+    vertFaceStart[vertex + 1] = vertFaceStart[vertex] + counts[vertex];
+  }
+  const vertFaceList = new Int32Array(vertFaceStart[n]);
+  const cursor = Int32Array.from(vertFaceStart);
+  for (let face = 0; face < faceCount; face += 1) {
+    for (let local = 0; local < 3; local += 1) {
+      const vertex = faces[face * 3 + local];
+      vertFaceList[cursor[vertex]++] = face;
+    }
+  }
+
+  const sim: MembraneSim = {
+    n,
+    radius,
+    pos: new Float32Array(restPos),
+    restPos,
+    restDir,
+    restRadius,
+    restShape,
+    vel: velocity === undefined
+      ? new Float32Array(n * 3)
+      : Float32Array.from(velocity),
+    force: new Float32Array(n * 3),
+    faces,
+    edgeA,
+    edgeB,
+    edgeOpp1,
+    edgeOpp2,
+    restLen,
+    degree: new Float32Array(n),
+    restLap: new Float32Array(n * 3),
+    normals: new Float32Array(n * 3),
+    vertFaceStart,
+    vertFaceList,
+    a0: 0,
+    v0: 0,
+    kStretch: reference?.kStretch ?? 8.0,
+    kBend: reference?.kBend ?? 6.0,
+    kVolume: reference?.kVolume ?? 8.0,
+    gamma: reference?.gamma ?? 1.0
+  };
+  for (let edge = 0; edge < edgeCount; edge += 1) {
+    sim.degree[edgeA[edge]] += 1;
+    sim.degree[edgeB[edge]] += 1;
+  }
+  sim.a0 = reference?.area ?? membraneSurfaceArea(sim);
+  sim.v0 = reference?.volume ?? enclosedVolume(sim);
+  if (
+    !Number.isFinite(sim.a0) ||
+    !Number.isFinite(sim.v0) ||
+    sim.a0 <= 0 ||
+    sim.v0 <= 0
+  ) {
+    throw new RangeError("membrane rest geometry has invalid area or volume");
+  }
+  computeLaplacian(sim, sim.restLap);
+  sim.pos.set(current);
+  computeNormals(sim);
+  return sim;
+}
+
 function createMembraneSimWithRestShape(
   radius: number,
   subdiv: number,
   restShape: MembraneSim["restShape"]
 ): MembraneSim {
   const ico = buildIcosphere(radius, subdiv);
-  const n = ico.pos.length / 3;
-  const pos = new Float32Array(ico.pos);
-  const restDir = new Float32Array(pos.length);
-  const restRadius = new Float32Array(n);
-  for (let i = 0; i < pos.length; i += 3) {
-    const L = Math.hypot(pos[i], pos[i + 1], pos[i + 2]) || 1;
-    restDir[i] = pos[i] / L;
-    restDir[i + 1] = pos[i + 1] / L;
-    restDir[i + 2] = pos[i + 2] / L;
-    const vertex = i / 3;
+  const restPositions = Float32Array.from(ico.pos);
+  for (let i = 0; i < restPositions.length; i += 3) {
+    const length = Math.hypot(
+      restPositions[i],
+      restPositions[i + 1],
+      restPositions[i + 2]
+    ) || 1;
+    const x = restPositions[i] / length;
+    const y = restPositions[i + 1] / length;
+    const z = restPositions[i + 2] / length;
     const localRadius = restShape === "canonical_hepatocyte_polyhedron"
-      ? canonicalHepatocyteRadius(radius, restDir[i], restDir[i + 1], restDir[i + 2])
+      ? canonicalHepatocyteRadius(radius, x, y, z)
       : radius;
-    restRadius[vertex] = localRadius;
-    pos[i] = restDir[i] * localRadius;
-    pos[i + 1] = restDir[i + 1] * localRadius;
-    pos[i + 2] = restDir[i + 2] * localRadius;
+    restPositions[i] = x * localRadius;
+    restPositions[i + 1] = y * localRadius;
+    restPositions[i + 2] = z * localRadius;
   }
-  const faces = new Int32Array(ico.faces);
-  const nf = faces.length / 3;
-
-  // edge -> the (up to two) opposite vertices, from the faces sharing it
-  const edgeMap = new Map<number, { a: number; b: number; opp: number[] }>();
-  const key = (a: number, b: number) => (a < b ? a * 1_000_000 + b : b * 1_000_000 + a);
-  for (let f = 0; f < nf; f += 1) {
-    const i = faces[f * 3], j = faces[f * 3 + 1], k = faces[f * 3 + 2];
-    const addEdge = (a: number, b: number, opp: number) => {
-      const kk = key(a, b);
-      const e = edgeMap.get(kk);
-      if (e) e.opp.push(opp);
-      else edgeMap.set(kk, { a: Math.min(a, b), b: Math.max(a, b), opp: [opp] });
-    };
-    addEdge(i, j, k);
-    addEdge(j, k, i);
-    addEdge(k, i, j);
-  }
-  const ne = edgeMap.size;
-  const edgeA = new Int32Array(ne), edgeB = new Int32Array(ne);
-  const edgeOpp1 = new Int32Array(ne), edgeOpp2 = new Int32Array(ne);
-  const restLen = new Float32Array(ne);
-  let ei = 0;
-  for (const e of edgeMap.values()) {
-    edgeA[ei] = e.a; edgeB[ei] = e.b;
-    edgeOpp1[ei] = e.opp[0];
-    edgeOpp2[ei] = e.opp.length > 1 ? e.opp[1] : e.opp[0];
-    const dx = pos[e.a * 3] - pos[e.b * 3];
-    const dy = pos[e.a * 3 + 1] - pos[e.b * 3 + 1];
-    const dz = pos[e.a * 3 + 2] - pos[e.b * 3 + 2];
-    restLen[ei] = Math.hypot(dx, dy, dz);
-    ei += 1;
-  }
-
-  // vertex -> incident faces (CSR)
-  const counts = new Int32Array(n);
-  for (let f = 0; f < nf; f += 1) {
-    counts[faces[f * 3]] += 1; counts[faces[f * 3 + 1]] += 1; counts[faces[f * 3 + 2]] += 1;
-  }
-  const vertFaceStart = new Int32Array(n + 1);
-  for (let v = 0; v < n; v += 1) vertFaceStart[v + 1] = vertFaceStart[v] + counts[v];
-  const vertFaceList = new Int32Array(vertFaceStart[n]);
-  const cursor = Int32Array.from(vertFaceStart);
-  for (let f = 0; f < nf; f += 1) {
-    for (let t = 0; t < 3; t += 1) {
-      const v = faces[f * 3 + t];
-      vertFaceList[cursor[v]++] = f;
-    }
-  }
-
-  const sim: MembraneSim = {
-    n, radius,
-    pos,
-    restPos: new Float32Array(pos),
-    restDir,
-    restRadius,
+  return buildMembraneSimFromMesh(
+    radius,
     restShape,
-    vel: new Float32Array(n * 3),
-    force: new Float32Array(n * 3),
-    faces,
-    edgeA, edgeB, edgeOpp1, edgeOpp2, restLen,
-    degree: new Float32Array(n),
-    restLap: new Float32Array(n * 3),
-    normals: new Float32Array(n * 3),
-    vertFaceStart, vertFaceList,
-    a0: 0,
-    v0: 0,
-    // Dimensionless solver gains. They only repair mesh quality and do not
-    // represent membrane stiffness, bending modulus, pressure or viscosity.
-    kStretch: 8.0,
-    kBend: 6.0,
-    kVolume: 8.0,
-    gamma: 1.0,
-  };
-  for (let e = 0; e < ne; e += 1) { sim.degree[edgeA[e]] += 1; sim.degree[edgeB[e]] += 1; }
-  sim.a0 = membraneSurfaceArea(sim);
-  sim.v0 = enclosedVolume(sim);
-  computeLaplacian(sim, sim.restLap); // rest-shape reference (spontaneous curvature)
-  computeNormals(sim);
-  return sim;
+    restPositions,
+    restPositions,
+    ico.faces
+  );
 }
 
 export function createMembraneSim(radius: number, subdiv = 3): MembraneSim {
@@ -228,6 +348,138 @@ export function createMembraneSim(radius: number, subdiv = 3): MembraneSim {
 
 export function createHepatocyteMembraneSim(radius: number, subdiv = 3): MembraneSim {
   return createMembraneSimWithRestShape(radius, subdiv, "canonical_hepatocyte_polyhedron");
+}
+
+/**
+ * Refine a live membrane mesh and rebuild every MembraneSim topology cache.
+ *
+ * Both controls are mandatory because the project has no evidence-backed PHH
+ * refinement threshold or runtime split budget. Edge bisection does not change
+ * the represented piecewise-linear surface, and does not model budding,
+ * endocytosis, fission, lipid insertion or any other biological topology event.
+ */
+export function remeshMembraneSim(
+  sim: MembraneSim,
+  options: {
+    targetMaximumEdgeLength: number;
+    maximumSplitCount: number;
+    bindings?: readonly SurfaceBinding[];
+    vertexFields?: readonly VertexField[];
+    faceFields?: readonly FaceField[];
+  }
+): MembraneSimRemeshResult {
+  const internalRestFieldName = "__membrane_sim_rest_position";
+  const internalVelocityFieldName = "__membrane_sim_velocity";
+  const externalNames = [
+    ...(options.vertexFields ?? []).map((field) => field.name),
+    ...(options.faceFields ?? []).map((field) => field.name)
+  ];
+  if (
+    externalNames.includes(internalRestFieldName) ||
+    externalNames.includes(internalVelocityFieldName)
+  ) {
+    throw new RangeError("surface field name is reserved by MembraneSim");
+  }
+
+  const beforeBindingPoints = new Map(
+    (options.bindings ?? []).map((binding) => [
+      binding.id,
+      evaluateSurfaceBinding(sim.pos, sim.faces, binding)
+    ])
+  );
+  const beforeArea = membraneSurfaceArea(sim);
+  const beforeVolume = enclosedVolume(sim);
+  const remesh = topologyPreservingAdaptiveRemesh(
+    sim.pos,
+    sim.faces,
+    {
+      targetMaximumEdgeLength: options.targetMaximumEdgeLength,
+      maximumSplitCount: options.maximumSplitCount,
+      bindings: options.bindings,
+      vertexFields: [
+        {
+          name: internalRestFieldName,
+          components: 3,
+          values: sim.restPos
+        },
+        {
+          name: internalVelocityFieldName,
+          components: 3,
+          values: sim.vel
+        },
+        ...(options.vertexFields ?? [])
+      ],
+      faceFields: options.faceFields
+    }
+  );
+  const remeshedRestPositions = remesh.vertexFields.find(
+    (field) => field.name === internalRestFieldName
+  );
+  const remeshedVelocity = remesh.vertexFields.find(
+    (field) => field.name === internalVelocityFieldName
+  );
+  if (!remeshedRestPositions || !remeshedVelocity) {
+    throw new Error("MembraneSim remeshing lost required vertex state");
+  }
+  const rebuilt = buildMembraneSimFromMesh(
+    sim.radius,
+    sim.restShape,
+    remesh.vertices,
+    remeshedRestPositions.values,
+    remesh.triangles,
+    remeshedVelocity.values,
+    {
+      area: sim.a0,
+      volume: sim.v0,
+      kStretch: sim.kStretch,
+      kBend: sim.kBend,
+      kVolume: sim.kVolume,
+      gamma: sim.gamma
+    }
+  );
+
+  let maximumRuntimeBindingPositionError = 0;
+  for (const binding of remesh.bindings) {
+    const before = beforeBindingPoints.get(binding.id);
+    if (!before) throw new Error("MembraneSim remeshing lost a surface binding");
+    const after = evaluateSurfaceBinding(rebuilt.pos, rebuilt.faces, binding);
+    maximumRuntimeBindingPositionError = Math.max(
+      maximumRuntimeBindingPositionError,
+      Math.hypot(
+        before[0] - after[0],
+        before[1] - after[1],
+        before[2] - after[2]
+      )
+    );
+  }
+  const relativeRuntimeSurfaceAreaError = Math.abs(
+    membraneSurfaceArea(rebuilt) - beforeArea
+  ) / Math.max(Math.abs(beforeArea), Number.EPSILON);
+  const relativeRuntimeEnclosedVolumeError = Math.abs(
+    enclosedVolume(rebuilt) - beforeVolume
+  ) / Math.max(Math.abs(beforeVolume), Number.EPSILON);
+  const numericalTolerance = Math.max(sim.radius, 1) * 1e-6;
+  if (
+    maximumRuntimeBindingPositionError > numericalTolerance ||
+    relativeRuntimeSurfaceAreaError > 1e-6 ||
+    relativeRuntimeEnclosedVolumeError > 1e-6
+  ) {
+    throw new Error(
+      "MembraneSim Float32 cache rebuild exceeded numerical preservation tolerance"
+    );
+  }
+  return {
+    sim: rebuilt,
+    remesh,
+    runtimeCachesRebuilt: true,
+    mechanicalReferenceAreaPreserved: true,
+    mechanicalReferenceVolumePreserved: true,
+    maximumRuntimeBindingPositionError,
+    relativeRuntimeSurfaceAreaError,
+    relativeRuntimeEnclosedVolumeError,
+    automaticTriggerEnabled: false,
+    biologicalMechanicsAssigned: false
+  };
 }
 
 export function membraneRestRadiusAlongDirection(sim: MembraneSim, x: number, y: number, z: number): number {

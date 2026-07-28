@@ -450,6 +450,11 @@ export type EngineCellHistory = {
     source_ids: string[];
     experimental_system: string;
     uncertainty: string;
+    direct_substrate_assay: string;
+    persistence_evidence_ids: string[];
+    future_response_evidence_ids: string[];
+    response_coupling_law_id: string | null;
+    quantitative_coupling_allowed: false;
     notes?: string;
   }[];
   source_ids: string[];
@@ -909,6 +914,21 @@ export type EngineGenerativeModelingBoundary = {
   automatic_state_coupling: boolean;
   blockers: string[];
   source_ids: string[];
+  donor_manifest_intake?: {
+    version: string;
+    contract_id: string;
+    status: string;
+    delivery_path: string;
+    contract_sha256: string;
+    sample_count: number;
+    donor_count: number;
+    feature_count: number;
+    structurally_training_data_ready: boolean;
+    validated_generative_donor_model_count: number;
+    automatic_training: false;
+    automatic_engine_coupling: false;
+    blockers: string[];
+  };
 };
 
 export type EngineCompartmentalEnergyRedox = {
@@ -1065,6 +1085,190 @@ export type EngineEnergyRedoxValidation = {
   };
 };
 
+export type EngineEnergyRedoxTrajectoryIntake = {
+  version: "phh_energy_redox_trajectory_intake_v1";
+  contract_id: string;
+  status: string;
+  delivery_path: string;
+  contract_sha256: string;
+  artifact_sha256?: string;
+  expected_header_count: number;
+  registered_pool_count: number;
+  record_count: number;
+  donor_count: number;
+  trajectory_count: number;
+  structurally_complete_trajectory_count: number;
+  calibration_and_heldout_complete_pool_count: number;
+  compartment_initialization_allowed_count: number;
+  rate_fitting_allowed_count: number;
+  automatic_state_coupling: false;
+  record_count_by_split?: Record<string, number>;
+  trajectory_assessments?: unknown[];
+  blockers: string[];
+};
+
+export type EngineReceptorSignalingTrajectoryIntake = {
+  version: "phh_receptor_signaling_trajectory_intake_v1";
+  contract_id: string;
+  atlas_id: string;
+  status: string;
+  delivery_path: string;
+  contract_sha256: string;
+  artifact_sha256?: string;
+  expected_header_count: number;
+  target_pathway_count: number;
+  required_stage_slot_count: number;
+  record_count: number;
+  covered_stage_slot_count: number;
+  structurally_ready_stage_slot_count: number;
+  complete_calibration_donor_pathway_count: number;
+  structurally_complete_pathway_count: number;
+  receptor_activation_allowed_count: number;
+  signal_execution_allowed_count: number;
+  cell_state_coupling_allowed_count: number;
+  automatic_unit_conversion: false;
+  automatic_kinetic_fitting: false;
+  record_count_by_split?: Record<string, number>;
+  pathway_assessments?: unknown[];
+  blockers: string[];
+};
+
+export type EngineActiveProteinLocalizationIntake = {
+  version: "phh_active_protein_localization_intake_v1";
+  contract_id: string;
+  protein_panel_id: string;
+  status: string;
+  delivery_path: string;
+  contract_sha256: string;
+  artifact_sha256?: string;
+  expected_header_count: number;
+  target_protein_count: number;
+  required_protein_slot_count: number;
+  record_count: number;
+  covered_protein_slot_count: number;
+  structurally_ready_protein_slot_count: number;
+  complete_calibration_donor_protein_count: number;
+  structurally_complete_protein_count: number;
+  active_copy_or_concentration_authorized_count: number;
+  functional_rate_authorized_count: number;
+  cell_state_coupling_allowed_count: number;
+  automatic_total_to_surface_conversion: false;
+  automatic_surface_to_active_conversion: false;
+  automatic_flux_scaling: false;
+  record_count_by_split?: Record<string, number>;
+  protein_assessments?: unknown[];
+  blockers: string[];
+};
+
+export type EnginePhh3dMeshBoundaryIntake = {
+  version: "phh_3d_mesh_boundary_intake_v1";
+  status: string;
+  contract_id: string;
+  contract_path: string;
+  contract_sha256: string;
+  delivery_path: string;
+  delivery_sha256: string | null;
+  expected_headers: string[];
+  target_structure_ids: string[];
+  canonical_mesh_artifact_schema: string;
+  records: unknown[];
+  assessments: unknown[];
+  summary: {
+    required_field_count: number;
+    conditional_field_count: number;
+    target_structure_count: number;
+    manifest_record_count: number;
+    mesh_artifact_count: number;
+    topologically_watertight_artifact_count: number;
+    self_intersection_audited_artifact_count: number;
+    repository_self_intersection_audited_artifact_count: number;
+    repository_self_intersection_free_artifact_count: number;
+    grid_convergence_verified_artifact_count: number;
+    structurally_ready_mesh_count: number;
+    registered_biological_mesh_boundary_count: number;
+    contact_ground_truth_mesh_count: number;
+    mechanics_coupled_mesh_count: number;
+    automatic_runtime_activation_count: number;
+  };
+  gates: {
+    generic_watertight_triangle_mesh_numerical_kernel_available: true;
+    topology_audit_available: true;
+    self_intersection_audit_implemented_in_repository: true;
+    biological_mesh_registration_allowed: false;
+    mechanics_coupling_allowed: false;
+    automatic_runtime_activation: false;
+  };
+  limitations: string[];
+};
+
+export type EngineIntracellularMobilityIntake = {
+  version: "phh_intracellular_mobility_intake_v1";
+  status: string;
+  contract_id: string;
+  contract_path: string;
+  contract_sha256: string;
+  delivery_path: string;
+  delivery_sha256: string | null;
+  expected_headers: string[];
+  target_species_ids: string[];
+  required_stage_ids: string[];
+  records: unknown[];
+  assessments: unknown[];
+  summary: {
+    required_field_count: number;
+    conditional_field_count: number;
+    target_species_count: number;
+    required_stage_count_per_species: number;
+    required_stage_slot_count: number;
+    record_count: number;
+    covered_stage_slot_count: number;
+    structurally_complete_species_count: number;
+    size_resolved_crowding_chain_count: number;
+    apparent_diffusivity_authorized_species_count: number;
+    crowding_law_authorized_species_count: number;
+    reaction_coupled_species_count: number;
+    global_viscosity_multiplier_count: number;
+  };
+  gates: Record<string, boolean>;
+  limitations: string[];
+};
+
+export type EngineReactionTransportCouplingIntake = {
+  version: "phh_reaction_transport_coupling_intake_v1";
+  status: string;
+  contract_id: string;
+  contract_path: string;
+  contract_sha256: string;
+  delivery_path: string;
+  delivery_sha256: string | null;
+  transport_scale_definition: "L^2/(D*tau_reaction)";
+  expected_headers: string[];
+  target_reaction_ids: string[];
+  required_stage_ids: string[];
+  records: unknown[];
+  assessments: unknown[];
+  summary: {
+    required_field_count: number;
+    conditional_field_count: number;
+    target_reaction_count: number;
+    required_stage_count_per_reaction: number;
+    required_stage_slot_count: number;
+    record_count: number;
+    covered_stage_slot_count: number;
+    mobility_resolved_reaction_count: number;
+    geometry_resolved_reaction_count: number;
+    dimensionally_consistent_reaction_count: number;
+    transport_limitation_demonstrated_reaction_count: number;
+    structurally_complete_reaction_count: number;
+    local_concentration_coupled_reaction_count: number;
+    direct_rate_corrected_reaction_count: number;
+    runtime_activated_reaction_count: number;
+    global_fluid_multiplier_count: number;
+  };
+  gates: Record<string, boolean>;
+  limitations: string[];
+};
+
 export type EngineExternalValidationContext = {
   id: string;
   title: string;
@@ -1206,7 +1410,7 @@ export type EngineHepatocyteCapabilityAtlas = {
 };
 
 export type EngineCellularMemoryContract = {
-  version: "cellular_memory_substrate_contract_v1";
+  version: "cellular_memory_substrate_contract_v2";
   status: string;
   event_log_is_memory: false;
   causal_rule: string;
@@ -1224,11 +1428,44 @@ export type EngineCellularMemoryContract = {
   active_memory_trace_count: number;
   automatic_memory_consolidation: false;
   automatic_future_response_coupling: false;
+  trajectory_intake: {
+    version: "phh_cellular_memory_trajectory_intake_v1";
+    contract_id: string;
+    contract_path: string;
+    contract_sha256: string;
+    delivery_path: string;
+    expected_header_count: number;
+    required_column_count: number;
+    conditional_column_count: number;
+    declared_substrate_count: number;
+    write_persist_rechallenge_gate_count: number;
+    split_leakage_guard_count: number;
+    independent_heldout_study_guard_count: number;
+    automatic_memory_trace_creation: false;
+    automatic_future_response_coupling: false;
+    automatic_parameter_activation: false;
+    status: string;
+    artifact_sha256: string | null;
+    record_count: number;
+    donor_count: number;
+    source_study_count: number;
+    candidate_trajectory_count: number;
+    structurally_complete_candidate_count: number;
+    quantitatively_authorized_memory_law_count: number;
+    record_count_by_split: Record<string, number>;
+    blockers: string[];
+  };
   source_ids: string[];
   summary: {
     substrate_contract_count: number;
     quantitatively_coupled_substrate_count: number;
     required_persistence_test_count: number;
+    trajectory_contract_column_count: number;
+    write_persist_rechallenge_gate_count: number;
+    donor_split_leakage_guard_count: number;
+    complete_donor_trajectory_record_count: number;
+    structurally_complete_candidate_count: number;
+    quantitatively_authorized_memory_law_count: number;
   };
 };
 
@@ -1289,8 +1526,60 @@ export type EngineReactionEvidenceAtlas = {
   limitations: string[];
 };
 
+export type EngineReactionEvidenceIntake = {
+  version: "phh_reaction_evidence_intake_v1";
+  contract_id: string;
+  network_id: string;
+  status: string;
+  delivery_path: string;
+  contract_sha256: string;
+  artifact_sha256?: string;
+  expected_header_count: number;
+  active_reaction_count: number;
+  required_slot_count: number;
+  record_count: number;
+  covered_slot_count: number;
+  structurally_ready_slot_count: number;
+  structurally_complete_reaction_count: number;
+  atlas_mutation_allowed_count: number;
+  quantitative_execution_allowed_count: number;
+  predictive_execution_allowed_count: number;
+  automatic_unit_conversion: false;
+  automatic_parameter_fitting: false;
+  automatic_cell_state_coupling: false;
+  record_count_by_split?: Record<string, number>;
+  reaction_assessments?: unknown[];
+  blockers: string[];
+};
+
+export type EnginePHHMechanicsCalibrationIntake = {
+  version: "phh_mechanics_calibration_intake_v1";
+  contract_id: string;
+  status: string;
+  delivery_path: string;
+  contract_sha256: string;
+  artifact_sha256?: string;
+  expected_header_count: number;
+  target_quantity_count: number;
+  record_count: number;
+  donor_count: number;
+  raw_trajectory_count: number;
+  reported_parameter_record_count: number;
+  structurally_complete_trajectory_count: number;
+  spatial_fsi_ready_trajectory_count: number;
+  independent_heldout_trajectory_count: number;
+  quantitatively_authorized_parameter_count: number;
+  mechanics_coupling_allowed: false;
+  automatic_parameter_fitting: false;
+  automatic_unit_conversion: false;
+  automatic_runtime_coupling: false;
+  record_count_by_split?: Record<string, number>;
+  trajectory_assessments?: unknown[];
+  blockers: string[];
+};
+
 export type EngineCytosolTransport = {
-  version: "cytosol_transport_rheology_contract_v2";
+  version: "cytosol_transport_rheology_contract_v13";
   status: string;
   material_model: {
     model: "poroelastic_two_phase_cytoplasm";
@@ -1331,6 +1620,28 @@ export type EngineCytosolTransport = {
     may_parameterize_healthy_phh: false;
     source_ids: string[];
   }[];
+  phh_mechanics_calibration_intake: EnginePHHMechanicsCalibrationIntake;
+  phh_membrane_topology_event_intake: {
+    version: "phh_membrane_topology_event_intake_v1";
+    contract_id: "healthy_phh_membrane_topology_event_intake_v1";
+    schema_version: "cell.phh-membrane-topology-event-intake.v1";
+    status: string;
+    delivery_path: string;
+    contract_sha256: string;
+    target_event_kinds: ("bud_growth" | "neck_formation" | "fission" | "fusion")[];
+    required_record_fields: string[];
+    required_field_count: number;
+    record_count: number;
+    healthy_phh_context_record_count: number;
+    structurally_complete_record_count: number;
+    quantitatively_authorized_record_count: number;
+    runtime_topology_activation_allowed: boolean;
+    automatic_missing_value_imputation: false;
+    automatic_event_threshold_fitting: false;
+    automatic_runtime_activation: false;
+    record_assessments: unknown[];
+    blockers: string[];
+  };
   transport_mode_contract: {
     aqueous_passive_transport: {
       carriers: string;
@@ -1341,9 +1652,29 @@ export type EngineCytosolTransport = {
     active_cargo_transport: {
       carriers: string;
       mechanisms: string[];
-      numerical_kernel_available: false;
+      numerical_kernel_available: true;
+      numerical_kernel_scope: string;
+      biological_velocity_or_dwell_time_assigned: false;
       healthy_phh_rate_bound: false;
       cross_context_reference_only: true;
+      trajectory_intake: {
+        version: string;
+        contract_id: string;
+        status: string;
+        delivery_path: string;
+        contract_sha256: string;
+        expected_header_count: number;
+        record_count: number;
+        donor_count: number;
+        route_count: number;
+        structurally_complete_route_count: number;
+        quantitatively_authorized_route_count: number;
+        automatic_velocity_inference: false;
+        automatic_motor_parameter_fitting: false;
+        automatic_route_activation: false;
+        automatic_cell_state_coupling: false;
+        blockers: string[];
+      };
     };
     mode_interchange_prohibited: true;
   };
@@ -1352,19 +1683,109 @@ export type EngineCytosolTransport = {
       enabled: true;
       role: string;
       membrane_volume_mapping: string;
+      local_star_shaped_membrane_boundary_coupling: true;
+      local_boundary_reference_space: true;
+      local_boundary_angular_bin_count: 512;
+      affine_component_removed_before_local_boundary_sampling: true;
+      multi_intersection_fold_or_topology_change_support: false;
+      non_star_shaped_closed_mesh_domain_kernel: true;
+      closed_mesh_domain_self_intersection_audit: true;
+      closed_mesh_domain_biological_registration_count: 0;
+      membrane_topology_change_support: false;
+      locally_conservative_membrane_face_flux: true;
+      outer_membrane_subgrid_volume_samples_per_cell: 8;
+      outer_membrane_face_area_samples: 4;
+      outer_membrane_geometric_conservation_source: true;
+      outer_membrane_volume_fraction_mass_remap: true;
       moving_analytic_obstacle_boundaries: true;
-      static_anatomy_proxy_boundaries: true;
+      analytic_obstacle_shapes: string[];
+      rigid_translation_boundary_velocity: true;
+      quaternion_derived_rotation_boundary_velocity: true;
+      renderer_geometry_boundary_adapter: true;
+      renderer_geometry_boundary_classes: string[];
+      thin_boundary_treatment: string;
+      subgrid_quadrature_samples_per_cell: 8;
+      face_aperture_quadrature_channels: 4;
+      subgrid_grid_convergence_tested: true;
+      fractional_face_aperture_flux_weighting: true;
+      fractional_face_aperture_pressure_weighting: true;
+      partial_cell_volume_conservation: true;
+      generic_watertight_triangle_mesh_boundary_kernel: true;
+      mesh_topology_checks: string[];
+      mesh_self_intersection_detection: true;
+      registered_biological_mesh_boundary_count: 0;
+      full_watertight_mesh_boundaries: false;
       pressure_reaction_diagnostic_only: true;
       biological_time_or_velocity_claim: false;
       biological_pressure_claim: false;
       membrane_pressure_feedback: false;
     };
+    dimensionless_pressure_membrane_response_candidate: {
+      enabled: true;
+      role: string;
+      triangle_pressure_traction: true;
+      surface_mean_pressure_shape_mode: true;
+      closed_mesh_volume_correction: true;
+      backtracking_line_search: true;
+      self_intersection_rejection: true;
+      action_reaction_diagnostic: true;
+      pressure_work_diagnostic: true;
+      force_energy_consistency_tested: true;
+      volume_preservation_tested: true;
+      runtime_feedback_enabled: false;
+      biological_pressure_assigned: false;
+      biological_compliance_assigned: false;
+      healthy_phh_mechanics_assigned: false;
+      mechanics_calibration_intake_contract_id: string;
+      delivered_mechanics_trajectory_count: 0;
+      spatial_fsi_ready_trajectory_count: 0;
+      quantitatively_authorized_parameter_count: 0;
+    };
+    dimensionless_membrane_topology_transition_candidate: {
+      enabled: true;
+      role: string;
+      supported_event_kinds: ("bud_growth" | "neck_formation" | "fission" | "fusion")[];
+      closed_surface_topology_audit: true;
+      cross_component_intersection_audit: true;
+      event_specific_euler_change_audit: true;
+      explicit_component_lineage_required: true;
+      explicit_face_transfer_map_required: true;
+      extensive_surface_inventory_conservation: true;
+      area_integrated_density_conservation: true;
+      explicit_binding_destination_required: true;
+      molecule_identity_resolved: false;
+      automatic_event_detection: false;
+      automatic_mesh_surgery: false;
+      automatic_event_time_or_neck_threshold: false;
+      runtime_mesh_replacement_enabled: false;
+      fluid_domain_replacement_enabled: false;
+      biological_event_activation_enabled: false;
+      evidence_intake_contract_id: string;
+      delivered_event_record_count: number;
+      quantitatively_authorized_event_record_count: number;
+    };
     conservative_passive_scalar_kernel: {
       enabled: true;
       role: string;
       boundary_condition: string;
+      moving_domain_remap: string;
+      moving_domain_mass_conservation_tested: true;
+      fractional_face_aperture_flux_weighting: true;
+      partial_cell_volume_mass_conservation_tested: true;
       biological_species_bound_count: 0;
       biological_diffusivity_claim: false;
+    };
+    dimensionless_active_cargo_route_kernel: {
+      enabled: true;
+      role: string;
+      independent_per_frame_random_walk: false;
+      biological_velocity_claim: false;
+      biological_pause_reversal_or_dwell_claim: false;
+      healthy_phh_route_bound_count: 0;
+      reaction_or_cell_state_coupling: false;
+      trajectory_intake_contract_id: string;
+      delivered_phh_route_count: 0;
+      quantitatively_authorized_phh_route_count: 0;
     };
     quantitative_poroelastic_solver: { enabled: false; reason: string };
     advection_diffusion_reaction_coupling: { enabled: false; reason: string };
@@ -1382,8 +1803,44 @@ export type EngineCytosolTransport = {
     healthy_phh_numeric_rheology_parameter_count: number;
     dimensionless_projection_solver_count: number;
     conservative_passive_scalar_kernel_count: number;
+    conservative_moving_domain_remap_count: number;
+    dimensionless_active_cargo_route_kernel_count: number;
+    healthy_phh_active_transport_kernel_count: number;
+    active_cargo_trajectory_intake_contract_count: number;
+    delivered_phh_active_cargo_route_count: number;
+    structurally_complete_phh_active_cargo_route_count: number;
+    quantitatively_authorized_phh_active_cargo_route_count: number;
     biological_species_bound_count: number;
     moving_analytic_obstacle_layer_count: number;
+    analytic_obstacle_shape_count: number;
+    rigid_body_boundary_kinematics_count: number;
+    renderer_geometry_boundary_adapter_count: number;
+    renderer_geometry_boundary_class_count: number;
+    conservative_subgrid_boundary_treatment_count: number;
+    subgrid_boundary_grid_convergence_test_count: number;
+    local_star_shaped_membrane_boundary_coupling_count: number;
+    local_membrane_topology_change_coupling_count: number;
+    membrane_topology_transition_audit_kernel_count: number;
+    conservative_membrane_topology_state_transfer_kernel_count: number;
+    membrane_topology_transition_candidate_transaction_count: number;
+    membrane_topology_event_intake_contract_count: number;
+    delivered_phh_membrane_topology_event_record_count: number;
+    quantitatively_authorized_phh_membrane_topology_event_record_count: number;
+    locally_conservative_membrane_face_flux_count: number;
+    fractional_face_aperture_solver_count: number;
+    generic_watertight_mesh_boundary_kernel_count: number;
+    repository_mesh_self_intersection_audit_count: number;
+    non_star_shaped_closed_mesh_domain_kernel_count: number;
+    dimensionless_pressure_membrane_response_kernel_count: number;
+    force_energy_consistency_test_count: number;
+    volume_preserving_fsi_candidate_test_count: number;
+    phh_mechanics_calibration_intake_contract_count: number;
+    phh_mechanics_target_quantity_count: number;
+    delivered_phh_mechanics_trajectory_count: number;
+    spatial_fsi_ready_phh_mechanics_trajectory_count: number;
+    quantitatively_authorized_phh_mechanics_parameter_count: number;
+    full_watertight_mesh_boundary_count: number;
+    compound_boundary_conservation_test_count: number;
     membrane_pressure_feedback_count: number;
     quantitative_fluid_solver_count: number;
     reaction_transport_coupling_count: number;
@@ -1393,23 +1850,333 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v1";
+  version: "metabolic_constraint_shell_v10";
   status: string;
   role: string;
   candidate_reconstruction: {
     model_family: string;
+    model_name: string;
     model_version: string | null;
+    release_tag: string;
+    release_commit: string;
+    release_date: string;
+    artifact_url: string;
     artifact_sha256: string | null;
+    artifact_size_bytes: number;
+    artifact_format: string;
+    manifest_path: string;
+    expected_local_cache_path: string;
     sbml_path: string | null;
+    artifact_vendored_in_repository: boolean;
+    model_loaded_by_runtime: boolean;
+    model_loader_verified_against_pinned_artifact: boolean;
+    fbc_loader_audit_report: string;
+    license: string;
     license_audited: boolean;
+    structural_counts_verified_from_sbml: {
+      compartments: number;
+      metabolites: number;
+      reactions: number;
+      genes: number;
+    };
+    structural_audit_report: string;
     mass_charge_balance_audited_in_project: boolean;
+    structural_audit: {
+      active_objective_id: string;
+      one_sided_reaction_count: number;
+      two_sided_reaction_count: number;
+      chemically_parseable_formula_count: number;
+      elementally_assessable_reaction_count: number;
+      elementally_balanced_reaction_count: number;
+      elementally_imbalanced_reaction_count: number;
+      jointly_assessable_reaction_count: number;
+      jointly_balanced_reaction_count: number;
+      jointly_imbalanced_reaction_count: number;
+      jointly_unassessable_reaction_count: number;
+      one_sided_reactions_excluded_from_internal_balance_claim: boolean;
+    };
+    sparse_fbc_loader_audit: {
+      loader_version: "human_gem_fbc_loader_v2";
+      artifact_identity_verified_before_parse: true;
+      stoichiometric_shape: [number, number];
+      stoichiometric_nonzero_count: number;
+      reversible_reaction_count: number;
+      gene_associated_reaction_count: number;
+      gene_product_label_count: number;
+      unique_gene_product_label_count: number;
+      parameter_count: number;
+      objective_count: number;
+      active_objective_id: string;
+      generic_human_reconstruction_loaded: true;
+      healthy_phh_context_extracted: false;
+      fba_execution_allowed: false;
+    };
+    generic_flux_consistency_audit: {
+      audit_report: string;
+      algorithm: "sign_definite_dead_end_prepass_plus_FASTCC";
+      epsilon: number;
+      epsilon_is_biological_parameter: false;
+      solver_backend_version: "1.17.1";
+      solver_method: "highs-ipm";
+      consistent_reaction_count: number;
+      blocked_reaction_count: number;
+      lp7_solve_count: number;
+      lp3_solve_count: number;
+      maximum_mass_balance_residual: number;
+      complete_at_declared_epsilon: true;
+      healthy_phh_context_extracted: false;
+      biological_flux_authority: false;
+    };
+    generic_native_objective_audit: {
+      audit_report: string;
+      objective_id: string;
+      objective_type: "maximize";
+      objective_reaction_id: string;
+      objective_reaction_name: string;
+      objective_is_healthy_phh_measurement: false;
+      status: "optimal";
+      objective_value: number;
+      active_reaction_count_at_1e_minus_9: number;
+      maximum_mass_balance_residual: number;
+      optimum_uniqueness_established: false;
+      healthy_phh_context_extracted: false;
+      biological_flux_authority: false;
+    };
+    seven_donor_proteome_gpr_audit: {
+      audit_report: string;
+      donor_count: number;
+      not_healthy_volunteers: true;
+      single_gene_group_count: number;
+      non_single_gene_excluded_group_count: number;
+      reaction_support_intersection_count: number;
+      generic_fastcc_blocked_conflict_count: number;
+      flux_consistent_core_candidate_count: number;
+      active_enzyme_abundance_inferred: false;
+      flux_magnitude_inferred: false;
+    };
+    seven_donor_fastcore_trial: {
+      audit_report: string;
+      core_reaction_count: number;
+      source_fastcore_selected_reaction_count: number;
+      source_fastcore_output_blocked_reaction_count: number;
+      closure_selected_reaction_count: number;
+      closure_omitted_reaction_count: number;
+      source_FASTCORE_output_flux_consistent: false;
+      context_specificity_established: false;
+      context_model_accepted: false;
+    };
+    seven_donor_gpr_stability_audit: {
+      audit_report: string;
+      gpr_reaction_count: number;
+      zero_donor_support_reaction_count: number;
+      six_donor_support_reaction_count: number;
+      seven_donor_support_reaction_count: number;
+      seven_donor_flux_consistent_core_count: number;
+      largest_leave_one_out_core_expansion_count: number;
+      missing_detection_interpreted_as_inactivity: false;
+    };
+    fastcore_scaling_comparison: {
+      audit_report: string;
+      fixed_selected_reaction_count: number;
+      fixed_output_blocked_reaction_count: number;
+      adaptive_selected_reaction_count: number;
+      adaptive_output_blocked_reaction_count: number;
+      adaptive_lp10_solve_count: number;
+      adaptive_fixed_fallback_count: number;
+      selected_jaccard: number;
+      adaptive_output_flux_consistent: false;
+      context_model_accepted: false;
+    };
+    fastcore_blocker_diagnostics: {
+      audit_report: string;
+      diagnosed_blocker_count: number;
+      full_network_active_blocker_count: number;
+      candidate_blocked_reaction_count: number;
+      full_witness_omitted_reaction_union_count: number;
+      omitted_one_hop_reaction_union_count: number;
+      minimum_reaction_support_proven: false;
+      context_model_accepted: false;
+    };
+    fastcore_support_repair: {
+      audit_report: string;
+      target_blocker_count: number;
+      direction_milp_solve_count: number;
+      minimum_per_target_added_reaction_count: number;
+      maximum_per_target_added_reaction_count: number;
+      added_reaction_union_count: number;
+      repaired_candidate_reaction_count: number;
+      strict_fastcc_blocked_reaction_count: number;
+      added_reaction_without_gpr_count: number;
+      added_reaction_zero_donor_gpr_count: number;
+      per_target_minimum_cardinality_proven: true;
+      union_strictly_flux_consistent: true;
+      union_global_minimum_guaranteed: false;
+      reaction_activity_in_phh_established: false;
+      context_model_accepted: false;
+      fba_execution_allowed: false;
+    };
+    fastcore_shared_support: {
+      audit_report: string;
+      input_candidate_union_count: number;
+      target_blocker_count: number;
+      minimum_shared_added_reaction_count: number;
+      removed_from_per_target_union_count: number;
+      repaired_candidate_reaction_count: number;
+      strict_fastcc_blocked_reaction_count: number;
+      selected_reaction_without_gpr_count: number;
+      selected_reaction_zero_donor_gpr_count: number;
+      minimum_cardinality_within_65_reaction_union_proven: true;
+      selected_subset_strictly_flux_consistent: true;
+      global_minimum_over_all_omitted_reactions_guaranteed: false;
+      reaction_activity_in_phh_established: false;
+      context_model_accepted: false;
+      fba_execution_allowed: false;
+    };
+    fastcore_support_optimality: {
+      audit_report: string;
+      minimum_support_set_count: number;
+      minimum_support_identity_enumeration_complete: true;
+      reactions_present_in_every_minimum_support_count: number;
+      optional_reaction_count: number;
+      optional_reaction_ids_in_input_order: string[];
+      terminal_infeasibility_proven: true;
+      all_minimum_support_identities_enumerated: true;
+      global_minimum_over_all_omitted_reactions_guaranteed: false;
+      reaction_activity_in_phh_established: false;
+      context_model_accepted: false;
+      fba_execution_allowed: false;
+    };
+    reaction_evidence_manifest: {
+      manifest_path: string;
+      manifest_reaction_count: number;
+      adaptive_fastcore_noncore_reaction_count: number;
+      adaptive_noncore_without_gpr_count: number;
+      adaptive_noncore_zero_donor_gpr_count: number;
+      adaptive_noncore_partial_donor_gpr_count: number;
+      priority_score_used: false;
+      automatic_bound_change_allowed: false;
+    };
   };
   hepatocyte_context: Record<string, string | null>;
+  generic_constraint_numerics: {
+    version: "constraint_numerics_v1";
+    scope: string;
+    backend: "scipy.optimize.linprog";
+    backend_version: "1.17.1";
+    method: "highs";
+    primal_feasibility_tolerance: number;
+    dual_feasibility_tolerance: number;
+    objective_absolute_tolerance: number;
+    synthetic_fba_fixture_count: number;
+    synthetic_fva_fixture_count: number;
+    mass_balance_residual_check_count: number;
+    bound_violation_check_count: number;
+    alternate_optimum_audit_count: number;
+    elastic_infeasibility_diagnosis_count: number;
+    analytic_fixture_pass_count: number;
+    human_gem_loaded: false;
+    healthy_phh_context_loaded: false;
+    biological_objective_selected: false;
+    measured_exchange_bounds_loaded: false;
+    biological_flux_authority: false;
+  };
+  context_extraction_kernel: {
+    version: "fastcore_context_kernel_v2";
+    algorithm: "FASTCORE";
+    algorithm_role: string;
+    primary_source: string;
+    official_reference_implementation: string;
+    official_reference_implementation_commit: string;
+    backend: "scipy.optimize.linprog";
+    backend_version: "1.17.1";
+    method: "highs";
+    epsilon_has_runtime_default: false;
+    lp10_scaling_factor_has_runtime_default: false;
+    official_fixed_lp10_scaling_factor: number;
+    official_adaptive_lp10_supported: true;
+    official_adaptive_lp10_core_multiplier: number;
+    adaptive_lp10_fixed_fallback_supported: true;
+    diagnostic_output_can_retain_blocked_identities: true;
+    accepting_output_rejects_blocked_identities: true;
+    support_threshold_fraction_of_epsilon: number;
+    requires_flux_consistent_input: true;
+    accepts_identity_bound_flux_consistency_certificate: true;
+    requires_explicit_core_reaction_ids: true;
+    preserves_original_reaction_orientation: true;
+    preserves_every_consistent_core_reaction: true;
+    unique_extraction_guaranteed: false;
+    synthetic_fixture_count: number;
+    synthetic_fixture_pass_count: number;
+    synthetic_selected_reaction_count: number;
+    synthetic_omitted_reaction_count: number;
+    human_gem_context_extraction_executed: false;
+    healthy_phh_core_set_loaded: false;
+    donor_omics_loaded: false;
+    biological_flux_authority: false;
+  };
+  phh_execution_bundle_intake: {
+    version: "phh_metabolic_execution_bundle_intake_v1";
+    contract_id: string;
+    status: string;
+    delivery_path: string;
+    bundle_id?: string;
+    bundle_sha256?: string;
+    contract_sha256: string;
+    required_artifact_count: number;
+    delivered_bundle_count: number;
+    verified_artifact_count: number;
+    measured_exchange_bound_count: number;
+    independent_validation_record_count: number;
+    structurally_complete_bundle_count: number;
+    generic_solver_fixture_pass_count: number;
+    fba_execution_allowed: false;
+    fva_execution_allowed: false;
+    runtime_flux_coupling_allowed: false;
+    automatic_context_extraction: false;
+    automatic_bound_imputation: false;
+    automatic_objective_selection: false;
+    automatic_unit_conversion: false;
+    blockers: string[];
+  };
   optimization_problem: Record<string, string | number | boolean | null>;
   required_outputs: string[];
   gates: Record<string, boolean>;
   source_ids: string[];
   blockers: string[];
+};
+
+export type EngineCompletionGapStatus =
+  | "closed"
+  | "partial"
+  | "blocked_missing_evidence"
+  | "external_action_required"
+  | "not_applicable_at_model_scale";
+
+export type EngineHepatocyteCompletionMatrix = {
+  version: "hepatocyte_completion_matrix_v1";
+  date_verified: string;
+  status: string;
+  score_policy: string;
+  status_semantics: Record<EngineCompletionGapStatus, string>;
+  entries: {
+    id: string;
+    title: string;
+    status: EngineCompletionGapStatus;
+    scope: string;
+    current_capability: string;
+    observed_metrics: Record<string, string | number | boolean | null>;
+    remaining_requirements: string[];
+    code_surfaces: string[];
+  }[];
+  summary: {
+    entry_count: number;
+    closed_count: number;
+    partial_count: number;
+    blocked_missing_evidence_count: number;
+    external_action_required_count: number;
+    not_applicable_at_model_scale_count: number;
+    biological_accuracy_pct: null;
+  };
 };
 
 export type EngineSnapshot = {
@@ -1455,12 +2222,20 @@ export type EngineSnapshot = {
     phh_glucose_observability?: EnginePhhGlucoseObservability;
     compartmental_energy_redox?: EngineCompartmentalEnergyRedox;
     energy_redox_validation?: EngineEnergyRedoxValidation;
+    energy_redox_trajectory_intake?: EngineEnergyRedoxTrajectoryIntake;
+    receptor_signaling_trajectory_intake?: EngineReceptorSignalingTrajectoryIntake;
+    active_protein_localization_intake?: EngineActiveProteinLocalizationIntake;
+    phh_3d_mesh_boundary_intake?: EnginePhh3dMeshBoundaryIntake;
+    intracellular_mobility_intake?: EngineIntracellularMobilityIntake;
+    reaction_transport_coupling_intake?: EngineReactionTransportCouplingIntake;
     external_validation_program?: EngineExternalValidationProgram;
     hepatocyte_capability_atlas?: EngineHepatocyteCapabilityAtlas;
     cellular_memory_contract?: EngineCellularMemoryContract;
     reaction_evidence_atlas?: EngineReactionEvidenceAtlas;
+    reaction_evidence_intake?: EngineReactionEvidenceIntake;
     cytosol_transport?: EngineCytosolTransport;
     metabolic_constraint_shell?: EngineMetabolicConstraintShell;
+    hepatocyte_completion_matrix?: EngineHepatocyteCompletionMatrix;
     phh_albumin_secretion?: EnginePhhAlbuminSecretion;
     phh_cyp_function?: EnginePhhCypFunction;
     phh_biliary_excretion?: EnginePhhBiliaryExcretion;
@@ -1469,6 +2244,8 @@ export type EngineSnapshot = {
     phh_absolute_proteome_atlas?: EnginePhhAbsoluteProteomeAtlas;
     phh_transporter_inventory?: EnginePhhTransporterInventory;
     phh_protein_functional_evidence?: EnginePhhProteinFunctionalEvidence;
+    hepatocyte_quantity_harvest?: EngineHepatocyteQuantityHarvest;
+    phh_injury_validation?: EnginePhhInjuryValidation;
     human_sch_bile_acids?: EngineHumanSchBileAcids;
     evidence_intake?: EnginePhhEvidenceIntake;
     published_glucose_model?: EnginePublishedGlucoseModelContext;
@@ -3348,13 +4125,21 @@ export type EngineProteinKineticObservation = {
   kinetic_model: string;
   biological_system: string;
   km: {
-    kind: "point" | "range";
+    kind: "point" | "range" | "apparent_S50";
     value: number | null;
     low: number | null;
     high: number | null;
     sd: number | null;
-    unit: "uM";
+    unit: "uM" | "mM";
   };
+  hill_coefficient: {
+    kind: "point";
+    value: number;
+    low: null;
+    high: null;
+    sd: number | null;
+    unit: "dimensionless";
+  } | null;
   velocity: {
     kind: "vmax" | "rate_at_substrate_concentration";
     value: number;
@@ -3417,7 +4202,7 @@ export type EngineWholeCellTransportValidation = {
 };
 
 export type EnginePhhProteinFunctionalEvidence = {
-  version: "phh_protein_functional_evidence_v1";
+  version: "phh_protein_functional_evidence_v2";
   status: string;
   date_verified: string;
   policy: string;
@@ -3485,8 +4270,9 @@ export type EnginePhhProteinFunctionalEvidence = {
     physiological_domain_identity_count: 3;
     quantitative_surface_localization_count: 0;
     active_fraction_observation_count: 0;
-    assay_kinetic_observation_count: 5;
-    assay_curve_evaluable_count: 2;
+    assay_kinetic_observation_count: 12;
+    assay_curve_evaluable_count: 4;
+    hill_coefficient_observation_count: 1;
     receptor_binding_kinetic_observation_count: 0;
     functional_response_observation_count: 3;
     whole_cell_transport_validation_observation_count: 1;
@@ -3498,6 +4284,296 @@ export type EnginePhhProteinFunctionalEvidence = {
     whole_cell_rate_ready_count: 0;
     highest_selected_abundance_cv_gene: string;
     highest_selected_abundance_cv: number;
+  };
+};
+
+export type EngineHepatocyteQuantityHarvest = {
+  version: "hepatocyte_quantity_harvest_audit_v1";
+  status: string;
+  policy: string;
+  audit: {
+    version: "hepatocyte_quantity_harvest_audit_v1";
+    status: string;
+    total_records: 168;
+    track_counts: Record<string, number>;
+    organism_bucket_counts: Record<string, number>;
+    reported_value_records: 144;
+    strict_numeric_value_records: 115;
+    reported_error_records: 65;
+    reported_sample_size_records: 59;
+    unique_primary_source_pmids: 91;
+    distinct_free_text_usability_labels: 73;
+    exact_duplicate_records: 0;
+    bucket_inconsistency_rows: number[];
+    source_review_count: 7;
+    reviewed_raw_record_count: 25;
+    promoted_context_bound_claim_count: 16;
+    automatic_parameter_activation: false;
+    authoritative_runtime_coupling: false;
+    healthy_phh_runtime_parameter_count: 0;
+  };
+  source_reviews: {
+    id: string;
+    raw_csv_rows: number[];
+    expected_pmids: string[];
+    review_status: string;
+    integration_target: string;
+    promoted_claim_count: number;
+    limitations: string;
+  }[];
+  integration_gates: {
+    lossless_raw_bundle_ready: true;
+    same_assay_kinetic_evidence_ready: true;
+    matching_protocol_injury_observations_ready: true;
+    automatic_parameter_activation: false;
+    healthy_phh_initialization_ready: false;
+    whole_cell_rate_coupling_ready: false;
+    predictive_ready: false;
+  };
+  raw_paths: string[];
+};
+
+export type EnginePhhInjuryTrajectoryDelivery = {
+  donor_resolved_raw_record_count: number;
+  donor_count: number;
+  biological_replicate_count: number;
+  source_study_count: number;
+  endpoint_count: number;
+  assay_count: number;
+  donor_disjoint_split_count: number;
+  independent_heldout_donor_count: number;
+  independent_heldout_trajectory_count: number;
+  numeric_measurement_projection_count: number;
+  independent_heldout_result_count: number;
+  general_fate_law_count: 0;
+  automatic_parameter_activation: false;
+  automatic_cell_state_coupling: false;
+};
+
+export type EnginePhhInjuryAssayProjectionContract = {
+  version: "exact_phh_injury_assay_projection_v1";
+  input_quantity: string;
+  output_quantity: string;
+  operator_formula: string;
+  exact_match_dimensions: string[];
+  unit_conversion_enabled: false;
+  dose_interpolation_enabled: false;
+  time_interpolation_enabled: false;
+  censored_scalar_residual_enabled: false;
+  aggregate_score_enabled: false;
+  pass_fail_assignment_enabled: false;
+  automatic_cell_state_coupling: false;
+};
+
+export type EnginePhhInjuryFrozenEvaluationContract = {
+  version: "donor_disjoint_phh_injury_frozen_evaluation_v1";
+  required_submission_fields: string[];
+  required_split_role: "independent_heldout";
+  source_study_disjoint_from_nonheldout_required: true;
+  manual_primary_source_review_required: true;
+  donor_identity_scope_review_required: true;
+  independent_review_attestation_required: true;
+  frozen_model_required: true;
+  post_freeze_parameter_refit_allowed: false;
+  descriptive_exact_assay_residuals_allowed: true;
+  aggregate_score_enabled: false;
+  pass_fail_assignment_enabled: false;
+  automatic_parameter_activation: false;
+  automatic_cell_state_coupling: false;
+};
+
+export type EnginePhhInjuryTrajectoryIntake = {
+  version: "donor_disjoint_phh_injury_trajectory_intake_v1";
+  contract_id: "donor_disjoint_phh_injury_trajectory_v1";
+  status: string;
+  delivery_path: string;
+  file_present: boolean;
+  artifact_sha256?: string;
+  contract_sha256: string;
+  expected_header_count: 29;
+  split_leakage_guard_enabled: true;
+  independent_heldout_study_guard_enabled: true;
+  measurement_operator: EnginePhhInjuryAssayProjectionContract & {
+    structure_ready: true;
+    numeric_projection_ready: false;
+    projectable_record_count: 0;
+  };
+  frozen_evaluation: EnginePhhInjuryFrozenEvaluationContract & {
+    contract_ready: true;
+    evaluation_ready: false;
+    independent_heldout_result_count: 0;
+  };
+  current_delivery: EnginePhhInjuryTrajectoryDelivery;
+  record_count?: number;
+  donor_count?: number;
+  biological_replicate_count?: number;
+  source_study_count?: number;
+  endpoint_count?: number;
+  assay_count?: number;
+  split_roles_present?: string[];
+  record_count_by_split?: Record<string, number>;
+  donor_count_by_split?: Record<string, number>;
+  donor_disjoint_split?: true;
+  independent_heldout_study_disjoint?: true;
+  donor_identity_scope?: "source_study_id_plus_donor_id";
+  cross_study_donor_linkage_verified?: false;
+  manual_primary_source_review_required?: true;
+  manual_primary_source_review_complete?: false;
+  automatic_parameter_activation?: false;
+  automatic_cell_state_coupling?: false;
+  blockers: string[];
+};
+
+export type EnginePhhInjuryValidation = {
+  version: "phh_injury_validation_v1";
+  status: string;
+  date_verified: string;
+  policy: string;
+  protocols: {
+    id: string;
+    species: "Homo sapiens";
+    biological_system: string;
+    challenge: string;
+    challenge_low: number;
+    challenge_high: number | null;
+    challenge_unit: string;
+    maximum_exposure_h: number;
+    temperature_c: number;
+    source_id: string;
+    source_locator: string;
+    may_initialize_healthy_baseline: false;
+    may_define_general_fate_law: false;
+    may_drive_cell_state: false;
+  }[];
+  observations: {
+    id: string;
+    protocol_id: string;
+    endpoint: string;
+    assay: string;
+    condition: string;
+    time_low_h: number;
+    time_high_h: number;
+    result: string;
+    death_mode: "necrosis" | null;
+    donor_count_low: number;
+    donor_count_high: number;
+    source_id: string;
+    source_locator: string;
+    may_validate_matching_protocol: true;
+    may_generalize: false;
+    may_drive_cell_state: false;
+  }[];
+  integration_gates: {
+    matching_protocol_observations_ready: true;
+    healthy_baseline_initialization_ready: false;
+    general_fate_law_ready: false;
+    senescence_commitment_ready: false;
+    donor_disjoint_validation_ready: false;
+    automatic_runtime_coupling: false;
+    predictive_ready: false;
+  };
+  source_ids: string[];
+  observation_operator: {
+    version: "exact_phh_injury_observation_operator_v1";
+    status: "exact_context_read_only_operator_ready";
+    match_dimensions: string[];
+    supported_result_statuses: string[];
+    exact_protocol_replay_count: number;
+    exact_protocol_replay_pass_count: number;
+    near_miss_probe_count: number;
+    near_miss_rejection_count: number;
+    unit_conversion_enabled: false;
+    dose_interpolation_enabled: false;
+    time_interpolation_enabled: false;
+    generalization_enabled: false;
+    state_mutation_enabled: false;
+    unknown_is_negative_result: false;
+    policy: string;
+  };
+  runtime_authority: {
+    version: "injury_runtime_authority_v1";
+    status: "legacy_injury_runtime_exploratory_only";
+    surfaces: {
+      id: string;
+      code_surfaces: string[];
+      current_role: string;
+      numerical_parameter_authority: string;
+      phh_context_match: false;
+      quantitative_validation_allowed: false;
+      predictive_execution_allowed: false;
+      authoritative_cell_state_coupling_allowed: false;
+      blockers: string[];
+    }[];
+    explicit_purpose_required: true;
+    exploratory_execution_allowed: true;
+    quantitative_validation_allowed: false;
+    predictive_execution_allowed: false;
+    authoritative_cell_state_coupling_allowed: false;
+    policy: string;
+    summary: {
+      audited_legacy_surface_count: number;
+      phh_context_matched_surface_count: 0;
+      quantitative_authority_surface_count: 0;
+      predictive_authority_surface_count: 0;
+      authoritative_state_coupling_surface_count: 0;
+    };
+  };
+  validation_data_contract: {
+    schema_version: "cell.phh-injury-trajectory-contract.v1";
+    contract_id: "donor_disjoint_phh_injury_trajectory_v1";
+    target: string;
+    record_granularity: string;
+    expected_record_file: "phh_injury_trajectories.csv";
+    expected_delivery_path: "data/evidence_intake/incoming/phh_injury/latest/phh_injury_trajectories.csv";
+    canonical_null_token: "null";
+    header_policy: string;
+    required_columns: { id: string; reason: string }[];
+    conditional_columns: { id: string; required_when: string }[];
+    allowed_split_roles: ("calibration" | "internal_validation" | "independent_heldout")[];
+    measurement_operator: EnginePhhInjuryAssayProjectionContract;
+    frozen_evaluation: EnginePhhInjuryFrozenEvaluationContract;
+    policy: {
+      donor_id_may_cross_split_roles: false;
+      biological_replicate_is_independent_donor: false;
+      aggregate_donor_count_may_reconstruct_donor_ids: false;
+      unit_conversion_without_explicit_conversion_provenance: false;
+      time_interpolation_for_validation: false;
+      unknown_endpoint_means_no_effect: false;
+      automatic_parameter_activation: false;
+      automatic_cell_state_coupling: false;
+      manual_primary_source_review_required: true;
+      frozen_model_required_before_independent_heldout_evaluation: true;
+    };
+    current_delivery: EnginePhhInjuryTrajectoryDelivery;
+  };
+  trajectory_intake: EnginePhhInjuryTrajectoryIntake;
+  summary: {
+    primary_source_count: 2;
+    human_phh_protocol_count: 4;
+    matching_protocol_observation_count: 9;
+    apap_observation_count: 5;
+    bile_acid_observation_count: 4;
+    necrosis_mode_observation_count: number;
+    healthy_baseline_parameter_count: 0;
+    general_fate_law_count: 0;
+    senescence_commitment_observation_count: 0;
+    donor_disjoint_validation_count: 0;
+    runtime_coupled_observation_count: 0;
+    exact_protocol_operator_count: 1;
+    exact_protocol_replay_pass_count: number;
+    near_miss_rejection_count: number;
+    audited_legacy_injury_surface_count: number;
+    legacy_quantitative_authority_surface_count: 0;
+    required_donor_trajectory_field_count: number;
+    conditional_donor_trajectory_field_count: number;
+    trajectory_intake_validator_count: 1;
+    donor_split_leakage_guard_count: 1;
+    independent_heldout_study_guard_count: 1;
+    exact_assay_projection_operator_count: 1;
+    frozen_evaluation_contract_count: 1;
+    complete_donor_trajectory_record_count: number;
+    numeric_measurement_projection_count: number;
+    independent_heldout_result_count: number;
   };
 };
 
@@ -3763,12 +4839,20 @@ export type EngineSnapshotSummary = {
   phhGlucoseObservability: EnginePhhGlucoseObservability | null;
   compartmentalEnergyRedox: EngineCompartmentalEnergyRedox | null;
   energyRedoxValidation: EngineEnergyRedoxValidation | null;
+  energyRedoxTrajectoryIntake: EngineEnergyRedoxTrajectoryIntake | null;
+  receptorSignalingTrajectoryIntake: EngineReceptorSignalingTrajectoryIntake | null;
+  activeProteinLocalizationIntake: EngineActiveProteinLocalizationIntake | null;
+  phh3dMeshBoundaryIntake: EnginePhh3dMeshBoundaryIntake | null;
+  intracellularMobilityIntake: EngineIntracellularMobilityIntake | null;
+  reactionTransportCouplingIntake: EngineReactionTransportCouplingIntake | null;
   externalValidationProgram: EngineExternalValidationProgram | null;
   hepatocyteCapabilityAtlas: EngineHepatocyteCapabilityAtlas | null;
   cellularMemoryContract: EngineCellularMemoryContract | null;
   reactionEvidenceAtlas: EngineReactionEvidenceAtlas | null;
+  reactionEvidenceIntake: EngineReactionEvidenceIntake | null;
   cytosolTransport: EngineCytosolTransport | null;
   metabolicConstraintShell: EngineMetabolicConstraintShell | null;
+  hepatocyteCompletionMatrix: EngineHepatocyteCompletionMatrix | null;
   phhAlbuminSecretion: EnginePhhAlbuminSecretion | null;
   phhCypFunction: EnginePhhCypFunction | null;
   phhBiliaryExcretion: EnginePhhBiliaryExcretion | null;
@@ -3777,6 +4861,8 @@ export type EngineSnapshotSummary = {
   phhAbsoluteProteomeAtlas: EnginePhhAbsoluteProteomeAtlas | null;
   phhTransporterInventory: EnginePhhTransporterInventory | null;
   phhProteinFunctionalEvidence: EnginePhhProteinFunctionalEvidence | null;
+  hepatocyteQuantityHarvest: EngineHepatocyteQuantityHarvest | null;
+  phhInjuryValidation: EnginePhhInjuryValidation | null;
   humanSchBileAcids: EngineHumanSchBileAcids | null;
   evidenceIntake: EnginePhhEvidenceIntake | null;
   publishedGlucoseModel: EnginePublishedGlucoseModelContext | null;
@@ -3832,7 +4918,7 @@ export type SnapshotFetcher = (url: string) => Promise<SnapshotResponse>;
 
 export function engineSnapshotEndpointFromLocation(locationLike: Pick<Location, "href">): string {
   const url = new URL(locationLike.href);
-  return url.searchParams.get("engineSnapshot") || "/engine-snapshot.json";
+  return url.searchParams.get("engineSnapshot") || new URL("engine-snapshot.json", url).pathname;
 }
 
 export async function loadEngineSnapshot(url: string, fetcher: SnapshotFetcher = defaultSnapshotFetcher): Promise<EngineSnapshotLoadResult> {
@@ -3935,12 +5021,25 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     phhGlucoseObservability: snapshot.state.phh_glucose_observability ?? null,
     compartmentalEnergyRedox: snapshot.state.compartmental_energy_redox ?? null,
     energyRedoxValidation: snapshot.state.energy_redox_validation ?? null,
+    energyRedoxTrajectoryIntake: snapshot.state.energy_redox_trajectory_intake ?? null,
+    receptorSignalingTrajectoryIntake:
+      snapshot.state.receptor_signaling_trajectory_intake ?? null,
+    activeProteinLocalizationIntake:
+      snapshot.state.active_protein_localization_intake ?? null,
+    phh3dMeshBoundaryIntake:
+      snapshot.state.phh_3d_mesh_boundary_intake ?? null,
+    intracellularMobilityIntake:
+      snapshot.state.intracellular_mobility_intake ?? null,
+    reactionTransportCouplingIntake:
+      snapshot.state.reaction_transport_coupling_intake ?? null,
     externalValidationProgram: snapshot.state.external_validation_program ?? null,
     hepatocyteCapabilityAtlas: snapshot.state.hepatocyte_capability_atlas ?? null,
     cellularMemoryContract: snapshot.state.cellular_memory_contract ?? null,
     reactionEvidenceAtlas: snapshot.state.reaction_evidence_atlas ?? null,
+    reactionEvidenceIntake: snapshot.state.reaction_evidence_intake ?? null,
     cytosolTransport: snapshot.state.cytosol_transport ?? null,
     metabolicConstraintShell: snapshot.state.metabolic_constraint_shell ?? null,
+    hepatocyteCompletionMatrix: snapshot.state.hepatocyte_completion_matrix ?? null,
     phhAlbuminSecretion: snapshot.state.phh_albumin_secretion ?? null,
     phhCypFunction: snapshot.state.phh_cyp_function ?? null,
     phhBiliaryExcretion: snapshot.state.phh_biliary_excretion ?? null,
@@ -3949,6 +5048,8 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     phhAbsoluteProteomeAtlas: snapshot.state.phh_absolute_proteome_atlas ?? null,
     phhTransporterInventory: snapshot.state.phh_transporter_inventory ?? null,
     phhProteinFunctionalEvidence: snapshot.state.phh_protein_functional_evidence ?? null,
+    hepatocyteQuantityHarvest: snapshot.state.hepatocyte_quantity_harvest ?? null,
+    phhInjuryValidation: snapshot.state.phh_injury_validation ?? null,
     humanSchBileAcids: snapshot.state.human_sch_bile_acids ?? null,
     evidenceIntake: snapshot.state.evidence_intake ?? null,
     publishedGlucoseModel: snapshot.state.published_glucose_model ?? null,
@@ -5554,6 +6655,7 @@ function isEngineProteinKineticObservation(value: unknown): value is EngineProte
   if (!isRecord(value) || !isRecord(value.km)) return false;
   const velocity = value.velocity;
   const relative = value.relative_activity_context;
+  const hill = value.hill_coefficient;
   return (
     isString(value.id) &&
     isString(value.gene) &&
@@ -5561,12 +6663,21 @@ function isEngineProteinKineticObservation(value: unknown): value is EngineProte
     isString(value.substrate) &&
     isString(value.kinetic_model) &&
     isString(value.biological_system) &&
-    (value.km.kind === "point" || value.km.kind === "range") &&
+    (value.km.kind === "point" || value.km.kind === "range" || value.km.kind === "apparent_S50") &&
     (value.km.value === null || isFiniteNumber(value.km.value)) &&
     (value.km.low === null || isFiniteNumber(value.km.low)) &&
     (value.km.high === null || isFiniteNumber(value.km.high)) &&
     (value.km.sd === null || isFiniteNumber(value.km.sd)) &&
-    value.km.unit === "uM" &&
+    (value.km.unit === "uM" || value.km.unit === "mM") &&
+    (hill === null || (
+      isRecord(hill) &&
+      hill.kind === "point" &&
+      isFiniteNumber(hill.value) &&
+      hill.low === null &&
+      hill.high === null &&
+      (hill.sd === null || isFiniteNumber(hill.sd)) &&
+      hill.unit === "dimensionless"
+    )) &&
     (velocity === null || (
       isRecord(velocity) &&
       (velocity.kind === "vmax" || velocity.kind === "rate_at_substrate_concentration") &&
@@ -5655,7 +6766,7 @@ function isEnginePhhProteinFunctionalEvidence(
   const gates = value.integration_gates;
   const summary = value.summary;
   return (
-    value.version === "phh_protein_functional_evidence_v1" &&
+    value.version === "phh_protein_functional_evidence_v2" &&
     isString(value.status) &&
     isString(value.date_verified) &&
     isString(value.policy) &&
@@ -5688,9 +6799,10 @@ function isEnginePhhProteinFunctionalEvidence(
       protein.whole_cell_rate_ready === false
     ) &&
     Array.isArray(value.kinetic_observations) &&
-    value.kinetic_observations.length === 5 &&
+    value.kinetic_observations.length === 12 &&
     value.kinetic_observations.every(isEngineProteinKineticObservation) &&
-    value.kinetic_observations.filter((item) => item.may_evaluate_assay_curve).length === 2 &&
+    value.kinetic_observations.filter((item) => item.may_evaluate_assay_curve).length === 4 &&
+    value.kinetic_observations.filter((item) => item.hill_coefficient !== null).length === 1 &&
     value.kinetic_observations.filter(
       (item) => item.velocity?.kind === "rate_at_substrate_concentration",
     ).length === 2 &&
@@ -5720,8 +6832,9 @@ function isEnginePhhProteinFunctionalEvidence(
     summary.physiological_domain_identity_count === 3 &&
     summary.quantitative_surface_localization_count === 0 &&
     summary.active_fraction_observation_count === 0 &&
-    summary.assay_kinetic_observation_count === 5 &&
-    summary.assay_curve_evaluable_count === 2 &&
+    summary.assay_kinetic_observation_count === 12 &&
+    summary.assay_curve_evaluable_count === 4 &&
+    summary.hill_coefficient_observation_count === 1 &&
     summary.receptor_binding_kinetic_observation_count === 0 &&
     summary.functional_response_observation_count === 3 &&
     summary.whole_cell_transport_validation_observation_count === 1 &&
@@ -5733,6 +6846,392 @@ function isEnginePhhProteinFunctionalEvidence(
     isFiniteNumber(summary.highest_selected_abundance_cv) &&
     Array.isArray(value.source_ids) && value.source_ids.every(isString) &&
     Array.isArray(value.limitations) && value.limitations.every(isString)
+  );
+}
+
+function isEngineHepatocyteQuantityHarvest(
+  value: unknown,
+): value is EngineHepatocyteQuantityHarvest {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.audit) ||
+    !isRecord(value.integration_gates) ||
+    !Array.isArray(value.source_reviews) ||
+    !Array.isArray(value.raw_paths)
+  ) return false;
+  const audit = value.audit;
+  const gates = value.integration_gates;
+  const reviewedRows: number[] = [];
+  let promotedClaims = 0;
+  for (const review of value.source_reviews) {
+    if (
+      !isRecord(review) ||
+      !isString(review.id) ||
+      !Array.isArray(review.raw_csv_rows) ||
+      !review.raw_csv_rows.every((row) => Number.isInteger(row)) ||
+      !Array.isArray(review.expected_pmids) ||
+      !review.expected_pmids.every(isString) ||
+      !isString(review.review_status) ||
+      !isString(review.integration_target) ||
+      !Number.isInteger(review.promoted_claim_count) ||
+      !isString(review.limitations)
+    ) return false;
+    reviewedRows.push(...review.raw_csv_rows.map(Number));
+    promotedClaims += Number(review.promoted_claim_count);
+  }
+  return (
+    value.version === "hepatocyte_quantity_harvest_audit_v1" &&
+    isString(value.status) &&
+    isString(value.policy) &&
+    audit.version === "hepatocyte_quantity_harvest_audit_v1" &&
+    audit.total_records === 168 &&
+    audit.reported_value_records === 144 &&
+    audit.strict_numeric_value_records === 115 &&
+    audit.reported_error_records === 65 &&
+    audit.reported_sample_size_records === 59 &&
+    audit.unique_primary_source_pmids === 91 &&
+    audit.distinct_free_text_usability_labels === 73 &&
+    audit.exact_duplicate_records === 0 &&
+    Array.isArray(audit.bucket_inconsistency_rows) &&
+    audit.bucket_inconsistency_rows.length === 1 &&
+    audit.bucket_inconsistency_rows[0] === 167 &&
+    audit.source_review_count === 7 &&
+    audit.reviewed_raw_record_count === 25 &&
+    audit.promoted_context_bound_claim_count === 16 &&
+    audit.automatic_parameter_activation === false &&
+    audit.authoritative_runtime_coupling === false &&
+    audit.healthy_phh_runtime_parameter_count === 0 &&
+    value.source_reviews.length === 7 &&
+    reviewedRows.length === 25 &&
+    new Set(reviewedRows).size === 25 &&
+    promotedClaims === 16 &&
+    value.raw_paths.length === 9 &&
+    value.raw_paths.every(isString) &&
+    gates.lossless_raw_bundle_ready === true &&
+    gates.same_assay_kinetic_evidence_ready === true &&
+    gates.matching_protocol_injury_observations_ready === true &&
+    gates.automatic_parameter_activation === false &&
+    gates.healthy_phh_initialization_ready === false &&
+    gates.whole_cell_rate_coupling_ready === false &&
+    gates.predictive_ready === false
+  );
+}
+
+function isEnginePhhInjuryValidation(value: unknown): value is EnginePhhInjuryValidation {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.integration_gates) ||
+    !isRecord(value.summary) ||
+    !isRecord(value.observation_operator) ||
+    !isRecord(value.runtime_authority) ||
+    !isRecord(value.runtime_authority.summary) ||
+    !isRecord(value.validation_data_contract) ||
+    !isRecord(value.validation_data_contract.policy) ||
+    !isRecord(value.validation_data_contract.current_delivery) ||
+    !isRecord(value.validation_data_contract.measurement_operator) ||
+    !isRecord(value.validation_data_contract.frozen_evaluation) ||
+    !isRecord(value.trajectory_intake) ||
+    !isRecord(value.trajectory_intake.measurement_operator) ||
+    !isRecord(value.trajectory_intake.frozen_evaluation) ||
+    !isRecord(value.trajectory_intake.current_delivery) ||
+    !Array.isArray(value.protocols) ||
+    !Array.isArray(value.observations) ||
+    !Array.isArray(value.source_ids) ||
+    !Array.isArray(value.observation_operator.match_dimensions) ||
+    !Array.isArray(value.observation_operator.supported_result_statuses) ||
+    !Array.isArray(value.runtime_authority.surfaces) ||
+    !Array.isArray(value.validation_data_contract.required_columns) ||
+    !Array.isArray(value.validation_data_contract.conditional_columns) ||
+    !Array.isArray(value.validation_data_contract.allowed_split_roles)
+  ) return false;
+  const protocolIds = new Set<string>();
+  for (const protocol of value.protocols) {
+    if (
+      !isRecord(protocol) ||
+      !isString(protocol.id) ||
+      protocol.species !== "Homo sapiens" ||
+      !isString(protocol.biological_system) ||
+      !isString(protocol.challenge) ||
+      !isFiniteNumber(protocol.challenge_low) ||
+      !(protocol.challenge_high === null || isFiniteNumber(protocol.challenge_high)) ||
+      !isString(protocol.challenge_unit) ||
+      !isFiniteNumber(protocol.maximum_exposure_h) ||
+      !isFiniteNumber(protocol.temperature_c) ||
+      !isString(protocol.source_id) ||
+      !isString(protocol.source_locator) ||
+      protocol.may_initialize_healthy_baseline !== false ||
+      protocol.may_define_general_fate_law !== false ||
+      protocol.may_drive_cell_state !== false
+    ) return false;
+    protocolIds.add(protocol.id);
+  }
+  let necrosisCount = 0;
+  for (const observation of value.observations) {
+    if (
+      !isRecord(observation) ||
+      !isString(observation.id) ||
+      !isString(observation.protocol_id) ||
+      !protocolIds.has(observation.protocol_id) ||
+      !isString(observation.endpoint) ||
+      !isString(observation.assay) ||
+      !isString(observation.condition) ||
+      !isFiniteNumber(observation.time_low_h) ||
+      !isFiniteNumber(observation.time_high_h) ||
+      !isString(observation.result) ||
+      !(observation.death_mode === null || observation.death_mode === "necrosis") ||
+      !Number.isInteger(observation.donor_count_low) ||
+      !Number.isInteger(observation.donor_count_high) ||
+      !isString(observation.source_id) ||
+      !isString(observation.source_locator) ||
+      observation.may_validate_matching_protocol !== true ||
+      observation.may_generalize !== false ||
+      observation.may_drive_cell_state !== false
+    ) return false;
+    if (observation.death_mode === "necrosis") necrosisCount += 1;
+  }
+  const gates = value.integration_gates;
+  const summary = value.summary;
+  const operator = value.observation_operator as Record<string, unknown>;
+  const matchDimensions = operator.match_dimensions as unknown[];
+  const supportedResultStatuses = operator.supported_result_statuses as unknown[];
+  const authority = value.runtime_authority as Record<string, unknown>;
+  const authoritySummary = authority.summary as Record<string, unknown>;
+  const authoritySurfaces = authority.surfaces as unknown[];
+  const contract = value.validation_data_contract as Record<string, unknown>;
+  const contractPolicy = contract.policy as Record<string, unknown>;
+  const currentDelivery = contract.current_delivery as Record<string, unknown>;
+  const contractMeasurement = contract.measurement_operator as Record<string, unknown>;
+  const contractFrozenEvaluation = contract.frozen_evaluation as Record<string, unknown>;
+  const requiredColumns = contract.required_columns as unknown[];
+  const conditionalColumns = contract.conditional_columns as unknown[];
+  const allowedSplitRoles = contract.allowed_split_roles as unknown[];
+  const trajectoryIntake = value.trajectory_intake as Record<string, unknown>;
+  const trajectoryMeasurement = trajectoryIntake.measurement_operator as Record<string, unknown>;
+  const trajectoryFrozenEvaluation = trajectoryIntake.frozen_evaluation as Record<string, unknown>;
+  const trajectoryDelivery = trajectoryIntake.current_delivery as Record<string, unknown>;
+  const isSha256 = (candidate: unknown) =>
+    isString(candidate) && /^[0-9a-f]{64}$/.test(candidate);
+  const deliveryCountKeys = [
+    "donor_resolved_raw_record_count",
+    "donor_count",
+    "biological_replicate_count",
+    "source_study_count",
+    "endpoint_count",
+    "assay_count",
+    "donor_disjoint_split_count",
+    "independent_heldout_donor_count",
+    "independent_heldout_trajectory_count",
+    "numeric_measurement_projection_count",
+    "independent_heldout_result_count",
+  ];
+  const isDelivery = (candidate: Record<string, unknown>) =>
+    deliveryCountKeys.every(
+      (key) => Number.isInteger(candidate[key]) && Number(candidate[key]) >= 0,
+    ) &&
+    candidate.general_fate_law_count === 0 &&
+    candidate.automatic_parameter_activation === false &&
+    candidate.automatic_cell_state_coupling === false;
+  const isAssayProjectionContract = (candidate: Record<string, unknown>) => {
+    const dimensions = candidate.exact_match_dimensions;
+    return (
+      candidate.version === "exact_phh_injury_assay_projection_v1" &&
+      isString(candidate.input_quantity) &&
+      isString(candidate.output_quantity) &&
+      isString(candidate.operator_formula) &&
+      Array.isArray(dimensions) &&
+      dimensions.length === 20 &&
+      dimensions.every(isString) &&
+      new Set(dimensions).size === 20 &&
+      candidate.unit_conversion_enabled === false &&
+      candidate.dose_interpolation_enabled === false &&
+      candidate.time_interpolation_enabled === false &&
+      candidate.censored_scalar_residual_enabled === false &&
+      candidate.aggregate_score_enabled === false &&
+      candidate.pass_fail_assignment_enabled === false &&
+      candidate.automatic_cell_state_coupling === false
+    );
+  };
+  const isFrozenEvaluationContract = (candidate: Record<string, unknown>) => {
+    const fields = candidate.required_submission_fields;
+    return (
+      candidate.version === "donor_disjoint_phh_injury_frozen_evaluation_v1" &&
+      Array.isArray(fields) &&
+      fields.length === 12 &&
+      fields.every(isString) &&
+      new Set(fields).size === 12 &&
+      candidate.required_split_role === "independent_heldout" &&
+      candidate.source_study_disjoint_from_nonheldout_required === true &&
+      candidate.manual_primary_source_review_required === true &&
+      candidate.donor_identity_scope_review_required === true &&
+      candidate.independent_review_attestation_required === true &&
+      candidate.frozen_model_required === true &&
+      candidate.post_freeze_parameter_refit_allowed === false &&
+      candidate.descriptive_exact_assay_residuals_allowed === true &&
+      candidate.aggregate_score_enabled === false &&
+      candidate.pass_fail_assignment_enabled === false &&
+      candidate.automatic_parameter_activation === false &&
+      candidate.automatic_cell_state_coupling === false
+    );
+  };
+  const deliveryMatches = deliveryCountKeys.every(
+    (key) => currentDelivery[key] === trajectoryDelivery[key],
+  );
+  const trajectoryStatusValid =
+    trajectoryIntake.status === "awaiting_donor_resolved_phh_injury_trajectories" ||
+    trajectoryIntake.status === "rejected_invalid_phh_injury_trajectory_delivery" ||
+    trajectoryIntake.status === "structurally_valid_manual_primary_source_review_required";
+  const requiredColumnsValid = requiredColumns.every((column) =>
+    isRecord(column) && isString(column.id) && isString(column.reason)
+  );
+  const conditionalColumnsValid = conditionalColumns.every((column) =>
+    isRecord(column) && isString(column.id) && isString(column.required_when)
+  );
+  const authoritySurfacesValid = authoritySurfaces.every((surface) =>
+    isRecord(surface) &&
+    isString(surface.id) &&
+    Array.isArray(surface.code_surfaces) &&
+    surface.code_surfaces.every(isString) &&
+    isString(surface.current_role) &&
+    isString(surface.numerical_parameter_authority) &&
+    surface.phh_context_match === false &&
+    surface.quantitative_validation_allowed === false &&
+    surface.predictive_execution_allowed === false &&
+    surface.authoritative_cell_state_coupling_allowed === false &&
+    Array.isArray(surface.blockers) &&
+    surface.blockers.length > 0 &&
+    surface.blockers.every(isString)
+  );
+  return (
+    value.version === "phh_injury_validation_v1" &&
+    isString(value.status) &&
+    isString(value.date_verified) &&
+    isString(value.policy) &&
+    value.protocols.length === 4 &&
+    protocolIds.size === 4 &&
+    value.observations.length === 9 &&
+    value.source_ids.length === 2 &&
+    value.source_ids.every(isString) &&
+    gates.matching_protocol_observations_ready === true &&
+    gates.healthy_baseline_initialization_ready === false &&
+    gates.general_fate_law_ready === false &&
+    gates.senescence_commitment_ready === false &&
+    gates.donor_disjoint_validation_ready === false &&
+    gates.automatic_runtime_coupling === false &&
+    gates.predictive_ready === false &&
+    operator.version === "exact_phh_injury_observation_operator_v1" &&
+    operator.status === "exact_context_read_only_operator_ready" &&
+    matchDimensions.length === 8 &&
+    matchDimensions.every(isString) &&
+    new Set(matchDimensions).size === 8 &&
+    supportedResultStatuses.length === 6 &&
+    supportedResultStatuses.every(isString) &&
+    operator.exact_protocol_replay_count === 4 &&
+    operator.exact_protocol_replay_pass_count === 4 &&
+    operator.near_miss_probe_count === 7 &&
+    operator.near_miss_rejection_count === 7 &&
+    operator.unit_conversion_enabled === false &&
+    operator.dose_interpolation_enabled === false &&
+    operator.time_interpolation_enabled === false &&
+    operator.generalization_enabled === false &&
+    operator.state_mutation_enabled === false &&
+    operator.unknown_is_negative_result === false &&
+    isString(operator.policy) &&
+    authority.version === "injury_runtime_authority_v1" &&
+    authority.status === "legacy_injury_runtime_exploratory_only" &&
+    authoritySurfaces.length === 3 &&
+    authoritySurfacesValid &&
+    authority.explicit_purpose_required === true &&
+    authority.exploratory_execution_allowed === true &&
+    authority.quantitative_validation_allowed === false &&
+    authority.predictive_execution_allowed === false &&
+    authority.authoritative_cell_state_coupling_allowed === false &&
+    isString(authority.policy) &&
+    authoritySummary.audited_legacy_surface_count === 3 &&
+    authoritySummary.phh_context_matched_surface_count === 0 &&
+    authoritySummary.quantitative_authority_surface_count === 0 &&
+    authoritySummary.predictive_authority_surface_count === 0 &&
+    authoritySummary.authoritative_state_coupling_surface_count === 0 &&
+    contract.schema_version === "cell.phh-injury-trajectory-contract.v1" &&
+    contract.contract_id === "donor_disjoint_phh_injury_trajectory_v1" &&
+    isString(contract.target) &&
+    isString(contract.record_granularity) &&
+    contract.expected_record_file === "phh_injury_trajectories.csv" &&
+    contract.expected_delivery_path === "data/evidence_intake/incoming/phh_injury/latest/phh_injury_trajectories.csv" &&
+    contract.canonical_null_token === "null" &&
+    isString(contract.header_policy) &&
+    requiredColumns.length === 19 &&
+    requiredColumnsValid &&
+    conditionalColumns.length === 10 &&
+    conditionalColumnsValid &&
+    allowedSplitRoles.length === 3 &&
+    new Set(allowedSplitRoles).size === 3 &&
+    allowedSplitRoles.every((role) =>
+      role === "calibration" ||
+      role === "internal_validation" ||
+      role === "independent_heldout"
+    ) &&
+    isAssayProjectionContract(contractMeasurement) &&
+    isFrozenEvaluationContract(contractFrozenEvaluation) &&
+    contractPolicy.donor_id_may_cross_split_roles === false &&
+    contractPolicy.biological_replicate_is_independent_donor === false &&
+    contractPolicy.aggregate_donor_count_may_reconstruct_donor_ids === false &&
+    contractPolicy.unit_conversion_without_explicit_conversion_provenance === false &&
+    contractPolicy.time_interpolation_for_validation === false &&
+    contractPolicy.unknown_endpoint_means_no_effect === false &&
+    contractPolicy.automatic_parameter_activation === false &&
+    contractPolicy.automatic_cell_state_coupling === false &&
+    contractPolicy.manual_primary_source_review_required === true &&
+    contractPolicy.frozen_model_required_before_independent_heldout_evaluation === true &&
+    isDelivery(currentDelivery) &&
+    trajectoryIntake.version === "donor_disjoint_phh_injury_trajectory_intake_v1" &&
+    trajectoryIntake.contract_id === "donor_disjoint_phh_injury_trajectory_v1" &&
+    trajectoryStatusValid &&
+    isString(trajectoryIntake.delivery_path) &&
+    (trajectoryIntake.file_present === true || trajectoryIntake.file_present === false) &&
+    (trajectoryIntake.artifact_sha256 === undefined || isSha256(trajectoryIntake.artifact_sha256)) &&
+    isSha256(trajectoryIntake.contract_sha256) &&
+    trajectoryIntake.expected_header_count === 29 &&
+    trajectoryIntake.split_leakage_guard_enabled === true &&
+    trajectoryIntake.independent_heldout_study_guard_enabled === true &&
+    isAssayProjectionContract(trajectoryMeasurement) &&
+    trajectoryMeasurement.structure_ready === true &&
+    trajectoryMeasurement.numeric_projection_ready === false &&
+    trajectoryMeasurement.projectable_record_count === 0 &&
+    isFrozenEvaluationContract(trajectoryFrozenEvaluation) &&
+    trajectoryFrozenEvaluation.contract_ready === true &&
+    trajectoryFrozenEvaluation.evaluation_ready === false &&
+    trajectoryFrozenEvaluation.independent_heldout_result_count === 0 &&
+    isDelivery(trajectoryDelivery) &&
+    deliveryMatches &&
+    Array.isArray(trajectoryIntake.blockers) &&
+    trajectoryIntake.blockers.length > 0 &&
+    trajectoryIntake.blockers.every(isString) &&
+    summary.primary_source_count === 2 &&
+    summary.human_phh_protocol_count === 4 &&
+    summary.matching_protocol_observation_count === 9 &&
+    summary.apap_observation_count === 5 &&
+    summary.bile_acid_observation_count === 4 &&
+    summary.necrosis_mode_observation_count === necrosisCount &&
+    summary.healthy_baseline_parameter_count === 0 &&
+    summary.general_fate_law_count === 0 &&
+    summary.senescence_commitment_observation_count === 0 &&
+    summary.donor_disjoint_validation_count === 0 &&
+    summary.runtime_coupled_observation_count === 0 &&
+    summary.exact_protocol_operator_count === 1 &&
+    summary.exact_protocol_replay_pass_count === 4 &&
+    summary.near_miss_rejection_count === 7 &&
+    summary.audited_legacy_injury_surface_count === 3 &&
+    summary.legacy_quantitative_authority_surface_count === 0 &&
+    summary.required_donor_trajectory_field_count === 19 &&
+    summary.conditional_donor_trajectory_field_count === 10 &&
+    summary.trajectory_intake_validator_count === 1 &&
+    summary.donor_split_leakage_guard_count === 1 &&
+    summary.independent_heldout_study_guard_count === 1 &&
+    summary.exact_assay_projection_operator_count === 1 &&
+    summary.frozen_evaluation_contract_count === 1 &&
+    summary.complete_donor_trajectory_record_count === currentDelivery.donor_resolved_raw_record_count &&
+    summary.numeric_measurement_projection_count === currentDelivery.numeric_measurement_projection_count &&
+    summary.independent_heldout_result_count === currentDelivery.independent_heldout_result_count
   );
 }
 
@@ -6275,6 +7774,8 @@ function isEngineSnapshot(value: unknown): value is EngineSnapshot {
     (candidate.state.phh_absolute_proteome_atlas === undefined || isEnginePhhAbsoluteProteomeAtlas(candidate.state.phh_absolute_proteome_atlas)) &&
     (candidate.state.phh_transporter_inventory === undefined || isEnginePhhTransporterInventory(candidate.state.phh_transporter_inventory)) &&
     (candidate.state.phh_protein_functional_evidence === undefined || isEnginePhhProteinFunctionalEvidence(candidate.state.phh_protein_functional_evidence)) &&
+    (candidate.state.hepatocyte_quantity_harvest === undefined || isEngineHepatocyteQuantityHarvest(candidate.state.hepatocyte_quantity_harvest)) &&
+    (candidate.state.phh_injury_validation === undefined || isEnginePhhInjuryValidation(candidate.state.phh_injury_validation)) &&
     (candidate.state.human_sch_bile_acids === undefined || isEngineHumanSchBileAcids(candidate.state.human_sch_bile_acids)) &&
     (candidate.state.human_hepatocyte_3d_morphometry === undefined || isEngineHumanHepatocyte3dMorphometry(candidate.state.human_hepatocyte_3d_morphometry)) &&
     (candidate.state.human_liver_open_atlas === undefined || isEngineHumanLiverOpenAtlas(candidate.state.human_liver_open_atlas)) &&

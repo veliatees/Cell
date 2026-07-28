@@ -6,6 +6,8 @@
 // diffusivity or reaction-rate parameters. Those biological units remain
 // evidence-gated by the Python engine.
 
+import { WatertightTriangleMeshBoundary } from "./watertightMeshBoundary";
+
 export type CytosolVector3 = readonly [number, number, number];
 export type CytosolQuaternion = readonly [number, number, number, number];
 
@@ -14,6 +16,8 @@ type CytosolObstacleBase = {
   center: CytosolVector3;
   orientation?: CytosolQuaternion;
   velocity?: CytosolVector3;
+  angularVelocity?: CytosolVector3;
+  boundarySampling?: "cell_center" | "conservative_subgrid";
 };
 
 export type CytosolSphereObstacle = CytosolObstacleBase & {
@@ -32,13 +36,26 @@ export type CytosolCapsuleObstacle = CytosolObstacleBase & {
   halfLength: number;
 };
 
+export type CytosolBoxObstacle = CytosolObstacleBase & {
+  kind: "box";
+  halfExtents: CytosolVector3;
+};
+
+export type CytosolMeshObstacle = CytosolObstacleBase & {
+  kind: "watertight_triangle_mesh";
+  boundary: WatertightTriangleMeshBoundary;
+};
+
 export type CytosolObstacle =
   | CytosolSphereObstacle
   | CytosolEllipsoidObstacle
-  | CytosolCapsuleObstacle;
+  | CytosolCapsuleObstacle
+  | CytosolBoxObstacle
+  | CytosolMeshObstacle;
 
 type StoredObstacle = CytosolObstacle & {
   resolvedVelocity: CytosolVector3;
+  resolvedAngularVelocity: CytosolVector3;
   boundingRadius: number;
 };
 
@@ -46,7 +63,8 @@ export type CytosolProjectionOptions = {
   resolution: number;
   halfExtent: number;
   seed: number;
-  radiusAtDirection: (x: number, y: number, z: number) => number;
+  radiusAtDirection?: (x: number, y: number, z: number) => number;
+  closedDomainBoundary?: () => WatertightTriangleMeshBoundary;
   safetyFraction?: number;
   projectionIterations?: number;
   visualModeCount?: number;
@@ -61,21 +79,78 @@ export type CytosolProjectionDiagnostics = {
   fluidCellCount: number;
   solidCellCount: number;
   obstacleCount: number;
+  rotatingObstacleCount: number;
+  subgridObstacleCount: number;
+  watertightMeshObstacleCount: number;
+  fractionalMembraneCellCount: number;
+  fractionalObstacleCellCount: number;
+  subgridInterceptedCellCount: number;
+  fractionalMembraneFaceCount: number;
+  closedMembraneFaceCount: number;
+  fractionalOpenFaceCount: number;
+  closedObstacleFaceCount: number;
+  meanInternalMembraneFaceOpenFraction: number;
+  meanInternalFaceOpenFraction: number;
+  dimensionlessMembraneVolumeEstimate: number;
+  dimensionlessMembraneVolumeChangeRate: number;
+  movingMembraneCellCount: number;
+  dimensionlessObstacleVolumeEstimate: number;
   divergenceRmsBefore: number;
   divergenceRmsAfter: number;
   divergenceMaxAfter: number;
   dimensionlessBoundaryPressureRms: number;
   dimensionlessBoundaryReaction: CytosolVector3;
+  closedMeshFluidDomainBoundaryCount: number;
   biologicalUnitsAssigned: false;
   membranePressureFeedbackEnabled: false;
 };
 
+export type PassiveScalarDomainRemapDiagnostics = {
+  remapCount: number;
+  displacedCellCount: number;
+  exposedCellCount: number;
+  faceRedistributedCellCount: number;
+  nearestFluidFallbackCellCount: number;
+  displacedDimensionlessMass: number;
+  redistributedDimensionlessMass: number;
+  absoluteMassResidual: number;
+  relativeMassResidual: number;
+};
+
 export const CYTOSOL_NUMERICAL_CONTRACT = Object.freeze({
-  version: "dimensionless_moving_boundary_projection_v1",
-  numericalMethod: "cell_centered_eulerian_pressure_projection",
-  movingObstacleShapes: ["sphere", "ellipsoid", "capsule"] as const,
-  passiveScalarMethod: "conservative_finite_volume_upwind_advection_centered_diffusion",
+  version: "dimensionless_moving_boundary_projection_v8",
+  numericalMethod: "cell_centered_eulerian_cut_cell_projection_with_discrete_geometric_conservation",
+  movingObstacleShapes: [
+    "sphere",
+    "ellipsoid",
+    "capsule",
+    "box",
+    "watertight_triangle_mesh"
+  ] as const,
+  movingObstacleKinematics: "rigid_translation_plus_quaternion_derived_rotation",
+  genericWatertightTriangleMeshBoundaryKernel: true,
+  repositorySelfIntersectionAudit: true,
+  closedMeshFluidDomainBoundaryKernel: true,
+  nonStarShapedClosedMeshDomainSupported: true,
+  registeredBiologicalMeshBoundaryCount: 0,
+  meshSelfIntersectionDetection: true,
+  membraneTopologyChangeSupport: false,
+  passiveScalarMethod: "finite_volume_advection_diffusion_with_conservative_moving_domain_remap",
+  movingDomainRemap: "face_neighbor_redistribution_with_deterministic_nearest_fluid_fallback",
+  outerMembraneTreatment: "star_shaped_2x2x2_volume_fraction_plus_2x2_face_area_quadrature",
+  outerMembraneGeometricConservation: "cell_local_volume_change_source_in_pressure_projection",
+  membraneSubgridQuadratureSamplesPerCell: 8,
+  membraneFaceApertureQuadratureSamples: 4,
+  locallyConservativeMembraneFaceFlux: true,
+  thinBoundaryTreatment: "conservative_subgrid_2x2x2_volume_quadrature_plus_2x2_analytic_face_channel_intersections",
+  subgridQuadratureSamplesPerCell: 8,
+  faceApertureQuadratureChannels: 4,
+  faceAperturePressureWeighted: true,
+  faceApertureScalarFluxWeighted: true,
+  partialCellVolumeConservation: true,
+  subgridGridConvergenceTested: true,
   rendererVelocityUnits: "world_units_per_render_second",
+  rendererAngularVelocityUnits: "radians_per_render_second",
   biologicalVelocityClaim: false,
   biologicalPressureClaim: false,
   biologicalDiffusivityClaim: false,
@@ -103,6 +178,77 @@ function normalizedQuaternion(raw?: CytosolQuaternion): CytosolQuaternion {
   return [x / length, y / length, z / length, w / length];
 }
 
+export function capsuleObstacleBetween(
+  id: string,
+  start: CytosolVector3,
+  end: CytosolVector3,
+  radius: number,
+  boundarySampling: "cell_center" | "conservative_subgrid" = "cell_center"
+): CytosolCapsuleObstacle {
+  if (!id) throw new RangeError("capsule segment id must be non-empty");
+  finiteVector(start, `${id} start`);
+  finiteVector(end, `${id} end`);
+  if (!Number.isFinite(radius) || radius <= 0) {
+    throw new RangeError(`${id} radius must be positive`);
+  }
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  const dz = end[2] - start[2];
+  const length = Math.hypot(dx, dy, dz);
+  if (length <= 1e-12) throw new RangeError(`${id} segment length must be positive`);
+  const nx = dx / length;
+  const ny = dy / length;
+  const nz = dz / length;
+  const orientation: CytosolQuaternion = ny < -1 + 1e-12
+    ? [1, 0, 0, 0]
+    : normalizedQuaternion([nz, 0, -nx, 1 + ny]);
+  return {
+    id,
+    kind: "capsule",
+    center: [
+      (start[0] + end[0]) * 0.5,
+      (start[1] + end[1]) * 0.5,
+      (start[2] + end[2]) * 0.5
+    ],
+    orientation,
+    radius,
+    halfLength: length * 0.5,
+    boundarySampling
+  };
+}
+
+function quaternionDot(a: CytosolQuaternion, b: CytosolQuaternion): number {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+}
+
+function resolvedAngularVelocity(
+  previous: CytosolQuaternion | undefined,
+  current: CytosolQuaternion,
+  deltaS: number
+): CytosolVector3 {
+  if (!previous || deltaS <= 1e-9) return ZERO_VECTOR;
+  const aligned: CytosolQuaternion = quaternionDot(previous, current) < 0
+    ? [-current[0], -current[1], -current[2], -current[3]]
+    : current;
+  const [px, py, pz, pw] = previous;
+  const [cx, cy, cz, cw] = aligned;
+  let dx = cw * -px + cx * pw + cy * -pz - cz * -py;
+  let dy = cw * -py - cx * -pz + cy * pw + cz * -px;
+  let dz = cw * -pz + cx * -py - cy * -px + cz * pw;
+  let dw = cw * pw - cx * -px - cy * -py - cz * -pz;
+  if (dw < 0) {
+    dx = -dx;
+    dy = -dy;
+    dz = -dz;
+    dw = -dw;
+  }
+  const vectorLength = Math.hypot(dx, dy, dz);
+  if (vectorLength <= 1e-12) return ZERO_VECTOR;
+  const angle = 2 * Math.atan2(vectorLength, Math.max(-1, Math.min(1, dw)));
+  const scale = angle / (vectorLength * deltaS);
+  return [dx * scale, dy * scale, dz * scale];
+}
+
 function inverseRotate(
   x: number,
   y: number,
@@ -124,14 +270,26 @@ function inverseRotate(
 function obstacleBoundingRadius(obstacle: CytosolObstacle): number {
   if (obstacle.kind === "sphere") return obstacle.radius;
   if (obstacle.kind === "ellipsoid") return Math.max(...obstacle.radii);
-  return obstacle.radius + obstacle.halfLength;
+  if (obstacle.kind === "capsule") return obstacle.radius + obstacle.halfLength;
+  if (obstacle.kind === "box") return Math.hypot(...obstacle.halfExtents);
+  return obstacle.boundary.boundingRadius;
 }
 
 function validateObstacle(obstacle: CytosolObstacle): void {
   if (!obstacle.id) throw new RangeError("cytosol obstacle id must be non-empty");
   finiteVector(obstacle.center, `${obstacle.id} center`);
   if (obstacle.velocity) finiteVector(obstacle.velocity, `${obstacle.id} velocity`);
+  if (obstacle.angularVelocity) {
+    finiteVector(obstacle.angularVelocity, `${obstacle.id} angular velocity`);
+  }
   normalizedQuaternion(obstacle.orientation);
+  if (
+    obstacle.boundarySampling !== undefined &&
+    obstacle.boundarySampling !== "cell_center" &&
+    obstacle.boundarySampling !== "conservative_subgrid"
+  ) {
+    throw new RangeError(`${obstacle.id} boundary sampling mode is invalid`);
+  }
   if (obstacle.kind === "sphere") {
     if (!Number.isFinite(obstacle.radius) || obstacle.radius <= 0) {
       throw new RangeError(`${obstacle.id} sphere radius must be positive`);
@@ -141,11 +299,23 @@ function validateObstacle(obstacle: CytosolObstacle): void {
     if (obstacle.radii.some((value) => value <= 0)) {
       throw new RangeError(`${obstacle.id} ellipsoid radii must be positive`);
     }
+  } else if (obstacle.kind === "capsule") {
+    if (
+      !Number.isFinite(obstacle.radius) || obstacle.radius <= 0 ||
+      !Number.isFinite(obstacle.halfLength) || obstacle.halfLength < 0
+    ) {
+      throw new RangeError(`${obstacle.id} capsule dimensions are invalid`);
+    }
+  } else if (obstacle.kind === "box") {
+    finiteVector(obstacle.halfExtents, `${obstacle.id} half extents`);
+    if (obstacle.halfExtents.some((value) => value <= 0)) {
+      throw new RangeError(`${obstacle.id} box half extents must be positive`);
+    }
   } else if (
-    !Number.isFinite(obstacle.radius) || obstacle.radius <= 0 ||
-    !Number.isFinite(obstacle.halfLength) || obstacle.halfLength < 0
+    !(obstacle.boundary instanceof WatertightTriangleMeshBoundary) ||
+    !obstacle.boundary.audit.topologicallyWatertight
   ) {
-    throw new RangeError(`${obstacle.id} capsule dimensions are invalid`);
+    throw new RangeError(`${obstacle.id} mesh boundary must pass the watertight audit`);
   }
 }
 
@@ -170,8 +340,203 @@ function obstacleContains(
     const rz = obstacle.radii[2] + padding;
     return (lx / rx) ** 2 + (ly / ry) ** 2 + (lz / rz) ** 2 <= 1;
   }
-  const closestY = Math.max(-obstacle.halfLength, Math.min(obstacle.halfLength, ly));
-  return lx * lx + (ly - closestY) ** 2 + lz * lz <= (obstacle.radius + padding) ** 2;
+  if (obstacle.kind === "capsule") {
+    const closestY = Math.max(-obstacle.halfLength, Math.min(obstacle.halfLength, ly));
+    return lx * lx + (ly - closestY) ** 2 + lz * lz <= (obstacle.radius + padding) ** 2;
+  }
+  if (obstacle.kind === "box") {
+    return (
+      Math.abs(lx) <= obstacle.halfExtents[0] + padding &&
+      Math.abs(ly) <= obstacle.halfExtents[1] + padding &&
+      Math.abs(lz) <= obstacle.halfExtents[2] + padding
+    );
+  }
+  return obstacle.boundary.containsPoint(lx, ly, lz, padding);
+}
+
+function dot3(a: CytosolVector3, b: CytosolVector3): number {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+function subtract3(a: CytosolVector3, b: CytosolVector3): CytosolVector3 {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+}
+
+function pointSegmentDistanceSquared(
+  point: CytosolVector3,
+  start: CytosolVector3,
+  end: CytosolVector3
+): number {
+  const segment = subtract3(end, start);
+  const relative = subtract3(point, start);
+  const denominator = dot3(segment, segment);
+  const t = denominator > 1e-18
+    ? Math.max(0, Math.min(1, dot3(relative, segment) / denominator))
+    : 0;
+  const dx = start[0] + segment[0] * t - point[0];
+  const dy = start[1] + segment[1] * t - point[1];
+  const dz = start[2] + segment[2] * t - point[2];
+  return dx * dx + dy * dy + dz * dz;
+}
+
+function segmentIntersectsUnitSphere(start: CytosolVector3, end: CytosolVector3): boolean {
+  if (dot3(start, start) <= 1 || dot3(end, end) <= 1) return true;
+  const direction = subtract3(end, start);
+  const a = dot3(direction, direction);
+  if (a <= 1e-18) return false;
+  const b = 2 * dot3(start, direction);
+  const c = dot3(start, start) - 1;
+  const discriminant = b * b - 4 * a * c;
+  if (discriminant < 0) return false;
+  const root = Math.sqrt(discriminant);
+  const inverse = 1 / (2 * a);
+  const first = (-b - root) * inverse;
+  const second = (-b + root) * inverse;
+  return (first >= 0 && first <= 1) || (second >= 0 && second <= 1);
+}
+
+function segmentIntersectsBox(
+  start: CytosolVector3,
+  end: CytosolVector3,
+  halfExtents: CytosolVector3
+): boolean {
+  let minimum = 0;
+  let maximum = 1;
+  for (let axis = 0; axis < 3; axis += 1) {
+    const direction = end[axis] - start[axis];
+    const extent = halfExtents[axis];
+    if (Math.abs(direction) <= 1e-18) {
+      if (start[axis] < -extent || start[axis] > extent) return false;
+      continue;
+    }
+    let first = (-extent - start[axis]) / direction;
+    let second = (extent - start[axis]) / direction;
+    if (first > second) [first, second] = [second, first];
+    minimum = Math.max(minimum, first);
+    maximum = Math.min(maximum, second);
+    if (minimum > maximum) return false;
+  }
+  return true;
+}
+
+function segmentSegmentDistanceSquared(
+  firstStart: CytosolVector3,
+  firstEnd: CytosolVector3,
+  secondStart: CytosolVector3,
+  secondEnd: CytosolVector3
+): number {
+  const firstDirection = subtract3(firstEnd, firstStart);
+  const secondDirection = subtract3(secondEnd, secondStart);
+  const relative = subtract3(firstStart, secondStart);
+  const firstLengthSquared = dot3(firstDirection, firstDirection);
+  const secondLengthSquared = dot3(secondDirection, secondDirection);
+  const secondProjection = dot3(secondDirection, relative);
+  let firstParameter = 0;
+  let secondParameter = 0;
+
+  if (firstLengthSquared <= 1e-18 && secondLengthSquared <= 1e-18) {
+    return dot3(relative, relative);
+  }
+  if (firstLengthSquared <= 1e-18) {
+    secondParameter = Math.max(0, Math.min(1, secondProjection / secondLengthSquared));
+  } else {
+    const firstProjection = dot3(firstDirection, relative);
+    if (secondLengthSquared <= 1e-18) {
+      firstParameter = Math.max(0, Math.min(1, -firstProjection / firstLengthSquared));
+    } else {
+      const crossProjection = dot3(firstDirection, secondDirection);
+      const denominator = firstLengthSquared * secondLengthSquared - crossProjection * crossProjection;
+      firstParameter = denominator !== 0
+        ? Math.max(0, Math.min(1, (
+            crossProjection * secondProjection - firstProjection * secondLengthSquared
+          ) / denominator))
+        : 0;
+      secondParameter = (
+        crossProjection * firstParameter + secondProjection
+      ) / secondLengthSquared;
+      if (secondParameter < 0) {
+        secondParameter = 0;
+        firstParameter = Math.max(0, Math.min(1, -firstProjection / firstLengthSquared));
+      } else if (secondParameter > 1) {
+        secondParameter = 1;
+        firstParameter = Math.max(
+          0,
+          Math.min(1, (crossProjection - firstProjection) / firstLengthSquared)
+        );
+      }
+    }
+  }
+
+  const dx = (
+    firstStart[0] + firstDirection[0] * firstParameter -
+    secondStart[0] - secondDirection[0] * secondParameter
+  );
+  const dy = (
+    firstStart[1] + firstDirection[1] * firstParameter -
+    secondStart[1] - secondDirection[1] * secondParameter
+  );
+  const dz = (
+    firstStart[2] + firstDirection[2] * firstParameter -
+    secondStart[2] - secondDirection[2] * secondParameter
+  );
+  return dx * dx + dy * dy + dz * dz;
+}
+
+function obstacleIntersectsSegment(
+  obstacle: StoredObstacle,
+  start: CytosolVector3,
+  end: CytosolVector3
+): boolean {
+  if (
+    pointSegmentDistanceSquared(obstacle.center, start, end) >
+    obstacle.boundingRadius ** 2
+  ) {
+    return false;
+  }
+  const localStart = inverseRotate(
+    start[0] - obstacle.center[0],
+    start[1] - obstacle.center[1],
+    start[2] - obstacle.center[2],
+    obstacle.orientation
+  );
+  const localEnd = inverseRotate(
+    end[0] - obstacle.center[0],
+    end[1] - obstacle.center[1],
+    end[2] - obstacle.center[2],
+    obstacle.orientation
+  );
+  if (obstacle.kind === "sphere") {
+    return segmentIntersectsUnitSphere(
+      [localStart[0] / obstacle.radius, localStart[1] / obstacle.radius, localStart[2] / obstacle.radius],
+      [localEnd[0] / obstacle.radius, localEnd[1] / obstacle.radius, localEnd[2] / obstacle.radius]
+    );
+  }
+  if (obstacle.kind === "ellipsoid") {
+    return segmentIntersectsUnitSphere(
+      [
+        localStart[0] / obstacle.radii[0],
+        localStart[1] / obstacle.radii[1],
+        localStart[2] / obstacle.radii[2]
+      ],
+      [
+        localEnd[0] / obstacle.radii[0],
+        localEnd[1] / obstacle.radii[1],
+        localEnd[2] / obstacle.radii[2]
+      ]
+    );
+  }
+  if (obstacle.kind === "box") {
+    return segmentIntersectsBox(localStart, localEnd, obstacle.halfExtents);
+  }
+  if (obstacle.kind === "capsule") {
+    return segmentSegmentDistanceSquared(
+      localStart,
+      localEnd,
+      [0, -obstacle.halfLength, 0],
+      [0, obstacle.halfLength, 0]
+    ) <= obstacle.radius ** 2;
+  }
+  return obstacle.boundary.intersectsSegment(localStart, localEnd);
 }
 
 export class DynamicCytosolObstacleField {
@@ -179,6 +544,9 @@ export class DynamicCytosolObstacleField {
   private obstacles: StoredObstacle[] = [];
   private readonly buckets = new Map<string, number[]>();
   private readonly previousCenters = new Map<string, CytosolVector3>();
+  private readonly previousOrientations = new Map<string, CytosolQuaternion>();
+  private readonly sampleVelocity = new Float32Array(3);
+  private subgridObstacleCount = 0;
 
   constructor(cellSize: number) {
     if (!Number.isFinite(cellSize) || cellSize <= 0) {
@@ -189,6 +557,22 @@ export class DynamicCytosolObstacleField {
 
   get count(): number {
     return this.obstacles.length;
+  }
+
+  get rotatingCount(): number {
+    return this.obstacles.reduce((count, obstacle) => (
+      Math.hypot(...obstacle.resolvedAngularVelocity) > 1e-9 ? count + 1 : count
+    ), 0);
+  }
+
+  get subgridCount(): number {
+    return this.subgridObstacleCount;
+  }
+
+  get watertightMeshCount(): number {
+    return this.obstacles.reduce((count, obstacle) => (
+      obstacle.kind === "watertight_triangle_mesh" ? count + 1 : count
+    ), 0);
   }
 
   setObstacles(obstacles: readonly CytosolObstacle[], deltaS: number): void {
@@ -202,6 +586,8 @@ export class DynamicCytosolObstacleField {
       if (ids.has(obstacle.id)) throw new RangeError(`duplicate cytosol obstacle id: ${obstacle.id}`);
       ids.add(obstacle.id);
       const previous = this.previousCenters.get(obstacle.id);
+      const orientation = normalizedQuaternion(obstacle.orientation);
+      const previousOrientation = this.previousOrientations.get(obstacle.id);
       const resolvedVelocity: CytosolVector3 = obstacle.velocity ?? (
         previous && deltaS > 1e-9
           ? [
@@ -211,18 +597,31 @@ export class DynamicCytosolObstacleField {
             ]
           : ZERO_VECTOR
       );
+      const angularVelocity = obstacle.angularVelocity ?? resolvedAngularVelocity(
+        previousOrientation,
+        orientation,
+        deltaS
+      );
       next.push({
         ...obstacle,
-        orientation: normalizedQuaternion(obstacle.orientation),
+        orientation,
         resolvedVelocity,
+        resolvedAngularVelocity: angularVelocity,
         boundingRadius: obstacleBoundingRadius(obstacle)
       });
       this.previousCenters.set(obstacle.id, [...obstacle.center]);
+      this.previousOrientations.set(obstacle.id, orientation);
     }
     for (const id of this.previousCenters.keys()) {
-      if (!ids.has(id)) this.previousCenters.delete(id);
+      if (!ids.has(id)) {
+        this.previousCenters.delete(id);
+        this.previousOrientations.delete(id);
+      }
     }
     this.obstacles = next;
+    this.subgridObstacleCount = next.reduce((count, obstacle) => (
+      obstacle.boundarySampling === "conservative_subgrid" ? count + 1 : count
+    ), 0);
     this.rebuildHash();
   }
 
@@ -239,10 +638,135 @@ export class DynamicCytosolObstacleField {
   ): boolean {
     const obstacle = this.findContaining(x, y, z, 0);
     if (!obstacle) return false;
-    target[offset] = obstacle.resolvedVelocity[0];
-    target[offset + 1] = obstacle.resolvedVelocity[1];
-    target[offset + 2] = obstacle.resolvedVelocity[2];
+    this.writeObstacleVelocity(obstacle, x, y, z, target, offset);
     return true;
+  }
+
+  cellCenteredSolidVelocityAt(
+    x: number,
+    y: number,
+    z: number,
+    target: Float32Array,
+    offset = 0
+  ): boolean {
+    const obstacle = this.findContaining(x, y, z, 0, "cell_center");
+    if (!obstacle) return false;
+    this.writeObstacleVelocity(obstacle, x, y, z, target, offset);
+    return true;
+  }
+
+  sampleSubgridCell(
+    x: number,
+    y: number,
+    z: number,
+    cellWidth: number,
+    targetVelocity: Float32Array,
+    target: { solidFraction: number; centerContained: boolean; conservativeIntercept: boolean }
+  ): void {
+    if (![x, y, z, cellWidth].every(Number.isFinite) || cellWidth <= 0) {
+      throw new RangeError("subgrid obstacle sample must be finite with positive cell width");
+    }
+    target.solidFraction = 0;
+    target.centerContained = false;
+    target.conservativeIntercept = false;
+    targetVelocity[0] = 0;
+    targetVelocity[1] = 0;
+    targetVelocity[2] = 0;
+    if (this.subgridCount === 0) return;
+
+    const centerObstacle = this.findContaining(x, y, z, 0, "subgrid");
+    target.centerContained = centerObstacle !== null;
+    const quarter = cellWidth * 0.25;
+    let sampleCount = 0;
+    for (const dz of [-quarter, quarter]) {
+      for (const dy of [-quarter, quarter]) {
+        for (const dx of [-quarter, quarter]) {
+          const sx = x + dx;
+          const sy = y + dy;
+          const sz = z + dz;
+          const obstacle = this.findContaining(sx, sy, sz, 0, "subgrid");
+          if (!obstacle) continue;
+          this.writeObstacleVelocity(obstacle, sx, sy, sz, this.sampleVelocity, 0);
+          targetVelocity[0] += this.sampleVelocity[0];
+          targetVelocity[1] += this.sampleVelocity[1];
+          targetVelocity[2] += this.sampleVelocity[2];
+          sampleCount += 1;
+        }
+      }
+    }
+    if (sampleCount > 0) {
+      target.solidFraction = sampleCount / 8;
+      targetVelocity[0] /= sampleCount;
+      targetVelocity[1] /= sampleCount;
+      targetVelocity[2] /= sampleCount;
+      target.conservativeIntercept = !target.centerContained;
+      return;
+    }
+
+    // A membrane thinner than the quadrature spacing can still fall between all
+    // eight samples. The half-cell diagonal gives a conservative intersection
+    // test; assigning one subcell of occupancy keeps that boundary represented
+    // while its excess volume shrinks under grid refinement.
+    const halfDiagonal = Math.sqrt(3) * cellWidth * 0.5;
+    const intersecting = this.findContaining(x, y, z, halfDiagonal, "subgrid");
+    if (!intersecting) return;
+    target.solidFraction = 1 / 8;
+    target.conservativeIntercept = !target.centerContained;
+    this.writeObstacleVelocity(intersecting, x, y, z, targetVelocity, 0);
+  }
+
+  sampleFaceOpenFraction(
+    start: CytosolVector3,
+    end: CytosolVector3,
+    axis: 0 | 1 | 2,
+    cellWidth: number
+  ): number {
+    finiteVector(start, "face aperture start");
+    finiteVector(end, "face aperture end");
+    if (!Number.isFinite(cellWidth) || cellWidth <= 0) {
+      throw new RangeError("face aperture cell width must be positive");
+    }
+    if (this.obstacles.length === 0) return 1;
+
+    const tangentialAxes = axis === 0 ? [1, 2] : axis === 1 ? [0, 2] : [0, 1];
+    const quarter = cellWidth * 0.25;
+    let blockedChannels = 0;
+    for (const firstOffset of [-quarter, quarter]) {
+      for (const secondOffset of [-quarter, quarter]) {
+        const shiftedStart: [number, number, number] = [...start];
+        const shiftedEnd: [number, number, number] = [...end];
+        shiftedStart[tangentialAxes[0]] += firstOffset;
+        shiftedEnd[tangentialAxes[0]] += firstOffset;
+        shiftedStart[tangentialAxes[1]] += secondOffset;
+        shiftedEnd[tangentialAxes[1]] += secondOffset;
+        if (this.segmentIntersectsObstacle(shiftedStart, shiftedEnd)) {
+          blockedChannels += 1;
+        }
+      }
+    }
+    if (blockedChannels === 0 && this.segmentIntersectsObstacle(start, end)) {
+      // The centerline catches a feature narrower than the four midpoint
+      // channels. One quarter-face is the conservative unresolved aperture.
+      blockedChannels = 1;
+    }
+    return 1 - blockedChannels / 4;
+  }
+
+  private writeObstacleVelocity(
+    obstacle: StoredObstacle,
+    x: number,
+    y: number,
+    z: number,
+    target: Float32Array,
+    offset: number
+  ): void {
+    const rx = x - obstacle.center[0];
+    const ry = y - obstacle.center[1];
+    const rz = z - obstacle.center[2];
+    const [wx, wy, wz] = obstacle.resolvedAngularVelocity;
+    target[offset] = obstacle.resolvedVelocity[0] + wy * rz - wz * ry;
+    target[offset + 1] = obstacle.resolvedVelocity[1] + wz * rx - wx * rz;
+    target[offset + 2] = obstacle.resolvedVelocity[2] + wx * ry - wy * rx;
   }
 
   private gridCoordinate(value: number): number {
@@ -277,7 +801,40 @@ export class DynamicCytosolObstacleField {
     }
   }
 
-  private findContaining(x: number, y: number, z: number, padding: number): StoredObstacle | null {
+  private segmentIntersectsObstacle(
+    start: CytosolVector3,
+    end: CytosolVector3
+  ): boolean {
+    const minX = this.gridCoordinate(Math.min(start[0], end[0]));
+    const maxX = this.gridCoordinate(Math.max(start[0], end[0]));
+    const minY = this.gridCoordinate(Math.min(start[1], end[1]));
+    const maxY = this.gridCoordinate(Math.max(start[1], end[1]));
+    const minZ = this.gridCoordinate(Math.min(start[2], end[2]));
+    const maxZ = this.gridCoordinate(Math.max(start[2], end[2]));
+    const visited = new Set<number>();
+    for (let iz = minZ; iz <= maxZ; iz += 1) {
+      for (let iy = minY; iy <= maxY; iy += 1) {
+        for (let ix = minX; ix <= maxX; ix += 1) {
+          const bucket = this.buckets.get(this.key(ix, iy, iz));
+          if (!bucket) continue;
+          for (const index of bucket) {
+            if (visited.has(index)) continue;
+            visited.add(index);
+            if (obstacleIntersectsSegment(this.obstacles[index], start, end)) return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  private findContaining(
+    x: number,
+    y: number,
+    z: number,
+    padding: number,
+    samplingFilter: "all" | "subgrid" | "cell_center" = "all"
+  ): StoredObstacle | null {
     if (![x, y, z, padding].every(Number.isFinite) || padding < 0) {
       throw new RangeError("cytosol obstacle query must be finite with non-negative padding");
     }
@@ -295,6 +852,14 @@ export class DynamicCytosolObstacleField {
             if (visited.has(index)) continue;
             visited.add(index);
             const obstacle = this.obstacles[index];
+            if (
+              samplingFilter === "subgrid" &&
+              obstacle.boundarySampling !== "conservative_subgrid"
+            ) continue;
+            if (
+              samplingFilter === "cell_center" &&
+              obstacle.boundarySampling === "conservative_subgrid"
+            ) continue;
             if (obstacleContains(obstacle, x, y, z, padding)) return obstacle;
           }
         }
@@ -376,27 +941,78 @@ export class CytosolProjectionGrid {
   readonly halfExtent: number;
   readonly spacing: number;
   readonly fluidMask: Uint8Array;
+  readonly fluidVolumeFraction: Float32Array;
+  readonly membraneFluidFraction: Float32Array;
+  readonly obstacleSolidFraction: Float32Array;
+  readonly membraneFaceOpenFractionX: Float32Array;
+  readonly membraneFaceOpenFractionY: Float32Array;
+  readonly membraneFaceOpenFractionZ: Float32Array;
+  readonly faceOpenFractionX: Float32Array;
+  readonly faceOpenFractionY: Float32Array;
+  readonly faceOpenFractionZ: Float32Array;
   readonly velocityX: Float32Array;
   readonly velocityY: Float32Array;
   readonly velocityZ: Float32Array;
 
   private readonly radiusAtDirection: CytosolProjectionOptions["radiusAtDirection"];
+  private readonly closedDomainBoundaryProvider:
+    CytosolProjectionOptions["closedDomainBoundary"];
+  private activeClosedDomainBoundary: WatertightTriangleMeshBoundary | null = null;
   private readonly safetyFraction: number;
   private readonly projectionIterations: number;
   private readonly pressure: Float32Array;
   private readonly nextPressure: Float32Array;
   private readonly divergence: Float32Array;
+  private readonly previousMembraneFluidFraction: Float32Array;
+  private readonly membraneTargetDivergence: Float32Array;
+  private readonly obstacleVelocityX: Float32Array;
+  private readonly obstacleVelocityY: Float32Array;
+  private readonly obstacleVelocityZ: Float32Array;
+  private readonly subgridSample = {
+    solidFraction: 0,
+    centerContained: false,
+    conservativeIntercept: false
+  };
+  private domainInitialized = false;
+  private fractionalMembraneCellCount = 0;
+  private fractionalObstacleCellCount = 0;
+  private subgridInterceptedCellCount = 0;
+  private fractionalMembraneFaceCount = 0;
+  private closedMembraneFaceCount = 0;
+  private fractionalOpenFaceCount = 0;
+  private closedObstacleFaceCount = 0;
+  private meanInternalMembraneFaceOpenFraction = 0;
+  private meanInternalFaceOpenFraction = 0;
+  private dimensionlessMembraneVolumeChangeRate = 0;
+  private movingMembraneCellCount = 0;
   private readonly modes: ProjectionMode[];
   private elapsedRenderS = 0;
   private currentDiagnostics: CytosolProjectionDiagnostics = {
     fluidCellCount: 0,
     solidCellCount: 0,
     obstacleCount: 0,
+    rotatingObstacleCount: 0,
+    subgridObstacleCount: 0,
+    watertightMeshObstacleCount: 0,
+    fractionalMembraneCellCount: 0,
+    fractionalObstacleCellCount: 0,
+    subgridInterceptedCellCount: 0,
+    fractionalMembraneFaceCount: 0,
+    closedMembraneFaceCount: 0,
+    fractionalOpenFaceCount: 0,
+    closedObstacleFaceCount: 0,
+    meanInternalMembraneFaceOpenFraction: 0,
+    meanInternalFaceOpenFraction: 0,
+    dimensionlessMembraneVolumeEstimate: 0,
+    dimensionlessMembraneVolumeChangeRate: 0,
+    movingMembraneCellCount: 0,
+    dimensionlessObstacleVolumeEstimate: 0,
     divergenceRmsBefore: 0,
     divergenceRmsAfter: 0,
     divergenceMaxAfter: 0,
     dimensionlessBoundaryPressureRms: 0,
     dimensionlessBoundaryReaction: [0, 0, 0],
+    closedMeshFluidDomainBoundaryCount: 0,
     biologicalUnitsAssigned: false,
     membranePressureFeedbackEnabled: false
   };
@@ -420,21 +1036,45 @@ export class CytosolProjectionGrid {
     if (!Number.isInteger(visualModeCount) || visualModeCount < 0) {
       throw new RangeError("cytosol visual mode count must be non-negative");
     }
+    if (
+      (options.radiusAtDirection === undefined) ===
+      (options.closedDomainBoundary === undefined)
+    ) {
+      throw new RangeError(
+        "cytosol grid requires exactly one radial or closed-mesh domain boundary"
+      );
+    }
 
     this.resolution = options.resolution;
     this.halfExtent = options.halfExtent;
     this.spacing = (2 * options.halfExtent) / options.resolution;
     this.radiusAtDirection = options.radiusAtDirection;
+    this.closedDomainBoundaryProvider = options.closedDomainBoundary;
+    this.activeClosedDomainBoundary = this.resolveClosedDomainBoundary();
     this.safetyFraction = safetyFraction;
     this.projectionIterations = projectionIterations;
     const count = options.resolution ** 3;
     this.fluidMask = new Uint8Array(count);
+    this.fluidVolumeFraction = new Float32Array(count);
+    this.membraneFluidFraction = new Float32Array(count);
+    this.obstacleSolidFraction = new Float32Array(count);
+    this.membraneFaceOpenFractionX = new Float32Array(count);
+    this.membraneFaceOpenFractionY = new Float32Array(count);
+    this.membraneFaceOpenFractionZ = new Float32Array(count);
+    this.faceOpenFractionX = new Float32Array(count);
+    this.faceOpenFractionY = new Float32Array(count);
+    this.faceOpenFractionZ = new Float32Array(count);
     this.velocityX = new Float32Array(count);
     this.velocityY = new Float32Array(count);
     this.velocityZ = new Float32Array(count);
+    this.obstacleVelocityX = new Float32Array(count);
+    this.obstacleVelocityY = new Float32Array(count);
+    this.obstacleVelocityZ = new Float32Array(count);
     this.pressure = new Float32Array(count);
     this.nextPressure = new Float32Array(count);
     this.divergence = new Float32Array(count);
+    this.previousMembraneFluidFraction = new Float32Array(count);
+    this.membraneTargetDivergence = new Float32Array(count);
 
     const random = seededRandom(options.seed);
     this.modes = Array.from({ length: visualModeCount }, () => {
@@ -470,7 +1110,11 @@ export class CytosolProjectionGrid {
     validateDeformation(deformation);
     const dt = Math.min(renderDeltaS, 0.05);
     this.elapsedRenderS += dt;
-    this.rebuildDomainAndTentativeVelocity(deformation, obstacles);
+    this.rebuildDomainAndTentativeVelocity(
+      deformation,
+      obstacles,
+      renderDeltaS
+    );
     const before = this.measureAndStoreDivergence();
     this.projectVelocity();
     const after = this.measureAndStoreDivergence();
@@ -480,11 +1124,31 @@ export class CytosolProjectionGrid {
       fluidCellCount,
       solidCellCount: this.fluidMask.length - fluidCellCount,
       obstacleCount: obstacles?.count ?? 0,
+      rotatingObstacleCount: obstacles?.rotatingCount ?? 0,
+      subgridObstacleCount: obstacles?.subgridCount ?? 0,
+      watertightMeshObstacleCount: obstacles?.watertightMeshCount ?? 0,
+      fractionalMembraneCellCount: this.fractionalMembraneCellCount,
+      fractionalObstacleCellCount: this.fractionalObstacleCellCount,
+      subgridInterceptedCellCount: this.subgridInterceptedCellCount,
+      fractionalMembraneFaceCount: this.fractionalMembraneFaceCount,
+      closedMembraneFaceCount: this.closedMembraneFaceCount,
+      fractionalOpenFaceCount: this.fractionalOpenFaceCount,
+      closedObstacleFaceCount: this.closedObstacleFaceCount,
+      meanInternalMembraneFaceOpenFraction:
+        this.meanInternalMembraneFaceOpenFraction,
+      meanInternalFaceOpenFraction: this.meanInternalFaceOpenFraction,
+      dimensionlessMembraneVolumeEstimate: this.membraneVolumeEstimate(),
+      dimensionlessMembraneVolumeChangeRate:
+        this.dimensionlessMembraneVolumeChangeRate,
+      movingMembraneCellCount: this.movingMembraneCellCount,
+      dimensionlessObstacleVolumeEstimate: this.obstacleVolumeEstimate(),
       divergenceRmsBefore: before.rms,
       divergenceRmsAfter: after.rms,
       divergenceMaxAfter: after.max,
       dimensionlessBoundaryPressureRms: boundary.pressureRms,
       dimensionlessBoundaryReaction: boundary.reaction,
+      closedMeshFluidDomainBoundaryCount:
+        this.activeClosedDomainBoundary === null ? 0 : 1,
       biologicalUnitsAssigned: false,
       membranePressureFeedbackEnabled: false
     };
@@ -550,6 +1214,20 @@ export class CytosolProjectionGrid {
     target[offset + 2] = -this.halfExtent + (k + 0.5) * this.spacing;
   }
 
+  obstacleVolumeEstimate(): number {
+    const cellVolume = this.spacing ** 3;
+    let fractionSum = 0;
+    for (const fraction of this.obstacleSolidFraction) fractionSum += fraction;
+    return fractionSum * cellVolume;
+  }
+
+  membraneVolumeEstimate(): number {
+    const cellVolume = this.spacing ** 3;
+    let fractionSum = 0;
+    for (const fraction of this.membraneFluidFraction) fractionSum += fraction;
+    return fractionSum * cellVolume;
+  }
+
   private index(i: number, j: number, k: number): number {
     return i + this.resolution * (j + this.resolution * k);
   }
@@ -558,29 +1236,172 @@ export class CytosolProjectionGrid {
     return i >= 0 && j >= 0 && k >= 0 && i < this.resolution && j < this.resolution && k < this.resolution;
   }
 
+  private membraneContainsPoint(
+    x: number,
+    y: number,
+    z: number,
+    deformation: CytosolProjectionDeformation | null,
+    reference: Float32Array
+  ): boolean {
+    inverseVolumePreservingPoint(x, y, z, deformation, reference);
+    if (this.activeClosedDomainBoundary) {
+      const inverseSafety = 1 / this.safetyFraction;
+      return this.activeClosedDomainBoundary.containsPoint(
+        reference[0] * inverseSafety,
+        reference[1] * inverseSafety,
+        reference[2] * inverseSafety
+      );
+    }
+    const length = Math.hypot(reference[0], reference[1], reference[2]);
+    if (length <= 1e-12) return true;
+    const radius = this.radiusAtDirection!(
+      reference[0] / length,
+      reference[1] / length,
+      reference[2] / length
+    );
+    if (!Number.isFinite(radius) || radius <= 0) {
+      throw new RangeError("cytosol domain radius must be finite and positive");
+    }
+    return length <= radius * this.safetyFraction;
+  }
+
+  private sampleMembraneCellFluidFraction(
+    x: number,
+    y: number,
+    z: number,
+    deformation: CytosolProjectionDeformation | null,
+    reference: Float32Array
+  ): number {
+    const offset = this.spacing * 0.25;
+    let insideCount = 0;
+    for (const dz of [-offset, offset]) {
+      for (const dy of [-offset, offset]) {
+        for (const dx of [-offset, offset]) {
+          if (this.membraneContainsPoint(
+            x + dx,
+            y + dy,
+            z + dz,
+            deformation,
+            reference
+          )) {
+            insideCount += 1;
+          }
+        }
+      }
+    }
+    return insideCount / 8;
+  }
+
+  private sampleMembraneFaceOpenFraction(
+    first: Float32Array,
+    second: Float32Array,
+    axis: 0 | 1 | 2,
+    deformation: CytosolProjectionDeformation | null,
+    reference: Float32Array
+  ): number {
+    const center: CytosolVector3 = [
+      (first[0] + second[0]) * 0.5,
+      (first[1] + second[1]) * 0.5,
+      (first[2] + second[2]) * 0.5
+    ];
+    const offset = this.spacing * 0.25;
+    const tangentA = axis === 0 ? 1 : 0;
+    const tangentB = axis === 2 ? 1 : 2;
+    let insideCount = 0;
+    for (const firstOffset of [-offset, offset]) {
+      for (const secondOffset of [-offset, offset]) {
+        const point: [number, number, number] = [
+          center[0],
+          center[1],
+          center[2]
+        ];
+        point[tangentA] += firstOffset;
+        point[tangentB] += secondOffset;
+        if (this.membraneContainsPoint(
+          point[0],
+          point[1],
+          point[2],
+          deformation,
+          reference
+        )) {
+          insideCount += 1;
+        }
+      }
+    }
+    return insideCount / 4;
+  }
+
   private rebuildDomainAndTentativeVelocity(
     deformation: CytosolProjectionDeformation | null,
-    obstacles?: DynamicCytosolObstacleField
+    obstacles?: DynamicCytosolObstacleField,
+    boundaryDeltaS = 0
   ): void {
+    this.activeClosedDomainBoundary = this.resolveClosedDomainBoundary();
     const point = new Float32Array(3);
     const reference = new Float32Array(3);
     const solidVelocity = new Float32Array(3);
+    if (this.domainInitialized) {
+      this.previousMembraneFluidFraction.set(this.membraneFluidFraction);
+    }
+    this.fractionalMembraneCellCount = 0;
+    this.fractionalObstacleCellCount = 0;
+    this.subgridInterceptedCellCount = 0;
+    this.dimensionlessMembraneVolumeChangeRate = 0;
+    this.movingMembraneCellCount = 0;
+    this.membraneTargetDivergence.fill(0);
+    const cellVolume = this.spacing ** 3;
     for (let index = 0; index < this.fluidMask.length; index += 1) {
       this.cellCenter(index, point);
-      inverseVolumePreservingPoint(point[0], point[1], point[2], deformation, reference);
-      const length = Math.hypot(reference[0], reference[1], reference[2]);
-      let insideMembrane = length <= 1e-12;
-      if (!insideMembrane) {
-        const radius = this.radiusAtDirection(reference[0] / length, reference[1] / length, reference[2] / length);
-        if (!Number.isFinite(radius) || radius <= 0) {
-          throw new RangeError("cytosol domain radius must be finite and positive");
-        }
-        insideMembrane = length <= radius * this.safetyFraction;
+      const membraneFraction = this.sampleMembraneCellFluidFraction(
+        point[0],
+        point[1],
+        point[2],
+        deformation,
+        reference
+      );
+      this.membraneFluidFraction[index] = membraneFraction;
+      if (membraneFraction > 1e-9 && membraneFraction < 1 - 1e-9) {
+        this.fractionalMembraneCellCount += 1;
       }
-      const insideObstacle = insideMembrane && Boolean(obstacles?.solidVelocityAt(
-        point[0], point[1], point[2], solidVelocity
-      ));
-      this.fluidMask[index] = insideMembrane && !insideObstacle ? 1 : 0;
+      let obstacleFraction = 0;
+      let insideObstacle = false;
+      solidVelocity[0] = 0;
+      solidVelocity[1] = 0;
+      solidVelocity[2] = 0;
+      if (membraneFraction > 1e-9 && obstacles) {
+        obstacles.sampleSubgridCell(
+          point[0],
+          point[1],
+          point[2],
+          this.spacing,
+          solidVelocity,
+          this.subgridSample
+        );
+        obstacleFraction = this.subgridSample.solidFraction;
+        insideObstacle = obstacleFraction >= 1 - 1e-9;
+        if (this.subgridSample.conservativeIntercept) {
+          this.subgridInterceptedCellCount += 1;
+        }
+        if (!insideObstacle) {
+          insideObstacle = obstacles.cellCenteredSolidVelocityAt(
+            point[0], point[1], point[2], solidVelocity
+          );
+          if (insideObstacle) obstacleFraction = 1;
+        }
+      }
+      this.obstacleSolidFraction[index] = obstacleFraction;
+      if (obstacleFraction > 0 && obstacleFraction < 1) {
+        this.fractionalObstacleCellCount += 1;
+      }
+      const fluidVolumeFraction = Math.max(
+        0,
+        Math.min(1, membraneFraction * (1 - obstacleFraction))
+      );
+      this.fluidVolumeFraction[index] = fluidVolumeFraction;
+      this.fluidMask[index] = fluidVolumeFraction > 1e-9 && !insideObstacle ? 1 : 0;
+      this.obstacleVelocityX[index] = solidVelocity[0];
+      this.obstacleVelocityY[index] = solidVelocity[1];
+      this.obstacleVelocityZ[index] = solidVelocity[2];
       if (!this.fluidMask[index]) {
         this.velocityX[index] = insideObstacle ? solidVelocity[0] : 0;
         this.velocityY[index] = insideObstacle ? solidVelocity[1] : 0;
@@ -605,22 +1426,223 @@ export class CytosolProjectionGrid {
       this.velocityY[index] = vy;
       this.velocityZ[index] = vz;
     }
+    if (this.domainInitialized && boundaryDeltaS > 1e-9) {
+      for (let index = 0; index < this.fluidMask.length; index += 1) {
+        const membraneVolumeFractionChange = (
+          this.membraneFluidFraction[index] -
+          this.previousMembraneFluidFraction[index]
+        );
+        if (Math.abs(membraneVolumeFractionChange) <= 1e-9) continue;
+        this.movingMembraneCellCount += 1;
+        const availableFraction = Math.max(
+          0,
+          1 - this.obstacleSolidFraction[index]
+        );
+        const availableVolumeChangeRate = (
+          membraneVolumeFractionChange *
+          availableFraction /
+          boundaryDeltaS
+        );
+        this.dimensionlessMembraneVolumeChangeRate += (
+          availableVolumeChangeRate * cellVolume
+        );
+        if (this.fluidVolumeFraction[index] > 1e-9) {
+          this.membraneTargetDivergence[index] = (
+            -availableVolumeChangeRate /
+            this.fluidVolumeFraction[index]
+          );
+        }
+      }
+    }
+    this.domainInitialized = true;
+    this.rebuildFaceApertures(deformation, obstacles);
   }
 
-  private neighborVelocity(
-    array: Float32Array,
+  private resolveClosedDomainBoundary(): WatertightTriangleMeshBoundary | null {
+    if (!this.closedDomainBoundaryProvider) return null;
+    const boundary = this.closedDomainBoundaryProvider();
+    if (!(boundary instanceof WatertightTriangleMeshBoundary)) {
+      throw new RangeError(
+        "closed cytosol domain provider must return a validated watertight boundary"
+      );
+    }
+    if (!boundary.audit.validClosedBoundary) {
+      throw new RangeError(
+        "closed cytosol domain boundary must pass topology and self-intersection audits"
+      );
+    }
+    return boundary;
+  }
+
+  private rebuildFaceApertures(
+    deformation: CytosolProjectionDeformation | null,
+    obstacles?: DynamicCytosolObstacleField
+  ): void {
+    this.membraneFaceOpenFractionX.fill(0);
+    this.membraneFaceOpenFractionY.fill(0);
+    this.membraneFaceOpenFractionZ.fill(0);
+    this.faceOpenFractionX.fill(0);
+    this.faceOpenFractionY.fill(0);
+    this.faceOpenFractionZ.fill(0);
+    this.fractionalMembraneFaceCount = 0;
+    this.closedMembraneFaceCount = 0;
+    this.fractionalOpenFaceCount = 0;
+    this.closedObstacleFaceCount = 0;
+    this.meanInternalMembraneFaceOpenFraction = 0;
+    this.meanInternalFaceOpenFraction = 0;
+    const n = this.resolution;
+    const first = new Float32Array(3);
+    const second = new Float32Array(3);
+    const reference = new Float32Array(3);
+    let internalFaceCount = 0;
+    let membraneOpenFractionSum = 0;
+    let openFractionSum = 0;
+    const sample = (
+      index: number,
+      neighbor: number,
+      axis: 0 | 1 | 2,
+      membraneTarget: Float32Array,
+      target: Float32Array
+    ) => {
+      if (!this.fluidMask[index] || !this.fluidMask[neighbor]) return;
+      this.cellCenter(index, first);
+      this.cellCenter(neighbor, second);
+      const membraneOpenFraction = this.sampleMembraneFaceOpenFraction(
+        first,
+        second,
+        axis,
+        deformation,
+        reference
+      );
+      membraneTarget[index] = membraneOpenFraction;
+      let obstacleOpenFraction = 1;
+      if (obstacles && obstacles.count > 0) {
+        obstacleOpenFraction = obstacles.sampleFaceOpenFraction(
+          [first[0], first[1], first[2]],
+          [second[0], second[1], second[2]],
+          axis,
+          this.spacing
+        );
+      }
+      const openFraction = membraneOpenFraction * obstacleOpenFraction;
+      target[index] = openFraction;
+      internalFaceCount += 1;
+      membraneOpenFractionSum += membraneOpenFraction;
+      openFractionSum += openFraction;
+      if (
+        membraneOpenFraction > 1e-9 &&
+        membraneOpenFraction < 1 - 1e-9
+      ) {
+        this.fractionalMembraneFaceCount += 1;
+      } else if (membraneOpenFraction <= 1e-9) {
+        this.closedMembraneFaceCount += 1;
+      }
+      if (openFraction > 1e-9 && openFraction < 1 - 1e-9) {
+        this.fractionalOpenFaceCount += 1;
+      }
+      if (obstacleOpenFraction <= 1e-9) {
+        this.closedObstacleFaceCount += 1;
+      }
+    };
+    for (let k = 0; k < n; k += 1) {
+      for (let j = 0; j < n; j += 1) {
+        for (let i = 0; i < n; i += 1) {
+          const index = this.index(i, j, k);
+          if (i + 1 < n) sample(
+            index,
+            index + 1,
+            0,
+            this.membraneFaceOpenFractionX,
+            this.faceOpenFractionX
+          );
+          if (j + 1 < n) sample(
+            index,
+            index + n,
+            1,
+            this.membraneFaceOpenFractionY,
+            this.faceOpenFractionY
+          );
+          if (k + 1 < n) sample(
+            index,
+            index + n * n,
+            2,
+            this.membraneFaceOpenFractionZ,
+            this.faceOpenFractionZ
+          );
+        }
+      }
+    }
+    this.meanInternalMembraneFaceOpenFraction = internalFaceCount > 0
+      ? membraneOpenFractionSum / internalFaceCount
+      : 0;
+    this.meanInternalFaceOpenFraction = internalFaceCount > 0
+      ? openFractionSum / internalFaceCount
+      : 0;
+  }
+
+  private faceAperture(
     i: number,
     j: number,
     k: number,
-    fallback: number
+    axis: 0 | 1 | 2,
+    direction: -1 | 1
   ): number {
-    if (!this.insideGrid(i, j, k)) return fallback;
-    return array[this.index(i, j, k)];
+    const ni = i + (axis === 0 ? direction : 0);
+    const nj = j + (axis === 1 ? direction : 0);
+    const nk = k + (axis === 2 ? direction : 0);
+    if (!this.insideGrid(ni, nj, nk)) return 0;
+    const source = direction > 0 ? this.index(i, j, k) : this.index(ni, nj, nk);
+    return axis === 0
+      ? this.faceOpenFractionX[source]
+      : axis === 1
+        ? this.faceOpenFractionY[source]
+        : this.faceOpenFractionZ[source];
+  }
+
+  private faceNormalVelocity(
+    i: number,
+    j: number,
+    k: number,
+    axis: 0 | 1 | 2,
+    direction: -1 | 1
+  ): number {
+    const centerIndex = this.index(i, j, k);
+    const ni = i + (axis === 0 ? direction : 0);
+    const nj = j + (axis === 1 ? direction : 0);
+    const nk = k + (axis === 2 ? direction : 0);
+    const aperture = this.faceAperture(i, j, k, axis, direction);
+    const velocity = axis === 0
+      ? this.velocityX
+      : axis === 1
+        ? this.velocityY
+        : this.velocityZ;
+    const obstacleVelocity = axis === 0
+      ? this.obstacleVelocityX
+      : axis === 1
+        ? this.obstacleVelocityY
+        : this.obstacleVelocityZ;
+    let fluidVelocity = velocity[centerIndex];
+    let wallVelocity = obstacleVelocity[centerIndex];
+    if (this.insideGrid(ni, nj, nk)) {
+      const neighborIndex = this.index(ni, nj, nk);
+      if (this.fluidMask[neighborIndex]) {
+        fluidVelocity = 0.5 * (fluidVelocity + velocity[neighborIndex]);
+      }
+      const centerSolid = this.obstacleSolidFraction[centerIndex];
+      const neighborSolid = this.obstacleSolidFraction[neighborIndex];
+      const solidWeight = centerSolid + neighborSolid;
+      wallVelocity = solidWeight > 1e-12
+        ? (
+            obstacleVelocity[centerIndex] * centerSolid +
+            obstacleVelocity[neighborIndex] * neighborSolid
+          ) / solidWeight
+        : 0;
+    }
+    return aperture * fluidVelocity + (1 - aperture) * wallVelocity;
   }
 
   private measureAndStoreDivergence(): { rms: number; max: number } {
     const n = this.resolution;
-    const inverseTwoH = 1 / (2 * this.spacing);
     let sumSquares = 0;
     let max = 0;
     let count = 0;
@@ -632,14 +1654,16 @@ export class CytosolProjectionGrid {
             this.divergence[index] = 0;
             continue;
           }
-          const div = (
-            this.neighborVelocity(this.velocityX, i + 1, j, k, 0) -
-            this.neighborVelocity(this.velocityX, i - 1, j, k, 0) +
-            this.neighborVelocity(this.velocityY, i, j + 1, k, 0) -
-            this.neighborVelocity(this.velocityY, i, j - 1, k, 0) +
-            this.neighborVelocity(this.velocityZ, i, j, k + 1, 0) -
-            this.neighborVelocity(this.velocityZ, i, j, k - 1, 0)
-          ) * inverseTwoH;
+          const fluidVolume = Math.max(this.fluidVolumeFraction[index], 1e-6);
+          const rawDivergence = (
+            this.faceNormalVelocity(i, j, k, 0, 1) -
+            this.faceNormalVelocity(i, j, k, 0, -1) +
+            this.faceNormalVelocity(i, j, k, 1, 1) -
+            this.faceNormalVelocity(i, j, k, 1, -1) +
+            this.faceNormalVelocity(i, j, k, 2, 1) -
+            this.faceNormalVelocity(i, j, k, 2, -1)
+          ) / (this.spacing * fluidVolume);
+          const div = rawDivergence - this.membraneTargetDivergence[index];
           this.divergence[index] = div;
           const absolute = Math.abs(div);
           sumSquares += div * div;
@@ -667,21 +1691,28 @@ export class CytosolProjectionGrid {
               next[index] = 0;
               continue;
             }
-            let sum = 0;
-            let count = 0;
+            let weightedPressure = 0;
+            let apertureSum = 0;
             const neighbors = [
-              [i - 1, j, k], [i + 1, j, k],
-              [i, j - 1, k], [i, j + 1, k],
-              [i, j, k - 1], [i, j, k + 1]
+              [i - 1, j, k, 0, -1], [i + 1, j, k, 0, 1],
+              [i, j - 1, k, 1, -1], [i, j + 1, k, 1, 1],
+              [i, j, k - 1, 2, -1], [i, j, k + 1, 2, 1]
             ] as const;
-            for (const [ni, nj, nk] of neighbors) {
+            for (const [ni, nj, nk, axis, direction] of neighbors) {
               if (!this.insideGrid(ni, nj, nk)) continue;
               const neighbor = this.index(ni, nj, nk);
               if (!this.fluidMask[neighbor]) continue;
-              sum += pressure[neighbor];
-              count += 1;
+              const aperture = this.faceAperture(i, j, k, axis, direction);
+              if (aperture <= 0) continue;
+              weightedPressure += pressure[neighbor] * aperture;
+              apertureSum += aperture;
             }
-            next[index] = count > 0 ? (sum - this.divergence[index] * h2) / count : 0;
+            next[index] = apertureSum > 0
+              ? (
+                  weightedPressure -
+                  this.divergence[index] * h2 * this.fluidVolumeFraction[index]
+                ) / apertureSum
+              : 0;
           }
         }
       }
@@ -691,31 +1722,45 @@ export class CytosolProjectionGrid {
     }
     if (pressure !== this.pressure) this.pressure.set(pressure);
 
-    const inverseTwoH = 1 / (2 * this.spacing);
     for (let k = 0; k < n; k += 1) {
       for (let j = 0; j < n; j += 1) {
         for (let i = 0; i < n; i += 1) {
           const index = this.index(i, j, k);
           if (!this.fluidMask[index]) continue;
           const center = this.pressure[index];
-          const pXm = this.fluidPressure(i - 1, j, k, center);
-          const pXp = this.fluidPressure(i + 1, j, k, center);
-          const pYm = this.fluidPressure(i, j - 1, k, center);
-          const pYp = this.fluidPressure(i, j + 1, k, center);
-          const pZm = this.fluidPressure(i, j, k - 1, center);
-          const pZp = this.fluidPressure(i, j, k + 1, center);
-          this.velocityX[index] -= (pXp - pXm) * inverseTwoH;
-          this.velocityY[index] -= (pYp - pYm) * inverseTwoH;
-          this.velocityZ[index] -= (pZp - pZm) * inverseTwoH;
+          const weightedGradient = (axis: 0 | 1 | 2): number => {
+            const minusAperture = this.faceAperture(i, j, k, axis, -1);
+            const plusAperture = this.faceAperture(i, j, k, axis, 1);
+            const minusCoordinates: [number, number, number] = [
+              i - (axis === 0 ? 1 : 0),
+              j - (axis === 1 ? 1 : 0),
+              k - (axis === 2 ? 1 : 0)
+            ];
+            const plusCoordinates: [number, number, number] = [
+              i + (axis === 0 ? 1 : 0),
+              j + (axis === 1 ? 1 : 0),
+              k + (axis === 2 ? 1 : 0)
+            ];
+            const minus = minusAperture > 0
+              ? this.pressure[this.index(...minusCoordinates)]
+              : center;
+            const plus = plusAperture > 0
+              ? this.pressure[this.index(...plusCoordinates)]
+              : center;
+            const denominator = minusAperture + plusAperture;
+            return denominator > 0
+              ? (
+                  plusAperture * (plus - center) +
+                  minusAperture * (center - minus)
+                ) / (this.spacing * denominator)
+              : 0;
+          };
+          this.velocityX[index] -= weightedGradient(0);
+          this.velocityY[index] -= weightedGradient(1);
+          this.velocityZ[index] -= weightedGradient(2);
         }
       }
     }
-  }
-
-  private fluidPressure(i: number, j: number, k: number, fallback: number): number {
-    if (!this.insideGrid(i, j, k)) return fallback;
-    const index = this.index(i, j, k);
-    return this.fluidMask[index] ? this.pressure[index] : fallback;
   }
 
   private boundaryReactionDiagnostic(): { pressureRms: number; reaction: CytosolVector3 } {
@@ -740,13 +1785,16 @@ export class CytosolProjectionGrid {
             const ni = i + dx;
             const nj = j + dy;
             const nk = k + dz;
-            const neighborIsFluid = this.insideGrid(ni, nj, nk) && this.fluidMask[this.index(ni, nj, nk)] === 1;
-            if (neighborIsFluid) continue;
-            pressureSq += pressure * pressure;
-            samples += 1;
-            rx -= pressure * dx * faceArea;
-            ry -= pressure * dy * faceArea;
-            rz -= pressure * dz * faceArea;
+            const axis = dx !== 0 ? 0 : dy !== 0 ? 1 : 2;
+            const direction = (dx + dy + dz) as -1 | 1;
+            const aperture = this.faceAperture(i, j, k, axis, direction);
+            const blockedFraction = 1 - aperture;
+            if (blockedFraction <= 1e-12) continue;
+            pressureSq += pressure * pressure * blockedFraction;
+            samples += blockedFraction;
+            rx -= pressure * dx * faceArea * blockedFraction;
+            ry -= pressure * dy * faceArea * blockedFraction;
+            rz -= pressure * dz * faceArea * blockedFraction;
           }
         }
       }
@@ -765,9 +1813,24 @@ export type PassiveScalarOptions = {
 
 export class ConservativePassiveScalar3D {
   readonly id: string;
-  readonly values: Float32Array;
+  readonly values: Float64Array;
   readonly dimensionlessDiffusivity: number;
   private readonly delta: Float64Array;
+  private readonly remappedValues: Float64Array;
+  private readonly trackedFluidMask: Uint8Array;
+  private readonly trackedFluidVolumeFraction: Float32Array;
+  private readonly nearestFluidDestination: Int32Array;
+  private currentRemapDiagnostics: PassiveScalarDomainRemapDiagnostics = {
+    remapCount: 0,
+    displacedCellCount: 0,
+    exposedCellCount: 0,
+    faceRedistributedCellCount: 0,
+    nearestFluidFallbackCellCount: 0,
+    displacedDimensionlessMass: 0,
+    redistributedDimensionlessMass: 0,
+    absoluteMassResidual: 0,
+    relativeMassResidual: 0
+  };
 
   constructor(private readonly grid: CytosolProjectionGrid, options: PassiveScalarOptions) {
     if (!options.id) throw new RangeError("passive scalar id must be non-empty");
@@ -776,11 +1839,17 @@ export class ConservativePassiveScalar3D {
     }
     this.id = options.id;
     this.dimensionlessDiffusivity = options.dimensionlessDiffusivity;
-    this.values = new Float32Array(grid.fluidMask.length);
+    this.values = new Float64Array(grid.fluidMask.length);
     this.delta = new Float64Array(grid.fluidMask.length);
+    this.remappedValues = new Float64Array(grid.fluidMask.length);
+    this.trackedFluidMask = new Uint8Array(grid.fluidMask);
+    this.trackedFluidVolumeFraction = new Float32Array(grid.fluidVolumeFraction);
+    this.nearestFluidDestination = new Int32Array(grid.fluidMask.length);
   }
 
   initialize(initializer: (x: number, y: number, z: number) => number): void {
+    this.trackedFluidMask.set(this.grid.fluidMask);
+    this.trackedFluidVolumeFraction.set(this.grid.fluidVolumeFraction);
     const point = new Float32Array(3);
     for (let index = 0; index < this.values.length; index += 1) {
       if (!this.grid.fluidMask[index]) {
@@ -796,36 +1865,222 @@ export class ConservativePassiveScalar3D {
     }
   }
 
+  domainRemapDiagnostics(): PassiveScalarDomainRemapDiagnostics {
+    return { ...this.currentRemapDiagnostics };
+  }
+
   totalMass(): number {
-    const cellVolume = this.grid.spacing ** 3;
-    let sum = 0;
-    for (let index = 0; index < this.values.length; index += 1) {
-      if (this.grid.fluidMask[index]) sum += this.values[index] * cellVolume;
-    }
-    return sum;
+    this.synchronizeDomain();
+    return this.massForVolumeFractions(this.grid.fluidVolumeFraction, this.values);
   }
 
   step(renderDeltaS: number): void {
     if (!Number.isFinite(renderDeltaS) || renderDeltaS < 0) {
       throw new RangeError("passive scalar delta must be finite and non-negative");
     }
+    this.synchronizeDomain();
     if (renderDeltaS === 0) return;
     const h = this.grid.spacing;
     let maximumSpeed = 0;
+    let minimumFluidVolumeFraction = 1;
     for (let index = 0; index < this.values.length; index += 1) {
       if (!this.grid.fluidMask[index]) continue;
       maximumSpeed = Math.max(maximumSpeed, Math.hypot(
         this.grid.velocityX[index], this.grid.velocityY[index], this.grid.velocityZ[index]
       ));
+      minimumFluidVolumeFraction = Math.min(
+        minimumFluidVolumeFraction,
+        this.grid.fluidVolumeFraction[index]
+      );
     }
-    const advectiveLimit = maximumSpeed > 1e-12 ? 0.32 * h / maximumSpeed : Number.POSITIVE_INFINITY;
+    const advectiveLimit = maximumSpeed > 1e-12
+      ? 0.32 * h * minimumFluidVolumeFraction / maximumSpeed
+      : Number.POSITIVE_INFINITY;
     const diffusiveLimit = this.dimensionlessDiffusivity > 0
-      ? 0.12 * h * h / this.dimensionlessDiffusivity
+      ? 0.12 * h * h * minimumFluidVolumeFraction / this.dimensionlessDiffusivity
       : Number.POSITIVE_INFINITY;
     const stableStep = Math.max(1e-6, Math.min(advectiveLimit, diffusiveLimit, 0.05));
     const substeps = Math.max(1, Math.ceil(renderDeltaS / stableStep));
     const dt = renderDeltaS / substeps;
     for (let substep = 0; substep < substeps; substep += 1) this.conservativeSubstep(dt);
+  }
+
+  synchronizeDomain(): PassiveScalarDomainRemapDiagnostics {
+    const nextMask = this.grid.fluidMask;
+    const nextVolumeFraction = this.grid.fluidVolumeFraction;
+    let displacedCellCount = 0;
+    let exposedCellCount = 0;
+    for (let index = 0; index < nextMask.length; index += 1) {
+      const previous = this.trackedFluidVolumeFraction[index];
+      const next = nextVolumeFraction[index];
+      if (previous > next + 1e-9) displacedCellCount += 1;
+      else if (next > previous + 1e-9) exposedCellCount += 1;
+    }
+    if (displacedCellCount === 0 && exposedCellCount === 0) {
+      return this.domainRemapDiagnostics();
+    }
+
+    const cellVolume = this.grid.spacing ** 3;
+    const massBefore = this.massForVolumeFractions(
+      this.trackedFluidVolumeFraction,
+      this.values
+    );
+    this.remappedValues.fill(0);
+    const displaced: Array<{ index: number; mass: number }> = [];
+    let displacedDimensionlessMass = 0;
+    for (let index = 0; index < nextMask.length; index += 1) {
+      const previousFraction = this.trackedFluidVolumeFraction[index];
+      const nextFraction = nextVolumeFraction[index];
+      const retainedFraction = Math.min(previousFraction, nextFraction);
+      this.remappedValues[index] = this.values[index] * retainedFraction * cellVolume;
+      const displacedMass = (
+        this.values[index] * (previousFraction - retainedFraction) * cellVolume
+      );
+      if (displacedMass > 0) {
+        displaced.push({ index, mass: displacedMass });
+        displacedDimensionlessMass += displacedMass;
+      }
+    }
+
+    let faceRedistributedCellCount = 0;
+    let nearestFluidFallbackCellCount = 0;
+    let redistributedDimensionlessMass = 0;
+    const faceDestinations: number[] = [];
+    let nearestMapReady = false;
+    for (const { index: source, mass } of displaced) {
+      faceDestinations.length = 0;
+      this.appendFluidFaceNeighbours(source, nextMask, faceDestinations);
+      if (faceDestinations.length > 0) {
+        const share = mass / faceDestinations.length;
+        for (const destination of faceDestinations) this.remappedValues[destination] += share;
+        faceRedistributedCellCount += 1;
+      } else {
+        if (!nearestMapReady) {
+          this.buildNearestFluidDestinationMap(nextMask);
+          nearestMapReady = true;
+        }
+        const destination = this.nearestFluidDestination[source];
+        if (destination < 0) {
+          throw new Error("passive scalar cannot conserve mass because the fluid domain is empty");
+        }
+        this.remappedValues[destination] += mass;
+        nearestFluidFallbackCellCount += 1;
+      }
+      redistributedDimensionlessMass += mass;
+    }
+
+    for (let index = 0; index < this.values.length; index += 1) {
+      const availableVolume = nextVolumeFraction[index] * cellVolume;
+      this.values[index] = availableVolume > 0
+        ? this.remappedValues[index] / availableVolume
+        : 0;
+    }
+    this.trackedFluidMask.set(nextMask);
+    this.trackedFluidVolumeFraction.set(nextVolumeFraction);
+    let massAfter = this.massForVolumeFractions(nextVolumeFraction, this.values);
+    const correction = massBefore - massAfter;
+    if (correction !== 0) {
+      let correctionTarget = -1;
+      let largestConcentration = -1;
+      for (let index = 0; index < nextMask.length; index += 1) {
+        if (nextMask[index] && this.values[index] > largestConcentration) {
+          correctionTarget = index;
+          largestConcentration = this.values[index];
+        }
+      }
+      if (correctionTarget < 0) {
+        if (massBefore !== 0) {
+          throw new Error("passive scalar cannot apply conservation correction without fluid cells");
+        }
+      } else {
+        const corrected = this.values[correctionTarget] + (
+          correction /
+          (cellVolume * nextVolumeFraction[correctionTarget])
+        );
+        if (corrected < -1e-12) {
+          throw new Error("passive scalar moving-domain correction would create negative mass");
+        }
+        this.values[correctionTarget] = Math.max(0, corrected);
+        massAfter = this.massForVolumeFractions(nextVolumeFraction, this.values);
+      }
+    }
+
+    const residual = massAfter - massBefore;
+    this.currentRemapDiagnostics = {
+      remapCount: this.currentRemapDiagnostics.remapCount + 1,
+      displacedCellCount,
+      exposedCellCount,
+      faceRedistributedCellCount,
+      nearestFluidFallbackCellCount,
+      displacedDimensionlessMass,
+      redistributedDimensionlessMass,
+      absoluteMassResidual: Math.abs(residual),
+      relativeMassResidual: massBefore !== 0 ? Math.abs(residual) / Math.abs(massBefore) : Math.abs(residual)
+    };
+    return this.domainRemapDiagnostics();
+  }
+
+  private massForVolumeFractions(
+    volumeFractions: Float32Array,
+    values: Float64Array
+  ): number {
+    const cellVolume = this.grid.spacing ** 3;
+    let sum = 0;
+    for (let index = 0; index < values.length; index += 1) {
+      sum += values[index] * volumeFractions[index] * cellVolume;
+    }
+    return sum;
+  }
+
+  private appendFluidFaceNeighbours(index: number, mask: Uint8Array, target: number[]): void {
+    const n = this.grid.resolution;
+    const plane = n * n;
+    const k = Math.floor(index / plane);
+    const remainder = index - k * plane;
+    const j = Math.floor(remainder / n);
+    const i = remainder - j * n;
+    if (i > 0 && mask[index - 1]) target.push(index - 1);
+    if (i + 1 < n && mask[index + 1]) target.push(index + 1);
+    if (j > 0 && mask[index - n]) target.push(index - n);
+    if (j + 1 < n && mask[index + n]) target.push(index + n);
+    if (k > 0 && mask[index - plane]) target.push(index - plane);
+    if (k + 1 < n && mask[index + plane]) target.push(index + plane);
+  }
+
+  private buildNearestFluidDestinationMap(mask: Uint8Array): void {
+    const nearest = this.nearestFluidDestination;
+    nearest.fill(-1);
+    const queue = new Int32Array(mask.length);
+    let head = 0;
+    let tail = 0;
+    for (let index = 0; index < mask.length; index += 1) {
+      if (!mask[index]) continue;
+      nearest[index] = index;
+      queue[tail] = index;
+      tail += 1;
+    }
+    const n = this.grid.resolution;
+    const plane = n * n;
+    const visit = (from: number, neighbour: number) => {
+      if (nearest[neighbour] >= 0) return;
+      nearest[neighbour] = nearest[from];
+      queue[tail] = neighbour;
+      tail += 1;
+    };
+    while (head < tail) {
+      const index = queue[head];
+      head += 1;
+      const k = Math.floor(index / plane);
+      const remainder = index - k * plane;
+      const j = Math.floor(remainder / n);
+      const i = remainder - j * n;
+      if (i > 0) visit(index, index - 1);
+      if (i + 1 < n) visit(index, index + 1);
+      if (j > 0) visit(index, index - n);
+      if (j + 1 < n) visit(index, index + n);
+      if (k > 0) visit(index, index - plane);
+      if (k + 1 < n) visit(index, index + plane);
+    }
   }
 
   private conservativeSubstep(dt: number): void {
@@ -855,6 +2110,12 @@ export class ConservativePassiveScalar3D {
 
   private transferAcrossFace(a: number, b: number, axis: 0 | 1 | 2, dt: number, h: number): void {
     if (!this.grid.fluidMask[b]) return;
+    const aperture = axis === 0
+      ? this.grid.faceOpenFractionX[a]
+      : axis === 1
+        ? this.grid.faceOpenFractionY[a]
+        : this.grid.faceOpenFractionZ[a];
+    if (aperture <= 1e-12) return;
     const velocityArray = axis === 0
       ? this.grid.velocityX
       : axis === 1
@@ -864,8 +2125,10 @@ export class ConservativePassiveScalar3D {
     const upwind = faceVelocity >= 0 ? this.values[a] : this.values[b];
     const advectiveFlux = faceVelocity * upwind;
     const diffusiveFlux = -this.dimensionlessDiffusivity * (this.values[b] - this.values[a]) / h;
-    const transfer = (advectiveFlux + diffusiveFlux) * dt / h;
-    this.delta[a] -= transfer;
-    this.delta[b] += transfer;
+    const transferPerFullCellVolume = (
+      (advectiveFlux + diffusiveFlux) * aperture * dt / h
+    );
+    this.delta[a] -= transferPerFullCellVolume / this.grid.fluidVolumeFraction[a];
+    this.delta[b] += transferPerFullCellVolume / this.grid.fluidVolumeFraction[b];
   }
 }

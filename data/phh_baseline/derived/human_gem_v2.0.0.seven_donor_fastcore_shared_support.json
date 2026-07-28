@@ -1,0 +1,1075 @@
+{
+  "audit_version": "human_gem_phh_fastcore_shared_support_v1",
+  "evidence_dependencies": {
+    "fastcc_audit_version": "human_gem_fastcc_audit_v2",
+    "fastcore_scaling_audit_version": "human_gem_phh_fastcore_scaling_comparison_v1",
+    "not_healthy_volunteers": true,
+    "support_repair_audit_version": "human_gem_phh_fastcore_support_repair_v1",
+    "support_repair_candidate_union_id_sha256": "9725dab3fa9bddee468ac29743fb69cf30ee36d1ddbdb13646501d1d2040e7ab"
+  },
+  "human_gem_artifact": {
+    "model_version": "2.0.0",
+    "release_commit": "635f533152dc5f7290ce04d12700eaa882273c3e",
+    "sha256": "cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a"
+  },
+  "method": {
+    "big_m_values": "native finite lower and upper reaction bounds",
+    "broader_omitted_reaction_universe_searched": false,
+    "candidate_identity_is_capacity_gate": true,
+    "candidate_identity_is_logical_or_of_scenario_directions": true,
+    "candidate_required_in_every_target_scenario": false,
+    "candidate_universe": "the 65-reaction union of committed per-target exact supports from Milestone 143",
+    "dual_direction_target_count": 4,
+    "epsilon": 0.0001,
+    "epsilon_is_biological_parameter": false,
+    "external_universal_reaction_database_used": false,
+    "fast_gap_filling_primary_source": "https://doi.org/10.1186/1471-2105-15-225",
+    "fixed_single_direction_target_count": 13,
+    "forward_reverse_binary_per_target": true,
+    "gapfill_primary_source": "https://doi.org/10.1186/1471-2105-8-212",
+    "generic_reaction_bounds_preserved": true,
+    "independent_steady_state_flux_scenario_per_target": true,
+    "kernel_version": "minimum_shared_reaction_support_milp_v1",
+    "mip_feasibility_tolerance": 1e-09,
+    "mip_feasibility_tolerance_source": "https://ergo-code.github.io/HiGHS/stable/options/definitions/",
+    "mip_relative_gap": 0.0,
+    "objective": "minimum shared enabled candidate-reaction identity count",
+    "post_milp_lp_certificate_per_target": true,
+    "proven_infeasible_target_directions_fixed": true,
+    "selected_candidate_reaches_epsilon_in_at_least_one_scenario": true,
+    "shared_candidate_identity_binary_across_scenarios": true,
+    "simultaneous_target_coactivity_claimed": false,
+    "solver_backend": "scipy.optimize.milp",
+    "strict_selected_subset_validation_algorithm": "FASTCC",
+    "subthreshold_candidate_activation_allowed": false
+  },
+  "schema_version": "cell.human-gem-phh-fastcore-shared-support.v1",
+  "scientific_boundary": {
+    "active_enzyme_abundance_inferred": false,
+    "all_candidates_from_pinned_generic_human_gem": true,
+    "all_target_lp_certificates_valid": true,
+    "biological_objective_attached": false,
+    "context_model_accepted": false,
+    "fba_execution_allowed": false,
+    "global_minimum_over_all_omitted_reactions_guaranteed": false,
+    "healthy_phh_context_established": false,
+    "measured_exchange_bounds_attached": false,
+    "minimum_cardinality_within_65_reaction_union_proven": true,
+    "minimum_support_set_uniqueness_guaranteed": false,
+    "reaction_activity_in_phh_established": false,
+    "runtime_flux_coupling_allowed": false,
+    "selected_subset_strictly_flux_consistent": true,
+    "simultaneous_target_flux_state_established": false
+  },
+  "selected_reaction_evidence_records_in_input_order": [
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00486",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00487",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00488",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00489",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00490",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00491",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00492",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00495",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00496",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00497",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00498",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00499",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00500",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00501",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00503",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00504",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00505",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00506",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00507",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00508",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00509",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00510",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00511",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00512",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00513",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00514",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00515",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00516",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00517",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00518",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00519",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00520",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00521",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00522",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00523",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00524",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00525",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00526",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00527",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00528",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00529",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00530",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00531",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00532",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00533",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00535",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00536",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00537",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00538",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00539",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00540",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00541",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00542",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00543",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [
+        "zero_of_seven_donor_total_proteome_support"
+      ],
+      "gene_rule": "(ENSG00000119927 or ENSG00000138678 or ENSG00000158669 or ENSG00000186281)",
+      "reaction_id": "MAR00544",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": 0
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [],
+      "gene_rule": null,
+      "reaction_id": "MAR05237",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": null
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [],
+      "gene_rule": null,
+      "reaction_id": "MAR05238",
+      "reaction_name": null,
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": null
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [],
+      "gene_rule": null,
+      "reaction_id": "MAR09055",
+      "reaction_name": "Exchange of LDL remnant",
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": null
+    },
+    {
+      "biological_evidence_required": true,
+      "gap_codes": [],
+      "gene_rule": null,
+      "reaction_id": "MAR10035",
+      "reaction_name": "1-acylglycerol-3-phosphate pool formation and breakdown",
+      "selection_scope": "minimum shared structural support inside the committed 65-reaction repair union",
+      "supported_donor_count": null
+    }
+  ],
+  "summary": {
+    "candidate_union_reduction_fraction": 0.09230769230769231,
+    "initial_adaptive_reaction_count": 7415,
+    "input_candidate_union_count": 65,
+    "input_candidate_union_id_sha256": "9725dab3fa9bddee468ac29743fb69cf30ee36d1ddbdb13646501d1d2040e7ab",
+    "maximum_integrality_residual": 0.0,
+    "maximum_milp_lp_bound_violation": 2.3874235921539366e-12,
+    "maximum_milp_lp_mass_balance_residual": 1.1544765143867153e-11,
+    "minimum_shared_added_reaction_count": 59,
+    "minimum_shared_added_reaction_id_sha256": "c8337cee4f813de7bad61228b7d80c0ee1ee30c41569dab244b989608ca14fff",
+    "minimum_shared_added_reaction_ids_in_input_order": [
+      "MAR00486",
+      "MAR00487",
+      "MAR00488",
+      "MAR00489",
+      "MAR00490",
+      "MAR00491",
+      "MAR00492",
+      "MAR00495",
+      "MAR00496",
+      "MAR00497",
+      "MAR00498",
+      "MAR00499",
+      "MAR00500",
+      "MAR00501",
+      "MAR00503",
+      "MAR00504",
+      "MAR00505",
+      "MAR00506",
+      "MAR00507",
+      "MAR00508",
+      "MAR00509",
+      "MAR00510",
+      "MAR00511",
+      "MAR00512",
+      "MAR00513",
+      "MAR00514",
+      "MAR00515",
+      "MAR00516",
+      "MAR00517",
+      "MAR00518",
+      "MAR00519",
+      "MAR00520",
+      "MAR00521",
+      "MAR00522",
+      "MAR00523",
+      "MAR00524",
+      "MAR00525",
+      "MAR00526",
+      "MAR00527",
+      "MAR00528",
+      "MAR00529",
+      "MAR00530",
+      "MAR00531",
+      "MAR00532",
+      "MAR00533",
+      "MAR00535",
+      "MAR00536",
+      "MAR00537",
+      "MAR00538",
+      "MAR00539",
+      "MAR00540",
+      "MAR00541",
+      "MAR00542",
+      "MAR00543",
+      "MAR00544",
+      "MAR05237",
+      "MAR05238",
+      "MAR09055",
+      "MAR10035"
+    ],
+    "mip_node_count": 1,
+    "removed_from_per_target_union_count": 6,
+    "repaired_candidate_reaction_count": 7474,
+    "repaired_candidate_reaction_id_sha256": "8b130f8a0e4d5f65d0c0d59cb9444acae2eae4d308e681c5485c1750f1a1585d",
+    "selected_reaction_evidence_record_sha256": "301a9ca5de6184cf05661a1715a4012a53e969fcd5061ba1c1bb2b3ab49e36d0",
+    "selected_reaction_partial_donor_gpr_count": 0,
+    "selected_reaction_seven_donor_gpr_count": 0,
+    "selected_reaction_without_gpr_count": 4,
+    "selected_reaction_zero_donor_gpr_count": 55,
+    "selected_reactions_requiring_biological_evidence_count": 59,
+    "shared_identity_milp_solve_count": 1,
+    "steady_state_target_scenario_count": 17,
+    "strict_fastcc_blocked_reaction_count": 0,
+    "strict_fastcc_consistent_reaction_count": 7474,
+    "strict_fastcc_lp3_solve_count": 4,
+    "strict_fastcc_lp7_solve_count": 6,
+    "strict_fastcc_maximum_bound_violation": 1.2286976991404686e-12,
+    "strict_fastcc_maximum_mass_balance_residual": 7.014477887423709e-11,
+    "strict_fastcc_witness_mode_count": 10,
+    "target_blocker_count": 17,
+    "target_lp_certificate_count": 17,
+    "target_lp_certificate_record_sha256": "d195cc6831f4d8a5050cb36a2a813e584269db973bb863c118bcefd13c8328af"
+  },
+  "target_certificates_in_input_order": [
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 7.958078640513122e-13,
+      "maximum_mass_balance_residual": 3.5833558342801552e-12,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1217,
+      "support_reaction_id_sha256": "7e5346295b204bee2e118e1f894891fc2259b41ee9de58b4fafff486f716497e",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR00468"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 7.958078640513122e-13,
+      "maximum_mass_balance_residual": 3.5833558342801552e-12,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1217,
+      "support_reaction_id_sha256": "7e5346295b204bee2e118e1f894891fc2259b41ee9de58b4fafff486f716497e",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR00470"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 7.958078640513122e-13,
+      "maximum_mass_balance_residual": 2.4610374502187504e-12,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1221,
+      "support_reaction_id_sha256": "46c29d46a5792cdbeaff8848fa5ce94272be38dfc3a0910031c08fab1dce8e92",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR00493"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 6.821210263296962e-13,
+      "maximum_mass_balance_residual": 5.239697564718426e-12,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1439,
+      "support_reaction_id_sha256": "ba2159fd2e2bc870df542cee75210f11075e6051aa94f0178fedd427dfee250a",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR00502"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 1.1368683772161603e-13,
+      "maximum_mass_balance_residual": 5.430766947256416e-12,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1220,
+      "support_reaction_id_sha256": "35ca3d0043658faea2eb2c3c8babe4ae2a8b6d9379d94b5cf8d3437068651dfa",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR00534"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 2.3874235921539366e-12,
+      "maximum_mass_balance_residual": 6.6484595606652874e-12,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1217,
+      "support_reaction_id_sha256": "7e5346295b204bee2e118e1f894891fc2259b41ee9de58b4fafff486f716497e",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR00553"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 2.3874235921539366e-12,
+      "maximum_mass_balance_residual": 6.6484595606652874e-12,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1217,
+      "support_reaction_id_sha256": "7e5346295b204bee2e118e1f894891fc2259b41ee9de58b4fafff486f716497e",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR00561"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 1.9326762412674725e-12,
+      "maximum_mass_balance_residual": 5.056843832562663e-12,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1217,
+      "support_reaction_id_sha256": "7e5346295b204bee2e118e1f894891fc2259b41ee9de58b4fafff486f716497e",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR00594"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 2.3874235921539366e-12,
+      "maximum_mass_balance_residual": 6.6484595606652874e-12,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1217,
+      "support_reaction_id_sha256": "7e5346295b204bee2e118e1f894891fc2259b41ee9de58b4fafff486f716497e",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR00602"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 6.110667527536862e-13,
+      "maximum_mass_balance_residual": 1.1544765143867153e-11,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1373,
+      "support_reaction_id_sha256": "6cba2a85ae4f3547defa08c118a37e22e9056bf6a3727f899263ae1863492bee",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR00612"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 6.110667527536862e-13,
+      "maximum_mass_balance_residual": 1.1544765143867153e-11,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1373,
+      "support_reaction_id_sha256": "6cba2a85ae4f3547defa08c118a37e22e9056bf6a3727f899263ae1863492bee",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR00613"
+    },
+    {
+      "direction": "reverse",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 6.110667527536862e-13,
+      "maximum_mass_balance_residual": 1.1544765143867153e-11,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1373,
+      "support_reaction_id_sha256": "6cba2a85ae4f3547defa08c118a37e22e9056bf6a3727f899263ae1863492bee",
+      "target_flux": -0.0001,
+      "target_reaction_id": "MAR00730"
+    },
+    {
+      "direction": "reverse",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 6.110667527536862e-13,
+      "maximum_mass_balance_residual": 1.1544765143867153e-11,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1373,
+      "support_reaction_id_sha256": "6cba2a85ae4f3547defa08c118a37e22e9056bf6a3727f899263ae1863492bee",
+      "target_flux": -0.0001,
+      "target_reaction_id": "MAR00763"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 6.110667527536862e-13,
+      "maximum_mass_balance_residual": 1.1544765143867153e-11,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1373,
+      "support_reaction_id_sha256": "6cba2a85ae4f3547defa08c118a37e22e9056bf6a3727f899263ae1863492bee",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR04860"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 6.110667527536862e-13,
+      "maximum_mass_balance_residual": 1.1544765143867153e-11,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1373,
+      "support_reaction_id_sha256": "6cba2a85ae4f3547defa08c118a37e22e9056bf6a3727f899263ae1863492bee",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR05249"
+    },
+    {
+      "direction": "reverse",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 6.110667527536862e-13,
+      "maximum_mass_balance_residual": 1.1544765143867153e-11,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1373,
+      "support_reaction_id_sha256": "6cba2a85ae4f3547defa08c118a37e22e9056bf6a3727f899263ae1863492bee",
+      "target_flux": -0.0001,
+      "target_reaction_id": "MAR05354"
+    },
+    {
+      "direction": "forward",
+      "lp_presolve": true,
+      "lp_solver_attempt_count": 1,
+      "lp_solver_method": "highs",
+      "maximum_bound_violation": 7.958078640513122e-13,
+      "maximum_mass_balance_residual": 3.4696689965585392e-12,
+      "post_milp_lp_certificate_valid": true,
+      "selected_candidate_at_epsilon_count": 0,
+      "selected_candidate_at_epsilon_id_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_candidate_at_epsilon_ids_in_input_order": [],
+      "support_reaction_count": 1217,
+      "support_reaction_id_sha256": "7e5346295b204bee2e118e1f894891fc2259b41ee9de58b4fafff486f716497e",
+      "target_flux": 0.0001,
+      "target_reaction_id": "MAR13065"
+    }
+  ]
+}

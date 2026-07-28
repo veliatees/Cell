@@ -1,0 +1,13 @@
+{
+  "schema_version": "cell.retired-artifact.v1",
+  "status": "retired_duplicate_source_not_for_build_or_runtime",
+  "retired_on": "2026-07-22",
+  "former_source_path": "src/main 2.ts",
+  "retained_for_audit_at": "data/quarantine/legacy_main_snapshot.RETIRED.txt",
+  "sha256": "4fb848364a2f32676af11df564df258a904c42a12266bc52913765ab3ea197a7",
+  "retirement_reason": "The file was a stale duplicate application entry inside the TypeScript include tree. It retained retired concentration-field code and was not the Vite entry point.",
+  "authoritative_source": "src/main.ts",
+  "build_inclusion_allowed": false,
+  "runtime_loading_allowed": false,
+  "scientific_use_allowed": false
+}

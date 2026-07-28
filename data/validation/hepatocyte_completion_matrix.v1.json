@@ -1,0 +1,1100 @@
+{
+  "version": "hepatocyte_completion_matrix_v1",
+  "date_verified": "2026-07-26",
+  "status": "mixed_completion_with_fail_closed_biological_activation",
+  "score_policy": "No average realism or biological-accuracy percentage is identifiable. Closed statuses apply only to each entry's exact scope.",
+  "status_semantics": {
+    "closed": "Every requirement inside the narrowly declared scope is implemented and verified.",
+    "partial": "A tested contract or numerical layer exists, but the declared capability is incomplete.",
+    "blocked_missing_evidence": "Activation would require unavailable context-matched measurements; values remain null.",
+    "external_action_required": "The requirement cannot be completed by repository code or literature intake alone.",
+    "not_applicable_at_model_scale": "The requested representation is the wrong abstraction at whole-cell scale."
+  },
+  "entries": [
+    {
+      "id": "dimensionless_cytosol_numerics",
+      "title": "Dimensionless cytosol transport numerics",
+      "status": "closed",
+      "scope": "Numerical test-bed only; no biological pressure, velocity, time or diffusivity claim.",
+      "current_capability": "A 3D pressure-projection grid, four analytic obstacle shapes, topology- and self-intersection-audited closed meshes, non-star-shaped closed fluid domains, rigid boundary kinematics and conservative moving-domain scalar transport are tested. The renderer still uses the star-shaped membrane path.",
+      "observed_metrics": {
+        "projection_solver_count": 1,
+        "conservative_scalar_kernel_count": 1,
+        "conservative_moving_domain_remap_count": 1,
+        "moving_analytic_obstacle_layer_count": 1,
+        "analytic_obstacle_shape_count": 4,
+        "rigid_body_boundary_kinematics_count": 1,
+        "compound_boundary_conservation_test_count": 1,
+        "subgrid_boundary_treatment_count": 1,
+        "subgrid_grid_convergence_test_count": 1,
+        "fractional_face_aperture_solver_count": 1,
+        "repository_mesh_self_intersection_audit_count": 1,
+        "non_star_shaped_closed_mesh_domain_kernel_count": 1
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "src/physics/cytosolNumerics.ts",
+        "src/physics/intracellularFluid.ts"
+      ]
+    },
+    {
+      "id": "healthy_phh_cytosol_parameters",
+      "title": "Healthy-PHH cytosol constitutive parameters",
+      "status": "blocked_missing_evidence",
+      "scope": "Healthy adult primary-human-hepatocyte aqueous phase.",
+      "current_capability": "Ten typed parameter slots are explicit and all remain null.",
+      "observed_metrics": {
+        "required_parameter_count": 10,
+        "filled_parameter_count": 0
+      },
+      "remaining_requirements": [
+        "Matched intracellular-water/cytosol fraction and aqueous volume.",
+        "Probe- and scale-resolved viscosity or apparent diffusivity.",
+        "Hydraulic permeability, cytoskeletal modulus, pressure and velocity validation."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/cytosol_transport.py"
+      ]
+    },
+    {
+      "id": "legacy_cytosol_fraction_quarantine",
+      "title": "Legacy 0.52 cytosol-fraction quarantine",
+      "status": "closed",
+      "scope": "Prevention of the legacy fraction from parameterizing quantitative fluid or reaction claims.",
+      "current_capability": "The value remains visible for legacy exploratory reaction-volume compatibility and is explicitly barred from quantitative fluid/reaction use.",
+      "observed_metrics": {
+        "legacy_fraction": 0.52,
+        "quantitative_use_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/cytosol_transport.py"
+      ]
+    },
+    {
+      "id": "quantitative_poroelastic_cfd",
+      "title": "Quantitative CFD or poroelastic solver",
+      "status": "blocked_missing_evidence",
+      "scope": "Biological-unit Brinkman/poroelastic flow in healthy PHH.",
+      "current_capability": "No quantitative solver is enabled; the dimensionless renderer solver cannot be relabelled as CFD calibration.",
+      "observed_metrics": {
+        "quantitative_solver_count": 0
+      },
+      "remaining_requirements": [
+        "Healthy-PHH constitutive coefficients and boundary conditions.",
+        "Matched pressure/velocity or displacement-relaxation validation trajectories.",
+        "Grid-convergence and uncertainty-qualified biological validation."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/cytosol_transport.py",
+        "src/physics/cytosolNumerics.ts"
+      ]
+    },
+    {
+      "id": "fluid_structure_interaction",
+      "title": "Cytosol-to-membrane fluid-structure feedback",
+      "status": "blocked_missing_evidence",
+      "scope": "Pressure/traction feedback from the aqueous/poroelastic phase to membrane, cortex and organelles.",
+      "current_capability": "A dimensionless closed-mesh pressure-traction candidate kernel checks action-reaction balance, pressure work, volume preservation, line-search stability and self-intersection rejection. A 48-column donor-resolved PHH mechanics intake now gates raw deformation/relaxation trajectories, reported constitutive parameters, same-cell meshes and spatial boundary conditions. No mechanics record is delivered and the candidate cannot modify the runtime membrane.",
+      "observed_metrics": {
+        "dimensionless_pressure_membrane_response_kernel_count": 1,
+        "force_energy_consistency_test_count": 1,
+        "volume_preserving_fsi_candidate_test_count": 1,
+        "membrane_pressure_feedback_count": 0,
+        "mechanics_calibration_intake_contract_count": 1,
+        "mechanics_target_quantity_count": 15,
+        "delivered_mechanics_trajectory_count": 0,
+        "spatial_fsi_ready_trajectory_count": 0,
+        "quantitatively_authorized_mechanics_parameter_count": 0
+      },
+      "remaining_requirements": [
+        "PHH membrane/cortex mechanics and hydraulic boundary data.",
+        "Runtime coupling of a calibrated pressure field to membrane, cortex and organelles.",
+        "Matched deformation and relaxation validation."
+      ],
+      "code_surfaces": [
+        "src/physics/dimensionlessFsi.ts",
+        "src/physics/intracellularFluid.ts",
+        "src/physics/cytosolNumerics.ts",
+        "engine/cell_engine/quantitative/phh_mechanics_calibration.py",
+        "data/evidence_intake/phh_mechanics_calibration_contract.v1.json"
+      ]
+    },
+    {
+      "id": "organelle_fluid_boundaries",
+      "title": "Organelle-resolved fluid boundaries",
+      "status": "partial",
+      "scope": "Impermeable moving organelle surfaces in the numerical cytosol domain.",
+      "current_capability": "Renderer-linked sphere, ellipsoid, capsule and oriented-box assemblies represent ten boundary classes. Generic closed meshes now require both two-manifold topology and repository self-intersection audits before containment or face interception, but no microscopy-derived PHH mesh is registered. Thin ER/canalicular/Golgi structures retain deterministic subgrid occupancy and fractional face flux.",
+      "observed_metrics": {
+        "analytic_obstacle_layer_count": 1,
+        "analytic_obstacle_shape_count": 4,
+        "renderer_geometry_boundary_adapter_count": 1,
+        "renderer_geometry_boundary_class_count": 10,
+        "rigid_body_boundary_kinematics_count": 1,
+        "compound_boundary_conservation_test_count": 1,
+        "conservative_subgrid_boundary_treatment_count": 1,
+        "subgrid_boundary_grid_convergence_test_count": 1,
+        "fractional_face_aperture_solver_count": 1,
+        "generic_watertight_mesh_boundary_kernel_count": 1,
+        "mesh_intake_contract_count": 1,
+        "mesh_target_structure_count": 11,
+        "delivered_mesh_artifact_count": 0,
+        "topologically_watertight_delivered_mesh_count": 0,
+        "self_intersection_audited_mesh_count": 0,
+        "repository_self_intersection_audit_kernel_count": 1,
+        "repository_self_intersection_audited_mesh_count": 0,
+        "repository_self_intersection_free_mesh_count": 0,
+        "full_watertight_mesh_boundary_count": 0
+      },
+      "remaining_requirements": [
+        "Watertight donor- or microscopy-derived organelle meshes.",
+        "Grid-convergence validation against those registered surface meshes."
+      ],
+      "code_surfaces": [
+        "src/physics/watertightMeshBoundary.ts",
+        "src/physics/cytosolNumerics.ts",
+        "src/physics/intracellularFluid.ts",
+        "engine/cell_engine/quantitative/phh_3d_mesh_boundary.py",
+        "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json"
+      ]
+    },
+    {
+      "id": "local_non_affine_membrane_coupling",
+      "title": "Local non-affine membrane-to-fluid coupling",
+      "status": "partial",
+      "scope": "Smooth star-shaped local membrane motion plus future folds, buds, endocytosis, exocytosis and topology change.",
+      "current_capability": "The renderer path follows the global affine map plus its star-shaped reference-space residual. A separate tested grid path accepts a self-intersection-free non-star-shaped closed mesh. The live edge-bisection bridge preserves topology and surface state. A new offline transition candidate verifies explicit bud/neck/fission/fusion pre/post meshes, component lineage, Euler change and cross-component intersections, then conserves extensive surface inventory, area-integrated density and explicit binding identity. It has no mesh-surgery trigger or runtime/fluid-domain commit path.",
+      "observed_metrics": {
+        "local_star_shaped_surface_modes_coupled": 1,
+        "local_topology_change_modes_coupled": 0,
+        "locally_conservative_membrane_face_flux_count": 1,
+        "non_star_shaped_closed_mesh_domain_kernel_count": 1,
+        "topology_preserving_adaptive_remeshing_kernel_count": 1,
+        "surface_state_transfer_kernel_count": 1,
+        "runtime_adaptive_remeshing_coupling_count": 1,
+        "automatic_runtime_remeshing_trigger_count": 0,
+        "topology_transition_representation_kernel_count": 1,
+        "conservative_topology_state_transfer_kernel_count": 1,
+        "topology_transition_candidate_transaction_count": 1,
+        "topology_event_intake_contract_count": 1,
+        "delivered_phh_topology_event_record_count": 0,
+        "authorized_phh_topology_event_record_count": 0,
+        "topology_change_remeshing_kernel_count": 0
+      },
+      "remaining_requirements": [
+        "Evidence-backed runtime refinement criterion and compute budget.",
+        "Event-specific healthy-PHH membrane reservoir, neck mechanics and cargo-partition evidence.",
+        "Runtime mesh/fluid-domain replacement after matched held-out validation."
+      ],
+      "code_surfaces": [
+        "src/physics/membraneFluidBoundary.ts",
+        "src/physics/intracellularFluid.ts",
+        "src/physics/cytosolNumerics.ts",
+        "src/physics/adaptiveRemeshing.ts",
+        "src/physics/membrane_mechanics.ts",
+        "src/physics/membraneTopology.ts",
+        "src/physics/membraneTopologyTransfer.ts",
+        "src/physics/membraneTopologyTransaction.ts",
+        "engine/cell_engine/quantitative/phh_membrane_topology_event.py",
+        "data/evidence_intake/phh_membrane_topology_event_contract.v1.json"
+      ]
+    },
+    {
+      "id": "explicit_water_molecules",
+      "title": "Explicit water-molecule representation",
+      "status": "not_applicable_at_model_scale",
+      "scope": "Whole-cell mesoscale renderer and transport solver.",
+      "current_capability": "Tracer points visualize streamlines only and carry no molecule count, concentration, pressure or PHH speed claim.",
+      "observed_metrics": {
+        "biological_species_bound_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "src/physics/intracellularFluid.ts"
+      ]
+    },
+    {
+      "id": "reaction_fluid_coupling",
+      "title": "Reaction-specific advection/diffusion coupling",
+      "status": "blocked_missing_evidence",
+      "scope": "Local concentration fields may influence one reaction only after its own transport gate passes.",
+      "current_capability": "The conservative scalar kernel exists. A strict 35-required plus 16-conditional-field intake now audits matched species mobility, geometry, reaction timescale, transport perturbation, a dimensionally explicit L^2/(D*tau_reaction) scale, equation fingerprints and held-out validation across all 36 reactions; no biological species or reaction is attached.",
+      "observed_metrics": {
+        "biological_species_bound_count": 0,
+        "transport_coupled_reaction_count": 0,
+        "transport_coupling_intake_contract_count": 1,
+        "transport_coupling_target_reaction_count": 36,
+        "transport_coupling_required_stage_slot_count": 288,
+        "transport_coupling_record_count": 0,
+        "transport_limitation_demonstrated_reaction_count": 0,
+        "structurally_complete_transport_coupling_reaction_count": 0,
+        "local_concentration_coupled_reaction_count": 0,
+        "direct_rate_corrected_reaction_count": 0,
+        "global_fluid_multiplier_count": 0
+      },
+      "remaining_requirements": [
+        "Species-specific PHH apparent diffusivity and compartment field.",
+        "Reaction timescale and evidence that transport is limiting.",
+        "Same-context held-out validation of the coupling law."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/cytosol_transport.py",
+        "engine/cell_engine/quantitative/reaction_transport_coupling.py",
+        "engine/cell_engine/validation/reaction_evidence_atlas.py",
+        "data/evidence_intake/phh_reaction_transport_coupling_contract.v1.json"
+      ]
+    },
+    {
+      "id": "macromolecular_crowding_physics",
+      "title": "Molecule-scale crowding and channeling",
+      "status": "blocked_missing_evidence",
+      "scope": "Size-dependent diffusion, binding, steric exclusion and local substrate channeling.",
+      "current_capability": "Crowder/protein points are visual. A 43-species, nine-stage donor-resolved mobility intake now separates molecular form, compartment, probe scale, raw dynamics, local abundance, binding, perturbation and held-out evidence; a prohibited global viscosity or crowding multiplier is not applied.",
+      "observed_metrics": {
+        "mobility_intake_contract_count": 1,
+        "target_species_count": 43,
+        "required_mobility_stage_slot_count": 387,
+        "delivered_mobility_record_count": 0,
+        "structurally_complete_mobility_species_count": 0,
+        "size_resolved_crowding_chain_count": 0,
+        "apparent_diffusivity_authorized_species_count": 0,
+        "quantitatively_bound_crowding_laws": 0,
+        "global_viscosity_multiplier_count": 0
+      },
+      "remaining_requirements": [
+        "Species-size-resolved PHH mobility data.",
+        "Local abundance/obstacle fields and binding kinetics.",
+        "Pathway-specific evidence for channeling or crowding-limited rates."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/cytosol_transport.py",
+        "engine/cell_engine/quantitative/intracellular_mobility.py",
+        "data/evidence_intake/phh_intracellular_mobility_contract.v1.json",
+        "src/physics/intracellularFluid.ts"
+      ]
+    },
+    {
+      "id": "transport_mode_separation",
+      "title": "Passive-fluid versus active-cargo separation",
+      "status": "closed",
+      "scope": "Semantic and activation separation of aqueous transport from ATP-dependent cargo motion.",
+      "current_capability": "The contract assigns metabolites/ions to passive advection-diffusion and vesicles to motor-track transport; cross-context motor rates cannot leak into PHH.",
+      "observed_metrics": {
+        "separate_transport_modes": 2
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/cytosol_transport.py"
+      ]
+    },
+    {
+      "id": "active_intracellular_transport_model",
+      "title": "Executable active intracellular transport",
+      "status": "blocked_missing_evidence",
+      "scope": "Microtubule motors, actomyosin, vesicle routing and organelle-driven active mixing in healthy PHH.",
+      "current_capability": "Passive aqueous tracers and directed cargo are now separate at runtime. A deterministic dimensionless path-progress kernel renders track cargo without per-frame random walks, while every PHH motor velocity, dwell, reversal, route and state-coupling parameter remains absent.",
+      "observed_metrics": {
+        "dimensionless_renderer_route_kernels": 1,
+        "healthy_phh_active_transport_kernels": 0,
+        "trajectory_intake_contract_count": 1,
+        "delivered_phh_route_count": 0,
+        "structurally_complete_phh_route_count": 0,
+        "quantitatively_authorized_phh_route_count": 0
+      },
+      "remaining_requirements": [
+        "Cargo- and route-resolved PHH trajectories.",
+        "Motor occupancy, ATP dependence, pause/reversal and fusion/fission statistics.",
+        "Independent route-level validation."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/cytosol_transport.py",
+        "engine/cell_engine/quantitative/active_cargo_trajectory.py",
+        "data/evidence_intake/phh_active_cargo_trajectory_contract.v1.json",
+        "src/physics/transportModes.ts",
+        "src/main.ts"
+      ]
+    },
+    {
+      "id": "cytosol_experimental_validation",
+      "title": "Healthy-PHH cytosol experimental validation",
+      "status": "blocked_missing_evidence",
+      "scope": "FRAP/FCS, intracellular particle tracking, microrheology or equivalent healthy-PHH trajectories.",
+      "current_capability": "One healthy-human in-vivo restricted-water MRI target and ten cross-context references are registered; neither calibrates PHH cytosol mechanics.",
+      "observed_metrics": {
+        "healthy_human_in_vivo_targets": 1,
+        "cross_context_references": 10,
+        "matched_healthy_phh_rheology_datasets": 0
+      },
+      "remaining_requirements": [
+        "A matched healthy-PHH intracellular transport/rheology time series with uncertainty."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/cytosol_transport.py"
+      ]
+    },
+    {
+      "id": "capability_template_quantitation",
+      "title": "Capability-template quantitation",
+      "status": "partial",
+      "scope": "The declared 38-feature hepatocyte engineering scope.",
+      "current_capability": "All feature topologies and evidence requirements exist; none of the 44 numerical slots is filled or executable.",
+      "observed_metrics": {
+        "feature_template_count": 38,
+        "parameter_slot_count": 44,
+        "filled_parameter_slot_count": 0,
+        "activated_template_count": 0
+      },
+      "remaining_requirements": [
+        "Context-matched evidence and independent validation for each individual slot."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/validation/capability_atlas.py"
+      ]
+    },
+    {
+      "id": "hepatocyte_quantity_harvest",
+      "title": "Provenance-strict hepatocyte quantity harvest",
+      "status": "partial",
+      "scope": "Literature observations spanning species, experimental systems and quantitative tracks; not a homogeneous healthy-PHH parameter set.",
+      "current_capability": "All 168 rows are retained byte-for-byte with checksums and exact species partitions; 25 rows were manually source-reviewed and 16 claims entered context-bound evidence modules without activating runtime parameters.",
+      "observed_metrics": {
+        "raw_record_count": 168,
+        "unique_primary_source_pmid_count": 91,
+        "strict_numeric_record_count": 115,
+        "reviewed_raw_record_count": 25,
+        "promoted_context_bound_claim_count": 16,
+        "healthy_phh_runtime_parameter_count": 0
+      },
+      "remaining_requirements": [
+        "Primary-source review of the remaining rows that address a declared model need.",
+        "Exact context, denominator, uncertainty and assay matching before any numerical activation.",
+        "Independent validation for every promoted model law."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/validation/hepatocyte_quantities.py",
+        "data/hepatocyte_quantities/curated/source_review.v1.json"
+      ]
+    },
+    {
+      "id": "quantitative_reaction_core",
+      "title": "Quantitative reaction core",
+      "status": "blocked_missing_evidence",
+      "scope": "The 36 reactions currently active in the exploratory integrated network.",
+      "current_capability": "Every reaction has twelve typed evidence fields and a fail-closed transport gate. A versioned 45-column PHH evidence intake now checks exact active reaction IDs, slot-specific context, units, donor/study split leakage and frozen held-out artifacts; no delivered record or reaction passes quantitative authority.",
+      "observed_metrics": {
+        "reaction_count": 36,
+        "evidence_slot_count": 432,
+        "filled_evidence_slot_count": 0,
+        "reaction_evidence_intake_contract_count": 1,
+        "delivered_reaction_evidence_record_count": 0,
+        "structurally_ready_intake_slot_count": 0,
+        "structurally_complete_intake_reaction_count": 0,
+        "quantitative_reaction_count": 0
+      },
+      "remaining_requirements": [
+        "Exact equation, units, compartment and molecular identities.",
+        "Healthy-PHH parameter context and identifiable calibration data.",
+        "Donor-disjoint validation with uncertainty."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/validation/reaction_evidence_atlas.py",
+        "engine/cell_engine/quantitative/reaction_evidence_intake.py",
+        "data/evidence_intake/phh_reaction_evidence_contract.v1.json"
+      ]
+    },
+    {
+      "id": "energy_redox_quantitation",
+      "title": "Compartmental energy and redox quantitation",
+      "status": "partial",
+      "scope": "ATP/ADP/AMP, NAD(H), NADP(H), glutathione, ROS, oxygen and electrochemical states across six compartments.",
+      "current_capability": "Pool identities and 14 process topologies are explicit. A versioned 47-column donor-resolved PHH trajectory intake now enforces exact pool/molecule/compartment mapping, validated targeting, same-assay calibration, oxygen/nutrient context and sealed donor/study-disjoint held-out data; aggregate observations and absent trajectories cannot initialize a compartment or rate.",
+      "observed_metrics": {
+        "compartment_count": 6,
+        "pool_count": 38,
+        "initialized_pool_count": 0,
+        "executable_process_count": 0,
+        "runtime_conflict_count": 6,
+        "trajectory_intake_contract_count": 1,
+        "delivered_trajectory_record_count": 0,
+        "structurally_complete_trajectory_count": 0,
+        "calibration_and_heldout_complete_pool_count": 0,
+        "trajectory_initialized_pool_count": 0
+      },
+      "remaining_requirements": [
+        "Compartment-resolved healthy-PHH initial states.",
+        "Matched oxygen/redox/adenylate trajectories and flux-identifying perturbations.",
+        "Resolution of legacy aggregate runtime pools."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/compartmental_energy_redox.py",
+        "engine/cell_engine/validation/energy_redox_gate.py",
+        "engine/cell_engine/quantitative/energy_redox_trajectory.py",
+        "data/evidence_intake/phh_energy_redox_trajectory_contract.v1.json"
+      ]
+    },
+    {
+      "id": "receptor_signaling_kinetics",
+      "title": "Receptor and signaling-chain kinetics",
+      "status": "blocked_missing_evidence",
+      "scope": "INSR, EGFR, MET, NTCP and future contact-triggered receptor chains.",
+      "current_capability": "Identity and selected response observations are present. A versioned 48-column intake now requires eight donor-matched stages for each of eight communication pathways, including surface density, geometry-appropriate association/dissociation, occupancy, internalization or gate turnover, proximal signal, functional response and sealed independent validation. No trajectory bundle has been delivered, so activation remains absent.",
+      "observed_metrics": {
+        "functional_response_observation_count": 3,
+        "receptor_binding_kinetic_observation_count": 0,
+        "trajectory_intake_contract_count": 1,
+        "target_pathway_count": 8,
+        "required_stage_slot_count": 64,
+        "delivered_trajectory_record_count": 0,
+        "structurally_complete_pathway_count": 0,
+        "receptor_activation_allowed_count": 0,
+        "signal_execution_allowed_count": 0
+      },
+      "remaining_requirements": [
+        "Domain-resolved receptor surface density and active fraction.",
+        "Two-dimensional or exposure-matched kon/koff and occupancy.",
+        "Internalization/recycling and downstream delay trajectories."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/phh_protein_functional_evidence.py",
+        "engine/cell_engine/multicell/communication.py",
+        "engine/cell_engine/quantitative/receptor_signaling_trajectory.py",
+        "data/evidence_intake/phh_receptor_signaling_trajectory_contract.v1.json"
+      ]
+    },
+    {
+      "id": "active_protein_copies",
+      "title": "Active protein copies and domain densities",
+      "status": "blocked_missing_evidence",
+      "scope": "BSEP, MRP2, NTCP, INSR, MET, EGFR, GLUT2 and glucokinase.",
+      "current_capability": "Seven-donor total abundance exists for all eight proteins; total per-nucleus protein groups are not active surface copies. A versioned 52-column intake now keeps total, membrane/compartment-localized, domain-localized, active, denominator-geometry and functional measurements linked within one donor/replicate and requires sealed independent validation. No localization/activity bundle has been delivered.",
+      "observed_metrics": {
+        "protein_count": 8,
+        "seven_donor_abundance_profile_count": 8,
+        "quantitative_surface_localization_count": 0,
+        "active_fraction_count": 0,
+        "donor_activity_distribution_count": 0,
+        "localization_intake_contract_count": 1,
+        "required_protein_slot_count": 63,
+        "delivered_localization_record_count": 0,
+        "structurally_complete_protein_count": 0,
+        "active_copy_or_concentration_authorized_count": 0,
+        "functional_rate_authorized_count": 0
+      },
+      "remaining_requirements": [
+        "Matched total, domain-localized and functional fractions in the same PHH donors.",
+        "Surface/domain area denominator and polarity state.",
+        "Same-assay transport or signaling validation."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/phh_protein_functional_evidence.py",
+        "engine/cell_engine/quantitative/active_protein_localization.py",
+        "data/evidence_intake/phh_active_protein_localization_contract.v1.json"
+      ]
+    },
+    {
+      "id": "cellular_memory_laws",
+      "title": "Persistent cellular-memory laws",
+      "status": "partial",
+      "scope": "Epigenetic, long-lived-protein, organelle-quality and metabolic-adaptation substrates.",
+      "current_capability": "Twelve physical substrate contracts, a provenance-preserving event log and a 34-column donor trajectory intake now exist. The intake requires matched write, verified washout persistence, first response and rechallenge response phases and never creates a trace or response law automatically.",
+      "observed_metrics": {
+        "substrate_contract_count": 12,
+        "required_persistence_test_count": 34,
+        "quantitatively_coupled_substrate_count": 0,
+        "trajectory_contract_column_count": 34,
+        "write_persist_rechallenge_gate_count": 1,
+        "donor_split_leakage_guard_count": 1,
+        "complete_donor_trajectory_record_count": 0,
+        "structurally_complete_candidate_count": 0,
+        "quantitatively_authorized_memory_law_count": 0
+      },
+      "remaining_requirements": [
+        "Trigger-write-decay persistence trajectories in matched PHH context.",
+        "Readout laws showing how each retained substrate changes a future response.",
+        "Inheritance and reversibility evidence where applicable."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/processes/cellular_memory.py",
+        "engine/cell_engine/core/history.py",
+        "engine/cell_engine/quantitative/cellular_memory_trajectory.py",
+        "data/evidence_intake/phh_cellular_memory_trajectory_contract.v1.json"
+      ]
+    },
+    {
+      "id": "damage_fate_recovery_calibration",
+      "title": "Damage, death and recovery calibration",
+      "status": "partial",
+      "scope": "Apoptosis, necrosis, cholestasis and proteostasis outcomes in healthy PHH perturbation contexts.",
+      "current_capability": "Four PHH perturbation protocols and nine APAP/bile-acid observations feed a read-only exact-context operator. A strict 29-column donor trajectory intake, donor/study split-leakage guards, exact assay projection and checksum-frozen evaluation contract are executable. No donor trajectory has been delivered, so quantitative projection, held-out result and runtime authority remain zero.",
+      "observed_metrics": {
+        "human_phh_protocol_count": 4,
+        "matching_protocol_observation_count": 9,
+        "necrosis_mode_observation_count": 5,
+        "calibrated_fate_commitment_laws": 0,
+        "runtime_coupled_observation_count": 0,
+        "exact_protocol_replay_pass_count": 4,
+        "near_miss_rejection_count": 7,
+        "audited_legacy_injury_surface_count": 3,
+        "legacy_quantitative_authority_surface_count": 0,
+        "required_donor_trajectory_field_count": 19,
+        "conditional_donor_trajectory_field_count": 10,
+        "trajectory_intake_validator_count": 1,
+        "donor_split_leakage_guard_count": 1,
+        "independent_heldout_study_guard_count": 1,
+        "exact_assay_projection_operator_count": 1,
+        "frozen_evaluation_contract_count": 1,
+        "complete_donor_trajectory_record_count": 0,
+        "numeric_measurement_projection_count": 0,
+        "independent_heldout_result_count": 0
+      },
+      "remaining_requirements": [
+        "Populate the 19 required plus 10 conditional fields with raw donor-resolved dose-time endpoint records.",
+        "Supply intervention, commitment-point, washout and recovery follow-up fields where applicable.",
+        "Freeze model and measurement operators before an independent donor-heldout evaluation."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/phh_injury_validation.py",
+        "engine/cell_engine/quantitative/phh_injury_trajectory.py",
+        "engine/cell_engine/core/injury_authority.py",
+        "engine/cell_engine/stochastic/apoptosis.py",
+        "engine/cell_engine/processes/cellular_response.py",
+        "data/evidence_intake/phh_injury_trajectory_contract.v1.json"
+      ]
+    },
+    {
+      "id": "donor_state_model",
+      "title": "Joint donor-state variability model",
+      "status": "blocked_missing_evidence",
+      "scope": "Age, sex, genotype, zonation, nutrition and disease history in one donor-resolved state.",
+      "current_capability": "A strict donor-linked multimodal manifest intake now requires explicit missingness, batch/technical covariates, donor-disjoint train/validation/test splits and a study-disjoint test set. No qualifying delivery, trained VAE or validated synthetic donor exists.",
+      "observed_metrics": {
+        "donor_manifest_intake_contract_count": 1,
+        "delivered_donor_manifest_sample_count": 0,
+        "delivered_donor_count": 0,
+        "structurally_training_data_ready_count": 0,
+        "validated_generative_donor_models": 0,
+        "automatic_engine_coupling_count": 0
+      },
+      "remaining_requirements": [
+        "A donor-linked multimodal training cohort and feature manifest.",
+        "Donor-level train/validation/test splits and batch covariates.",
+        "Posterior predictive and biological constraint validation."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/ml/generative.py",
+        "data/evidence_intake/phh_generative_donor_manifest_contract.v1.json"
+      ]
+    },
+    {
+      "id": "donor_3d_morphology_mechanics",
+      "title": "Donor-resolved 3D morphology and mechanics",
+      "status": "partial",
+      "scope": "In-situ hepatocyte surface, organelle distribution, cortex, adhesion and membrane mechanics.",
+      "current_capability": "Human aggregate 3D volume and verified proxy geometry exist. Checksum-frozen donor mesh and mechanics contracts now share cell/mesh identifiers and require raw loading-relaxation trajectories, spatial boundary conditions and held-out donors. No donor mesh, mechanics trajectory or matched PHH parameter set is registered.",
+      "observed_metrics": {
+        "mesh_intake_contract_count": 1,
+        "mesh_target_structure_count": 11,
+        "delivered_mesh_artifact_count": 0,
+        "structurally_ready_mesh_count": 0,
+        "donor_resolved_in_situ_mesh_count": 0,
+        "contact_ground_truth_mesh_count": 0,
+        "matched_phh_mechanical_parameter_sets": 0,
+        "mechanics_calibration_intake_contract_count": 1,
+        "mechanics_target_quantity_count": 15,
+        "delivered_mechanics_trajectory_count": 0,
+        "spatial_fsi_ready_trajectory_count": 0
+      },
+      "remaining_requirements": [
+        "Donor-resolved in-situ membrane and organelle meshes.",
+        "Matched cortex, adhesion, tension, bending and hydraulic measurements.",
+        "Contact-interface ground truth."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/validation/physical_validation.py",
+        "engine/cell_engine/quantitative/human_hepatocyte_3d_morphometry.py",
+        "engine/cell_engine/quantitative/phh_3d_mesh_boundary.py",
+        "engine/cell_engine/quantitative/phh_mechanics_calibration.py",
+        "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json",
+        "data/evidence_intake/phh_mechanics_calibration_contract.v1.json"
+      ]
+    },
+    {
+      "id": "human_gem_artifact_identity",
+      "title": "Pinned Human-GEM artifact identity",
+      "status": "closed",
+      "scope": "Exact generic reconstruction release identity and reproducible retrieval only.",
+      "current_capability": "Human-GEM v2.0.0 is pinned by release tag, commit, byte size and SHA-256; streaming audits verify structure, active objective identity and scoped elemental/charge balance without vendoring 43 MB.",
+      "observed_metrics": {
+        "model_version": "2.0.0",
+        "release_commit": "635f533152dc5f7290ce04d12700eaa882273c3e",
+        "artifact_sha256": "cc5a4383c6116b0c91f4db089cc640f29aec7e840249b573b74d3792c9ca4a7a",
+        "runtime_loaded": false,
+        "elementally_assessable_reaction_count": 9849,
+        "elementally_imbalanced_reaction_count": 17,
+        "jointly_unassessable_reaction_count": 1422,
+        "active_objective_id": "obj"
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "data/published_models/human_gem_v2.0.0.manifest.json",
+        "data/published_models/human_gem_v2.0.0.structural_audit.json",
+        "scripts/fetch_human_gem.py",
+        "scripts/audit_human_gem.py"
+      ]
+    },
+    {
+      "id": "human_gem_sparse_fbc_loader",
+      "title": "Checksum-gated Human-GEM sparse FBC loader",
+      "status": "closed",
+      "scope": "Exact loading of the pinned generic SBML/FBC artifact; no PHH context or flux claim.",
+      "current_capability": "A streaming loader verifies the artifact before parsing and preserves compartments, species, sparse stoichiometry, bounds, reversible flags, FBC objective metadata and Boolean gene-product rules. A committed compact audit is regenerated from the real 43 MB artifact.",
+      "observed_metrics": {
+        "artifact_identity_verified_before_parse": true,
+        "stoichiometric_row_count": 8461,
+        "stoichiometric_column_count": 12931,
+        "stoichiometric_nonzero_count": 55198,
+        "reversible_reaction_count": 5725,
+        "gene_associated_reaction_count": 7782,
+        "gene_product_label_count": 2848,
+        "objective_count": 1,
+        "active_objective_id": "obj",
+        "healthy_phh_context_extracted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_fbc_loader.py",
+        "scripts/audit_human_gem_fbc_loader.py",
+        "data/published_models/human_gem_v2.0.0.fbc_loader_audit.json",
+        "engine/tests/test_human_gem_fbc_loader.py"
+      ]
+    },
+    {
+      "id": "human_gem_generic_flux_consistency",
+      "title": "Pinned Human-GEM generic flux consistency",
+      "status": "closed",
+      "scope": "Complete FASTCC classification of the checksum-pinned generic reconstruction at an explicit numerical epsilon; no healthy-PHH context or flux claim.",
+      "current_capability": "A sound sign-definite dead-end prepass and the source-defined FASTCC LP-7 orientation loop classify every Human-GEM v2.0.0 reaction. Witnesses are checked against steady-state mass balance and original bounds; the epsilon is recorded as a numerical threshold rather than a biological parameter.",
+      "observed_metrics": {
+        "epsilon": 0.0001,
+        "epsilon_is_biological_parameter": false,
+        "consistent_reaction_count": 11641,
+        "blocked_reaction_count": 1290,
+        "lp7_solve_count": 6,
+        "lp3_solve_count": 247,
+        "maximum_mass_balance_residual": 3.3518572306275897e-10,
+        "complete_at_declared_epsilon": true,
+        "healthy_phh_context_extracted": false,
+        "biological_flux_authority": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/fastcore_context.py",
+        "engine/cell_engine/quantitative/human_gem_flux_consistency.py",
+        "scripts/audit_human_gem_fastcc.py",
+        "data/published_models/human_gem_v2.0.0.fastcc_audit.json",
+        "engine/tests/test_human_gem_flux_consistency.py"
+      ]
+    },
+    {
+      "id": "human_gem_generic_native_fba",
+      "title": "Pinned Human-GEM generic native-objective FBA",
+      "status": "closed",
+      "scope": "Reproducible sparse execution of the exact generic SBML/FBC objective and bounds; no healthy-PHH objective, exchange context or dynamic rate claim.",
+      "current_capability": "The checksum-verified model's own Generic human cell biomass reaction is optimized with pinned SciPy/HiGHS. The optimum, active-flux count, residuals and selected-vector digest are committed while non-uniqueness and all biological-authority gates remain explicit.",
+      "observed_metrics": {
+        "objective_id": "obj",
+        "objective_reaction_id": "MAR13082",
+        "objective_is_healthy_phh_measurement": false,
+        "status": "optimal",
+        "objective_value": 124.86814837744569,
+        "active_reaction_count_at_1e_minus_9": 2566,
+        "maximum_mass_balance_residual": 5.229594535194337e-12,
+        "optimum_uniqueness_established": false,
+        "healthy_phh_context_extracted": false,
+        "biological_flux_authority": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_generic_fba.py",
+        "scripts/audit_human_gem_generic_fba.py",
+        "data/published_models/human_gem_v2.0.0.generic_fba_audit.json",
+        "engine/tests/test_human_gem_generic_fba.py"
+      ]
+    },
+    {
+      "id": "seven_donor_phh_proteome_gpr_core",
+      "title": "Seven-donor PHH proteome-to-GPR core evidence",
+      "status": "closed",
+      "scope": "Conservative Boolean support mapping from the curated seven-donor resection-PHH total proteome to exact Human-GEM FBC gene-product rules; no activity, capacity or flux claim.",
+      "current_capability": "Every donor is evaluated independently using only single-gene MaxQuant groups with a non-null source observation and exact case-sensitive FBC labels. The all-donor reaction intersection is separated from generic FASTCC conflicts, yielding a reproducible 4,555-reaction candidate core without abundance thresholds, synonym imputation or protein-group summation.",
+      "observed_metrics": {
+        "donor_count": 7,
+        "not_healthy_volunteers": true,
+        "single_gene_group_count": 8110,
+        "non_single_gene_excluded_group_count": 579,
+        "reaction_support_intersection_count": 5082,
+        "generic_fastcc_blocked_conflict_count": 527,
+        "flux_consistent_core_candidate_count": 4555,
+        "active_enzyme_abundance_inferred": false,
+        "flux_magnitude_inferred": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_gpr.py",
+        "engine/cell_engine/quantitative/human_gem_phh_proteome_context.py",
+        "scripts/audit_human_gem_phh_proteome_gpr.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_proteome_gpr_audit.json",
+        "engine/tests/test_human_gem_phh_proteome_context.py"
+      ]
+    },
+    {
+      "id": "human_gem_real_scale_fastcore_trial",
+      "title": "Real-scale Human-GEM FASTCORE trial",
+      "status": "closed",
+      "scope": "Reproducible offline application and fail-closed diagnosis of source-defined FASTCORE on the seven-donor Boolean proteome core; no accepted PHH context model.",
+      "current_capability": "The source-defined trial selected 7,320 reactions but strict output FASTCC found 408 blocked. A parameter-free bipartite stoichiometric closure restored consistency only by retaining 11,639 of 11,641 input reactions. The trial is therefore recorded as a reproducible negative context-specificity result, not promoted to a hepatocyte model.",
+      "observed_metrics": {
+        "core_reaction_count": 4555,
+        "source_fastcore_selected_reaction_count": 7320,
+        "source_fastcore_output_blocked_reaction_count": 408,
+        "closure_selected_reaction_count": 11639,
+        "closure_omitted_reaction_count": 2,
+        "source_FASTCORE_output_flux_consistent": false,
+        "context_specificity_established": false,
+        "context_model_accepted": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/fastcore_context.py",
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_context.py",
+        "scripts/extract_human_gem_phh_fastcore_context.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_proteome_fastcore_context.json",
+        "engine/tests/test_human_gem_phh_fastcore_context.py"
+      ]
+    },
+    {
+      "id": "seven_donor_gpr_support_stability",
+      "title": "Seven-donor GPR support stability",
+      "status": "closed",
+      "scope": "Exact 0/7 through 7/7 Boolean reaction-support frequencies, pairwise donor similarity and leave-one-donor-out sensitivity for the pinned resection-PHH proteome cohort; no prevalence or inactivity claim.",
+      "current_capability": "All 7,782 GPR-associated Human-GEM reactions now retain their exact supporting donor identities. The audit exposes 150 six-of-seven and 1,801 zero-of-seven reactions, while leave-one-out analysis shows a maximum 62-reaction expansion of the flux-consistent core. Missing detection remains missing evidence.",
+      "observed_metrics": {
+        "gpr_reaction_count": 7782,
+        "zero_donor_support_reaction_count": 1801,
+        "six_donor_support_reaction_count": 150,
+        "seven_donor_support_reaction_count": 5082,
+        "seven_donor_flux_consistent_core_count": 4555,
+        "largest_leave_one_out_core_expansion_count": 62,
+        "missing_detection_interpreted_as_inactivity": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_phh_donor_stability.py",
+        "scripts/audit_human_gem_phh_donor_stability.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_gpr_stability_audit.json",
+        "engine/tests/test_human_gem_phh_donor_stability.py"
+      ]
+    },
+    {
+      "id": "human_gem_fastcore_scaling_sensitivity",
+      "title": "Human-GEM FASTCORE scaling sensitivity",
+      "status": "closed",
+      "scope": "Real-scale comparison of the pinned official fixed and adaptive LP-10 numerical branches on one Human-GEM network and one seven-donor core; no accepted context model.",
+      "current_capability": "Fixed scaling selected 7,320 reactions and left 408 blocked. Official adaptive scaling selected 7,415 and reduced the strict-output blocked set to 17, using eleven adaptive solves and one fixed fallback. Because the adaptive output is still not flux-consistent, every FBA and runtime gate remains closed.",
+      "observed_metrics": {
+        "fixed_selected_reaction_count": 7320,
+        "fixed_output_blocked_reaction_count": 408,
+        "adaptive_selected_reaction_count": 7415,
+        "adaptive_output_blocked_reaction_count": 17,
+        "adaptive_lp10_solve_count": 11,
+        "adaptive_fixed_fallback_count": 1,
+        "adaptive_output_flux_consistent": false,
+        "context_model_accepted": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/fastcore_context.py",
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_scaling.py",
+        "scripts/compare_human_gem_phh_fastcore_scaling.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_scaling_comparison.json",
+        "engine/tests/test_human_gem_phh_fastcore_scaling.py"
+      ]
+    },
+    {
+      "id": "human_gem_fastcore_blocker_diagnostics",
+      "title": "Human-GEM FASTCORE blocker diagnostics",
+      "status": "closed",
+      "scope": "Reaction-level generic-network flux-range and structural-witness diagnosis of the 17 adaptive-output blockers; no bound change, minimum-support claim or PHH activity claim.",
+      "current_capability": "All 17 reactions carry flux somewhere in the pinned generic FASTCC-consistent network and are blocked only after adaptive extraction. Exact extrema, omitted full-network witness reactions and omitted one-hop neighborhoods are preserved so numerical extraction failures can be separated from biological evidence gaps.",
+      "observed_metrics": {
+        "diagnosed_blocker_count": 17,
+        "full_network_active_blocker_count": 17,
+        "candidate_blocked_reaction_count": 17,
+        "full_witness_omitted_reaction_union_count": 1169,
+        "omitted_one_hop_reaction_union_count": 1402,
+        "minimum_reaction_support_proven": false,
+        "context_model_accepted": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/minimum_reaction_support.py",
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_blocker_diagnostics.py",
+        "scripts/diagnose_human_gem_phh_fastcore_blockers.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_blocker_diagnostics.json",
+        "engine/tests/test_minimum_reaction_support.py",
+        "engine/tests/test_human_gem_phh_fastcore_blocker_diagnostics.py"
+      ]
+    },
+    {
+      "id": "human_gem_fastcore_source_limited_support_repair",
+      "title": "Human-GEM source-limited FASTCORE support repair",
+      "status": "closed",
+      "scope": "Zero-gap per-target minimum-reaction MILP, post-MILP LP certification and strict FASTCC validation using only omitted reactions already present in checksum-pinned generic Human-GEM; no accepted PHH context.",
+      "current_capability": "Thirty-four directional MILPs prove target-specific supports of one to 56 reactions. Their 65-reaction union raises the candidate from 7,415 to 7,480 reactions and strict FASTCC classifies all 7,480 as consistent. All 65 additions still require biological evidence: 57 have zero-of-seven donor GPR support and eight have no GPR annotation.",
+      "observed_metrics": {
+        "target_blocker_count": 17,
+        "direction_milp_solve_count": 34,
+        "minimum_per_target_added_reaction_count": 1,
+        "maximum_per_target_added_reaction_count": 56,
+        "added_reaction_union_count": 65,
+        "repaired_candidate_reaction_count": 7480,
+        "strict_fastcc_blocked_reaction_count": 0,
+        "added_reaction_without_gpr_count": 8,
+        "added_reaction_zero_donor_gpr_count": 57,
+        "per_target_minimum_cardinality_proven": true,
+        "union_strictly_flux_consistent": true,
+        "union_global_minimum_guaranteed": false,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/minimum_reaction_support.py",
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_support_repair.py",
+        "scripts/repair_human_gem_phh_fastcore_support.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_support_repair.json",
+        "engine/tests/test_minimum_reaction_support.py",
+        "engine/tests/test_human_gem_phh_fastcore_support_repair.py"
+      ]
+    },
+    {
+      "id": "human_gem_fastcore_minimum_shared_support",
+      "title": "Human-GEM minimum shared FASTCORE support",
+      "status": "closed",
+      "scope": "Zero-gap shared-identity MILP with an independent steady-state scenario per target, explicit per-scenario candidate direction thresholds, post-MILP LP certificates and strict FASTCC; exact only inside the committed 65-reaction repair union.",
+      "current_capability": "The per-target union contracts from 65 to a proven 59-reaction minimum inside that candidate pool. The resulting 7,474-reaction candidate is strict FASTCC consistent. Four selected additions lack a GPR and 55 have zero-of-seven donor GPR support, so this remains structural rather than a PHH activity model.",
+      "observed_metrics": {
+        "input_candidate_union_count": 65,
+        "target_blocker_count": 17,
+        "minimum_shared_added_reaction_count": 59,
+        "removed_from_per_target_union_count": 6,
+        "repaired_candidate_reaction_count": 7474,
+        "strict_fastcc_blocked_reaction_count": 0,
+        "selected_reaction_without_gpr_count": 4,
+        "selected_reaction_zero_donor_gpr_count": 55,
+        "minimum_cardinality_within_65_reaction_union_proven": true,
+        "global_minimum_over_all_omitted_reactions_guaranteed": false,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/minimum_reaction_support.py",
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_shared_support.py",
+        "scripts/minimize_human_gem_phh_fastcore_shared_support.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_shared_support.json",
+        "engine/tests/test_minimum_reaction_support.py",
+        "engine/tests/test_human_gem_phh_fastcore_shared_support.py"
+      ]
+    },
+    {
+      "id": "human_gem_fastcore_support_optimality",
+      "title": "Human-GEM FASTCORE support optimum enumeration",
+      "status": "closed",
+      "scope": "Exact no-good MILP enumeration at the proven 59-reaction cardinality inside the committed 65-reaction pool, with terminal infeasibility and strict FASTCC checks for every identity set.",
+      "current_capability": "Exactly two minimum identity sets exist in the scoped pool. They share 58 reactions and differ only by MAR02308 versus MAR10035. A terminal infeasibility proof excludes a third 59-reaction set; larger nonminimum supports and the wider 4,226-reaction universe are outside this claim.",
+      "observed_metrics": {
+        "minimum_support_set_count": 2,
+        "minimum_support_identity_enumeration_complete": true,
+        "reactions_present_in_every_minimum_support_count": 58,
+        "optional_reaction_count": 2,
+        "optional_reaction_ids_in_input_order": [
+          "MAR02308",
+          "MAR10035"
+        ],
+        "terminal_infeasibility_proven": true,
+        "all_minimum_support_identities_enumerated": true,
+        "global_minimum_over_all_omitted_reactions_guaranteed": false,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_support_optimality.py",
+        "scripts/audit_human_gem_phh_fastcore_support_optimality.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_support_optimality.json",
+        "engine/tests/test_human_gem_phh_fastcore_support_optimality.py"
+      ]
+    },
+    {
+      "id": "human_gem_reaction_evidence_manifest",
+      "title": "Human-GEM reaction evidence manifest",
+      "status": "closed",
+      "scope": "Dependency-ordered, reaction-identity-level research tasks generated from numerical contradictions, donor missingness and adaptive non-core support; no synthetic priority score or automatic model edit.",
+      "current_capability": "A 4,895-reaction machine-readable manifest now separates seven evidence-gap classes. Of 2,860 adaptive non-core support reactions, 2,177 lack a GPR annotation, 401 have zero-of-seven donor support and 282 have partial donor support. Required output fields preserve assay, donor, compartment, unit, uncertainty and exact source location.",
+      "observed_metrics": {
+        "manifest_reaction_count": 4895,
+        "adaptive_fastcore_noncore_reaction_count": 2860,
+        "adaptive_noncore_without_gpr_count": 2177,
+        "adaptive_noncore_zero_donor_gpr_count": 401,
+        "adaptive_noncore_partial_donor_gpr_count": 282,
+        "priority_score_used": false,
+        "automatic_bound_change_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_phh_reaction_evidence_manifest.py",
+        "scripts/build_human_gem_phh_reaction_evidence_manifest.py",
+        "data/evidence_intake/human_gem_phh_reaction_evidence_manifest.v1.json",
+        "engine/tests/test_human_gem_phh_reaction_evidence_manifest.py"
+      ]
+    },
+    {
+      "id": "generic_fba_fva_numerics",
+      "title": "Generic FBA/FVA numerical kernel",
+      "status": "closed",
+      "scope": "Linear-programming software verification on analytic synthetic stoichiometric fixtures only.",
+      "current_capability": "A pinned SciPy/HiGHS backend solves steady-state FBA, objective-constrained FVA, alternate-optimum audits and elastic infeasibility diagnosis. Five analytic fixture checks cover mass balance, reaction bounds and solver failure states without loading Human-GEM or claiming a biological flux.",
+      "observed_metrics": {
+        "synthetic_fba_fixture_count": 3,
+        "synthetic_fva_fixture_count": 2,
+        "analytic_fixture_pass_count": 5,
+        "alternate_optimum_audit_count": 1,
+        "elastic_infeasibility_diagnosis_count": 1,
+        "human_gem_loaded": false,
+        "biological_flux_authority": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/constraint_numerics.py",
+        "engine/tests/test_constraint_numerics.py"
+      ]
+    },
+    {
+      "id": "fastcore_context_extraction_numerics",
+      "title": "FASTCORE context-extraction numerical kernel",
+      "status": "closed",
+      "scope": "Source-defined LP-7/LP-10 software behavior on analytic synthetic flux-consistent networks only.",
+      "current_capability": "The Vlassis et al. FASTCORE greedy extraction loop is implemented with mandatory epsilon, the pinned fixed LP10 scale, the official adaptive branch with counted fixed fallback, identity-bound input consistency certificates, original reaction-orientation restoration, strict output FASTCC and explicit non-uniqueness. Synthetic fixtures include reverse-only, adaptive-fallback and subthreshold-support closure cases. Real Human-GEM applications are reported separately as fail-closed numerical audits.",
+      "observed_metrics": {
+        "synthetic_fixture_pass_count": 1,
+        "epsilon_has_runtime_default": false,
+        "lp10_scaling_factor_has_runtime_default": false,
+        "official_adaptive_lp10_supported": true,
+        "official_adaptive_lp10_core_multiplier": 10.0,
+        "adaptive_lp10_fixed_fallback_supported": true,
+        "requires_flux_consistent_input": true,
+        "requires_explicit_core_reaction_ids": true,
+        "unique_extraction_guaranteed": false,
+        "human_gem_context_extraction_executed": false,
+        "healthy_phh_core_set_loaded": false,
+        "biological_flux_authority": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/fastcore_context.py",
+        "engine/tests/test_fastcore_context.py"
+      ]
+    },
+    {
+      "id": "hepatocyte_fba_execution",
+      "title": "Healthy-PHH FBA/FVA execution",
+      "status": "blocked_missing_evidence",
+      "scope": "A context-extracted and independently validated healthy-hepatocyte constraint model.",
+      "current_capability": "The generic reconstruction and LP backend are pinned. A checksum-frozen ten-artifact execution-bundle intake now requires deterministic context extraction, measured exchange bounds, an explicit scale operator, measured objective, FBA/FVA/infeasibility reports and donor/study-disjoint validation. No PHH bundle is delivered, so every biological execution and coupling gate remains false.",
+      "observed_metrics": {
+        "execution_gate_count": 6,
+        "enabled_execution_gate_count": 0,
+        "generic_solver_fixture_pass_count": 5,
+        "context_extraction_fixture_pass_count": 1,
+        "human_gem_context_extraction_executed_count": 0,
+        "execution_bundle_intake_contract_count": 1,
+        "required_execution_bundle_artifact_count": 10,
+        "delivered_execution_bundle_count": 0,
+        "structurally_complete_execution_bundle_count": 0,
+        "measured_exchange_bound_count": 0,
+        "independent_validation_record_count": 0,
+        "runtime_flux_coupling_allowed_count": 0
+      },
+      "remaining_requirements": [
+        "Declared PHH context-extraction algorithm and donor/cohort inputs.",
+        "Measured exchange bounds, defensible objective and pinned solver.",
+        "FVA, infeasibility, reaction-level structural-audit exception resolution and independent flux validation."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/metabolic_constraint_shell.py",
+        "engine/cell_engine/quantitative/constraint_numerics.py",
+        "engine/cell_engine/quantitative/phh_metabolic_execution_bundle.py",
+        "data/evidence_intake/phh_metabolic_execution_bundle_contract.v1.json"
+      ]
+    },
+    {
+      "id": "visual_regression_automation",
+      "title": "Automated browser render-integrity regression",
+      "status": "closed",
+      "scope": "Repeatable desktop/mobile checks for nonblank moving canvas output, layout integrity and runtime errors; exact cross-GPU design equivalence is outside this scope.",
+      "current_capability": "A Playwright suite runs two viewports and checks canvas dimensions, luminance variance, non-dark and chromatic pixel fractions, color diversity, two-frame motion, overflow, clipped controls, console errors and page errors.",
+      "observed_metrics": {
+        "manual_browser_qa_available": true,
+        "automated_visual_regression_suites": 1,
+        "automated_viewport_count": 2,
+        "exact_cross_gpu_pixel_baseline_count": 0,
+        "exact_cross_gpu_pixel_equivalence_claim": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "playwright.config.ts",
+        "tests/visual/render-integrity.spec.ts",
+        "src/main.ts"
+      ]
+    },
+    {
+      "id": "independent_scientific_validation",
+      "title": "Independent scientific and software validation",
+      "status": "external_action_required",
+      "scope": "External domain review, same-assay held-out validation, prospective PHH experiment and independent reproduction.",
+      "current_capability": "The review contract and dossier are ready; no external result artifact has been received.",
+      "observed_metrics": {
+        "internally_ready_claim_count": 10,
+        "externally_reviewed_claim_count": 0,
+        "same_assay_validated_claim_count": 0,
+        "prospectively_validated_claim_count": 0,
+        "independent_reproduction_count": 0
+      },
+      "remaining_requirements": [
+        "Signed domain-expert review with conflicts declared.",
+        "Donor-disjoint same-assay validation.",
+        "Prospective independent wet-lab PHH result.",
+        "Independent software reproduction."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/validation/external_review.py",
+        "docs/validation/external-review-dossier.md"
+      ]
+    }
+  ],
+  "summary": {
+    "entry_count": 41,
+    "closed_count": 19,
+    "partial_count": 8,
+    "blocked_missing_evidence_count": 12,
+    "external_action_required_count": 1,
+    "not_applicable_at_model_scale_count": 1,
+    "biological_accuracy_pct": null
+  }
+}

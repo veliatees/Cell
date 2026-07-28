@@ -12,11 +12,35 @@ from dataclasses import dataclass
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.processes.hepatocyte import build_hepatocyte_definition
+from cell_engine.quantitative.active_cargo_trajectory import (
+    active_cargo_trajectory_intake_snapshot,
+)
 from cell_engine.quantitative.geometry import HEPATOCYTE_REFERENCE_VOLUME_UM3
+from cell_engine.quantitative.phh_mechanics_calibration import (
+    phh_mechanics_calibration_intake_snapshot,
+    validate_phh_mechanics_calibration_intake_snapshot,
+)
+from cell_engine.quantitative.phh_membrane_topology_event import (
+    phh_membrane_topology_event_intake_snapshot,
+    validate_phh_membrane_topology_event_intake_snapshot,
+)
 
 
-DATE_VERIFIED = "2026-07-22"
-VERSION = "cytosol_transport_rheology_contract_v2"
+DATE_VERIFIED = "2026-07-26"
+VERSION = "cytosol_transport_rheology_contract_v13"
+
+RENDERER_GEOMETRY_BOUNDARY_CLASSES: tuple[str, ...] = (
+    "nuclear_envelope",
+    "bile_canaliculus",
+    "rough_er_cisternae",
+    "rough_er_branches",
+    "smooth_er_branches",
+    "golgi_stacks",
+    "lipid_droplets",
+    "mitochondria",
+    "peroxisomes",
+    "lysosomes",
+)
 
 CYTOSOL_TRANSPORT_SOURCES: dict[str, SourceReference] = {
     "moeendarbary2013_poroelastic_cytoplasm": SourceReference(
@@ -335,6 +359,13 @@ def cytosol_transport_snapshot() -> dict[str, object]:
         raise ValueError("legacy cytosol fraction unexpectedly disappeared without migration review")
     if any(observation.may_parameterize_healthy_phh for observation in REFERENCE_OBSERVATIONS):
         raise ValueError("cross-context rheology reference was promoted to healthy PHH")
+    active_cargo_intake = active_cargo_trajectory_intake_snapshot()
+    mechanics_intake = phh_mechanics_calibration_intake_snapshot()
+    validate_phh_mechanics_calibration_intake_snapshot(mechanics_intake)
+    topology_event_intake = phh_membrane_topology_event_intake_snapshot()
+    validate_phh_membrane_topology_event_intake_snapshot(
+        topology_event_intake
+    )
 
     return {
         "version": VERSION,
@@ -353,7 +384,13 @@ def cytosol_transport_snapshot() -> dict[str, object]:
         },
         "governing_contract": {
             "species_balance": "partial_t(c_i) + div(u*c_i) = div(D_i*grad(c_i)) + R_i(c)",
-            "incompressible_visual_mapping": "div(u) = 0 and det(F) = 1 for the affine moving-domain display map",
+            "incompressible_visual_mapping": (
+                "det(F) = 1 for the affine contact map; smooth star-shaped "
+                "or validated non-star-shaped closed-mesh domains are rasterized "
+                "into fractional cell volumes and face apertures, and the pressure "
+                "projection enforces the corresponding discrete local "
+                "geometric-conservation source"
+            ),
             "poroelastic_scaling": "D_p scales with E*xi^2/mu; no coefficient is assigned for healthy PHH",
             "advection_changes_reaction_state_via": "local reactant/product concentrations and boundary fluxes",
             "direct_viscosity_rate_multiplier": None,
@@ -403,6 +440,8 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "migration_required": True,
         },
         "cross_context_reference_observations": REFERENCE_OBSERVATIONS,
+        "phh_mechanics_calibration_intake": mechanics_intake,
+        "phh_membrane_topology_event_intake": topology_event_intake,
         "transport_mode_contract": {
             "aqueous_passive_transport": {
                 "carriers": "ions, metabolites and soluble macromolecules",
@@ -416,9 +455,14 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                     "ATP-dependent motor transport on cytoskeletal tracks",
                     "fusion, fission and sorting",
                 ),
-                "numerical_kernel_available": False,
+                "numerical_kernel_available": True,
+                "numerical_kernel_scope": (
+                    "deterministic dimensionless renderer path progress only"
+                ),
+                "biological_velocity_or_dwell_time_assigned": False,
                 "healthy_phh_rate_bound": False,
                 "cross_context_reference_only": True,
+                "trajectory_intake": active_cargo_intake,
             },
             "mode_interchange_prohibited": True,
         },
@@ -427,19 +471,149 @@ def cytosol_transport_snapshot() -> dict[str, object]:
                 "enabled": True,
                 "role": "dimensionless moving-domain visualization and numerical test bed",
                 "membrane_volume_mapping": "same volume-preserving affine deformation as the rendered membrane",
+                "local_star_shaped_membrane_boundary_coupling": True,
+                "local_boundary_reference_space": True,
+                "local_boundary_angular_bin_count": 512,
+                "affine_component_removed_before_local_boundary_sampling": True,
+                "multi_intersection_fold_or_topology_change_support": False,
+                "non_star_shaped_closed_mesh_domain_kernel": True,
+                "closed_mesh_domain_self_intersection_audit": True,
+                "closed_mesh_domain_biological_registration_count": 0,
+                "membrane_topology_change_support": False,
+                "locally_conservative_membrane_face_flux": True,
+                "outer_membrane_subgrid_volume_samples_per_cell": 8,
+                "outer_membrane_face_area_samples": 4,
+                "outer_membrane_geometric_conservation_source": True,
+                "outer_membrane_volume_fraction_mass_remap": True,
                 "moving_analytic_obstacle_boundaries": True,
-                "static_anatomy_proxy_boundaries": True,
+                "analytic_obstacle_shapes": ("sphere", "ellipsoid", "capsule", "box"),
+                "rigid_translation_boundary_velocity": True,
+                "quaternion_derived_rotation_boundary_velocity": True,
+                "renderer_geometry_boundary_adapter": True,
+                "renderer_geometry_boundary_classes": RENDERER_GEOMETRY_BOUNDARY_CLASSES,
+                "thin_boundary_treatment": (
+                    "conservative 2x2x2 volume occupancy plus four analytic "
+                    "center-to-center face-channel intersections"
+                ),
+                "subgrid_quadrature_samples_per_cell": 8,
+                "face_aperture_quadrature_channels": 4,
+                "subgrid_grid_convergence_tested": True,
+                "fractional_face_aperture_flux_weighting": True,
+                "fractional_face_aperture_pressure_weighting": True,
+                "partial_cell_volume_conservation": True,
+                "generic_watertight_triangle_mesh_boundary_kernel": True,
+                "mesh_topology_checks": (
+                    "finite_vertices",
+                    "valid_triangle_indices",
+                    "nondegenerate_triangles",
+                    "two_incident_faces_per_edge",
+                    "opposite_half_edge_winding",
+                    "single_connected_component",
+                    "nonzero_enclosed_volume",
+                ),
+                "mesh_self_intersection_detection": True,
+                "registered_biological_mesh_boundary_count": 0,
+                "full_watertight_mesh_boundaries": False,
                 "pressure_reaction_diagnostic_only": True,
                 "biological_time_or_velocity_claim": False,
                 "biological_pressure_claim": False,
                 "membrane_pressure_feedback": False,
             },
+            "dimensionless_pressure_membrane_response_candidate": {
+                "enabled": True,
+                "role": "numerical candidate generation and verification only",
+                "triangle_pressure_traction": True,
+                "surface_mean_pressure_shape_mode": True,
+                "closed_mesh_volume_correction": True,
+                "backtracking_line_search": True,
+                "self_intersection_rejection": True,
+                "action_reaction_diagnostic": True,
+                "pressure_work_diagnostic": True,
+                "force_energy_consistency_tested": True,
+                "volume_preservation_tested": True,
+                "runtime_feedback_enabled": False,
+                "biological_pressure_assigned": False,
+                "biological_compliance_assigned": False,
+                "healthy_phh_mechanics_assigned": False,
+                "mechanics_calibration_intake_contract_id": mechanics_intake[
+                    "contract_id"
+                ],
+                "delivered_mechanics_trajectory_count": mechanics_intake[
+                    "raw_trajectory_count"
+                ],
+                "spatial_fsi_ready_trajectory_count": mechanics_intake[
+                    "spatial_fsi_ready_trajectory_count"
+                ],
+                "quantitatively_authorized_parameter_count": mechanics_intake[
+                    "quantitatively_authorized_parameter_count"
+                ],
+            },
+            "dimensionless_membrane_topology_transition_candidate": {
+                "enabled": True,
+                "role": (
+                    "offline topology audit and conservative surface-state "
+                    "transfer for explicitly supplied pre/post closed meshes"
+                ),
+                "supported_event_kinds": (
+                    "bud_growth",
+                    "neck_formation",
+                    "fission",
+                    "fusion",
+                ),
+                "closed_surface_topology_audit": True,
+                "cross_component_intersection_audit": True,
+                "event_specific_euler_change_audit": True,
+                "explicit_component_lineage_required": True,
+                "explicit_face_transfer_map_required": True,
+                "extensive_surface_inventory_conservation": True,
+                "area_integrated_density_conservation": True,
+                "explicit_binding_destination_required": True,
+                "molecule_identity_resolved": False,
+                "automatic_event_detection": False,
+                "automatic_mesh_surgery": False,
+                "automatic_event_time_or_neck_threshold": False,
+                "runtime_mesh_replacement_enabled": False,
+                "fluid_domain_replacement_enabled": False,
+                "biological_event_activation_enabled": False,
+                "evidence_intake_contract_id": topology_event_intake[
+                    "contract_id"
+                ],
+                "delivered_event_record_count": topology_event_intake[
+                    "record_count"
+                ],
+                "quantitatively_authorized_event_record_count": (
+                    topology_event_intake[
+                        "quantitatively_authorized_record_count"
+                    ]
+                ),
+            },
             "conservative_passive_scalar_kernel": {
                 "enabled": True,
-                "role": "mass-conservation and non-negativity test bed",
-                "boundary_condition": "no flux through analytic solid faces",
+                "role": "fixed- and moving-domain mass-conservation and non-negativity test bed",
+                "boundary_condition": "no flux through analytic or topology-validated numerical mesh faces",
+                "moving_domain_remap": "deterministic face-neighbour redistribution with nearest-fluid fallback",
+                "moving_domain_mass_conservation_tested": True,
+                "fractional_face_aperture_flux_weighting": True,
+                "partial_cell_volume_mass_conservation_tested": True,
                 "biological_species_bound_count": 0,
                 "biological_diffusivity_claim": False,
+            },
+            "dimensionless_active_cargo_route_kernel": {
+                "enabled": True,
+                "role": (
+                    "deterministic renderer-only separation of track cargo from "
+                    "the passive aqueous projection field"
+                ),
+                "independent_per_frame_random_walk": False,
+                "biological_velocity_claim": False,
+                "biological_pause_reversal_or_dwell_claim": False,
+                "healthy_phh_route_bound_count": 0,
+                "reaction_or_cell_state_coupling": False,
+                "trajectory_intake_contract_id": active_cargo_intake["contract_id"],
+                "delivered_phh_route_count": active_cargo_intake["route_count"],
+                "quantitatively_authorized_phh_route_count": active_cargo_intake[
+                    "quantitatively_authorized_route_count"
+                ],
             },
             "quantitative_poroelastic_solver": {
                 "enabled": False,
@@ -463,8 +637,66 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "healthy_phh_numeric_rheology_parameter_count": 0,
             "dimensionless_projection_solver_count": 1,
             "conservative_passive_scalar_kernel_count": 1,
+            "conservative_moving_domain_remap_count": 1,
+            "dimensionless_active_cargo_route_kernel_count": 1,
+            "healthy_phh_active_transport_kernel_count": 0,
+            "active_cargo_trajectory_intake_contract_count": 1,
+            "delivered_phh_active_cargo_route_count": active_cargo_intake[
+                "route_count"
+            ],
+            "structurally_complete_phh_active_cargo_route_count": active_cargo_intake[
+                "structurally_complete_route_count"
+            ],
+            "quantitatively_authorized_phh_active_cargo_route_count": active_cargo_intake[
+                "quantitatively_authorized_route_count"
+            ],
             "biological_species_bound_count": 0,
             "moving_analytic_obstacle_layer_count": 1,
+            "analytic_obstacle_shape_count": 4,
+            "rigid_body_boundary_kinematics_count": 1,
+            "renderer_geometry_boundary_adapter_count": 1,
+            "renderer_geometry_boundary_class_count": len(
+                RENDERER_GEOMETRY_BOUNDARY_CLASSES
+            ),
+            "conservative_subgrid_boundary_treatment_count": 1,
+            "subgrid_boundary_grid_convergence_test_count": 1,
+            "local_star_shaped_membrane_boundary_coupling_count": 1,
+            "local_membrane_topology_change_coupling_count": 0,
+            "membrane_topology_transition_audit_kernel_count": 1,
+            "conservative_membrane_topology_state_transfer_kernel_count": 1,
+            "membrane_topology_transition_candidate_transaction_count": 1,
+            "membrane_topology_event_intake_contract_count": 1,
+            "delivered_phh_membrane_topology_event_record_count": (
+                topology_event_intake["record_count"]
+            ),
+            "quantitatively_authorized_phh_membrane_topology_event_record_count": (
+                topology_event_intake[
+                    "quantitatively_authorized_record_count"
+                ]
+            ),
+            "locally_conservative_membrane_face_flux_count": 1,
+            "fractional_face_aperture_solver_count": 1,
+            "generic_watertight_mesh_boundary_kernel_count": 1,
+            "repository_mesh_self_intersection_audit_count": 1,
+            "non_star_shaped_closed_mesh_domain_kernel_count": 1,
+            "dimensionless_pressure_membrane_response_kernel_count": 1,
+            "force_energy_consistency_test_count": 1,
+            "volume_preserving_fsi_candidate_test_count": 1,
+            "phh_mechanics_calibration_intake_contract_count": 1,
+            "phh_mechanics_target_quantity_count": mechanics_intake[
+                "target_quantity_count"
+            ],
+            "delivered_phh_mechanics_trajectory_count": mechanics_intake[
+                "raw_trajectory_count"
+            ],
+            "spatial_fsi_ready_phh_mechanics_trajectory_count": mechanics_intake[
+                "spatial_fsi_ready_trajectory_count"
+            ],
+            "quantitatively_authorized_phh_mechanics_parameter_count": mechanics_intake[
+                "quantitatively_authorized_parameter_count"
+            ],
+            "full_watertight_mesh_boundary_count": 0,
+            "compound_boundary_conservation_test_count": 1,
             "membrane_pressure_feedback_count": 0,
             "quantitative_fluid_solver_count": 0,
             "reaction_transport_coupling_count": 0,
@@ -477,6 +709,7 @@ def cytosol_transport_snapshot() -> dict[str, object]:
             "Species-specific apparent diffusion and reaction-specific diffusion limitation are missing.",
             "Healthy-PHH motor-cargo rates and route-resolved validation trajectories are missing.",
             "Membrane pressure feedback requires measured PHH permeability, modulus and hydraulic boundary data.",
+            "Runtime membrane topology change requires event-resolved healthy-PHH meshes, neck mechanics, surface partition measurements and held-out validation.",
         ),
     }
 
@@ -498,6 +731,12 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("reaction-fluid coupling cannot be active")
     projection = solvers.get("renderer_dimensionless_projection_grid")
     scalar = solvers.get("conservative_passive_scalar_kernel")
+    active_cargo = solvers.get("dimensionless_active_cargo_route_kernel")
+    fsi_candidate = solvers.get("dimensionless_pressure_membrane_response_candidate")
+    mechanics_intake = payload.get("phh_mechanics_calibration_intake")
+    topology_event_intake = payload.get(
+        "phh_membrane_topology_event_intake"
+    )
     if not isinstance(projection, dict) or projection.get("enabled") is not True:
         raise ValueError("dimensionless projection layer is missing")
     if projection.get("biological_time_or_velocity_claim") is not False:
@@ -506,12 +745,180 @@ def validate_cytosol_transport_snapshot(payload: dict[str, object]) -> None:
         raise ValueError("dimensionless pressure escaped into a biological pressure claim")
     if projection.get("membrane_pressure_feedback") is not False:
         raise ValueError("unvalidated cytosol pressure feeds the membrane")
+    if (
+        projection.get("local_star_shaped_membrane_boundary_coupling") is not True
+        or projection.get("local_boundary_reference_space") is not True
+        or projection.get("local_boundary_angular_bin_count") != 512
+        or projection.get("affine_component_removed_before_local_boundary_sampling")
+        is not True
+    ):
+        raise ValueError("local star-shaped membrane boundary coupling is missing")
+    if (
+        projection.get("multi_intersection_fold_or_topology_change_support")
+        is not False
+        or projection.get("membrane_topology_change_support") is not False
+    ):
+        raise ValueError("local membrane boundary overclaims topology support")
+    if (
+        projection.get("non_star_shaped_closed_mesh_domain_kernel") is not True
+        or projection.get("closed_mesh_domain_self_intersection_audit") is not True
+        or projection.get("closed_mesh_domain_biological_registration_count") != 0
+    ):
+        raise ValueError("closed-mesh cytosol domain escaped its numerical scope")
+    if (
+        projection.get("locally_conservative_membrane_face_flux") is not True
+        or projection.get("outer_membrane_subgrid_volume_samples_per_cell") != 8
+        or projection.get("outer_membrane_face_area_samples") != 4
+        or projection.get("outer_membrane_geometric_conservation_source") is not True
+        or projection.get("outer_membrane_volume_fraction_mass_remap") is not True
+    ):
+        raise ValueError("local membrane geometric-conservation coupling is missing")
+    if projection.get("analytic_obstacle_shapes") != (
+        "sphere",
+        "ellipsoid",
+        "capsule",
+        "box",
+    ):
+        raise ValueError("renderer obstacle-shape contract changed")
+    if projection.get("rigid_translation_boundary_velocity") is not True:
+        raise ValueError("moving boundary translation kinematics are missing")
+    if projection.get("quaternion_derived_rotation_boundary_velocity") is not True:
+        raise ValueError("moving boundary rotation kinematics are missing")
+    if projection.get("renderer_geometry_boundary_adapter") is not True:
+        raise ValueError("renderer geometry boundary adapter is missing")
+    if projection.get("renderer_geometry_boundary_classes") != (
+        RENDERER_GEOMETRY_BOUNDARY_CLASSES
+    ):
+        raise ValueError("renderer geometry boundary classes changed")
+    if (
+        projection.get("subgrid_quadrature_samples_per_cell") != 8
+        or projection.get("face_aperture_quadrature_channels") != 4
+        or projection.get("subgrid_grid_convergence_tested") is not True
+        or projection.get("fractional_face_aperture_flux_weighting") is not True
+        or projection.get("fractional_face_aperture_pressure_weighting") is not True
+        or projection.get("partial_cell_volume_conservation") is not True
+    ):
+        raise ValueError("conservative subgrid thin-boundary contract changed")
+    if projection.get("full_watertight_mesh_boundaries") is not False:
+        raise ValueError("analytic renderer boundaries were mislabelled as watertight meshes")
+    if (
+        projection.get("generic_watertight_triangle_mesh_boundary_kernel") is not True
+        or projection.get("mesh_self_intersection_detection") is not True
+        or projection.get("registered_biological_mesh_boundary_count") != 0
+    ):
+        raise ValueError("generic mesh boundary escaped its numerical-only scope")
     if not isinstance(scalar, dict) or scalar.get("enabled") is not True:
         raise ValueError("conservative passive-scalar kernel is missing")
     if scalar.get("biological_species_bound_count") != 0:
         raise ValueError("passive-scalar kernel was bound to an unvalidated biological species")
     if scalar.get("biological_diffusivity_claim") is not False:
         raise ValueError("dimensionless scalar diffusion escaped into a biological claim")
+    if scalar.get("moving_domain_mass_conservation_tested") is not True:
+        raise ValueError("moving-domain scalar conservation guard is missing")
+    if (
+        scalar.get("fractional_face_aperture_flux_weighting") is not True
+        or scalar.get("partial_cell_volume_mass_conservation_tested") is not True
+    ):
+        raise ValueError("fractional-aperture scalar conservation guard is missing")
+    if not isinstance(active_cargo, dict) or active_cargo.get("enabled") is not True:
+        raise ValueError("dimensionless active-cargo route kernel is missing")
+    if active_cargo.get("independent_per_frame_random_walk") is not False:
+        raise ValueError("active-cargo display escaped deterministic kinematics")
+    if (
+        active_cargo.get("biological_velocity_claim") is not False
+        or active_cargo.get("biological_pause_reversal_or_dwell_claim") is not False
+        or active_cargo.get("healthy_phh_route_bound_count") != 0
+        or active_cargo.get("reaction_or_cell_state_coupling") is not False
+        or active_cargo.get("delivered_phh_route_count") != 0
+        or active_cargo.get("quantitatively_authorized_phh_route_count") != 0
+    ):
+        raise ValueError("dimensionless active-cargo renderer escaped into PHH biology")
+    if not isinstance(fsi_candidate, dict) or fsi_candidate.get("enabled") is not True:
+        raise ValueError("dimensionless pressure-membrane candidate kernel is missing")
+    if not isinstance(mechanics_intake, dict):
+        raise ValueError("PHH mechanics calibration intake is missing")
+    validate_phh_mechanics_calibration_intake_snapshot(mechanics_intake)
+    if not isinstance(topology_event_intake, dict):
+        raise ValueError("PHH membrane topology event intake is missing")
+    validate_phh_membrane_topology_event_intake_snapshot(
+        topology_event_intake
+    )
+    if any(
+        fsi_candidate.get(key) is not True
+        for key in (
+            "triangle_pressure_traction",
+            "surface_mean_pressure_shape_mode",
+            "closed_mesh_volume_correction",
+            "backtracking_line_search",
+            "self_intersection_rejection",
+            "action_reaction_diagnostic",
+            "pressure_work_diagnostic",
+            "force_energy_consistency_tested",
+            "volume_preservation_tested",
+        )
+    ):
+        raise ValueError("dimensionless pressure-membrane verification contract changed")
+    if any(
+        fsi_candidate.get(key) is not False
+        for key in (
+            "runtime_feedback_enabled",
+            "biological_pressure_assigned",
+            "biological_compliance_assigned",
+            "healthy_phh_mechanics_assigned",
+        )
+    ):
+        raise ValueError("dimensionless pressure-membrane candidate escaped into PHH mechanics")
+    if (
+        fsi_candidate.get("mechanics_calibration_intake_contract_id")
+        != mechanics_intake.get("contract_id")
+        or fsi_candidate.get("delivered_mechanics_trajectory_count") != 0
+        or fsi_candidate.get("spatial_fsi_ready_trajectory_count") != 0
+        or fsi_candidate.get("quantitatively_authorized_parameter_count") != 0
+    ):
+        raise ValueError("dimensionless FSI candidate bypassed the PHH mechanics gate")
+    topology_candidate = solvers.get(
+        "dimensionless_membrane_topology_transition_candidate"
+    )
+    if not isinstance(topology_candidate, dict):
+        raise ValueError("dimensionless membrane topology candidate is missing")
+    if any(
+        topology_candidate.get(key) is not True
+        for key in (
+            "enabled",
+            "closed_surface_topology_audit",
+            "cross_component_intersection_audit",
+            "event_specific_euler_change_audit",
+            "explicit_component_lineage_required",
+            "explicit_face_transfer_map_required",
+            "extensive_surface_inventory_conservation",
+            "area_integrated_density_conservation",
+            "explicit_binding_destination_required",
+        )
+    ):
+        raise ValueError("membrane topology numerical verification contract changed")
+    if any(
+        topology_candidate.get(key) is not False
+        for key in (
+            "molecule_identity_resolved",
+            "automatic_event_detection",
+            "automatic_mesh_surgery",
+            "automatic_event_time_or_neck_threshold",
+            "runtime_mesh_replacement_enabled",
+            "fluid_domain_replacement_enabled",
+            "biological_event_activation_enabled",
+        )
+    ):
+        raise ValueError("membrane topology candidate escaped into PHH biology")
+    if (
+        topology_candidate.get("evidence_intake_contract_id")
+        != topology_event_intake.get("contract_id")
+        or topology_candidate.get("delivered_event_record_count") != 0
+        or topology_candidate.get(
+            "quantitatively_authorized_event_record_count"
+        )
+        != 0
+    ):
+        raise ValueError("membrane topology candidate bypassed its evidence gate")
     if coupling.get("currently_coupled_reaction_count") != 0:
         raise ValueError("cytosol transport contract activated a reaction")
     if conflict.get("may_parameterize_quantitative_fluid_or_reaction_model") is not False:

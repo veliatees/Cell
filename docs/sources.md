@@ -226,6 +226,20 @@ link back here or to a more specific research file.
 - Human capability and genome-scale structural references:
   - Human1 metabolism atlas: https://doi.org/10.1126/scisignal.aaz1482
   - Human-GEM repository: https://github.com/SysBioChalmers/Human-GEM
+  - Vlassis, Pacheco and Sauter, FASTCC/FASTCORE:
+    https://doi.org/10.1371/journal.pcbi.1003424
+  - Pinned COBRA Toolbox FASTCORE implementation:
+    https://github.com/opencobra/cobratoolbox/tree/67c790dbac809d9d891fdbafc33e18c21fc9bddc/src/dataIntegration/transcriptomics/FASTCORE
+  - Pinned COBRA Toolbox LP-10 fixed/adaptive source:
+    https://github.com/opencobra/cobratoolbox/blob/67c790dbac809d9d891fdbafc33e18c21fc9bddc/src/dataIntegration/transcriptomics/FASTCORE/LP10.m
+  - Kumar et al. (2007), optimization-based GapFind/GapFill:
+    https://doi.org/10.1186/1471-2105-8-212
+  - Latendresse (2014), Efficiently gap-filling reaction networks:
+    https://doi.org/10.1186/1471-2105-15-225
+  - HiGHS MIP feasibility and integrality option definitions:
+    https://ergo-code.github.io/HiGHS/stable/options/definitions/
+  - Gap-filling outputs are structural hypotheses. They do not establish PHH
+    reaction activity, active enzyme abundance, exchange flux or kinetic rate.
   - Human Protein Atlas subcellular map:
     https://doi.org/10.1126/science.aal3321
   - MacParland et al. normal human liver cell atlas:
@@ -1125,3 +1139,29 @@ unassigned until claim-specific external evidence exists.
 The renderer's projection-grid velocity, pressure and passive-scalar
 diffusivity are dimensionless numerical variables. Zero biological species,
 zero reactions and zero membrane-force laws are bound to this layer.
+
+## Hepatocyte Quantity Harvest and Injury Validation V1
+
+- Noe et al., recombinant human BSEP bile-salt transport:
+  https://doi.org/10.1053/gast.2002.36587. Four substrate affinities are retained
+  in the Sf9 membrane-vesicle assay context; no whole-cell flux is inferred.
+- Gilibili et al., recombinant human MRP2 probe-substrate kinetics:
+  https://pubmed.ncbi.nlm.nih.gov/28325716/. E17G retains its apparent S50,
+  Vmax and Hill coefficient; coproporphyrin-I retains its Km and Vmax. Assay
+  protein-normalized rates do not become hepatocyte rates.
+- Arbuckle et al., human GLUT2 expressed in Xenopus oocytes:
+  https://doi.org/10.1021/bi962210n. The 2-deoxyglucose affinity is a
+  heterologous-system observation, not a PHH transport law.
+- Xie et al., acetaminophen injury in freshly isolated PHH:
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC4171351/. Timing of glutathione
+  depletion, mitochondrial dysfunction, necrosis and delayed NAC protection is
+  retained only for the reported APAP protocol.
+- Woolbright et al., bile-acid injury in PHH:
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC4361327/. Serum and local biliary
+  exposure contexts remain distinct; the observations do not define a
+  universal cholestatic-death threshold.
+
+The supplied `168`-row harvest is preserved byte-for-byte with file hashes,
+CSV/JSON equality checks and organism partitions. A literature-harvest row is
+not a parameter. Only explicitly reviewed claims can enter a typed evidence
+module, and all healthy-runtime activation gates remain false.
