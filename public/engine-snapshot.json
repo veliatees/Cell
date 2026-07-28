@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-26T21:29:25.632763+00:00",
+    "created_at_utc": "2026-07-28T10:42:31.452072+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -16479,6 +16479,40 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_optimality.py",
+            "scripts/audit_human_gem_phh_fastcore_global_support_optimality.py",
+            "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_optimality.json",
+            "engine/tests/test_human_gem_phh_fastcore_global_support_optimality.py"
+          ],
+          "current_capability": "MAR00468 and MAR00612 require an exact 59-reaction shared support even when every omitted reaction in checksum-pinned, FASTCC-consistent Human-GEM is available. The committed 59-reaction set certifies all 17 targets and strict FASTCC, so matching bounds prove global minimum cardinality. Globally alternative 59-reaction identity sets, active PHH enzymes, exchange bounds and a biological objective remain unestablished.",
+          "id": "human_gem_fastcore_global_support_cardinality",
+          "observed_metrics": {
+            "bounds_match": true,
+            "context_model_accepted": false,
+            "fba_execution_allowed": false,
+            "full_target_count": 17,
+            "global_candidate_reaction_count": 4226,
+            "global_minimum_added_reaction_count": 59,
+            "global_minimum_cardinality_proven": true,
+            "global_minimum_identity_sets_enumerated": false,
+            "global_minimum_support_set_unique": null,
+            "global_universal_reaction_identities_established": false,
+            "lower_bound_exact_minimum_added_reaction_count": 59,
+            "lower_bound_target_count": 2,
+            "lower_bound_target_ids_in_input_order": [
+              "MAR00468",
+              "MAR00612"
+            ],
+            "reaction_activity_in_phh_established": false,
+            "upper_bound_feasible_added_reaction_count": 59
+          },
+          "remaining_requirements": [],
+          "scope": "Exact two-target shared-support lower bound over all 4,226 reactions omitted by adaptive FASTCORE, matched against the committed feasible 17-target upper bound; identity-set enumeration remains outside this scope.",
+          "status": "closed",
+          "title": "Human-GEM global FASTCORE support cardinality"
+        },
+        {
+          "code_surfaces": [
             "engine/cell_engine/quantitative/human_gem_phh_reaction_evidence_manifest.py",
             "scripts/build_human_gem_phh_reaction_evidence_manifest.py",
             "data/evidence_intake/human_gem_phh_reaction_evidence_manifest.v1.json",
@@ -16636,8 +16670,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 12,
-        "closed_count": 19,
-        "entry_count": 41,
+        "closed_count": 20,
+        "entry_count": 42,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
@@ -23131,7 +23165,7 @@
         "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
         "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
         "adaptive official LP-10 scaling selected 7,415 reactions but its raw output left 17 reactions blocked at the declared epsilon",
-        "the 65-reaction per-target union was reduced to a proven 59-reaction minimum inside that pool; both minimum identity sets produce 7,474 of 7,474 strict-consistent reactions, but all additions still lack sufficient PHH activity evidence",
+        "the exact two-target lower bound over all 4,226 omitted reactions matches the feasible 17-target upper bound at 59 additions, proving global cardinality; global minimum identity sets remain unenumerated and all additions still lack sufficient PHH activity evidence",
         "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
         "2,860 adaptive non-core support reactions require reaction-level PHH evidence; 2,177 lack a GPR annotation",
         "measured exchange bounds and explicit scale conversion are absent",
@@ -23155,6 +23189,32 @@
           "full_witness_omitted_reaction_union_count": 1169,
           "minimum_reaction_support_proven": false,
           "omitted_one_hop_reaction_union_count": 1402
+        },
+        "fastcore_global_support_optimality": {
+          "all_target_upper_bound_lp_certificate_count": 17,
+          "audit_report": "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_optimality.json",
+          "bounds_match": true,
+          "context_model_accepted": false,
+          "fba_execution_allowed": false,
+          "full_target_count": 17,
+          "global_candidate_reaction_count": 4226,
+          "global_minimum_added_reaction_count": 59,
+          "global_minimum_cardinality_proven": true,
+          "global_minimum_identity_sets_enumerated": false,
+          "global_minimum_over_all_omitted_reactions_guaranteed": true,
+          "global_minimum_support_set_unique": null,
+          "global_universal_reaction_identities_established": false,
+          "lower_bound_exact_minimum_added_reaction_count": 59,
+          "lower_bound_support_matches_committed_upper_support": true,
+          "lower_bound_target_count": 2,
+          "lower_bound_target_ids_in_input_order": [
+            "MAR00468",
+            "MAR00612"
+          ],
+          "lower_bound_target_lp_certificate_count": 2,
+          "reaction_activity_in_phh_established": false,
+          "strict_fastcc_blocked_reaction_count": 0,
+          "upper_bound_feasible_added_reaction_count": 59
         },
         "fastcore_scaling_comparison": {
           "adaptive_fixed_fallback_count": 1,
@@ -23471,7 +23531,7 @@
         "fast_gap_filling"
       ],
       "status": "generic_human_gem_loaded_classified_native_objective_solved_seven_donor_stability_FASTCORE_scaling_and_source_limited_support_repair_minimized_optima_enumerated_reaction_evidence_pending_PHH_execution_blocked",
-      "version": "metabolic_constraint_shell_v10"
+      "version": "metabolic_constraint_shell_v11"
     },
     "metabolic_fluxes": [
       {
@@ -41646,6 +41706,7 @@
         "minimum_shared_reaction_support_numerics",
         "human_gem_fastcore_minimum_shared_support",
         "human_gem_fastcore_support_optimality",
+        "human_gem_fastcore_global_support_cardinality",
         "human_gem_phh_reaction_evidence_manifest",
         "phh_metabolic_execution_bundle_intake",
         "metabolic_constraint_shell",
@@ -42708,6 +42769,21 @@
           "status": "derived"
         },
         {
+          "action": "solve an exact lower-bound target subset against all 4,226 reactions omitted by adaptive FASTCORE and match it to a fully certified all-target feasible upper bound",
+          "default_snapshot_role": "global_candidate_cardinality_sandwich_proof",
+          "drives_scientific_validation": true,
+          "id": "human_gem_fastcore_global_support_cardinality",
+          "limitations": "The two-target lower bound and 17-target upper bound both equal 59, proving global minimum cardinality over the pinned omitted-reaction universe. Globally alternative identity sets, universal membership, PHH activity, objective, exchange bounds and runtime authority remain unestablished.",
+          "source_ids": [
+            "human_hepatocyte_proteome_2016",
+            "human_gem_repository",
+            "fastcore",
+            "gapfill",
+            "fast_gap_filling"
+          ],
+          "status": "derived"
+        },
+        {
           "action": "retain dependency-ordered reaction gap codes and exact requested result fields; use no synthetic priority score and permit no automatic bound, inclusion or exclusion change",
           "default_snapshot_role": "reaction_identity_level_research_intake",
           "drives_scientific_validation": true,
@@ -42730,11 +42806,11 @@
           "status": "derived"
         },
         {
-          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, seven-donor GPR stability, FASTCORE sensitivity, source-limited structural repair, exact scoped support minimization and reaction evidence manifest; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
+          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, seven-donor GPR stability, FASTCORE sensitivity, source-limited structural repair, exact global support cardinality and reaction evidence manifest; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
           "default_snapshot_role": "pinned_reconstruction_and_genome_scale_activation_firewall",
           "drives_scientific_validation": true,
           "id": "metabolic_constraint_shell",
-          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective. The per-target 65-reaction repair union contracts to two fully enumerated 59-reaction optima, each yielding 7,474 strict-consistent reactions, but all additions lack sufficient PHH activity evidence and the available total proteome does not establish active enzyme capacities. No PHH bundle or biological optimization runs.",
+          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective. A 59-reaction repair is globally minimum over all 4,226 omitted reactions and yields 7,474 strict-consistent reactions; exactly two identities are known only inside the 65-reaction scoped pool. All additions lack sufficient PHH activity evidence, and the available total proteome does not establish active enzyme capacities. No PHH bundle or biological optimization runs.",
           "source_ids": [
             "human1_metabolic_atlas",
             "human_gem_repository",

@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 41
-    assert summary["closed_count"] == 19
+    assert summary["entry_count"] == 42
+    assert summary["closed_count"] == 20
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -240,6 +240,35 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
     assert optimality["observed_metrics"][
         "terminal_infeasibility_proven"
     ] is True
+    global_support = entries[
+        "human_gem_fastcore_global_support_cardinality"
+    ]
+    assert global_support["status"] == "closed"
+    assert global_support["observed_metrics"][
+        "global_candidate_reaction_count"
+    ] == 4226
+    assert global_support["observed_metrics"][
+        "lower_bound_target_ids_in_input_order"
+    ] == ["MAR00468", "MAR00612"]
+    assert global_support["observed_metrics"][
+        "lower_bound_exact_minimum_added_reaction_count"
+    ] == 59
+    assert global_support["observed_metrics"][
+        "upper_bound_feasible_added_reaction_count"
+    ] == 59
+    assert global_support["observed_metrics"]["bounds_match"] is True
+    assert global_support["observed_metrics"][
+        "global_minimum_cardinality_proven"
+    ] is True
+    assert global_support["observed_metrics"][
+        "global_minimum_identity_sets_enumerated"
+    ] is False
+    assert global_support["observed_metrics"][
+        "global_minimum_support_set_unique"
+    ] is None
+    assert global_support["observed_metrics"][
+        "reaction_activity_in_phh_established"
+    ] is False
     evidence = entries["human_gem_reaction_evidence_manifest"]
     assert evidence["status"] == "closed"
     assert evidence["observed_metrics"]["manifest_reaction_count"] == 4895

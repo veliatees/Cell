@@ -9,7 +9,7 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_context() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     validate_metabolic_constraint_shell(snapshot)
-    assert snapshot["version"] == "metabolic_constraint_shell_v10"
+    assert snapshot["version"] == "metabolic_constraint_shell_v11"
     reconstruction = snapshot["candidate_reconstruction"]
     assert reconstruction["model_version"] == "2.0.0"
     assert reconstruction["release_tag"] == "v2.0.0"
@@ -121,6 +121,37 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     ]
     assert optimality["terminal_infeasibility_proven"] is True
     assert optimality["reaction_activity_in_phh_established"] is False
+    global_optimality = reconstruction[
+        "fastcore_global_support_optimality"
+    ]
+    assert global_optimality["global_candidate_reaction_count"] == 4226
+    assert global_optimality["full_target_count"] == 17
+    assert global_optimality["lower_bound_target_count"] == 2
+    assert global_optimality[
+        "lower_bound_target_ids_in_input_order"
+    ] == ["MAR00468", "MAR00612"]
+    assert global_optimality[
+        "lower_bound_exact_minimum_added_reaction_count"
+    ] == 59
+    assert global_optimality[
+        "upper_bound_feasible_added_reaction_count"
+    ] == 59
+    assert global_optimality["bounds_match"] is True
+    assert global_optimality["global_minimum_cardinality_proven"] is True
+    assert (
+        global_optimality["global_minimum_identity_sets_enumerated"]
+        is False
+    )
+    assert global_optimality["global_minimum_support_set_unique"] is None
+    assert (
+        global_optimality[
+            "global_minimum_over_all_omitted_reactions_guaranteed"
+        ]
+        is True
+    )
+    assert global_optimality["reaction_activity_in_phh_established"] is False
+    assert global_optimality["context_model_accepted"] is False
+    assert global_optimality["fba_execution_allowed"] is False
     evidence = reconstruction["reaction_evidence_manifest"]
     assert evidence["manifest_reaction_count"] == 4895
     assert evidence["adaptive_fastcore_noncore_reaction_count"] == 2860
@@ -154,7 +185,11 @@ def test_exact_release_pin_removed_only_the_artifact_identity_blocker() -> None:
     assert not any("release and checksum are not pinned" in item for item in blockers)
     assert any("context specificity was not established" in item for item in blockers)
     assert any("raw output left 17 reactions blocked" in item for item in blockers)
-    assert any("reduced to a proven 59-reaction minimum" in item for item in blockers)
+    assert any(
+        "proving global cardinality" in item
+        and "global minimum identity sets remain unenumerated" in item
+        for item in blockers
+    )
     assert any("independent flux validation" in item for item in blockers)
     assert not any("have not been audited" in item for item in blockers)
     assert any("structural audit exceptions" in item for item in blockers)
