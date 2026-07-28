@@ -41,6 +41,9 @@ from cell_engine.quantitative.human_gem_phh_fastcore_support_repair import (
 from cell_engine.quantitative.human_gem_phh_fastcore_shared_support import (
     load_committed_human_gem_phh_fastcore_shared_support,
 )
+from cell_engine.quantitative.human_gem_phh_fastcore_global_support_optimality import (
+    load_committed_human_gem_phh_fastcore_global_support_optimality,
+)
 from cell_engine.quantitative.human_gem_phh_fastcore_support_optimality import (
     load_committed_human_gem_phh_fastcore_support_optimality,
 )
@@ -60,7 +63,7 @@ from cell_engine.quantitative.phh_metabolic_execution_bundle import (
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "metabolic_constraint_shell_v10"
+VERSION = "metabolic_constraint_shell_v11"
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
@@ -169,6 +172,9 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
     )
     support_optimality = (
         load_committed_human_gem_phh_fastcore_support_optimality()
+    )
+    global_support_optimality = (
+        load_committed_human_gem_phh_fastcore_global_support_optimality()
     )
     scope = manifest["scientific_scope"]
     verification = manifest["verification"]
@@ -686,6 +692,103 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
                     "scientific_boundary"
                 ]["fba_execution_allowed"],
             },
+            "fastcore_global_support_optimality": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_"
+                    "fastcore_global_support_optimality.json"
+                ),
+                "global_candidate_reaction_count": (
+                    global_support_optimality["input"][
+                        "global_candidate_reaction_count"
+                    ]
+                ),
+                "full_target_count": global_support_optimality["input"][
+                    "full_target_count"
+                ],
+                "lower_bound_target_count": global_support_optimality[
+                    "input"
+                ]["lower_bound_target_count"],
+                "lower_bound_target_ids_in_input_order": (
+                    global_support_optimality["input"][
+                        "lower_bound_target_ids_in_input_order"
+                    ]
+                ),
+                "lower_bound_exact_minimum_added_reaction_count": (
+                    global_support_optimality["lower_bound_certificate"][
+                        "exact_minimum_added_reaction_count"
+                    ]
+                ),
+                "lower_bound_target_lp_certificate_count": (
+                    global_support_optimality["lower_bound_certificate"][
+                        "target_lp_certificate_count"
+                    ]
+                ),
+                "upper_bound_feasible_added_reaction_count": (
+                    global_support_optimality["upper_bound_certificate"][
+                        "feasible_added_reaction_count"
+                    ]
+                ),
+                "all_target_upper_bound_lp_certificate_count": (
+                    global_support_optimality["upper_bound_certificate"][
+                        "all_target_lp_certificate_count"
+                    ]
+                ),
+                "strict_fastcc_blocked_reaction_count": (
+                    global_support_optimality["upper_bound_certificate"][
+                        "strict_fastcc_blocked_reaction_count"
+                    ]
+                ),
+                "bounds_match": global_support_optimality["proof"][
+                    "bounds_match"
+                ],
+                "global_minimum_added_reaction_count": (
+                    global_support_optimality["proof"][
+                        "global_minimum_added_reaction_count"
+                    ]
+                ),
+                "global_minimum_cardinality_proven": (
+                    global_support_optimality["proof"][
+                        "global_minimum_cardinality_proven"
+                    ]
+                ),
+                "lower_bound_support_matches_committed_upper_support": (
+                    global_support_optimality["proof"][
+                        "lower_bound_support_matches_committed_upper_support"
+                    ]
+                ),
+                "global_minimum_identity_sets_enumerated": (
+                    global_support_optimality["proof"][
+                        "global_minimum_identity_sets_enumerated"
+                    ]
+                ),
+                "global_minimum_support_set_unique": (
+                    global_support_optimality["proof"][
+                        "global_minimum_support_set_unique"
+                    ]
+                ),
+                "global_universal_reaction_identities_established": (
+                    global_support_optimality["proof"][
+                        "global_universal_reaction_identities_established"
+                    ]
+                ),
+                "global_minimum_over_all_omitted_reactions_guaranteed": (
+                    global_support_optimality["scientific_boundary"][
+                        "global_minimum_over_all_omitted_reactions_guaranteed"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    global_support_optimality["scientific_boundary"][
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": global_support_optimality[
+                    "scientific_boundary"
+                ]["context_model_accepted"],
+                "fba_execution_allowed": global_support_optimality[
+                    "scientific_boundary"
+                ]["fba_execution_allowed"],
+            },
             "reaction_evidence_manifest": {
                 "manifest_path": (
                     "data/evidence_intake/"
@@ -761,7 +864,7 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
             "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
             "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
             "adaptive official LP-10 scaling selected 7,415 reactions but its raw output left 17 reactions blocked at the declared epsilon",
-            "the 65-reaction per-target union was reduced to a proven 59-reaction minimum inside that pool; both minimum identity sets produce 7,474 of 7,474 strict-consistent reactions, but all additions still lack sufficient PHH activity evidence",
+            "the exact two-target lower bound over all 4,226 omitted reactions matches the feasible 17-target upper bound at 59 additions, proving global cardinality; global minimum identity sets remain unenumerated and all additions still lack sufficient PHH activity evidence",
             "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
             "2,860 adaptive non-core support reactions require reaction-level PHH evidence; 2,177 lack a GPR annotation",
             "measured exchange bounds and explicit scale conversion are absent",
@@ -1073,6 +1176,79 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
         or support_optimality.get("fba_execution_allowed") is not False
     ):
         raise ValueError("PHH FASTCORE support-optimality audit changed")
+    global_support_optimality = reconstruction.get(
+        "fastcore_global_support_optimality"
+    )
+    if not isinstance(global_support_optimality, dict) or (
+        global_support_optimality.get("global_candidate_reaction_count")
+        != 4_226
+        or global_support_optimality.get("full_target_count") != 17
+        or global_support_optimality.get("lower_bound_target_count") != 2
+        or global_support_optimality.get(
+            "lower_bound_target_ids_in_input_order"
+        )
+        != ["MAR00468", "MAR00612"]
+        or global_support_optimality.get(
+            "lower_bound_exact_minimum_added_reaction_count"
+        )
+        != 59
+        or global_support_optimality.get(
+            "lower_bound_target_lp_certificate_count"
+        )
+        != 2
+        or global_support_optimality.get(
+            "upper_bound_feasible_added_reaction_count"
+        )
+        != 59
+        or global_support_optimality.get(
+            "all_target_upper_bound_lp_certificate_count"
+        )
+        != 17
+        or global_support_optimality.get(
+            "strict_fastcc_blocked_reaction_count"
+        )
+        != 0
+        or global_support_optimality.get("bounds_match") is not True
+        or global_support_optimality.get(
+            "global_minimum_added_reaction_count"
+        )
+        != 59
+        or global_support_optimality.get(
+            "global_minimum_cardinality_proven"
+        )
+        is not True
+        or global_support_optimality.get(
+            "lower_bound_support_matches_committed_upper_support"
+        )
+        is not True
+        or global_support_optimality.get(
+            "global_minimum_identity_sets_enumerated"
+        )
+        is not False
+        or global_support_optimality.get(
+            "global_minimum_support_set_unique"
+        )
+        is not None
+        or global_support_optimality.get(
+            "global_universal_reaction_identities_established"
+        )
+        is not False
+        or global_support_optimality.get(
+            "global_minimum_over_all_omitted_reactions_guaranteed"
+        )
+        is not True
+        or global_support_optimality.get(
+            "reaction_activity_in_phh_established"
+        )
+        is not False
+        or global_support_optimality.get("context_model_accepted")
+        is not False
+        or global_support_optimality.get("fba_execution_allowed")
+        is not False
+    ):
+        raise ValueError(
+            "PHH FASTCORE global-support optimality audit changed"
+        )
     evidence_manifest = reconstruction.get("reaction_evidence_manifest")
     if not isinstance(evidence_manifest, dict) or (
         evidence_manifest.get("manifest_reaction_count") != 4_895

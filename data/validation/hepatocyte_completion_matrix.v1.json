@@ -942,6 +942,40 @@
       ]
     },
     {
+      "id": "human_gem_fastcore_global_support_cardinality",
+      "title": "Human-GEM global FASTCORE support cardinality",
+      "status": "closed",
+      "scope": "Exact two-target shared-support lower bound over all 4,226 reactions omitted by adaptive FASTCORE, matched against the committed feasible 17-target upper bound; identity-set enumeration remains outside this scope.",
+      "current_capability": "MAR00468 and MAR00612 require an exact 59-reaction shared support even when every omitted reaction in checksum-pinned, FASTCC-consistent Human-GEM is available. The committed 59-reaction set certifies all 17 targets and strict FASTCC, so matching bounds prove global minimum cardinality. Globally alternative 59-reaction identity sets, active PHH enzymes, exchange bounds and a biological objective remain unestablished.",
+      "observed_metrics": {
+        "global_candidate_reaction_count": 4226,
+        "full_target_count": 17,
+        "lower_bound_target_count": 2,
+        "lower_bound_target_ids_in_input_order": [
+          "MAR00468",
+          "MAR00612"
+        ],
+        "lower_bound_exact_minimum_added_reaction_count": 59,
+        "upper_bound_feasible_added_reaction_count": 59,
+        "bounds_match": true,
+        "global_minimum_added_reaction_count": 59,
+        "global_minimum_cardinality_proven": true,
+        "global_minimum_identity_sets_enumerated": false,
+        "global_minimum_support_set_unique": null,
+        "global_universal_reaction_identities_established": false,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_optimality.py",
+        "scripts/audit_human_gem_phh_fastcore_global_support_optimality.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_optimality.json",
+        "engine/tests/test_human_gem_phh_fastcore_global_support_optimality.py"
+      ]
+    },
+    {
       "id": "human_gem_reaction_evidence_manifest",
       "title": "Human-GEM reaction evidence manifest",
       "status": "closed",
@@ -1089,8 +1123,8 @@
     }
   ],
   "summary": {
-    "entry_count": 41,
-    "closed_count": 19,
+    "entry_count": 42,
+    "closed_count": 20,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,
