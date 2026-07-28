@@ -3929,6 +3929,14 @@ function renderExternalEngineStatus(): string {
       `${wholeCellAuthority.summary.predictive_authority_surface_count}/` +
       `${wholeCellAuthority.summary.authoritative_state_coupling_surface_count}`
     : "whole-cell runtime authority unavailable";
+  const calibrationAuthority = s.legacyCalibrationAuthority;
+  const calibrationAuthorityText = calibrationAuthority
+    ? `legacy calibration ${calibrationAuthority.status.replaceAll("_", " ")} · ` +
+      `placeholder/source-backed/authorized targets ` +
+      `${calibrationAuthority.summary.placeholder_target_count}/` +
+      `${calibrationAuthority.summary.source_backed_target_count}/` +
+      `${calibrationAuthority.summary.biologically_authorized_target_count}`
+    : "legacy calibration authority unavailable";
   const reactionAuthority = s.reactionAuthority;
   const reactionAuthorityText = reactionAuthority
     ? `reaction authority ${reactionAuthority.source_backed_parameterization_count}/${reactionAuthority.reaction_count} source-backed · ${reactionAuthority.runtime_role}`
@@ -3948,6 +3956,7 @@ function renderExternalEngineStatus(): string {
     `<span>${s.cellType} · schematic status ${s.status} · ${atp} · Ca(rel) ${s.cytosolicCa == null ? "-" : s.cytosolicCa.toFixed(2)} · ${vm} · ${pump} · cargo ${cargo || "none"} · ` +
     `SBML ${s.pathwayCount} · signaling ${s.signalingCount}${flux}</span>` +
     `<span class="external-snapshot__diag">${runtimeAuthorityText}</span>` +
+    `<span class="external-snapshot__diag">${calibrationAuthorityText}</span>` +
     `<span class="external-snapshot__diag">${reactionAuthorityText}</span>` +
     `<span class="external-snapshot__diag">${kineticTransferText}</span>` +
     `<span class="external-snapshot__diag">${divisionText}</span>` +
@@ -4208,6 +4217,10 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
   const schematicRuntime = summary?.schematicVisualState;
   const wholeCellAuthorityRow = wholeCellAuthority
     ? `<div class="phh-profile"><div class="phh-profile__head"><b>Whole-cell runtime authority v1</b><span>explicit purpose · scientific use blocked</span></div><div class="phh-profile__grid"><span>Declared purpose <b>${(schematicRuntime?.runtime_purpose ?? "missing").replaceAll("_", " ")}</b></span><span>Schematic steps executed <b>${schematicRuntime?.executed_step_count ?? 0}</b></span><span>Legacy surfaces audited <b>${wholeCellAuthority.summary.audited_legacy_surface_count}</b></span><span>PHH context matched <b>${wholeCellAuthority.summary.phh_context_matched_surface_count}</b></span><span>Quantitative authority <b>${wholeCellAuthority.summary.quantitative_authority_surface_count}</b></span><span>Predictive authority <b>${wholeCellAuthority.summary.predictive_authority_surface_count}</b></span><span>Authoritative state coupling <b>${wholeCellAuthority.summary.authoritative_state_coupling_surface_count}</b></span><span>Biological parameter authority <b>${schematicRuntime?.biological_parameter_authority ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Execution firewall</span><span>Relative ATP, ROS, stress, organelle and cargo dynamics may animate or exercise software only. Public engine calls must declare that purpose; quantitative validation, prediction and authoritative PHH state mutation raise an error.</span></div>`
+    : "";
+  const legacyCalibrationAuthority = summary?.legacyCalibrationAuthority;
+  const legacyCalibrationAuthorityRow = legacyCalibrationAuthority
+    ? `<div class="phh-profile"><div class="phh-profile__head"><b>Legacy calibration authority v1</b><span>fixture scoring only · scientific use blocked</span></div><div class="phh-profile__grid"><span>Audited workflows <b>${legacyCalibrationAuthority.summary.audited_workflow_count}</b></span><span>Built-in targets <b>${legacyCalibrationAuthority.summary.built_in_target_count}</b></span><span>Placeholder targets <b>${legacyCalibrationAuthority.summary.placeholder_target_count}</b></span><span>Source-backed targets <b>${legacyCalibrationAuthority.summary.source_backed_target_count}</b></span><span>Biologically authorized targets <b>${legacyCalibrationAuthority.summary.biologically_authorized_target_count}</b></span><span>Scientific-authority purposes <b>${legacyCalibrationAuthority.summary.scientific_authority_purpose_count}</b></span><span>Parameter calibration <b>${legacyCalibrationAuthority.gates.biological_parameter_calibration_allowed ? "enabled" : "blocked"}</b></span><span>Predictive model selection <b>${legacyCalibrationAuthority.gates.predictive_model_selection_allowed ? "enabled" : "blocked"}</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Fixture-score firewall</span><span>The three relative ATP, ROS and energy-stress targets are project fixtures. Residuals and fixture-fit scores can test deterministic software behavior or rank exploratory candidates; they cannot estimate PHH parameters, validate biology or select a predictive model.</span></div>`
     : "";
   const geometryReference = summary?.quantitativeState?.geometry_reference;
   const geometryReferenceRow = geometryReference
@@ -4549,7 +4562,7 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
     "Cytosol transport + reaction evidence v12"
   );
   return (
-    externalReviewRow + wholeCellAuthorityRow + visualAnatomyRow + capabilityAtlasRow + cytosolTransportRowDisplay + mechanicsAndConstraintRow + metabolicContextProgressRow + metabolicSupportRepairRow + spatialTransportDataPlaneRow + profileRow + geometryReferenceRow + human3dRow + zonationRow + openAtlasRow + homeostasisRow + homeostasisV3Row + endocrineRow + validationProtocolRow + healthyPhhValidationRow + phhSpheroidProtocolRow + phhGlucoseObservabilityRow + energyRedoxRow + phhAlbuminSecretionRow + phhCypFunctionRow + phhBiliaryExcretionRow + phhIdentityHeterogeneityRow + phhProteomeBudgetRow + phhAbsoluteProteomeAtlasRow + phhTransporterInventoryRow + phhProteinFunctionalEvidenceRow + proteinSignalIntakeRow + phhInjuryValidationRow + humanSchBileAcidsRow + evidenceIntakeRow + publishedModelRow + externalValidationRow + publishedLineageRow + nutritionalContextRow + fluxEvidenceRow + phhRow + authorityRow + reactionAuthorityRow + kineticTransferRow + auditRow + placeholderRow +
+    externalReviewRow + wholeCellAuthorityRow + legacyCalibrationAuthorityRow + visualAnatomyRow + capabilityAtlasRow + cytosolTransportRowDisplay + mechanicsAndConstraintRow + metabolicContextProgressRow + metabolicSupportRepairRow + spatialTransportDataPlaneRow + profileRow + geometryReferenceRow + human3dRow + zonationRow + openAtlasRow + homeostasisRow + homeostasisV3Row + endocrineRow + validationProtocolRow + healthyPhhValidationRow + phhSpheroidProtocolRow + phhGlucoseObservabilityRow + energyRedoxRow + phhAlbuminSecretionRow + phhCypFunctionRow + phhBiliaryExcretionRow + phhIdentityHeterogeneityRow + phhProteomeBudgetRow + phhAbsoluteProteomeAtlasRow + phhTransporterInventoryRow + phhProteinFunctionalEvidenceRow + proteinSignalIntakeRow + phhInjuryValidationRow + humanSchBileAcidsRow + evidenceIntakeRow + publishedModelRow + externalValidationRow + publishedLineageRow + nutritionalContextRow + fluxEvidenceRow + phhRow + authorityRow + reactionAuthorityRow + kineticTransferRow + auditRow + placeholderRow +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Source-backed</span><span>BSEP/MRP2 directionality; intracellular/extracellular measurement distinction; cholestasis → ER stress; human bile-acid death-mode constraint.</span></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Model state</span><span>Mass-conserving intracellular → canalicular relative pools. CYP7A1 feedback and basolateral escape are explicitly not modeled.</span></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Derived</span><span>Stress-time exposure and fate evidence; no calibrated time-to-death or canalicular pressure.</span></div>` +

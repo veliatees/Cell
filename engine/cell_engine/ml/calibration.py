@@ -2,10 +2,16 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
+from typing import Literal
 
 from cell_engine.core.cell_definition import CellDefinition
 from cell_engine.core.serialization import to_plain
 from cell_engine.core.state import CellState
+from cell_engine.ml.calibration_authority import (
+    LegacyCalibrationPurpose,
+    assert_legacy_calibration_authority,
+    legacy_calibration_authority_snapshot,
+)
 from cell_engine.validation.experiments import Scenario, run_scenario
 
 
@@ -19,6 +25,10 @@ class CalibrationTarget:
     unit: str = ""
     source_id: str = ""
     notes: str = ""
+    evidence_authority: Literal[
+        "schematic_project_fixture",
+        "source_backed_observation",
+    ] = "schematic_project_fixture"
 
 
 @dataclass(frozen=True)
@@ -47,8 +57,13 @@ class CalibrationRun:
     scenario_id: str
     residuals: tuple[CalibrationResidual, ...]
     normalized_error: float
-    fit_score: float
+    fixture_fit_score: float
     final_status: str
+    execution_purpose: LegacyCalibrationPurpose
+    score_authority: Literal["software_fixture_only"]
+    biological_parameter_calibration_allowed: Literal[False]
+    quantitative_validation_allowed: Literal[False]
+    predictive_model_selection_allowed: Literal[False]
     provenance: str
 
     def to_dict(self) -> dict[str, object]:
@@ -65,6 +80,7 @@ BASELINE_HEPATOCYTE_TARGETS = (
         unit="relative_pool_0_1",
         source_id="project_roadmap_07",
         notes="Placeholder baseline energy target until curated hepatocyte concentration data is linked.",
+        evidence_authority="schematic_project_fixture",
     ),
     CalibrationTarget(
         id="baseline_ros",
@@ -75,6 +91,7 @@ BASELINE_HEPATOCYTE_TARGETS = (
         unit="relative_pool_0_1",
         source_id="project_roadmap_07",
         notes="Coarse low-ROS target; intentionally wide while model constants are placeholders.",
+        evidence_authority="schematic_project_fixture",
     ),
     CalibrationTarget(
         id="baseline_energy_stress",
@@ -84,8 +101,35 @@ BASELINE_HEPATOCYTE_TARGETS = (
         weight=1.0,
         unit="dimensionless",
         source_id="project_roadmap_07",
+        notes="Project fixture target; not a measured healthy-PHH stress observation.",
+        evidence_authority="schematic_project_fixture",
     ),
 )
+
+
+def validate_builtin_calibration_targets() -> None:
+    contracts = legacy_calibration_authority_snapshot()["built_in_targets"]
+    expected = {
+        contract["id"]: contract
+        for contract in contracts
+        if isinstance(contract, dict)
+    }
+    actual = {target.id: target for target in BASELINE_HEPATOCYTE_TARGETS}
+    if set(actual) != set(expected):
+        raise ValueError("legacy calibration built-in target identity changed")
+    for target_id, target in actual.items():
+        contract = expected[target_id]
+        if (
+            target.path != contract["path"]
+            or target.unit != contract["unit"]
+            or target.evidence_authority != contract["evidence_authority"]
+        ):
+            raise ValueError(
+                f"legacy calibration target contract changed: {target_id}"
+            )
+
+
+validate_builtin_calibration_targets()
 
 
 def evaluate_calibration(
@@ -98,27 +142,45 @@ def evaluate_calibration(
     dt_s: float,
     steps: int,
     seed: int,
+    purpose: LegacyCalibrationPurpose,
 ) -> CalibrationRun:
+    assert_legacy_calibration_authority(purpose)
     calibration_candidate = candidate or CalibrationCandidate(id="default", interventions={})
     merged_scenario = Scenario(
         id=scenario.id,
         description=scenario.description,
         interventions={**scenario.interventions, **calibration_candidate.interventions},
     )
-    scenario_result = run_scenario(definition, initial_state, merged_scenario, dt_s=dt_s, steps=steps, seed=seed)
+    scenario_result = run_scenario(
+        definition,
+        initial_state,
+        merged_scenario,
+        dt_s=dt_s,
+        steps=steps,
+        seed=seed,
+        purpose="exploratory_execution",
+    )
     final_frame = scenario_result.frames[-1]
     residuals = tuple(_residual(target, to_plain(final_frame)) for target in targets)
     total_weight = sum(residual.weight for residual in residuals) or 1.0
     normalized_error = sum(residual.weighted_error for residual in residuals) / total_weight
-    fit_score = 1.0 / (1.0 + normalized_error)
+    fixture_fit_score = 1.0 / (1.0 + normalized_error)
     return CalibrationRun(
         candidate_id=calibration_candidate.id,
         scenario_id=scenario.id,
         residuals=residuals,
         normalized_error=normalized_error,
-        fit_score=fit_score,
+        fixture_fit_score=fixture_fit_score,
         final_status=scenario_result.final_status,
-        provenance="calibration_runner_v1_does_not_mutate_cell_rules",
+        execution_purpose=purpose,
+        score_authority="software_fixture_only",
+        biological_parameter_calibration_allowed=False,
+        quantitative_validation_allowed=False,
+        predictive_model_selection_allowed=False,
+        provenance=(
+            "legacy_calibration_authority_v1_software_fixture_only_"
+            "does_not_mutate_cell_rules"
+        ),
     )
 
 
@@ -132,7 +194,13 @@ def rank_calibration_candidates(
     dt_s: float,
     steps: int,
     seed: int,
+    purpose: LegacyCalibrationPurpose,
 ) -> tuple[CalibrationRun, ...]:
+    assert_legacy_calibration_authority(purpose)
+    if purpose != "exploratory_candidate_ranking":
+        raise ValueError(
+            "candidate ranking requires purpose='exploratory_candidate_ranking'"
+        )
     runs = [
         evaluate_calibration(
             definition,
@@ -143,6 +211,7 @@ def rank_calibration_candidates(
             dt_s=dt_s,
             steps=steps,
             seed=seed,
+            purpose=purpose,
         )
         for candidate in candidates
     ]

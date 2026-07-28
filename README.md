@@ -521,6 +521,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 152: Human-GEM fixed-core completion enumeration v1](docs/milestones/152-human-gem-fixed-core-completion-enumeration-v1.md)
 - [Milestone 153: Human-GEM global support identity completeness v1](docs/milestones/153-human-gem-global-support-identity-completeness-v1.md)
 - [Milestone 154: Whole-cell runtime authority firewall v1](docs/milestones/154-whole-cell-runtime-authority-firewall-v1.md)
+- [Milestone 155: Legacy calibration authority firewall v1](docs/milestones/155-legacy-calibration-authority-firewall-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

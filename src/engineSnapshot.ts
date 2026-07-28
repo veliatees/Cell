@@ -2348,6 +2348,7 @@ export type EngineSnapshot = {
     brian2_communication?: EngineBrian2Communication;
     generative_modeling?: EngineGenerativeModelingBoundary;
     whole_cell_runtime_authority?: EngineWholeCellRuntimeAuthority;
+    legacy_calibration_authority?: EngineLegacyCalibrationAuthority;
     schematic_visual_state?: EngineSchematicVisualState;
     phh_baseline?: EnginePhhBaseline;
     cellular_response?: EngineCellularResponse;
@@ -2649,6 +2650,43 @@ export type EngineWholeCellRuntimeAuthority = {
     predictive_authority_surface_count: 0;
     authoritative_state_coupling_surface_count: 0;
   };
+};
+
+export type EngineLegacyCalibrationAuthority = {
+  version: "legacy_calibration_authority_v1";
+  status: "software_fixture_only";
+  explicit_purpose_required: true;
+  allowed_purposes: (
+    | "software_fixture_evaluation"
+    | "exploratory_candidate_ranking"
+  )[];
+  blocked_purposes: (
+    | "biological_parameter_calibration"
+    | "quantitative_validation"
+    | "predictive_model_selection"
+  )[];
+  built_in_targets: {
+    id: string;
+    path: string;
+    unit: string;
+    evidence_authority: "schematic_project_fixture";
+    biological_parameter_authority: false;
+  }[];
+  gates: {
+    biological_parameter_calibration_allowed: false;
+    quantitative_validation_allowed: false;
+    predictive_model_selection_allowed: false;
+    automatic_cell_rule_mutation_allowed: false;
+  };
+  summary: {
+    audited_workflow_count: 3;
+    built_in_target_count: 3;
+    placeholder_target_count: 3;
+    source_backed_target_count: 0;
+    biologically_authorized_target_count: 0;
+    scientific_authority_purpose_count: 0;
+  };
+  policy: string;
 };
 
 export type EngineZonationMarker = {
@@ -5007,6 +5045,7 @@ export type EngineSnapshotSummary = {
   brian2Communication: EngineBrian2Communication | null;
   generativeModeling: EngineGenerativeModelingBoundary | null;
   wholeCellRuntimeAuthority: EngineWholeCellRuntimeAuthority | null;
+  legacyCalibrationAuthority: EngineLegacyCalibrationAuthority | null;
   schematicVisualState: EngineSchematicVisualState | null;
   phhBaseline: EnginePhhBaseline | null;
   modelAuthority: EngineModelAuthority | null;
@@ -5195,6 +5234,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     brian2Communication: snapshot.state.brian2_communication ?? null,
     generativeModeling: snapshot.state.generative_modeling ?? null,
     wholeCellRuntimeAuthority: snapshot.state.whole_cell_runtime_authority ?? null,
+    legacyCalibrationAuthority: snapshot.state.legacy_calibration_authority ?? null,
     schematicVisualState: snapshot.state.schematic_visual_state ?? null,
     phhBaseline: snapshot.state.phh_baseline ?? null,
     modelAuthority: snapshot.state.model_authority ?? null,

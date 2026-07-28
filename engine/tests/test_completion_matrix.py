@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 46
-    assert summary["closed_count"] == 24
+    assert summary["entry_count"] == 47
+    assert summary["closed_count"] == 25
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -40,6 +40,21 @@ def test_whole_cell_runtime_is_closed_only_as_an_authority_firewall() -> None:
     assert metrics["quantitative_authority_surface_count"] == 0
     assert metrics["predictive_authority_surface_count"] == 0
     assert metrics["authoritative_state_coupling_surface_count"] == 0
+
+
+def test_legacy_calibration_is_closed_only_as_a_fixture_score_firewall() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    calibration = entries["legacy_calibration_authority_firewall"]
+    metrics = calibration["observed_metrics"]
+    assert calibration["status"] == "closed"
+    assert metrics["explicit_purpose_guard_count"] == 1
+    assert metrics["audited_workflow_count"] == 3
+    assert metrics["built_in_target_count"] == 3
+    assert metrics["placeholder_target_count"] == 3
+    assert metrics["source_backed_target_count"] == 0
+    assert metrics["biologically_authorized_target_count"] == 0
+    assert metrics["scientific_authority_purpose_count"] == 0
 
 
 def test_render_integrity_is_closed_without_claiming_cross_gpu_pixel_identity() -> None:

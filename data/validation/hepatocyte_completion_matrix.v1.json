@@ -33,6 +33,29 @@
       ]
     },
     {
+      "id": "legacy_calibration_authority_firewall",
+      "title": "Legacy calibration authority firewall",
+      "status": "closed",
+      "scope": "Code-level prevention of project fixture residuals and scores being used as PHH parameter calibration, quantitative validation or predictive model selection.",
+      "current_capability": "Calibration evaluation and candidate ranking require an explicit fixture or exploratory purpose. The score is named fixture_fit_score, every result carries zero scientific authority, and all three scientific-use purposes fail closed.",
+      "observed_metrics": {
+        "explicit_purpose_guard_count": 1,
+        "audited_workflow_count": 3,
+        "built_in_target_count": 3,
+        "placeholder_target_count": 3,
+        "source_backed_target_count": 0,
+        "biologically_authorized_target_count": 0,
+        "scientific_authority_purpose_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/ml/calibration.py",
+        "engine/cell_engine/ml/environment.py",
+        "engine/cell_engine/validation/experiments.py",
+        "engine/tests/test_ml_environment.py"
+      ]
+    },
+    {
       "id": "dimensionless_cytosol_numerics",
       "title": "Dimensionless cytosol transport numerics",
       "status": "closed",
@@ -1268,8 +1291,8 @@
     }
   ],
   "summary": {
-    "entry_count": 46,
-    "closed_count": 24,
+    "entry_count": 47,
+    "closed_count": 25,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,
