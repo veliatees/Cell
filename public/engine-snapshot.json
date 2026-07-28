@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-28T11:49:34.874072+00:00",
+    "created_at_utc": "2026-07-28T12:23:25.118363+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -16558,6 +16558,44 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/quantitative/human_gem_phh_fastcore_fixed_core_completion_enumeration.py",
+            "scripts/audit_human_gem_phh_fastcore_fixed_core_completion_enumeration.py",
+            "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_fixed_core_completion_enumeration.json",
+            "engine/tests/test_human_gem_phh_fastcore_fixed_core_completion_enumeration.py"
+          ],
+          "current_capability": "MAR00494, MAR02308 and MAR10035 are exactly the three one-reaction completions when the known common 58-reaction core is fixed. This closes the conditioned subspace only; global optima replacing two or more core identities, PHH reaction activity and runtime flux authority remain open.",
+          "id": "human_gem_fastcore_fixed_core_completion_enumeration",
+          "observed_metrics": {
+            "additional_unconditioned_global_search_required": true,
+            "conditioned_retained_reaction_count": 7473,
+            "context_model_accepted": false,
+            "exact_singleton_completion_count_given_fixed_core": 3,
+            "fba_execution_allowed": false,
+            "fixed_common_reaction_count": 58,
+            "fixed_common_reactions_proven_globally_universal": false,
+            "fixed_core_singleton_completion_enumeration_complete": true,
+            "fourth_singleton_completion_with_same_fixed_core_exists": false,
+            "global_minimum_identity_enumeration_complete": false,
+            "known_singleton_completion_count": 3,
+            "known_singleton_completion_ids_in_model_order": [
+              "MAR00494",
+              "MAR02308",
+              "MAR10035"
+            ],
+            "multi_replacement_global_optima_excluded": false,
+            "reaction_activity_in_phh_established": false,
+            "remaining_candidate_reaction_count": 4168,
+            "terminal_infeasibility_confirmed_without_presolve": true,
+            "terminal_infeasibility_proven": true,
+            "terminal_solver_attempt_count": 2
+          },
+          "remaining_requirements": [],
+          "scope": "Exact singleton-completion enumeration conditional on the 58 identities shared by three certified global minima, with three no-good cuts and terminal no-presolve infeasibility over the remaining 4,168 candidates.",
+          "status": "closed",
+          "title": "Human-GEM fixed-core completion enumeration"
+        },
+        {
+          "code_surfaces": [
             "engine/cell_engine/quantitative/human_gem_phh_reaction_evidence_manifest.py",
             "scripts/build_human_gem_phh_reaction_evidence_manifest.py",
             "data/evidence_intake/human_gem_phh_reaction_evidence_manifest.v1.json",
@@ -16715,8 +16753,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 12,
-        "closed_count": 21,
-        "entry_count": 43,
+        "closed_count": 22,
+        "entry_count": 44,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
@@ -23210,7 +23248,7 @@
         "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
         "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
         "adaptive official LP-10 scaling selected 7,415 reactions but its raw output left 17 reactions blocked at the declared epsilon",
-        "the global minimum cardinality is 59 and at least three distinct all-target identity sets are certified, including one using MAR00494 outside the scoped 65-reaction pool; complete global identity enumeration and sufficient PHH activity evidence remain absent",
+        "the global minimum cardinality is 59; exactly three singleton completions exist when the known common 58-reaction core is fixed, but optima replacing two or more core identities remain unexcluded and sufficient PHH activity evidence is absent",
         "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
         "2,860 adaptive non-core support reactions require reaction-level PHH evidence; 2,177 lack a GPR annotation",
         "measured exchange bounds and explicit scale conversion are absent",
@@ -23234,6 +23272,32 @@
           "full_witness_omitted_reaction_union_count": 1169,
           "minimum_reaction_support_proven": false,
           "omitted_one_hop_reaction_union_count": 1402
+        },
+        "fastcore_fixed_core_completion_enumeration": {
+          "additional_unconditioned_global_search_required": true,
+          "audit_report": "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_fixed_core_completion_enumeration.json",
+          "conditioned_retained_reaction_count": 7473,
+          "context_model_accepted": false,
+          "exact_singleton_completion_count_given_fixed_core": 3,
+          "fba_execution_allowed": false,
+          "fixed_common_reaction_count": 58,
+          "fixed_common_reactions_proven_globally_universal": false,
+          "fixed_core_singleton_completion_enumeration_complete": true,
+          "fourth_singleton_completion_with_same_fixed_core_exists": false,
+          "global_minimum_identity_enumeration_complete": false,
+          "known_singleton_completion_count": 3,
+          "known_singleton_completion_ids_in_model_order": [
+            "MAR00494",
+            "MAR02308",
+            "MAR10035"
+          ],
+          "multi_replacement_global_optima_excluded": false,
+          "reaction_activity_in_phh_established": false,
+          "remaining_candidate_reaction_count": 4168,
+          "terminal_accepted_solve_used_presolve": false,
+          "terminal_infeasibility_confirmed_without_presolve": true,
+          "terminal_infeasibility_proven": true,
+          "terminal_solver_attempt_count": 2
         },
         "fastcore_global_support_counterexample": {
           "accepted_solve_used_presolve": false,
@@ -23606,8 +23670,8 @@
         "gapfill",
         "fast_gap_filling"
       ],
-      "status": "generic_human_gem_loaded_classified_native_objective_solved_seven_donor_stability_FASTCORE_scaling_and_source_limited_support_repair_minimized_optima_enumerated_global_alternate_identity_certified_reaction_evidence_pending_PHH_execution_blocked",
-      "version": "metabolic_constraint_shell_v12"
+      "status": "generic_human_gem_loaded_classified_native_objective_solved_seven_donor_stability_FASTCORE_scaling_and_source_limited_support_repair_minimized_optima_enumerated_global_alternate_identity_and_fixed_core_completions_certified_reaction_evidence_pending_PHH_execution_blocked",
+      "version": "metabolic_constraint_shell_v13"
     },
     "metabolic_fluxes": [
       {
@@ -41784,6 +41848,7 @@
         "human_gem_fastcore_support_optimality",
         "human_gem_fastcore_global_support_cardinality",
         "human_gem_fastcore_global_support_counterexample",
+        "human_gem_fastcore_fixed_core_completion_enumeration",
         "human_gem_phh_reaction_evidence_manifest",
         "phh_metabolic_execution_bundle_intake",
         "metabolic_constraint_shell",
@@ -42876,6 +42941,21 @@
           "status": "derived"
         },
         {
+          "action": "fix the 58 identities shared by three certified global minima; exclude their singleton completions with no-good cuts; prove terminal infeasibility with presolve disabled over every remaining omitted reaction",
+          "default_snapshot_role": "exact_conditioned_singleton_completion_enumeration",
+          "drives_scientific_validation": true,
+          "id": "human_gem_fastcore_fixed_core_completion_enumeration",
+          "limitations": "Exactly three singleton completions exist when the known common 58-reaction core is fixed: MAR00494, MAR02308 and MAR10035. This does not prove the core globally universal or exclude another 59-reaction optimum that replaces two or more core identities.",
+          "source_ids": [
+            "human_hepatocyte_proteome_2016",
+            "human_gem_repository",
+            "fastcore",
+            "gapfill",
+            "fast_gap_filling"
+          ],
+          "status": "derived"
+        },
+        {
           "action": "retain dependency-ordered reaction gap codes and exact requested result fields; use no synthetic priority score and permit no automatic bound, inclusion or exclusion change",
           "default_snapshot_role": "reaction_identity_level_research_intake",
           "drives_scientific_validation": true,
@@ -42898,11 +42978,11 @@
           "status": "derived"
         },
         {
-          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, seven-donor GPR stability, FASTCORE sensitivity, source-limited structural repair, exact global support cardinality, certified alternate global identities and reaction evidence manifest; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
+          "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, seven-donor GPR stability, FASTCORE sensitivity, source-limited structural repair, exact global support cardinality, certified alternate global identities, exact fixed-core singleton completions and reaction evidence manifest; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
           "default_snapshot_role": "pinned_reconstruction_and_genome_scale_activation_firewall",
           "drives_scientific_validation": true,
           "id": "metabolic_constraint_shell",
-          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective. A 59-reaction repair is globally minimum over all 4,226 omitted reactions and yields 7,474 strict-consistent reactions; at least three distinct global minimum identities are certified, while complete identity enumeration remains open. All additions lack sufficient PHH activity evidence, and the available total proteome does not establish active enzyme capacities. No PHH bundle or biological optimization runs.",
+          "limitations": "The exact generic reconstruction is cache-fetched, loader-verified, flux-consistency classified and solved under its own generic biomass objective. A 59-reaction repair is globally minimum over all 4,226 omitted reactions and yields 7,474 strict-consistent reactions. Exactly three singleton completions exist given the known common 58-reaction core, while multi-replacement global optima remain unexcluded. All additions lack sufficient PHH activity evidence, and the available total proteome does not establish active enzyme capacities. No PHH bundle or biological optimization runs.",
           "source_ids": [
             "human1_metabolic_atlas",
             "human_gem_repository",

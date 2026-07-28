@@ -1021,6 +1021,44 @@
       ]
     },
     {
+      "id": "human_gem_fastcore_fixed_core_completion_enumeration",
+      "title": "Human-GEM fixed-core completion enumeration",
+      "status": "closed",
+      "scope": "Exact singleton-completion enumeration conditional on the 58 identities shared by three certified global minima, with three no-good cuts and terminal no-presolve infeasibility over the remaining 4,168 candidates.",
+      "current_capability": "MAR00494, MAR02308 and MAR10035 are exactly the three one-reaction completions when the known common 58-reaction core is fixed. This closes the conditioned subspace only; global optima replacing two or more core identities, PHH reaction activity and runtime flux authority remain open.",
+      "observed_metrics": {
+        "fixed_common_reaction_count": 58,
+        "conditioned_retained_reaction_count": 7473,
+        "remaining_candidate_reaction_count": 4168,
+        "known_singleton_completion_count": 3,
+        "known_singleton_completion_ids_in_model_order": [
+          "MAR00494",
+          "MAR02308",
+          "MAR10035"
+        ],
+        "terminal_infeasibility_proven": true,
+        "terminal_solver_attempt_count": 2,
+        "terminal_infeasibility_confirmed_without_presolve": true,
+        "exact_singleton_completion_count_given_fixed_core": 3,
+        "fixed_core_singleton_completion_enumeration_complete": true,
+        "fourth_singleton_completion_with_same_fixed_core_exists": false,
+        "global_minimum_identity_enumeration_complete": false,
+        "fixed_common_reactions_proven_globally_universal": false,
+        "multi_replacement_global_optima_excluded": false,
+        "additional_unconditioned_global_search_required": true,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_fixed_core_completion_enumeration.py",
+        "scripts/audit_human_gem_phh_fastcore_fixed_core_completion_enumeration.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_fixed_core_completion_enumeration.json",
+        "engine/tests/test_human_gem_phh_fastcore_fixed_core_completion_enumeration.py"
+      ]
+    },
+    {
       "id": "human_gem_reaction_evidence_manifest",
       "title": "Human-GEM reaction evidence manifest",
       "status": "closed",
@@ -1168,8 +1206,8 @@
     }
   ],
   "summary": {
-    "entry_count": 43,
-    "closed_count": 21,
+    "entry_count": 44,
+    "closed_count": 22,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

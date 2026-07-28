@@ -9,7 +9,7 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_context() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     validate_metabolic_constraint_shell(snapshot)
-    assert snapshot["version"] == "metabolic_constraint_shell_v12"
+    assert snapshot["version"] == "metabolic_constraint_shell_v13"
     reconstruction = snapshot["candidate_reconstruction"]
     assert reconstruction["model_version"] == "2.0.0"
     assert reconstruction["release_tag"] == "v2.0.0"
@@ -187,6 +187,39 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
         "additional_global_minimum_search_required"
     ] is True
     assert global_counterexample["reaction_activity_in_phh_established"] is False
+    fixed_core_completion = reconstruction[
+        "fastcore_fixed_core_completion_enumeration"
+    ]
+    assert fixed_core_completion["fixed_common_reaction_count"] == 58
+    assert fixed_core_completion["conditioned_retained_reaction_count"] == 7473
+    assert fixed_core_completion["remaining_candidate_reaction_count"] == 4168
+    assert fixed_core_completion["known_singleton_completion_count"] == 3
+    assert fixed_core_completion[
+        "known_singleton_completion_ids_in_model_order"
+    ] == ["MAR00494", "MAR02308", "MAR10035"]
+    assert fixed_core_completion["terminal_infeasibility_proven"] is True
+    assert fixed_core_completion["terminal_solver_attempt_count"] == 2
+    assert fixed_core_completion[
+        "terminal_infeasibility_confirmed_without_presolve"
+    ] is True
+    assert fixed_core_completion[
+        "exact_singleton_completion_count_given_fixed_core"
+    ] == 3
+    assert fixed_core_completion[
+        "fixed_core_singleton_completion_enumeration_complete"
+    ] is True
+    assert fixed_core_completion[
+        "fourth_singleton_completion_with_same_fixed_core_exists"
+    ] is False
+    assert fixed_core_completion[
+        "global_minimum_identity_enumeration_complete"
+    ] is False
+    assert fixed_core_completion[
+        "multi_replacement_global_optima_excluded"
+    ] is False
+    assert fixed_core_completion[
+        "reaction_activity_in_phh_established"
+    ] is False
     evidence = reconstruction["reaction_evidence_manifest"]
     assert evidence["manifest_reaction_count"] == 4895
     assert evidence["adaptive_fastcore_noncore_reaction_count"] == 2860
@@ -221,8 +254,8 @@ def test_exact_release_pin_removed_only_the_artifact_identity_blocker() -> None:
     assert any("context specificity was not established" in item for item in blockers)
     assert any("raw output left 17 reactions blocked" in item for item in blockers)
     assert any(
-        "at least three distinct all-target identity sets" in item
-        and "complete global identity enumeration" in item
+        "exactly three singleton completions" in item
+        and "two or more core identities remain unexcluded" in item
         for item in blockers
     )
     assert any("independent flux validation" in item for item in blockers)

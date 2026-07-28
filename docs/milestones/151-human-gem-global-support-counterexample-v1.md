@@ -56,7 +56,8 @@ result and scientific boundary.
 ## Scientific Boundary
 
 This is a counterexample to global identity uniqueness, not a complete global
-enumeration. It proves neither universal reaction membership nor the total
-number of global minimum sets. No active enzyme abundance, measured exchange
-bound, biological objective, healthy-PHH context, FBA execution or runtime
-flux coupling is authorized.
+enumeration. Milestone 152 subsequently proves that the three known
+single-reaction completions are exhaustive when their shared 58-reaction core
+is fixed; optima replacing multiple core identities remain unexcluded. No
+active enzyme abundance, measured exchange bound, biological objective,
+healthy-PHH context, FBA execution or runtime flux coupling is authorized.
