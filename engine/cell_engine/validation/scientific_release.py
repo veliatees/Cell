@@ -10,6 +10,10 @@ from cell_engine.core.runtime_authority import (
     build_whole_cell_runtime_authority,
     validate_whole_cell_runtime_authority,
 )
+from cell_engine.ml.calibration_authority import (
+    legacy_calibration_authority_snapshot,
+    validate_legacy_calibration_authority_snapshot,
+)
 from cell_engine.quantitative.phh_profiles import PHH_NUTRITIONAL_PROFILES
 from cell_engine.quantitative.phh_state import build_quantitative_phh_state, validate_quantitative_phh_state
 from cell_engine.quantitative.zonation import build_human_hepatocyte_zonation, validate_human_hepatocyte_zonation
@@ -226,6 +230,19 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except ValueError as exc:
         blockers.append(f"invalid whole-cell runtime authority: {exc}")
+
+    try:
+        calibration_authority = legacy_calibration_authority_snapshot()
+        validate_legacy_calibration_authority_snapshot(calibration_authority)
+        if any(bool(value) for value in calibration_authority["gates"].values()):
+            raise ValueError("legacy fixture score exceeded software-only authority")
+        checks.append(
+            "legacy relative-pool residuals are fixture-only, require an explicit "
+            "purpose and reject biological calibration, quantitative validation and "
+            "predictive model selection"
+        )
+    except ValueError as exc:
+        blockers.append(f"invalid legacy calibration authority: {exc}")
 
     if registry.metabolic_pool_initialization_ready:
         checks.append("source-traceable metabolic pool initialization")
@@ -1037,6 +1054,9 @@ def scientific_release_snapshot() -> dict[str, object]:
             "The whole-cell execution firewall likewise requires an explicit schematic or "
             "exploratory purpose and rejects quantitative, predictive and authoritative "
             "state-coupling use of relative-pool dynamics. "
+            "Legacy calibration residuals are labeled software fixtures, expose only a "
+            "fixture-fit score and reject biological calibration, validation and model "
+            "selection purposes. "
             "Published glucose execution remains shadow/diagnostic. Runtime contact geometry is "
             "engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, "
             "Brian2 biochemical execution and generative-state coupling remain blocked."

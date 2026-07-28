@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-28T13:40:06.329077+00:00",
+    "created_at_utc": "2026-07-28T14:25:28.497180+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -15570,6 +15570,29 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/ml/calibration.py",
+            "engine/cell_engine/ml/environment.py",
+            "engine/cell_engine/validation/experiments.py",
+            "engine/tests/test_ml_environment.py"
+          ],
+          "current_capability": "Calibration evaluation and candidate ranking require an explicit fixture or exploratory purpose. The score is named fixture_fit_score, every result carries zero scientific authority, and all three scientific-use purposes fail closed.",
+          "id": "legacy_calibration_authority_firewall",
+          "observed_metrics": {
+            "audited_workflow_count": 3,
+            "biologically_authorized_target_count": 0,
+            "built_in_target_count": 3,
+            "explicit_purpose_guard_count": 1,
+            "placeholder_target_count": 3,
+            "scientific_authority_purpose_count": 0,
+            "source_backed_target_count": 0
+          },
+          "remaining_requirements": [],
+          "scope": "Code-level prevention of project fixture residuals and scores being used as PHH parameter calibration, quantitative validation or predictive model selection.",
+          "status": "closed",
+          "title": "Legacy calibration authority firewall"
+        },
+        {
+          "code_surfaces": [
             "src/physics/cytosolNumerics.ts",
             "src/physics/intracellularFluid.ts"
           ],
@@ -16815,8 +16838,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 12,
-        "closed_count": 24,
-        "entry_count": 46,
+        "closed_count": 25,
+        "entry_count": 47,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
@@ -23295,6 +23318,58 @@
       },
       "version": "published_reaction_kinetic_transfer_audit_v1"
     },
+    "legacy_calibration_authority": {
+      "allowed_purposes": [
+        "software_fixture_evaluation",
+        "exploratory_candidate_ranking"
+      ],
+      "blocked_purposes": [
+        "biological_parameter_calibration",
+        "quantitative_validation",
+        "predictive_model_selection"
+      ],
+      "built_in_targets": [
+        {
+          "biological_parameter_authority": false,
+          "evidence_authority": "schematic_project_fixture",
+          "id": "baseline_atp",
+          "path": "pools.ATP",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "biological_parameter_authority": false,
+          "evidence_authority": "schematic_project_fixture",
+          "id": "baseline_ros",
+          "path": "pools.ROS",
+          "unit": "relative_pool_0_1"
+        },
+        {
+          "biological_parameter_authority": false,
+          "evidence_authority": "schematic_project_fixture",
+          "id": "baseline_energy_stress",
+          "path": "stress.energy",
+          "unit": "dimensionless"
+        }
+      ],
+      "explicit_purpose_required": true,
+      "gates": {
+        "automatic_cell_rule_mutation_allowed": false,
+        "biological_parameter_calibration_allowed": false,
+        "predictive_model_selection_allowed": false,
+        "quantitative_validation_allowed": false
+      },
+      "policy": "Residuals and fixture-fit scores may test deterministic software behavior or rank exploratory candidates only. They are not parameter estimates, biological validation results or predictive model-selection evidence.",
+      "status": "software_fixture_only",
+      "summary": {
+        "audited_workflow_count": 3,
+        "biologically_authorized_target_count": 0,
+        "built_in_target_count": 3,
+        "placeholder_target_count": 3,
+        "scientific_authority_purpose_count": 0,
+        "source_backed_target_count": 0
+      },
+      "version": "legacy_calibration_authority_v1"
+    },
     "membrane_state": {
       "channel_open_probability": 0.05695517306220143,
       "cytosolic_ca": 0.027818243664244183,
@@ -27326,7 +27401,7 @@
         "whole_cell_transport_flux_ready": false
       },
       "scientific_release": {
-        "authoritative_scope": "Healthy PHH aggregate metabolic observations, nutritional glycogen contexts, and apparent Pi-to-ATP exchange retained only in its original assay space. The source-supported energy/redox compartment and process graph is authoritative as non-executable structure; all organelle initial values, ATP demand, OXPHOS, antioxidant kinetics and predictive coupling remain blocked. Human zonation, postabsorptive glucose perfusion, measured endocrine observations, exact PHH glucose/albumin/CYP/BEI operators, donor-resolved proteome references and bile-acid endpoints retain their declared assay and denominator limits. The quantity harvest and PHH injury observations retain species, dose, time, assay and death-mode context without automatic runtime activation. Reaction authority and kinetic-transfer firewalls keep the integrated fuel runtime exploratory. The whole-cell execution firewall likewise requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of relative-pool dynamics. Published glucose execution remains shadow/diagnostic. Runtime contact geometry is engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, Brian2 biochemical execution and generative-state coupling remain blocked. External scientific review is organized by explicit context, claim, reviewer role and independence rules; no external report, prospective result, independent reproduction or whole-cell biological-accuracy percentage is claimed.",
+        "authoritative_scope": "Healthy PHH aggregate metabolic observations, nutritional glycogen contexts, and apparent Pi-to-ATP exchange retained only in its original assay space. The source-supported energy/redox compartment and process graph is authoritative as non-executable structure; all organelle initial values, ATP demand, OXPHOS, antioxidant kinetics and predictive coupling remain blocked. Human zonation, postabsorptive glucose perfusion, measured endocrine observations, exact PHH glucose/albumin/CYP/BEI operators, donor-resolved proteome references and bile-acid endpoints retain their declared assay and denominator limits. The quantity harvest and PHH injury observations retain species, dose, time, assay and death-mode context without automatic runtime activation. Reaction authority and kinetic-transfer firewalls keep the integrated fuel runtime exploratory. The whole-cell execution firewall likewise requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of relative-pool dynamics. Legacy calibration residuals are labeled software fixtures, expose only a fixture-fit score and reject biological calibration, validation and model selection purposes. Published glucose execution remains shadow/diagnostic. Runtime contact geometry is engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, Brian2 biochemical execution and generative-state coupling remain blocked. External scientific review is organized by explicit context, claim, reviewer role and independence rules; no external report, prospective result, independent reproduction or whole-cell biological-accuracy percentage is claimed.",
         "predictive": {
           "blockers": [
             "matched donor and nutritional state",
@@ -27430,6 +27505,7 @@
           ],
           "checks": [
             "the whole-cell relative-pool runtime requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative PHH state-coupling use",
+            "legacy relative-pool residuals are fixture-only, require an explicit purpose and reject biological calibration, quantitative validation and predictive model selection",
             "source-traceable metabolic pool initialization",
             "human-liver apparent Pi-to-ATP exchange retained as an assay observation",
             "mitochondrial ATP synthesis and cellular ATP demand remain uninitialized",
@@ -27489,6 +27565,7 @@
           "blockers": [],
           "checks": [
             "the whole-cell relative-pool runtime requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative PHH state-coupling use",
+            "legacy relative-pool residuals are fixture-only, require an explicit purpose and reject biological calibration, quantitative validation and predictive model selection",
             "source-traceable metabolic pool initialization",
             "human-liver apparent Pi-to-ATP exchange retained as an assay observation",
             "mitochondrial ATP synthesis and cellular ATP demand remain uninitialized",
@@ -41888,6 +41965,7 @@
     "scientific_audit": {
       "authoritative_surfaces": [
         "whole_cell_runtime_authority_firewall",
+        "legacy_calibration_authority_firewall",
         "phh_glycogen_contexts",
         "aggregate_energy_redox_observations",
         "compartmental_energy_redox_contract",
@@ -41980,6 +42058,15 @@
           "drives_scientific_validation": true,
           "id": "whole_cell_runtime_authority_firewall",
           "limitations": "The firewall supplies no biological values and does not make the legacy relative pools, rates, hazards or thresholds accurate. It prevents those fixtures from silently acquiring scientific authority.",
+          "source_ids": [],
+          "status": "derived"
+        },
+        {
+          "action": "require explicit software-fixture or exploratory-ranking purpose; label every score as fixture-only and reject biological parameter calibration, quantitative validation and predictive model selection",
+          "default_snapshot_role": "software_fixture_scoring_firewall",
+          "drives_scientific_validation": true,
+          "id": "legacy_calibration_authority_firewall",
+          "limitations": "The three built-in relative ATP, ROS and energy-stress targets are project placeholders. Their residuals and fixture-fit scores test software behavior only and establish zero PHH parameters or predictive claims.",
           "source_ids": [],
           "status": "derived"
         },

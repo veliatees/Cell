@@ -32,7 +32,20 @@ class ValidationHarnessTests(unittest.TestCase):
         self.assertEqual(report.runtime_sections["cargo_packets"], len(self.state.cargo_packets))
 
     def test_baseline_scenario_records_trajectory(self) -> None:
-        result = run_scenario(self.definition, self.state, BASELINE_SCENARIO, dt_s=120.0, steps=4, seed=1)
+        result = run_scenario(
+            self.definition,
+            self.state,
+            BASELINE_SCENARIO,
+            dt_s=120.0,
+            steps=4,
+            seed=1,
+            purpose="exploratory_execution",
+        )
+        self.assertEqual(result.runtime_purpose, "exploratory_execution")
+        self.assertEqual(
+            result.scientific_authority,
+            "schematic_or_exploratory_only",
+        )
         self.assertEqual(len(result.frames), 5)
         self.assertEqual(result.frames[0].step, 0)
         self.assertEqual(result.frames[-1].step, 4)
@@ -40,13 +53,37 @@ class ValidationHarnessTests(unittest.TestCase):
         self.assertIn("ATP", result.frames[-1].pools)
 
     def test_detox_scenario_changes_detox_outputs(self) -> None:
-        baseline = run_scenario(self.definition, self.state, BASELINE_SCENARIO, dt_s=300.0, steps=4, seed=2)
-        detox = run_scenario(self.definition, self.state, DETOX_LOAD_SCENARIO, dt_s=300.0, steps=4, seed=2)
+        baseline = run_scenario(
+            self.definition,
+            self.state,
+            BASELINE_SCENARIO,
+            dt_s=300.0,
+            steps=4,
+            seed=2,
+            purpose="exploratory_execution",
+        )
+        detox = run_scenario(
+            self.definition,
+            self.state,
+            DETOX_LOAD_SCENARIO,
+            dt_s=300.0,
+            steps=4,
+            seed=2,
+            purpose="exploratory_execution",
+        )
         self.assertGreater(detox.frames[-1].pools["detoxified_xenobiotic"], baseline.frames[-1].pools["detoxified_xenobiotic"])
         self.assertGreater(detox.frames[-1].pools["ROS"], baseline.frames[-1].pools["ROS"])
 
     def test_experiment_scenario_records_explicit_surface_control_and_response(self) -> None:
-        result = run_scenario(self.definition, self.state, BSEP_LOSS_SCENARIO, dt_s=120.0, steps=2, seed=12)
+        result = run_scenario(
+            self.definition,
+            self.state,
+            BSEP_LOSS_SCENARIO,
+            dt_s=120.0,
+            steps=2,
+            seed=12,
+            purpose="exploratory_execution",
+        )
         self.assertEqual(result.scenario.controls["bsep_surface_activity"], 0.0)
         self.assertEqual(result.scenario.controls["intervention_type"], "genetic_abcb11_loss")
         self.assertIsNotNone(result.frames[-1].response)
