@@ -4,8 +4,10 @@ from cell_engine.ml import (
     BASELINE_HEPATOCYTE_TARGETS,
     CalibrationCandidate,
     CellPolicyEnvironment,
+    LegacyCalibrationAuthorityError,
     apply_policy_action,
     evaluate_calibration,
+    legacy_calibration_authority_snapshot,
     rank_calibration_candidates,
 )
 from cell_engine.processes.hepatocyte import build_hepatocyte_definition, initial_hepatocyte_state
@@ -18,7 +20,14 @@ class MlEnvironmentTests(unittest.TestCase):
         self.state = initial_hepatocyte_state(self.definition)
 
     def test_policy_environment_observation_contains_engine_state_summary(self) -> None:
-        env = CellPolicyEnvironment(self.definition, self.state, dt_s=120.0, episode_steps=4, seed=19)
+        env = CellPolicyEnvironment(
+            self.definition,
+            self.state,
+            dt_s=120.0,
+            episode_steps=4,
+            seed=19,
+            runtime_purpose="exploratory_execution",
+        )
         observation = env.reset()
         self.assertIn("ATP", observation.pools)
         self.assertIn("energy", observation.stress)
@@ -27,12 +36,22 @@ class MlEnvironmentTests(unittest.TestCase):
         step = env.step({"glucose_influx": 0.02, "amino_acid_influx": 0.01})
         self.assertIn(step.observation.status, {"healthy", "stressed", "dying"})
         self.assertIn("reward_terms", step.info)
+        self.assertEqual(step.info["runtime_purpose"], "exploratory_execution")
+        self.assertEqual(step.info["score_authority"], "software_fixture_only")
+        self.assertFalse(step.info["biological_policy_authority"])
         self.assertIn("membrane_potential_mv", step.observation.membrane)
         self.assertGreater(step.observation.elapsed_s, observation.elapsed_s)
 
     def test_policy_action_does_not_mutate_cell_definition_or_rules(self) -> None:
         before_definition = self.definition.to_dict()
-        env = CellPolicyEnvironment(self.definition, self.state, dt_s=180.0, episode_steps=2, seed=20)
+        env = CellPolicyEnvironment(
+            self.definition,
+            self.state,
+            dt_s=180.0,
+            episode_steps=2,
+            seed=20,
+            runtime_purpose="exploratory_execution",
+        )
         step = env.step({"glucose_influx": 0.03, "xenobiotic_exposure": 0.04})
         self.assertEqual(self.definition.to_dict(), before_definition)
         self.assertFalse(step.info["rules_mutated"])
@@ -46,8 +65,22 @@ class MlEnvironmentTests(unittest.TestCase):
         self.assertGreater(application.unrealistic_penalty, 1.0)
         self.assertLessEqual(application.applied["glucose_influx"], 0.08)
 
-        safe_env = CellPolicyEnvironment(self.definition, self.state, dt_s=120.0, episode_steps=2, seed=21)
-        unsafe_env = CellPolicyEnvironment(self.definition, self.state, dt_s=120.0, episode_steps=2, seed=21)
+        safe_env = CellPolicyEnvironment(
+            self.definition,
+            self.state,
+            dt_s=120.0,
+            episode_steps=2,
+            seed=21,
+            runtime_purpose="exploratory_execution",
+        )
+        unsafe_env = CellPolicyEnvironment(
+            self.definition,
+            self.state,
+            dt_s=120.0,
+            episode_steps=2,
+            seed=21,
+            runtime_purpose="exploratory_execution",
+        )
         safe_reward = safe_env.step({"glucose_influx": 0.02}).reward
         unsafe_reward = unsafe_env.step({"glucose_influx": 0.40, "unknown_magic": 2.0}).reward
         self.assertLess(unsafe_reward, safe_reward)
@@ -61,11 +94,16 @@ class MlEnvironmentTests(unittest.TestCase):
             dt_s=120.0,
             steps=2,
             seed=22,
+            purpose="software_fixture_evaluation",
         )
         self.assertEqual(run.scenario_id, BASELINE_SCENARIO.id)
-        self.assertGreater(run.fit_score, 0.0)
-        self.assertLessEqual(run.fit_score, 1.0)
-        self.assertIn("does_not_mutate_cell_rules", run.provenance)
+        self.assertGreater(run.fixture_fit_score, 0.0)
+        self.assertLessEqual(run.fixture_fit_score, 1.0)
+        self.assertEqual(run.score_authority, "software_fixture_only")
+        self.assertFalse(run.biological_parameter_calibration_allowed)
+        self.assertFalse(run.quantitative_validation_allowed)
+        self.assertFalse(run.predictive_model_selection_allowed)
+        self.assertIn("software_fixture_only", run.provenance)
         self.assertGreaterEqual(len(run.residuals), 3)
 
     def test_calibration_candidate_ranking_is_separate_from_rl_actions(self) -> None:
@@ -82,10 +120,59 @@ class MlEnvironmentTests(unittest.TestCase):
             dt_s=120.0,
             steps=2,
             seed=23,
+            purpose="exploratory_candidate_ranking",
         )
         self.assertEqual(len(runs), 2)
         self.assertLessEqual(runs[0].normalized_error, runs[1].normalized_error)
         self.assertEqual({run.candidate_id for run in runs}, {"starved", "supported"})
+
+    def test_calibration_scientific_purposes_fail_closed(self) -> None:
+        for purpose in (
+            "biological_parameter_calibration",
+            "quantitative_validation",
+            "predictive_model_selection",
+        ):
+            with self.assertRaisesRegex(
+                LegacyCalibrationAuthorityError,
+                f"{purpose} is blocked",
+            ):
+                evaluate_calibration(
+                    self.definition,
+                    self.state,
+                    BASELINE_SCENARIO,
+                    BASELINE_HEPATOCYTE_TARGETS,
+                    dt_s=120.0,
+                    steps=2,
+                    seed=24,
+                    purpose=purpose,
+                )
+
+    def test_calibration_requires_explicit_purpose(self) -> None:
+        with self.assertRaisesRegex(TypeError, "purpose"):
+            evaluate_calibration(
+                self.definition,
+                self.state,
+                BASELINE_SCENARIO,
+                BASELINE_HEPATOCYTE_TARGETS,
+                dt_s=120.0,
+                steps=2,
+                seed=25,
+            )
+
+    def test_calibration_authority_snapshot_exposes_placeholder_targets(self) -> None:
+        snapshot = legacy_calibration_authority_snapshot()
+        self.assertEqual(snapshot["status"], "software_fixture_only")
+        self.assertEqual(snapshot["summary"]["built_in_target_count"], 3)
+        self.assertEqual(snapshot["summary"]["placeholder_target_count"], 3)
+        self.assertEqual(snapshot["summary"]["source_backed_target_count"], 0)
+        self.assertEqual(
+            snapshot["summary"]["biologically_authorized_target_count"],
+            0,
+        )
+        self.assertEqual(
+            tuple(target["id"] for target in snapshot["built_in_targets"]),
+            ("baseline_atp", "baseline_ros", "baseline_energy_stress"),
+        )
 
 
 if __name__ == "__main__":

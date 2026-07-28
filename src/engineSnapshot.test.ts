@@ -1322,6 +1322,42 @@ const snapshot: EngineSnapshot = {
         authoritative_state_coupling_surface_count: 0
       }
     },
+    legacy_calibration_authority: {
+      version: "legacy_calibration_authority_v1",
+      status: "software_fixture_only",
+      explicit_purpose_required: true,
+      allowed_purposes: [
+        "software_fixture_evaluation",
+        "exploratory_candidate_ranking"
+      ],
+      blocked_purposes: [
+        "biological_parameter_calibration",
+        "quantitative_validation",
+        "predictive_model_selection"
+      ],
+      built_in_targets: [{
+        id: "baseline_atp",
+        path: "pools.ATP",
+        unit: "relative_pool_0_1",
+        evidence_authority: "schematic_project_fixture",
+        biological_parameter_authority: false
+      }],
+      gates: {
+        biological_parameter_calibration_allowed: false,
+        quantitative_validation_allowed: false,
+        predictive_model_selection_allowed: false,
+        automatic_cell_rule_mutation_allowed: false
+      },
+      summary: {
+        audited_workflow_count: 3,
+        built_in_target_count: 3,
+        placeholder_target_count: 3,
+        source_backed_target_count: 0,
+        biologically_authorized_target_count: 0,
+        scientific_authority_purpose_count: 0
+      },
+      policy: "fixture scoring only"
+    },
     schematic_visual_state: {
       authority: "schematic_visual_only",
       source_path: "state.pools",
@@ -1694,6 +1730,10 @@ describe("engine snapshot client", () => {
     expect(summary.quantitativeState?.pools.ATP.value).toBeCloseTo(2.19232);
     expect(summary.wholeCellRuntimeAuthority?.explicit_purpose_required).toBe(true);
     expect(summary.wholeCellRuntimeAuthority?.summary.quantitative_authority_surface_count).toBe(0);
+    expect(summary.legacyCalibrationAuthority?.status).toBe("software_fixture_only");
+    expect(summary.legacyCalibrationAuthority?.summary.placeholder_target_count).toBe(3);
+    expect(summary.legacyCalibrationAuthority?.summary.source_backed_target_count).toBe(0);
+    expect(summary.legacyCalibrationAuthority?.summary.biologically_authorized_target_count).toBe(0);
     expect(summary.schematicVisualState?.runtime_purpose).toBe("schematic_visualization");
     expect(summary.schematicVisualState?.biological_parameter_authority).toBe(false);
     expect(summary.reactionAuthority?.runtime_role).toBe("exploratory");
@@ -2384,8 +2424,8 @@ describe("engine snapshot client", () => {
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.delivered_bundle_count).toBe(0);
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.runtime_flux_coupling_allowed).toBe(false);
       expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(46);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(24);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(47);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(25);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.partial_count).toBe(8);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(12);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.biological_accuracy_pct).toBeNull();

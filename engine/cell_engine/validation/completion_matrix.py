@@ -12,6 +12,9 @@ from typing import Literal
 from cell_engine.core.runtime_authority import (
     whole_cell_runtime_authority_snapshot,
 )
+from cell_engine.ml.calibration_authority import (
+    legacy_calibration_authority_snapshot,
+)
 from cell_engine.ml.generative import generative_donor_manifest_intake_snapshot
 from cell_engine.processes.cellular_memory import cellular_memory_contract_snapshot
 from cell_engine.quantitative.active_protein_localization import (
@@ -98,6 +101,8 @@ def _entry(
 def build_hepatocyte_completion_matrix() -> dict[str, object]:
     runtime_authority = whole_cell_runtime_authority_snapshot()
     runtime_authority_summary = runtime_authority["summary"]
+    calibration_authority = legacy_calibration_authority_snapshot()
+    calibration_authority_summary = calibration_authority["summary"]
     cytosol = cytosol_transport_snapshot()
     cytosol_summary = cytosol["summary"]
     capability = hepatocyte_capability_atlas_snapshot()["summary"]
@@ -203,6 +208,45 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "engine/cell_engine/core/runtime_authority.py",
                 "engine/cell_engine/core/engine.py",
                 "engine/tests/test_runtime_authority.py",
+            ),
+        ),
+        _entry(
+            "legacy_calibration_authority_firewall",
+            "Legacy calibration authority firewall",
+            "closed",
+            "Code-level prevention of project fixture residuals and scores being used as PHH parameter calibration, quantitative validation or predictive model selection.",
+            "Calibration evaluation and candidate ranking require an explicit fixture or exploratory purpose. The score is named fixture_fit_score, every result carries zero scientific authority, and all three scientific-use purposes fail closed.",
+            {
+                "explicit_purpose_guard_count": int(
+                    bool(calibration_authority["explicit_purpose_required"])
+                ),
+                "audited_workflow_count": calibration_authority_summary[
+                    "audited_workflow_count"
+                ],
+                "built_in_target_count": calibration_authority_summary[
+                    "built_in_target_count"
+                ],
+                "placeholder_target_count": calibration_authority_summary[
+                    "placeholder_target_count"
+                ],
+                "source_backed_target_count": calibration_authority_summary[
+                    "source_backed_target_count"
+                ],
+                "biologically_authorized_target_count": (
+                    calibration_authority_summary[
+                        "biologically_authorized_target_count"
+                    ]
+                ),
+                "scientific_authority_purpose_count": calibration_authority_summary[
+                    "scientific_authority_purpose_count"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/ml/calibration.py",
+                "engine/cell_engine/ml/environment.py",
+                "engine/cell_engine/validation/experiments.py",
+                "engine/tests/test_ml_environment.py",
             ),
         ),
         _entry(
@@ -2345,6 +2389,25 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 0
     ):
         raise ValueError("whole-cell runtime escaped its authority firewall")
+    calibration_authority_metrics = by_id[
+        "legacy_calibration_authority_firewall"
+    ]["observed_metrics"]
+    if (
+        calibration_authority_metrics["explicit_purpose_guard_count"] != 1
+        or calibration_authority_metrics["audited_workflow_count"] != 3
+        or calibration_authority_metrics["built_in_target_count"] != 3
+        or calibration_authority_metrics["placeholder_target_count"] != 3
+        or calibration_authority_metrics["source_backed_target_count"] != 0
+        or calibration_authority_metrics[
+            "biologically_authorized_target_count"
+        ]
+        != 0
+        or calibration_authority_metrics[
+            "scientific_authority_purpose_count"
+        ]
+        != 0
+    ):
+        raise ValueError("legacy calibration escaped its authority firewall")
     if by_id["quantitative_reaction_core"]["observed_metrics"]["filled_evidence_slot_count"] != 0:
         raise ValueError("reaction evidence was promoted without review")
     if by_id["healthy_phh_cytosol_parameters"]["observed_metrics"]["filled_parameter_count"] != 0:
