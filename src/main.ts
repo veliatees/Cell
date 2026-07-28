@@ -4146,14 +4146,14 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
     : "";
   const metabolicSupportRepairRow = metabolicConstraint
     ? `<div class="phh-profile phh-profile--mechanics-execution">
-        <div class="phh-profile__head"><b>PHH structural support audit v6</b><span>global cardinality · conditioned enumeration · strict FASTCC</span></div>
+        <div class="phh-profile__head"><b>PHH structural support audit v7</b><span>global identity complete · strict FASTCC · PHH gated</span></div>
         <div class="phh-profile__grid">
           <span>Raw adaptive selected / blocked <b>${metabolicConstraint.candidate_reconstruction.fastcore_scaling_comparison.adaptive_selected_reaction_count.toLocaleString()} / ${metabolicConstraint.candidate_reconstruction.fastcore_scaling_comparison.adaptive_output_blocked_reaction_count}</b></span>
           <span>Global omitted candidate universe <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.global_candidate_reaction_count.toLocaleString()}</b></span>
           <span>Global lower-bound targets <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.lower_bound_target_ids_in_input_order.join(" / ")}</b></span>
           <span>Global lower / upper bound <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.lower_bound_exact_minimum_added_reaction_count} / ${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.upper_bound_feasible_added_reaction_count}</b></span>
           <span>Global minimum additions <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.global_minimum_added_reaction_count}</b></span>
-          <span>Known global minimum sets <b>&ge;${metabolicConstraint.candidate_reconstruction.fastcore_global_support_counterexample.known_distinct_global_minimum_support_set_count_lower_bound}</b></span>
+          <span>Global minimum sets <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_identity_completeness.global_minimum_support_set_count} exact</b></span>
           <span>New outside-pool identity <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_counterexample.outside_scoped_pool_reaction_ids_in_input_order.join(" / ")}</b></span>
           <span>Presolve cross-check <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_counterexample.presolve_infeasibility_disagreed ? "disagreed · no-presolve accepted" : "agreed"}</b></span>
           <span>Fixed common core <b>${metabolicConstraint.candidate_reconstruction.fastcore_fixed_core_completion_enumeration.fixed_common_reaction_count}</b></span>
@@ -4165,15 +4165,16 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
           <span>65-pool minimum identity sets <b>${metabolicConstraint.candidate_reconstruction.fastcore_support_optimality.minimum_support_set_count}</b></span>
           <span>65-pool common identities <b>${metabolicConstraint.candidate_reconstruction.fastcore_support_optimality.reactions_present_in_every_minimum_support_count}</b></span>
           <span>65-pool optional pair <b>${metabolicConstraint.candidate_reconstruction.fastcore_support_optimality.optional_reaction_ids_in_input_order.join(" / ")}</b></span>
-          <span>Global identity enumeration complete <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_counterexample.global_minimum_identity_enumeration_complete ? "yes" : "no"}</b></span>
-          <span>Global minimum unique <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_counterexample.global_minimum_support_set_unique ? "yes" : "no"}</b></span>
-          <span>Multi-replacement optima excluded <b>${metabolicConstraint.candidate_reconstruction.fastcore_fixed_core_completion_enumeration.multi_replacement_global_optima_excluded ? "yes" : "no"}</b></span>
+          <span>Global identity enumeration complete <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_identity_completeness.global_minimum_support_identity_enumeration_complete ? "yes" : "no"}</b></span>
+          <span>Global universal / optional identities <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_identity_completeness.global_universal_minimum_support_reaction_count} / ${metabolicConstraint.candidate_reconstruction.fastcore_global_support_identity_completeness.global_optional_minimum_support_reaction_count}</b></span>
+          <span>Global minimum unique <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_identity_completeness.global_minimum_support_set_unique ? "yes" : "no"}</b></span>
+          <span>Multi-replacement optima excluded <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_identity_completeness.multi_replacement_global_optima_excluded ? "yes" : "no"}</b></span>
           <span>Selected no-GPR / zero-donor GPR <b>${metabolicConstraint.candidate_reconstruction.fastcore_shared_support.selected_reaction_without_gpr_count} / ${metabolicConstraint.candidate_reconstruction.fastcore_shared_support.selected_reaction_zero_donor_gpr_count}</b></span>
           <span>PHH activity established <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.reaction_activity_in_phh_established ? "yes" : "no"}</b></span>
           <span>Context accepted / PHH FBA <b>${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.context_model_accepted ? "yes" : "no"} / ${metabolicConstraint.candidate_reconstruction.fastcore_global_support_optimality.fba_execution_allowed ? "enabled" : "blocked"}</b></span>
         </div>
       </div>
-      <div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Structural, not biological</span><span>The global minimum cardinality is 59. A presolve cross-check exposed and corrected a false infeasibility result, yielding MAR00494 as a third all-target optimum. With the 58 identities shared by those three optima fixed, MAR00494, MAR02308 and MAR10035 are exactly the three singleton completions; terminal infeasibility is confirmed without presolve. Optima replacing multiple core identities remain unexcluded. No active PHH enzyme, exchange bound, biological objective, FBA output or runtime rate is established.</span></div>`
+      <div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Structural, not biological</span><span>The global minimum cardinality is 59 and the minimum identity space is complete: exactly three sets share 58 identities and each uses exactly one of MAR00494, MAR02308 or MAR10035. A single common-core exclusion cut rules out every multi-replacement minimum, with terminal infeasibility confirmed without presolve. Universal membership applies only to minimum structural supports, not biological or knockout essentiality. No active PHH enzyme, exchange bound, biological objective, FBA output or runtime rate is established.</span></div>`
     : "";
   const spatialTransportDataPlaneRow =
     meshBoundaryIntake && intracellularMobilityIntake && reactionTransportIntake

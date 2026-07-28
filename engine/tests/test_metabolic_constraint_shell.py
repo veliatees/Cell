@@ -9,7 +9,7 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_context() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     validate_metabolic_constraint_shell(snapshot)
-    assert snapshot["version"] == "metabolic_constraint_shell_v13"
+    assert snapshot["version"] == "metabolic_constraint_shell_v14"
     reconstruction = snapshot["candidate_reconstruction"]
     assert reconstruction["model_version"] == "2.0.0"
     assert reconstruction["release_tag"] == "v2.0.0"
@@ -220,6 +220,37 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     assert fixed_core_completion[
         "reaction_activity_in_phh_established"
     ] is False
+    global_identity = reconstruction[
+        "fastcore_global_support_identity_completeness"
+    ]
+    assert global_identity["global_candidate_reaction_count"] == 4226
+    assert global_identity["global_minimum_added_reaction_count"] == 59
+    assert global_identity["global_minimum_support_set_count"] == 3
+    assert global_identity[
+        "global_minimum_support_identity_enumeration_complete"
+    ] is True
+    assert global_identity["global_minimum_support_set_unique"] is False
+    assert global_identity[
+        "global_universal_minimum_support_reaction_count"
+    ] == 58
+    assert global_identity[
+        "global_optional_minimum_support_reaction_ids_in_model_order"
+    ] == ["MAR00494", "MAR02308", "MAR10035"]
+    assert global_identity[
+        "every_global_minimum_contains_exactly_one_optional_identity"
+    ] is True
+    assert global_identity["core_breaking_global_minimum_exists"] is False
+    assert global_identity["multi_replacement_global_optima_excluded"] is True
+    assert global_identity[
+        "additional_global_minimum_identity_search_required"
+    ] is False
+    assert global_identity[
+        "terminal_infeasibility_confirmed_without_presolve"
+    ] is True
+    assert global_identity[
+        "structural_essentiality_at_larger_support_sizes_established"
+    ] is False
+    assert global_identity["reaction_activity_in_phh_established"] is False
     evidence = reconstruction["reaction_evidence_manifest"]
     assert evidence["manifest_reaction_count"] == 4895
     assert evidence["adaptive_fastcore_noncore_reaction_count"] == 2860
@@ -254,8 +285,8 @@ def test_exact_release_pin_removed_only_the_artifact_identity_blocker() -> None:
     assert any("context specificity was not established" in item for item in blockers)
     assert any("raw output left 17 reactions blocked" in item for item in blockers)
     assert any(
-        "exactly three singleton completions" in item
-        and "two or more core identities remain unexcluded" in item
+        "global minimum support identity space is complete" in item
+        and "sufficient PHH activity evidence is absent" in item
         for item in blockers
     )
     assert any("independent flux validation" in item for item in blockers)

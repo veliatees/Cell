@@ -50,6 +50,9 @@ from cell_engine.quantitative.human_gem_phh_fastcore_global_support_counterexamp
 from cell_engine.quantitative.human_gem_phh_fastcore_fixed_core_completion_enumeration import (
     load_committed_human_gem_phh_fastcore_fixed_core_completion_enumeration,
 )
+from cell_engine.quantitative.human_gem_phh_fastcore_global_support_identity_completeness import (
+    load_committed_human_gem_phh_fastcore_global_support_identity_completeness,
+)
 from cell_engine.quantitative.human_gem_phh_fastcore_support_optimality import (
     load_committed_human_gem_phh_fastcore_support_optimality,
 )
@@ -69,7 +72,7 @@ from cell_engine.quantitative.phh_metabolic_execution_bundle import (
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "metabolic_constraint_shell_v13"
+VERSION = "metabolic_constraint_shell_v14"
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
@@ -188,6 +191,9 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
     fixed_core_completion = (
         load_committed_human_gem_phh_fastcore_fixed_core_completion_enumeration()
     )
+    global_identity_completeness = (
+        load_committed_human_gem_phh_fastcore_global_support_identity_completeness()
+    )
     scope = manifest["scientific_scope"]
     verification = manifest["verification"]
     counts = manifest["structural_counts_verified_from_sbml"]
@@ -206,7 +212,7 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
             "generic_human_gem_loaded_classified_native_objective_solved_"
             "seven_donor_stability_FASTCORE_scaling_and_source_limited_"
             "support_repair_minimized_optima_enumerated_"
-            "global_alternate_identity_and_fixed_core_completions_certified_"
+            "global_minimum_identity_space_complete_"
             "reaction_evidence_pending_"
             "PHH_execution_blocked"
         ),
@@ -1003,6 +1009,94 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
                     "scientific_boundary"
                 ]["fba_execution_allowed"],
             },
+            "fastcore_global_support_identity_completeness": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_"
+                    "fastcore_global_support_identity_completeness.json"
+                ),
+                "global_candidate_reaction_count": (
+                    global_identity_completeness["input"][
+                        "global_candidate_reaction_count"
+                    ]
+                ),
+                "global_minimum_added_reaction_count": (
+                    global_identity_completeness["proof"][
+                        "global_minimum_added_reaction_count"
+                    ]
+                ),
+                "global_minimum_support_set_count": (
+                    global_identity_completeness["proof"][
+                        "global_minimum_support_set_count"
+                    ]
+                ),
+                "global_minimum_support_identity_enumeration_complete": (
+                    global_identity_completeness["proof"][
+                        "global_minimum_support_identity_enumeration_complete"
+                    ]
+                ),
+                "global_minimum_support_set_unique": (
+                    global_identity_completeness["proof"][
+                        "global_minimum_support_set_unique"
+                    ]
+                ),
+                "global_universal_minimum_support_reaction_count": (
+                    global_identity_completeness["proof"][
+                        "global_universal_minimum_support_reaction_count"
+                    ]
+                ),
+                "global_optional_minimum_support_reaction_count": (
+                    global_identity_completeness["proof"][
+                        "global_optional_minimum_support_reaction_count"
+                    ]
+                ),
+                "global_optional_minimum_support_reaction_ids_in_model_order": (
+                    global_identity_completeness["proof"][
+                        "global_optional_minimum_support_reaction_ids_in_model_order"
+                    ]
+                ),
+                "every_global_minimum_contains_exactly_one_optional_identity": (
+                    global_identity_completeness["proof"][
+                        "every_global_minimum_contains_exactly_one_optional_identity"
+                    ]
+                ),
+                "core_breaking_global_minimum_exists": (
+                    global_identity_completeness["proof"][
+                        "core_breaking_global_minimum_exists"
+                    ]
+                ),
+                "multi_replacement_global_optima_excluded": (
+                    global_identity_completeness["proof"][
+                        "multi_replacement_global_optima_excluded"
+                    ]
+                ),
+                "additional_global_minimum_identity_search_required": (
+                    global_identity_completeness["proof"][
+                        "additional_global_minimum_identity_search_required"
+                    ]
+                ),
+                "terminal_infeasibility_confirmed_without_presolve": (
+                    global_identity_completeness[
+                        "common_core_exclusion_terminal_result"
+                    ]["infeasibility_confirmed_without_presolve"]
+                ),
+                "structural_essentiality_at_larger_support_sizes_established": (
+                    global_identity_completeness["scientific_boundary"][
+                        "structural_essentiality_at_larger_support_sizes_established"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    global_identity_completeness["scientific_boundary"][
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": global_identity_completeness[
+                    "scientific_boundary"
+                ]["context_model_accepted"],
+                "fba_execution_allowed": global_identity_completeness[
+                    "scientific_boundary"
+                ]["fba_execution_allowed"],
+            },
             "reaction_evidence_manifest": {
                 "manifest_path": (
                     "data/evidence_intake/"
@@ -1078,7 +1172,7 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
             "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
             "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
             "adaptive official LP-10 scaling selected 7,415 reactions but its raw output left 17 reactions blocked at the declared epsilon",
-            "the global minimum cardinality is 59; exactly three singleton completions exist when the known common 58-reaction core is fixed, but optima replacing two or more core identities remain unexcluded and sufficient PHH activity evidence is absent",
+            "the global minimum support identity space is complete at cardinality 59: exactly three sets share 58 identities and each uses exactly one of MAR00494, MAR02308 or MAR10035; this remains structural and sufficient PHH activity evidence is absent",
             "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
             "2,860 adaptive non-core support reactions require reaction-level PHH evidence; 2,177 lack a GPR annotation",
             "measured exchange bounds and explicit scale conversion are absent",
@@ -1620,6 +1714,78 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
     ):
         raise ValueError(
             "PHH FASTCORE fixed-core completion audit changed"
+        )
+    global_identity_completeness = reconstruction.get(
+        "fastcore_global_support_identity_completeness"
+    )
+    if not isinstance(global_identity_completeness, dict) or (
+        global_identity_completeness.get(
+            "global_candidate_reaction_count"
+        )
+        != 4_226
+        or global_identity_completeness.get(
+            "global_minimum_added_reaction_count"
+        )
+        != 59
+        or global_identity_completeness.get(
+            "global_minimum_support_set_count"
+        )
+        != 3
+        or global_identity_completeness.get(
+            "global_minimum_support_identity_enumeration_complete"
+        )
+        is not True
+        or global_identity_completeness.get(
+            "global_minimum_support_set_unique"
+        )
+        is not False
+        or global_identity_completeness.get(
+            "global_universal_minimum_support_reaction_count"
+        )
+        != 58
+        or global_identity_completeness.get(
+            "global_optional_minimum_support_reaction_count"
+        )
+        != 3
+        or global_identity_completeness.get(
+            "global_optional_minimum_support_reaction_ids_in_model_order"
+        )
+        != ["MAR00494", "MAR02308", "MAR10035"]
+        or global_identity_completeness.get(
+            "every_global_minimum_contains_exactly_one_optional_identity"
+        )
+        is not True
+        or global_identity_completeness.get(
+            "core_breaking_global_minimum_exists"
+        )
+        is not False
+        or global_identity_completeness.get(
+            "multi_replacement_global_optima_excluded"
+        )
+        is not True
+        or global_identity_completeness.get(
+            "additional_global_minimum_identity_search_required"
+        )
+        is not False
+        or global_identity_completeness.get(
+            "terminal_infeasibility_confirmed_without_presolve"
+        )
+        is not True
+        or global_identity_completeness.get(
+            "structural_essentiality_at_larger_support_sizes_established"
+        )
+        is not False
+        or global_identity_completeness.get(
+            "reaction_activity_in_phh_established"
+        )
+        is not False
+        or global_identity_completeness.get("context_model_accepted")
+        is not False
+        or global_identity_completeness.get("fba_execution_allowed")
+        is not False
+    ):
+        raise ValueError(
+            "PHH FASTCORE global identity-completeness audit changed"
         )
     evidence_manifest = reconstruction.get("reaction_evidence_manifest")
     if not isinstance(evidence_manifest, dict) or (
