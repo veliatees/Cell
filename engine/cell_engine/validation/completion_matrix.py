@@ -144,6 +144,9 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     fastcore_support_optimality = metabolic[
         "candidate_reconstruction"
     ]["fastcore_support_optimality"]
+    fastcore_global_support_optimality = metabolic[
+        "candidate_reconstruction"
+    ]["fastcore_global_support_optimality"]
     reaction_evidence_manifest = metabolic["candidate_reconstruction"][
         "reaction_evidence_manifest"
     ]
@@ -1560,6 +1563,93 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "human_gem_fastcore_global_support_cardinality",
+            "Human-GEM global FASTCORE support cardinality",
+            "closed",
+            "Exact two-target shared-support lower bound over all 4,226 reactions omitted by adaptive FASTCORE, matched against the committed feasible 17-target upper bound; identity-set enumeration remains outside this scope.",
+            "MAR00468 and MAR00612 require an exact 59-reaction shared support even when every omitted reaction in checksum-pinned, FASTCC-consistent Human-GEM is available. The committed 59-reaction set certifies all 17 targets and strict FASTCC, so matching bounds prove global minimum cardinality. Globally alternative 59-reaction identity sets, active PHH enzymes, exchange bounds and a biological objective remain unestablished.",
+            {
+                "global_candidate_reaction_count": (
+                    fastcore_global_support_optimality[
+                        "global_candidate_reaction_count"
+                    ]
+                ),
+                "full_target_count": fastcore_global_support_optimality[
+                    "full_target_count"
+                ],
+                "lower_bound_target_count": (
+                    fastcore_global_support_optimality[
+                        "lower_bound_target_count"
+                    ]
+                ),
+                "lower_bound_target_ids_in_input_order": (
+                    fastcore_global_support_optimality[
+                        "lower_bound_target_ids_in_input_order"
+                    ]
+                ),
+                "lower_bound_exact_minimum_added_reaction_count": (
+                    fastcore_global_support_optimality[
+                        "lower_bound_exact_minimum_added_reaction_count"
+                    ]
+                ),
+                "upper_bound_feasible_added_reaction_count": (
+                    fastcore_global_support_optimality[
+                        "upper_bound_feasible_added_reaction_count"
+                    ]
+                ),
+                "bounds_match": fastcore_global_support_optimality[
+                    "bounds_match"
+                ],
+                "global_minimum_added_reaction_count": (
+                    fastcore_global_support_optimality[
+                        "global_minimum_added_reaction_count"
+                    ]
+                ),
+                "global_minimum_cardinality_proven": (
+                    fastcore_global_support_optimality[
+                        "global_minimum_cardinality_proven"
+                    ]
+                ),
+                "global_minimum_identity_sets_enumerated": (
+                    fastcore_global_support_optimality[
+                        "global_minimum_identity_sets_enumerated"
+                    ]
+                ),
+                "global_minimum_support_set_unique": (
+                    fastcore_global_support_optimality[
+                        "global_minimum_support_set_unique"
+                    ]
+                ),
+                "global_universal_reaction_identities_established": (
+                    fastcore_global_support_optimality[
+                        "global_universal_reaction_identities_established"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    fastcore_global_support_optimality[
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": (
+                    fastcore_global_support_optimality[
+                        "context_model_accepted"
+                    ]
+                ),
+                "fba_execution_allowed": (
+                    fastcore_global_support_optimality[
+                        "fba_execution_allowed"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_optimality.py",
+                "scripts/audit_human_gem_phh_fastcore_global_support_optimality.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_optimality.json",
+                "engine/tests/test_human_gem_phh_fastcore_global_support_optimality.py",
+            ),
+        ),
+        _entry(
             "human_gem_reaction_evidence_manifest",
             "Human-GEM reaction evidence manifest",
             "closed",
@@ -2377,6 +2467,54 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or optimality_metrics["fba_execution_allowed"] is not False
     ):
         raise ValueError("FASTCORE support optimality escaped scope")
+    global_support_metrics = by_id[
+        "human_gem_fastcore_global_support_cardinality"
+    ]["observed_metrics"]
+    if (
+        global_support_metrics["global_candidate_reaction_count"] != 4_226
+        or global_support_metrics["full_target_count"] != 17
+        or global_support_metrics["lower_bound_target_count"] != 2
+        or global_support_metrics[
+            "lower_bound_target_ids_in_input_order"
+        ]
+        != ["MAR00468", "MAR00612"]
+        or global_support_metrics[
+            "lower_bound_exact_minimum_added_reaction_count"
+        ]
+        != 59
+        or global_support_metrics[
+            "upper_bound_feasible_added_reaction_count"
+        ]
+        != 59
+        or global_support_metrics["bounds_match"] is not True
+        or global_support_metrics[
+            "global_minimum_added_reaction_count"
+        ]
+        != 59
+        or global_support_metrics[
+            "global_minimum_cardinality_proven"
+        ]
+        is not True
+        or global_support_metrics[
+            "global_minimum_identity_sets_enumerated"
+        ]
+        is not False
+        or global_support_metrics[
+            "global_minimum_support_set_unique"
+        ]
+        is not None
+        or global_support_metrics[
+            "global_universal_reaction_identities_established"
+        ]
+        is not False
+        or global_support_metrics[
+            "reaction_activity_in_phh_established"
+        ]
+        is not False
+        or global_support_metrics["context_model_accepted"] is not False
+        or global_support_metrics["fba_execution_allowed"] is not False
+    ):
+        raise ValueError("FASTCORE global support cardinality escaped scope")
     evidence_metrics = by_id[
         "human_gem_reaction_evidence_manifest"
     ]["observed_metrics"]
