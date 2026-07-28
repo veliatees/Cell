@@ -4,6 +4,10 @@ from dataclasses import replace
 
 from cell_engine.core.cell_definition import CellDefinition
 from cell_engine.core.random import EngineRng
+from cell_engine.core.runtime_authority import (
+    WholeCellRuntimePurpose,
+    assert_whole_cell_runtime_authority,
+)
 from cell_engine.core.state import CellEvent, CellState
 from cell_engine.cargo.routing import route_cargo_packets
 from cell_engine.organelles.registry import build_organelle_modules
@@ -17,6 +21,18 @@ from cell_engine.stochastic.hazard import clamp
 
 
 def step_cell(
+    definition: CellDefinition,
+    state: CellState,
+    dt_s: float,
+    *,
+    purpose: WholeCellRuntimePurpose,
+    rng: EngineRng | None = None,
+) -> CellState:
+    assert_whole_cell_runtime_authority(purpose)
+    return _step_cell(definition, state, dt_s, rng=rng)
+
+
+def _step_cell(
     definition: CellDefinition,
     state: CellState,
     dt_s: float,
@@ -77,12 +93,14 @@ def run_cell(
     *,
     dt_s: float,
     steps: int,
+    purpose: WholeCellRuntimePurpose,
     rng: EngineRng | None = None,
 ) -> CellState:
+    assert_whole_cell_runtime_authority(purpose)
     next_state = state
     engine_rng = rng or EngineRng(definition.stochastic_policy.seed)
     for _ in range(steps):
-        next_state = step_cell(definition, next_state, dt_s, rng=engine_rng)
+        next_state = _step_cell(definition, next_state, dt_s, rng=engine_rng)
     return next_state
 
 

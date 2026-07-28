@@ -6,6 +6,10 @@ import json
 from dataclasses import dataclass
 from typing import Literal
 
+from cell_engine.core.runtime_authority import (
+    build_whole_cell_runtime_authority,
+    validate_whole_cell_runtime_authority,
+)
 from cell_engine.quantitative.phh_profiles import PHH_NUTRITIONAL_PROFILES
 from cell_engine.quantitative.phh_state import build_quantitative_phh_state, validate_quantitative_phh_state
 from cell_engine.quantitative.zonation import build_human_hepatocyte_zonation, validate_human_hepatocyte_zonation
@@ -205,6 +209,23 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
     human_sch_bile_acids = None
     integrated_reaction_authority = None
     kinetic_transfer = None
+
+    try:
+        runtime_authority = build_whole_cell_runtime_authority()
+        validate_whole_cell_runtime_authority(runtime_authority)
+        if (
+            runtime_authority.quantitative_validation_allowed
+            or runtime_authority.predictive_execution_allowed
+            or runtime_authority.authoritative_cell_state_coupling_allowed
+        ):
+            raise ValueError("schematic whole-cell runtime exceeded exploratory authority")
+        checks.append(
+            "the whole-cell relative-pool runtime requires an explicit schematic or "
+            "exploratory purpose and rejects quantitative, predictive and authoritative "
+            "PHH state-coupling use"
+        )
+    except ValueError as exc:
+        blockers.append(f"invalid whole-cell runtime authority: {exc}")
 
     if registry.metabolic_pool_initialization_ready:
         checks.append("source-traceable metabolic pool initialization")
@@ -1013,6 +1034,9 @@ def scientific_release_snapshot() -> dict[str, object]:
             "and PHH injury observations retain species, dose, time, assay and death-mode context "
             "without automatic runtime activation. Reaction authority "
             "and kinetic-transfer firewalls keep the integrated fuel runtime exploratory. "
+            "The whole-cell execution firewall likewise requires an explicit schematic or "
+            "exploratory purpose and rejects quantitative, predictive and authoritative "
+            "state-coupling use of relative-pool dynamics. "
             "Published glucose execution remains shadow/diagnostic. Runtime contact geometry is "
             "engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, "
             "Brian2 biochemical execution and generative-state coupling remain blocked."

@@ -94,7 +94,13 @@ def run_scenario(
     rng = EngineRng(seed)
     frames = [_frame(0, state)]
     for step in range(1, steps + 1):
-        state = step_cell(definition, state, dt_s, rng=rng)
+        state = step_cell(
+            definition,
+            state,
+            dt_s,
+            purpose="exploratory_execution",
+            rng=rng,
+        )
         frames.append(_frame(step, state))
     return ScenarioResult(scenario=scenario, frames=tuple(frames), final_status=state.status)
 

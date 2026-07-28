@@ -20,11 +20,18 @@ class CellularResponseTests(unittest.TestCase):
         self.state = initial_hepatocyte_state(self.definition)
 
     def test_exact_bsep_loss_blocks_only_bile_acid_export(self) -> None:
-        baseline = step_cell(self.definition, self.state, 1800.0, rng=EngineRng(51))
+        baseline = step_cell(
+            self.definition,
+            self.state,
+            1800.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(51),
+        )
         bsep_loss = step_cell(
             self.definition,
             apply_scenario(self.state, BSEP_LOSS_SCENARIO),
             1800.0,
+            purpose="exploratory_execution",
             rng=EngineRng(51),
         )
         baseline_fluxes = {flux.id: flux.value for flux in baseline.metabolic_fluxes}
@@ -47,11 +54,18 @@ class CellularResponseTests(unittest.TestCase):
         )
 
     def test_exact_mrp2_loss_blocks_only_bilirubin_export(self) -> None:
-        baseline = step_cell(self.definition, self.state, 1800.0, rng=EngineRng(52))
+        baseline = step_cell(
+            self.definition,
+            self.state,
+            1800.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(52),
+        )
         mrp2_loss = step_cell(
             self.definition,
             apply_scenario(self.state, MRP2_LOSS_SCENARIO),
             1800.0,
+            purpose="exploratory_execution",
             rng=EngineRng(52),
         )
         baseline_fluxes = {flux.id: flux.value for flux in baseline.metabolic_fluxes}
@@ -78,8 +92,20 @@ class CellularResponseTests(unittest.TestCase):
             },
             stress={**self.state.stress, "proteotoxic": 0.8, "oxidative": 0.7, "cholestatic": 0.8},
         )
-        first = step_cell(self.definition, stressed, 120.0, rng=EngineRng(53))
-        second = step_cell(self.definition, first, 120.0, rng=EngineRng(53))
+        first = step_cell(
+            self.definition,
+            stressed,
+            120.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(53),
+        )
+        second = step_cell(
+            self.definition,
+            first,
+            120.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(53),
+        )
         response = second.cellular_response
         self.assertIsNotNone(response)
         assert response is not None

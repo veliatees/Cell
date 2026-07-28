@@ -19,13 +19,27 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 45
-    assert summary["closed_count"] == 23
+    assert summary["entry_count"] == 46
+    assert summary["closed_count"] == 24
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
     assert summary["not_applicable_at_model_scale_count"] == 1
     assert summary["biological_accuracy_pct"] is None
+
+
+def test_whole_cell_runtime_is_closed_only_as_an_authority_firewall() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    runtime = entries["whole_cell_runtime_authority_firewall"]
+    metrics = runtime["observed_metrics"]
+    assert runtime["status"] == "closed"
+    assert metrics["explicit_purpose_guard_count"] == 1
+    assert metrics["audited_legacy_surface_count"] == 4
+    assert metrics["phh_context_matched_surface_count"] == 0
+    assert metrics["quantitative_authority_surface_count"] == 0
+    assert metrics["predictive_authority_surface_count"] == 0
+    assert metrics["authoritative_state_coupling_surface_count"] == 0
 
 
 def test_render_integrity_is_closed_without_claiming_cross_gpu_pixel_identity() -> None:

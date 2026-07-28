@@ -39,9 +39,20 @@ class QuantitativePhhStateTests(unittest.TestCase):
         )
 
     def test_schematic_state_cannot_drive_quantitative_validation(self) -> None:
-        schematic = schematic_visual_state_snapshot(("ATP", "glycogen"))
+        schematic = schematic_visual_state_snapshot(
+            ("ATP", "glycogen"),
+            runtime_purpose="schematic_visualization",
+            executed_step_count=8,
+            elapsed_s=960.0,
+        )
         self.assertEqual(schematic["authority"], "schematic_visual_only")
         self.assertEqual(schematic["unit"], "relative_pool_0_1")
+        self.assertEqual(
+            schematic["runtime_purpose"],
+            "schematic_visualization",
+        )
+        self.assertTrue(schematic["dynamics_executed"])
+        self.assertFalse(schematic["biological_parameter_authority"])
         self.assertFalse(schematic["may_drive_quantitative_validation"])
 
 
