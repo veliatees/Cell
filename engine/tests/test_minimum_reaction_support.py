@@ -342,6 +342,60 @@ def test_shared_support_can_prove_an_optimum_has_no_alternative_set() -> None:
     assert result.infeasibility_proven is True
     assert result.maximum_added_reaction_count_constraint == 1
     assert result.forbidden_candidate_superset_count == 1
+    assert result.milp_solver_attempt_count == 2
+    assert result.milp_presolve is False
+    assert result.infeasibility_confirmed_without_presolve is True
+
+
+def test_shared_support_retries_a_false_presolve_infeasibility(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import scipy.optimize
+    from scipy.optimize import OptimizeResult
+
+    network = FluxConsistentNetwork(
+        metabolite_ids=("A", "B"),
+        reaction_ids=("R_IN", "R_TARGET", "R_OUT"),
+        stoichiometry=csc_matrix(
+            [
+                [1.0, 0.0, -1.0],
+                [0.0, -1.0, 1.0],
+            ]
+        ),
+        lower_bounds=(0.0, 0.0, 0.0),
+        upper_bounds=(10.0, 10.0, 10.0),
+    )
+    real_milp = scipy.optimize.milp
+
+    def presolve_false_negative(*args, **kwargs):
+        if kwargs["options"]["presolve"]:
+            return OptimizeResult(
+                success=False,
+                status=2,
+                message="synthetic presolve false infeasibility",
+            )
+        return real_milp(*args, **kwargs)
+
+    monkeypatch.setattr(
+        scipy.optimize,
+        "milp",
+        presolve_false_negative,
+    )
+    result = minimum_shared_reaction_support(
+        network,
+        retained_reaction_ids=("R_IN", "R_TARGET"),
+        candidate_reaction_ids=("R_OUT",),
+        target_reaction_ids=("R_TARGET",),
+        epsilon=1e-4,
+    )
+
+    assert result.feasible is True
+    assert result.minimum_added_reaction_count == 1
+    assert result.added_reaction_ids == ("R_OUT",)
+    assert result.milp_solver_attempt_count == 2
+    assert result.milp_presolve is False
+    assert result.presolve_infeasibility_disagreed is True
+    assert result.infeasibility_confirmed_without_presolve is False
 
 
 def test_shared_support_no_good_constraint_finds_an_alternate_optimum() -> None:

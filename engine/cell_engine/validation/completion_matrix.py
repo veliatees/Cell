@@ -9,6 +9,12 @@ from __future__ import annotations
 from collections import Counter
 from typing import Literal
 
+from cell_engine.core.runtime_authority import (
+    whole_cell_runtime_authority_snapshot,
+)
+from cell_engine.ml.calibration_authority import (
+    legacy_calibration_authority_snapshot,
+)
 from cell_engine.ml.generative import generative_donor_manifest_intake_snapshot
 from cell_engine.processes.cellular_memory import cellular_memory_contract_snapshot
 from cell_engine.quantitative.active_protein_localization import (
@@ -93,6 +99,10 @@ def _entry(
 
 
 def build_hepatocyte_completion_matrix() -> dict[str, object]:
+    runtime_authority = whole_cell_runtime_authority_snapshot()
+    runtime_authority_summary = runtime_authority["summary"]
+    calibration_authority = legacy_calibration_authority_snapshot()
+    calibration_authority_summary = calibration_authority["summary"]
     cytosol = cytosol_transport_snapshot()
     cytosol_summary = cytosol["summary"]
     capability = hepatocyte_capability_atlas_snapshot()["summary"]
@@ -144,6 +154,18 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     fastcore_support_optimality = metabolic[
         "candidate_reconstruction"
     ]["fastcore_support_optimality"]
+    fastcore_global_support_optimality = metabolic[
+        "candidate_reconstruction"
+    ]["fastcore_global_support_optimality"]
+    fastcore_global_support_counterexample = metabolic[
+        "candidate_reconstruction"
+    ]["fastcore_global_support_counterexample"]
+    fastcore_fixed_core_completion = metabolic[
+        "candidate_reconstruction"
+    ]["fastcore_fixed_core_completion_enumeration"]
+    fastcore_global_identity_completeness = metabolic[
+        "candidate_reconstruction"
+    ]["fastcore_global_support_identity_completeness"]
     reaction_evidence_manifest = metabolic["candidate_reconstruction"][
         "reaction_evidence_manifest"
     ]
@@ -153,6 +175,80 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     donor_generative = generative_donor_manifest_intake_snapshot()
 
     entries = (
+        _entry(
+            "whole_cell_runtime_authority_firewall",
+            "Whole-cell runtime authority firewall",
+            "closed",
+            "Code-level prevention of legacy relative-pool dynamics being used for quantitative validation, prediction or authoritative PHH state coupling.",
+            "Every public whole-cell step and run requires an explicit purpose. Schematic visualization and exploratory execution remain available; all three scientific-authority purposes fail closed.",
+            {
+                "explicit_purpose_guard_count": int(
+                    bool(runtime_authority["explicit_purpose_required"])
+                ),
+                "audited_legacy_surface_count": runtime_authority_summary[
+                    "audited_legacy_surface_count"
+                ],
+                "phh_context_matched_surface_count": runtime_authority_summary[
+                    "phh_context_matched_surface_count"
+                ],
+                "quantitative_authority_surface_count": runtime_authority_summary[
+                    "quantitative_authority_surface_count"
+                ],
+                "predictive_authority_surface_count": runtime_authority_summary[
+                    "predictive_authority_surface_count"
+                ],
+                "authoritative_state_coupling_surface_count": (
+                    runtime_authority_summary[
+                        "authoritative_state_coupling_surface_count"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/core/runtime_authority.py",
+                "engine/cell_engine/core/engine.py",
+                "engine/tests/test_runtime_authority.py",
+            ),
+        ),
+        _entry(
+            "legacy_calibration_authority_firewall",
+            "Legacy calibration authority firewall",
+            "closed",
+            "Code-level prevention of project fixture residuals and scores being used as PHH parameter calibration, quantitative validation or predictive model selection.",
+            "Calibration evaluation and candidate ranking require an explicit fixture or exploratory purpose. The score is named fixture_fit_score, every result carries zero scientific authority, and all three scientific-use purposes fail closed.",
+            {
+                "explicit_purpose_guard_count": int(
+                    bool(calibration_authority["explicit_purpose_required"])
+                ),
+                "audited_workflow_count": calibration_authority_summary[
+                    "audited_workflow_count"
+                ],
+                "built_in_target_count": calibration_authority_summary[
+                    "built_in_target_count"
+                ],
+                "placeholder_target_count": calibration_authority_summary[
+                    "placeholder_target_count"
+                ],
+                "source_backed_target_count": calibration_authority_summary[
+                    "source_backed_target_count"
+                ],
+                "biologically_authorized_target_count": (
+                    calibration_authority_summary[
+                        "biologically_authorized_target_count"
+                    ]
+                ),
+                "scientific_authority_purpose_count": calibration_authority_summary[
+                    "scientific_authority_purpose_count"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/ml/calibration.py",
+                "engine/cell_engine/ml/environment.py",
+                "engine/cell_engine/validation/experiments.py",
+                "engine/tests/test_ml_environment.py",
+            ),
+        ),
         _entry(
             "dimensionless_cytosol_numerics",
             "Dimensionless cytosol transport numerics",
@@ -652,13 +748,28 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Compartmental energy and redox quantitation",
             "partial",
             "ATP/ADP/AMP, NAD(H), NADP(H), glutathione, ROS, oxygen and electrochemical states across six compartments.",
-            "Pool identities and 14 process topologies are explicit. A versioned 47-column donor-resolved PHH trajectory intake now enforces exact pool/molecule/compartment mapping, validated targeting, same-assay calibration, oxygen/nutrient context and sealed donor/study-disjoint held-out data; aggregate observations and absent trajectories cannot initialize a compartment or rate.",
+            "Pool identities and 14 process topologies are explicit. A versioned 47-column donor-resolved PHH trajectory intake enforces exact pool/molecule/compartment mapping, validated targeting, same-assay calibration, oxygen/nutrient context and sealed donor/study-disjoint held-out data. Six legacy conflicts remain visible, but an explicit-purpose firewall gives them zero quantitative, predictive or authoritative state-coupling permission.",
             {
                 "compartment_count": energy["compartment_count"],
                 "pool_count": energy["explicit_pool_count"],
                 "initialized_pool_count": energy["initialized_compartment_pool_count"],
                 "executable_process_count": energy["executable_process_count"],
-                "runtime_conflict_count": energy["detected_runtime_conflict_count"],
+                "detected_legacy_runtime_conflict_count": energy[
+                    "detected_runtime_conflict_count"
+                ],
+                "legacy_runtime_quantitative_authority_violation_count": (
+                    runtime_authority_summary[
+                        "quantitative_authority_surface_count"
+                    ]
+                ),
+                "legacy_runtime_predictive_authority_violation_count": (
+                    runtime_authority_summary["predictive_authority_surface_count"]
+                ),
+                "legacy_runtime_authoritative_coupling_violation_count": (
+                    runtime_authority_summary[
+                        "authoritative_state_coupling_surface_count"
+                    ]
+                ),
                 "trajectory_intake_contract_count": 1,
                 "delivered_trajectory_record_count": energy_trajectory_intake[
                     "record_count"
@@ -676,11 +787,12 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             (
                 "Compartment-resolved healthy-PHH initial states.",
                 "Matched oxygen/redox/adenylate trajectories and flux-identifying perturbations.",
-                "Resolution of legacy aggregate runtime pools.",
+                "Replacement of quarantined aggregate pools by a validated compartment state.",
             ),
             (
                 "engine/cell_engine/quantitative/compartmental_energy_redox.py",
                 "engine/cell_engine/validation/energy_redox_gate.py",
+                "engine/cell_engine/core/runtime_authority.py",
                 "engine/cell_engine/quantitative/energy_redox_trajectory.py",
                 "data/evidence_intake/phh_energy_redox_trajectory_contract.v1.json",
             ),
@@ -1560,6 +1672,423 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "human_gem_fastcore_global_support_cardinality",
+            "Human-GEM global FASTCORE support cardinality",
+            "closed",
+            "Exact two-target shared-support lower bound over all 4,226 reactions omitted by adaptive FASTCORE, matched against the committed feasible 17-target upper bound; identity-set enumeration remains outside this scope.",
+            "MAR00468 and MAR00612 require an exact 59-reaction shared support even when every omitted reaction in checksum-pinned, FASTCC-consistent Human-GEM is available. The committed 59-reaction set certifies all 17 targets and strict FASTCC, so matching bounds prove global minimum cardinality. Globally alternative 59-reaction identity sets, active PHH enzymes, exchange bounds and a biological objective remain unestablished.",
+            {
+                "global_candidate_reaction_count": (
+                    fastcore_global_support_optimality[
+                        "global_candidate_reaction_count"
+                    ]
+                ),
+                "full_target_count": fastcore_global_support_optimality[
+                    "full_target_count"
+                ],
+                "lower_bound_target_count": (
+                    fastcore_global_support_optimality[
+                        "lower_bound_target_count"
+                    ]
+                ),
+                "lower_bound_target_ids_in_input_order": (
+                    fastcore_global_support_optimality[
+                        "lower_bound_target_ids_in_input_order"
+                    ]
+                ),
+                "lower_bound_exact_minimum_added_reaction_count": (
+                    fastcore_global_support_optimality[
+                        "lower_bound_exact_minimum_added_reaction_count"
+                    ]
+                ),
+                "upper_bound_feasible_added_reaction_count": (
+                    fastcore_global_support_optimality[
+                        "upper_bound_feasible_added_reaction_count"
+                    ]
+                ),
+                "bounds_match": fastcore_global_support_optimality[
+                    "bounds_match"
+                ],
+                "global_minimum_added_reaction_count": (
+                    fastcore_global_support_optimality[
+                        "global_minimum_added_reaction_count"
+                    ]
+                ),
+                "global_minimum_cardinality_proven": (
+                    fastcore_global_support_optimality[
+                        "global_minimum_cardinality_proven"
+                    ]
+                ),
+                "global_minimum_identity_sets_enumerated": (
+                    fastcore_global_support_optimality[
+                        "global_minimum_identity_sets_enumerated"
+                    ]
+                ),
+                "global_minimum_support_set_unique": (
+                    fastcore_global_support_optimality[
+                        "global_minimum_support_set_unique"
+                    ]
+                ),
+                "global_universal_reaction_identities_established": (
+                    fastcore_global_support_optimality[
+                        "global_universal_reaction_identities_established"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    fastcore_global_support_optimality[
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": (
+                    fastcore_global_support_optimality[
+                        "context_model_accepted"
+                    ]
+                ),
+                "fba_execution_allowed": (
+                    fastcore_global_support_optimality[
+                        "fba_execution_allowed"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_optimality.py",
+                "scripts/audit_human_gem_phh_fastcore_global_support_optimality.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_optimality.json",
+                "engine/tests/test_human_gem_phh_fastcore_global_support_optimality.py",
+            ),
+        ),
+        _entry(
+            "human_gem_fastcore_global_support_counterexample",
+            "Human-GEM global FASTCORE support counterexample",
+            "closed",
+            "Presolve-cross-checked no-good MILP search over all 4,226 omitted reactions, followed by all-17-target LP certificates and strict FASTCC validation for one identity outside the scoped 65-reaction pool.",
+            "At least three distinct globally minimum 59-reaction support sets are now certified. The new set replaces MAR10035 with MAR00494 outside the scoped pool, proving global non-uniqueness. Complete global identity enumeration, universal reaction membership, PHH activity and runtime authority remain open.",
+            {
+                "global_candidate_reaction_count": (
+                    fastcore_global_support_counterexample[
+                        "global_candidate_reaction_count"
+                    ]
+                ),
+                "global_minimum_cardinality": (
+                    fastcore_global_support_counterexample[
+                        "global_minimum_cardinality"
+                    ]
+                ),
+                "known_distinct_global_minimum_support_set_count_lower_bound": (
+                    fastcore_global_support_counterexample[
+                        "known_distinct_global_minimum_support_set_count_lower_bound"
+                    ]
+                ),
+                "presolve_infeasibility_disagreed": (
+                    fastcore_global_support_counterexample[
+                        "presolve_infeasibility_disagreed"
+                    ]
+                ),
+                "solver_attempt_count": (
+                    fastcore_global_support_counterexample[
+                        "solver_attempt_count"
+                    ]
+                ),
+                "accepted_solve_used_presolve": (
+                    fastcore_global_support_counterexample[
+                        "accepted_solve_used_presolve"
+                    ]
+                ),
+                "counterexample_added_reaction_count": (
+                    fastcore_global_support_counterexample[
+                        "counterexample_added_reaction_count"
+                    ]
+                ),
+                "primary_overlap_count": (
+                    fastcore_global_support_counterexample[
+                        "primary_overlap_count"
+                    ]
+                ),
+                "primary_only_reaction_ids_in_input_order": (
+                    fastcore_global_support_counterexample[
+                        "primary_only_reaction_ids_in_input_order"
+                    ]
+                ),
+                "counterexample_only_reaction_ids_in_input_order": (
+                    fastcore_global_support_counterexample[
+                        "counterexample_only_reaction_ids_in_input_order"
+                    ]
+                ),
+                "outside_scoped_pool_reaction_ids_in_input_order": (
+                    fastcore_global_support_counterexample[
+                        "outside_scoped_pool_reaction_ids_in_input_order"
+                    ]
+                ),
+                "all_target_lp_certificate_count": (
+                    fastcore_global_support_counterexample[
+                        "all_target_lp_certificate_count"
+                    ]
+                ),
+                "strict_fastcc_consistent_reaction_count": (
+                    fastcore_global_support_counterexample[
+                        "strict_fastcc_consistent_reaction_count"
+                    ]
+                ),
+                "strict_fastcc_blocked_reaction_count": (
+                    fastcore_global_support_counterexample[
+                        "strict_fastcc_blocked_reaction_count"
+                    ]
+                ),
+                "global_minimum_identity_enumeration_complete": (
+                    fastcore_global_support_counterexample[
+                        "global_minimum_identity_enumeration_complete"
+                    ]
+                ),
+                "global_minimum_support_set_unique": (
+                    fastcore_global_support_counterexample[
+                        "global_minimum_support_set_unique"
+                    ]
+                ),
+                "global_universal_reaction_membership_established": (
+                    fastcore_global_support_counterexample[
+                        "global_universal_reaction_membership_established"
+                    ]
+                ),
+                "additional_global_minimum_search_required": (
+                    fastcore_global_support_counterexample[
+                        "additional_global_minimum_search_required"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    fastcore_global_support_counterexample[
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": (
+                    fastcore_global_support_counterexample[
+                        "context_model_accepted"
+                    ]
+                ),
+                "fba_execution_allowed": (
+                    fastcore_global_support_counterexample[
+                        "fba_execution_allowed"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/minimum_reaction_support.py",
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_counterexample.py",
+                "scripts/audit_human_gem_phh_fastcore_global_support_counterexample.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_counterexample.json",
+                "engine/tests/test_minimum_reaction_support.py",
+                "engine/tests/test_human_gem_phh_fastcore_global_support_counterexample.py",
+            ),
+        ),
+        _entry(
+            "human_gem_fastcore_fixed_core_completion_enumeration",
+            "Human-GEM fixed-core completion enumeration",
+            "closed",
+            "Exact singleton-completion enumeration conditional on the 58 identities shared by three certified global minima, with three no-good cuts and terminal no-presolve infeasibility over the remaining 4,168 candidates.",
+            "MAR00494, MAR02308 and MAR10035 are exactly the three one-reaction completions when the known common 58-reaction core is fixed. This closes the conditioned subspace only; global optima replacing two or more core identities, PHH reaction activity and runtime flux authority remain open.",
+            {
+                "fixed_common_reaction_count": (
+                    fastcore_fixed_core_completion[
+                        "fixed_common_reaction_count"
+                    ]
+                ),
+                "conditioned_retained_reaction_count": (
+                    fastcore_fixed_core_completion[
+                        "conditioned_retained_reaction_count"
+                    ]
+                ),
+                "remaining_candidate_reaction_count": (
+                    fastcore_fixed_core_completion[
+                        "remaining_candidate_reaction_count"
+                    ]
+                ),
+                "known_singleton_completion_count": (
+                    fastcore_fixed_core_completion[
+                        "known_singleton_completion_count"
+                    ]
+                ),
+                "known_singleton_completion_ids_in_model_order": (
+                    fastcore_fixed_core_completion[
+                        "known_singleton_completion_ids_in_model_order"
+                    ]
+                ),
+                "terminal_infeasibility_proven": (
+                    fastcore_fixed_core_completion[
+                        "terminal_infeasibility_proven"
+                    ]
+                ),
+                "terminal_solver_attempt_count": (
+                    fastcore_fixed_core_completion[
+                        "terminal_solver_attempt_count"
+                    ]
+                ),
+                "terminal_infeasibility_confirmed_without_presolve": (
+                    fastcore_fixed_core_completion[
+                        "terminal_infeasibility_confirmed_without_presolve"
+                    ]
+                ),
+                "exact_singleton_completion_count_given_fixed_core": (
+                    fastcore_fixed_core_completion[
+                        "exact_singleton_completion_count_given_fixed_core"
+                    ]
+                ),
+                "fixed_core_singleton_completion_enumeration_complete": (
+                    fastcore_fixed_core_completion[
+                        "fixed_core_singleton_completion_enumeration_complete"
+                    ]
+                ),
+                "fourth_singleton_completion_with_same_fixed_core_exists": (
+                    fastcore_fixed_core_completion[
+                        "fourth_singleton_completion_with_same_fixed_core_exists"
+                    ]
+                ),
+                "global_minimum_identity_enumeration_complete": (
+                    fastcore_fixed_core_completion[
+                        "global_minimum_identity_enumeration_complete"
+                    ]
+                ),
+                "fixed_common_reactions_proven_globally_universal": (
+                    fastcore_fixed_core_completion[
+                        "fixed_common_reactions_proven_globally_universal"
+                    ]
+                ),
+                "multi_replacement_global_optima_excluded": (
+                    fastcore_fixed_core_completion[
+                        "multi_replacement_global_optima_excluded"
+                    ]
+                ),
+                "additional_unconditioned_global_search_required": (
+                    fastcore_fixed_core_completion[
+                        "additional_unconditioned_global_search_required"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    fastcore_fixed_core_completion[
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": (
+                    fastcore_fixed_core_completion[
+                        "context_model_accepted"
+                    ]
+                ),
+                "fba_execution_allowed": (
+                    fastcore_fixed_core_completion[
+                        "fba_execution_allowed"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_fixed_core_completion_enumeration.py",
+                "scripts/audit_human_gem_phh_fastcore_fixed_core_completion_enumeration.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_fixed_core_completion_enumeration.json",
+                "engine/tests/test_human_gem_phh_fastcore_fixed_core_completion_enumeration.py",
+            ),
+        ),
+        _entry(
+            "human_gem_fastcore_global_support_identity_completeness",
+            "Human-GEM global support identity completeness",
+            "closed",
+            "Complete global minimum support-identity enumeration over all 4,226 omitted reactions at the proven cardinality 59, composed from exact fixed-core completions and a no-presolve-confirmed common-core exclusion proof.",
+            "Exactly three global minimum sets exist. Each contains the same 58 reactions and exactly one of MAR00494, MAR02308 or MAR10035. This closes minimum-set identities only; larger support sets, biological essentiality, PHH activity, exchange bounds, objective and runtime flux authority remain outside the claim.",
+            {
+                "global_candidate_reaction_count": (
+                    fastcore_global_identity_completeness[
+                        "global_candidate_reaction_count"
+                    ]
+                ),
+                "global_minimum_added_reaction_count": (
+                    fastcore_global_identity_completeness[
+                        "global_minimum_added_reaction_count"
+                    ]
+                ),
+                "global_minimum_support_set_count": (
+                    fastcore_global_identity_completeness[
+                        "global_minimum_support_set_count"
+                    ]
+                ),
+                "global_minimum_support_identity_enumeration_complete": (
+                    fastcore_global_identity_completeness[
+                        "global_minimum_support_identity_enumeration_complete"
+                    ]
+                ),
+                "global_minimum_support_set_unique": (
+                    fastcore_global_identity_completeness[
+                        "global_minimum_support_set_unique"
+                    ]
+                ),
+                "global_universal_minimum_support_reaction_count": (
+                    fastcore_global_identity_completeness[
+                        "global_universal_minimum_support_reaction_count"
+                    ]
+                ),
+                "global_optional_minimum_support_reaction_count": (
+                    fastcore_global_identity_completeness[
+                        "global_optional_minimum_support_reaction_count"
+                    ]
+                ),
+                "global_optional_minimum_support_reaction_ids_in_model_order": (
+                    fastcore_global_identity_completeness[
+                        "global_optional_minimum_support_reaction_ids_in_model_order"
+                    ]
+                ),
+                "every_global_minimum_contains_exactly_one_optional_identity": (
+                    fastcore_global_identity_completeness[
+                        "every_global_minimum_contains_exactly_one_optional_identity"
+                    ]
+                ),
+                "core_breaking_global_minimum_exists": (
+                    fastcore_global_identity_completeness[
+                        "core_breaking_global_minimum_exists"
+                    ]
+                ),
+                "multi_replacement_global_optima_excluded": (
+                    fastcore_global_identity_completeness[
+                        "multi_replacement_global_optima_excluded"
+                    ]
+                ),
+                "additional_global_minimum_identity_search_required": (
+                    fastcore_global_identity_completeness[
+                        "additional_global_minimum_identity_search_required"
+                    ]
+                ),
+                "terminal_infeasibility_confirmed_without_presolve": (
+                    fastcore_global_identity_completeness[
+                        "terminal_infeasibility_confirmed_without_presolve"
+                    ]
+                ),
+                "structural_essentiality_at_larger_support_sizes_established": (
+                    fastcore_global_identity_completeness[
+                        "structural_essentiality_at_larger_support_sizes_established"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    fastcore_global_identity_completeness[
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": (
+                    fastcore_global_identity_completeness[
+                        "context_model_accepted"
+                    ]
+                ),
+                "fba_execution_allowed": (
+                    fastcore_global_identity_completeness[
+                        "fba_execution_allowed"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_identity_completeness.py",
+                "scripts/audit_human_gem_phh_fastcore_global_support_identity_completeness.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_identity_completeness.json",
+                "engine/tests/test_human_gem_phh_fastcore_global_support_identity_completeness.py",
+            ),
+        ),
+        _entry(
             "human_gem_reaction_evidence_manifest",
             "Human-GEM reaction evidence manifest",
             "closed",
@@ -1845,6 +2374,40 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         raise ValueError("completion matrix may not invent a biological accuracy percentage")
 
     by_id = {str(entry["id"]): entry for entry in entries}
+    runtime_authority_metrics = by_id["whole_cell_runtime_authority_firewall"][
+        "observed_metrics"
+    ]
+    if (
+        runtime_authority_metrics["explicit_purpose_guard_count"] != 1
+        or runtime_authority_metrics["audited_legacy_surface_count"] != 4
+        or runtime_authority_metrics["phh_context_matched_surface_count"] != 0
+        or runtime_authority_metrics["quantitative_authority_surface_count"] != 0
+        or runtime_authority_metrics["predictive_authority_surface_count"] != 0
+        or runtime_authority_metrics[
+            "authoritative_state_coupling_surface_count"
+        ]
+        != 0
+    ):
+        raise ValueError("whole-cell runtime escaped its authority firewall")
+    calibration_authority_metrics = by_id[
+        "legacy_calibration_authority_firewall"
+    ]["observed_metrics"]
+    if (
+        calibration_authority_metrics["explicit_purpose_guard_count"] != 1
+        or calibration_authority_metrics["audited_workflow_count"] != 3
+        or calibration_authority_metrics["built_in_target_count"] != 3
+        or calibration_authority_metrics["placeholder_target_count"] != 3
+        or calibration_authority_metrics["source_backed_target_count"] != 0
+        or calibration_authority_metrics[
+            "biologically_authorized_target_count"
+        ]
+        != 0
+        or calibration_authority_metrics[
+            "scientific_authority_purpose_count"
+        ]
+        != 0
+    ):
+        raise ValueError("legacy calibration escaped its authority firewall")
     if by_id["quantitative_reaction_core"]["observed_metrics"]["filled_evidence_slot_count"] != 0:
         raise ValueError("reaction evidence was promoted without review")
     if by_id["healthy_phh_cytosol_parameters"]["observed_metrics"]["filled_parameter_count"] != 0:
@@ -1875,6 +2438,18 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or energy_intake_metrics["structurally_complete_trajectory_count"] != 0
         or energy_intake_metrics["calibration_and_heldout_complete_pool_count"] != 0
         or energy_intake_metrics["trajectory_initialized_pool_count"] != 0
+        or energy_intake_metrics[
+            "legacy_runtime_quantitative_authority_violation_count"
+        ]
+        != 0
+        or energy_intake_metrics[
+            "legacy_runtime_predictive_authority_violation_count"
+        ]
+        != 0
+        or energy_intake_metrics[
+            "legacy_runtime_authoritative_coupling_violation_count"
+        ]
+        != 0
     ):
         raise ValueError("energy/redox trajectory intake escaped into state authority")
     receptor_metrics = by_id["receptor_signaling_kinetics"]["observed_metrics"]
@@ -2377,6 +2952,270 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or optimality_metrics["fba_execution_allowed"] is not False
     ):
         raise ValueError("FASTCORE support optimality escaped scope")
+    global_support_metrics = by_id[
+        "human_gem_fastcore_global_support_cardinality"
+    ]["observed_metrics"]
+    if (
+        global_support_metrics["global_candidate_reaction_count"] != 4_226
+        or global_support_metrics["full_target_count"] != 17
+        or global_support_metrics["lower_bound_target_count"] != 2
+        or global_support_metrics[
+            "lower_bound_target_ids_in_input_order"
+        ]
+        != ["MAR00468", "MAR00612"]
+        or global_support_metrics[
+            "lower_bound_exact_minimum_added_reaction_count"
+        ]
+        != 59
+        or global_support_metrics[
+            "upper_bound_feasible_added_reaction_count"
+        ]
+        != 59
+        or global_support_metrics["bounds_match"] is not True
+        or global_support_metrics[
+            "global_minimum_added_reaction_count"
+        ]
+        != 59
+        or global_support_metrics[
+            "global_minimum_cardinality_proven"
+        ]
+        is not True
+        or global_support_metrics[
+            "global_minimum_identity_sets_enumerated"
+        ]
+        is not False
+        or global_support_metrics[
+            "global_minimum_support_set_unique"
+        ]
+        is not None
+        or global_support_metrics[
+            "global_universal_reaction_identities_established"
+        ]
+        is not False
+        or global_support_metrics[
+            "reaction_activity_in_phh_established"
+        ]
+        is not False
+        or global_support_metrics["context_model_accepted"] is not False
+        or global_support_metrics["fba_execution_allowed"] is not False
+    ):
+        raise ValueError("FASTCORE global support cardinality escaped scope")
+    global_counterexample_metrics = by_id[
+        "human_gem_fastcore_global_support_counterexample"
+    ]["observed_metrics"]
+    if (
+        global_counterexample_metrics[
+            "global_candidate_reaction_count"
+        ]
+        != 4_226
+        or global_counterexample_metrics["global_minimum_cardinality"] != 59
+        or global_counterexample_metrics[
+            "known_distinct_global_minimum_support_set_count_lower_bound"
+        ]
+        != 3
+        or global_counterexample_metrics[
+            "presolve_infeasibility_disagreed"
+        ]
+        is not True
+        or global_counterexample_metrics["solver_attempt_count"] != 2
+        or global_counterexample_metrics[
+            "accepted_solve_used_presolve"
+        ]
+        is not False
+        or global_counterexample_metrics[
+            "counterexample_added_reaction_count"
+        ]
+        != 59
+        or global_counterexample_metrics["primary_overlap_count"] != 58
+        or global_counterexample_metrics[
+            "primary_only_reaction_ids_in_input_order"
+        ]
+        != ["MAR10035"]
+        or global_counterexample_metrics[
+            "counterexample_only_reaction_ids_in_input_order"
+        ]
+        != ["MAR00494"]
+        or global_counterexample_metrics[
+            "outside_scoped_pool_reaction_ids_in_input_order"
+        ]
+        != ["MAR00494"]
+        or global_counterexample_metrics[
+            "all_target_lp_certificate_count"
+        ]
+        != 17
+        or global_counterexample_metrics[
+            "strict_fastcc_consistent_reaction_count"
+        ]
+        != 7_474
+        or global_counterexample_metrics[
+            "strict_fastcc_blocked_reaction_count"
+        ]
+        != 0
+        or global_counterexample_metrics[
+            "global_minimum_identity_enumeration_complete"
+        ]
+        is not False
+        or global_counterexample_metrics[
+            "global_minimum_support_set_unique"
+        ]
+        is not False
+        or global_counterexample_metrics[
+            "global_universal_reaction_membership_established"
+        ]
+        is not False
+        or global_counterexample_metrics[
+            "additional_global_minimum_search_required"
+        ]
+        is not True
+        or global_counterexample_metrics[
+            "reaction_activity_in_phh_established"
+        ]
+        is not False
+        or global_counterexample_metrics["context_model_accepted"]
+        is not False
+        or global_counterexample_metrics["fba_execution_allowed"]
+        is not False
+    ):
+        raise ValueError(
+            "FASTCORE global support counterexample escaped scope"
+        )
+    fixed_core_completion_metrics = by_id[
+        "human_gem_fastcore_fixed_core_completion_enumeration"
+    ]["observed_metrics"]
+    if (
+        fixed_core_completion_metrics["fixed_common_reaction_count"] != 58
+        or fixed_core_completion_metrics[
+            "conditioned_retained_reaction_count"
+        ]
+        != 7_473
+        or fixed_core_completion_metrics[
+            "remaining_candidate_reaction_count"
+        ]
+        != 4_168
+        or fixed_core_completion_metrics[
+            "known_singleton_completion_count"
+        ]
+        != 3
+        or fixed_core_completion_metrics[
+            "known_singleton_completion_ids_in_model_order"
+        ]
+        != ["MAR00494", "MAR02308", "MAR10035"]
+        or fixed_core_completion_metrics[
+            "terminal_infeasibility_proven"
+        ]
+        is not True
+        or fixed_core_completion_metrics[
+            "terminal_solver_attempt_count"
+        ]
+        != 2
+        or fixed_core_completion_metrics[
+            "terminal_infeasibility_confirmed_without_presolve"
+        ]
+        is not True
+        or fixed_core_completion_metrics[
+            "exact_singleton_completion_count_given_fixed_core"
+        ]
+        != 3
+        or fixed_core_completion_metrics[
+            "fixed_core_singleton_completion_enumeration_complete"
+        ]
+        is not True
+        or fixed_core_completion_metrics[
+            "fourth_singleton_completion_with_same_fixed_core_exists"
+        ]
+        is not False
+        or fixed_core_completion_metrics[
+            "global_minimum_identity_enumeration_complete"
+        ]
+        is not False
+        or fixed_core_completion_metrics[
+            "fixed_common_reactions_proven_globally_universal"
+        ]
+        is not False
+        or fixed_core_completion_metrics[
+            "multi_replacement_global_optima_excluded"
+        ]
+        is not False
+        or fixed_core_completion_metrics[
+            "additional_unconditioned_global_search_required"
+        ]
+        is not True
+        or fixed_core_completion_metrics[
+            "reaction_activity_in_phh_established"
+        ]
+        is not False
+        or fixed_core_completion_metrics["context_model_accepted"]
+        is not False
+        or fixed_core_completion_metrics["fba_execution_allowed"]
+        is not False
+    ):
+        raise ValueError(
+            "FASTCORE fixed-core completion enumeration escaped scope"
+        )
+    global_identity_metrics = by_id[
+        "human_gem_fastcore_global_support_identity_completeness"
+    ]["observed_metrics"]
+    if (
+        global_identity_metrics["global_candidate_reaction_count"] != 4_226
+        or global_identity_metrics[
+            "global_minimum_added_reaction_count"
+        ]
+        != 59
+        or global_identity_metrics["global_minimum_support_set_count"] != 3
+        or global_identity_metrics[
+            "global_minimum_support_identity_enumeration_complete"
+        ]
+        is not True
+        or global_identity_metrics[
+            "global_minimum_support_set_unique"
+        ]
+        is not False
+        or global_identity_metrics[
+            "global_universal_minimum_support_reaction_count"
+        ]
+        != 58
+        or global_identity_metrics[
+            "global_optional_minimum_support_reaction_count"
+        ]
+        != 3
+        or global_identity_metrics[
+            "global_optional_minimum_support_reaction_ids_in_model_order"
+        ]
+        != ["MAR00494", "MAR02308", "MAR10035"]
+        or global_identity_metrics[
+            "every_global_minimum_contains_exactly_one_optional_identity"
+        ]
+        is not True
+        or global_identity_metrics[
+            "core_breaking_global_minimum_exists"
+        ]
+        is not False
+        or global_identity_metrics[
+            "multi_replacement_global_optima_excluded"
+        ]
+        is not True
+        or global_identity_metrics[
+            "additional_global_minimum_identity_search_required"
+        ]
+        is not False
+        or global_identity_metrics[
+            "terminal_infeasibility_confirmed_without_presolve"
+        ]
+        is not True
+        or global_identity_metrics[
+            "structural_essentiality_at_larger_support_sizes_established"
+        ]
+        is not False
+        or global_identity_metrics[
+            "reaction_activity_in_phh_established"
+        ]
+        is not False
+        or global_identity_metrics["context_model_accepted"] is not False
+        or global_identity_metrics["fba_execution_allowed"] is not False
+    ):
+        raise ValueError(
+            "FASTCORE global identity completeness escaped scope"
+        )
     evidence_metrics = by_id[
         "human_gem_reaction_evidence_manifest"
     ]["observed_metrics"]

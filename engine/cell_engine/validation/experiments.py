@@ -5,6 +5,10 @@ from dataclasses import dataclass, field, replace
 from cell_engine.core.cell_definition import CellDefinition
 from cell_engine.core.engine import step_cell
 from cell_engine.core.random import EngineRng
+from cell_engine.core.runtime_authority import (
+    WholeCellRuntimePurpose,
+    assert_whole_cell_runtime_authority,
+)
 from cell_engine.core.serialization import to_plain
 from cell_engine.core.state import CellState
 from cell_engine.core.expression import apply_functional_perturbation
@@ -33,6 +37,8 @@ class ScenarioResult:
     scenario: Scenario
     frames: tuple[TrajectoryFrame, ...]
     final_status: str
+    runtime_purpose: WholeCellRuntimePurpose
+    scientific_authority: str
 
     def to_dict(self) -> dict[str, object]:
         return to_plain(self)
@@ -89,14 +95,30 @@ def run_scenario(
     dt_s: float,
     steps: int,
     seed: int,
+    purpose: WholeCellRuntimePurpose,
 ) -> ScenarioResult:
+    assert_whole_cell_runtime_authority(purpose)
+    if purpose != "exploratory_execution":
+        raise ValueError("run_scenario requires purpose='exploratory_execution'")
     state = apply_scenario(initial_state, scenario)
     rng = EngineRng(seed)
     frames = [_frame(0, state)]
     for step in range(1, steps + 1):
-        state = step_cell(definition, state, dt_s, rng=rng)
+        state = step_cell(
+            definition,
+            state,
+            dt_s,
+            purpose=purpose,
+            rng=rng,
+        )
         frames.append(_frame(step, state))
-    return ScenarioResult(scenario=scenario, frames=tuple(frames), final_status=state.status)
+    return ScenarioResult(
+        scenario=scenario,
+        frames=tuple(frames),
+        final_status=state.status,
+        runtime_purpose=purpose,
+        scientific_authority="schematic_or_exploratory_only",
+    )
 
 
 def apply_interventions(state: CellState, interventions: dict[str, float]) -> CellState:

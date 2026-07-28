@@ -10,7 +10,13 @@ from cell_engine.processes.hepatocyte import build_hepatocyte_definition, initia
 class PhysiCellBridgeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.definition = build_hepatocyte_definition()
-        self.state = step_cell(self.definition, initial_hepatocyte_state(self.definition), 120.0, rng=EngineRng(3))
+        self.state = step_cell(
+            self.definition,
+            initial_hepatocyte_state(self.definition),
+            120.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(3),
+        )
 
     def test_microenvironment_fields_have_units_and_transport_parameters(self) -> None:
         fields = build_microenvironment_fields()
@@ -57,4 +63,3 @@ class PhysiCellBridgeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

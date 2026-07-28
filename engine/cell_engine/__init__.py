@@ -7,6 +7,11 @@ definition/state/snapshot contract that the renderer will eventually consume.
 from cell_engine.core.cell_definition import CellDefinition
 from cell_engine.core.engine import run_cell, step_cell
 from cell_engine.core.random import EngineRng
+from cell_engine.core.runtime_authority import (
+    WholeCellRuntimeAuthorityError,
+    assert_whole_cell_runtime_authority,
+    whole_cell_runtime_authority_snapshot,
+)
 from cell_engine.core.genome import HepatocyteGenomeState, SomaticVariantRecord, build_reference_hepatocyte_genome, record_somatic_variant
 from cell_engine.core.history import CellHistoryState, MemoryTrace, consolidate_memory_trace
 from cell_engine.core.state import CargoPacket, CellState, MembraneElectrochemicalState, MetabolicFlux, PathwayResult, SignalingResult
@@ -29,7 +34,10 @@ __all__ = [
     "consolidate_memory_trace",
     "initial_hepatocyte_state",
     "run_cell",
+    "assert_whole_cell_runtime_authority",
     "record_somatic_variant",
     "SomaticVariantRecord",
     "step_cell",
+    "whole_cell_runtime_authority_snapshot",
+    "WholeCellRuntimeAuthorityError",
 ]

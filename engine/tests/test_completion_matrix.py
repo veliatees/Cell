@@ -19,13 +19,42 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 41
-    assert summary["closed_count"] == 19
+    assert summary["entry_count"] == 47
+    assert summary["closed_count"] == 25
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
     assert summary["not_applicable_at_model_scale_count"] == 1
     assert summary["biological_accuracy_pct"] is None
+
+
+def test_whole_cell_runtime_is_closed_only_as_an_authority_firewall() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    runtime = entries["whole_cell_runtime_authority_firewall"]
+    metrics = runtime["observed_metrics"]
+    assert runtime["status"] == "closed"
+    assert metrics["explicit_purpose_guard_count"] == 1
+    assert metrics["audited_legacy_surface_count"] == 4
+    assert metrics["phh_context_matched_surface_count"] == 0
+    assert metrics["quantitative_authority_surface_count"] == 0
+    assert metrics["predictive_authority_surface_count"] == 0
+    assert metrics["authoritative_state_coupling_surface_count"] == 0
+
+
+def test_legacy_calibration_is_closed_only_as_a_fixture_score_firewall() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    calibration = entries["legacy_calibration_authority_firewall"]
+    metrics = calibration["observed_metrics"]
+    assert calibration["status"] == "closed"
+    assert metrics["explicit_purpose_guard_count"] == 1
+    assert metrics["audited_workflow_count"] == 3
+    assert metrics["built_in_target_count"] == 3
+    assert metrics["placeholder_target_count"] == 3
+    assert metrics["source_backed_target_count"] == 0
+    assert metrics["biologically_authorized_target_count"] == 0
+    assert metrics["scientific_authority_purpose_count"] == 0
 
 
 def test_render_integrity_is_closed_without_claiming_cross_gpu_pixel_identity() -> None:
@@ -240,6 +269,131 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
     assert optimality["observed_metrics"][
         "terminal_infeasibility_proven"
     ] is True
+    global_support = entries[
+        "human_gem_fastcore_global_support_cardinality"
+    ]
+    assert global_support["status"] == "closed"
+    assert global_support["observed_metrics"][
+        "global_candidate_reaction_count"
+    ] == 4226
+    assert global_support["observed_metrics"][
+        "lower_bound_target_ids_in_input_order"
+    ] == ["MAR00468", "MAR00612"]
+    assert global_support["observed_metrics"][
+        "lower_bound_exact_minimum_added_reaction_count"
+    ] == 59
+    assert global_support["observed_metrics"][
+        "upper_bound_feasible_added_reaction_count"
+    ] == 59
+    assert global_support["observed_metrics"]["bounds_match"] is True
+    assert global_support["observed_metrics"][
+        "global_minimum_cardinality_proven"
+    ] is True
+    assert global_support["observed_metrics"][
+        "global_minimum_identity_sets_enumerated"
+    ] is False
+    assert global_support["observed_metrics"][
+        "global_minimum_support_set_unique"
+    ] is None
+    assert global_support["observed_metrics"][
+        "reaction_activity_in_phh_established"
+    ] is False
+    global_counterexample = entries[
+        "human_gem_fastcore_global_support_counterexample"
+    ]
+    assert global_counterexample["status"] == "closed"
+    assert global_counterexample["observed_metrics"][
+        "global_minimum_cardinality"
+    ] == 59
+    assert global_counterexample["observed_metrics"][
+        "known_distinct_global_minimum_support_set_count_lower_bound"
+    ] == 3
+    assert global_counterexample["observed_metrics"][
+        "presolve_infeasibility_disagreed"
+    ] is True
+    assert global_counterexample["observed_metrics"][
+        "counterexample_only_reaction_ids_in_input_order"
+    ] == ["MAR00494"]
+    assert global_counterexample["observed_metrics"][
+        "outside_scoped_pool_reaction_ids_in_input_order"
+    ] == ["MAR00494"]
+    assert global_counterexample["observed_metrics"][
+        "all_target_lp_certificate_count"
+    ] == 17
+    assert global_counterexample["observed_metrics"][
+        "strict_fastcc_blocked_reaction_count"
+    ] == 0
+    assert global_counterexample["observed_metrics"][
+        "global_minimum_identity_enumeration_complete"
+    ] is False
+    assert global_counterexample["observed_metrics"][
+        "global_minimum_support_set_unique"
+    ] is False
+    assert global_counterexample["observed_metrics"][
+        "reaction_activity_in_phh_established"
+    ] is False
+    fixed_core_completion = entries[
+        "human_gem_fastcore_fixed_core_completion_enumeration"
+    ]
+    assert fixed_core_completion["status"] == "closed"
+    assert fixed_core_completion["observed_metrics"][
+        "fixed_common_reaction_count"
+    ] == 58
+    assert fixed_core_completion["observed_metrics"][
+        "remaining_candidate_reaction_count"
+    ] == 4168
+    assert fixed_core_completion["observed_metrics"][
+        "known_singleton_completion_ids_in_model_order"
+    ] == ["MAR00494", "MAR02308", "MAR10035"]
+    assert fixed_core_completion["observed_metrics"][
+        "terminal_infeasibility_confirmed_without_presolve"
+    ] is True
+    assert fixed_core_completion["observed_metrics"][
+        "exact_singleton_completion_count_given_fixed_core"
+    ] == 3
+    assert fixed_core_completion["observed_metrics"][
+        "fixed_core_singleton_completion_enumeration_complete"
+    ] is True
+    assert fixed_core_completion["observed_metrics"][
+        "global_minimum_identity_enumeration_complete"
+    ] is False
+    assert fixed_core_completion["observed_metrics"][
+        "multi_replacement_global_optima_excluded"
+    ] is False
+    assert fixed_core_completion["observed_metrics"][
+        "reaction_activity_in_phh_established"
+    ] is False
+    global_identity = entries[
+        "human_gem_fastcore_global_support_identity_completeness"
+    ]
+    assert global_identity["status"] == "closed"
+    assert global_identity["observed_metrics"][
+        "global_minimum_added_reaction_count"
+    ] == 59
+    assert global_identity["observed_metrics"][
+        "global_minimum_support_set_count"
+    ] == 3
+    assert global_identity["observed_metrics"][
+        "global_minimum_support_identity_enumeration_complete"
+    ] is True
+    assert global_identity["observed_metrics"][
+        "global_universal_minimum_support_reaction_count"
+    ] == 58
+    assert global_identity["observed_metrics"][
+        "global_optional_minimum_support_reaction_ids_in_model_order"
+    ] == ["MAR00494", "MAR02308", "MAR10035"]
+    assert global_identity["observed_metrics"][
+        "multi_replacement_global_optima_excluded"
+    ] is True
+    assert global_identity["observed_metrics"][
+        "additional_global_minimum_identity_search_required"
+    ] is False
+    assert global_identity["observed_metrics"][
+        "structural_essentiality_at_larger_support_sizes_established"
+    ] is False
+    assert global_identity["observed_metrics"][
+        "reaction_activity_in_phh_established"
+    ] is False
     evidence = entries["human_gem_reaction_evidence_manifest"]
     assert evidence["status"] == "closed"
     assert evidence["observed_metrics"]["manifest_reaction_count"] == 4895

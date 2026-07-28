@@ -5,7 +5,8 @@
 Resolve identity ambiguity at the Milestone 148 optimum. Each discovered
 `59`-reaction set is excluded with a cumulative no-good cut while the total
 candidate count remains capped at `59`. Enumeration stops only when HiGHS
-proves the remaining problem infeasible.
+proves the remaining problem infeasible with presolve disabled after an
+initial presolve infeasibility result.
 
 Every newly discovered set receives all `17` post-MILP LP certificates and an
 independent strict FASTCC classification.
@@ -20,11 +21,12 @@ Exactly two minimum identity sets exist inside the scoped `65`-reaction pool:
 - each optimum contains exactly one of those two identities;
 - each optimum produces `7,474/7,474` strict-consistent reactions;
 - cumulative no-good MILP solves: `2`;
-- the second solve proves that no third `59`-reaction set exists.
+- the terminal no-good problem is solved twice, and the no-presolve solve
+  confirms that no third `59`-reaction set exists.
 
-The terminal infeasibility certificate makes the identity enumeration
-complete for this pool. The `58` common reactions are proven members of every
-minimum-cardinality set in this scope.
+The no-presolve-confirmed terminal infeasibility certificate makes the
+identity enumeration complete for this pool. The `58` common reactions are
+proven members of every minimum-cardinality set in this scope.
 
 ## Reproducibility
 

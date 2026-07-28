@@ -45,7 +45,7 @@ from cell_engine.quantitative.human_gem_structural_audit import (
 from cell_engine.quantitative.minimum_reaction_support import (
     HIGHS_MIP_FEASIBILITY_TOLERANCE,
     MIP_RELATIVE_GAP,
-    SHARED_SUPPORT_VERSION,
+    SHARED_SUPPORT_INFEASIBILITY_CONFIRMATION_VERSION,
     SOLVER_BACKEND,
     induced_reaction_subnetwork,
     minimum_shared_reaction_support,
@@ -383,7 +383,9 @@ def build_human_gem_phh_fastcore_support_optimality(
             "not_healthy_volunteers": True,
         },
         "method": {
-            "kernel_version": SHARED_SUPPORT_VERSION,
+            "kernel_version": (
+                SHARED_SUPPORT_INFEASIBILITY_CONFIRMATION_VERSION
+            ),
             "solver_backend": SOLVER_BACKEND,
             "mip_relative_gap": MIP_RELATIVE_GAP,
             "mip_feasibility_tolerance": (
@@ -399,6 +401,7 @@ def build_human_gem_phh_fastcore_support_optimality(
             "structural_feasibility_beyond_minimum_size_tested": False,
             "exact_optimum_enumeration_performed": True,
             "optimum_enumeration_guard": MAX_OPTIMUM_ENUMERATION_COUNT,
+            "presolve_infeasibility_requires_no_presolve_confirmation": True,
             "epsilon": PAPER_EXPERIMENT_EPSILON,
             "epsilon_is_biological_parameter": False,
         },
@@ -478,6 +481,18 @@ def build_human_gem_phh_fastcore_support_optimality(
             ),
             "no_good_milp_solve_count": len(alternate_results) + 1,
             "enumeration_terminal_infeasibility_proven": True,
+            "enumeration_terminal_solver_attempt_count": (
+                terminal_result.milp_solver_attempt_count
+            ),
+            "enumeration_terminal_presolve": (
+                terminal_result.milp_presolve
+            ),
+            "enumeration_terminal_presolve_infeasibility_disagreed": (
+                terminal_result.presolve_infeasibility_disagreed
+            ),
+            "enumeration_terminal_infeasibility_confirmed_without_presolve": (
+                terminal_result.infeasibility_confirmed_without_presolve
+            ),
             "solver_status": terminal_result.solver_status,
             "solver_message": terminal_result.solver_message,
         },
@@ -560,7 +575,8 @@ def validate_human_gem_phh_fastcore_support_optimality(
     alternate_exists = summary.get("alternate_optimum_exists")
     infeasible = summary.get("alternate_search_infeasibility_proven")
     if (
-        method.get("kernel_version") != SHARED_SUPPORT_VERSION
+        method.get("kernel_version")
+        != SHARED_SUPPORT_INFEASIBILITY_CONFIRMATION_VERSION
         or method.get("solver_backend") != SOLVER_BACKEND
         or method.get("mip_relative_gap") != 0.0
         or method.get("primary_support_forbidden_by_no_good_constraint")
@@ -572,6 +588,10 @@ def validate_human_gem_phh_fastcore_support_optimality(
         or method.get("exact_optimum_enumeration_performed") is not True
         or method.get("optimum_enumeration_guard")
         != MAX_OPTIMUM_ENUMERATION_COUNT
+        or method.get(
+            "presolve_infeasibility_requires_no_presolve_confirmation"
+        )
+        is not True
         or method.get("epsilon") != PAPER_EXPERIMENT_EPSILON
         or method.get("epsilon_is_biological_parameter") is not False
         or summary.get("input_candidate_union_count") != 65
@@ -596,6 +616,16 @@ def validate_human_gem_phh_fastcore_support_optimality(
         != EXPECTED_MINIMUM_SUPPORT_RECORD_DIGEST
         or summary.get("no_good_milp_solve_count") != 2
         or summary.get("enumeration_terminal_infeasibility_proven")
+        is not True
+        or summary.get("enumeration_terminal_solver_attempt_count") != 2
+        or summary.get("enumeration_terminal_presolve") is not False
+        or summary.get(
+            "enumeration_terminal_presolve_infeasibility_disagreed"
+        )
+        is not False
+        or summary.get(
+            "enumeration_terminal_infeasibility_confirmed_without_presolve"
+        )
         is not True
         or summary.get("solver_status") != 2
     ):

@@ -6,6 +6,10 @@ from dataclasses import dataclass, field, replace
 from cell_engine.core.cell_definition import CellDefinition
 from cell_engine.core.engine import step_cell
 from cell_engine.core.random import EngineRng
+from cell_engine.core.runtime_authority import (
+    WholeCellRuntimePurpose,
+    assert_whole_cell_runtime_authority,
+)
 from cell_engine.core.serialization import to_plain
 from cell_engine.core.state import CellState, PoolState
 from cell_engine.stochastic.hazard import clamp
@@ -92,7 +96,7 @@ DEFAULT_ACTION_BOUNDS = (
 
 
 class CellPolicyEnvironment:
-    """Small Gymnasium-like wrapper around the authoritative cell engine."""
+    """Gymnasium-like wrapper for explicitly exploratory relative-pool execution."""
 
     def __init__(
         self,
@@ -103,16 +107,23 @@ class CellPolicyEnvironment:
         episode_steps: int = 24,
         seed: int | None = None,
         action_bounds: tuple[ActionBound, ...] = DEFAULT_ACTION_BOUNDS,
+        runtime_purpose: WholeCellRuntimePurpose,
     ) -> None:
         if dt_s <= 0:
             raise ValueError("dt_s must be positive")
         if episode_steps <= 0:
             raise ValueError("episode_steps must be positive")
+        assert_whole_cell_runtime_authority(runtime_purpose)
+        if runtime_purpose != "exploratory_execution":
+            raise ValueError(
+                "CellPolicyEnvironment requires purpose='exploratory_execution'"
+            )
         self.definition = definition
         self.initial_state = initial_state
         self.dt_s = dt_s
         self.episode_steps = episode_steps
         self.action_bounds = action_bounds
+        self.runtime_purpose = runtime_purpose
         self._base_seed = definition.stochastic_policy.seed if seed is None else seed
         self._rng = EngineRng(self._base_seed)
         self._state = initial_state
@@ -130,7 +141,13 @@ class CellPolicyEnvironment:
 
     def step(self, action: Mapping[str, float] | None = None) -> EnvStep:
         application = apply_policy_action(self._state, action or {}, self.action_bounds)
-        next_state = step_cell(self.definition, application.state, self.dt_s, rng=self._rng)
+        next_state = step_cell(
+            self.definition,
+            application.state,
+            self.dt_s,
+            purpose=self.runtime_purpose,
+            rng=self._rng,
+        )
         self._state = next_state
         self._step_index += 1
 
@@ -149,6 +166,9 @@ class CellPolicyEnvironment:
                 "action": application.to_dict(),
                 "reward_terms": reward_terms(next_state, application.unrealistic_penalty),
                 "rules_mutated": False,
+                "runtime_purpose": self.runtime_purpose,
+                "score_authority": "software_fixture_only",
+                "biological_policy_authority": False,
             },
             state=next_state,
         )

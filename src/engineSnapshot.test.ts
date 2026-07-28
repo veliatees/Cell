@@ -1293,12 +1293,84 @@ const snapshot: EngineSnapshot = {
       blockers: ["no audited donor-resolved training dataset manifest is loaded"],
       source_ids: ["autoencoding_variational_bayes", "scvi_single_cell_generative_model"]
     },
+    whole_cell_runtime_authority: {
+      version: "whole_cell_runtime_authority_v1",
+      status: "schematic_and_exploratory_execution_only",
+      surfaces: [{
+        id: "normalized_pool_initial_state",
+        code_surfaces: ["engine/cell_engine/processes/hepatocyte.py"],
+        current_role: "schematic_visual_initial_state",
+        numerical_parameter_authority: "relative_pool_placeholders",
+        phh_context_match: false,
+        quantitative_validation_allowed: false,
+        predictive_execution_allowed: false,
+        authoritative_cell_state_coupling_allowed: false,
+        blockers: ["not calibrated"]
+      }],
+      explicit_purpose_required: true,
+      schematic_visualization_allowed: true,
+      exploratory_execution_allowed: true,
+      quantitative_validation_allowed: false,
+      predictive_execution_allowed: false,
+      authoritative_cell_state_coupling_allowed: false,
+      policy: "schematic only",
+      summary: {
+        audited_legacy_surface_count: 4,
+        phh_context_matched_surface_count: 0,
+        quantitative_authority_surface_count: 0,
+        predictive_authority_surface_count: 0,
+        authoritative_state_coupling_surface_count: 0
+      }
+    },
+    legacy_calibration_authority: {
+      version: "legacy_calibration_authority_v1",
+      status: "software_fixture_only",
+      explicit_purpose_required: true,
+      allowed_purposes: [
+        "software_fixture_evaluation",
+        "exploratory_candidate_ranking"
+      ],
+      blocked_purposes: [
+        "biological_parameter_calibration",
+        "quantitative_validation",
+        "predictive_model_selection"
+      ],
+      built_in_targets: [{
+        id: "baseline_atp",
+        path: "pools.ATP",
+        unit: "relative_pool_0_1",
+        evidence_authority: "schematic_project_fixture",
+        biological_parameter_authority: false
+      }],
+      gates: {
+        biological_parameter_calibration_allowed: false,
+        quantitative_validation_allowed: false,
+        predictive_model_selection_allowed: false,
+        automatic_cell_rule_mutation_allowed: false
+      },
+      summary: {
+        audited_workflow_count: 3,
+        built_in_target_count: 3,
+        placeholder_target_count: 3,
+        source_backed_target_count: 0,
+        biologically_authorized_target_count: 0,
+        scientific_authority_purpose_count: 0
+      },
+      policy: "fixture scoring only"
+    },
     schematic_visual_state: {
       authority: "schematic_visual_only",
       source_path: "state.pools",
       unit: "relative_pool_0_1",
       pool_ids: ["ATP", "albumin"],
-      may_drive_quantitative_validation: false
+      runtime_purpose: "schematic_visualization",
+      dynamics_executed: true,
+      executed_step_count: 8,
+      elapsed_s: 960,
+      biological_parameter_authority: false,
+      may_drive_quantitative_validation: false,
+      may_drive_predictive_execution: false,
+      may_authoritatively_couple_cell_state: false
     },
     stress: { energy: 0.1, oxidative: 0.2 },
     organelles: {
@@ -1656,6 +1728,14 @@ describe("engine snapshot client", () => {
     expect(summary.phhBaseline?.readiness.whole_cell_transport_flux_ready).toBe(false);
     expect(summary.quantitativeState?.authority).toBe("authoritative_research_preview");
     expect(summary.quantitativeState?.pools.ATP.value).toBeCloseTo(2.19232);
+    expect(summary.wholeCellRuntimeAuthority?.explicit_purpose_required).toBe(true);
+    expect(summary.wholeCellRuntimeAuthority?.summary.quantitative_authority_surface_count).toBe(0);
+    expect(summary.legacyCalibrationAuthority?.status).toBe("software_fixture_only");
+    expect(summary.legacyCalibrationAuthority?.summary.placeholder_target_count).toBe(3);
+    expect(summary.legacyCalibrationAuthority?.summary.source_backed_target_count).toBe(0);
+    expect(summary.legacyCalibrationAuthority?.summary.biologically_authorized_target_count).toBe(0);
+    expect(summary.schematicVisualState?.runtime_purpose).toBe("schematic_visualization");
+    expect(summary.schematicVisualState?.biological_parameter_authority).toBe(false);
     expect(summary.reactionAuthority?.runtime_role).toBe("exploratory");
     expect(summary.reactionAuthority?.source_backed_parameterization_count).toBe(0);
     expect(summary.reactionAuthority?.scientific_validation_ready).toBe(false);
@@ -2242,7 +2322,7 @@ describe("engine snapshot client", () => {
       expect(result.summary.cytosolTransport?.solver_layers.conservative_passive_scalar_kernel.biological_species_bound_count).toBe(0);
       expect(result.summary.cytosolTransport?.solver_layers.conservative_passive_scalar_kernel.moving_domain_mass_conservation_tested).toBe(true);
       expect(result.summary.cytosolTransport?.summary.conservative_moving_domain_remap_count).toBe(1);
-      expect(result.summary.metabolicConstraintShell?.version).toBe("metabolic_constraint_shell_v10");
+      expect(result.summary.metabolicConstraintShell?.version).toBe("metabolic_constraint_shell_v14");
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.model_version).toBe("2.0.0");
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.release_commit)
         .toBe("635f533152dc5f7290ce04d12700eaa882273c3e");
@@ -2286,6 +2366,49 @@ describe("engine snapshot client", () => {
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_support_optimality.reactions_present_in_every_minimum_support_count).toBe(58);
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_support_optimality.optional_reaction_ids_in_input_order).toEqual(["MAR02308", "MAR10035"]);
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_support_optimality.terminal_infeasibility_proven).toBe(true);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_optimality.global_candidate_reaction_count).toBe(4226);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_optimality.lower_bound_target_ids_in_input_order).toEqual(["MAR00468", "MAR00612"]);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_optimality.lower_bound_exact_minimum_added_reaction_count).toBe(59);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_optimality.upper_bound_feasible_added_reaction_count).toBe(59);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_optimality.bounds_match).toBe(true);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_optimality.global_minimum_cardinality_proven).toBe(true);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_optimality.global_minimum_identity_sets_enumerated).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_optimality.global_minimum_support_set_unique).toBeNull();
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_optimality.reaction_activity_in_phh_established).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.global_candidate_reaction_count).toBe(4226);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.global_minimum_cardinality).toBe(59);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.known_distinct_global_minimum_support_set_count_lower_bound).toBe(3);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.presolve_infeasibility_disagreed).toBe(true);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.solver_attempt_count).toBe(2);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.accepted_solve_used_presolve).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.counterexample_only_reaction_ids_in_input_order).toEqual(["MAR00494"]);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.outside_scoped_pool_reaction_ids_in_input_order).toEqual(["MAR00494"]);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.all_target_lp_certificate_count).toBe(17);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.strict_fastcc_blocked_reaction_count).toBe(0);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.global_minimum_identity_enumeration_complete).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.global_minimum_support_set_unique).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_counterexample.reaction_activity_in_phh_established).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_fixed_core_completion_enumeration.fixed_common_reaction_count).toBe(58);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_fixed_core_completion_enumeration.conditioned_retained_reaction_count).toBe(7473);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_fixed_core_completion_enumeration.remaining_candidate_reaction_count).toBe(4168);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_fixed_core_completion_enumeration.known_singleton_completion_ids_in_model_order).toEqual(["MAR00494", "MAR02308", "MAR10035"]);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_fixed_core_completion_enumeration.terminal_infeasibility_confirmed_without_presolve).toBe(true);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_fixed_core_completion_enumeration.exact_singleton_completion_count_given_fixed_core).toBe(3);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_fixed_core_completion_enumeration.fixed_core_singleton_completion_enumeration_complete).toBe(true);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_fixed_core_completion_enumeration.global_minimum_identity_enumeration_complete).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_fixed_core_completion_enumeration.multi_replacement_global_optima_excluded).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_fixed_core_completion_enumeration.reaction_activity_in_phh_established).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_identity_completeness.global_candidate_reaction_count).toBe(4226);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_identity_completeness.global_minimum_added_reaction_count).toBe(59);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_identity_completeness.global_minimum_support_set_count).toBe(3);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_identity_completeness.global_minimum_support_identity_enumeration_complete).toBe(true);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_identity_completeness.global_universal_minimum_support_reaction_count).toBe(58);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_identity_completeness.global_optional_minimum_support_reaction_ids_in_model_order).toEqual(["MAR00494", "MAR02308", "MAR10035"]);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_identity_completeness.multi_replacement_global_optima_excluded).toBe(true);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_identity_completeness.additional_global_minimum_identity_search_required).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_identity_completeness.terminal_infeasibility_confirmed_without_presolve).toBe(true);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_identity_completeness.structural_essentiality_at_larger_support_sizes_established).toBe(false);
+      expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.fastcore_global_support_identity_completeness.reaction_activity_in_phh_established).toBe(false);
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.reaction_evidence_manifest.manifest_reaction_count).toBe(4895);
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.reaction_evidence_manifest.adaptive_noncore_without_gpr_count).toBe(2177);
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.reaction_evidence_manifest.automatic_bound_change_allowed).toBe(false);
@@ -2301,8 +2424,8 @@ describe("engine snapshot client", () => {
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.delivered_bundle_count).toBe(0);
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.runtime_flux_coupling_allowed).toBe(false);
       expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(41);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(19);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(47);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(25);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.partial_count).toBe(8);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(12);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.biological_accuracy_pct).toBeNull();
