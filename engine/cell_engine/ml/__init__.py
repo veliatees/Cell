@@ -7,6 +7,13 @@ from cell_engine.ml.calibration import (
     evaluate_calibration,
     rank_calibration_candidates,
 )
+from cell_engine.ml.calibration_authority import (
+    LegacyCalibrationAuthorityError,
+    LegacyCalibrationPurpose,
+    assert_legacy_calibration_authority,
+    legacy_calibration_authority_snapshot,
+    validate_legacy_calibration_authority_snapshot,
+)
 from cell_engine.ml.environment import (
     DEFAULT_ACTION_BOUNDS,
     ActionBound,
@@ -54,6 +61,8 @@ __all__ = [
     "CellPolicyEnvironment",
     "EnvStep",
     "GENERATIVE_SOURCES",
+    "LegacyCalibrationAuthorityError",
+    "LegacyCalibrationPurpose",
     "DatasetSplit",
     "GenerativeDatasetManifest",
     "GenerativeDonorManifestAudit",
@@ -63,12 +72,14 @@ __all__ = [
     "OptionalMlBackend",
     "SyntheticCellCandidate",
     "apply_policy_action",
+    "assert_legacy_calibration_authority",
     "evaluate_calibration",
     "audit_generative_donor_manifest",
     "build_generative_modeling_boundary",
     "generative_donor_manifest_intake_snapshot",
     "generative_modeling_snapshot",
     "load_generative_donor_manifest_contract",
+    "legacy_calibration_authority_snapshot",
     "make_observation",
     "rank_calibration_candidates",
     "reward_from_state",
@@ -77,5 +88,6 @@ __all__ = [
     "validate_dataset_manifest",
     "validate_generative_modeling_boundary",
     "validate_model_card",
+    "validate_legacy_calibration_authority_snapshot",
     "validate_synthetic_candidate",
 ]

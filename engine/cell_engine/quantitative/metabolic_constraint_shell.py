@@ -41,6 +41,18 @@ from cell_engine.quantitative.human_gem_phh_fastcore_support_repair import (
 from cell_engine.quantitative.human_gem_phh_fastcore_shared_support import (
     load_committed_human_gem_phh_fastcore_shared_support,
 )
+from cell_engine.quantitative.human_gem_phh_fastcore_global_support_optimality import (
+    load_committed_human_gem_phh_fastcore_global_support_optimality,
+)
+from cell_engine.quantitative.human_gem_phh_fastcore_global_support_counterexample import (
+    load_committed_human_gem_phh_fastcore_global_support_counterexample,
+)
+from cell_engine.quantitative.human_gem_phh_fastcore_fixed_core_completion_enumeration import (
+    load_committed_human_gem_phh_fastcore_fixed_core_completion_enumeration,
+)
+from cell_engine.quantitative.human_gem_phh_fastcore_global_support_identity_completeness import (
+    load_committed_human_gem_phh_fastcore_global_support_identity_completeness,
+)
 from cell_engine.quantitative.human_gem_phh_fastcore_support_optimality import (
     load_committed_human_gem_phh_fastcore_support_optimality,
 )
@@ -60,7 +72,7 @@ from cell_engine.quantitative.phh_metabolic_execution_bundle import (
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "metabolic_constraint_shell_v10"
+VERSION = "metabolic_constraint_shell_v14"
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
@@ -170,6 +182,18 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
     support_optimality = (
         load_committed_human_gem_phh_fastcore_support_optimality()
     )
+    global_support_optimality = (
+        load_committed_human_gem_phh_fastcore_global_support_optimality()
+    )
+    global_support_counterexample = (
+        load_committed_human_gem_phh_fastcore_global_support_counterexample()
+    )
+    fixed_core_completion = (
+        load_committed_human_gem_phh_fastcore_fixed_core_completion_enumeration()
+    )
+    global_identity_completeness = (
+        load_committed_human_gem_phh_fastcore_global_support_identity_completeness()
+    )
     scope = manifest["scientific_scope"]
     verification = manifest["verification"]
     counts = manifest["structural_counts_verified_from_sbml"]
@@ -188,6 +212,7 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
             "generic_human_gem_loaded_classified_native_objective_solved_"
             "seven_donor_stability_FASTCORE_scaling_and_source_limited_"
             "support_repair_minimized_optima_enumerated_"
+            "global_minimum_identity_space_complete_"
             "reaction_evidence_pending_"
             "PHH_execution_blocked"
         ),
@@ -686,6 +711,392 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
                     "scientific_boundary"
                 ]["fba_execution_allowed"],
             },
+            "fastcore_global_support_optimality": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_"
+                    "fastcore_global_support_optimality.json"
+                ),
+                "global_candidate_reaction_count": (
+                    global_support_optimality["input"][
+                        "global_candidate_reaction_count"
+                    ]
+                ),
+                "full_target_count": global_support_optimality["input"][
+                    "full_target_count"
+                ],
+                "lower_bound_target_count": global_support_optimality[
+                    "input"
+                ]["lower_bound_target_count"],
+                "lower_bound_target_ids_in_input_order": (
+                    global_support_optimality["input"][
+                        "lower_bound_target_ids_in_input_order"
+                    ]
+                ),
+                "lower_bound_exact_minimum_added_reaction_count": (
+                    global_support_optimality["lower_bound_certificate"][
+                        "exact_minimum_added_reaction_count"
+                    ]
+                ),
+                "lower_bound_target_lp_certificate_count": (
+                    global_support_optimality["lower_bound_certificate"][
+                        "target_lp_certificate_count"
+                    ]
+                ),
+                "upper_bound_feasible_added_reaction_count": (
+                    global_support_optimality["upper_bound_certificate"][
+                        "feasible_added_reaction_count"
+                    ]
+                ),
+                "all_target_upper_bound_lp_certificate_count": (
+                    global_support_optimality["upper_bound_certificate"][
+                        "all_target_lp_certificate_count"
+                    ]
+                ),
+                "strict_fastcc_blocked_reaction_count": (
+                    global_support_optimality["upper_bound_certificate"][
+                        "strict_fastcc_blocked_reaction_count"
+                    ]
+                ),
+                "bounds_match": global_support_optimality["proof"][
+                    "bounds_match"
+                ],
+                "global_minimum_added_reaction_count": (
+                    global_support_optimality["proof"][
+                        "global_minimum_added_reaction_count"
+                    ]
+                ),
+                "global_minimum_cardinality_proven": (
+                    global_support_optimality["proof"][
+                        "global_minimum_cardinality_proven"
+                    ]
+                ),
+                "lower_bound_support_matches_committed_upper_support": (
+                    global_support_optimality["proof"][
+                        "lower_bound_support_matches_committed_upper_support"
+                    ]
+                ),
+                "global_minimum_identity_sets_enumerated": (
+                    global_support_optimality["proof"][
+                        "global_minimum_identity_sets_enumerated"
+                    ]
+                ),
+                "global_minimum_support_set_unique": (
+                    global_support_optimality["proof"][
+                        "global_minimum_support_set_unique"
+                    ]
+                ),
+                "global_universal_reaction_identities_established": (
+                    global_support_optimality["proof"][
+                        "global_universal_reaction_identities_established"
+                    ]
+                ),
+                "global_minimum_over_all_omitted_reactions_guaranteed": (
+                    global_support_optimality["scientific_boundary"][
+                        "global_minimum_over_all_omitted_reactions_guaranteed"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    global_support_optimality["scientific_boundary"][
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": global_support_optimality[
+                    "scientific_boundary"
+                ]["context_model_accepted"],
+                "fba_execution_allowed": global_support_optimality[
+                    "scientific_boundary"
+                ]["fba_execution_allowed"],
+            },
+            "fastcore_global_support_counterexample": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_"
+                    "fastcore_global_support_counterexample.json"
+                ),
+                "global_candidate_reaction_count": (
+                    global_support_counterexample["input"][
+                        "global_candidate_reaction_count"
+                    ]
+                ),
+                "global_minimum_cardinality": (
+                    global_support_counterexample["input"][
+                        "global_minimum_cardinality"
+                    ]
+                ),
+                "known_distinct_global_minimum_support_set_count_lower_bound": (
+                    global_support_counterexample["conclusion"][
+                        "known_distinct_global_minimum_support_set_count_lower_bound"
+                    ]
+                ),
+                "presolve_infeasibility_disagreed": (
+                    global_support_counterexample["presolve_cross_check"][
+                        "presolve_infeasibility_disagreed"
+                    ]
+                ),
+                "solver_attempt_count": global_support_counterexample[
+                    "presolve_cross_check"
+                ]["solver_attempt_count"],
+                "accepted_solve_used_presolve": (
+                    global_support_counterexample["presolve_cross_check"][
+                        "accepted_solve_used_presolve"
+                    ]
+                ),
+                "counterexample_added_reaction_count": (
+                    global_support_counterexample["counterexample"][
+                        "added_reaction_count"
+                    ]
+                ),
+                "primary_overlap_count": global_support_counterexample[
+                    "counterexample"
+                ]["primary_overlap_count"],
+                "primary_only_reaction_ids_in_input_order": (
+                    global_support_counterexample["counterexample"][
+                        "primary_only_reaction_ids_in_input_order"
+                    ]
+                ),
+                "counterexample_only_reaction_ids_in_input_order": (
+                    global_support_counterexample["counterexample"][
+                        "counterexample_only_reaction_ids_in_input_order"
+                    ]
+                ),
+                "outside_scoped_pool_reaction_ids_in_input_order": (
+                    global_support_counterexample["counterexample"][
+                        "outside_scoped_pool_reaction_ids_in_input_order"
+                    ]
+                ),
+                "all_target_lp_certificate_count": (
+                    global_support_counterexample["counterexample"][
+                        "all_target_lp_certificate_count"
+                    ]
+                ),
+                "strict_fastcc_consistent_reaction_count": (
+                    global_support_counterexample["counterexample"][
+                        "strict_fastcc_consistent_reaction_count"
+                    ]
+                ),
+                "strict_fastcc_blocked_reaction_count": (
+                    global_support_counterexample["counterexample"][
+                        "strict_fastcc_blocked_reaction_count"
+                    ]
+                ),
+                "scoped_two_set_enumeration_is_globally_complete": (
+                    global_support_counterexample["conclusion"][
+                        "scoped_two_set_enumeration_is_globally_complete"
+                    ]
+                ),
+                "global_minimum_identity_enumeration_complete": (
+                    global_support_counterexample["conclusion"][
+                        "global_minimum_identity_enumeration_complete"
+                    ]
+                ),
+                "global_minimum_support_set_unique": (
+                    global_support_counterexample["conclusion"][
+                        "global_minimum_support_set_unique"
+                    ]
+                ),
+                "global_universal_reaction_membership_established": (
+                    global_support_counterexample["conclusion"][
+                        "global_universal_reaction_membership_established"
+                    ]
+                ),
+                "additional_global_minimum_search_required": (
+                    global_support_counterexample["conclusion"][
+                        "additional_global_minimum_search_required"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    global_support_counterexample["scientific_boundary"][
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": global_support_counterexample[
+                    "scientific_boundary"
+                ]["context_model_accepted"],
+                "fba_execution_allowed": global_support_counterexample[
+                    "scientific_boundary"
+                ]["fba_execution_allowed"],
+            },
+            "fastcore_fixed_core_completion_enumeration": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_"
+                    "fastcore_fixed_core_completion_enumeration.json"
+                ),
+                "fixed_common_reaction_count": fixed_core_completion[
+                    "conditioned_space"
+                ]["fixed_common_reaction_count"],
+                "conditioned_retained_reaction_count": (
+                    fixed_core_completion["conditioned_space"][
+                        "conditioned_retained_reaction_count"
+                    ]
+                ),
+                "remaining_candidate_reaction_count": (
+                    fixed_core_completion["conditioned_space"][
+                        "remaining_candidate_reaction_count"
+                    ]
+                ),
+                "known_singleton_completion_count": (
+                    fixed_core_completion["conditioned_space"][
+                        "known_singleton_completion_count"
+                    ]
+                ),
+                "known_singleton_completion_ids_in_model_order": (
+                    fixed_core_completion["conditioned_space"][
+                        "known_singleton_completion_ids_in_model_order"
+                    ]
+                ),
+                "terminal_infeasibility_proven": fixed_core_completion[
+                    "terminal_no_good_result"
+                ]["infeasibility_proven"],
+                "terminal_solver_attempt_count": fixed_core_completion[
+                    "terminal_no_good_result"
+                ]["solver_attempt_count"],
+                "terminal_accepted_solve_used_presolve": (
+                    fixed_core_completion["terminal_no_good_result"][
+                        "accepted_solve_used_presolve"
+                    ]
+                ),
+                "terminal_infeasibility_confirmed_without_presolve": (
+                    fixed_core_completion["terminal_no_good_result"][
+                        "infeasibility_confirmed_without_presolve"
+                    ]
+                ),
+                "exact_singleton_completion_count_given_fixed_core": (
+                    fixed_core_completion["proof"][
+                        "exact_singleton_completion_count_given_fixed_core"
+                    ]
+                ),
+                "fixed_core_singleton_completion_enumeration_complete": (
+                    fixed_core_completion["proof"][
+                        "fixed_core_singleton_completion_enumeration_complete"
+                    ]
+                ),
+                "fourth_singleton_completion_with_same_fixed_core_exists": (
+                    fixed_core_completion["proof"][
+                        "fourth_singleton_completion_with_same_fixed_core_exists"
+                    ]
+                ),
+                "global_minimum_identity_enumeration_complete": (
+                    fixed_core_completion["proof"][
+                        "global_minimum_identity_enumeration_complete"
+                    ]
+                ),
+                "fixed_common_reactions_proven_globally_universal": (
+                    fixed_core_completion["proof"][
+                        "fixed_common_reactions_proven_globally_universal"
+                    ]
+                ),
+                "multi_replacement_global_optima_excluded": (
+                    fixed_core_completion["proof"][
+                        "multi_replacement_global_optima_excluded"
+                    ]
+                ),
+                "additional_unconditioned_global_search_required": (
+                    fixed_core_completion["proof"][
+                        "additional_unconditioned_global_search_required"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    fixed_core_completion["scientific_boundary"][
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": fixed_core_completion[
+                    "scientific_boundary"
+                ]["context_model_accepted"],
+                "fba_execution_allowed": fixed_core_completion[
+                    "scientific_boundary"
+                ]["fba_execution_allowed"],
+            },
+            "fastcore_global_support_identity_completeness": {
+                "audit_report": (
+                    "data/phh_baseline/derived/"
+                    "human_gem_v2.0.0.seven_donor_"
+                    "fastcore_global_support_identity_completeness.json"
+                ),
+                "global_candidate_reaction_count": (
+                    global_identity_completeness["input"][
+                        "global_candidate_reaction_count"
+                    ]
+                ),
+                "global_minimum_added_reaction_count": (
+                    global_identity_completeness["proof"][
+                        "global_minimum_added_reaction_count"
+                    ]
+                ),
+                "global_minimum_support_set_count": (
+                    global_identity_completeness["proof"][
+                        "global_minimum_support_set_count"
+                    ]
+                ),
+                "global_minimum_support_identity_enumeration_complete": (
+                    global_identity_completeness["proof"][
+                        "global_minimum_support_identity_enumeration_complete"
+                    ]
+                ),
+                "global_minimum_support_set_unique": (
+                    global_identity_completeness["proof"][
+                        "global_minimum_support_set_unique"
+                    ]
+                ),
+                "global_universal_minimum_support_reaction_count": (
+                    global_identity_completeness["proof"][
+                        "global_universal_minimum_support_reaction_count"
+                    ]
+                ),
+                "global_optional_minimum_support_reaction_count": (
+                    global_identity_completeness["proof"][
+                        "global_optional_minimum_support_reaction_count"
+                    ]
+                ),
+                "global_optional_minimum_support_reaction_ids_in_model_order": (
+                    global_identity_completeness["proof"][
+                        "global_optional_minimum_support_reaction_ids_in_model_order"
+                    ]
+                ),
+                "every_global_minimum_contains_exactly_one_optional_identity": (
+                    global_identity_completeness["proof"][
+                        "every_global_minimum_contains_exactly_one_optional_identity"
+                    ]
+                ),
+                "core_breaking_global_minimum_exists": (
+                    global_identity_completeness["proof"][
+                        "core_breaking_global_minimum_exists"
+                    ]
+                ),
+                "multi_replacement_global_optima_excluded": (
+                    global_identity_completeness["proof"][
+                        "multi_replacement_global_optima_excluded"
+                    ]
+                ),
+                "additional_global_minimum_identity_search_required": (
+                    global_identity_completeness["proof"][
+                        "additional_global_minimum_identity_search_required"
+                    ]
+                ),
+                "terminal_infeasibility_confirmed_without_presolve": (
+                    global_identity_completeness[
+                        "common_core_exclusion_terminal_result"
+                    ]["infeasibility_confirmed_without_presolve"]
+                ),
+                "structural_essentiality_at_larger_support_sizes_established": (
+                    global_identity_completeness["scientific_boundary"][
+                        "structural_essentiality_at_larger_support_sizes_established"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    global_identity_completeness["scientific_boundary"][
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": global_identity_completeness[
+                    "scientific_boundary"
+                ]["context_model_accepted"],
+                "fba_execution_allowed": global_identity_completeness[
+                    "scientific_boundary"
+                ]["fba_execution_allowed"],
+            },
             "reaction_evidence_manifest": {
                 "manifest_path": (
                     "data/evidence_intake/"
@@ -761,7 +1172,7 @@ def metabolic_constraint_shell_snapshot() -> dict[str, object]:
             "the 43 MB SBML remains cache-only and must be checksum-fetched in each execution environment",
             "the seven-donor resection-PHH total-proteome core is not a healthy-volunteer or active-enzyme core",
             "adaptive official LP-10 scaling selected 7,415 reactions but its raw output left 17 reactions blocked at the declared epsilon",
-            "the 65-reaction per-target union was reduced to a proven 59-reaction minimum inside that pool; both minimum identity sets produce 7,474 of 7,474 strict-consistent reactions, but all additions still lack sufficient PHH activity evidence",
+            "the global minimum support identity space is complete at cardinality 59: exactly three sets share 58 identities and each uses exactly one of MAR00494, MAR02308 or MAR10035; this remains structural and sufficient PHH activity evidence is absent",
             "strict connected-component closure retained 11,639 of 11,641 consistent reactions, so context specificity was not established",
             "2,860 adaptive non-core support reactions require reaction-level PHH evidence; 2,177 lack a GPR annotation",
             "measured exchange bounds and explicit scale conversion are absent",
@@ -1073,6 +1484,309 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
         or support_optimality.get("fba_execution_allowed") is not False
     ):
         raise ValueError("PHH FASTCORE support-optimality audit changed")
+    global_support_optimality = reconstruction.get(
+        "fastcore_global_support_optimality"
+    )
+    if not isinstance(global_support_optimality, dict) or (
+        global_support_optimality.get("global_candidate_reaction_count")
+        != 4_226
+        or global_support_optimality.get("full_target_count") != 17
+        or global_support_optimality.get("lower_bound_target_count") != 2
+        or global_support_optimality.get(
+            "lower_bound_target_ids_in_input_order"
+        )
+        != ["MAR00468", "MAR00612"]
+        or global_support_optimality.get(
+            "lower_bound_exact_minimum_added_reaction_count"
+        )
+        != 59
+        or global_support_optimality.get(
+            "lower_bound_target_lp_certificate_count"
+        )
+        != 2
+        or global_support_optimality.get(
+            "upper_bound_feasible_added_reaction_count"
+        )
+        != 59
+        or global_support_optimality.get(
+            "all_target_upper_bound_lp_certificate_count"
+        )
+        != 17
+        or global_support_optimality.get(
+            "strict_fastcc_blocked_reaction_count"
+        )
+        != 0
+        or global_support_optimality.get("bounds_match") is not True
+        or global_support_optimality.get(
+            "global_minimum_added_reaction_count"
+        )
+        != 59
+        or global_support_optimality.get(
+            "global_minimum_cardinality_proven"
+        )
+        is not True
+        or global_support_optimality.get(
+            "lower_bound_support_matches_committed_upper_support"
+        )
+        is not True
+        or global_support_optimality.get(
+            "global_minimum_identity_sets_enumerated"
+        )
+        is not False
+        or global_support_optimality.get(
+            "global_minimum_support_set_unique"
+        )
+        is not None
+        or global_support_optimality.get(
+            "global_universal_reaction_identities_established"
+        )
+        is not False
+        or global_support_optimality.get(
+            "global_minimum_over_all_omitted_reactions_guaranteed"
+        )
+        is not True
+        or global_support_optimality.get(
+            "reaction_activity_in_phh_established"
+        )
+        is not False
+        or global_support_optimality.get("context_model_accepted")
+        is not False
+        or global_support_optimality.get("fba_execution_allowed")
+        is not False
+    ):
+        raise ValueError(
+            "PHH FASTCORE global-support optimality audit changed"
+        )
+    global_support_counterexample = reconstruction.get(
+        "fastcore_global_support_counterexample"
+    )
+    if not isinstance(global_support_counterexample, dict) or (
+        global_support_counterexample.get(
+            "global_candidate_reaction_count"
+        )
+        != 4_226
+        or global_support_counterexample.get(
+            "global_minimum_cardinality"
+        )
+        != 59
+        or global_support_counterexample.get(
+            "known_distinct_global_minimum_support_set_count_lower_bound"
+        )
+        != 3
+        or global_support_counterexample.get(
+            "presolve_infeasibility_disagreed"
+        )
+        is not True
+        or global_support_counterexample.get("solver_attempt_count") != 2
+        or global_support_counterexample.get(
+            "accepted_solve_used_presolve"
+        )
+        is not False
+        or global_support_counterexample.get(
+            "counterexample_added_reaction_count"
+        )
+        != 59
+        or global_support_counterexample.get("primary_overlap_count") != 58
+        or global_support_counterexample.get(
+            "primary_only_reaction_ids_in_input_order"
+        )
+        != ["MAR10035"]
+        or global_support_counterexample.get(
+            "counterexample_only_reaction_ids_in_input_order"
+        )
+        != ["MAR00494"]
+        or global_support_counterexample.get(
+            "outside_scoped_pool_reaction_ids_in_input_order"
+        )
+        != ["MAR00494"]
+        or global_support_counterexample.get(
+            "all_target_lp_certificate_count"
+        )
+        != 17
+        or global_support_counterexample.get(
+            "strict_fastcc_consistent_reaction_count"
+        )
+        != 7_474
+        or global_support_counterexample.get(
+            "strict_fastcc_blocked_reaction_count"
+        )
+        != 0
+        or global_support_counterexample.get(
+            "scoped_two_set_enumeration_is_globally_complete"
+        )
+        is not False
+        or global_support_counterexample.get(
+            "global_minimum_identity_enumeration_complete"
+        )
+        is not False
+        or global_support_counterexample.get(
+            "global_minimum_support_set_unique"
+        )
+        is not False
+        or global_support_counterexample.get(
+            "global_universal_reaction_membership_established"
+        )
+        is not False
+        or global_support_counterexample.get(
+            "additional_global_minimum_search_required"
+        )
+        is not True
+        or global_support_counterexample.get(
+            "reaction_activity_in_phh_established"
+        )
+        is not False
+        or global_support_counterexample.get("context_model_accepted")
+        is not False
+        or global_support_counterexample.get("fba_execution_allowed")
+        is not False
+    ):
+        raise ValueError(
+            "PHH FASTCORE global-support counterexample audit changed"
+        )
+    fixed_core_completion = reconstruction.get(
+        "fastcore_fixed_core_completion_enumeration"
+    )
+    if not isinstance(fixed_core_completion, dict) or (
+        fixed_core_completion.get("fixed_common_reaction_count") != 58
+        or fixed_core_completion.get(
+            "conditioned_retained_reaction_count"
+        )
+        != 7_473
+        or fixed_core_completion.get(
+            "remaining_candidate_reaction_count"
+        )
+        != 4_168
+        or fixed_core_completion.get(
+            "known_singleton_completion_count"
+        )
+        != 3
+        or fixed_core_completion.get(
+            "known_singleton_completion_ids_in_model_order"
+        )
+        != ["MAR00494", "MAR02308", "MAR10035"]
+        or fixed_core_completion.get(
+            "terminal_infeasibility_proven"
+        )
+        is not True
+        or fixed_core_completion.get("terminal_solver_attempt_count") != 2
+        or fixed_core_completion.get(
+            "terminal_accepted_solve_used_presolve"
+        )
+        is not False
+        or fixed_core_completion.get(
+            "terminal_infeasibility_confirmed_without_presolve"
+        )
+        is not True
+        or fixed_core_completion.get(
+            "exact_singleton_completion_count_given_fixed_core"
+        )
+        != 3
+        or fixed_core_completion.get(
+            "fixed_core_singleton_completion_enumeration_complete"
+        )
+        is not True
+        or fixed_core_completion.get(
+            "fourth_singleton_completion_with_same_fixed_core_exists"
+        )
+        is not False
+        or fixed_core_completion.get(
+            "global_minimum_identity_enumeration_complete"
+        )
+        is not False
+        or fixed_core_completion.get(
+            "fixed_common_reactions_proven_globally_universal"
+        )
+        is not False
+        or fixed_core_completion.get(
+            "multi_replacement_global_optima_excluded"
+        )
+        is not False
+        or fixed_core_completion.get(
+            "additional_unconditioned_global_search_required"
+        )
+        is not True
+        or fixed_core_completion.get(
+            "reaction_activity_in_phh_established"
+        )
+        is not False
+        or fixed_core_completion.get("context_model_accepted") is not False
+        or fixed_core_completion.get("fba_execution_allowed") is not False
+    ):
+        raise ValueError(
+            "PHH FASTCORE fixed-core completion audit changed"
+        )
+    global_identity_completeness = reconstruction.get(
+        "fastcore_global_support_identity_completeness"
+    )
+    if not isinstance(global_identity_completeness, dict) or (
+        global_identity_completeness.get(
+            "global_candidate_reaction_count"
+        )
+        != 4_226
+        or global_identity_completeness.get(
+            "global_minimum_added_reaction_count"
+        )
+        != 59
+        or global_identity_completeness.get(
+            "global_minimum_support_set_count"
+        )
+        != 3
+        or global_identity_completeness.get(
+            "global_minimum_support_identity_enumeration_complete"
+        )
+        is not True
+        or global_identity_completeness.get(
+            "global_minimum_support_set_unique"
+        )
+        is not False
+        or global_identity_completeness.get(
+            "global_universal_minimum_support_reaction_count"
+        )
+        != 58
+        or global_identity_completeness.get(
+            "global_optional_minimum_support_reaction_count"
+        )
+        != 3
+        or global_identity_completeness.get(
+            "global_optional_minimum_support_reaction_ids_in_model_order"
+        )
+        != ["MAR00494", "MAR02308", "MAR10035"]
+        or global_identity_completeness.get(
+            "every_global_minimum_contains_exactly_one_optional_identity"
+        )
+        is not True
+        or global_identity_completeness.get(
+            "core_breaking_global_minimum_exists"
+        )
+        is not False
+        or global_identity_completeness.get(
+            "multi_replacement_global_optima_excluded"
+        )
+        is not True
+        or global_identity_completeness.get(
+            "additional_global_minimum_identity_search_required"
+        )
+        is not False
+        or global_identity_completeness.get(
+            "terminal_infeasibility_confirmed_without_presolve"
+        )
+        is not True
+        or global_identity_completeness.get(
+            "structural_essentiality_at_larger_support_sizes_established"
+        )
+        is not False
+        or global_identity_completeness.get(
+            "reaction_activity_in_phh_established"
+        )
+        is not False
+        or global_identity_completeness.get("context_model_accepted")
+        is not False
+        or global_identity_completeness.get("fba_execution_allowed")
+        is not False
+    ):
+        raise ValueError(
+            "PHH FASTCORE global identity-completeness audit changed"
+        )
     evidence_manifest = reconstruction.get("reaction_evidence_manifest")
     if not isinstance(evidence_manifest, dict) or (
         evidence_manifest.get("manifest_reaction_count") != 4_895

@@ -12,6 +12,50 @@
   },
   "entries": [
     {
+      "id": "whole_cell_runtime_authority_firewall",
+      "title": "Whole-cell runtime authority firewall",
+      "status": "closed",
+      "scope": "Code-level prevention of legacy relative-pool dynamics being used for quantitative validation, prediction or authoritative PHH state coupling.",
+      "current_capability": "Every public whole-cell step and run requires an explicit purpose. Schematic visualization and exploratory execution remain available; all three scientific-authority purposes fail closed.",
+      "observed_metrics": {
+        "explicit_purpose_guard_count": 1,
+        "audited_legacy_surface_count": 4,
+        "phh_context_matched_surface_count": 0,
+        "quantitative_authority_surface_count": 0,
+        "predictive_authority_surface_count": 0,
+        "authoritative_state_coupling_surface_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/core/runtime_authority.py",
+        "engine/cell_engine/core/engine.py",
+        "engine/tests/test_runtime_authority.py"
+      ]
+    },
+    {
+      "id": "legacy_calibration_authority_firewall",
+      "title": "Legacy calibration authority firewall",
+      "status": "closed",
+      "scope": "Code-level prevention of project fixture residuals and scores being used as PHH parameter calibration, quantitative validation or predictive model selection.",
+      "current_capability": "Calibration evaluation and candidate ranking require an explicit fixture or exploratory purpose. The score is named fixture_fit_score, every result carries zero scientific authority, and all three scientific-use purposes fail closed.",
+      "observed_metrics": {
+        "explicit_purpose_guard_count": 1,
+        "audited_workflow_count": 3,
+        "built_in_target_count": 3,
+        "placeholder_target_count": 3,
+        "source_backed_target_count": 0,
+        "biologically_authorized_target_count": 0,
+        "scientific_authority_purpose_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/ml/calibration.py",
+        "engine/cell_engine/ml/environment.py",
+        "engine/cell_engine/validation/experiments.py",
+        "engine/tests/test_ml_environment.py"
+      ]
+    },
+    {
       "id": "dimensionless_cytosol_numerics",
       "title": "Dimensionless cytosol transport numerics",
       "status": "closed",
@@ -408,13 +452,16 @@
       "title": "Compartmental energy and redox quantitation",
       "status": "partial",
       "scope": "ATP/ADP/AMP, NAD(H), NADP(H), glutathione, ROS, oxygen and electrochemical states across six compartments.",
-      "current_capability": "Pool identities and 14 process topologies are explicit. A versioned 47-column donor-resolved PHH trajectory intake now enforces exact pool/molecule/compartment mapping, validated targeting, same-assay calibration, oxygen/nutrient context and sealed donor/study-disjoint held-out data; aggregate observations and absent trajectories cannot initialize a compartment or rate.",
+      "current_capability": "Pool identities and 14 process topologies are explicit. A versioned 47-column donor-resolved PHH trajectory intake enforces exact pool/molecule/compartment mapping, validated targeting, same-assay calibration, oxygen/nutrient context and sealed donor/study-disjoint held-out data. Six legacy conflicts remain visible, but an explicit-purpose firewall gives them zero quantitative, predictive or authoritative state-coupling permission.",
       "observed_metrics": {
         "compartment_count": 6,
         "pool_count": 38,
         "initialized_pool_count": 0,
         "executable_process_count": 0,
-        "runtime_conflict_count": 6,
+        "detected_legacy_runtime_conflict_count": 6,
+        "legacy_runtime_quantitative_authority_violation_count": 0,
+        "legacy_runtime_predictive_authority_violation_count": 0,
+        "legacy_runtime_authoritative_coupling_violation_count": 0,
         "trajectory_intake_contract_count": 1,
         "delivered_trajectory_record_count": 0,
         "structurally_complete_trajectory_count": 0,
@@ -424,11 +471,12 @@
       "remaining_requirements": [
         "Compartment-resolved healthy-PHH initial states.",
         "Matched oxygen/redox/adenylate trajectories and flux-identifying perturbations.",
-        "Resolution of legacy aggregate runtime pools."
+        "Replacement of quarantined aggregate pools by a validated compartment state."
       ],
       "code_surfaces": [
         "engine/cell_engine/quantitative/compartmental_energy_redox.py",
         "engine/cell_engine/validation/energy_redox_gate.py",
+        "engine/cell_engine/core/runtime_authority.py",
         "engine/cell_engine/quantitative/energy_redox_trajectory.py",
         "data/evidence_intake/phh_energy_redox_trajectory_contract.v1.json"
       ]
@@ -942,6 +990,160 @@
       ]
     },
     {
+      "id": "human_gem_fastcore_global_support_cardinality",
+      "title": "Human-GEM global FASTCORE support cardinality",
+      "status": "closed",
+      "scope": "Exact two-target shared-support lower bound over all 4,226 reactions omitted by adaptive FASTCORE, matched against the committed feasible 17-target upper bound; identity-set enumeration remains outside this scope.",
+      "current_capability": "MAR00468 and MAR00612 require an exact 59-reaction shared support even when every omitted reaction in checksum-pinned, FASTCC-consistent Human-GEM is available. The committed 59-reaction set certifies all 17 targets and strict FASTCC, so matching bounds prove global minimum cardinality. Globally alternative 59-reaction identity sets, active PHH enzymes, exchange bounds and a biological objective remain unestablished.",
+      "observed_metrics": {
+        "global_candidate_reaction_count": 4226,
+        "full_target_count": 17,
+        "lower_bound_target_count": 2,
+        "lower_bound_target_ids_in_input_order": [
+          "MAR00468",
+          "MAR00612"
+        ],
+        "lower_bound_exact_minimum_added_reaction_count": 59,
+        "upper_bound_feasible_added_reaction_count": 59,
+        "bounds_match": true,
+        "global_minimum_added_reaction_count": 59,
+        "global_minimum_cardinality_proven": true,
+        "global_minimum_identity_sets_enumerated": false,
+        "global_minimum_support_set_unique": null,
+        "global_universal_reaction_identities_established": false,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_optimality.py",
+        "scripts/audit_human_gem_phh_fastcore_global_support_optimality.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_optimality.json",
+        "engine/tests/test_human_gem_phh_fastcore_global_support_optimality.py"
+      ]
+    },
+    {
+      "id": "human_gem_fastcore_global_support_counterexample",
+      "title": "Human-GEM global FASTCORE support counterexample",
+      "status": "closed",
+      "scope": "Presolve-cross-checked no-good MILP search over all 4,226 omitted reactions, followed by all-17-target LP certificates and strict FASTCC validation for one identity outside the scoped 65-reaction pool.",
+      "current_capability": "At least three distinct globally minimum 59-reaction support sets are now certified. The new set replaces MAR10035 with MAR00494 outside the scoped pool, proving global non-uniqueness. Complete global identity enumeration, universal reaction membership, PHH activity and runtime authority remain open.",
+      "observed_metrics": {
+        "global_candidate_reaction_count": 4226,
+        "global_minimum_cardinality": 59,
+        "known_distinct_global_minimum_support_set_count_lower_bound": 3,
+        "presolve_infeasibility_disagreed": true,
+        "solver_attempt_count": 2,
+        "accepted_solve_used_presolve": false,
+        "counterexample_added_reaction_count": 59,
+        "primary_overlap_count": 58,
+        "primary_only_reaction_ids_in_input_order": [
+          "MAR10035"
+        ],
+        "counterexample_only_reaction_ids_in_input_order": [
+          "MAR00494"
+        ],
+        "outside_scoped_pool_reaction_ids_in_input_order": [
+          "MAR00494"
+        ],
+        "all_target_lp_certificate_count": 17,
+        "strict_fastcc_consistent_reaction_count": 7474,
+        "strict_fastcc_blocked_reaction_count": 0,
+        "global_minimum_identity_enumeration_complete": false,
+        "global_minimum_support_set_unique": false,
+        "global_universal_reaction_membership_established": false,
+        "additional_global_minimum_search_required": true,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/minimum_reaction_support.py",
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_counterexample.py",
+        "scripts/audit_human_gem_phh_fastcore_global_support_counterexample.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_counterexample.json",
+        "engine/tests/test_minimum_reaction_support.py",
+        "engine/tests/test_human_gem_phh_fastcore_global_support_counterexample.py"
+      ]
+    },
+    {
+      "id": "human_gem_fastcore_fixed_core_completion_enumeration",
+      "title": "Human-GEM fixed-core completion enumeration",
+      "status": "closed",
+      "scope": "Exact singleton-completion enumeration conditional on the 58 identities shared by three certified global minima, with three no-good cuts and terminal no-presolve infeasibility over the remaining 4,168 candidates.",
+      "current_capability": "MAR00494, MAR02308 and MAR10035 are exactly the three one-reaction completions when the known common 58-reaction core is fixed. This closes the conditioned subspace only; global optima replacing two or more core identities, PHH reaction activity and runtime flux authority remain open.",
+      "observed_metrics": {
+        "fixed_common_reaction_count": 58,
+        "conditioned_retained_reaction_count": 7473,
+        "remaining_candidate_reaction_count": 4168,
+        "known_singleton_completion_count": 3,
+        "known_singleton_completion_ids_in_model_order": [
+          "MAR00494",
+          "MAR02308",
+          "MAR10035"
+        ],
+        "terminal_infeasibility_proven": true,
+        "terminal_solver_attempt_count": 2,
+        "terminal_infeasibility_confirmed_without_presolve": true,
+        "exact_singleton_completion_count_given_fixed_core": 3,
+        "fixed_core_singleton_completion_enumeration_complete": true,
+        "fourth_singleton_completion_with_same_fixed_core_exists": false,
+        "global_minimum_identity_enumeration_complete": false,
+        "fixed_common_reactions_proven_globally_universal": false,
+        "multi_replacement_global_optima_excluded": false,
+        "additional_unconditioned_global_search_required": true,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_fixed_core_completion_enumeration.py",
+        "scripts/audit_human_gem_phh_fastcore_fixed_core_completion_enumeration.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_fixed_core_completion_enumeration.json",
+        "engine/tests/test_human_gem_phh_fastcore_fixed_core_completion_enumeration.py"
+      ]
+    },
+    {
+      "id": "human_gem_fastcore_global_support_identity_completeness",
+      "title": "Human-GEM global support identity completeness",
+      "status": "closed",
+      "scope": "Complete global minimum support-identity enumeration over all 4,226 omitted reactions at the proven cardinality 59, composed from exact fixed-core completions and a no-presolve-confirmed common-core exclusion proof.",
+      "current_capability": "Exactly three global minimum sets exist. Each contains the same 58 reactions and exactly one of MAR00494, MAR02308 or MAR10035. This closes minimum-set identities only; larger support sets, biological essentiality, PHH activity, exchange bounds, objective and runtime flux authority remain outside the claim.",
+      "observed_metrics": {
+        "global_candidate_reaction_count": 4226,
+        "global_minimum_added_reaction_count": 59,
+        "global_minimum_support_set_count": 3,
+        "global_minimum_support_identity_enumeration_complete": true,
+        "global_minimum_support_set_unique": false,
+        "global_universal_minimum_support_reaction_count": 58,
+        "global_optional_minimum_support_reaction_count": 3,
+        "global_optional_minimum_support_reaction_ids_in_model_order": [
+          "MAR00494",
+          "MAR02308",
+          "MAR10035"
+        ],
+        "every_global_minimum_contains_exactly_one_optional_identity": true,
+        "core_breaking_global_minimum_exists": false,
+        "multi_replacement_global_optima_excluded": true,
+        "additional_global_minimum_identity_search_required": false,
+        "terminal_infeasibility_confirmed_without_presolve": true,
+        "structural_essentiality_at_larger_support_sizes_established": false,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_identity_completeness.py",
+        "scripts/audit_human_gem_phh_fastcore_global_support_identity_completeness.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_identity_completeness.json",
+        "engine/tests/test_human_gem_phh_fastcore_global_support_identity_completeness.py"
+      ]
+    },
+    {
       "id": "human_gem_reaction_evidence_manifest",
       "title": "Human-GEM reaction evidence manifest",
       "status": "closed",
@@ -1089,8 +1291,8 @@
     }
   ],
   "summary": {
-    "entry_count": 41,
-    "closed_count": 19,
+    "entry_count": 47,
+    "closed_count": 25,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

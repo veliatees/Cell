@@ -29,7 +29,13 @@ class OrganelleModuleTests(unittest.TestCase):
                 self.assertEqual(module.health(self.state), 1.0)
 
     def test_step_cell_updates_organelle_local_state(self) -> None:
-        next_state = step_cell(self.definition, self.state, 60.0, rng=EngineRng(7))
+        next_state = step_cell(
+            self.definition,
+            self.state,
+            60.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(7),
+        )
         validate_state(self.definition, next_state)
         self.assertEqual(next_state.elapsed_s, 60.0)
         for organelle_id, organelle_state in next_state.organelles.items():
@@ -39,7 +45,13 @@ class OrganelleModuleTests(unittest.TestCase):
                 self.assertEqual(organelle_state.risk_per_hour, 0.0)
 
     def test_uncalibrated_hazard_fails_closed_but_stress_still_reduces_activity(self) -> None:
-        baseline = step_cell(self.definition, self.state, 60.0, rng=EngineRng(1))
+        baseline = step_cell(
+            self.definition,
+            self.state,
+            60.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(1),
+        )
         stressed = replace(
             self.state,
             stress={
@@ -50,7 +62,13 @@ class OrganelleModuleTests(unittest.TestCase):
                 "trafficking": 0.8,
             },
         )
-        stressed_next = step_cell(self.definition, stressed, 60.0, rng=EngineRng(1))
+        stressed_next = step_cell(
+            self.definition,
+            stressed,
+            60.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(1),
+        )
         self.assertEqual(stressed_next.organelles["mitochondria"].risk_per_hour, 0.0)
         self.assertEqual(stressed_next.organelles["rough_er"].risk_per_hour, 0.0)
         self.assertLess(stressed_next.organelles["rough_er"].activity, baseline.organelles["rough_er"].activity)
@@ -68,18 +86,44 @@ class OrganelleModuleTests(unittest.TestCase):
         self.assertGreater(result.probability_per_hour, 0.0)
 
     def test_seeded_run_is_reproducible(self) -> None:
-        first = run_cell(self.definition, self.state, dt_s=120.0, steps=8, rng=EngineRng(42))
-        second = run_cell(self.definition, self.state, dt_s=120.0, steps=8, rng=EngineRng(42))
+        first = run_cell(
+            self.definition,
+            self.state,
+            dt_s=120.0,
+            steps=8,
+            purpose="exploratory_execution",
+            rng=EngineRng(42),
+        )
+        second = run_cell(
+            self.definition,
+            self.state,
+            dt_s=120.0,
+            steps=8,
+            purpose="exploratory_execution",
+            rng=EngineRng(42),
+        )
         self.assertEqual(first.to_dict(), second.to_dict())
 
     def test_stepped_snapshot_remains_serializable(self) -> None:
-        next_state = step_cell(self.definition, self.state, 30.0, rng=EngineRng(11))
+        next_state = step_cell(
+            self.definition,
+            self.state,
+            30.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(11),
+        )
         snapshot = build_snapshot(self.definition, next_state, metadata={"mode": "m016_step"})
         self.assertEqual(snapshot["metadata"]["mode"], "m016_step")
         self.assertEqual(snapshot["state"]["organelles"]["mitochondria"]["risk_per_hour"], 0.0)
 
     def test_organelle_function_cycles_change_biological_pools(self) -> None:
-        next_state = step_cell(self.definition, self.state, 900.0, rng=EngineRng(123))
+        next_state = step_cell(
+            self.definition,
+            self.state,
+            900.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(123),
+        )
         validate_state(self.definition, next_state)
 
         self.assertGreater(next_state.pools["mRNA"].value, self.state.pools["mRNA"].value)
@@ -90,7 +134,13 @@ class OrganelleModuleTests(unittest.TestCase):
         self.assertLess(next_state.pools["very_long_chain_fatty_acids"].value, self.state.pools["very_long_chain_fatty_acids"].value)
 
     def test_organelle_active_processes_are_specific_to_each_module(self) -> None:
-        next_state = step_cell(self.definition, self.state, 900.0, rng=EngineRng(124))
+        next_state = step_cell(
+            self.definition,
+            self.state,
+            900.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(124),
+        )
 
         self.assertIn("DNA_damage_response", next_state.organelles["nucleus"].active_processes)
         self.assertIn("ribosome_quality_control", next_state.organelles["ribosome"].active_processes)
@@ -102,7 +152,13 @@ class OrganelleModuleTests(unittest.TestCase):
         self.assertIn("ERAD_degradation", next_state.organelles["proteasome"].active_processes)
 
     def test_adenylate_pool_stays_conserved_through_organelle_cycles(self) -> None:
-        next_state = step_cell(self.definition, self.state, 900.0, rng=EngineRng(125))
+        next_state = step_cell(
+            self.definition,
+            self.state,
+            900.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(125),
+        )
         total = sum(next_state.pools[id].value for id in ("ATP", "ADP", "AMP"))
         self.assertAlmostEqual(total, 1.0, places=8)
 

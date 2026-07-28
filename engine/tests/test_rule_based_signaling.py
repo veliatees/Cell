@@ -48,7 +48,13 @@ class RuleBasedSignalingTests(unittest.TestCase):
         self.assertGreater(signaled.organelles["mitochondria"].damage, self.state.organelles["mitochondria"].damage)
 
     def test_step_cell_includes_signaling_result_in_snapshot(self) -> None:
-        next_state = step_cell(self.definition, self.state, 120.0, rng=EngineRng(8))
+        next_state = step_cell(
+            self.definition,
+            self.state,
+            120.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(8),
+        )
         validate_state(self.definition, next_state)
         snapshot = build_snapshot(self.definition, next_state)
         self.assertGreaterEqual(len(snapshot["state"]["signaling_results"]), 1)
@@ -63,4 +69,3 @@ class RuleBasedSignalingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

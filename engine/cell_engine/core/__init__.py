@@ -10,6 +10,11 @@ from cell_engine.core.cell_definition import (
 from cell_engine.core.engine import run_cell, step_cell
 from cell_engine.core.provenance import ParameterProvenance, SourceReference
 from cell_engine.core.random import EngineRng
+from cell_engine.core.runtime_authority import (
+    WholeCellRuntimeAuthorityError,
+    assert_whole_cell_runtime_authority,
+    whole_cell_runtime_authority_snapshot,
+)
 from cell_engine.core.state import (
     CargoPacket,
     CellEvent,
@@ -48,6 +53,9 @@ __all__ = [
     "SourceReference",
     "StochasticPolicy",
     "run_cell",
+    "assert_whole_cell_runtime_authority",
     "step_cell",
     "ValidationTarget",
+    "whole_cell_runtime_authority_snapshot",
+    "WholeCellRuntimeAuthorityError",
 ]

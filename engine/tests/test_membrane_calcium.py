@@ -33,7 +33,13 @@ class MembraneCalciumTests(unittest.TestCase):
         self.assertGreater(stressed.membrane_state.membrane_potential_mv, baseline.membrane_state.membrane_potential_mv)
 
     def test_step_cell_exposes_membrane_state_in_snapshot(self) -> None:
-        next_state = step_cell(self.definition, self.state, 60.0, rng=EngineRng(10))
+        next_state = step_cell(
+            self.definition,
+            self.state,
+            60.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(10),
+        )
         validate_state(self.definition, next_state)
         snapshot = build_snapshot(self.definition, next_state)
         self.assertIn("membrane_state", snapshot["state"])
@@ -51,7 +57,13 @@ class MembraneCalciumTests(unittest.TestCase):
             },
             stress={**self.state.stress, "energy": 1.0, "ionic": 0.7},
         )
-        next_state = step_cell(self.definition, low_atp, 180.0, rng=EngineRng(11))
+        next_state = step_cell(
+            self.definition,
+            low_atp,
+            180.0,
+            purpose="exploratory_execution",
+            rng=EngineRng(11),
+        )
         self.assertGreater(next_state.pools["Ca2+"].value, self.state.pools["Ca2+"].value)
         self.assertGreater(next_state.stress["ionic"], self.state.stress["ionic"])
 
@@ -63,4 +75,3 @@ class MembraneCalciumTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

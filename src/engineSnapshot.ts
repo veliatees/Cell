@@ -1850,7 +1850,7 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v10";
+  version: "metabolic_constraint_shell_v14";
   status: string;
   role: string;
   candidate_reconstruction: {
@@ -2042,6 +2042,96 @@ export type EngineMetabolicConstraintShell = {
       terminal_infeasibility_proven: true;
       all_minimum_support_identities_enumerated: true;
       global_minimum_over_all_omitted_reactions_guaranteed: false;
+      reaction_activity_in_phh_established: false;
+      context_model_accepted: false;
+      fba_execution_allowed: false;
+    };
+    fastcore_global_support_optimality: {
+      audit_report: string;
+      global_candidate_reaction_count: number;
+      full_target_count: number;
+      lower_bound_target_count: number;
+      lower_bound_target_ids_in_input_order: string[];
+      lower_bound_exact_minimum_added_reaction_count: number;
+      lower_bound_target_lp_certificate_count: number;
+      upper_bound_feasible_added_reaction_count: number;
+      all_target_upper_bound_lp_certificate_count: number;
+      strict_fastcc_blocked_reaction_count: number;
+      bounds_match: true;
+      global_minimum_added_reaction_count: number;
+      global_minimum_cardinality_proven: true;
+      lower_bound_support_matches_committed_upper_support: true;
+      global_minimum_identity_sets_enumerated: false;
+      global_minimum_support_set_unique: null;
+      global_universal_reaction_identities_established: false;
+      global_minimum_over_all_omitted_reactions_guaranteed: true;
+      reaction_activity_in_phh_established: false;
+      context_model_accepted: false;
+      fba_execution_allowed: false;
+    };
+    fastcore_global_support_counterexample: {
+      audit_report: string;
+      global_candidate_reaction_count: number;
+      global_minimum_cardinality: number;
+      known_distinct_global_minimum_support_set_count_lower_bound: number;
+      presolve_infeasibility_disagreed: true;
+      solver_attempt_count: number;
+      accepted_solve_used_presolve: false;
+      counterexample_added_reaction_count: number;
+      primary_overlap_count: number;
+      primary_only_reaction_ids_in_input_order: string[];
+      counterexample_only_reaction_ids_in_input_order: string[];
+      outside_scoped_pool_reaction_ids_in_input_order: string[];
+      all_target_lp_certificate_count: number;
+      strict_fastcc_consistent_reaction_count: number;
+      strict_fastcc_blocked_reaction_count: number;
+      scoped_two_set_enumeration_is_globally_complete: false;
+      global_minimum_identity_enumeration_complete: false;
+      global_minimum_support_set_unique: false;
+      global_universal_reaction_membership_established: false;
+      additional_global_minimum_search_required: true;
+      reaction_activity_in_phh_established: false;
+      context_model_accepted: false;
+      fba_execution_allowed: false;
+    };
+    fastcore_fixed_core_completion_enumeration: {
+      audit_report: string;
+      fixed_common_reaction_count: number;
+      conditioned_retained_reaction_count: number;
+      remaining_candidate_reaction_count: number;
+      known_singleton_completion_count: number;
+      known_singleton_completion_ids_in_model_order: string[];
+      terminal_infeasibility_proven: true;
+      terminal_solver_attempt_count: number;
+      terminal_accepted_solve_used_presolve: false;
+      terminal_infeasibility_confirmed_without_presolve: true;
+      exact_singleton_completion_count_given_fixed_core: number;
+      fixed_core_singleton_completion_enumeration_complete: true;
+      fourth_singleton_completion_with_same_fixed_core_exists: false;
+      global_minimum_identity_enumeration_complete: false;
+      fixed_common_reactions_proven_globally_universal: false;
+      multi_replacement_global_optima_excluded: false;
+      additional_unconditioned_global_search_required: true;
+      reaction_activity_in_phh_established: false;
+      context_model_accepted: false;
+      fba_execution_allowed: false;
+    };
+    fastcore_global_support_identity_completeness: {
+      audit_report: string;
+      global_candidate_reaction_count: number;
+      global_minimum_added_reaction_count: number;
+      global_minimum_support_set_count: number;
+      global_minimum_support_identity_enumeration_complete: true;
+      global_minimum_support_set_unique: false;
+      global_universal_minimum_support_reaction_count: number;
+      global_optional_minimum_support_reaction_count: number;
+      global_optional_minimum_support_reaction_ids_in_model_order: string[];
+      every_global_minimum_contains_exactly_one_optional_identity: true;
+      core_breaking_global_minimum_exists: false;
+      multi_replacement_global_optima_excluded: true;
+      additional_global_minimum_identity_search_required: false;
+      terminal_infeasibility_confirmed_without_presolve: true;
+      structural_essentiality_at_larger_support_sizes_established: false;
       reaction_activity_in_phh_established: false;
       context_model_accepted: false;
       fba_execution_allowed: false;
@@ -2257,6 +2347,8 @@ export type EngineSnapshot = {
     physical_validation?: EnginePhysicalValidation;
     brian2_communication?: EngineBrian2Communication;
     generative_modeling?: EngineGenerativeModelingBoundary;
+    whole_cell_runtime_authority?: EngineWholeCellRuntimeAuthority;
+    legacy_calibration_authority?: EngineLegacyCalibrationAuthority;
     schematic_visual_state?: EngineSchematicVisualState;
     phh_baseline?: EnginePhhBaseline;
     cellular_response?: EngineCellularResponse;
@@ -2312,6 +2404,10 @@ export type EngineModelAuthority = {
   status: string;
   primary_state_path?: string;
   schematic_state_path?: string;
+  runtime_execution_purpose?: string;
+  schematic_dynamics_executed?: boolean;
+  quantitative_biochemical_dynamics_executed?: boolean;
+  authoritative_biochemical_state_coupling_executed?: boolean;
   authoritative_sections: string[];
   runtime_authoritative_sections?: string[];
   shadow_sections?: string[];
@@ -2516,7 +2612,81 @@ export type EngineSchematicVisualState = {
   source_path: string;
   unit: "relative_pool_0_1";
   pool_ids: string[];
+  runtime_purpose?: "schematic_visualization" | "exploratory_execution";
+  dynamics_executed?: boolean;
+  executed_step_count?: number;
+  elapsed_s?: number;
+  biological_parameter_authority?: false;
   may_drive_quantitative_validation: false;
+  may_drive_predictive_execution?: false;
+  may_authoritatively_couple_cell_state?: false;
+};
+
+export type EngineWholeCellRuntimeAuthority = {
+  version: "whole_cell_runtime_authority_v1";
+  status: "schematic_and_exploratory_execution_only";
+  surfaces: {
+    id: string;
+    code_surfaces: string[];
+    current_role: string;
+    numerical_parameter_authority: string;
+    phh_context_match: false;
+    quantitative_validation_allowed: false;
+    predictive_execution_allowed: false;
+    authoritative_cell_state_coupling_allowed: false;
+    blockers: string[];
+  }[];
+  explicit_purpose_required: true;
+  schematic_visualization_allowed: true;
+  exploratory_execution_allowed: true;
+  quantitative_validation_allowed: false;
+  predictive_execution_allowed: false;
+  authoritative_cell_state_coupling_allowed: false;
+  policy: string;
+  summary: {
+    audited_legacy_surface_count: number;
+    phh_context_matched_surface_count: 0;
+    quantitative_authority_surface_count: 0;
+    predictive_authority_surface_count: 0;
+    authoritative_state_coupling_surface_count: 0;
+  };
+};
+
+export type EngineLegacyCalibrationAuthority = {
+  version: "legacy_calibration_authority_v1";
+  status: "software_fixture_only";
+  explicit_purpose_required: true;
+  allowed_purposes: (
+    | "software_fixture_evaluation"
+    | "exploratory_candidate_ranking"
+  )[];
+  blocked_purposes: (
+    | "biological_parameter_calibration"
+    | "quantitative_validation"
+    | "predictive_model_selection"
+  )[];
+  built_in_targets: {
+    id: string;
+    path: string;
+    unit: string;
+    evidence_authority: "schematic_project_fixture";
+    biological_parameter_authority: false;
+  }[];
+  gates: {
+    biological_parameter_calibration_allowed: false;
+    quantitative_validation_allowed: false;
+    predictive_model_selection_allowed: false;
+    automatic_cell_rule_mutation_allowed: false;
+  };
+  summary: {
+    audited_workflow_count: 3;
+    built_in_target_count: 3;
+    placeholder_target_count: 3;
+    source_backed_target_count: 0;
+    biologically_authorized_target_count: 0;
+    scientific_authority_purpose_count: 0;
+  };
+  policy: string;
 };
 
 export type EngineZonationMarker = {
@@ -4874,6 +5044,8 @@ export type EngineSnapshotSummary = {
   physicalValidation: EnginePhysicalValidation | null;
   brian2Communication: EngineBrian2Communication | null;
   generativeModeling: EngineGenerativeModelingBoundary | null;
+  wholeCellRuntimeAuthority: EngineWholeCellRuntimeAuthority | null;
+  legacyCalibrationAuthority: EngineLegacyCalibrationAuthority | null;
   schematicVisualState: EngineSchematicVisualState | null;
   phhBaseline: EnginePhhBaseline | null;
   modelAuthority: EngineModelAuthority | null;
@@ -5061,6 +5233,8 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     physicalValidation: snapshot.state.physical_validation ?? null,
     brian2Communication: snapshot.state.brian2_communication ?? null,
     generativeModeling: snapshot.state.generative_modeling ?? null,
+    wholeCellRuntimeAuthority: snapshot.state.whole_cell_runtime_authority ?? null,
+    legacyCalibrationAuthority: snapshot.state.legacy_calibration_authority ?? null,
     schematicVisualState: snapshot.state.schematic_visual_state ?? null,
     phhBaseline: snapshot.state.phh_baseline ?? null,
     modelAuthority: snapshot.state.model_authority ?? null,
