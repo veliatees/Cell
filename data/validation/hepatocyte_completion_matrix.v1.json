@@ -1059,6 +1059,43 @@
       ]
     },
     {
+      "id": "human_gem_fastcore_global_support_identity_completeness",
+      "title": "Human-GEM global support identity completeness",
+      "status": "closed",
+      "scope": "Complete global minimum support-identity enumeration over all 4,226 omitted reactions at the proven cardinality 59, composed from exact fixed-core completions and a no-presolve-confirmed common-core exclusion proof.",
+      "current_capability": "Exactly three global minimum sets exist. Each contains the same 58 reactions and exactly one of MAR00494, MAR02308 or MAR10035. This closes minimum-set identities only; larger support sets, biological essentiality, PHH activity, exchange bounds, objective and runtime flux authority remain outside the claim.",
+      "observed_metrics": {
+        "global_candidate_reaction_count": 4226,
+        "global_minimum_added_reaction_count": 59,
+        "global_minimum_support_set_count": 3,
+        "global_minimum_support_identity_enumeration_complete": true,
+        "global_minimum_support_set_unique": false,
+        "global_universal_minimum_support_reaction_count": 58,
+        "global_optional_minimum_support_reaction_count": 3,
+        "global_optional_minimum_support_reaction_ids_in_model_order": [
+          "MAR00494",
+          "MAR02308",
+          "MAR10035"
+        ],
+        "every_global_minimum_contains_exactly_one_optional_identity": true,
+        "core_breaking_global_minimum_exists": false,
+        "multi_replacement_global_optima_excluded": true,
+        "additional_global_minimum_identity_search_required": false,
+        "terminal_infeasibility_confirmed_without_presolve": true,
+        "structural_essentiality_at_larger_support_sizes_established": false,
+        "reaction_activity_in_phh_established": false,
+        "context_model_accepted": false,
+        "fba_execution_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_identity_completeness.py",
+        "scripts/audit_human_gem_phh_fastcore_global_support_identity_completeness.py",
+        "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_identity_completeness.json",
+        "engine/tests/test_human_gem_phh_fastcore_global_support_identity_completeness.py"
+      ]
+    },
+    {
       "id": "human_gem_reaction_evidence_manifest",
       "title": "Human-GEM reaction evidence manifest",
       "status": "closed",
@@ -1206,8 +1243,8 @@
     }
   ],
   "summary": {
-    "entry_count": 44,
-    "closed_count": 22,
+    "entry_count": 45,
+    "closed_count": 23,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

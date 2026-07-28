@@ -153,6 +153,9 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     fastcore_fixed_core_completion = metabolic[
         "candidate_reconstruction"
     ]["fastcore_fixed_core_completion_enumeration"]
+    fastcore_global_identity_completeness = metabolic[
+        "candidate_reconstruction"
+    ]["fastcore_global_support_identity_completeness"]
     reaction_evidence_manifest = metabolic["candidate_reconstruction"][
         "reaction_evidence_manifest"
     ]
@@ -1885,6 +1888,107 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "human_gem_fastcore_global_support_identity_completeness",
+            "Human-GEM global support identity completeness",
+            "closed",
+            "Complete global minimum support-identity enumeration over all 4,226 omitted reactions at the proven cardinality 59, composed from exact fixed-core completions and a no-presolve-confirmed common-core exclusion proof.",
+            "Exactly three global minimum sets exist. Each contains the same 58 reactions and exactly one of MAR00494, MAR02308 or MAR10035. This closes minimum-set identities only; larger support sets, biological essentiality, PHH activity, exchange bounds, objective and runtime flux authority remain outside the claim.",
+            {
+                "global_candidate_reaction_count": (
+                    fastcore_global_identity_completeness[
+                        "global_candidate_reaction_count"
+                    ]
+                ),
+                "global_minimum_added_reaction_count": (
+                    fastcore_global_identity_completeness[
+                        "global_minimum_added_reaction_count"
+                    ]
+                ),
+                "global_minimum_support_set_count": (
+                    fastcore_global_identity_completeness[
+                        "global_minimum_support_set_count"
+                    ]
+                ),
+                "global_minimum_support_identity_enumeration_complete": (
+                    fastcore_global_identity_completeness[
+                        "global_minimum_support_identity_enumeration_complete"
+                    ]
+                ),
+                "global_minimum_support_set_unique": (
+                    fastcore_global_identity_completeness[
+                        "global_minimum_support_set_unique"
+                    ]
+                ),
+                "global_universal_minimum_support_reaction_count": (
+                    fastcore_global_identity_completeness[
+                        "global_universal_minimum_support_reaction_count"
+                    ]
+                ),
+                "global_optional_minimum_support_reaction_count": (
+                    fastcore_global_identity_completeness[
+                        "global_optional_minimum_support_reaction_count"
+                    ]
+                ),
+                "global_optional_minimum_support_reaction_ids_in_model_order": (
+                    fastcore_global_identity_completeness[
+                        "global_optional_minimum_support_reaction_ids_in_model_order"
+                    ]
+                ),
+                "every_global_minimum_contains_exactly_one_optional_identity": (
+                    fastcore_global_identity_completeness[
+                        "every_global_minimum_contains_exactly_one_optional_identity"
+                    ]
+                ),
+                "core_breaking_global_minimum_exists": (
+                    fastcore_global_identity_completeness[
+                        "core_breaking_global_minimum_exists"
+                    ]
+                ),
+                "multi_replacement_global_optima_excluded": (
+                    fastcore_global_identity_completeness[
+                        "multi_replacement_global_optima_excluded"
+                    ]
+                ),
+                "additional_global_minimum_identity_search_required": (
+                    fastcore_global_identity_completeness[
+                        "additional_global_minimum_identity_search_required"
+                    ]
+                ),
+                "terminal_infeasibility_confirmed_without_presolve": (
+                    fastcore_global_identity_completeness[
+                        "terminal_infeasibility_confirmed_without_presolve"
+                    ]
+                ),
+                "structural_essentiality_at_larger_support_sizes_established": (
+                    fastcore_global_identity_completeness[
+                        "structural_essentiality_at_larger_support_sizes_established"
+                    ]
+                ),
+                "reaction_activity_in_phh_established": (
+                    fastcore_global_identity_completeness[
+                        "reaction_activity_in_phh_established"
+                    ]
+                ),
+                "context_model_accepted": (
+                    fastcore_global_identity_completeness[
+                        "context_model_accepted"
+                    ]
+                ),
+                "fba_execution_allowed": (
+                    fastcore_global_identity_completeness[
+                        "fba_execution_allowed"
+                    ]
+                ),
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/human_gem_phh_fastcore_global_support_identity_completeness.py",
+                "scripts/audit_human_gem_phh_fastcore_global_support_identity_completeness.py",
+                "data/phh_baseline/derived/human_gem_v2.0.0.seven_donor_fastcore_global_support_identity_completeness.json",
+                "engine/tests/test_human_gem_phh_fastcore_global_support_identity_completeness.py",
+            ),
+        ),
+        _entry(
             "human_gem_reaction_evidence_manifest",
             "Human-GEM reaction evidence manifest",
             "closed",
@@ -2901,6 +3005,70 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
     ):
         raise ValueError(
             "FASTCORE fixed-core completion enumeration escaped scope"
+        )
+    global_identity_metrics = by_id[
+        "human_gem_fastcore_global_support_identity_completeness"
+    ]["observed_metrics"]
+    if (
+        global_identity_metrics["global_candidate_reaction_count"] != 4_226
+        or global_identity_metrics[
+            "global_minimum_added_reaction_count"
+        ]
+        != 59
+        or global_identity_metrics["global_minimum_support_set_count"] != 3
+        or global_identity_metrics[
+            "global_minimum_support_identity_enumeration_complete"
+        ]
+        is not True
+        or global_identity_metrics[
+            "global_minimum_support_set_unique"
+        ]
+        is not False
+        or global_identity_metrics[
+            "global_universal_minimum_support_reaction_count"
+        ]
+        != 58
+        or global_identity_metrics[
+            "global_optional_minimum_support_reaction_count"
+        ]
+        != 3
+        or global_identity_metrics[
+            "global_optional_minimum_support_reaction_ids_in_model_order"
+        ]
+        != ["MAR00494", "MAR02308", "MAR10035"]
+        or global_identity_metrics[
+            "every_global_minimum_contains_exactly_one_optional_identity"
+        ]
+        is not True
+        or global_identity_metrics[
+            "core_breaking_global_minimum_exists"
+        ]
+        is not False
+        or global_identity_metrics[
+            "multi_replacement_global_optima_excluded"
+        ]
+        is not True
+        or global_identity_metrics[
+            "additional_global_minimum_identity_search_required"
+        ]
+        is not False
+        or global_identity_metrics[
+            "terminal_infeasibility_confirmed_without_presolve"
+        ]
+        is not True
+        or global_identity_metrics[
+            "structural_essentiality_at_larger_support_sizes_established"
+        ]
+        is not False
+        or global_identity_metrics[
+            "reaction_activity_in_phh_established"
+        ]
+        is not False
+        or global_identity_metrics["context_model_accepted"] is not False
+        or global_identity_metrics["fba_execution_allowed"] is not False
+    ):
+        raise ValueError(
+            "FASTCORE global identity completeness escaped scope"
         )
     evidence_metrics = by_id[
         "human_gem_reaction_evidence_manifest"

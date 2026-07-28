@@ -53,8 +53,9 @@ no-presolve solver proof.
 
 ## Scientific Boundary
 
-The result is exact only under the fixed-common-core condition. It does not
-prove that the `58` identities are present in every global optimum and does
-not exclude another `59`-reaction set that replaces two or more of them
-together. It establishes no reaction activity in healthy PHH, active enzyme
-capacity, exchange flux, objective, FBA result or runtime rate.
+This milestone alone is exact only under the fixed-common-core condition.
+Milestone 153 subsequently proves that the `58` identities are present in
+every global minimum and excludes another `59`-reaction set that replaces two
+or more of them together. Neither result establishes reaction activity in
+healthy PHH, active enzyme capacity, exchange flux, objective, FBA result or
+runtime rate.
