@@ -63,10 +63,19 @@ from cell_engine.validation.baseline_lifecycle_timing import (
 from cell_engine.validation.browser_bundle_budget import (
     browser_bundle_budget_snapshot,
 )
+from cell_engine.validation.browser_runtime_policy import (
+    browser_runtime_policy_snapshot,
+)
 from cell_engine.validation.external_review import external_validation_snapshot
+from cell_engine.validation.evidence_readiness import (
+    phh_evidence_readiness_snapshot,
+)
 from cell_engine.validation.reaction_evidence_atlas import build_reaction_evidence_atlas
 from cell_engine.validation.hepatocyte_quantities import (
     hepatocyte_quantity_harvest_snapshot,
+)
+from cell_engine.validation.scientific_snapshot_export_policy import (
+    scientific_snapshot_export_policy_snapshot,
 )
 
 
@@ -189,6 +198,11 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     browser_bundle = browser_bundle_budget_snapshot()
     browser_bundle_limits = browser_bundle["limits"]
     browser_bundle_verified = browser_bundle["last_verified_build"]
+    browser_runtime = browser_runtime_policy_snapshot()
+    snapshot_export_policy = scientific_snapshot_export_policy_snapshot()
+    snapshot_cache_surfaces = snapshot_export_policy["cache_surfaces"]
+    evidence_readiness = phh_evidence_readiness_snapshot()
+    evidence_readiness_summary = evidence_readiness["summary"]
     baseline_lifecycle = baseline_lifecycle_timing_snapshot()
 
     entries = (
@@ -2370,6 +2384,103 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "scientific_snapshot_export_recomputation_firewall",
+            "Scientific snapshot export recomputation firewall",
+            "closed",
+            "Process-local reuse of identical default scientific snapshot computations with explicit invalidation and output-isolation rules; no biological-model, parameter or validation claim.",
+            "Seven audited reuse surfaces eliminate repeated PHH proteome scans, SBML parsing and default evidence reconstruction. File-backed SBML caches are stat-invalidated, custom scientific inputs bypass default caches, mutable public results are defensive copies and scientific payload equivalence excludes only the creation timestamp.",
+            {
+                "cache_surface_count": len(snapshot_cache_surfaces),
+                "stat_invalidated_file_cache_count": sum(
+                    item["cache_lifetime"]
+                    == "stat_invalidated_process_local"
+                    for item in snapshot_cache_surfaces
+                ),
+                "defensive_copy_surface_count": sum(
+                    item["return_policy"] == "defensive_deepcopy"
+                    for item in snapshot_cache_surfaces
+                ),
+                "immutable_return_surface_count": sum(
+                    item["return_policy"]
+                    in {
+                        "immutable_tuple_graph",
+                        "immutable_frozen_dataclass_graph",
+                    }
+                    for item in snapshot_cache_surfaces
+                ),
+                "custom_input_cache_bypass_surface_count": sum(
+                    bool(item["custom_arguments_bypass_cache"])
+                    for item in snapshot_cache_surfaces
+                ),
+                "scientific_payload_equivalence_excluded_path_count": len(
+                    snapshot_export_policy["scientific_output_equivalence"][
+                        "excluded_volatile_paths"
+                    ]
+                ),
+                "automatic_biological_parameter_activation_count": int(
+                    bool(snapshot_export_policy["biological_parameter_activation"])
+                ),
+            },
+            (),
+            (
+                "data/validation/scientific_snapshot_export_policy.v1.json",
+                "engine/cell_engine/io/sbml.py",
+                "engine/cell_engine/quantitative/phh_proteome_atlas.py",
+                "engine/cell_engine/validation/kinetic_transfer.py",
+                "engine/cell_engine/validation/reaction_evidence_atlas.py",
+                "engine/cell_engine/quantitative/metabolic_constraint_shell.py",
+                "engine/tests/test_scientific_snapshot_export_policy.py",
+            ),
+        ),
+        _entry(
+            "phh_evidence_readiness_preflight",
+            "Unified PHH evidence readiness preflight",
+            "closed",
+            "Repository-level identity verification, delivery discovery, structural-validator dispatch and quarantine reporting for every declared PHH evidence contract; no biological parameter, model-fit or predictive claim.",
+            "One checksum-pinned registry discovers all 15 versioned intake contracts, dispatches only statically registered validators, preserves dependency-aware mobility and geometry links, quarantines one malformed delivery without stopping the remaining audit, and exposes one read-only CLI and snapshot surface.",
+            {
+                "registry_contract_count": evidence_readiness_summary[
+                    "registry_contract_count"
+                ],
+                "contract_identity_verified_count": evidence_readiness_summary[
+                    "contract_identity_verified_count"
+                ],
+                "validator_surface_count": evidence_readiness_summary[
+                    "validator_surface_count"
+                ],
+                "delivery_present_count": evidence_readiness_summary[
+                    "delivery_present_count"
+                ],
+                "rejected_intake_count": evidence_readiness_summary[
+                    "rejected_intake_count"
+                ],
+                "target_gap_count": evidence_readiness_summary[
+                    "target_gap_count"
+                ],
+                "target_gap_ids": evidence_readiness["target_gap_ids"],
+                "quantitatively_authorized_item_count": (
+                    evidence_readiness_summary[
+                        "quantitatively_authorized_item_count"
+                    ]
+                ),
+                "automatic_parameter_activation_count": (
+                    evidence_readiness_summary[
+                        "automatic_parameter_activation_count"
+                    ]
+                ),
+                "automatic_state_coupling_count": evidence_readiness_summary[
+                    "automatic_state_coupling_count"
+                ],
+            },
+            (),
+            (
+                "data/evidence_intake/phh_evidence_readiness_registry.v1.json",
+                "engine/cell_engine/validation/evidence_readiness.py",
+                "scripts/audit_phh_evidence_readiness.py",
+                "engine/tests/test_evidence_readiness.py",
+            ),
+        ),
+        _entry(
             "browser_startup_bundle_budget",
             "Browser startup bundle budget",
             "closed",
@@ -2404,6 +2515,69 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "data/validation/browser_bundle_budget.v1.json",
                 "src/main.ts",
                 "engine/tests/test_browser_bundle_budget.py",
+            ),
+        ),
+        _entry(
+            "browser_runtime_workload_policy",
+            "Browser runtime workload and cadence policy",
+            "closed",
+            "Browser render scheduling, visual-fluid cadence and device-load degradation; no biological-model, timescale or accuracy claim.",
+            "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone.",
+            {
+                "document_visibility_suspension_guard_count": int(
+                    bool(
+                        browser_runtime["suspension"][
+                            "when_document_hidden"
+                        ]
+                    )
+                ),
+                "viewport_intersection_suspension_guard_count": int(
+                    bool(
+                        browser_runtime["suspension"][
+                            "when_viewport_not_intersecting"
+                        ]
+                    )
+                ),
+                "suspended_elapsed_discard_guard_count": int(
+                    bool(
+                        browser_runtime["suspension"][
+                            "discard_suspended_elapsed_time_on_resume"
+                        ]
+                    )
+                ),
+                "single_pending_render_guard_count": int(
+                    bool(
+                        browser_runtime["suspension"][
+                            "single_pending_frame_or_timer"
+                        ]
+                    )
+                ),
+                "quality_tier_count": len(
+                    browser_runtime["quality"]["tiers"]
+                ),
+                "initial_load_grace_window_count": browser_runtime[
+                    "quality"
+                ]["initial_grace_windows"],
+                "visual_fluid_cadence_tier_count": sum(
+                    int(
+                        tier["fluid_step_interval_s"] > 0
+                    )
+                    for tier in browser_runtime["quality"]["tiers"].values()
+                ),
+                "total_frame_work_governor_count": 1,
+                "visual_clock_conservation_test_count": 1,
+                "automatic_biological_parameter_activation_count": int(
+                    bool(browser_runtime["biological_parameter_activation"])
+                ),
+            },
+            (),
+            (
+                "data/validation/browser_runtime_policy.v1.json",
+                "src/runtime/renderCadence.ts",
+                "src/runtime/renderCadence.test.ts",
+                "src/main.ts",
+                "engine/cell_engine/validation/browser_runtime_policy.py",
+                "engine/tests/test_browser_runtime_policy.py",
             ),
         ),
         _entry(
@@ -3473,6 +3647,52 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 0
     ):
         raise ValueError("browser context-snapshot matrix contract changed")
+    snapshot_export_metrics = by_id[
+        "scientific_snapshot_export_recomputation_firewall"
+    ]["observed_metrics"]
+    if (
+        snapshot_export_metrics["cache_surface_count"] != 7
+        or snapshot_export_metrics["stat_invalidated_file_cache_count"] != 2
+        or snapshot_export_metrics["defensive_copy_surface_count"] != 4
+        or snapshot_export_metrics["immutable_return_surface_count"] != 2
+        or snapshot_export_metrics[
+            "custom_input_cache_bypass_surface_count"
+        ]
+        != 3
+        or snapshot_export_metrics[
+            "scientific_payload_equivalence_excluded_path_count"
+        ]
+        != 1
+        or snapshot_export_metrics[
+            "automatic_biological_parameter_activation_count"
+        ]
+        != 0
+    ):
+        raise ValueError("scientific snapshot export cache contract changed")
+    evidence_readiness_metrics = by_id[
+        "phh_evidence_readiness_preflight"
+    ]["observed_metrics"]
+    if (
+        evidence_readiness_metrics["registry_contract_count"] != 15
+        or evidence_readiness_metrics[
+            "contract_identity_verified_count"
+        ]
+        != 15
+        or evidence_readiness_metrics["validator_surface_count"] != 15
+        or evidence_readiness_metrics["rejected_intake_count"] != 0
+        or evidence_readiness_metrics["target_gap_count"] != 19
+        or evidence_readiness_metrics[
+            "quantitatively_authorized_item_count"
+        ]
+        != 0
+        or evidence_readiness_metrics[
+            "automatic_parameter_activation_count"
+        ]
+        != 0
+        or evidence_readiness_metrics["automatic_state_coupling_count"] != 0
+        or not set(evidence_readiness_metrics["target_gap_ids"]).issubset(by_id)
+    ):
+        raise ValueError("PHH evidence readiness preflight contract changed")
     browser_bundle_metrics = by_id["browser_startup_bundle_budget"][
         "observed_metrics"
     ]
@@ -3490,6 +3710,34 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 0
     ):
         raise ValueError("browser startup bundle budget contract changed")
+    browser_runtime_metrics = by_id["browser_runtime_workload_policy"][
+        "observed_metrics"
+    ]
+    if (
+        browser_runtime_metrics[
+            "document_visibility_suspension_guard_count"
+        ]
+        != 1
+        or browser_runtime_metrics[
+            "viewport_intersection_suspension_guard_count"
+        ]
+        != 1
+        or browser_runtime_metrics[
+            "suspended_elapsed_discard_guard_count"
+        ]
+        != 1
+        or browser_runtime_metrics["single_pending_render_guard_count"] != 1
+        or browser_runtime_metrics["quality_tier_count"] != 3
+        or browser_runtime_metrics["initial_load_grace_window_count"] != 2
+        or browser_runtime_metrics["visual_fluid_cadence_tier_count"] != 3
+        or browser_runtime_metrics["total_frame_work_governor_count"] != 1
+        or browser_runtime_metrics["visual_clock_conservation_test_count"] != 1
+        or browser_runtime_metrics[
+            "automatic_biological_parameter_activation_count"
+        ]
+        != 0
+    ):
+        raise ValueError("browser runtime workload policy contract changed")
     if by_id["independent_scientific_validation"]["observed_metrics"]["externally_reviewed_claim_count"] != 0:
         raise ValueError("external validation count changed without result intake")
 

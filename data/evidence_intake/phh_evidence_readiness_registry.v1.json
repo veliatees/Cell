@@ -1,0 +1,222 @@
+{
+  "schema_version": "cell.phh-evidence-readiness-registry.v1",
+  "registry_id": "phh_evidence_readiness_registry_v1",
+  "scientific_authority": false,
+  "biological_parameter_activation": false,
+  "incoming_root": "data/evidence_intake/incoming",
+  "entries": [
+    {
+      "id": "legacy_scale_bridge_bundle",
+      "contract_path": "data/evidence_intake/phh_evidence_bundle_contract.v1.json",
+      "contract_sha256": "38eb23fb13f0908bfcbb73e1ed990e52e2987406538c2d803bd07c4f843be6b1",
+      "contract_schema_version": "cell.phh-evidence-bundle-contract.v1",
+      "contract_id": "healthy_adult_human_phh_scale_bridge_v1",
+      "delivery_kind": "directory_bundle",
+      "delivery_relative_path": "latest",
+      "validator_surface": "cell_engine.validation.evidence_intake.evidence_intake_snapshot",
+      "target_gap_ids": [
+        "hepatocyte_quantity_harvest",
+        "quantitative_reaction_core",
+        "energy_redox_quantitation",
+        "receptor_signaling_kinetics",
+        "hepatocyte_fba_execution"
+      ]
+    },
+    {
+      "id": "reaction_evidence",
+      "contract_path": "data/evidence_intake/phh_reaction_evidence_contract.v1.json",
+      "contract_sha256": "f7d4f545aa1e0b25b1e9aaafb6d57de7388b59c91bf1aeba190afa413f69f440",
+      "contract_schema_version": "cell.phh-reaction-evidence-contract.v1",
+      "contract_id": "phh_reaction_evidence_contract_v1",
+      "delivery_kind": "csv",
+      "delivery_relative_path": "phh_reaction_evidence/latest/phh_reaction_evidence.csv",
+      "validator_surface": "cell_engine.quantitative.reaction_evidence_intake.reaction_evidence_intake_snapshot",
+      "target_gap_ids": [
+        "quantitative_reaction_core"
+      ]
+    },
+    {
+      "id": "energy_redox_trajectory",
+      "contract_path": "data/evidence_intake/phh_energy_redox_trajectory_contract.v1.json",
+      "contract_sha256": "275f47ba3e5b48a75060ae680ee9b8778d977c5019e6dde35f67b9dabb767bd1",
+      "contract_schema_version": "cell.phh-energy-redox-trajectory-contract.v1",
+      "contract_id": "phh_energy_redox_trajectory_contract_v1",
+      "delivery_kind": "csv",
+      "delivery_relative_path": "phh_energy_redox/latest/phh_energy_redox_trajectories.csv",
+      "validator_surface": "cell_engine.quantitative.energy_redox_trajectory.energy_redox_trajectory_intake_snapshot",
+      "target_gap_ids": [
+        "energy_redox_quantitation"
+      ]
+    },
+    {
+      "id": "receptor_signaling_trajectory",
+      "contract_path": "data/evidence_intake/phh_receptor_signaling_trajectory_contract.v1.json",
+      "contract_sha256": "b58011697d67d0c16cc94916086f214653cafc2b0b0004a4cdd4f3800000721e",
+      "contract_schema_version": "cell.phh-receptor-signaling-trajectory-contract.v1",
+      "contract_id": "phh_receptor_signaling_trajectory_intake_v1",
+      "delivery_kind": "csv",
+      "delivery_relative_path": "phh_receptor_signaling/latest/phh_receptor_signaling_trajectories.csv",
+      "validator_surface": "cell_engine.quantitative.receptor_signaling_trajectory.receptor_signaling_trajectory_snapshot",
+      "target_gap_ids": [
+        "receptor_signaling_kinetics"
+      ]
+    },
+    {
+      "id": "active_protein_localization",
+      "contract_path": "data/evidence_intake/phh_active_protein_localization_contract.v1.json",
+      "contract_sha256": "37ef7d4ec6b0d586e96e81ec3f8910af090280211bbf5711715011cba11247a9",
+      "contract_schema_version": "cell.phh-active-protein-localization-contract.v1",
+      "contract_id": "phh_active_protein_localization_intake_v1",
+      "delivery_kind": "csv",
+      "delivery_relative_path": "phh_active_protein_localization/latest/phh_active_protein_localization.csv",
+      "validator_surface": "cell_engine.quantitative.active_protein_localization.active_protein_localization_snapshot",
+      "target_gap_ids": [
+        "active_protein_copies"
+      ]
+    },
+    {
+      "id": "phh_3d_mesh_boundary",
+      "contract_path": "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json",
+      "contract_sha256": "22594e8dc35fc9c23b3b34c7c62d010191679707c04ca1f79bebe3004cdeb15c",
+      "contract_schema_version": "cell.phh-3d-mesh-boundary-contract.v1",
+      "contract_id": "phh_3d_mesh_boundary_contract_v1",
+      "delivery_kind": "csv",
+      "delivery_relative_path": "phh_3d_mesh_boundary/latest/phh_3d_mesh_manifest.csv",
+      "validator_surface": "cell_engine.quantitative.phh_3d_mesh_boundary.phh_3d_mesh_boundary_intake_snapshot",
+      "target_gap_ids": [
+        "organelle_fluid_boundaries",
+        "donor_3d_morphology_mechanics"
+      ]
+    },
+    {
+      "id": "intracellular_mobility",
+      "contract_path": "data/evidence_intake/phh_intracellular_mobility_contract.v1.json",
+      "contract_sha256": "8bc13fb7f8cb6bd3009229936e5bac08e4c386507a6031a47059ea594d3c6a3e",
+      "contract_schema_version": "cell.phh-intracellular-mobility-contract.v1",
+      "contract_id": "phh_intracellular_mobility_contract_v1",
+      "delivery_kind": "csv",
+      "delivery_relative_path": "phh_intracellular_mobility/latest/phh_intracellular_mobility_observations.csv",
+      "validator_surface": "cell_engine.quantitative.intracellular_mobility.intracellular_mobility_intake_snapshot",
+      "target_gap_ids": [
+        "healthy_phh_cytosol_parameters",
+        "reaction_fluid_coupling",
+        "macromolecular_crowding_physics",
+        "cytosol_experimental_validation"
+      ]
+    },
+    {
+      "id": "reaction_transport_coupling",
+      "contract_path": "data/evidence_intake/phh_reaction_transport_coupling_contract.v1.json",
+      "contract_sha256": "c059fb67b05aec9314a1669c9a81c0074196d0932981636bc4261c3b669ab2c9",
+      "contract_schema_version": "cell.phh-reaction-transport-coupling-contract.v1",
+      "contract_id": "phh_reaction_transport_coupling_contract_v1",
+      "delivery_kind": "csv",
+      "delivery_relative_path": "phh_reaction_transport_coupling/latest/phh_reaction_transport_observations.csv",
+      "validator_surface": "cell_engine.quantitative.reaction_transport_coupling.reaction_transport_coupling_intake_snapshot",
+      "target_gap_ids": [
+        "reaction_fluid_coupling"
+      ]
+    },
+    {
+      "id": "active_cargo_trajectory",
+      "contract_path": "data/evidence_intake/phh_active_cargo_trajectory_contract.v1.json",
+      "contract_sha256": "0f2917f6ae414930a940f24132d1819b1482d15a135b5bbed25c2af38af30507",
+      "contract_schema_version": "cell.phh-active-cargo-trajectory-contract.v1",
+      "contract_id": "phh_active_cargo_trajectory_contract_v1",
+      "delivery_kind": "csv",
+      "delivery_relative_path": "phh_active_cargo/latest/phh_active_cargo_trajectories.csv",
+      "validator_surface": "cell_engine.quantitative.active_cargo_trajectory.active_cargo_trajectory_intake_snapshot",
+      "target_gap_ids": [
+        "active_intracellular_transport_model"
+      ]
+    },
+    {
+      "id": "cellular_memory_trajectory",
+      "contract_path": "data/evidence_intake/phh_cellular_memory_trajectory_contract.v1.json",
+      "contract_sha256": "a263816b826ee45e1139c23dcbe77c3295d20efbb48d5188091c3cfb513a6d69",
+      "contract_schema_version": "cell.phh-cellular-memory-trajectory-contract.v1",
+      "contract_id": "phh_cellular_memory_trajectory_contract_v1",
+      "delivery_kind": "csv",
+      "delivery_relative_path": "phh_cellular_memory/latest/phh_cellular_memory_trajectories.csv",
+      "validator_surface": "cell_engine.quantitative.cellular_memory_trajectory.cellular_memory_trajectory_intake_snapshot",
+      "target_gap_ids": [
+        "cellular_memory_laws"
+      ]
+    },
+    {
+      "id": "phh_injury_trajectory",
+      "contract_path": "data/evidence_intake/phh_injury_trajectory_contract.v1.json",
+      "contract_sha256": "d19292e25edca0a9e3cfe675ad9a2bc5fb8a2bf5b9f9fd1b4751500cb4ac001d",
+      "contract_schema_version": "cell.phh-injury-trajectory-contract.v1",
+      "contract_id": "donor_disjoint_phh_injury_trajectory_v1",
+      "delivery_kind": "csv",
+      "delivery_relative_path": "phh_injury/latest/phh_injury_trajectories.csv",
+      "validator_surface": "cell_engine.quantitative.phh_injury_trajectory.phh_injury_trajectory_intake_snapshot",
+      "target_gap_ids": [
+        "damage_fate_recovery_calibration"
+      ]
+    },
+    {
+      "id": "generative_donor_manifest",
+      "contract_path": "data/evidence_intake/phh_generative_donor_manifest_contract.v1.json",
+      "contract_sha256": "efc26576abc24058201bc22106bf2fd346992e5584c3bce1be4a761c915a25ae",
+      "contract_schema_version": "cell.phh-generative-donor-manifest-contract.v1",
+      "contract_id": "phh_generative_donor_manifest_contract_v1",
+      "delivery_kind": "json",
+      "delivery_relative_path": "phh_generative_donor/latest/phh_generative_donor_manifest.json",
+      "validator_surface": "cell_engine.ml.generative.generative_donor_manifest_intake_snapshot",
+      "target_gap_ids": [
+        "donor_state_model"
+      ]
+    },
+    {
+      "id": "phh_mechanics_calibration",
+      "contract_path": "data/evidence_intake/phh_mechanics_calibration_contract.v1.json",
+      "contract_sha256": "dcdcdf892b10cef1d5730003af67e3b6da0619dd8c96633e5f09ea801d029fcc",
+      "contract_schema_version": "cell.phh-mechanics-calibration-contract.v1",
+      "contract_id": "phh_mechanics_calibration_contract_v1",
+      "delivery_kind": "csv",
+      "delivery_relative_path": "phh_mechanics/latest/phh_mechanics_calibration.csv",
+      "validator_surface": "cell_engine.quantitative.phh_mechanics_calibration.phh_mechanics_calibration_intake_snapshot",
+      "target_gap_ids": [
+        "healthy_phh_cytosol_parameters",
+        "quantitative_poroelastic_cfd",
+        "fluid_structure_interaction",
+        "donor_3d_morphology_mechanics"
+      ]
+    },
+    {
+      "id": "membrane_topology_event",
+      "contract_path": "data/evidence_intake/phh_membrane_topology_event_contract.v1.json",
+      "contract_sha256": "d642d42f965bed8cdcc99dfa07df6cff368fdd3ad4eec36a9a1795fe3ba5dfa1",
+      "contract_schema_version": "cell.phh-membrane-topology-event-intake.v1",
+      "contract_id": "healthy_phh_membrane_topology_event_intake_v1",
+      "delivery_kind": "json",
+      "delivery_relative_path": "phh_membrane_topology_event/latest/phh_membrane_topology_events.v1.json",
+      "validator_surface": "cell_engine.quantitative.phh_membrane_topology_event.phh_membrane_topology_event_intake_snapshot",
+      "target_gap_ids": [
+        "local_non_affine_membrane_coupling"
+      ]
+    },
+    {
+      "id": "metabolic_execution_bundle",
+      "contract_path": "data/evidence_intake/phh_metabolic_execution_bundle_contract.v1.json",
+      "contract_sha256": "80247d29d8b06f6b63e92821d38fdfdf4975a2401c4f732fc473120f8cc05b7e",
+      "contract_schema_version": "cell.phh-metabolic-execution-bundle-contract.v1",
+      "contract_id": "phh_metabolic_execution_bundle_contract_v1",
+      "delivery_kind": "json",
+      "delivery_relative_path": "phh_metabolic_execution/latest/phh_metabolic_execution_bundle.json",
+      "validator_surface": "cell_engine.quantitative.phh_metabolic_execution_bundle.phh_metabolic_execution_bundle_intake_snapshot",
+      "target_gap_ids": [
+        "hepatocyte_fba_execution"
+      ]
+    }
+  ],
+  "policy": {
+    "manual_primary_source_review_required": true,
+    "invalid_delivery_quarantined": true,
+    "automatic_parameter_activation": false,
+    "automatic_state_coupling": false,
+    "predictive_authority": false
+  }
+}

@@ -26,3 +26,15 @@ def test_reaction_evidence_is_fail_closed_and_fluid_coupling_is_per_reaction() -
         assert gate["direct_fluid_rate_multiplier"] is None
         assert gate["local_concentration_coupling_allowed"] is False
         assert gate["direct_rate_correction_allowed"] is False
+
+
+def test_default_atlas_cache_returns_an_isolated_copy() -> None:
+    first = build_reaction_evidence_atlas()
+    first["summary"]["active_reaction_count"] = -1
+    first["reactions"][0]["quantitative_execution_allowed"] = True
+
+    second = build_reaction_evidence_atlas()
+
+    assert first is not second
+    assert second["summary"]["active_reaction_count"] == 36
+    assert second["reactions"][0]["quantitative_execution_allowed"] is False

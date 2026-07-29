@@ -10,6 +10,7 @@ from cell_engine.quantitative.phh_proteome_atlas import (
     donor_reference_nucleus_inventory,
     load_phh_proteome_atlas,
     phh_proteome_atlas_snapshot,
+    protein_group_for_accession,
     protein_groups_for_gene,
     validate_phh_proteome_atlas,
 )
@@ -56,6 +57,17 @@ def test_gene_query_does_not_silently_merge_distinct_protein_groups() -> None:
     assert len(glut2_groups) == 2
     assert {record["group_id"] for record in glut2_groups} == {"C9J0E8", "P11168"}
     assert canonical_gene_reference("SLC2A2")["group_id"] == "P11168"
+
+
+def test_default_gene_and_accession_indexes_preserve_group_identity() -> None:
+    glut2_groups = protein_groups_for_gene("SLC2A2")
+    canonical = protein_group_for_accession("P11168")
+
+    assert canonical is next(
+        record for record in glut2_groups if record["group_id"] == "P11168"
+    )
+    assert protein_groups_for_gene("SLC2A2") == glut2_groups
+    assert protein_groups_for_gene("not_a_human_gene") == ()
 
 
 def test_donor_inventory_matches_audited_group_count_and_copy_sum() -> None:

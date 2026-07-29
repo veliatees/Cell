@@ -7,7 +7,9 @@ reaction into a context-matched kinetic claim.  Missing quantities are explicit
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
+from functools import lru_cache
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.serialization import to_plain
@@ -165,7 +167,7 @@ def _transport_gate() -> ReactionTransportCouplingGate:
     )
 
 
-def build_reaction_evidence_atlas(
+def _build_reaction_evidence_atlas(
     network: ReactionNetwork | None = None,
     kinetic_transfer: KineticTransferAudit | None = None,
 ) -> dict[str, object]:
@@ -251,6 +253,22 @@ def build_reaction_evidence_atlas(
     }
     validate_reaction_evidence_atlas(payload, active_network)
     return payload
+
+
+@lru_cache(maxsize=1)
+def _default_reaction_evidence_atlas() -> dict[str, object]:
+    network = build_integrated_hepatocyte_network(HormoneState())
+    transfer = build_kinetic_transfer_audit()
+    return _build_reaction_evidence_atlas(network, transfer)
+
+
+def build_reaction_evidence_atlas(
+    network: ReactionNetwork | None = None,
+    kinetic_transfer: KineticTransferAudit | None = None,
+) -> dict[str, object]:
+    if network is not None or kinetic_transfer is not None:
+        return _build_reaction_evidence_atlas(network, kinetic_transfer)
+    return deepcopy(_default_reaction_evidence_atlas())
 
 
 def validate_reaction_evidence_atlas(
