@@ -546,6 +546,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 157: Browser first-render code splitting and budget v1](docs/milestones/157-browser-first-render-code-splitting-budget-v1.md)
 - [Milestone 158: Human baseline lifecycle timing firewall v1](docs/milestones/158-human-baseline-lifecycle-timing-firewall-v1.md)
 - [Milestone 159: Browser runtime workload and cadence v1](docs/milestones/159-browser-runtime-workload-cadence-v1.md)
+- [Milestone 162: Human sinusoid cutaway visual v1](docs/milestones/162-human-sinusoid-cutaway-visual-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

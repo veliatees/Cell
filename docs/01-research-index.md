@@ -73,6 +73,7 @@ linked to its dependencies.
 - Historical BSEP-only arithmetic bridge, superseded by donor-resolved BSEP/MRP2 totals in Milestone 077: `milestones/067-bsep-mrp2-transporter-inventory-v1.md`
 - Four-donor day-7 human-SCH endogenous bile-acid compartments with aggregation, censoring, and canalicular-concentration gates: `milestones/068-human-sch-endogenous-bile-acids-v1.md`
 - Evidence-scoped hepatocyte polarity, endomembrane, cytoskeleton, sinusoid, cutaway, and LOD renderer contract: `milestones/069-source-backed-hepatocyte-visual-anatomy-v2.md`
+- Healthy-human sinusoid caliber, Evans-Fung erythrocytes, local-lumen confinement, and disclosed open cutaway: `milestones/162-human-sinusoid-cutaway-visual-v1.md`
 - Engine-authoritative sphere/capsule proximity, closest-point, overlap, and contact-duration state with fail-closed mechanics: `milestones/070-geometry-authoritative-spatial-world-v1.md`
 - Single-cell default runtime, convex polyhedral surfaces, broad membrane-domain contact patches, and enter/stay/exit geometry inputs: `milestones/071-event-driven-polyhedral-contact-world-v2.md`
 - Volume-preserving contact deformation, conservative cross-system area cap, rest-shape recovery, and renderer coupling: `milestones/072-volume-preserving-contact-deformation-v1.md`
