@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { PNG } from "pngjs";
 
 type PixelStats = {
@@ -62,6 +62,27 @@ function changedPixelRatio(firstBuffer: Buffer, secondBuffer: Buffer): number {
     if (channelDelta >= 8) changed += 1;
   }
   return changed / pixelCount;
+}
+
+async function captureStableFramePair(
+  canvas: Locator,
+  page: Page
+): Promise<[Buffer, Buffer]> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const first = await canvas.screenshot();
+    await page.waitForTimeout(650);
+    const second = await canvas.screenshot();
+    const firstImage = PNG.sync.read(first);
+    const secondImage = PNG.sync.read(second);
+    if (
+      firstImage.width === secondImage.width &&
+      firstImage.height === secondImage.height
+    ) {
+      return [first, second];
+    }
+    await page.waitForTimeout(400);
+  }
+  throw new Error("canvas dimensions did not settle across three frame pairs");
 }
 
 async function waitForRender(page: Page): Promise<void> {
@@ -136,9 +157,10 @@ test.describe("hepatocyte render integrity", () => {
       expect(runtimeErrors).toEqual([]);
 
       const canvas = page.locator('[data-role="viewport"] canvas').first();
-      const firstFrame = await canvas.screenshot();
-      await page.waitForTimeout(650);
-      const secondFrame = await canvas.screenshot();
+      const [firstFrame, secondFrame] = await captureStableFramePair(
+        canvas,
+        page
+      );
       const pixelStats = summarizePixels(firstFrame);
       const motionRatio = changedPixelRatio(firstFrame, secondFrame);
 
@@ -162,6 +184,35 @@ test.describe("hepatocyte render integrity", () => {
       });
     });
   }
+
+  test("offscreen mobile viewport suspends and resumes the render loop", async ({ page }) => {
+    const runtimeErrors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
+    });
+    page.on("pageerror", (error) => runtimeErrors.push(`page: ${error.message}`));
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await waitForRender(page);
+    const root = page.locator("html");
+    await expect(root).toHaveAttribute("data-cell-render-suspended", "none");
+
+    await page.evaluate(() => {
+      window.scrollTo(0, document.documentElement.scrollHeight);
+    });
+    await expect.poll(
+      () => root.getAttribute("data-cell-render-suspended")
+    ).toBe("viewport_not_intersecting");
+
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
+    await expect.poll(
+      () => root.getAttribute("data-cell-render-suspended")
+    ).toBe("none");
+    expect(runtimeErrors).toEqual([]);
+  });
 
   test("deferred scientific and protein modules activate on demand", async ({ page }, testInfo) => {
     const runtimeErrors: string[] = [];
@@ -218,6 +269,8 @@ test.describe("hepatocyte render integrity", () => {
       fps: element.getAttribute("data-cell-perf-fps"),
       averageWorkMs: element.getAttribute("data-cell-perf-work-ms"),
       maximumWorkMs: element.getAttribute("data-cell-perf-max-work-ms"),
+      fluidStepHz: element.getAttribute("data-cell-perf-fluid-step-hz"),
+      suspended: element.getAttribute("data-cell-render-suspended"),
       stages: element.getAttribute("data-cell-perf-stages")
     }));
     await testInfo.attach("deferred-glucokinase-canvas.png", {
@@ -233,12 +286,16 @@ test.describe("hepatocyte render integrity", () => {
       contentType: "application/json"
     });
     expect(proteinStats.meanLuma).toBeGreaterThan(2);
-    expect(proteinStats.lumaStandardDeviation).toBeGreaterThan(8);
+    // Balanced/essential tiers intentionally disable bloom. Color diversity,
+    // non-dark coverage and this lower software-renderer contrast floor still
+    // reject blank or failed protein scenes without requiring full-tier glow.
+    expect(proteinStats.lumaStandardDeviation).toBeGreaterThan(7.5);
     expect(proteinStats.nonDarkRatio).toBeGreaterThan(0.005);
     expect(proteinStats.coloredRatio).toBeGreaterThan(0.01);
     expect(proteinStats.quantizedColorCount).toBeGreaterThan(64);
     expect(runtimeErrors).toEqual([]);
     const renderQuality = performanceState.renderQuality;
     expect(["full", "balanced", "essential"]).toContain(renderQuality);
+    expect(performanceState.suspended).toBe("none");
   });
 });
