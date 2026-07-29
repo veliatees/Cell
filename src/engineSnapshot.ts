@@ -5079,6 +5079,35 @@ export type EngineSnapshotLoadResult =
   | { status: "loaded"; url: string; snapshot: EngineSnapshot; summary: EngineSnapshotSummary }
   | { status: "missing"; url: string; diagnostic: string };
 
+export type EngineContextSnapshotOverlay = {
+  schema_version: "cell-engine.context-overlay.v1";
+  base_identity: {
+    schema_version: "cell-engine.snapshot.v1";
+    created_at_utc: string;
+    definition_id: string;
+    state_key_count: number;
+    state_key_sha256: string;
+    snapshot_sha256: string;
+  };
+  target_context: {
+    zone: string;
+    nutrition_profile: string;
+    experiment: string;
+  };
+  target_metadata: Record<string, unknown>;
+  target_definition: Record<string, unknown>;
+  state_overrides: Record<string, unknown>;
+  removed_state_keys: string[];
+  audit: {
+    state_override_count: number;
+    removed_state_key_count: number;
+    target_state_key_count: number;
+    target_state_key_sha256: string;
+    target_snapshot_sha256: string;
+    exact_reconstruction_verified: true;
+  };
+};
+
 type SnapshotResponse = {
   ok: boolean;
   status: number;
@@ -5094,20 +5123,187 @@ export function engineSnapshotEndpointFromLocation(locationLike: Pick<Location, 
 }
 
 export async function loadEngineSnapshot(url: string, fetcher: SnapshotFetcher = defaultSnapshotFetcher): Promise<EngineSnapshotLoadResult> {
+  return loadEngineSnapshotArtifactInternal(url, null, fetcher);
+}
+
+export async function loadEngineSnapshotArtifact(
+  url: string,
+  canonicalSnapshot: EngineSnapshot,
+  fetcher: SnapshotFetcher = defaultSnapshotFetcher
+): Promise<EngineSnapshotLoadResult> {
+  return loadEngineSnapshotArtifactInternal(url, canonicalSnapshot, fetcher);
+}
+
+async function loadEngineSnapshotArtifactInternal(
+  url: string,
+  canonicalSnapshot: EngineSnapshot | null,
+  fetcher: SnapshotFetcher
+): Promise<EngineSnapshotLoadResult> {
   try {
     const response = await fetcher(url);
     if (!response.ok) {
       return { status: "missing", url, diagnostic: `Python engine snapshot unavailable (${response.status} ${response.statusText || "HTTP"})` };
     }
     const json = await response.json();
-    if (!isEngineSnapshot(json)) {
-      return { status: "missing", url, diagnostic: "Python engine snapshot did not match cell-engine.snapshot.v1" };
+    if (isEngineSnapshot(json)) {
+      return { status: "loaded", url, snapshot: json, summary: summarizeEngineSnapshot(json, url) };
     }
-    return { status: "loaded", url, snapshot: json, summary: summarizeEngineSnapshot(json, url) };
+    if (!isEngineContextSnapshotOverlay(json)) {
+      return {
+        status: "missing",
+        url,
+        diagnostic: "Python engine artifact matched neither cell-engine.snapshot.v1 nor cell-engine.context-overlay.v1"
+      };
+    }
+    if (!canonicalSnapshot) {
+      return {
+        status: "missing",
+        url,
+        diagnostic: "Context overlay requires the canonical engine snapshot"
+      };
+    }
+    return reconstructEngineContextSnapshot(url, canonicalSnapshot, json);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return { status: "missing", url, diagnostic: `Python engine snapshot unavailable (${message})` };
   }
+}
+
+async function reconstructEngineContextSnapshot(
+  url: string,
+  canonicalSnapshot: EngineSnapshot,
+  overlay: EngineContextSnapshotOverlay
+): Promise<EngineSnapshotLoadResult> {
+  const baseIdentity = overlay.base_identity;
+  const canonicalMetadata = canonicalSnapshot.metadata;
+  const canonicalStateKeys = Object.keys(canonicalSnapshot.state).sort();
+  const canonicalStateKeyHash = await sha256Hex(canonicalStateKeys.join("\n"));
+  const baseMismatch = (
+    canonicalSnapshot.schema_version !== baseIdentity.schema_version ||
+    canonicalMetadata?.created_at_utc !== baseIdentity.created_at_utc ||
+    canonicalMetadata?.definition_id !== baseIdentity.definition_id ||
+    canonicalStateKeys.length !== baseIdentity.state_key_count ||
+    canonicalStateKeyHash !== baseIdentity.state_key_sha256
+  );
+  if (baseMismatch) {
+    return {
+      status: "missing",
+      url,
+      diagnostic: "Context overlay base identity did not match the canonical engine snapshot"
+    };
+  }
+
+  const reconstructedState: Record<string, unknown> = {
+    ...canonicalSnapshot.state,
+    ...overlay.state_overrides
+  };
+  for (const key of overlay.removed_state_keys) delete reconstructedState[key];
+  const reconstructedStateKeys = Object.keys(reconstructedState).sort();
+  if (
+    reconstructedStateKeys.length !== overlay.audit.target_state_key_count ||
+    await sha256Hex(reconstructedStateKeys.join("\n")) !== overlay.audit.target_state_key_sha256
+  ) {
+    return {
+      status: "missing",
+      url,
+      diagnostic: "Context overlay reconstructed an unexpected engine state surface"
+    };
+  }
+
+  const snapshot = {
+    schema_version: canonicalSnapshot.schema_version,
+    definition: overlay.target_definition,
+    state: reconstructedState,
+    metadata: overlay.target_metadata
+  } as EngineSnapshot;
+  if (!isEngineSnapshot(snapshot)) {
+    return {
+      status: "missing",
+      url,
+      diagnostic: "Reconstructed context snapshot did not match cell-engine.snapshot.v1"
+    };
+  }
+  const nutritionalContext = snapshot.state.nutritional_context;
+  const experiment = snapshot.state.experiment;
+  if (
+    snapshot.definition.zone !== overlay.target_context.zone ||
+    nutritionalContext?.profile_id !== overlay.target_context.nutrition_profile ||
+    experiment?.id !== overlay.target_context.experiment
+  ) {
+    return {
+      status: "missing",
+      url,
+      diagnostic: "Reconstructed context snapshot did not match its declared zone, nutrition and experiment"
+    };
+  }
+  return {
+    status: "loaded",
+    url,
+    snapshot,
+    summary: summarizeEngineSnapshot(snapshot, url)
+  };
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error("Web Crypto SHA-256 is unavailable for context overlay verification");
+  }
+  const digest = await globalThis.crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value)
+  );
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function isSha256(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
+}
+
+function isEngineContextSnapshotOverlay(value: unknown): value is EngineContextSnapshotOverlay {
+  if (!isRecord(value) || value.schema_version !== "cell-engine.context-overlay.v1") {
+    return false;
+  }
+  const base = value.base_identity;
+  const context = value.target_context;
+  const audit = value.audit;
+  const removed = value.removed_state_keys;
+  const overrides = value.state_overrides;
+  if (
+    !isRecord(base) ||
+    base.schema_version !== "cell-engine.snapshot.v1" ||
+    !isString(base.created_at_utc) ||
+    !isString(base.definition_id) ||
+    !Number.isInteger(base.state_key_count) ||
+    Number(base.state_key_count) < 1 ||
+    !isSha256(base.state_key_sha256) ||
+    !isSha256(base.snapshot_sha256) ||
+    !isRecord(context) ||
+    !isString(context.zone) ||
+    !isString(context.nutrition_profile) ||
+    !isString(context.experiment) ||
+    !isRecord(value.target_metadata) ||
+    !isRecord(value.target_definition) ||
+    !isRecord(overrides) ||
+    !Array.isArray(removed) ||
+    !removed.every(isString) ||
+    new Set(removed).size !== removed.length ||
+    removed.some((key) => Object.hasOwn(overrides, key)) ||
+    !isRecord(audit) ||
+    !Number.isInteger(audit.state_override_count) ||
+    audit.state_override_count !== Object.keys(overrides).length ||
+    !Number.isInteger(audit.removed_state_key_count) ||
+    audit.removed_state_key_count !== removed.length ||
+    !Number.isInteger(audit.target_state_key_count) ||
+    Number(audit.target_state_key_count) < 1 ||
+    !isSha256(audit.target_state_key_sha256) ||
+    !isSha256(audit.target_snapshot_sha256) ||
+    audit.exact_reconstruction_verified !== true
+  ) {
+    return false;
+  }
+  return true;
 }
 
 async function defaultSnapshotFetcher(url: string): Promise<SnapshotResponse> {

@@ -12,6 +12,13 @@ from typing import Literal
 from cell_engine.core.runtime_authority import (
     whole_cell_runtime_authority_snapshot,
 )
+from cell_engine.io.context_overlays import (
+    CONTEXT_OVERLAY_ARTIFACT_COUNT,
+    CONTEXT_OVERLAY_CANONICAL_SNAPSHOT_COUNT,
+    CONTEXT_OVERLAY_EXPERIMENT_COUNT,
+    CONTEXT_OVERLAY_NUTRITION_PROFILE_COUNT,
+    CONTEXT_OVERLAY_ZONE_COUNT,
+)
 from cell_engine.ml.calibration_authority import (
     legacy_calibration_authority_snapshot,
 )
@@ -58,7 +65,7 @@ from cell_engine.validation.hepatocyte_quantities import (
 
 
 VERSION = "hepatocyte_completion_matrix_v1"
-DATE_VERIFIED = "2026-07-26"
+DATE_VERIFIED = "2026-07-29"
 GapStatus = Literal[
     "closed",
     "partial",
@@ -2279,6 +2286,33 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "context_snapshot_matrix_integrity",
+            "Canonical browser context-snapshot matrix",
+            "closed",
+            "Lossless transport of the engine snapshot across every browser-selectable zone, nutrition and experiment context; no biological-model or parameter claim.",
+            "One canonical full snapshot plus 40 base-identity-bound overlays replace duplicated context snapshots. Python verifies exact target reconstruction and checksums before atomic publication; TypeScript rechecks base identity, state-surface identity and declared context before rendering.",
+            {
+                "canonical_snapshot_count": CONTEXT_OVERLAY_CANONICAL_SNAPSHOT_COUNT,
+                "context_overlay_count": CONTEXT_OVERLAY_ARTIFACT_COUNT,
+                "zone_count": CONTEXT_OVERLAY_ZONE_COUNT,
+                "nutrition_profile_count": CONTEXT_OVERLAY_NUTRITION_PROFILE_COUNT,
+                "experiment_count": CONTEXT_OVERLAY_EXPERIMENT_COUNT,
+                "offline_exact_reconstruction_verifier_count": 1,
+                "runtime_base_identity_guard_count": 1,
+                "runtime_state_surface_guard_count": 1,
+                "automatic_biological_parameter_activation_count": 0,
+            },
+            (),
+            (
+                "engine/cell_engine/io/context_overlays.py",
+                "scripts/export_context_matrix.py",
+                "public/context-snapshot-manifest.v1.json",
+                "src/engineSnapshot.ts",
+                "engine/tests/test_context_overlays.py",
+                "src/engineSnapshot.test.ts",
+            ),
+        ),
+        _entry(
             "visual_regression_automation",
             "Automated browser render-integrity regression",
             "closed",
@@ -3298,6 +3332,27 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or visual_metrics["exact_cross_gpu_pixel_equivalence_claim"] is not False
     ):
         raise ValueError("browser render-integrity automation contract changed")
+    context_snapshot_metrics = by_id["context_snapshot_matrix_integrity"][
+        "observed_metrics"
+    ]
+    if (
+        context_snapshot_metrics["canonical_snapshot_count"] != 1
+        or context_snapshot_metrics["context_overlay_count"] != 40
+        or context_snapshot_metrics["zone_count"] != 3
+        or context_snapshot_metrics["nutrition_profile_count"] != 3
+        or context_snapshot_metrics["experiment_count"] != 4
+        or context_snapshot_metrics[
+            "offline_exact_reconstruction_verifier_count"
+        ]
+        != 1
+        or context_snapshot_metrics["runtime_base_identity_guard_count"] != 1
+        or context_snapshot_metrics["runtime_state_surface_guard_count"] != 1
+        or context_snapshot_metrics[
+            "automatic_biological_parameter_activation_count"
+        ]
+        != 0
+    ):
+        raise ValueError("browser context-snapshot matrix contract changed")
     if by_id["independent_scientific_validation"]["observed_metrics"]["externally_reviewed_claim_count"] != 0:
         raise ValueError("external validation count changed without result intake")
 

@@ -1,6 +1,6 @@
 {
   "version": "hepatocyte_completion_matrix_v1",
-  "date_verified": "2026-07-26",
+  "date_verified": "2026-07-29",
   "status": "mixed_completion_with_fail_closed_biological_activation",
   "score_policy": "No average realism or biological-accuracy percentage is identifiable. Closed statuses apply only to each entry's exact scope.",
   "status_semantics": {
@@ -1246,6 +1246,33 @@
       ]
     },
     {
+      "id": "context_snapshot_matrix_integrity",
+      "title": "Canonical browser context-snapshot matrix",
+      "status": "closed",
+      "scope": "Lossless transport of the engine snapshot across every browser-selectable zone, nutrition and experiment context; no biological-model or parameter claim.",
+      "current_capability": "One canonical full snapshot plus 40 base-identity-bound overlays replace duplicated context snapshots. Python verifies exact target reconstruction and checksums before atomic publication; TypeScript rechecks base identity, state-surface identity and declared context before rendering.",
+      "observed_metrics": {
+        "canonical_snapshot_count": 1,
+        "context_overlay_count": 40,
+        "zone_count": 3,
+        "nutrition_profile_count": 3,
+        "experiment_count": 4,
+        "offline_exact_reconstruction_verifier_count": 1,
+        "runtime_base_identity_guard_count": 1,
+        "runtime_state_surface_guard_count": 1,
+        "automatic_biological_parameter_activation_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/io/context_overlays.py",
+        "scripts/export_context_matrix.py",
+        "public/context-snapshot-manifest.v1.json",
+        "src/engineSnapshot.ts",
+        "engine/tests/test_context_overlays.py",
+        "src/engineSnapshot.test.ts"
+      ]
+    },
+    {
       "id": "visual_regression_automation",
       "title": "Automated browser render-integrity regression",
       "status": "closed",
@@ -1291,8 +1318,8 @@
     }
   ],
   "summary": {
-    "entry_count": 47,
-    "closed_count": 25,
+    "entry_count": 48,
+    "closed_count": 26,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,
