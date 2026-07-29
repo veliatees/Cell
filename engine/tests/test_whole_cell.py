@@ -37,6 +37,7 @@ from cell_engine.stochastic.hepatocyte_regeneration import (
     apply_regeneration_decision,
     evaluate_hepatocyte_regeneration,
     regeneration_timing_profile,
+    regeneration_timing_reference_available,
 )
 
 
@@ -89,7 +90,10 @@ class WholeCellRunTests(unittest.TestCase):
         self.assertLessEqual(cell.energy_charge(), 1.0)        # exploratory network; not PHH energy validation
         snapshot = whole_cell_snapshot(cell, "cell-0", params=WHOLE_CELL_CYCLE)
         self.assertEqual(snapshot["phase"], "G0")
-        self.assertEqual(snapshot["checkpoint_control"]["blocked_by"], ())
+        self.assertIn(
+            "human hepatocyte cell-cycle timing unavailable",
+            snapshot["checkpoint_control"]["blocked_by"],
+        )
         self.assertIn(
             "quiescent G0 maintained",
             snapshot["checkpoint_control"]["supported_by"][0],
@@ -118,6 +122,30 @@ class WholeCellRunTests(unittest.TestCase):
         self.assertEqual(cell.cycle.phase, "G1")
         self.assertEqual(REAL_TIME_PROLIFERATING_HEPATOCYTE_CYCLE.timing_profile.id, "rat_hepatocyte_phx_reference")
         self.assertFalse(REAL_TIME_PROLIFERATING_HEPATOCYTE_CYCLE.timing_profile.time_compressed)
+
+    def test_human_baseline_cycle_has_no_executable_cross_species_timing(self):
+        cell = seed_whole_cell(self.definition, fed=True)
+        params = replace(WHOLE_CELL_CYCLE, regeneration_signal_active=True)
+        after, divisions = run_whole_cell(
+            cell,
+            160.0,
+            0.05,
+            EngineRng(7),
+            params=params,
+        )
+        snapshot = whole_cell_snapshot(after, "cell-0", params=params)
+
+        self.assertEqual(
+            WHOLE_CELL_CYCLE.timing_profile.id,
+            "human_hepatocyte_timing_unavailable",
+        )
+        self.assertFalse(WHOLE_CELL_CYCLE.timing_profile.execution_authorized)
+        self.assertEqual(divisions, 0)
+        self.assertEqual(after.cycle.phase, "G0")
+        self.assertIn(
+            "human hepatocyte cell-cycle timing unavailable",
+            snapshot["checkpoint_control"]["blocked_by"],
+        )
 
     def test_starved_cell_arrests(self):
         cell, divisions = run_whole_cell(
@@ -440,6 +468,12 @@ class WholeCellRunTests(unittest.TestCase):
         self.assertEqual(mouse.dna_synthesis_peak_h, (36.0, 48.0))
         self.assertEqual(human.dna_synthesis_peak_h, (168.0, 240.0))
         self.assertIn("hepatectomy_timing", human.source_ids)
+        self.assertTrue(regeneration_timing_reference_available(human))
+        self.assertFalse(
+            regeneration_timing_reference_available(
+                regeneration_timing_profile(species="human", trigger="none")
+            )
+        )
 
 
 if __name__ == "__main__":

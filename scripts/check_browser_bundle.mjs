@@ -69,6 +69,19 @@ const measurements = {
   initial_css_gzip_bytes: sum(initialCss, "gzipBytes")
 };
 
+const verifiedBuild = budget.last_verified_build;
+if (!verifiedBuild || typeof verifiedBuild !== "object") {
+  throw new Error("browser bundle budget requires a last_verified_build ledger");
+}
+for (const [field, observed] of Object.entries(measurements)) {
+  if (verifiedBuild[field] !== observed) {
+    throw new Error(
+      `browser bundle verified-build ledger is stale: ${field} ` +
+      `${verifiedBuild[field]} != ${observed}`
+    );
+  }
+}
+
 const requiredDeferred = budget.required_deferred_entries;
 if (
   !Array.isArray(requiredDeferred) ||
@@ -84,6 +97,12 @@ for (const source of requiredDeferred) {
   if (initialKeys.has(source)) {
     throw new Error(`deferred entry escaped into the initial graph: ${source}`);
   }
+}
+if (
+  verifiedBuild.required_deferred_entry_count !== requiredDeferred.length ||
+  verifiedBuild.budget_gate_passed !== true
+) {
+  throw new Error("browser bundle verified-build deferred ledger is stale");
 }
 
 const limits = budget.limits;
