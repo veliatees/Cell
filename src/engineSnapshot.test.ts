@@ -1630,6 +1630,7 @@ const snapshot: EngineSnapshot = {
         m_duration_s: 5,
         time_compressed: true,
         biological_reference: false,
+        execution_authorized: true,
         source_ids: ["cell_cycle_timing"],
         notes: "Not biological time."
       },
@@ -1720,6 +1721,7 @@ describe("engine snapshot client", () => {
     expect(summary.divisionDisplay.displayableDaughterCount).toBe(2);
     expect(summary.divisionDisplay.timeCompressed).toBe(true);
     expect(summary.divisionDisplay.biologicalReference).toBe(false);
+    expect(summary.divisionDisplay.timingExecutionAuthorized).toBe(true);
     expect(summary.regenerationContext?.decision?.cell_cycle_entry_permitted).toBe(true);
     expect(summary.regenerationContext?.decision?.direct_mitogen_axes?.[0].active).toBe(true);
     expect(summary.regenerationContext?.timing_profile?.dna_synthesis_peak_h).toEqual([36, 48]);
@@ -2079,6 +2081,7 @@ describe("engine snapshot client", () => {
             m_duration_s: 3600,
             time_compressed: false,
             biological_reference: true,
+            execution_authorized: true,
             source_ids: ["rat_hepatocyte_phx_timing", "cell_cycle_timing"],
             notes: "Source-anchored timing; no demo-speed division."
           },
@@ -2104,6 +2107,7 @@ describe("engine snapshot client", () => {
     expect(summary.division?.timing_profile?.biological_reference).toBe(true);
     expect(summary.divisionDisplay.timeCompressed).toBe(false);
     expect(summary.divisionDisplay.biologicalReference).toBe(true);
+    expect(summary.divisionDisplay.timingExecutionAuthorized).toBe(true);
   });
 
   it("summarizes the default one-cell no-event snapshot as no displayable engine daughters", () => {
@@ -2148,10 +2152,11 @@ describe("engine snapshot client", () => {
           event_count: 0,
           cytokinesis_failure_risk: 0.2,
           timing_profile: {
-            id: "rat_hepatocyte_phx_reference",
+            id: "human_hepatocyte_timing_unavailable",
             time_compressed: false,
-            biological_reference: true,
-            source_ids: ["rat_hepatocyte_phx_timing", "cell_cycle_timing"]
+            biological_reference: false,
+            execution_authorized: false,
+            source_ids: []
           },
           cells: [quiescentCell],
           events: [],
@@ -2164,7 +2169,15 @@ describe("engine snapshot client", () => {
             cell_cycle_entry_permitted: false,
             blocked_by: ["no injury/development/regeneration context or liver mass already restored"]
           },
-          timing_is_real_world_reference: true,
+          timing_profile: {
+            species: "human",
+            trigger: "none",
+            dna_synthesis_onset_h: null,
+            dna_synthesis_peak_h: null,
+            mass_restoration_days: null,
+            source_ids: []
+          },
+          timing_is_real_world_reference: false,
           division_demo_is_time_compressed: false
         }
       }),
@@ -2179,9 +2192,12 @@ describe("engine snapshot client", () => {
     expect(summary.divisionDisplay.displayableDaughterCount).toBe(0);
     expect(summary.divisionDisplay.resultingCellCount).toBe(0);
     expect(summary.divisionDisplay.timeCompressed).toBe(false);
-    expect(summary.divisionDisplay.biologicalReference).toBe(true);
+    expect(summary.divisionDisplay.biologicalReference).toBe(false);
+    expect(summary.divisionDisplay.timingExecutionAuthorized).toBe(false);
     expect(summary.regenerationContext?.decision?.regeneration_context_active).toBe(false);
     expect(summary.regenerationContext?.decision?.cell_cycle_entry_permitted).toBe(false);
+    expect(summary.regenerationContext?.timing_profile?.species).toBe("human");
+    expect(summary.regenerationContext?.timing_is_real_world_reference).toBe(false);
     expect(summary.regenerationContext?.division_demo_is_time_compressed).toBe(false);
   });
 
@@ -2588,8 +2604,8 @@ describe("engine snapshot client", () => {
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.delivered_bundle_count).toBe(0);
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.runtime_flux_coupling_allowed).toBe(false);
       expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(49);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(27);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(50);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(28);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.partial_count).toBe(8);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(12);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.biological_accuracy_pct).toBeNull();

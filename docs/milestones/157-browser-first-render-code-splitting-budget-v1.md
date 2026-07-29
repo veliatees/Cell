@@ -35,24 +35,26 @@ these JavaScript modules from entering the initial parse and execution graph.
   instead of assuming that the entry file alone is the initial payload.
 - The production build fails if byte limits are exceeded or any required
   deferred source becomes an initial dependency.
+- The build also fails when the checked-in `last_verified_build` ledger differs
+  from the freshly measured manifest graph, preventing stale performance claims.
 
 ## Verified production graph
 
 | Item | Measured value | Budget |
 | --- | ---: | ---: |
 | Initial JavaScript chunks | 2 | explicit graph |
-| Initial JavaScript raw bytes | 938,612 | <= 980,000 |
-| Initial JavaScript gzip bytes | 255,954 | <= 275,000 |
+| Initial JavaScript raw bytes | 938,799 | <= 980,000 |
+| Initial JavaScript gzip bytes | 256,016 | <= 275,000 |
 | Largest initial JavaScript chunk | 522,443 bytes | <= 550,000 |
 | Initial CSS raw bytes | 32,732 | <= 40,000 |
 | Required deferred entries | 6 | exactly 6 |
 
 The gzip values in the gate use Node's deterministic level-9 zlib call. Vite's
-displayed gzip sum for the same two initial chunks is 259.74 kB.
+displayed gzip sum for the same two initial chunks is 259.81 kB.
 
 Relative to the previous Vite-reported monolithic entry, raw initial JavaScript
 fell from approximately 1,042 kB to 939 kB, a 9.9% reduction. The
-engine-snapshot interpreter is now an 86.08 kB deferred chunk; PDB and bloom
+engine-snapshot interpreter is now an 86.21 kB deferred chunk; PDB and bloom
 modules are also outside the initial graph.
 
 ## Verification boundary

@@ -33,6 +33,30 @@
       ]
     },
     {
+      "id": "human_baseline_lifecycle_timing_firewall",
+      "title": "Human baseline lifecycle timing firewall",
+      "status": "closed",
+      "scope": "Canonical quiescent human-hepatocyte division and regeneration timing metadata; no phase-duration or proliferation-rate claim.",
+      "current_capability": "The baseline snapshot declares a human regeneration context, publishes no absent phase durations, marks the unavailable healthy-human timing profile as non-executable and refuses G0 exit until an explicit authorized timing profile is selected.",
+      "observed_metrics": {
+        "canonical_human_cell_species_count": 1,
+        "baseline_human_regeneration_species_count": 1,
+        "baseline_cross_species_default_count": 0,
+        "baseline_timing_execution_authorized_count": 0,
+        "baseline_regeneration_numeric_reference_count": 0,
+        "automatic_phase_timing_parameter_count": 0,
+        "automatic_division_event_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/stochastic/cell_cycle.py",
+        "engine/cell_engine/stochastic/whole_cell.py",
+        "engine/cell_engine/validation/baseline_lifecycle_timing.py",
+        "scripts/export_engine_snapshot.py",
+        "engine/tests/test_baseline_lifecycle_timing.py"
+      ]
+    },
+    {
       "id": "legacy_calibration_authority_firewall",
       "title": "Legacy calibration authority firewall",
       "status": "closed",
@@ -1281,8 +1305,8 @@
       "observed_metrics": {
         "production_manifest_gate_count": 1,
         "initial_js_chunk_count": 2,
-        "initial_js_raw_bytes": 938612,
-        "initial_js_gzip_bytes": 255954,
+        "initial_js_raw_bytes": 938799,
+        "initial_js_gzip_bytes": 256016,
         "maximum_initial_js_raw_bytes": 980000,
         "maximum_initial_js_gzip_bytes": 275000,
         "required_deferred_entry_count": 6,
@@ -1343,8 +1367,8 @@
     }
   ],
   "summary": {
-    "entry_count": 49,
-    "closed_count": 27,
+    "entry_count": 50,
+    "closed_count": 28,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

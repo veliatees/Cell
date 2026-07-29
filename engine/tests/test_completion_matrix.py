@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 49
-    assert summary["closed_count"] == 27
+    assert summary["entry_count"] == 50
+    assert summary["closed_count"] == 28
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -101,6 +101,21 @@ def test_browser_bundle_budget_is_closed_without_biological_authority() -> None:
     ]
     assert metrics["required_deferred_entry_count"] == 6
     assert metrics["automatic_biological_parameter_activation_count"] == 0
+
+
+def test_human_baseline_lifecycle_timing_is_fail_closed() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    lifecycle = entries["human_baseline_lifecycle_timing_firewall"]
+    metrics = lifecycle["observed_metrics"]
+    assert lifecycle["status"] == "closed"
+    assert metrics["canonical_human_cell_species_count"] == 1
+    assert metrics["baseline_human_regeneration_species_count"] == 1
+    assert metrics["baseline_cross_species_default_count"] == 0
+    assert metrics["baseline_timing_execution_authorized_count"] == 0
+    assert metrics["baseline_regeneration_numeric_reference_count"] == 0
+    assert metrics["automatic_phase_timing_parameter_count"] == 0
+    assert metrics["automatic_division_event_count"] == 0
 
 
 def test_organelle_boundaries_report_geometry_adapter_without_mesh_overclaim() -> None:

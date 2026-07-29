@@ -78,6 +78,11 @@ biology rather than tuned to look right.
   core is separately cacheable. The production manifest gate keeps initial
   JavaScript below explicit raw/gzip budgets and fails if deferred modules drift
   back into the startup graph.
+- **A fail-closed human lifecycle baseline** — the quiescent human hepatocyte no
+  longer inherits rat cell-cycle or mouse regeneration timing metadata. Missing
+  healthy-human phase durations are omitted, marked non-executable and cannot
+  advance the cycle; cross-species timing profiles remain explicit opt-in
+  benchmarks only.
 - **A stochastic reaction core** — exact Gillespie SSA for low-copy species and
   the chemical Langevin equation (an SDE) for high-copy species, the same hybrid
   the field's whole-cell models use, verified against analytic results (Poisson
@@ -534,6 +539,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 155: Legacy calibration authority firewall v1](docs/milestones/155-legacy-calibration-authority-firewall-v1.md)
 - [Milestone 156: Canonical context snapshot overlay matrix v1](docs/milestones/156-canonical-context-snapshot-overlay-matrix-v1.md)
 - [Milestone 157: Browser first-render code splitting and budget v1](docs/milestones/157-browser-first-render-code-splitting-budget-v1.md)
+- [Milestone 158: Human baseline lifecycle timing firewall v1](docs/milestones/158-human-baseline-lifecycle-timing-firewall-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
