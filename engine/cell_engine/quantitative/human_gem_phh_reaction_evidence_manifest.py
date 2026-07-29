@@ -515,6 +515,7 @@ def validate_human_gem_phh_reaction_evidence_manifest(
         )
     record_ids = {record["reaction_id"] for record in records}
     observed_union: set[str] = set()
+    group_identifier_sets: dict[str, set[str]] = {}
     for code in GAP_ORDER:
         section = groups[code]
         identifiers = section.get("reaction_ids_in_model_order")
@@ -533,7 +534,9 @@ def validate_human_gem_phh_reaction_evidence_manifest(
             raise HumanGemPhhReactionEvidenceManifestError(
                 f"reaction-evidence group {code} changed"
             )
-        observed_union.update(identifiers)
+        identifier_set = set(identifiers)
+        group_identifier_sets[code] = identifier_set
+        observed_union.update(identifier_set)
     if observed_union != record_ids:
         raise HumanGemPhhReactionEvidenceManifestError(
             "reaction-evidence groups do not cover the manifest"
@@ -542,8 +545,7 @@ def validate_human_gem_phh_reaction_evidence_manifest(
         expected_codes = [
             code
             for code in GAP_ORDER
-            if record["reaction_id"]
-            in set(groups[code]["reaction_ids_in_model_order"])
+            if record["reaction_id"] in group_identifier_sets[code]
         ]
         if record.get("gap_codes") != expected_codes:
             raise HumanGemPhhReactionEvidenceManifestError(

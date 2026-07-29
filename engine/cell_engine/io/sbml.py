@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from copy import deepcopy
+from dataclasses import dataclass, replace
+from functools import lru_cache
 from hashlib import sha256
 from pathlib import Path
 import re
@@ -125,6 +127,26 @@ class RoadRunnerAdapter:
 def inspect_sbml_document(path: str | Path) -> SbmlDocumentManifest:
     """Inspect an SBML document without pretending to execute its MathML."""
     model_path = Path(path)
+    resolved = model_path.resolve()
+    stat = resolved.stat()
+    cached = _inspect_sbml_document_cached(
+        str(resolved),
+        stat.st_mtime_ns,
+        stat.st_size,
+    )
+    result = deepcopy(cached)
+    if result.path != str(model_path):
+        result = replace(result, path=str(model_path))
+    return result
+
+
+@lru_cache(maxsize=16)
+def _inspect_sbml_document_cached(
+    resolved_path: str,
+    _mtime_ns: int,
+    _size_bytes: int,
+) -> SbmlDocumentManifest:
+    model_path = Path(resolved_path)
     payload = model_path.read_bytes()
     root = ET.fromstring(payload)
     if _local_name(root.tag) != "sbml":
@@ -205,7 +227,22 @@ def inspect_sbml_reaction_fingerprints(
     vendored artifact. It is a provenance/integrity check, not a claim that two
     algebraically equivalent expressions must share a digest.
     """
-    model_path = Path(path)
+    model_path = Path(path).resolve()
+    stat = model_path.stat()
+    return _inspect_sbml_reaction_fingerprints_cached(
+        str(model_path),
+        stat.st_mtime_ns,
+        stat.st_size,
+    )
+
+
+@lru_cache(maxsize=16)
+def _inspect_sbml_reaction_fingerprints_cached(
+    resolved_path: str,
+    _mtime_ns: int,
+    _size_bytes: int,
+) -> tuple[SbmlReactionFingerprint, ...]:
+    model_path = Path(resolved_path)
     root = ET.fromstring(model_path.read_bytes())
     if _local_name(root.tag) != "sbml":
         raise ValueError(f"SBML file {model_path} has unexpected root element {root.tag}")

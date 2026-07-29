@@ -261,6 +261,9 @@ def protein_groups_for_gene(
     *,
     payload: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], ...]:
+    if payload is None:
+        gene_index, _ = _default_protein_group_indexes()
+        return gene_index.get(gene, ())
     atlas = payload or load_phh_proteome_atlas()
     records = _require_list(atlas.get("protein_groups"), "protein_groups")
     return tuple(
@@ -275,6 +278,14 @@ def protein_group_for_accession(
     *,
     payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if payload is None:
+        _, accession_index = _default_protein_group_indexes()
+        matches = accession_index.get(accession, ())
+        if len(matches) != 1:
+            raise ValueError(
+                f"expected one PHH protein group for accession {accession}, found {len(matches)}"
+            )
+        return matches[0]
     atlas = payload or load_phh_proteome_atlas()
     records = _require_list(atlas.get("protein_groups"), "protein_groups")
     matches = [
@@ -287,6 +298,32 @@ def protein_group_for_accession(
             f"expected one PHH protein group for accession {accession}, found {len(matches)}"
         )
     return matches[0]
+
+
+@lru_cache(maxsize=1)
+def _default_protein_group_indexes() -> tuple[
+    dict[str, tuple[dict[str, Any], ...]],
+    dict[str, tuple[dict[str, Any], ...]],
+]:
+    records = _require_list(
+        load_phh_proteome_atlas().get("protein_groups"),
+        "protein_groups",
+    )
+    by_gene: dict[str, list[dict[str, Any]]] = {}
+    by_accession: dict[str, list[dict[str, Any]]] = {}
+    for item in records:
+        if not isinstance(item, dict):
+            continue
+        for gene in item.get("gene_names", ()):
+            if isinstance(gene, str):
+                by_gene.setdefault(gene, []).append(item)
+        for accession in item.get("protein_ids", ()):
+            if isinstance(accession, str):
+                by_accession.setdefault(accession, []).append(item)
+    return (
+        {key: tuple(values) for key, values in by_gene.items()},
+        {key: tuple(values) for key, values in by_accession.items()},
+    )
 
 
 def canonical_gene_reference(
@@ -356,7 +393,7 @@ def phh_proteome_atlas_snapshot() -> dict[str, Any]:
     atlas = load_phh_proteome_atlas()
     records = _require_list(atlas["protein_groups"], "protein_groups")
     selected = [
-        {"gene": gene, **_snapshot_record(canonical_gene_reference(gene, payload=atlas))}
+        {"gene": gene, **_snapshot_record(canonical_gene_reference(gene))}
         for gene in CANONICAL_REFERENCE_ACCESSIONS
     ]
     ranked = sorted(

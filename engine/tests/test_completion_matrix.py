@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 51
-    assert summary["closed_count"] == 29
+    assert summary["entry_count"] == 52
+    assert summary["closed_count"] == 30
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -118,6 +118,22 @@ def test_browser_runtime_policy_suspends_hidden_work_without_biological_authorit
     assert metrics["visual_fluid_cadence_tier_count"] == 3
     assert metrics["total_frame_work_governor_count"] == 1
     assert metrics["visual_clock_conservation_test_count"] == 1
+    assert metrics["automatic_biological_parameter_activation_count"] == 0
+
+
+def test_snapshot_export_reuse_is_isolated_and_biologically_inert() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    export = entries["scientific_snapshot_export_recomputation_firewall"]
+    metrics = export["observed_metrics"]
+
+    assert export["status"] == "closed"
+    assert metrics["cache_surface_count"] == 7
+    assert metrics["stat_invalidated_file_cache_count"] == 2
+    assert metrics["defensive_copy_surface_count"] == 4
+    assert metrics["immutable_return_surface_count"] == 2
+    assert metrics["custom_input_cache_bypass_surface_count"] == 3
+    assert metrics["scientific_payload_equivalence_excluded_path_count"] == 1
     assert metrics["automatic_biological_parameter_activation_count"] == 0
 
 

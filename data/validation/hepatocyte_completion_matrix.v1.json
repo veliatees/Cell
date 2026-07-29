@@ -1297,6 +1297,32 @@
       ]
     },
     {
+      "id": "scientific_snapshot_export_recomputation_firewall",
+      "title": "Scientific snapshot export recomputation firewall",
+      "status": "closed",
+      "scope": "Process-local reuse of identical default scientific snapshot computations with explicit invalidation and output-isolation rules; no biological-model, parameter or validation claim.",
+      "current_capability": "Seven audited reuse surfaces eliminate repeated PHH proteome scans, SBML parsing and default evidence reconstruction. File-backed SBML caches are stat-invalidated, custom scientific inputs bypass default caches, mutable public results are defensive copies and scientific payload equivalence excludes only the creation timestamp.",
+      "observed_metrics": {
+        "cache_surface_count": 7,
+        "stat_invalidated_file_cache_count": 2,
+        "defensive_copy_surface_count": 4,
+        "immutable_return_surface_count": 2,
+        "custom_input_cache_bypass_surface_count": 3,
+        "scientific_payload_equivalence_excluded_path_count": 1,
+        "automatic_biological_parameter_activation_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "data/validation/scientific_snapshot_export_policy.v1.json",
+        "engine/cell_engine/io/sbml.py",
+        "engine/cell_engine/quantitative/phh_proteome_atlas.py",
+        "engine/cell_engine/validation/kinetic_transfer.py",
+        "engine/cell_engine/validation/reaction_evidence_atlas.py",
+        "engine/cell_engine/quantitative/metabolic_constraint_shell.py",
+        "engine/tests/test_scientific_snapshot_export_policy.py"
+      ]
+    },
+    {
       "id": "browser_startup_bundle_budget",
       "title": "Browser startup bundle budget",
       "status": "closed",
@@ -1395,8 +1421,8 @@
     }
   ],
   "summary": {
-    "entry_count": 51,
-    "closed_count": 29,
+    "entry_count": 52,
+    "closed_count": 30,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

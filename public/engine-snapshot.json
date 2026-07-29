@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-29T10:50:14.640676+00:00",
+    "created_at_utc": "2026-07-29T11:36:53.576149+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -16830,6 +16830,32 @@
         },
         {
           "code_surfaces": [
+            "data/validation/scientific_snapshot_export_policy.v1.json",
+            "engine/cell_engine/io/sbml.py",
+            "engine/cell_engine/quantitative/phh_proteome_atlas.py",
+            "engine/cell_engine/validation/kinetic_transfer.py",
+            "engine/cell_engine/validation/reaction_evidence_atlas.py",
+            "engine/cell_engine/quantitative/metabolic_constraint_shell.py",
+            "engine/tests/test_scientific_snapshot_export_policy.py"
+          ],
+          "current_capability": "Seven audited reuse surfaces eliminate repeated PHH proteome scans, SBML parsing and default evidence reconstruction. File-backed SBML caches are stat-invalidated, custom scientific inputs bypass default caches, mutable public results are defensive copies and scientific payload equivalence excludes only the creation timestamp.",
+          "id": "scientific_snapshot_export_recomputation_firewall",
+          "observed_metrics": {
+            "automatic_biological_parameter_activation_count": 0,
+            "cache_surface_count": 7,
+            "custom_input_cache_bypass_surface_count": 3,
+            "defensive_copy_surface_count": 4,
+            "immutable_return_surface_count": 2,
+            "scientific_payload_equivalence_excluded_path_count": 1,
+            "stat_invalidated_file_cache_count": 2
+          },
+          "remaining_requirements": [],
+          "scope": "Process-local reuse of identical default scientific snapshot computations with explicit invalidation and output-isolation rules; no biological-model, parameter or validation claim.",
+          "status": "closed",
+          "title": "Scientific snapshot export recomputation firewall"
+        },
+        {
+          "code_surfaces": [
             "vite.config.ts",
             "scripts/check_browser_bundle.mjs",
             "data/validation/browser_bundle_budget.v1.json",
@@ -16938,8 +16964,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 12,
-        "closed_count": 29,
-        "entry_count": 51,
+        "closed_count": 30,
+        "entry_count": 52,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
