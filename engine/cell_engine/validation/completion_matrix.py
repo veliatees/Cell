@@ -12,6 +12,13 @@ from typing import Literal
 from cell_engine.core.runtime_authority import (
     whole_cell_runtime_authority_snapshot,
 )
+from cell_engine.io.context_overlays import (
+    CONTEXT_OVERLAY_ARTIFACT_COUNT,
+    CONTEXT_OVERLAY_CANONICAL_SNAPSHOT_COUNT,
+    CONTEXT_OVERLAY_EXPERIMENT_COUNT,
+    CONTEXT_OVERLAY_NUTRITION_PROFILE_COUNT,
+    CONTEXT_OVERLAY_ZONE_COUNT,
+)
 from cell_engine.ml.calibration_authority import (
     legacy_calibration_authority_snapshot,
 )
@@ -50,6 +57,12 @@ from cell_engine.quantitative.reaction_transport_coupling import (
     reaction_transport_coupling_intake_snapshot,
 )
 from cell_engine.validation.capability_atlas import hepatocyte_capability_atlas_snapshot
+from cell_engine.validation.baseline_lifecycle_timing import (
+    baseline_lifecycle_timing_snapshot,
+)
+from cell_engine.validation.browser_bundle_budget import (
+    browser_bundle_budget_snapshot,
+)
 from cell_engine.validation.external_review import external_validation_snapshot
 from cell_engine.validation.reaction_evidence_atlas import build_reaction_evidence_atlas
 from cell_engine.validation.hepatocyte_quantities import (
@@ -58,7 +71,7 @@ from cell_engine.validation.hepatocyte_quantities import (
 
 
 VERSION = "hepatocyte_completion_matrix_v1"
-DATE_VERIFIED = "2026-07-26"
+DATE_VERIFIED = "2026-07-29"
 GapStatus = Literal[
     "closed",
     "partial",
@@ -173,6 +186,10 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     metabolic_bundle = metabolic["phh_execution_bundle_intake"]
     external = external_validation_snapshot()["summary"]
     donor_generative = generative_donor_manifest_intake_snapshot()
+    browser_bundle = browser_bundle_budget_snapshot()
+    browser_bundle_limits = browser_bundle["limits"]
+    browser_bundle_verified = browser_bundle["last_verified_build"]
+    baseline_lifecycle = baseline_lifecycle_timing_snapshot()
 
     entries = (
         _entry(
@@ -208,6 +225,53 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "engine/cell_engine/core/runtime_authority.py",
                 "engine/cell_engine/core/engine.py",
                 "engine/tests/test_runtime_authority.py",
+            ),
+        ),
+        _entry(
+            "human_baseline_lifecycle_timing_firewall",
+            "Human baseline lifecycle timing firewall",
+            "closed",
+            "Canonical quiescent human-hepatocyte division and regeneration timing metadata; no phase-duration or proliferation-rate claim.",
+            "The baseline snapshot declares a human regeneration context, publishes no absent phase durations, marks the unavailable healthy-human timing profile as non-executable and refuses G0 exit until an explicit authorized timing profile is selected.",
+            {
+                "canonical_human_cell_species_count": int(
+                    baseline_lifecycle["canonical_cell_species"] == "human"
+                ),
+                "baseline_human_regeneration_species_count": int(
+                    baseline_lifecycle["baseline_regeneration_species"]
+                    == "human"
+                ),
+                "baseline_cross_species_default_count": baseline_lifecycle[
+                    "cross_species_default_count"
+                ],
+                "baseline_timing_execution_authorized_count": int(
+                    bool(
+                        baseline_lifecycle[
+                            "baseline_division_timing_profile"
+                        ]["execution_authorized"]
+                    )
+                ),
+                "baseline_regeneration_numeric_reference_count": int(
+                    bool(
+                        baseline_lifecycle[
+                            "regeneration_timing_reference_available"
+                        ]
+                    )
+                ),
+                "automatic_phase_timing_parameter_count": baseline_lifecycle[
+                    "automatic_phase_timing_parameter_count"
+                ],
+                "automatic_division_event_count": baseline_lifecycle[
+                    "automatic_division_event_count"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/stochastic/cell_cycle.py",
+                "engine/cell_engine/stochastic/whole_cell.py",
+                "engine/cell_engine/validation/baseline_lifecycle_timing.py",
+                "scripts/export_engine_snapshot.py",
+                "engine/tests/test_baseline_lifecycle_timing.py",
             ),
         ),
         _entry(
@@ -2279,6 +2343,70 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "context_snapshot_matrix_integrity",
+            "Canonical browser context-snapshot matrix",
+            "closed",
+            "Lossless transport of the engine snapshot across every browser-selectable zone, nutrition and experiment context; no biological-model or parameter claim.",
+            "One canonical full snapshot plus 40 base-identity-bound overlays replace duplicated context snapshots. Python verifies exact target reconstruction and checksums before atomic publication; TypeScript rechecks base identity, state-surface identity and declared context before rendering.",
+            {
+                "canonical_snapshot_count": CONTEXT_OVERLAY_CANONICAL_SNAPSHOT_COUNT,
+                "context_overlay_count": CONTEXT_OVERLAY_ARTIFACT_COUNT,
+                "zone_count": CONTEXT_OVERLAY_ZONE_COUNT,
+                "nutrition_profile_count": CONTEXT_OVERLAY_NUTRITION_PROFILE_COUNT,
+                "experiment_count": CONTEXT_OVERLAY_EXPERIMENT_COUNT,
+                "offline_exact_reconstruction_verifier_count": 1,
+                "runtime_base_identity_guard_count": 1,
+                "runtime_state_surface_guard_count": 1,
+                "automatic_biological_parameter_activation_count": 0,
+            },
+            (),
+            (
+                "engine/cell_engine/io/context_overlays.py",
+                "scripts/export_context_matrix.py",
+                "public/context-snapshot-manifest.v1.json",
+                "src/engineSnapshot.ts",
+                "engine/tests/test_context_overlays.py",
+                "src/engineSnapshot.test.ts",
+            ),
+        ),
+        _entry(
+            "browser_startup_bundle_budget",
+            "Browser startup bundle budget",
+            "closed",
+            "Production-artifact loading and parsing cost for the browser entry graph; no biological-model or accuracy claim.",
+            "The production build emits a manifest, recursively measures the initial JavaScript and CSS graph, requires the snapshot interpreter, PDB parser and four bloom modules to remain deferred, and fails when an explicit engineering byte budget is exceeded.",
+            {
+                "production_manifest_gate_count": 1,
+                "initial_js_chunk_count": browser_bundle_verified[
+                    "initial_js_chunk_count"
+                ],
+                "initial_js_raw_bytes": browser_bundle_verified[
+                    "initial_js_raw_bytes"
+                ],
+                "initial_js_gzip_bytes": browser_bundle_verified[
+                    "initial_js_gzip_bytes"
+                ],
+                "maximum_initial_js_raw_bytes": browser_bundle_limits[
+                    "maximum_initial_js_raw_bytes"
+                ],
+                "maximum_initial_js_gzip_bytes": browser_bundle_limits[
+                    "maximum_initial_js_gzip_bytes"
+                ],
+                "required_deferred_entry_count": browser_bundle_verified[
+                    "required_deferred_entry_count"
+                ],
+                "automatic_biological_parameter_activation_count": 0,
+            },
+            (),
+            (
+                "vite.config.ts",
+                "scripts/check_browser_bundle.mjs",
+                "data/validation/browser_bundle_budget.v1.json",
+                "src/main.ts",
+                "engine/tests/test_browser_bundle_budget.py",
+            ),
+        ),
+        _entry(
             "visual_regression_automation",
             "Automated browser render-integrity regression",
             "closed",
@@ -2389,6 +2517,32 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 0
     ):
         raise ValueError("whole-cell runtime escaped its authority firewall")
+    baseline_lifecycle_metrics = by_id[
+        "human_baseline_lifecycle_timing_firewall"
+    ]["observed_metrics"]
+    if (
+        baseline_lifecycle_metrics["canonical_human_cell_species_count"] != 1
+        or baseline_lifecycle_metrics[
+            "baseline_human_regeneration_species_count"
+        ]
+        != 1
+        or baseline_lifecycle_metrics["baseline_cross_species_default_count"]
+        != 0
+        or baseline_lifecycle_metrics[
+            "baseline_timing_execution_authorized_count"
+        ]
+        != 0
+        or baseline_lifecycle_metrics[
+            "baseline_regeneration_numeric_reference_count"
+        ]
+        != 0
+        or baseline_lifecycle_metrics[
+            "automatic_phase_timing_parameter_count"
+        ]
+        != 0
+        or baseline_lifecycle_metrics["automatic_division_event_count"] != 0
+    ):
+        raise ValueError("human baseline lifecycle timing escaped fail-closed")
     calibration_authority_metrics = by_id[
         "legacy_calibration_authority_firewall"
     ]["observed_metrics"]
@@ -3298,6 +3452,44 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or visual_metrics["exact_cross_gpu_pixel_equivalence_claim"] is not False
     ):
         raise ValueError("browser render-integrity automation contract changed")
+    context_snapshot_metrics = by_id["context_snapshot_matrix_integrity"][
+        "observed_metrics"
+    ]
+    if (
+        context_snapshot_metrics["canonical_snapshot_count"] != 1
+        or context_snapshot_metrics["context_overlay_count"] != 40
+        or context_snapshot_metrics["zone_count"] != 3
+        or context_snapshot_metrics["nutrition_profile_count"] != 3
+        or context_snapshot_metrics["experiment_count"] != 4
+        or context_snapshot_metrics[
+            "offline_exact_reconstruction_verifier_count"
+        ]
+        != 1
+        or context_snapshot_metrics["runtime_base_identity_guard_count"] != 1
+        or context_snapshot_metrics["runtime_state_surface_guard_count"] != 1
+        or context_snapshot_metrics[
+            "automatic_biological_parameter_activation_count"
+        ]
+        != 0
+    ):
+        raise ValueError("browser context-snapshot matrix contract changed")
+    browser_bundle_metrics = by_id["browser_startup_bundle_budget"][
+        "observed_metrics"
+    ]
+    if (
+        browser_bundle_metrics["production_manifest_gate_count"] != 1
+        or browser_bundle_metrics["initial_js_chunk_count"] != 2
+        or browser_bundle_metrics["initial_js_raw_bytes"]
+        > browser_bundle_metrics["maximum_initial_js_raw_bytes"]
+        or browser_bundle_metrics["initial_js_gzip_bytes"]
+        > browser_bundle_metrics["maximum_initial_js_gzip_bytes"]
+        or browser_bundle_metrics["required_deferred_entry_count"] != 6
+        or browser_bundle_metrics[
+            "automatic_biological_parameter_activation_count"
+        ]
+        != 0
+    ):
+        raise ValueError("browser startup bundle budget contract changed")
     if by_id["independent_scientific_validation"]["observed_metrics"]["externally_reviewed_claim_count"] != 0:
         raise ValueError("external validation count changed without result intake")
 

@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import publicEngineSnapshot from "../public/engine-snapshot.json";
+import publicBsepOverlay from "../public/experiments/bsep_loss.json";
 import {
   connectEngineSnapshotStream,
   engineSnapshotEndpointFromLocation,
   loadEngineSnapshot,
+  loadEngineSnapshotArtifact,
   summarizeEngineSnapshot,
   type EngineCheckpointControl,
   type EngineCytokinesisState,
+  type EngineContextSnapshotOverlay,
   type EngineDivisionCell,
   type EngineDivisionOrganelleInventory,
   type EngineMembraneMaterialProfile,
@@ -1627,6 +1630,7 @@ const snapshot: EngineSnapshot = {
         m_duration_s: 5,
         time_compressed: true,
         biological_reference: false,
+        execution_authorized: true,
         source_ids: ["cell_cycle_timing"],
         notes: "Not biological time."
       },
@@ -1717,6 +1721,7 @@ describe("engine snapshot client", () => {
     expect(summary.divisionDisplay.displayableDaughterCount).toBe(2);
     expect(summary.divisionDisplay.timeCompressed).toBe(true);
     expect(summary.divisionDisplay.biologicalReference).toBe(false);
+    expect(summary.divisionDisplay.timingExecutionAuthorized).toBe(true);
     expect(summary.regenerationContext?.decision?.cell_cycle_entry_permitted).toBe(true);
     expect(summary.regenerationContext?.decision?.direct_mitogen_axes?.[0].active).toBe(true);
     expect(summary.regenerationContext?.timing_profile?.dna_synthesis_peak_h).toEqual([36, 48]);
@@ -2076,6 +2081,7 @@ describe("engine snapshot client", () => {
             m_duration_s: 3600,
             time_compressed: false,
             biological_reference: true,
+            execution_authorized: true,
             source_ids: ["rat_hepatocyte_phx_timing", "cell_cycle_timing"],
             notes: "Source-anchored timing; no demo-speed division."
           },
@@ -2101,6 +2107,7 @@ describe("engine snapshot client", () => {
     expect(summary.division?.timing_profile?.biological_reference).toBe(true);
     expect(summary.divisionDisplay.timeCompressed).toBe(false);
     expect(summary.divisionDisplay.biologicalReference).toBe(true);
+    expect(summary.divisionDisplay.timingExecutionAuthorized).toBe(true);
   });
 
   it("summarizes the default one-cell no-event snapshot as no displayable engine daughters", () => {
@@ -2145,10 +2152,11 @@ describe("engine snapshot client", () => {
           event_count: 0,
           cytokinesis_failure_risk: 0.2,
           timing_profile: {
-            id: "rat_hepatocyte_phx_reference",
+            id: "human_hepatocyte_timing_unavailable",
             time_compressed: false,
-            biological_reference: true,
-            source_ids: ["rat_hepatocyte_phx_timing", "cell_cycle_timing"]
+            biological_reference: false,
+            execution_authorized: false,
+            source_ids: []
           },
           cells: [quiescentCell],
           events: [],
@@ -2161,7 +2169,15 @@ describe("engine snapshot client", () => {
             cell_cycle_entry_permitted: false,
             blocked_by: ["no injury/development/regeneration context or liver mass already restored"]
           },
-          timing_is_real_world_reference: true,
+          timing_profile: {
+            species: "human",
+            trigger: "none",
+            dna_synthesis_onset_h: null,
+            dna_synthesis_peak_h: null,
+            mass_restoration_days: null,
+            source_ids: []
+          },
+          timing_is_real_world_reference: false,
           division_demo_is_time_compressed: false
         }
       }),
@@ -2176,9 +2192,12 @@ describe("engine snapshot client", () => {
     expect(summary.divisionDisplay.displayableDaughterCount).toBe(0);
     expect(summary.divisionDisplay.resultingCellCount).toBe(0);
     expect(summary.divisionDisplay.timeCompressed).toBe(false);
-    expect(summary.divisionDisplay.biologicalReference).toBe(true);
+    expect(summary.divisionDisplay.biologicalReference).toBe(false);
+    expect(summary.divisionDisplay.timingExecutionAuthorized).toBe(false);
     expect(summary.regenerationContext?.decision?.regeneration_context_active).toBe(false);
     expect(summary.regenerationContext?.decision?.cell_cycle_entry_permitted).toBe(false);
+    expect(summary.regenerationContext?.timing_profile?.species).toBe("human");
+    expect(summary.regenerationContext?.timing_is_real_world_reference).toBe(false);
     expect(summary.regenerationContext?.division_demo_is_time_compressed).toBe(false);
   });
 
@@ -2246,6 +2265,167 @@ describe("engine snapshot client", () => {
     expect(result.status).toBe("loaded");
     if (result.status === "loaded") {
       expect(result.summary.status).toBe("healthy");
+    }
+  });
+
+  it("reconstructs a context overlay only against its exact canonical base", async () => {
+    const base = publicEngineSnapshot as unknown as EngineSnapshot;
+    const stateKeys = Object.keys(base.state).sort();
+    const stateKeyDigest = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(stateKeys.join("\n"))
+    );
+    const stateKeySha256 = [...new Uint8Array(stateKeyDigest)]
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+    const overlay: EngineContextSnapshotOverlay = {
+      schema_version: "cell-engine.context-overlay.v1",
+      base_identity: {
+        schema_version: "cell-engine.snapshot.v1",
+        created_at_utc: base.metadata?.created_at_utc ?? "",
+        definition_id: base.metadata?.definition_id ?? "",
+        state_key_count: stateKeys.length,
+        state_key_sha256: stateKeySha256,
+        snapshot_sha256: "0".repeat(64)
+      },
+      target_context: {
+        zone: "periportal",
+        nutrition_profile: "fed_peak",
+        experiment: "bsep_loss"
+      },
+      target_metadata: {
+        ...base.metadata,
+        definition_id: "human_hepatocyte_periportal_v1"
+      },
+      target_definition: {
+        ...base.definition,
+        zone: "periportal"
+      },
+      state_overrides: {
+        nutritional_context: {
+          ...base.state.nutritional_context,
+          profile_id: "fed_peak"
+        },
+        experiment: {
+          ...base.state.experiment,
+          id: "bsep_loss"
+        }
+      },
+      removed_state_keys: [],
+      audit: {
+        state_override_count: 2,
+        removed_state_key_count: 0,
+        target_state_key_count: stateKeys.length,
+        target_state_key_sha256: stateKeySha256,
+        target_snapshot_sha256: "1".repeat(64),
+        exact_reconstruction_verified: true
+      }
+    };
+    const fetcher = async () => ({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => overlay
+    });
+
+    const result = await loadEngineSnapshotArtifact(
+      "/contexts/periportal/fed_peak/bsep_loss.json",
+      base,
+      fetcher
+    );
+    expect(result.status).toBe("loaded");
+    if (result.status === "loaded") {
+      expect(result.summary.zone).toBe("periportal");
+      expect(result.summary.nutritionalContext?.profile_id).toBe("fed_peak");
+      expect(result.summary.experiment?.id).toBe("bsep_loss");
+      expect(result.summary.wholeCellRuntimeAuthority?.version).toBe(
+        "whole_cell_runtime_authority_v1"
+      );
+    }
+
+    const staleBase = {
+      ...base,
+      metadata: {
+        ...base.metadata,
+        created_at_utc: "2026-01-01T00:00:00+00:00"
+      }
+    };
+    const rejected = await loadEngineSnapshotArtifact(
+      "/contexts/periportal/fed_peak/bsep_loss.json",
+      staleBase,
+      fetcher
+    );
+    expect(rejected.status).toBe("missing");
+    if (rejected.status === "missing") {
+      expect(rejected.diagnostic).toContain("base identity");
+    }
+  });
+
+  it("fails closed when a context overlay is loaded without its canonical base", async () => {
+    const overlay = {
+      schema_version: "cell-engine.context-overlay.v1",
+      base_identity: {
+        schema_version: "cell-engine.snapshot.v1",
+        created_at_utc: "2026-07-29T00:00:00+00:00",
+        definition_id: "human_hepatocyte_midlobular_v1",
+        state_key_count: 1,
+        state_key_sha256: "0".repeat(64),
+        snapshot_sha256: "1".repeat(64)
+      },
+      target_context: {
+        zone: "midlobular",
+        nutrition_profile: "postabsorptive",
+        experiment: "baseline"
+      },
+      target_metadata: {},
+      target_definition: {},
+      state_overrides: {},
+      removed_state_keys: [],
+      audit: {
+        state_override_count: 0,
+        removed_state_key_count: 0,
+        target_state_key_count: 1,
+        target_state_key_sha256: "0".repeat(64),
+        target_snapshot_sha256: "1".repeat(64),
+        exact_reconstruction_verified: true
+      }
+    };
+    const result = await loadEngineSnapshot("/overlay.json", async () => ({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => overlay
+    }));
+    expect(result.status).toBe("missing");
+    if (result.status === "missing") {
+      expect(result.diagnostic).toContain("requires the canonical");
+    }
+  });
+
+  it("loads the checked-in BSEP overlay with current authority surfaces", async () => {
+    const result = await loadEngineSnapshotArtifact(
+      "/experiments/bsep_loss.json",
+      publicEngineSnapshot as unknown as EngineSnapshot,
+      async () => ({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        json: async () => publicBsepOverlay
+      })
+    );
+    expect(result.status).toBe("loaded");
+    if (result.status === "loaded") {
+      expect(result.summary.experiment?.id).toBe("bsep_loss");
+      expect(result.summary.cellularResponse?.bsep_surface_activity).toBe(0);
+      expect(result.summary.metabolicConstraintShell?.version).toBe(
+        "metabolic_constraint_shell_v14"
+      );
+      expect(result.summary.wholeCellRuntimeAuthority?.version).toBe(
+        "whole_cell_runtime_authority_v1"
+      );
+      expect(result.summary.legacyCalibrationAuthority?.version).toBe(
+        "legacy_calibration_authority_v1"
+      );
     }
   });
 
@@ -2424,8 +2604,8 @@ describe("engine snapshot client", () => {
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.delivered_bundle_count).toBe(0);
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.runtime_flux_coupling_allowed).toBe(false);
       expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(47);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(25);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(50);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(28);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.partial_count).toBe(8);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(12);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.biological_accuracy_pct).toBeNull();

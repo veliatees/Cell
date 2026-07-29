@@ -1,6 +1,6 @@
 {
   "version": "hepatocyte_completion_matrix_v1",
-  "date_verified": "2026-07-26",
+  "date_verified": "2026-07-29",
   "status": "mixed_completion_with_fail_closed_biological_activation",
   "score_policy": "No average realism or biological-accuracy percentage is identifiable. Closed statuses apply only to each entry's exact scope.",
   "status_semantics": {
@@ -30,6 +30,30 @@
         "engine/cell_engine/core/runtime_authority.py",
         "engine/cell_engine/core/engine.py",
         "engine/tests/test_runtime_authority.py"
+      ]
+    },
+    {
+      "id": "human_baseline_lifecycle_timing_firewall",
+      "title": "Human baseline lifecycle timing firewall",
+      "status": "closed",
+      "scope": "Canonical quiescent human-hepatocyte division and regeneration timing metadata; no phase-duration or proliferation-rate claim.",
+      "current_capability": "The baseline snapshot declares a human regeneration context, publishes no absent phase durations, marks the unavailable healthy-human timing profile as non-executable and refuses G0 exit until an explicit authorized timing profile is selected.",
+      "observed_metrics": {
+        "canonical_human_cell_species_count": 1,
+        "baseline_human_regeneration_species_count": 1,
+        "baseline_cross_species_default_count": 0,
+        "baseline_timing_execution_authorized_count": 0,
+        "baseline_regeneration_numeric_reference_count": 0,
+        "automatic_phase_timing_parameter_count": 0,
+        "automatic_division_event_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/stochastic/cell_cycle.py",
+        "engine/cell_engine/stochastic/whole_cell.py",
+        "engine/cell_engine/validation/baseline_lifecycle_timing.py",
+        "scripts/export_engine_snapshot.py",
+        "engine/tests/test_baseline_lifecycle_timing.py"
       ]
     },
     {
@@ -1246,6 +1270,58 @@
       ]
     },
     {
+      "id": "context_snapshot_matrix_integrity",
+      "title": "Canonical browser context-snapshot matrix",
+      "status": "closed",
+      "scope": "Lossless transport of the engine snapshot across every browser-selectable zone, nutrition and experiment context; no biological-model or parameter claim.",
+      "current_capability": "One canonical full snapshot plus 40 base-identity-bound overlays replace duplicated context snapshots. Python verifies exact target reconstruction and checksums before atomic publication; TypeScript rechecks base identity, state-surface identity and declared context before rendering.",
+      "observed_metrics": {
+        "canonical_snapshot_count": 1,
+        "context_overlay_count": 40,
+        "zone_count": 3,
+        "nutrition_profile_count": 3,
+        "experiment_count": 4,
+        "offline_exact_reconstruction_verifier_count": 1,
+        "runtime_base_identity_guard_count": 1,
+        "runtime_state_surface_guard_count": 1,
+        "automatic_biological_parameter_activation_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/io/context_overlays.py",
+        "scripts/export_context_matrix.py",
+        "public/context-snapshot-manifest.v1.json",
+        "src/engineSnapshot.ts",
+        "engine/tests/test_context_overlays.py",
+        "src/engineSnapshot.test.ts"
+      ]
+    },
+    {
+      "id": "browser_startup_bundle_budget",
+      "title": "Browser startup bundle budget",
+      "status": "closed",
+      "scope": "Production-artifact loading and parsing cost for the browser entry graph; no biological-model or accuracy claim.",
+      "current_capability": "The production build emits a manifest, recursively measures the initial JavaScript and CSS graph, requires the snapshot interpreter, PDB parser and four bloom modules to remain deferred, and fails when an explicit engineering byte budget is exceeded.",
+      "observed_metrics": {
+        "production_manifest_gate_count": 1,
+        "initial_js_chunk_count": 2,
+        "initial_js_raw_bytes": 938799,
+        "initial_js_gzip_bytes": 256016,
+        "maximum_initial_js_raw_bytes": 980000,
+        "maximum_initial_js_gzip_bytes": 275000,
+        "required_deferred_entry_count": 6,
+        "automatic_biological_parameter_activation_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "vite.config.ts",
+        "scripts/check_browser_bundle.mjs",
+        "data/validation/browser_bundle_budget.v1.json",
+        "src/main.ts",
+        "engine/tests/test_browser_bundle_budget.py"
+      ]
+    },
+    {
       "id": "visual_regression_automation",
       "title": "Automated browser render-integrity regression",
       "status": "closed",
@@ -1291,8 +1367,8 @@
     }
   ],
   "summary": {
-    "entry_count": 47,
-    "closed_count": 25,
+    "entry_count": 50,
+    "closed_count": 28,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

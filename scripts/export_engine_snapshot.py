@@ -40,6 +40,7 @@ from cell_engine.stochastic.hepatocyte_regeneration import (
     apply_regeneration_decision,
     evaluate_hepatocyte_regeneration,
     regeneration_timing_profile,
+    regeneration_timing_reference_available,
 )
 from cell_engine.stochastic.integrated_cell import (
     SCOREABLE_SPECIES,
@@ -50,6 +51,10 @@ from cell_engine.stochastic.oxphos import OXPHOS_SOURCES
 from cell_engine.stochastic.redox import REDOX_SOURCES
 from cell_engine.stochastic.signaling import HormoneState
 from cell_engine.validation.hmdb_ranges import score_compartment_concentrations
+from cell_engine.validation.baseline_lifecycle_timing import (
+    BASELINE_DIVISION_TIMING_PROFILE_ID,
+    BASELINE_REGENERATION_SPECIES,
+)
 from cell_engine.validation.experiments import CURATED_EXPERIMENTS, apply_scenario
 from cell_engine.validation.phh_baseline import load_phh_baseline, phh_baseline_snapshot
 from cell_engine.validation.scientific_release import assert_scientific_release, scientific_release_snapshot
@@ -272,7 +277,11 @@ def main() -> None:
     parser.add_argument("--division-dt", type=float, default=0.05)
     parser.add_argument("--division-seed", type=int, default=20260621)
     parser.add_argument("--division-timing-profile", choices=tuple(CELL_CYCLE_TIMING_PROFILES), default=None)
-    parser.add_argument("--regeneration-species", choices=("rat", "mouse", "human", "unknown"), default="mouse")
+    parser.add_argument(
+        "--regeneration-species",
+        choices=("rat", "mouse", "human", "unknown"),
+        default=BASELINE_REGENERATION_SPECIES,
+    )
     parser.add_argument("--experiment", choices=tuple(CURATED_EXPERIMENTS), default="baseline")
     parser.add_argument("--zone", choices=("periportal", "midlobular", "pericentral"), default="midlobular")
     parser.add_argument("--nutrition-profile", choices=("fed_peak", "postabsorptive", "prolonged_fasted"), default="postabsorptive")
@@ -322,7 +331,11 @@ def main() -> None:
         division_params = WHOLE_CELL_CYCLE
     division_timing_profile = (
         args.division_timing_profile
-        or ("compressed_demo" if args.include_division_demo else "rat_hepatocyte_phx_reference")
+        or (
+            "compressed_demo"
+            if args.include_division_demo
+            else BASELINE_DIVISION_TIMING_PROFILE_ID
+        )
     )
     division_params = apply_timing_profile(division_params, division_timing_profile)
     timing = regeneration_timing_profile(species=args.regeneration_species, trigger=regeneration_input.trigger)
@@ -503,7 +516,9 @@ def main() -> None:
                     "input": regeneration_input,
                     "decision": regeneration_decision,
                     "timing_profile": timing,
-                    "timing_is_real_world_reference": True,
+                    "timing_is_real_world_reference": (
+                        regeneration_timing_reference_available(timing)
+                    ),
                     "division_demo_is_time_compressed": bool(args.include_division_demo and division_params.timing_profile.time_compressed),
                 },
             },
