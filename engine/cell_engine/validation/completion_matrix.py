@@ -67,6 +67,9 @@ from cell_engine.validation.browser_runtime_policy import (
     browser_runtime_policy_snapshot,
 )
 from cell_engine.validation.external_review import external_validation_snapshot
+from cell_engine.validation.evidence_readiness import (
+    phh_evidence_readiness_snapshot,
+)
 from cell_engine.validation.reaction_evidence_atlas import build_reaction_evidence_atlas
 from cell_engine.validation.hepatocyte_quantities import (
     hepatocyte_quantity_harvest_snapshot,
@@ -198,6 +201,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     browser_runtime = browser_runtime_policy_snapshot()
     snapshot_export_policy = scientific_snapshot_export_policy_snapshot()
     snapshot_cache_surfaces = snapshot_export_policy["cache_surfaces"]
+    evidence_readiness = phh_evidence_readiness_snapshot()
+    evidence_readiness_summary = evidence_readiness["summary"]
     baseline_lifecycle = baseline_lifecycle_timing_snapshot()
 
     entries = (
@@ -2428,6 +2433,54 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "phh_evidence_readiness_preflight",
+            "Unified PHH evidence readiness preflight",
+            "closed",
+            "Repository-level identity verification, delivery discovery, structural-validator dispatch and quarantine reporting for every declared PHH evidence contract; no biological parameter, model-fit or predictive claim.",
+            "One checksum-pinned registry discovers all 15 versioned intake contracts, dispatches only statically registered validators, preserves dependency-aware mobility and geometry links, quarantines one malformed delivery without stopping the remaining audit, and exposes one read-only CLI and snapshot surface.",
+            {
+                "registry_contract_count": evidence_readiness_summary[
+                    "registry_contract_count"
+                ],
+                "contract_identity_verified_count": evidence_readiness_summary[
+                    "contract_identity_verified_count"
+                ],
+                "validator_surface_count": evidence_readiness_summary[
+                    "validator_surface_count"
+                ],
+                "delivery_present_count": evidence_readiness_summary[
+                    "delivery_present_count"
+                ],
+                "rejected_intake_count": evidence_readiness_summary[
+                    "rejected_intake_count"
+                ],
+                "target_gap_count": evidence_readiness_summary[
+                    "target_gap_count"
+                ],
+                "target_gap_ids": evidence_readiness["target_gap_ids"],
+                "quantitatively_authorized_item_count": (
+                    evidence_readiness_summary[
+                        "quantitatively_authorized_item_count"
+                    ]
+                ),
+                "automatic_parameter_activation_count": (
+                    evidence_readiness_summary[
+                        "automatic_parameter_activation_count"
+                    ]
+                ),
+                "automatic_state_coupling_count": evidence_readiness_summary[
+                    "automatic_state_coupling_count"
+                ],
+            },
+            (),
+            (
+                "data/evidence_intake/phh_evidence_readiness_registry.v1.json",
+                "engine/cell_engine/validation/evidence_readiness.py",
+                "scripts/audit_phh_evidence_readiness.py",
+                "engine/tests/test_evidence_readiness.py",
+            ),
+        ),
+        _entry(
             "browser_startup_bundle_budget",
             "Browser startup bundle budget",
             "closed",
@@ -3616,6 +3669,30 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 0
     ):
         raise ValueError("scientific snapshot export cache contract changed")
+    evidence_readiness_metrics = by_id[
+        "phh_evidence_readiness_preflight"
+    ]["observed_metrics"]
+    if (
+        evidence_readiness_metrics["registry_contract_count"] != 15
+        or evidence_readiness_metrics[
+            "contract_identity_verified_count"
+        ]
+        != 15
+        or evidence_readiness_metrics["validator_surface_count"] != 15
+        or evidence_readiness_metrics["rejected_intake_count"] != 0
+        or evidence_readiness_metrics["target_gap_count"] != 19
+        or evidence_readiness_metrics[
+            "quantitatively_authorized_item_count"
+        ]
+        != 0
+        or evidence_readiness_metrics[
+            "automatic_parameter_activation_count"
+        ]
+        != 0
+        or evidence_readiness_metrics["automatic_state_coupling_count"] != 0
+        or not set(evidence_readiness_metrics["target_gap_ids"]).issubset(by_id)
+    ):
+        raise ValueError("PHH evidence readiness preflight contract changed")
     browser_bundle_metrics = by_id["browser_startup_bundle_budget"][
         "observed_metrics"
     ]
