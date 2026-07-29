@@ -73,8 +73,13 @@ import {
   computeNormals as computeMembraneNormals,
   restoreMembraneRestShape,
   writePrevalidatedBarycentricMembranePoint,
-  type MembraneSim
+  type MembraneSim,
+  type MembraneStepDiagnostics
 } from "./physics/membrane_mechanics";
+import {
+  IntracellularBoundaryMechanics,
+  type IntracellularBoundaryLoadDiagnostics
+} from "./physics/intracellularBoundaryMechanics";
 import {
   IntracellularFluidField,
   type IntracellularFluidCollision,
@@ -802,6 +807,11 @@ let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by c
 let membraneSim: MembraneSim | null = null;
 let membraneRestPos: Float32Array | null = null;
 let engineMembraneDeformationActive = false;
+let intracellularBoundaryMechanics: IntracellularBoundaryMechanics | null = null;
+let intracellularBoundaryLoadScratch: Float32Array | null = null;
+let intracellularBoundaryPressureScratch: Float32Array | null = null;
+let lastIntracellularBoundaryDiagnostics: IntracellularBoundaryLoadDiagnostics | null = null;
+let lastMembraneStepDiagnostics: MembraneStepDiagnostics | null = null;
 type IntracellularFluidVisual = {
   field: IntracellularFluidField;
   numericalGrid: CytosolProjectionGrid;
@@ -1145,7 +1155,8 @@ type OrganellePopulation = {
   obstacleHalfLength: number;
   currentPos: Float32Array; // 3 * count, exact renderer centers from the latest matrix update
   diffusionUm2S: number; // engine thermal diffusion coefficient for this organelle type (0 = ungrounded fallback)
-  bodyRadiusWorld: number; // drawn radius (world units) for membrane containment
+  bodyRadiusWorld: Float32Array; // exact drawn bounding radius per instance
+  contactFace: Int32Array; // current local membrane face hint for fast exact contact
 };
 const organellePopulations: OrganellePopulation[] = [];
 // Shared stochastic cytoplasm motion, driven by the engine's cytoplasm_dynamics
@@ -3289,19 +3300,41 @@ const _popColor = new THREE.Color();
 const _anchorPos = new THREE.Vector3();
 const _anchorNorm = new THREE.Vector3();
 const SQRT3 = 1.7320508075688772;
-// Keep a body fully inside the star-shaped (truncated-octahedron) plasma membrane:
-// the placement envelope is a sphere, but the rendered membrane dips inward at the
-// hexagonal faces, so bodies must be pulled in along their own direction.
-function clampInsideMembrane(pos: THREE.Vector3, bodyRadiusWorld: number): void {
-  if (!membraneSim) return;
+// Resolve a drawn organelle against the current membrane triangles. The body is
+// reflected into the admissible domain while the equal-and-opposite numerical
+// penalty is queued for the next membrane step. Physical force remains unknown.
+function resolveIntracellularBodyBoundary(
+  pos: THREE.Vector3,
+  bodyRadiusWorld: number,
+  faceHint: number
+): number {
+  const sim = membraneSim;
+  const mechanics = intracellularBoundaryMechanics;
+  if (sim && mechanics) {
+    const contact = mechanics.resolveSphere(
+      [pos.x, pos.y, pos.z],
+      bodyRadiusWorld,
+      faceHint
+    );
+    pos.set(...contact.correctedCenter);
+    return contact.faceIndex;
+  }
+  if (!sim) return faceHint;
   const r = pos.length();
-  if (r < 1e-4) return;
-  // Organelles fill the cell up to the membrane and may touch it; only stop a
-  // body's centre from crossing the surface (allow the body to reach it, and a
-  // slight indent). This is a motion safety-net, not an inward avoidance gap.
-  const surfaceR = membraneRestRadiusAlongDirection(membraneSim, pos.x, pos.y, pos.z);
-  const maxR = surfaceR - bodyRadiusWorld * 0.35;
-  if (maxR > 0.05 && r > maxR) pos.multiplyScalar(maxR / r);
+  if (r < 1e-4) return faceHint;
+  const restRadius = membraneRestRadiusAlongDirection(
+    sim,
+    pos.x,
+    pos.y,
+    pos.z
+  );
+  const currentRadius =
+    restRadius * membraneRadialFactor(pos.x / r, pos.y / r, pos.z / r, 0);
+  const maximumCenterRadius = currentRadius - bodyRadiusWorld;
+  if (maximumCenterRadius > 0.05 && r > maximumCenterRadius) {
+    pos.multiplyScalar(maximumCenterRadius / r);
+  }
+  return faceHint;
 }
 function updateOrganellePopulations(t: number, updateColor: boolean) {
   // Simulated seconds since the last update (clamped against pauses / big jumps).
@@ -3347,11 +3380,20 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
         oy *= s;
         oz *= s;
       }
-      pop.offset[i * 3] = ox;
-      pop.offset[i * 3 + 1] = oy;
-      pop.offset[i * 3 + 2] = oz;
-      _popPos.set(bx * mf + ox, by * mf + oy, bz * mf + oz);
-      clampInsideMembrane(_popPos, pop.bodyRadiusWorld);
+      const coupledBaseX = bx * mf;
+      const coupledBaseY = by * mf;
+      const coupledBaseZ = bz * mf;
+      _popPos.set(coupledBaseX + ox, coupledBaseY + oy, coupledBaseZ + oz);
+      pop.contactFace[i] = resolveIntracellularBodyBoundary(
+        _popPos,
+        pop.bodyRadiusWorld[i],
+        pop.contactFace[i]
+      );
+      // Feed the membrane reaction back into the organelle's overdamped random
+      // walk state, rather than snapping only the rendered matrix for one frame.
+      pop.offset[i * 3] = _popPos.x - coupledBaseX;
+      pop.offset[i * 3 + 1] = _popPos.y - coupledBaseY;
+      pop.offset[i * 3 + 2] = _popPos.z - coupledBaseZ;
       _popQuat.set(pop.baseQuat[i * 4], pop.baseQuat[i * 4 + 1], pop.baseQuat[i * 4 + 2], pop.baseQuat[i * 4 + 3]);
       const sc = pop.scale[i];
       _popScale.set(sc, sc, sc);
@@ -3747,9 +3789,6 @@ function activeEngineSurfaceDeformation(): EngineSurfaceDeformationState | null 
 function updateMembraneShape(dtReal: number) {
   const sim = membraneSim;
   if (!sim || !organelleMembrane) return;
-  // These substeps repair mesh quality only; they are not biological time.
-  const simDt = clamp(dtReal, 0.004, 0.024);
-  stepMembrane(sim, simDt);
   const deformation = activeEngineSurfaceDeformation();
   if (deformation) {
     applyVolumePreservingAffineContactShape(sim, deformation.normal_local, deformation.axial_scale);
@@ -3757,6 +3796,22 @@ function updateMembraneShape(dtReal: number) {
   } else if (engineMembraneDeformationActive) {
     restoreMembraneRestShape(sim);
     engineMembraneDeformationActive = false;
+  }
+  // These substeps repair mesh quality and consume dimensionless intracellular
+  // loads. They are not a calibrated healthy-PHH force/time integration.
+  const simDt = clamp(dtReal, 0.004, 0.024);
+  const loadScratch = intracellularBoundaryLoadScratch;
+  const mechanics = intracellularBoundaryMechanics;
+  if (loadScratch && mechanics) {
+    lastIntracellularBoundaryDiagnostics =
+      mechanics.drainVertexLoads(loadScratch);
+    lastMembraneStepDiagnostics = stepMembrane(sim, simDt, {
+      vertexLoads: loadScratch,
+      loadUnit: "dimensionless_numerical",
+      biologicalForceAssigned: false
+    });
+  } else {
+    lastMembraneStepDiagnostics = stepMembrane(sim, simDt);
   }
   const attr = organelleMembrane.geometry.getAttribute("position") as THREE.BufferAttribute;
   (attr.array as Float32Array).set(sim.pos);
@@ -3771,6 +3826,57 @@ function updateMembraneShape(dtReal: number) {
       ? { normal: deformation.normal_local, axialScale: deformation.axial_scale }
       : null
   );
+}
+
+function queueDimensionlessCytosolMembranePressure(): void {
+  const sim = membraneSim;
+  const visual = intracellularFluidVisual;
+  const mechanics = intracellularBoundaryMechanics;
+  const pressures = intracellularBoundaryPressureScratch;
+  if (!sim || !visual || !mechanics || !pressures) return;
+  const faceCount = sim.faces.length / 3;
+  if (pressures.length !== faceCount) return;
+  const grid = visual.numericalGrid;
+  for (let face = 0; face < faceCount; face += 1) {
+    const faceOffset = face * 3;
+    const ia = sim.faces[faceOffset] * 3;
+    const ib = sim.faces[faceOffset + 1] * 3;
+    const ic = sim.faces[faceOffset + 2] * 3;
+    const cx = (sim.pos[ia] + sim.pos[ib] + sim.pos[ic]) / 3;
+    const cy = (sim.pos[ia + 1] + sim.pos[ib + 1] + sim.pos[ic + 1]) / 3;
+    const cz = (sim.pos[ia + 2] + sim.pos[ib + 2] + sim.pos[ic + 2]) / 3;
+    const abx = sim.pos[ib] - sim.pos[ia];
+    const aby = sim.pos[ib + 1] - sim.pos[ia + 1];
+    const abz = sim.pos[ib + 2] - sim.pos[ia + 2];
+    const acx = sim.pos[ic] - sim.pos[ia];
+    const acy = sim.pos[ic + 1] - sim.pos[ia + 1];
+    const acz = sim.pos[ic + 2] - sim.pos[ia + 2];
+    let nx = aby * acz - abz * acy;
+    let ny = abz * acx - abx * acz;
+    let nz = abx * acy - aby * acx;
+    const inverseNormal = 1 / (Math.hypot(nx, ny, nz) || 1);
+    nx *= inverseNormal;
+    ny *= inverseNormal;
+    nz *= inverseNormal;
+    if (nx * cx + ny * cy + nz * cz < 0) {
+      nx *= -1;
+      ny *= -1;
+      nz *= -1;
+    }
+    let pressure: number | null = null;
+    // Sample progressively inward so an organelle-occupied cut cell does not
+    // erase the local fluid pressure. Distances are grid geometry, not biology.
+    for (const depthCells of [0.65, 1.3, 2.1]) {
+      pressure = grid.sampleDimensionlessPressure(
+        cx - nx * grid.spacing * depthCells,
+        cy - ny * grid.spacing * depthCells,
+        cz - nz * grid.spacing * depthCells
+      );
+      if (pressure !== null) break;
+    }
+    pressures[face] = pressure ?? 0;
+  }
+  mechanics.queueDimensionlessCytosolPressure(pressures);
 }
 
 function updateIntracellularFluid(realDeltaS: number, refreshMovingBoundaries: boolean): void {
@@ -3820,6 +3926,9 @@ function updateIntracellularFluid(realDeltaS: number, refreshMovingBoundaries: b
         numericalGridDeltaS
       );
     });
+    if (refreshNumericalGrid) {
+      queueDimensionlessCytosolMembranePressure();
+    }
     performanceWindowFluidStepCount += 1;
     positionsChanged = true;
   } else if (!running && deformationChanged) {
@@ -5343,6 +5452,17 @@ function animate() {
         maximum: fluidDiagnostics.divergenceMaxAfter
       });
     }
+    if (lastIntracellularBoundaryDiagnostics && lastMembraneStepDiagnostics) {
+      dataset.cellIntracellularBoundary = JSON.stringify({
+        ...lastIntracellularBoundaryDiagnostics,
+        membrane_area_ratio: lastMembraneStepDiagnostics.areaRatio,
+        membrane_volume_ratio: lastMembraneStepDiagnostics.volumeRatio,
+        engineering_area_guard_utilization:
+          lastMembraneStepDiagnostics.engineeringAreaGuardUtilization,
+        engineering_area_guard_exceeded:
+          lastMembraneStepDiagnostics.engineeringAreaGuardExceeded
+      });
+    }
     dataset.cellPerfStages = JSON.stringify(
       Object.fromEntries(
         [...performanceStageWorkMs.entries()].map(([stage, elapsedMs]) => [
@@ -5527,6 +5647,11 @@ function clearWaterVisuals() {
   membraneSim = null;
   membraneRestPos = null;
   engineMembraneDeformationActive = false;
+  intracellularBoundaryMechanics = null;
+  intracellularBoundaryLoadScratch = null;
+  intracellularBoundaryPressureScratch = null;
+  lastIntracellularBoundaryDiagnostics = null;
+  lastMembraneStepDiagnostics = null;
   intracellularFluidVisual = null;
   membraneFaceDirs = null;
   membraneField = null;
@@ -7308,6 +7433,11 @@ function buildOrganelleScene() {
   organelleMembrane = null;
   membraneSim = null;
   membraneRestPos = null;
+  intracellularBoundaryMechanics = null;
+  intracellularBoundaryLoadScratch = null;
+  intracellularBoundaryPressureScratch = null;
+  lastIntracellularBoundaryDiagnostics = null;
+  lastMembraneStepDiagnostics = null;
   intracellularFluidVisual = null;
   membraneFaceDirs = null;
   membraneField = null;
@@ -7675,6 +7805,8 @@ function buildOrganelleScene() {
     const scaleArr = new Float32Array(actual);
     const offsetArr = new Float32Array(actual * 3); // starts at rest
     const currentPos = new Float32Array(actual * 3);
+    const bodyRadiusWorld = new Float32Array(actual);
+    const contactFace = new Int32Array(actual);
     const cageArr = new Float32Array(actual);
     const brightArr = new Float32Array(actual);
     const col = new THREE.Color();
@@ -7694,6 +7826,14 @@ function buildOrganelleScene() {
       currentPos[i * 3] = pos.x;
       currentPos[i * 3 + 1] = pos.y;
       currentPos[i * 3 + 2] = pos.z;
+      bodyRadiusWorld[i] = engineScale
+        ? engineRadiusWorld[i]
+        : opts.collisionRadius * sc;
+      contactFace[i] = nearestMembraneFace(
+        pos.x / (pos.length() || 1),
+        pos.y / (pos.length() || 1),
+        pos.z / (pos.length() || 1)
+      );
       baseQuat[i * 4] = q.x;
       baseQuat[i * 4 + 1] = q.y;
       baseQuat[i * 4 + 2] = q.z;
@@ -7740,7 +7880,8 @@ function buildOrganelleScene() {
       obstacleHalfLength: opts.obstacleHalfLength ?? 0,
       currentPos,
       diffusionUm2S: kind ? (cytoplasmDiffusionByOrganelle[ENGINE_KIND_TO_ID[kind] ?? ""] ?? 0) : 0,
-      bodyRadiusWorld: engineScale && engineRadiusWorld.length > 0 ? engineRadiusWorld[0] : (opts.obstacleRadius ?? opts.collisionRadius)
+      bodyRadiusWorld,
+      contactFace
     });
     return inst;
   };
@@ -7758,6 +7899,11 @@ function buildOrganelleScene() {
   // engine supplies a geometric deformation; unresolved thermal amplitudes do
   // not alter the collision shape.
   membraneRestPos = new Float32Array(membraneSim.pos);
+  intracellularBoundaryMechanics = new IntracellularBoundaryMechanics(membraneSim);
+  intracellularBoundaryLoadScratch = new Float32Array(membraneSim.pos.length);
+  intracellularBoundaryPressureScratch = new Float32Array(
+    membraneSim.faces.length / 3
+  );
   rebuildMembraneSurfaceIndex();
   membraneField = null;
   {
@@ -7785,7 +7931,7 @@ function buildOrganelleScene() {
     });
     organelleMembrane = new THREE.Mesh(geo, mat);
     organelleMembrane.userData.label =
-      "Intrinsic fluid-bilayer plasma membrane - cyan is sinusoidal/basolateral, blue is lateral and yellow-green is canalicular/apical. The surface mesh is an Eulerian shape coordinate, not a frozen lipid lattice; membrane proteins and surface tracers use barycentric anchors and follow every deformation. The 22.107 µm volume-equivalent diameter is derived from the active 5657.071 µm³ human normal-control 3D median; the space-filling rest shape and domain areas remain geometric proxies. Direct lipid-area strain and enclosed volume remain constrained, while visible contact deformation comes only from engine geometry.";
+      "Intrinsic fluid-bilayer plasma membrane - cyan is sinusoidal/basolateral, blue is lateral and yellow-green is canalicular/apical. The surface mesh is an Eulerian shape coordinate, not a frozen lipid lattice; membrane proteins and surface tracers use barycentric anchors and follow every deformation. The 22.107 µm volume-equivalent diameter is derived from the active 5657.071 µm³ human normal-control 3D median; the space-filling rest shape and domain areas remain geometric proxies. Direct lipid-area strain and enclosed volume remain constrained. External contact geometry plus dimensionless intracellular organelle and cytosol loads can deform the surface; no healthy-PHH force or pressure is assigned.";
     group.add(organelleMembrane);
     rebuildMembraneField();
   }
@@ -9390,7 +9536,9 @@ function buildOrganelleScene() {
       halfExtent: CELL_R * 1.08,
       seed: 20260722,
       radiusAtDirection,
-      safetyFraction: 0.9,
+      // The pressure projection uses the actual membrane boundary. Tracer
+      // clearance is handled separately by IntracellularFluidField below.
+      safetyFraction: 1,
       projectionIterations: 24,
       visualModeCount: 6
     });
