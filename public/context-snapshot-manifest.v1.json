@@ -1,0 +1,426 @@
+{
+  "artifacts": [
+    {
+      "byte_count": 42878,
+      "experiment": "baseline",
+      "nutrition_profile": "postabsorptive",
+      "path": "contexts/midlobular/baseline.json",
+      "sha256": "fdc98e7baaf405163b7a064d354aefe96bc2b97dc54f50dce8214e97eb7c3732",
+      "state_override_count": 0,
+      "target_snapshot_sha256": "65b93e7444a164680b2832e65366bcb0dba5977495eea7fa9a812df800feafc9",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 92923,
+      "experiment": "bsep_loss",
+      "nutrition_profile": "postabsorptive",
+      "path": "contexts/midlobular/bsep_loss.json",
+      "sha256": "837363bc0d2402ec23884bc42d9fc16a9f6f95c19eae703df1cc2821bd106695",
+      "state_override_count": 13,
+      "target_snapshot_sha256": "2ea7656e318407286360e2bf7d2e83e584d9670714881a33adf875ac9566b062",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 93680,
+      "experiment": "canalicular_export_loss",
+      "nutrition_profile": "postabsorptive",
+      "path": "contexts/midlobular/canalicular_export_loss.json",
+      "sha256": "78855421a0edde0978dedb8a3b5eba9d3ec6da37d810eb9cf71bb49bcc571886",
+      "state_override_count": 13,
+      "target_snapshot_sha256": "64ae31390c883e6c0eda8bd9d12fdcf6b4e16fa0f4b5bd43b52627652ef41c59",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 139244,
+      "experiment": "baseline",
+      "nutrition_profile": "fed_peak",
+      "path": "contexts/midlobular/fed_peak/baseline.json",
+      "sha256": "7eaddc441e491851a592ad70931e58aaf0dce48ab17426d152a888dd4715bf2a",
+      "state_override_count": 8,
+      "target_snapshot_sha256": "470585e467ef0f46addecddf2efb1219a7dbc0350224a96e057cb5e77a2d42b9",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 189129,
+      "experiment": "bsep_loss",
+      "nutrition_profile": "fed_peak",
+      "path": "contexts/midlobular/fed_peak/bsep_loss.json",
+      "sha256": "0d1ce5db5a1cbb7e4abfea3dc06072e56c654846230a975d2c150c3ce554c407",
+      "state_override_count": 20,
+      "target_snapshot_sha256": "35d94051d00db12eff40c260e453af4d5215573f8db1d3c8ef35a1e12d139be7",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 189886,
+      "experiment": "canalicular_export_loss",
+      "nutrition_profile": "fed_peak",
+      "path": "contexts/midlobular/fed_peak/canalicular_export_loss.json",
+      "sha256": "0d6f88ce1eb05160c1e254ca895ef0af32967a453f71923bbacd99462e489443",
+      "state_override_count": 20,
+      "target_snapshot_sha256": "5595aa0a12983686222ae9b6b5bd2cb244d3a774d2fa084a55e824858e08d656",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 185063,
+      "experiment": "mrp2_loss",
+      "nutrition_profile": "fed_peak",
+      "path": "contexts/midlobular/fed_peak/mrp2_loss.json",
+      "sha256": "3420beaa3a77aac9d4d42be6767e67c465346b17d57c882f8e7e44c1ac4f5b12",
+      "state_override_count": 18,
+      "target_snapshot_sha256": "d4e359b15025fa9464ef90ac4cf121fbd4379fd1fbfb2383085dcfa5f995feee",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 88857,
+      "experiment": "mrp2_loss",
+      "nutrition_profile": "postabsorptive",
+      "path": "contexts/midlobular/mrp2_loss.json",
+      "sha256": "942236f3b76ff19bdca6cb8f7336bf4e6846195c94eddda9c7e48e420c7257b3",
+      "state_override_count": 11,
+      "target_snapshot_sha256": "f0802506767c5ce20df869eb6cd2391514ccb813cc43d040c94571cbe6a70f18",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 143470,
+      "experiment": "baseline",
+      "nutrition_profile": "prolonged_fasted",
+      "path": "contexts/midlobular/prolonged_fasted/baseline.json",
+      "sha256": "bffe0c1248b4fb3e6e0bb711a78f5523a442b995dddf0ce28eb55e8f703bd0d5",
+      "state_override_count": 9,
+      "target_snapshot_sha256": "7d097892ef1225e553b2b1b36e532253e9b9cbac66f6591ca5d97515bc286aaf",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 193355,
+      "experiment": "bsep_loss",
+      "nutrition_profile": "prolonged_fasted",
+      "path": "contexts/midlobular/prolonged_fasted/bsep_loss.json",
+      "sha256": "37f1dcfcf0e3dbe6e183308fd6ab2427951e6571e08fd29f591933c0998ce014",
+      "state_override_count": 21,
+      "target_snapshot_sha256": "bb8b716137641f7d27786785b77183ff746e37e91c884cf4b0e020438fe8d8ee",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 194112,
+      "experiment": "canalicular_export_loss",
+      "nutrition_profile": "prolonged_fasted",
+      "path": "contexts/midlobular/prolonged_fasted/canalicular_export_loss.json",
+      "sha256": "cc327e5e4c84f7bbc606a33a5a8065892b7780bb9c960e4d3d1855aa156c736d",
+      "state_override_count": 21,
+      "target_snapshot_sha256": "b4c42632129073d961f968dd3b9d0c74bbfe8390b6c528a6f87f80346318b42c",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 189289,
+      "experiment": "mrp2_loss",
+      "nutrition_profile": "prolonged_fasted",
+      "path": "contexts/midlobular/prolonged_fasted/mrp2_loss.json",
+      "sha256": "0f3f5f59f1310157dc85b3d3c10d7c785580e61a82e0fb0cf1ea2a7605fa39ff",
+      "state_override_count": 19,
+      "target_snapshot_sha256": "a2d56d5f3678928471ed6ee6c86209a9bb2976128abd8cbdfc6a8059ac2d9ba8",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 212954,
+      "experiment": "baseline",
+      "nutrition_profile": "postabsorptive",
+      "path": "contexts/pericentral/baseline.json",
+      "sha256": "3eac89f3f3d9f82aa3d2a9ed89e42bcf5b5ee1fa612a96c9c45052fd20483b2a",
+      "state_override_count": 5,
+      "target_snapshot_sha256": "88a2b8ca8028d9afdb48bb07e83528a88f733bd73b70260dabbaa7e0acabeead",
+      "zone": "pericentral"
+    },
+    {
+      "byte_count": 262997,
+      "experiment": "bsep_loss",
+      "nutrition_profile": "postabsorptive",
+      "path": "contexts/pericentral/bsep_loss.json",
+      "sha256": "fde45206f4b3b4484aaaae33ea67c1a72dcb351ea861fe613f7b44398fdabbf8",
+      "state_override_count": 18,
+      "target_snapshot_sha256": "0b21eb3a295130ec8b26b0f061bfc08c25f23de87175c49c475b1ed42bd0869f",
+      "zone": "pericentral"
+    },
+    {
+      "byte_count": 263754,
+      "experiment": "canalicular_export_loss",
+      "nutrition_profile": "postabsorptive",
+      "path": "contexts/pericentral/canalicular_export_loss.json",
+      "sha256": "016cf77c2c540575c1fa31c4d5c2c9cc2d299605224ea74516bc81e328a8429a",
+      "state_override_count": 18,
+      "target_snapshot_sha256": "004fdd3274060d240588cfd9817ecb9125335f326aca2218cc3d0d3ca36785eb",
+      "zone": "pericentral"
+    },
+    {
+      "byte_count": 306553,
+      "experiment": "baseline",
+      "nutrition_profile": "fed_peak",
+      "path": "contexts/pericentral/fed_peak/baseline.json",
+      "sha256": "2cf191ecaf511dad53a94dd2ebbfc02c3bdfe68e070d62ce99d88b1ecd13bc1a",
+      "state_override_count": 12,
+      "target_snapshot_sha256": "d05ef118cf5738ed165d2842cc339b4b1387ec33ee970a69634c49909859b256",
+      "zone": "pericentral"
+    },
+    {
+      "byte_count": 356437,
+      "experiment": "bsep_loss",
+      "nutrition_profile": "fed_peak",
+      "path": "contexts/pericentral/fed_peak/bsep_loss.json",
+      "sha256": "aa08a71870276b7d25bb1f429c09937779491606ebecf403fbcc397679051823",
+      "state_override_count": 24,
+      "target_snapshot_sha256": "738c49e4f696d4b9a236cbd47b8c3dcf962f2fda34fc4f35ee94bd2396d46092",
+      "zone": "pericentral"
+    },
+    {
+      "byte_count": 357194,
+      "experiment": "canalicular_export_loss",
+      "nutrition_profile": "fed_peak",
+      "path": "contexts/pericentral/fed_peak/canalicular_export_loss.json",
+      "sha256": "22eeb9ca9bd0aa547b83a3f948c269b0dfaf1265b77862bd9a23bb415e250084",
+      "state_override_count": 24,
+      "target_snapshot_sha256": "0324d49137ecca4641959fb965180e5cc11cacd17a6dd339095589683a0ded17",
+      "zone": "pericentral"
+    },
+    {
+      "byte_count": 352371,
+      "experiment": "mrp2_loss",
+      "nutrition_profile": "fed_peak",
+      "path": "contexts/pericentral/fed_peak/mrp2_loss.json",
+      "sha256": "73d88a3d6f19ac7bca89f108e273b835a0660fa134d7f8f76e1a819512d884e1",
+      "state_override_count": 22,
+      "target_snapshot_sha256": "5c8cee6fc599da945a065bd4a5f10fc20bc1329ef00943a2208d99e9c6afc673",
+      "zone": "pericentral"
+    },
+    {
+      "byte_count": 258931,
+      "experiment": "mrp2_loss",
+      "nutrition_profile": "postabsorptive",
+      "path": "contexts/pericentral/mrp2_loss.json",
+      "sha256": "0a934433f7f371780e96d9027ab0a745e327511c25c4dabe8e8d70e6ce500d90",
+      "state_override_count": 16,
+      "target_snapshot_sha256": "bfa1cdbc65744a0b2e59c61d18511ad2d3dad7a662c6056a8579962cc2b1eebf",
+      "zone": "pericentral"
+    },
+    {
+      "byte_count": 310779,
+      "experiment": "baseline",
+      "nutrition_profile": "prolonged_fasted",
+      "path": "contexts/pericentral/prolonged_fasted/baseline.json",
+      "sha256": "c5717f7164a4ea46283dcc7d495337cd28bcb9b0edca5c9720195ebcf4fbf357",
+      "state_override_count": 13,
+      "target_snapshot_sha256": "fc517a23b83693050aa8b4257ab353604b18fd70a06464cf53a6422dd475e829",
+      "zone": "pericentral"
+    },
+    {
+      "byte_count": 360663,
+      "experiment": "bsep_loss",
+      "nutrition_profile": "prolonged_fasted",
+      "path": "contexts/pericentral/prolonged_fasted/bsep_loss.json",
+      "sha256": "f90ff6f9a15dca74cd522ea069f6313937352dba536767d80a85e31c00d0a1bc",
+      "state_override_count": 25,
+      "target_snapshot_sha256": "72fa76634aaa4a2dbc81a38f0b8dd904c45d07bb64a081370fb41bd36b982c7d",
+      "zone": "pericentral"
+    },
+    {
+      "byte_count": 361420,
+      "experiment": "canalicular_export_loss",
+      "nutrition_profile": "prolonged_fasted",
+      "path": "contexts/pericentral/prolonged_fasted/canalicular_export_loss.json",
+      "sha256": "534a511859d1fe972b568afd74b339fe208be7847e221e7340914c41cf9b767f",
+      "state_override_count": 25,
+      "target_snapshot_sha256": "d9cd7fbedb901ec5e6def501b35f282c72404a600fea1fe406f32719116ebf04",
+      "zone": "pericentral"
+    },
+    {
+      "byte_count": 356597,
+      "experiment": "mrp2_loss",
+      "nutrition_profile": "prolonged_fasted",
+      "path": "contexts/pericentral/prolonged_fasted/mrp2_loss.json",
+      "sha256": "f55231c1f72212ceed3b965608bb3b439d084abbea3e8ed5770e774110994a83",
+      "state_override_count": 23,
+      "target_snapshot_sha256": "1635752f94b382e26bb5d8a7fcc6290a12b12303aaa6167ceecc732f7b8890a9",
+      "zone": "pericentral"
+    },
+    {
+      "byte_count": 232026,
+      "experiment": "baseline",
+      "nutrition_profile": "postabsorptive",
+      "path": "contexts/periportal/baseline.json",
+      "sha256": "7fd646d4c7b23e4ca8b2f8c90ee3720cdbce7d14adecd58862e6aca9a23b2d05",
+      "state_override_count": 5,
+      "target_snapshot_sha256": "991f598ade6422ca7dc483f6e3fbb1cc0dc80e8d5cc826d7ac05a888978f0399",
+      "zone": "periportal"
+    },
+    {
+      "byte_count": 282069,
+      "experiment": "bsep_loss",
+      "nutrition_profile": "postabsorptive",
+      "path": "contexts/periportal/bsep_loss.json",
+      "sha256": "953953f58bb7639afccfae3125ab8a3a0ac73fba3b0c8ae267087f987f417d68",
+      "state_override_count": 18,
+      "target_snapshot_sha256": "06fe106648051a795ec47205017863a4f0679f4c7ba8e5f2a99a368a657b58bc",
+      "zone": "periportal"
+    },
+    {
+      "byte_count": 282826,
+      "experiment": "canalicular_export_loss",
+      "nutrition_profile": "postabsorptive",
+      "path": "contexts/periportal/canalicular_export_loss.json",
+      "sha256": "c1e7c253ccf48b1a0db02bf79aba599a2ad1a882ca9d6069fee3dabcb3d25eac",
+      "state_override_count": 18,
+      "target_snapshot_sha256": "66b9264169bc04cefc8328d29737e1736eccd4ddbf41dc6d2accb4ed7905c76d",
+      "zone": "periportal"
+    },
+    {
+      "byte_count": 325625,
+      "experiment": "baseline",
+      "nutrition_profile": "fed_peak",
+      "path": "contexts/periportal/fed_peak/baseline.json",
+      "sha256": "afac31ef510705b1b11b849fbc53d1287d478f7e8a6f33d5b31b69cfeb35ee68",
+      "state_override_count": 12,
+      "target_snapshot_sha256": "0d4bbfa7f8f6707a170d3ff16186fdc294e6b8764ca580948378dee01e1f3f21",
+      "zone": "periportal"
+    },
+    {
+      "byte_count": 375509,
+      "experiment": "bsep_loss",
+      "nutrition_profile": "fed_peak",
+      "path": "contexts/periportal/fed_peak/bsep_loss.json",
+      "sha256": "201427e77c94b2f557d055705114f46447f1b7c1bbdd60dce1bfaf504ca9c4c4",
+      "state_override_count": 24,
+      "target_snapshot_sha256": "232ccf3cc3af348a9c5419a0bd6d878709e6c8488441bcba93c70754a81f153b",
+      "zone": "periportal"
+    },
+    {
+      "byte_count": 376266,
+      "experiment": "canalicular_export_loss",
+      "nutrition_profile": "fed_peak",
+      "path": "contexts/periportal/fed_peak/canalicular_export_loss.json",
+      "sha256": "87d5de590af866af61344dba63a0e55784c5898ee994b8968dfb21c3e8f1fc88",
+      "state_override_count": 24,
+      "target_snapshot_sha256": "eb6ff8948a581298de1b7e6870b399a85095b3f7cba67ebd732b63745f566332",
+      "zone": "periportal"
+    },
+    {
+      "byte_count": 371443,
+      "experiment": "mrp2_loss",
+      "nutrition_profile": "fed_peak",
+      "path": "contexts/periportal/fed_peak/mrp2_loss.json",
+      "sha256": "504c4512bd5aa442088e4fb7636e20cf65329ff545eab68af58b91dd17b38f18",
+      "state_override_count": 22,
+      "target_snapshot_sha256": "b3a9a5365823f131d794453d40b5c81f570222756c61a29ce7565ef1598b7878",
+      "zone": "periportal"
+    },
+    {
+      "byte_count": 278003,
+      "experiment": "mrp2_loss",
+      "nutrition_profile": "postabsorptive",
+      "path": "contexts/periportal/mrp2_loss.json",
+      "sha256": "0f3832f65b930f85fe33245c8ef915ba409d99cb4802ade84a674268144f78d3",
+      "state_override_count": 16,
+      "target_snapshot_sha256": "b820bb7162c523ae206cd8b0fc19ad9183804873121d41cb44ed1d7990a2d598",
+      "zone": "periportal"
+    },
+    {
+      "byte_count": 329851,
+      "experiment": "baseline",
+      "nutrition_profile": "prolonged_fasted",
+      "path": "contexts/periportal/prolonged_fasted/baseline.json",
+      "sha256": "b0250177e06caa2ebfa1b58348b0dd494d5a01e42d238d5b2ca117519add4f16",
+      "state_override_count": 13,
+      "target_snapshot_sha256": "c61bd5e75d2bc38dc9a9662806ee2b466161878ce6c13a3b7e736830aacb9d67",
+      "zone": "periportal"
+    },
+    {
+      "byte_count": 379735,
+      "experiment": "bsep_loss",
+      "nutrition_profile": "prolonged_fasted",
+      "path": "contexts/periportal/prolonged_fasted/bsep_loss.json",
+      "sha256": "0162b7ffbe5f4630d58bccc9ce493ed9dbc88b003555a6a2f66e3c6b55a33e28",
+      "state_override_count": 25,
+      "target_snapshot_sha256": "e84a0f91ccf370da235d528e0277eee0db37d1a2f1e785e1779a4bb10a697e98",
+      "zone": "periportal"
+    },
+    {
+      "byte_count": 380492,
+      "experiment": "canalicular_export_loss",
+      "nutrition_profile": "prolonged_fasted",
+      "path": "contexts/periportal/prolonged_fasted/canalicular_export_loss.json",
+      "sha256": "39c5972496bb922b313d25daab5622250568e3ee51827cda23d8c0e06b1084af",
+      "state_override_count": 25,
+      "target_snapshot_sha256": "635cba305620b1023cf69d4fd55ea4e8b34b31b9ca570c091297fde1ed03a919",
+      "zone": "periportal"
+    },
+    {
+      "byte_count": 375669,
+      "experiment": "mrp2_loss",
+      "nutrition_profile": "prolonged_fasted",
+      "path": "contexts/periportal/prolonged_fasted/mrp2_loss.json",
+      "sha256": "d35ec4129872dd96bad634795c435565da3084dacaabca87a348450df51fc000",
+      "state_override_count": 23,
+      "target_snapshot_sha256": "76f79f466b0aaf5858f9ea3b89226a3400d674a5c8acdcb87fd3bf71c457c2cc",
+      "zone": "periportal"
+    },
+    {
+      "byte_count": 42878,
+      "experiment": "baseline",
+      "nutrition_profile": "postabsorptive",
+      "path": "experiments/baseline.json",
+      "sha256": "cbe4cc73d329d08131fb3073c4ef078e0ac5ac627cc767ff82044256c69fb0a7",
+      "state_override_count": 0,
+      "target_snapshot_sha256": "8ef47c8df811d95e64d7e48b188f3df9a56b9e36eae0fc32a9f49f2ba68da496",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 92923,
+      "experiment": "bsep_loss",
+      "nutrition_profile": "postabsorptive",
+      "path": "experiments/bsep_loss.json",
+      "sha256": "4f4493024e6bdcd0af7e33e91900a22f48f909059e7e8c8ad88e8cd392733a3b",
+      "state_override_count": 13,
+      "target_snapshot_sha256": "de36e38c4ce9d58668d6b8a59763eb8cf91825ea3193b1dcd1b788568ba33e91",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 93680,
+      "experiment": "canalicular_export_loss",
+      "nutrition_profile": "postabsorptive",
+      "path": "experiments/canalicular_export_loss.json",
+      "sha256": "8e1f429348bd2048a6c795c21fbdf9cd08660d2b2d97af9845d3c7ffb8b3ec5f",
+      "state_override_count": 13,
+      "target_snapshot_sha256": "0296899b9295e3b4c1950c1a56f42c8d1ac8e7d6b0050d97c4726535331d6c44",
+      "zone": "midlobular"
+    },
+    {
+      "byte_count": 88857,
+      "experiment": "mrp2_loss",
+      "nutrition_profile": "postabsorptive",
+      "path": "experiments/mrp2_loss.json",
+      "sha256": "6b54a14b8cb4c2b9444f7f5316d17e8e1ecaa5fd0c388d5c5a67f82df9a27ed4",
+      "state_override_count": 11,
+      "target_snapshot_sha256": "3121490f7d1b1f88cd2dde4c6885f20b792218a132a2d4bc7d201f4a92459e53",
+      "zone": "midlobular"
+    }
+  ],
+  "base_artifact": {
+    "byte_count": 1822146,
+    "identity": {
+      "created_at_utc": "2026-07-29T06:25:01.761956+00:00",
+      "definition_id": "human_hepatocyte_midlobular_v1",
+      "schema_version": "cell-engine.snapshot.v1",
+      "snapshot_sha256": "d9e89f077352d2714be503064aa5f681f24cf9486397b22cf8a177e315a72548",
+      "state_key_count": 85,
+      "state_key_sha256": "421d38cda01ff90a8fc92e4372ed01dcb7527de997ec55ad3cfdaa01da766b18"
+    },
+    "path": "engine-snapshot.json",
+    "sha256": "5fa4509db86f53adaf022750a25152abc26fe7db29c97019778199776ae3ba4e"
+  },
+  "byte_reduction_fraction": 0.8491198065003653,
+  "canonical_plus_overlay_byte_count": 11632534,
+  "expected_experiment_count": 4,
+  "expected_nutrition_profile_count": 3,
+  "expected_zone_count": 3,
+  "full_snapshot_matrix_byte_count": 77097820,
+  "overlay_count": 40,
+  "policy": "Every browser context is reconstructed from the checksummed canonical snapshot plus exact top-level state overrides. A base identity mismatch fails closed; overlays introduce no biological parameter, interpolation or model output.",
+  "schema_version": "cell-engine.context-overlay-manifest.v1"
+}

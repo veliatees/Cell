@@ -99,6 +99,7 @@ import {
 import {
   engineSnapshotEndpointFromLocation,
   loadEngineSnapshot,
+  loadEngineSnapshotArtifact,
   type EngineDivisionCell,
   type EngineDivisionEvent,
   type EngineSnapshotLoadResult,
@@ -502,6 +503,10 @@ let externalEngineSummary: EngineSnapshotSummary | null = null;
 let evidenceBoundaryEngineSummary: EngineSnapshotSummary | null = null;
 let externalEngineDiagnostic = "Python engine snapshot loading...";
 const defaultExternalEngineSnapshotUrl = engineSnapshotEndpointFromLocation(window.location);
+const canonicalContextBaseSnapshotUrl = new URL(
+  "engine-snapshot.json",
+  window.location.href
+).pathname;
 let externalEngineSnapshotUrl = defaultExternalEngineSnapshotUrl;
 const ENGINE_EXPERIMENTS = ["baseline", "bsep_loss", "mrp2_loss", "canalicular_export_loss"] as const;
 const ENGINE_ZONES = ["periportal", "midlobular", "pericentral"] as const;
@@ -553,7 +558,22 @@ async function loadCachedEngineSnapshot(
     const activeLoad = engineSnapshotLoads.get(url);
     if (activeLoad) return activeLoad;
   }
-  const load = loadEngineSnapshot(url);
+  const load = url === canonicalContextBaseSnapshotUrl
+    ? loadEngineSnapshot(url)
+    : (async () => {
+        const base = await loadCachedEngineSnapshot(
+          canonicalContextBaseSnapshotUrl,
+          forceRefresh
+        );
+        if (base.status !== "loaded") {
+          return {
+            status: "missing",
+            url,
+            diagnostic: `Context overlay base unavailable: ${base.diagnostic}`
+          } satisfies EngineSnapshotLoadResult;
+        }
+        return loadEngineSnapshotArtifact(url, base.snapshot);
+      })();
   engineSnapshotLoads.set(url, load);
   try {
     const result = await load;

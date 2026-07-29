@@ -6,6 +6,20 @@ from cell_engine.io.brian2 import (
     Brian2ExecutionGate,
     brian2_communication_snapshot,
 )
+from cell_engine.io.context_overlays import (
+    CONTEXT_OVERLAY_ARTIFACT_COUNT,
+    CONTEXT_OVERLAY_CANONICAL_SNAPSHOT_COUNT,
+    CONTEXT_OVERLAY_EXPERIMENT_COUNT,
+    CONTEXT_OVERLAY_MANIFEST_SCHEMA_VERSION,
+    CONTEXT_OVERLAY_NUTRITION_PROFILE_COUNT,
+    CONTEXT_OVERLAY_SCHEMA_VERSION,
+    CONTEXT_OVERLAY_ZONE_COUNT,
+    ContextOverlayError,
+    apply_context_overlay,
+    build_context_overlay,
+    canonical_sha256,
+    snapshot_identity,
+)
 from cell_engine.io.pysb import PySBAdapter
 from cell_engine.io.schema import SNAPSHOT_SCHEMA, SNAPSHOT_SCHEMA_VERSION
 from cell_engine.io.sbml import (
@@ -26,6 +40,14 @@ __all__ = [
     "Brian2ExecutionGate",
     "BRIAN2_PINNED_VERSION",
     "BRIAN2_SOURCES",
+    "CONTEXT_OVERLAY_ARTIFACT_COUNT",
+    "CONTEXT_OVERLAY_CANONICAL_SNAPSHOT_COUNT",
+    "CONTEXT_OVERLAY_EXPERIMENT_COUNT",
+    "CONTEXT_OVERLAY_MANIFEST_SCHEMA_VERSION",
+    "CONTEXT_OVERLAY_NUTRITION_PROFILE_COUNT",
+    "CONTEXT_OVERLAY_SCHEMA_VERSION",
+    "CONTEXT_OVERLAY_ZONE_COUNT",
+    "ContextOverlayError",
     "RoadRunnerAdapter",
     "SbmlDocumentManifest",
     "SbmlReactionFingerprint",
@@ -34,10 +56,14 @@ __all__ = [
     "SNAPSHOT_SCHEMA",
     "SNAPSHOT_SCHEMA_VERSION",
     "build_snapshot",
+    "build_context_overlay",
     "brian2_communication_snapshot",
+    "apply_context_overlay",
+    "canonical_sha256",
     "inspect_sbml_document",
     "inspect_sbml_reaction_fingerprints",
     "load_sbml_subset",
     "simulate_sbml_subset",
     "snapshot_to_json",
+    "snapshot_identity",
 ]
