@@ -63,6 +63,9 @@ from cell_engine.validation.baseline_lifecycle_timing import (
 from cell_engine.validation.browser_bundle_budget import (
     browser_bundle_budget_snapshot,
 )
+from cell_engine.validation.browser_runtime_policy import (
+    browser_runtime_policy_snapshot,
+)
 from cell_engine.validation.external_review import external_validation_snapshot
 from cell_engine.validation.reaction_evidence_atlas import build_reaction_evidence_atlas
 from cell_engine.validation.hepatocyte_quantities import (
@@ -189,6 +192,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     browser_bundle = browser_bundle_budget_snapshot()
     browser_bundle_limits = browser_bundle["limits"]
     browser_bundle_verified = browser_bundle["last_verified_build"]
+    browser_runtime = browser_runtime_policy_snapshot()
     baseline_lifecycle = baseline_lifecycle_timing_snapshot()
 
     entries = (
@@ -2407,6 +2411,69 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "browser_runtime_workload_policy",
+            "Browser runtime workload and cadence policy",
+            "closed",
+            "Browser render scheduling, visual-fluid cadence and device-load degradation; no biological-model, timescale or accuracy claim.",
+            "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone.",
+            {
+                "document_visibility_suspension_guard_count": int(
+                    bool(
+                        browser_runtime["suspension"][
+                            "when_document_hidden"
+                        ]
+                    )
+                ),
+                "viewport_intersection_suspension_guard_count": int(
+                    bool(
+                        browser_runtime["suspension"][
+                            "when_viewport_not_intersecting"
+                        ]
+                    )
+                ),
+                "suspended_elapsed_discard_guard_count": int(
+                    bool(
+                        browser_runtime["suspension"][
+                            "discard_suspended_elapsed_time_on_resume"
+                        ]
+                    )
+                ),
+                "single_pending_render_guard_count": int(
+                    bool(
+                        browser_runtime["suspension"][
+                            "single_pending_frame_or_timer"
+                        ]
+                    )
+                ),
+                "quality_tier_count": len(
+                    browser_runtime["quality"]["tiers"]
+                ),
+                "initial_load_grace_window_count": browser_runtime[
+                    "quality"
+                ]["initial_grace_windows"],
+                "visual_fluid_cadence_tier_count": sum(
+                    int(
+                        tier["fluid_step_interval_s"] > 0
+                    )
+                    for tier in browser_runtime["quality"]["tiers"].values()
+                ),
+                "total_frame_work_governor_count": 1,
+                "visual_clock_conservation_test_count": 1,
+                "automatic_biological_parameter_activation_count": int(
+                    bool(browser_runtime["biological_parameter_activation"])
+                ),
+            },
+            (),
+            (
+                "data/validation/browser_runtime_policy.v1.json",
+                "src/runtime/renderCadence.ts",
+                "src/runtime/renderCadence.test.ts",
+                "src/main.ts",
+                "engine/cell_engine/validation/browser_runtime_policy.py",
+                "engine/tests/test_browser_runtime_policy.py",
+            ),
+        ),
+        _entry(
             "visual_regression_automation",
             "Automated browser render-integrity regression",
             "closed",
@@ -3490,6 +3557,34 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 0
     ):
         raise ValueError("browser startup bundle budget contract changed")
+    browser_runtime_metrics = by_id["browser_runtime_workload_policy"][
+        "observed_metrics"
+    ]
+    if (
+        browser_runtime_metrics[
+            "document_visibility_suspension_guard_count"
+        ]
+        != 1
+        or browser_runtime_metrics[
+            "viewport_intersection_suspension_guard_count"
+        ]
+        != 1
+        or browser_runtime_metrics[
+            "suspended_elapsed_discard_guard_count"
+        ]
+        != 1
+        or browser_runtime_metrics["single_pending_render_guard_count"] != 1
+        or browser_runtime_metrics["quality_tier_count"] != 3
+        or browser_runtime_metrics["initial_load_grace_window_count"] != 2
+        or browser_runtime_metrics["visual_fluid_cadence_tier_count"] != 3
+        or browser_runtime_metrics["total_frame_work_governor_count"] != 1
+        or browser_runtime_metrics["visual_clock_conservation_test_count"] != 1
+        or browser_runtime_metrics[
+            "automatic_biological_parameter_activation_count"
+        ]
+        != 0
+    ):
+        raise ValueError("browser runtime workload policy contract changed")
     if by_id["independent_scientific_validation"]["observed_metrics"]["externally_reviewed_claim_count"] != 0:
         raise ValueError("external validation count changed without result intake")
 

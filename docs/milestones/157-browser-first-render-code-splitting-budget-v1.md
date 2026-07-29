@@ -43,17 +43,17 @@ these JavaScript modules from entering the initial parse and execution graph.
 | Item | Measured value | Budget |
 | --- | ---: | ---: |
 | Initial JavaScript chunks | 2 | explicit graph |
-| Initial JavaScript raw bytes | 938,799 | <= 980,000 |
-| Initial JavaScript gzip bytes | 256,016 | <= 275,000 |
+| Initial JavaScript raw bytes | 942,685 | <= 980,000 |
+| Initial JavaScript gzip bytes | 257,281 | <= 275,000 |
 | Largest initial JavaScript chunk | 522,443 bytes | <= 550,000 |
 | Initial CSS raw bytes | 32,732 | <= 40,000 |
 | Required deferred entries | 6 | exactly 6 |
 
 The gzip values in the gate use Node's deterministic level-9 zlib call. Vite's
-displayed gzip sum for the same two initial chunks is 259.81 kB.
+displayed gzip sum for the same two initial chunks is 261.11 kB.
 
 Relative to the previous Vite-reported monolithic entry, raw initial JavaScript
-fell from approximately 1,042 kB to 939 kB, a 9.9% reduction. The
+fell from approximately 1,042 kB to 943 kB, a 9.5% reduction. The
 engine-snapshot interpreter is now an 86.21 kB deferred chunk; PDB and bloom
 modules are also outside the initial graph.
 
