@@ -18,11 +18,8 @@ import {
   Waves
 } from "lucide";
 import * as THREE from "three";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
-import { PDBLoader } from "three/examples/jsm/loaders/PDBLoader.js";
+import type { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import type { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import {
   IonSimulation,
   SCENE_PRESETS,
@@ -96,17 +93,17 @@ import {
   deterministicDisplayJitter,
   dimensionlessRouteProgress
 } from "./physics/transportModes";
-import {
-  engineSnapshotEndpointFromLocation,
-  loadEngineSnapshot,
-  type EngineDivisionCell,
-  type EngineDivisionEvent,
-  type EngineIntercellularCommunication,
-  type EngineSpatialBody,
-  type EngineSpatialPairRelation,
-  type EngineSurfaceDeformationState,
-  type EngineSnapshotSummary
+import type {
+  EngineDivisionCell,
+  EngineDivisionEvent,
+  EngineSnapshotLoadResult,
+  EngineIntercellularCommunication,
+  EngineSpatialBody,
+  EngineSpatialPairRelation,
+  EngineSurfaceDeformationState,
+  EngineSnapshotSummary
 } from "./engineSnapshot";
+import { engineSnapshotEndpointFromLocation } from "./engineSnapshotEndpoint";
 import {
   HEPATOCYTE_RENDER_RADIUS_WORLD,
   HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT,
@@ -122,6 +119,26 @@ import {
 import { contactPatchDecision } from "./contactVisualization";
 import { perspectiveFrameScale } from "./visualFraming";
 import "./styles.css";
+
+let engineSnapshotModulePromise:
+  | Promise<typeof import("./engineSnapshot")>
+  | null = null;
+
+function loadEngineSnapshotModule(): Promise<typeof import("./engineSnapshot")> {
+  engineSnapshotModulePromise ??= import("./engineSnapshot");
+  return engineSnapshotModulePromise;
+}
+
+let pdbLoaderModulePromise:
+  | Promise<typeof import("three/examples/jsm/loaders/PDBLoader.js")>
+  | null = null;
+
+function loadPdbLoaderModule() {
+  pdbLoaderModulePromise ??= import(
+    "three/examples/jsm/loaders/PDBLoader.js"
+  );
+  return pdbLoaderModulePromise;
+}
 
 const app = document.querySelector<HTMLDivElement>("#app");
 
@@ -472,6 +489,25 @@ reportPanel.innerHTML =
   '<div class="report-log__title">Local visual event log</div>' +
   '<div class="report-log"></div>';
 (rightInspectorElement ?? viewportElement).append(reportPanel);
+const reportPanelElements = {
+  status: reportPanel.querySelector<HTMLElement>(".report-status"),
+  external: reportPanel.querySelector<HTMLElement>(".external-snapshot"),
+  history: reportPanel.querySelector<HTMLElement>(".report-history"),
+  genome: reportPanel.querySelector<HTMLElement>(".report-genome"),
+  expression: reportPanel.querySelector<HTMLElement>(".report-expression"),
+  genomicProgram: reportPanel.querySelector<HTMLElement>(".report-genomic-program"),
+  interaction: reportPanel.querySelector<HTMLElement>(".report-interaction"),
+  response: reportPanel.querySelector<HTMLElement>(".report-response"),
+  comparison: reportPanel.querySelector<HTMLElement>(".report-comparison"),
+  evidence: reportPanel.querySelector<HTMLElement>(".report-evidence"),
+  timescale: reportPanel.querySelector<HTMLElement>(".report-timescale"),
+  rows: reportPanel.querySelector<HTMLElement>(".report-rows"),
+  flows: reportPanel.querySelector<HTMLElement>(".report-flows"),
+  log: reportPanel.querySelector<HTMLElement>(".report-log")
+};
+let reportStaticRevision = 0;
+let renderedReportStaticRevision = -1;
+let lastReportPanelUpdateMs = Number.NEGATIVE_INFINITY;
 const communicationPanel = document.createElement("div");
 communicationPanel.className = "report-panel communication-panel";
 communicationPanel.style.display = "none";
@@ -479,8 +515,13 @@ communicationPanel.setAttribute("aria-label", "Intercellular communication evide
 (rightInspectorElement ?? viewportElement).append(communicationPanel);
 let lastEventId = 0;
 let externalEngineSummary: EngineSnapshotSummary | null = null;
+let evidenceBoundaryEngineSummary: EngineSnapshotSummary | null = null;
 let externalEngineDiagnostic = "Python engine snapshot loading...";
 const defaultExternalEngineSnapshotUrl = engineSnapshotEndpointFromLocation(window.location);
+const canonicalContextBaseSnapshotUrl = new URL(
+  "engine-snapshot.json",
+  window.location.href
+).pathname;
 let externalEngineSnapshotUrl = defaultExternalEngineSnapshotUrl;
 const ENGINE_EXPERIMENTS = ["baseline", "bsep_loss", "mrp2_loss", "canalicular_export_loss"] as const;
 const ENGINE_ZONES = ["periportal", "midlobular", "pericentral"] as const;
@@ -491,6 +532,11 @@ type EngineNutritionId = (typeof ENGINE_NUTRITION_PROFILES)[number];
 let selectedExperiment: EngineExperimentId = "baseline";
 let selectedZone: EngineZoneId = "midlobular";
 let selectedNutrition: EngineNutritionId = "postabsorptive";
+const engineSnapshotCache = new Map<string, EngineSnapshotLoadResult>();
+const engineSnapshotLoads = new Map<string, Promise<EngineSnapshotLoadResult>>();
+const engineSnapshotVersions = new Map<string, string>();
+let externalSnapshotRefreshGeneration = 0;
+let experimentComparisonSchedule: number | null = null;
 const publicAssetPath = (path: string): string => new URL(path, window.location.href).pathname;
 const ENGINE_EXPERIMENT_LABELS: Record<(typeof ENGINE_EXPERIMENTS)[number], string> = {
   baseline: "Control",
@@ -512,14 +558,102 @@ function selectEngineContext(): void {
   externalEngineSnapshotUrl = contextSnapshotUrl(selectedZone, selectedExperiment);
   externalEngineSummary = null;
   externalEngineDiagnostic = "Python zonation context loading...";
+  reportStaticRevision += 1;
   void refreshExternalEngineSnapshot();
-  void loadExperimentComparisons();
+  scheduleExperimentComparisons();
 }
 
-async function refreshExternalEngineSnapshot() {
-  const result = await loadEngineSnapshot(externalEngineSnapshotUrl);
+async function loadCachedEngineSnapshot(
+  url: string,
+  forceRefresh = false
+): Promise<EngineSnapshotLoadResult> {
+  if (!forceRefresh) {
+    const cached = engineSnapshotCache.get(url);
+    if (cached) return cached;
+    const activeLoad = engineSnapshotLoads.get(url);
+    if (activeLoad) return activeLoad;
+  }
+  const load = (async () => {
+    const snapshotModule = await loadEngineSnapshotModule();
+    if (url === canonicalContextBaseSnapshotUrl) {
+      return snapshotModule.loadEngineSnapshot(url);
+    }
+    return (async () => {
+        const base = await loadCachedEngineSnapshot(
+          canonicalContextBaseSnapshotUrl,
+          forceRefresh
+        );
+        if (base.status !== "loaded") {
+          return {
+            status: "missing",
+            url,
+            diagnostic: `Context overlay base unavailable: ${base.diagnostic}`
+          } satisfies EngineSnapshotLoadResult;
+        }
+        return snapshotModule.loadEngineSnapshotArtifact(url, base.snapshot);
+      })();
+  })();
+  engineSnapshotLoads.set(url, load);
+  try {
+    const result = await load;
+    engineSnapshotCache.set(url, result);
+    return result;
+  } finally {
+    if (engineSnapshotLoads.get(url) === load) engineSnapshotLoads.delete(url);
+  }
+}
+
+async function rememberEngineSnapshotVersion(url: string): Promise<void> {
+  try {
+    const response = await fetch(url, { method: "HEAD", cache: "no-cache" });
+    if (!response.ok) return;
+    const signature = [
+      response.headers.get("etag"),
+      response.headers.get("last-modified"),
+      response.headers.get("content-length")
+    ].filter(Boolean).join(":");
+    if (signature) engineSnapshotVersions.set(url, signature);
+  } catch {
+    // Snapshot loading already exposes the actionable diagnostic. A missing
+    // HEAD response must not disable the renderer.
+  }
+}
+
+async function engineSnapshotVersionChanged(url: string): Promise<boolean> {
+  try {
+    const response = await fetch(url, { method: "HEAD", cache: "no-cache" });
+    if (!response.ok) return true;
+    const signature = [
+      response.headers.get("etag"),
+      response.headers.get("last-modified"),
+      response.headers.get("content-length")
+    ].filter(Boolean).join(":");
+    if (!signature) return true;
+    const previous = engineSnapshotVersions.get(url);
+    engineSnapshotVersions.set(url, signature);
+    return previous !== undefined && previous !== signature;
+  } catch {
+    return true;
+  }
+}
+
+async function refreshExternalEngineSnapshot(forceRefresh = false) {
+  const requestedUrl = externalEngineSnapshotUrl;
+  const generation = ++externalSnapshotRefreshGeneration;
+  const result = await loadCachedEngineSnapshot(requestedUrl, forceRefresh);
+  if (
+    generation !== externalSnapshotRefreshGeneration ||
+    requestedUrl !== externalEngineSnapshotUrl
+  ) return;
   if (result.status === "loaded") {
     externalEngineSummary = result.summary;
+    if (requestedUrl === defaultExternalEngineSnapshotUrl) {
+      // Evidence intake and model-audit surfaces are project-wide. Context
+      // snapshots may intentionally trail the canonical export, so keep those
+      // reports on the complete baseline artifact while the selected response
+      // and physiology continue to come from the requested context.
+      evidenceBoundaryEngineSummary = result.summary;
+    }
     externalEngineDiagnostic = "";
     const contextEl = app?.querySelector<HTMLElement>("[data-role='cell-context']");
     if (contextEl) {
@@ -530,25 +664,52 @@ async function refreshExternalEngineSnapshot() {
     externalEngineSummary = null;
     externalEngineDiagnostic = `${result.diagnostic}; TS visual model remains active.`;
   }
+  reportStaticRevision += 1;
   setMetricLabels(mode);
   updateDivisionDemoGate();
+  void rememberEngineSnapshotVersion(requestedUrl);
 }
 
 void refreshExternalEngineSnapshot();
-window.setInterval(() => void refreshExternalEngineSnapshot(), 5000);
+window.setInterval(() => {
+  if (document.hidden) return;
+  const url = externalEngineSnapshotUrl;
+  void engineSnapshotVersionChanged(url).then((changed) => {
+    if (changed && url === externalEngineSnapshotUrl) {
+      void refreshExternalEngineSnapshot(true);
+    }
+  });
+}, 15_000);
 
 async function loadExperimentComparisons() {
-  const loaded = await Promise.all(
-    ENGINE_EXPERIMENTS.map(async (id) => ({ id, result: await loadEngineSnapshot(contextSnapshotUrl(selectedZone, id)) }))
-  );
+  const contextKey = `${selectedZone}:${selectedNutrition}`;
+  const requests = ENGINE_EXPERIMENTS.map((id) => ({
+    id,
+    url: contextSnapshotUrl(selectedZone, id)
+  }));
   const summaries: Partial<Record<(typeof ENGINE_EXPERIMENTS)[number], EngineSnapshotSummary>> = {};
-  for (const item of loaded) {
-    if (item.result.status === "loaded") summaries[item.id] = item.result.summary;
+  // Parse sequentially after first paint. Concurrently validating four large
+  // snapshots monopolized the main thread during startup.
+  for (const request of requests) {
+    const result = await loadCachedEngineSnapshot(request.url);
+    if (`${selectedZone}:${selectedNutrition}` !== contextKey) return;
+    if (result.status === "loaded") summaries[request.id] = result.summary;
   }
   experimentComparisonSummaries = summaries;
+  reportStaticRevision += 1;
 }
 
-void loadExperimentComparisons();
+function scheduleExperimentComparisons(): void {
+  if (experimentComparisonSchedule !== null) {
+    window.clearTimeout(experimentComparisonSchedule);
+  }
+  experimentComparisonSchedule = window.setTimeout(() => {
+    experimentComparisonSchedule = null;
+    void loadExperimentComparisons();
+  }, 750);
+}
+
+scheduleExperimentComparisons();
 
 app.querySelector<HTMLSelectElement>("[data-control='experiment']")?.addEventListener("change", (event) => {
   selectedExperiment = (event.currentTarget as HTMLSelectElement).value as EngineExperimentId;
@@ -1021,11 +1182,34 @@ const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fi
 const CELL_R = HEPATOCYTE_RENDER_RADIUS_WORLD;
 const CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND = 5;
 const CELL_VISUAL_STEP_ITERATIONS = 2;
+// The dimensionless pressure projection follows slowly moving organelle
+// boundaries. Rebuilding its 18^3 cut-cell domain at display-frame cadence
+// wastes CPU without adding biological or visual information. Tracers continue
+// to advect every frame through the latest projected velocity field.
+const CYTOSOL_NUMERICAL_REFRESH_INTERVAL_S = 1 / 4;
 const MEMBRANE_SCALE = 1.6; // membrane positions are in σ (~1 nm); scale for display
 let running = true;
 let showClouds = true;
 let showVectors = true;
 let lastFrame = performance.now();
+let performanceWindowStartedAt = lastFrame;
+let performanceWindowFrameCount = 0;
+let performanceWindowWorkMs = 0;
+let performanceWindowMaxWorkMs = 0;
+let performanceWindowLongFrameCount = 0;
+const performanceStageWorkMs = new Map<string, number>();
+type RenderQualityTier = "full" | "balanced" | "essential";
+const RENDER_QUALITY_ORDER: Record<RenderQualityTier, number> = {
+  full: 0,
+  balanced: 1,
+  essential: 2
+};
+const SLOW_RENDER_FRAME_MS = 45;
+const SLOW_RENDER_FRAMES_PER_DEGRADE = 2;
+let renderQualityTier: RenderQualityTier = "full";
+let renderSlowFrameStreak = 0;
+let renderFastPlainFrameCount = 0;
+let performanceVisualAnatomyLodCap: VisualAnatomyLod | null = null;
 let dragState: { x: number; y: number; theta: number; phi: number } | null = null;
 let cameraDistance = 6.5;
 let baselineEnergyEv = simulation.snapshot().totalEnergyEv;
@@ -1096,6 +1280,7 @@ function makeRenderer(): RendererHandle {
 
 const renderer = makeRenderer();
 let activePixelRatio = Math.min(window.devicePixelRatio, 1.5);
+document.documentElement.dataset.cellRenderQuality = renderQualityTier;
 renderer.setPixelRatio(activePixelRatio);
 renderer.setSize(viewportElement.clientWidth, viewportElement.clientHeight);
 viewportElement.append(renderer.domElement);
@@ -1732,6 +1917,7 @@ function syncVisualDivisionFromEngine(summary: EngineSnapshotSummary | null) {
   latestVisualDivisionSource = "engine";
   createResolvedDivisionVisual(visualPopulation, event.outcome);
 }
+let lastCellCycleDomUpdateMs = Number.NEGATIVE_INFINITY;
 function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy: boolean) {
   const c = cellCycle;
   const alreadyResolved = visualDivisionEvents.length > 0;
@@ -1818,6 +2004,9 @@ function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy:
     ? ` · population ${visualPopulation.length} · ${eventSourceText} · outcome ${latestEvent.outcome.replaceAll("_", " ")} · P(fail) ${(latestEvent.failureRisk * 100).toFixed(0)}%`
     : ` · population ${visualPopulation.length}`;
   const localBlock = localDivisionDemoBlockedByEngine() ? " · local division demo locked by Python snapshot" : "";
+  const uiNow = performance.now();
+  if (uiNow - lastCellCycleDomUpdateMs < 150) return;
+  lastCellCycleDomUpdateMs = uiNow;
 
   if (cellCycleEl) {
     cellCycleEl.innerHTML =
@@ -1863,31 +2052,112 @@ scene.add(ambient, key, fill, rim, backCyan);
 // falls back gracefully to a plain render if the GL context can't support it. ---
 let composer: EffectComposer | null = null;
 let bloomPass: UnrealBloomPass | null = null;
+let bloomInitializationStarted = false;
+let bloomPerformanceDisabled = false;
 let lastCalcium = 0; // latest calcium-transient value (0..1), shared with the overlay
-if (realRenderer) {
+async function initializeBloomComposer(): Promise<void> {
+  if (
+    !realRenderer ||
+    composer ||
+    bloomPerformanceDisabled ||
+    renderQualityTier !== "full"
+  ) return;
   try {
-    composer = new EffectComposer(realRenderer);
-    composer.addPass(new RenderPass(scene, camera));
-    bloomPass = new UnrealBloomPass(
+    const [
+      { EffectComposer: EffectComposerCtor },
+      { RenderPass },
+      { UnrealBloomPass: UnrealBloomPassCtor },
+      { OutputPass }
+    ] = await Promise.all([
+      import("three/examples/jsm/postprocessing/EffectComposer.js"),
+      import("three/examples/jsm/postprocessing/RenderPass.js"),
+      import("three/examples/jsm/postprocessing/UnrealBloomPass.js"),
+      import("three/examples/jsm/postprocessing/OutputPass.js")
+    ]);
+    if (bloomPerformanceDisabled || renderQualityTier !== "full") return;
+    const nextComposer = new EffectComposerCtor(realRenderer);
+    nextComposer.addPass(new RenderPass(scene, camera));
+    const nextBloomPass = new UnrealBloomPassCtor(
       new THREE.Vector2(viewportElement.clientWidth, viewportElement.clientHeight),
       0.62, // strength (modulated live by cell energy/calcium below)
       0.5,  // radius
       0.82  // threshold — only the bright emissive cores bloom
     );
-    composer.addPass(bloomPass);
-    composer.addPass(new OutputPass());
-    composer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    composer.setSize(viewportElement.clientWidth, viewportElement.clientHeight);
+    nextComposer.addPass(nextBloomPass);
+    nextComposer.addPass(new OutputPass());
+    nextComposer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    nextComposer.setSize(
+      viewportElement.clientWidth,
+      viewportElement.clientHeight
+    );
+    bloomPass = nextBloomPass;
+    composer = nextComposer;
   } catch {
     composer = null;
     bloomPass = null;
   }
 }
 
+function applyRenderQualityTier(next: RenderQualityTier): void {
+  if (RENDER_QUALITY_ORDER[next] <= RENDER_QUALITY_ORDER[renderQualityTier]) {
+    return;
+  }
+  renderQualityTier = next;
+  renderSlowFrameStreak = 0;
+  document.documentElement.dataset.cellRenderQuality = next;
+  if (next !== "full") {
+    bloomPerformanceDisabled = true;
+    composer?.dispose();
+    composer = null;
+    bloomPass = null;
+  }
+  const nextPixelRatio =
+    next === "balanced"
+      ? Math.min(window.devicePixelRatio, 1)
+      : Math.min(window.devicePixelRatio, 0.75);
+  if (nextPixelRatio !== activePixelRatio) {
+    activePixelRatio = nextPixelRatio;
+    renderer.setPixelRatio(activePixelRatio);
+    renderer.setSize(
+      viewportElement.clientWidth,
+      viewportElement.clientHeight
+    );
+  }
+  performanceVisualAnatomyLodCap =
+    next === "essential" ? "overview" : "cellular";
+  activeVisualAnatomyLod = null;
+  updateVisualAnatomyLod();
+}
+
 /** Render the active scene through the bloom composer when available. */
 function renderFrame() {
+  const startedAt = performance.now();
   if (composer) composer.render();
   else renderer.render(scene, camera);
+  const elapsedMs = performance.now() - startedAt;
+  if (elapsedMs > SLOW_RENDER_FRAME_MS) {
+    renderSlowFrameStreak += 1;
+    renderFastPlainFrameCount = 0;
+  } else {
+    renderSlowFrameStreak = Math.max(0, renderSlowFrameStreak - 1);
+    if (!composer && renderQualityTier === "full") {
+      renderFastPlainFrameCount += 1;
+    }
+  }
+  if (renderSlowFrameStreak >= SLOW_RENDER_FRAMES_PER_DEGRADE) {
+    applyRenderQualityTier(
+      renderQualityTier === "full" ? "balanced" : "essential"
+    );
+  } else if (
+    !bloomInitializationStarted &&
+    renderFastPlainFrameCount >= 2 &&
+    renderQualityTier === "full"
+  ) {
+    bloomInitializationStarted = true;
+    window.setTimeout(() => {
+      void initializeBloomComposer();
+    }, 0);
+  }
 }
 
 const grid = new THREE.GridHelper(8, 32, "#243142", "#16202d");
@@ -3425,23 +3695,31 @@ function updateIntracellularFluid(realDeltaS: number, refreshMovingBoundaries: b
     : "rest";
   const deformationChanged = deformationSignature !== visual.deformationSignature;
   visual.obstacleSyncElapsedS += running ? realDeltaS : 0;
-  const refreshNumericalGrid = refreshMovingBoundaries || deformationChanged;
+  const refreshNumericalGrid = deformationChanged
+    || (
+      refreshMovingBoundaries
+      && visual.obstacleSyncElapsedS >= CYTOSOL_NUMERICAL_REFRESH_INTERVAL_S
+    );
   const numericalGridDeltaS = refreshNumericalGrid
     ? Math.max(visual.obstacleSyncElapsedS, realDeltaS)
     : realDeltaS;
   if (running && refreshNumericalGrid) {
-    visual.syncObstacles(visual.obstacleSyncElapsedS);
+    measurePerformanceStage("fluid-obstacles", () => {
+      visual.syncObstacles(visual.obstacleSyncElapsedS);
+    });
     visual.obstacleSyncElapsedS = 0;
   }
   if (running) {
-    visual.field.step(
-      realDeltaS,
-      deformation,
-      visual.collides,
-      visual.obstacles,
-      refreshNumericalGrid,
-      numericalGridDeltaS
-    );
+    measurePerformanceStage("fluid-field", () => {
+      visual.field.step(
+        realDeltaS,
+        deformation,
+        visual.collides,
+        visual.obstacles,
+        refreshNumericalGrid,
+        numericalGridDeltaS
+      );
+    });
   }
   else visual.field.synchronizeDeformation(deformation);
   visual.deformationSignature = deformationSignature;
@@ -3548,7 +3826,16 @@ function updateMembraneMicrovilli(): void {
 }
 
 function updateVisualAnatomyLod(): void {
-  const next = visualAnatomyLod(cameraDistance, viewportElement.clientWidth);
+  const requested = visualAnatomyLod(
+    cameraDistance,
+    viewportElement.clientWidth
+  );
+  const next =
+    performanceVisualAnatomyLodCap &&
+    ANATOMY_LOD_ORDER[requested] >
+      ANATOMY_LOD_ORDER[performanceVisualAnatomyLodCap]
+      ? performanceVisualAnatomyLodCap
+      : requested;
   if (next === activeVisualAnatomyLod) return;
   activeVisualAnatomyLod = next;
   const level = ANATOMY_LOD_ORDER[next];
@@ -3758,9 +4045,12 @@ function updateDivisionOverlay(mechanics: DivisionMechanicsState) {
 }
 
 function updateReportPanel(s: CellSnapshot) {
+  const now = performance.now();
+  if (now - lastReportPanelUpdateMs < 250) return;
+  lastReportPanelUpdateMs = now;
   reportPanel.style.display = "flex";
   timeScaleBadge.textContent = timeScaleDisclosureText();
-  const statusEl = reportPanel.querySelector(".report-status");
+  const statusEl = reportPanelElements.status;
   if (statusEl) {
     const col = s.status === "dying" ? "#ff8a8a" : s.status === "senescent" ? "#d9a6ff" : s.status === "stressed" ? "#ffcf6b" : "#7ee0a8";
     const survival = Number.isFinite(s.projectedMedianSurvivalH) ? ` · median fate ${s.projectedMedianSurvivalH.toFixed(1)}h` : "";
@@ -3774,31 +4064,43 @@ function updateReportPanel(s: CellSnapshot) {
       `ROS ${s.pools.ros.toFixed(2)} · waste ${s.pools.waste.toFixed(2)} · ` +
       `sen ${s.senescenceRiskPerHour.toFixed(2)}%/h · apo ${s.apoptosisRiskPerHour.toFixed(2)}%/h${survival} · t ${Math.round(s.elapsedS)}s`;
   }
-  const externalEl = reportPanel.querySelector(".external-snapshot");
-  if (externalEl) {
-    externalEl.innerHTML = renderExternalEngineStatus();
+  if (renderedReportStaticRevision !== reportStaticRevision) {
+    if (reportPanelElements.external) {
+      reportPanelElements.external.innerHTML = renderExternalEngineStatus();
+    }
+    if (reportPanelElements.history) {
+      reportPanelElements.history.innerHTML = renderCellHistory(externalEngineSummary);
+    }
+    if (reportPanelElements.genome) {
+      reportPanelElements.genome.innerHTML = renderGenomeState(externalEngineSummary);
+    }
+    if (reportPanelElements.expression) {
+      reportPanelElements.expression.innerHTML = renderGeneExpression(externalEngineSummary);
+    }
+    if (reportPanelElements.genomicProgram) {
+      reportPanelElements.genomicProgram.innerHTML = renderGenomicProgram(externalEngineSummary);
+    }
+    if (reportPanelElements.interaction) {
+      reportPanelElements.interaction.innerHTML = renderCommunicationEvidencePanel(externalEngineSummary);
+    }
+    if (reportPanelElements.response) {
+      reportPanelElements.response.innerHTML = renderEngineResponse(externalEngineSummary);
+    }
+    if (reportPanelElements.comparison) {
+      reportPanelElements.comparison.innerHTML = renderExperimentComparison(externalEngineSummary);
+    }
+    if (reportPanelElements.evidence) {
+      reportPanelElements.evidence.innerHTML = renderEvidenceBoundary(
+        evidenceBoundaryEngineSummary ?? externalEngineSummary
+      );
+    }
+    renderedReportStaticRevision = reportStaticRevision;
   }
-  const historyEl = reportPanel.querySelector(".report-history");
-  if (historyEl) historyEl.innerHTML = renderCellHistory(externalEngineSummary);
-  const genomeEl = reportPanel.querySelector(".report-genome");
-  if (genomeEl) genomeEl.innerHTML = renderGenomeState(externalEngineSummary);
-  const expressionEl = reportPanel.querySelector(".report-expression");
-  if (expressionEl) expressionEl.innerHTML = renderGeneExpression(externalEngineSummary);
-  const genomicProgramEl = reportPanel.querySelector(".report-genomic-program");
-  if (genomicProgramEl) genomicProgramEl.innerHTML = renderGenomicProgram(externalEngineSummary);
-  const interactionEl = reportPanel.querySelector(".report-interaction");
-  if (interactionEl) interactionEl.innerHTML = renderCommunicationEvidencePanel(externalEngineSummary);
-  const responseEl = reportPanel.querySelector(".report-response");
-  if (responseEl) responseEl.innerHTML = renderEngineResponse(externalEngineSummary);
-  const comparisonEl = reportPanel.querySelector(".report-comparison");
-  if (comparisonEl) comparisonEl.innerHTML = renderExperimentComparison(externalEngineSummary);
-  const evidenceEl = reportPanel.querySelector(".report-evidence");
-  if (evidenceEl) evidenceEl.innerHTML = renderEvidenceBoundary(externalEngineSummary);
-  const timescaleEl = reportPanel.querySelector(".report-timescale");
+  const timescaleEl = reportPanelElements.timescale;
   if (timescaleEl) {
     timescaleEl.textContent = timeScaleDisclosureText();
   }
-  const rowsEl = reportPanel.querySelector(".report-rows");
+  const rowsEl = reportPanelElements.rows;
   if (rowsEl) {
     rowsEl.innerHTML = s.organelles
       .map((o) => {
@@ -3822,7 +4124,7 @@ function updateReportPanel(s: CellSnapshot) {
       })
       .join("");
   }
-  const flowsEl = reportPanel.querySelector(".report-flows");
+  const flowsEl = reportPanelElements.flows;
   if (flowsEl) {
     flowsEl.innerHTML = s.flows
       .slice()
@@ -3841,7 +4143,7 @@ function updateReportPanel(s: CellSnapshot) {
       })
       .join("");
   }
-  const logEl = reportPanel.querySelector(".report-log");
+  const logEl = reportPanelElements.log;
   if (logEl) {
     const fresh = s.events.filter((e) => e.id > lastEventId);
     for (const e of fresh) {
@@ -3876,7 +4178,9 @@ function renderExternalEngineStatus(): string {
   const divisionEvent = s.division?.latest_event ?? s.division?.events.at(-1);
   const divisionDisplay = s.divisionDisplay;
   const divisionTiming = s.division?.timing_profile
-    ? `${s.division.timing_profile.id ?? "timing"} ${s.division.timing_profile.time_compressed ? "compressed" : "real-time"}`
+    ? s.division.timing_profile.execution_authorized === false
+      ? `${s.division.timing_profile.id ?? "timing"} blocked · no authorized human phase durations`
+      : `${s.division.timing_profile.id ?? "timing"} ${s.division.timing_profile.time_compressed ? "compressed" : "real-time"}`
     : "timing -";
   const displayReason = divisionDisplay.available
     ? `display ${divisionDisplay.reason.replaceAll("_", " ")}`
@@ -3891,9 +4195,9 @@ function renderExternalEngineStatus(): string {
       : "division -";
   const regen = s.regenerationContext;
   const timingPeak = regen?.timing_profile?.dna_synthesis_peak_h;
-  const timingText = timingPeak
+  const timingText = regen?.timing_is_real_world_reference && timingPeak
     ? `${regen?.timing_profile?.species ?? "unknown"} DNA synth peak ${timingPeak[0]}-${timingPeak[1]}h`
-    : "no active regeneration timing";
+    : "no sourced numeric regeneration timing";
   const directAxes = regen?.decision?.direct_mitogen_axes
     ?.map((axis) => `${axis.axis ?? "axis"} ${axis.active ? "active" : "blocked"}`)
     .join(" · ");
@@ -4634,9 +4938,12 @@ let hovering = false;
 let hoverCandidateKey = "";
 let hoverCandidateSince = 0;
 let hoverPointerMovedAt = 0;
+let hoverRaycastRequested = false;
+let lastHoverRaycastMs = Number.NEGATIVE_INFINITY;
 
 viewportElement.addEventListener("pointerenter", () => {
   hoverPointerMovedAt = performance.now();
+  hoverRaycastRequested = true;
   hoverCandidateKey = "";
   hoverTooltip.style.display = "none";
 });
@@ -4648,10 +4955,12 @@ viewportElement.addEventListener("pointermove", (event) => {
   hoverClientY = event.clientY - rect.top;
   hovering = true;
   hoverPointerMovedAt = performance.now();
+  hoverRaycastRequested = true;
   hoverTooltip.style.display = "none";
 });
 viewportElement.addEventListener("pointerleave", () => {
   hovering = false;
+  hoverRaycastRequested = false;
   hoverTooltip.style.display = "none";
 });
 
@@ -4663,6 +4972,10 @@ function updateHoverTooltip() {
     hoverCandidateKey = "";
     return;
   }
+  const now = performance.now();
+  if (!hoverRaycastRequested && now - lastHoverRaycastMs < 120) return;
+  hoverRaycastRequested = false;
+  lastHoverRaycastMs = now;
   (hoverRaycaster.params.Points as { threshold: number }).threshold = cameraDistance <= 7 ? 0.035 : cameraDistance <= 13 ? 0.01 : 0.001;
   hoverRaycaster.setFromCamera(hoverNDC, camera);
   const hits = hoverRaycaster.intersectObjects(hoverRoot.children, true);
@@ -4678,7 +4991,6 @@ function updateHoverTooltip() {
     const label = hit.object.userData.label as string;
     const kind = hit.object.userData.hoverKind ?? "default";
     const key = `${kind}:${label}`;
-    const now = performance.now();
     if (key !== hoverCandidateKey) {
       hoverCandidateKey = key;
       hoverCandidateSince = now;
@@ -4707,6 +5019,7 @@ viewportElement.addEventListener(
   (event) => {
     event.preventDefault();
     cameraDistance = clamp(cameraDistance + event.deltaY * 0.02, 2.4, 140);
+    hoverRaycastRequested = true;
     resize();
   },
   { passive: false }
@@ -4727,10 +5040,13 @@ viewportResizeObserver.observe(viewportElement);
 loadScene(DEFAULT_SCENE_ID);
 resize();
 updatePlayIcon();
-animate();
+window.setTimeout(() => {
+  requestAnimationFrame(animate);
+}, 0);
 
 function animate() {
-  const now = performance.now();
+  const frameWorkStartedAt = performance.now();
+  const now = frameWorkStartedAt;
   const delta = Math.min(48, now - lastFrame);
   lastFrame = now;
   const iterations = Math.max(1, Math.round(delta / 3.2));
@@ -4782,7 +5098,73 @@ function animate() {
     }
     renderIonSnapshot(simulation.snapshot());
   }
-  requestAnimationFrame(animate);
+  const frameWorkMs = performance.now() - frameWorkStartedAt;
+  performanceWindowFrameCount += 1;
+  performanceWindowWorkMs += frameWorkMs;
+  performanceWindowMaxWorkMs = Math.max(performanceWindowMaxWorkMs, frameWorkMs);
+  if (delta > 33.34) performanceWindowLongFrameCount += 1;
+  const performanceWindowElapsedMs = performance.now() - performanceWindowStartedAt;
+  if (performanceWindowElapsedMs >= 2000) {
+    const dataset = document.documentElement.dataset;
+    dataset.cellPerfFps = ((performanceWindowFrameCount * 1000) / performanceWindowElapsedMs).toFixed(1);
+    dataset.cellPerfWorkMs = (performanceWindowWorkMs / performanceWindowFrameCount).toFixed(2);
+    dataset.cellPerfMaxWorkMs = performanceWindowMaxWorkMs.toFixed(2);
+    dataset.cellPerfLongFrames = String(performanceWindowLongFrameCount);
+    dataset.cellPerfDomNodes = String(document.getElementsByTagName("*").length);
+    if (realRenderer) {
+      dataset.cellPerfDrawCalls = String(realRenderer.info.render.calls);
+      dataset.cellPerfTriangles = String(realRenderer.info.render.triangles);
+      dataset.cellPerfPoints = String(realRenderer.info.render.points);
+    }
+    const fluidGrid = intracellularFluidVisual?.numericalGrid;
+    if (fluidGrid) {
+      dataset.cellPerfFluidSolver = JSON.stringify(fluidGrid.performanceDiagnostics());
+      const fluidDiagnostics = fluidGrid.diagnostics();
+      dataset.cellPerfFluidDivergence = JSON.stringify({
+        before: fluidDiagnostics.divergenceRmsBefore,
+        after: fluidDiagnostics.divergenceRmsAfter,
+        maximum: fluidDiagnostics.divergenceMaxAfter
+      });
+    }
+    dataset.cellPerfStages = JSON.stringify(
+      Object.fromEntries(
+        [...performanceStageWorkMs.entries()].map(([stage, elapsedMs]) => [
+          stage,
+          Number((elapsedMs / performanceWindowFrameCount).toFixed(2))
+        ])
+      )
+    );
+    performanceWindowStartedAt = performance.now();
+    performanceWindowFrameCount = 0;
+    performanceWindowWorkMs = 0;
+    performanceWindowMaxWorkMs = 0;
+    performanceWindowLongFrameCount = 0;
+    performanceStageWorkMs.clear();
+  }
+  scheduleNextAnimationFrame();
+}
+
+function scheduleNextAnimationFrame(): void {
+  const delayMs =
+    renderQualityTier === "full"
+      ? 0
+      : renderQualityTier === "balanced"
+        ? 16
+        : 50;
+  if (delayMs === 0) {
+    requestAnimationFrame(animate);
+    return;
+  }
+  window.setTimeout(() => {
+    requestAnimationFrame(animate);
+  }, delayMs);
+}
+
+function measurePerformanceStage<T>(stage: string, work: () => T): T {
+  const startedAt = performance.now();
+  const result = work();
+  performanceStageWorkMs.set(stage, (performanceStageWorkMs.get(stage) ?? 0) + performance.now() - startedAt);
+  return result;
 }
 
 function clearIonVisuals() {
@@ -5535,9 +5917,19 @@ async function buildProteinScene() {
   const baseUrl =
     (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/";
 
+  let PdbLoaderCtor: (
+    typeof import("three/examples/jsm/loaders/PDBLoader.js")
+  )["PDBLoader"];
+  try {
+    PdbLoaderCtor = (await loadPdbLoaderModule()).PDBLoader;
+  } catch {
+    return;
+  }
+  if (proteinGroup !== targetGroup) return;
+
   // PDBLoader is async (XHR). Build the meshes in the callback. Guard against the
   // scene having been switched away while the file was loading.
-  new PDBLoader().load(`${baseUrl}glucokinase.pdb`, (pdb) => {
+  new PdbLoaderCtor().load(`${baseUrl}glucokinase.pdb`, (pdb) => {
     if (proteinGroup !== targetGroup) return;
     const geometryAtoms = pdb.geometryAtoms;
     const geometryBonds = pdb.geometryBonds;
@@ -8803,6 +9195,15 @@ async function embedRealProteins(
 ) {
   const BASE = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/";
   const live = () => organelleGroup === targetGroup && !!targetGroup.parent;
+  let PdbLoaderCtor: (
+    typeof import("three/examples/jsm/loaders/PDBLoader.js")
+  )["PDBLoader"];
+  try {
+    PdbLoaderCtor = (await loadPdbLoaderModule()).PDBLoader;
+  } catch {
+    return;
+  }
+  if (!live()) return;
 
   // True world-units-per-Angstrom: rendering at this scale would be sub-pixel.
   const worldPerAngstromTrue = ctx.nmToWorld(0.1);
@@ -8810,7 +9211,7 @@ async function embedRealProteins(
   // PDBLoader is callback-based; wrap it so we can await all 7 in parallel.
   const loadPdb = (url: string) =>
     new Promise<{ geometryAtoms: THREE.BufferGeometry }>((resolve, reject) =>
-      new PDBLoader().load(url, (pdb) => resolve(pdb), undefined, reject)
+      new PdbLoaderCtor().load(url, (pdb) => resolve(pdb), undefined, reject)
     );
 
   let manifest: RealProteinEntry[];
@@ -9143,7 +9544,9 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
 
   if (livingCell && running) {
     const simDt = clamp((realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND) / CELL_VISUAL_STEP_ITERATIONS, 0.005, 0.08);
-    livingCell.step(simDt, CELL_VISUAL_STEP_ITERATIONS); // accelerated, frame-rate independent visual clock
+    measurePerformanceStage("biology", () => {
+      livingCell?.step(simDt, CELL_VISUAL_STEP_ITERATIONS);
+    }); // accelerated, frame-rate independent visual clock
   }
   if (livingCell) {
     const s = livingCell.snapshot();
@@ -9164,17 +9567,23 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     // The membrane carries the current engine geometry plus deterministic mesh
     // repair. It is stepped on alternating frames because its area/volume
     // projections are among the costliest parts of the scene.
-    if (heavyFrame) updateMembraneShape(realDeltaS * 2);
-    syncOrganelleInteractionGeometry(externalEngineSummary);
-    updateVisualAnatomyLod();
-    updateMembraneMicrovilli();
-    updateSinusoidBloodFlow(s.elapsedS);
-    updateOrganelleMotion(s.elapsedS);
-    if (heavyFrame) updateOrganellePopulations(s.elapsedS, colorFrame);
+    if (heavyFrame) {
+      measurePerformanceStage("membrane", () => updateMembraneShape(realDeltaS * 2));
+    }
+    measurePerformanceStage("scene-sync", () => {
+      syncOrganelleInteractionGeometry(externalEngineSummary);
+      updateVisualAnatomyLod();
+      updateMembraneMicrovilli();
+      updateSinusoidBloodFlow(s.elapsedS);
+      updateOrganelleMotion(s.elapsedS);
+    });
+    if (heavyFrame) {
+      measurePerformanceStage("organelle-populations", () => updateOrganellePopulations(s.elapsedS, colorFrame));
+    }
     // Rebuild moving analytic organelle boundaries only after all organelle
     // transforms have advanced; the projected cytosol therefore sees this frame,
     // not the placement-time proxy geometry.
-    updateIntracellularFluid(realDeltaS, heavyFrame);
+    measurePerformanceStage("cytosol-fluid", () => updateIntracellularFluid(realDeltaS, heavyFrame));
     updateNucleusExpression(realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND);
     updateMembraneProteinAnchors(s.elapsedS);
     updateMembraneRidingClouds(s.elapsedS);
@@ -9231,7 +9640,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     drawCalciumTrace();
     // Ribosomes brighten as translation runs (protein being built).
     if (ribosomeMat) ribosomeMat.opacity = 0.4 + 0.55 * Math.min(1, activityOf("ribosome") / 0.62);
-    updateReportPanel(s);
+    measurePerformanceStage("report-dom", () => updateReportPanel(s));
     // The whole cell takes on its health: blue (healthy) → amber → red (dying).
     if (organelleMembrane) {
       const visualStatus = externalEngineSummary?.status ?? s.status;
@@ -9278,8 +9687,8 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
   }
 
   updateScientificScaleBar();
-  updateHoverTooltip();
-  renderFrame();
+  measurePerformanceStage("hover", updateHoverTooltip);
+  measurePerformanceStage("render", renderFrame);
 }
 
 /** Position and orient a unit-height cylinder so it spans from a to b. */

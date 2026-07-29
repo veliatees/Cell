@@ -132,6 +132,36 @@ linked to its dependencies.
 - Donor-resolved raw PHH mechanics and constitutive-parameter intake: `milestones/126-donor-resolved-phh-mechanics-calibration-intake-v1.md`
 - Pinned LP backend with analytic FBA/FVA and infeasibility verification: `milestones/127-generic-fba-fva-numerical-kernel-v1.md`
 - Checksum-frozen healthy-PHH Human-GEM execution-bundle gate: `milestones/128-healthy-phh-metabolic-execution-bundle-v1.md`
+- Checksum-gated Human-GEM sparse FBC loader: `milestones/129-checksum-gated-human-gem-sparse-fbc-loader-v1.md`
+- FASTCORE context-extraction numerical kernel: `milestones/130-fastcore-context-extraction-numerical-kernel-v1.md`
+- Topology-preserving adaptive remeshing: `milestones/131-topology-preserving-adaptive-remeshing-v1.md`
+- Source-defined FASTCC Human-GEM consistency: `milestones/132-source-defined-fastcc-human-gem-consistency-v1.md`
+- Pinned Human-GEM generic sparse FBA: `milestones/133-pinned-human-gem-generic-sparse-fba-v1.md`
+- Live membrane remesh cache bridge: `milestones/134-live-membrane-remesh-cache-bridge-v1.md`
+- Human-GEM FBC gene labels and strict GPR evaluation: `milestones/135-human-gem-fbc-gene-label-gpr-v1.md`
+- Seven-donor PHH proteome-to-GPR core evidence: `milestones/136-seven-donor-phh-proteome-gpr-core-v1.md`
+- Real-scale Human-GEM FASTCORE trial: `milestones/137-real-scale-human-gem-fastcore-trial-v1.md`
+- Seven-donor GPR support stability: `milestones/138-seven-donor-gpr-support-stability-v1.md`
+- Human-GEM FASTCORE scaling sensitivity: `milestones/139-human-gem-fastcore-scaling-sensitivity-v1.md`
+- Reaction-level PHH evidence manifest: `milestones/140-reaction-level-phh-evidence-manifest-v1.md`
+- Human-GEM FASTCORE blocker diagnostics: `milestones/141-human-gem-fastcore-blocker-diagnostics-v1.md`
+- Source-limited minimum-reaction support kernel: `milestones/142-source-limited-minimum-reaction-support-kernel-v1.md`
+- Human-GEM source-limited support repair: `milestones/143-human-gem-source-limited-support-repair-v1.md`
+- Closed membrane topology transition audit: `milestones/144-closed-membrane-topology-transition-audit-v1.md`
+- Conservative membrane topology state transfer: `milestones/145-conservative-membrane-topology-state-transfer-v1.md`
+- Evidence-gated membrane topology transaction: `milestones/146-evidence-gated-membrane-topology-transaction-v1.md`
+- Multi-target shared reaction-support kernel: `milestones/147-multi-target-shared-reaction-support-kernel-v1.md`
+- Human-GEM minimum shared support: `milestones/148-human-gem-minimum-shared-support-v1.md`
+- Human-GEM support optimum enumeration: `milestones/149-human-gem-support-optimum-enumeration-v1.md`
+- Human-GEM global support cardinality: `milestones/150-human-gem-global-support-cardinality-v1.md`
+- Human-GEM global support counterexample: `milestones/151-human-gem-global-support-counterexample-v1.md`
+- Human-GEM fixed-core completion enumeration: `milestones/152-human-gem-fixed-core-completion-enumeration-v1.md`
+- Human-GEM global support identity completeness: `milestones/153-human-gem-global-support-identity-completeness-v1.md`
+- Whole-cell runtime authority firewall: `milestones/154-whole-cell-runtime-authority-firewall-v1.md`
+- Legacy calibration authority firewall: `milestones/155-legacy-calibration-authority-firewall-v1.md`
+- Canonical browser context snapshot overlay matrix: `milestones/156-canonical-context-snapshot-overlay-matrix-v1.md`
+- Browser first-render code splitting and production bundle budget: `milestones/157-browser-first-render-code-splitting-budget-v1.md`
+- Human baseline lifecycle timing firewall: `milestones/158-human-baseline-lifecycle-timing-firewall-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

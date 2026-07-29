@@ -162,4 +162,83 @@ test.describe("hepatocyte render integrity", () => {
       });
     });
   }
+
+  test("deferred scientific and protein modules activate on demand", async ({ page }, testInfo) => {
+    const runtimeErrors: string[] = [];
+    const loadedUrls = new Set<string>();
+    page.on("console", (message) => {
+      if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
+    });
+    page.on("pageerror", (error) => runtimeErrors.push(`page: ${error.message}`));
+    page.on("response", (response) => {
+      if (response.ok()) loadedUrls.add(new URL(response.url()).pathname);
+    });
+
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto("/");
+    await waitForRender(page);
+
+    await expect.poll(() => (
+      [...loadedUrls].some((url) => url.includes("engineSnapshot"))
+    )).toBe(true);
+    await expect.poll(async () => {
+      const bloomLoaded = [...loadedUrls].some((url) =>
+        url.includes("UnrealBloomPass")
+      );
+      const quality = await page.locator("html").getAttribute(
+        "data-cell-render-quality"
+      );
+      return bloomLoaded || quality === "balanced" || quality === "essential";
+    }, { timeout: 20_000 }).toBe(true);
+
+    await page.getByLabel("Hepatic zone", { exact: true }).selectOption("periportal");
+    await page.getByLabel("Nutritional state", { exact: true }).selectOption("fed_peak");
+    await page.getByLabel("Engine experiment", { exact: true }).selectOption("bsep_loss");
+    await expect(page.locator("[data-role='cell-context']")).toContainText(
+      "hepatocyte · periportal · fed peak"
+    );
+    await expect(page.locator(".report-response")).toContainText("bsep export loss");
+    await expect(page.locator(".report-response")).toContainText("0.00×");
+
+    const sceneControl = page.locator("[data-control='scene']");
+    await sceneControl.selectOption("glucokinase-structure");
+    await expect(sceneControl).toHaveValue(
+      "glucokinase-structure"
+    );
+    await expect.poll(() => (
+      [...loadedUrls].some((url) => url.toLowerCase().includes("pdbloader"))
+    )).toBe(true);
+    await page.waitForTimeout(1_000);
+
+    const canvas = page.locator('[data-role="viewport"] canvas').first();
+    const proteinFrame = await canvas.screenshot();
+    const proteinStats = summarizePixels(proteinFrame);
+    const performanceState = await page.locator("html").evaluate((element) => ({
+      renderQuality: element.getAttribute("data-cell-render-quality"),
+      fps: element.getAttribute("data-cell-perf-fps"),
+      averageWorkMs: element.getAttribute("data-cell-perf-work-ms"),
+      maximumWorkMs: element.getAttribute("data-cell-perf-max-work-ms"),
+      stages: element.getAttribute("data-cell-perf-stages")
+    }));
+    await testInfo.attach("deferred-glucokinase-canvas.png", {
+      body: proteinFrame,
+      contentType: "image/png"
+    });
+    await testInfo.attach("deferred-module-diagnostics.json", {
+      body: Buffer.from(JSON.stringify({
+        loadedUrls: [...loadedUrls].sort(),
+        performanceState,
+        proteinStats
+      }, null, 2)),
+      contentType: "application/json"
+    });
+    expect(proteinStats.meanLuma).toBeGreaterThan(2);
+    expect(proteinStats.lumaStandardDeviation).toBeGreaterThan(8);
+    expect(proteinStats.nonDarkRatio).toBeGreaterThan(0.005);
+    expect(proteinStats.coloredRatio).toBeGreaterThan(0.01);
+    expect(proteinStats.quantizedColorCount).toBeGreaterThan(64);
+    expect(runtimeErrors).toEqual([]);
+    const renderQuality = performanceState.renderQuality;
+    expect(["full", "balanced", "essential"]).toContain(renderQuality);
+  });
 });

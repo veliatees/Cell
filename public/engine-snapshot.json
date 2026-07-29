@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-28T14:25:28.497180+00:00",
+    "created_at_utc": "2026-07-29T10:00:33.063067+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -5923,7 +5923,9 @@
         {
           "biomass": 1.0,
           "checkpoint_control": {
-            "blocked_by": [],
+            "blocked_by": [
+              "human hepatocyte cell-cycle timing unavailable"
+            ],
             "g1_s_committed": false,
             "g2_m_committed": false,
             "metaphase_anaphase_permitted": false,
@@ -5973,7 +5975,7 @@
           "cytokinesis": {
             "abscission_readiness": 0.0,
             "bridge_present": false,
-            "bridge_tension": 0.25,
+            "bridge_tension": 0.0,
             "chromosome_alignment": 0.0,
             "cleavage_origin_um": [
               0.0,
@@ -6033,18 +6035,12 @@
       "events": [],
       "latest_event": null,
       "timing_profile": {
-        "biological_reference": true,
-        "g1_min_duration_s": 64800.0,
-        "g2_min_duration_s": 36000.0,
-        "id": "rat_hepatocyte_phx_reference",
-        "label": "rat hepatocyte post-PHx first-cycle timing",
-        "m_duration_s": 3600.0,
-        "notes": "Rat PHx anchor: S phase begins around 18 h and DNA synthesis peaks 21-24 h. S/M durations use generic mammalian anchors until hepatocyte-specific phase durations are added.",
-        "s_duration_s": 21600.0,
-        "source_ids": [
-          "rat_hepatocyte_phx_timing",
-          "cell_cycle_timing"
-        ],
+        "biological_reference": false,
+        "execution_authorized": false,
+        "id": "human_hepatocyte_timing_unavailable",
+        "label": "human hepatocyte cell-cycle timing unavailable",
+        "notes": "Healthy-human hepatocyte phase durations are not available in the declared context. The cell remains quiescent and no timing law executes.",
+        "source_ids": [],
         "time_compressed": false
       }
     },
@@ -15545,7 +15541,7 @@
       "version": "hepatocyte_capability_atlas_v1"
     },
     "hepatocyte_completion_matrix": {
-      "date_verified": "2026-07-26",
+      "date_verified": "2026-07-29",
       "entries": [
         {
           "code_surfaces": [
@@ -15567,6 +15563,30 @@
           "scope": "Code-level prevention of legacy relative-pool dynamics being used for quantitative validation, prediction or authoritative PHH state coupling.",
           "status": "closed",
           "title": "Whole-cell runtime authority firewall"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/stochastic/cell_cycle.py",
+            "engine/cell_engine/stochastic/whole_cell.py",
+            "engine/cell_engine/validation/baseline_lifecycle_timing.py",
+            "scripts/export_engine_snapshot.py",
+            "engine/tests/test_baseline_lifecycle_timing.py"
+          ],
+          "current_capability": "The baseline snapshot declares a human regeneration context, publishes no absent phase durations, marks the unavailable healthy-human timing profile as non-executable and refuses G0 exit until an explicit authorized timing profile is selected.",
+          "id": "human_baseline_lifecycle_timing_firewall",
+          "observed_metrics": {
+            "automatic_division_event_count": 0,
+            "automatic_phase_timing_parameter_count": 0,
+            "baseline_cross_species_default_count": 0,
+            "baseline_human_regeneration_species_count": 1,
+            "baseline_regeneration_numeric_reference_count": 0,
+            "baseline_timing_execution_authorized_count": 0,
+            "canonical_human_cell_species_count": 1
+          },
+          "remaining_requirements": [],
+          "scope": "Canonical quiescent human-hepatocyte division and regeneration timing metadata; no phase-duration or proliferation-rate claim.",
+          "status": "closed",
+          "title": "Human baseline lifecycle timing firewall"
         },
         {
           "code_surfaces": [
@@ -16783,6 +16803,58 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/io/context_overlays.py",
+            "scripts/export_context_matrix.py",
+            "public/context-snapshot-manifest.v1.json",
+            "src/engineSnapshot.ts",
+            "engine/tests/test_context_overlays.py",
+            "src/engineSnapshot.test.ts"
+          ],
+          "current_capability": "One canonical full snapshot plus 40 base-identity-bound overlays replace duplicated context snapshots. Python verifies exact target reconstruction and checksums before atomic publication; TypeScript rechecks base identity, state-surface identity and declared context before rendering.",
+          "id": "context_snapshot_matrix_integrity",
+          "observed_metrics": {
+            "automatic_biological_parameter_activation_count": 0,
+            "canonical_snapshot_count": 1,
+            "context_overlay_count": 40,
+            "experiment_count": 4,
+            "nutrition_profile_count": 3,
+            "offline_exact_reconstruction_verifier_count": 1,
+            "runtime_base_identity_guard_count": 1,
+            "runtime_state_surface_guard_count": 1,
+            "zone_count": 3
+          },
+          "remaining_requirements": [],
+          "scope": "Lossless transport of the engine snapshot across every browser-selectable zone, nutrition and experiment context; no biological-model or parameter claim.",
+          "status": "closed",
+          "title": "Canonical browser context-snapshot matrix"
+        },
+        {
+          "code_surfaces": [
+            "vite.config.ts",
+            "scripts/check_browser_bundle.mjs",
+            "data/validation/browser_bundle_budget.v1.json",
+            "src/main.ts",
+            "engine/tests/test_browser_bundle_budget.py"
+          ],
+          "current_capability": "The production build emits a manifest, recursively measures the initial JavaScript and CSS graph, requires the snapshot interpreter, PDB parser and four bloom modules to remain deferred, and fails when an explicit engineering byte budget is exceeded.",
+          "id": "browser_startup_bundle_budget",
+          "observed_metrics": {
+            "automatic_biological_parameter_activation_count": 0,
+            "initial_js_chunk_count": 2,
+            "initial_js_gzip_bytes": 256016,
+            "initial_js_raw_bytes": 938799,
+            "maximum_initial_js_gzip_bytes": 275000,
+            "maximum_initial_js_raw_bytes": 980000,
+            "production_manifest_gate_count": 1,
+            "required_deferred_entry_count": 6
+          },
+          "remaining_requirements": [],
+          "scope": "Production-artifact loading and parsing cost for the browser entry graph; no biological-model or accuracy claim.",
+          "status": "closed",
+          "title": "Browser startup bundle budget"
+        },
+        {
+          "code_surfaces": [
             "playwright.config.ts",
             "tests/visual/render-integrity.spec.ts",
             "src/main.ts"
@@ -16838,8 +16910,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 12,
-        "closed_count": 25,
-        "entry_count": 47,
+        "closed_count": 28,
+        "entry_count": 50,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
@@ -41888,14 +41960,14 @@
         "wnt_beta_catenin": "unknown",
         "wnt_ligand": "unknown"
       },
-      "timing_is_real_world_reference": true,
+      "timing_is_real_world_reference": false,
       "timing_profile": {
         "dna_synthesis_onset_h": null,
         "dna_synthesis_peak_h": null,
         "mass_restoration_days": null,
         "notes": "No universal timing profile is encoded for this context.",
         "source_ids": [],
-        "species": "mouse",
+        "species": "human",
         "trigger": "none"
       }
     },
