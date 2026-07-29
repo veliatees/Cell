@@ -1,0 +1,46 @@
+{
+  "schema_version": "cell.browser-runtime-policy.v1",
+  "purpose": "Browser rendering workload and cadence policy",
+  "scientific_authority": false,
+  "biological_parameter_activation": false,
+  "suspension": {
+    "when_document_hidden": true,
+    "when_viewport_not_intersecting": true,
+    "discard_suspended_elapsed_time_on_resume": true,
+    "single_pending_frame_or_timer": true
+  },
+  "clock": {
+    "maximum_visible_frame_delta_ms": 80,
+    "visual_cell_seconds_per_real_second": 5,
+    "maximum_visual_cell_substep_s": 0.08,
+    "minimum_visual_cell_substeps": 2
+  },
+  "quality": {
+    "measurement_window_ms": 2000,
+    "initial_grace_windows": 2,
+    "consecutive_breach_windows_before_degrade": 2,
+    "tiers": {
+      "full": {
+        "frame_delay_ms": 0,
+        "fluid_step_interval_s": 0.03333333333333333,
+        "maximum_average_work_ms": 14,
+        "maximum_long_frame_ratio": 0.12,
+        "long_frame_threshold_ms": 33.34
+      },
+      "balanced": {
+        "frame_delay_ms": 16,
+        "fluid_step_interval_s": 0.05,
+        "maximum_average_work_ms": 26,
+        "maximum_long_frame_ratio": 0.18,
+        "long_frame_threshold_ms": 55
+      },
+      "essential": {
+        "frame_delay_ms": 34,
+        "fluid_step_interval_s": 0.1,
+        "maximum_average_work_ms": 42,
+        "maximum_long_frame_ratio": 0.3,
+        "long_frame_threshold_ms": 90
+      }
+    }
+  }
+}

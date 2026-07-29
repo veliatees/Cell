@@ -118,6 +118,18 @@ import {
 } from "./visualAnatomy";
 import { contactPatchDecision } from "./contactVisualization";
 import { perspectiveFrameScale } from "./visualFraming";
+import {
+  BROWSER_RUNTIME_POLICY,
+  accumulateCadencedStep,
+  evaluateRenderWorkloadWindow,
+  fluidStepIntervalS,
+  renderFrameDelayMs,
+  renderLongFrameThresholdMs,
+  renderQualityOrder,
+  renderSuspensionReason,
+  visualSimulationStepPlan,
+  type RenderQualityTier
+} from "./runtime/renderCadence";
 import "./styles.css";
 
 let engineSnapshotModulePromise:
@@ -783,6 +795,7 @@ type IntracellularFluidVisual = {
   collides: IntracellularFluidCollision;
   deformationSignature: string;
   obstacleSyncElapsedS: number;
+  fieldStepElapsedS: number;
 };
 let intracellularFluidVisual: IntracellularFluidVisual | null = null;
 
@@ -1180,12 +1193,12 @@ let mode: Mode = "ions";
 let organelleFrameCount = 0;
 const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
 const CELL_R = HEPATOCYTE_RENDER_RADIUS_WORLD;
-const CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND = 5;
-const CELL_VISUAL_STEP_ITERATIONS = 2;
+const CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND =
+  BROWSER_RUNTIME_POLICY.clock.visual_cell_seconds_per_real_second;
 // The dimensionless pressure projection follows slowly moving organelle
 // boundaries. Rebuilding its 18^3 cut-cell domain at display-frame cadence
-// wastes CPU without adding biological or visual information. Tracers continue
-// to advect every frame through the latest projected velocity field.
+// wastes CPU without adding biological or visual information. Tracers advect
+// on the active quality tier's cadence through the latest projected field.
 const CYTOSOL_NUMERICAL_REFRESH_INTERVAL_S = 1 / 4;
 const MEMBRANE_SCALE = 1.6; // membrane positions are in σ (~1 nm); scale for display
 let running = true;
@@ -1197,18 +1210,13 @@ let performanceWindowFrameCount = 0;
 let performanceWindowWorkMs = 0;
 let performanceWindowMaxWorkMs = 0;
 let performanceWindowLongFrameCount = 0;
+let performanceWindowFluidStepCount = 0;
 const performanceStageWorkMs = new Map<string, number>();
-type RenderQualityTier = "full" | "balanced" | "essential";
-const RENDER_QUALITY_ORDER: Record<RenderQualityTier, number> = {
-  full: 0,
-  balanced: 1,
-  essential: 2
-};
-const SLOW_RENDER_FRAME_MS = 45;
-const SLOW_RENDER_FRAMES_PER_DEGRADE = 2;
 let renderQualityTier: RenderQualityTier = "full";
-let renderSlowFrameStreak = 0;
 let renderFastPlainFrameCount = 0;
+let renderWorkloadBreachWindows = 0;
+let renderWorkloadGraceWindows =
+  BROWSER_RUNTIME_POLICY.quality.initial_grace_windows;
 let performanceVisualAnatomyLodCap: VisualAnatomyLod | null = null;
 let dragState: { x: number; y: number; theta: number; phi: number } | null = null;
 let cameraDistance = 6.5;
@@ -2099,11 +2107,11 @@ async function initializeBloomComposer(): Promise<void> {
 }
 
 function applyRenderQualityTier(next: RenderQualityTier): void {
-  if (RENDER_QUALITY_ORDER[next] <= RENDER_QUALITY_ORDER[renderQualityTier]) {
+  if (renderQualityOrder(next) <= renderQualityOrder(renderQualityTier)) {
     return;
   }
   renderQualityTier = next;
-  renderSlowFrameStreak = 0;
+  renderWorkloadBreachWindows = 0;
   document.documentElement.dataset.cellRenderQuality = next;
   if (next !== "full") {
     bloomPerformanceDisabled = true;
@@ -2135,20 +2143,11 @@ function renderFrame() {
   if (composer) composer.render();
   else renderer.render(scene, camera);
   const elapsedMs = performance.now() - startedAt;
-  if (elapsedMs > SLOW_RENDER_FRAME_MS) {
-    renderSlowFrameStreak += 1;
-    renderFastPlainFrameCount = 0;
-  } else {
-    renderSlowFrameStreak = Math.max(0, renderSlowFrameStreak - 1);
-    if (!composer && renderQualityTier === "full") {
-      renderFastPlainFrameCount += 1;
-    }
+  if (!composer && renderQualityTier === "full") {
+    if (elapsedMs <= 45) renderFastPlainFrameCount += 1;
+    else renderFastPlainFrameCount = 0;
   }
-  if (renderSlowFrameStreak >= SLOW_RENDER_FRAMES_PER_DEGRADE) {
-    applyRenderQualityTier(
-      renderQualityTier === "full" ? "balanced" : "essential"
-    );
-  } else if (
+  if (
     !bloomInitializationStarted &&
     renderFastPlainFrameCount >= 2 &&
     renderQualityTier === "full"
@@ -3695,24 +3694,34 @@ function updateIntracellularFluid(realDeltaS: number, refreshMovingBoundaries: b
     : "rest";
   const deformationChanged = deformationSignature !== visual.deformationSignature;
   visual.obstacleSyncElapsedS += running ? realDeltaS : 0;
-  const refreshNumericalGrid = deformationChanged
-    || (
-      refreshMovingBoundaries
-      && visual.obstacleSyncElapsedS >= CYTOSOL_NUMERICAL_REFRESH_INTERVAL_S
-    );
-  const numericalGridDeltaS = refreshNumericalGrid
-    ? Math.max(visual.obstacleSyncElapsedS, realDeltaS)
-    : realDeltaS;
-  if (running && refreshNumericalGrid) {
-    measurePerformanceStage("fluid-obstacles", () => {
-      visual.syncObstacles(visual.obstacleSyncElapsedS);
-    });
-    visual.obstacleSyncElapsedS = 0;
-  }
-  if (running) {
+  const cadence = accumulateCadencedStep(
+    visual.fieldStepElapsedS,
+    running ? realDeltaS : 0,
+    fluidStepIntervalS(renderQualityTier),
+    deformationChanged
+  );
+  visual.fieldStepElapsedS = running ? cadence.accumulatedS : 0;
+  const fieldStepDeltaS = running ? cadence.stepDeltaS : null;
+  let positionsChanged = false;
+
+  if (fieldStepDeltaS !== null) {
+    const refreshNumericalGrid = deformationChanged
+      || (
+        refreshMovingBoundaries
+        && visual.obstacleSyncElapsedS >= CYTOSOL_NUMERICAL_REFRESH_INTERVAL_S
+      );
+    const numericalGridDeltaS = refreshNumericalGrid
+      ? Math.max(visual.obstacleSyncElapsedS, fieldStepDeltaS)
+      : fieldStepDeltaS;
+    if (refreshNumericalGrid) {
+      measurePerformanceStage("fluid-obstacles", () => {
+        visual.syncObstacles(visual.obstacleSyncElapsedS);
+      });
+      visual.obstacleSyncElapsedS = 0;
+    }
     measurePerformanceStage("fluid-field", () => {
       visual.field.step(
-        realDeltaS,
+        fieldStepDeltaS,
         deformation,
         visual.collides,
         visual.obstacles,
@@ -3720,9 +3729,15 @@ function updateIntracellularFluid(realDeltaS: number, refreshMovingBoundaries: b
         numericalGridDeltaS
       );
     });
+    performanceWindowFluidStepCount += 1;
+    positionsChanged = true;
+  } else if (!running && deformationChanged) {
+    visual.field.synchronizeDeformation(deformation);
+    positionsChanged = true;
   }
-  else visual.field.synchronizeDeformation(deformation);
   visual.deformationSignature = deformationSignature;
+
+  if (!positionsChanged) return;
 
   const pointAttribute = visual.points.geometry.getAttribute("position") as THREE.BufferAttribute;
   pointAttribute.needsUpdate = true;
@@ -4808,6 +4823,14 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
         return `<div class="phh-profile phh-profile--intake"><div class="phh-profile__head"><b>Healthy PHH evidence intake v1</b><span>${status}</span></div><div class="phh-profile__grid"><span>Reviewed contract files <b>${presentFiles}/${requiredFiles}</b></span><span>Missing required files <b>${missing}</b></span><span>Validation targets <b>${candidateCount}</b></span><span>Automatic activation <b>disabled</b></span><span>Primary-source review <b>${sourceReview}</b></span><span>Cell coupling <b>blocked</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--model">Intake gate</span><span>Reviewed measurements may become validation targets; incomplete or conflicting artifacts remain quarantined and cannot alter the cell.</span></div>`;
       })()
     : "";
+  const evidenceReadiness = summary?.evidenceReadiness;
+  const evidenceReadinessRow = evidenceReadiness
+    ? (() => {
+        const readiness = evidenceReadiness.summary;
+        const status = evidenceReadiness.status.replaceAll("_", " ");
+        return `<div class="phh-profile phh-profile--intake"><div class="phh-profile__head"><b>Unified PHH evidence readiness v1</b><span>${status}</span></div><div class="phh-profile__grid"><span>Verified contracts <b>${readiness.contract_identity_verified_count}/${readiness.registry_contract_count}</b></span><span>Registered validators <b>${readiness.validator_surface_count}</b></span><span>Deliveries present <b>${readiness.delivery_present_count}</b></span><span>Rejected deliveries <b>${readiness.rejected_intake_count}</b></span><span>Delivered artifacts <b>${readiness.delivered_artifact_count}</b></span><span>Delivered records <b>${readiness.delivered_record_count}</b></span><span>Structurally complete candidates <b>${readiness.structurally_complete_item_count}</b></span><span>Quantitatively authorized outputs <b>${readiness.quantitatively_authorized_item_count}</b></span><span>Mapped completion scopes <b>${readiness.target_gap_count}</b></span><span>Automatic parameter activation <b>${readiness.automatic_parameter_activation_count}</b></span><span>Automatic state coupling <b>${readiness.automatic_state_coupling_count}</b></span><span>Manual primary-source review <b>required</b></span></div></div><div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Readiness registry</span><span>Every declared PHH evidence package now has one checksum-pinned contract and one fail-closed validator. Invalid deliveries are quarantined; structural completeness alone cannot alter the cell.</span></div>`;
+      })()
+    : "";
   const publishedModel = summary?.publishedGlucoseModel;
   const publishedModelRow = publishedModel
     ? (() => {
@@ -4866,7 +4889,7 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
     "Cytosol transport + reaction evidence v12"
   );
   return (
-    externalReviewRow + wholeCellAuthorityRow + legacyCalibrationAuthorityRow + visualAnatomyRow + capabilityAtlasRow + cytosolTransportRowDisplay + mechanicsAndConstraintRow + metabolicContextProgressRow + metabolicSupportRepairRow + spatialTransportDataPlaneRow + profileRow + geometryReferenceRow + human3dRow + zonationRow + openAtlasRow + homeostasisRow + homeostasisV3Row + endocrineRow + validationProtocolRow + healthyPhhValidationRow + phhSpheroidProtocolRow + phhGlucoseObservabilityRow + energyRedoxRow + phhAlbuminSecretionRow + phhCypFunctionRow + phhBiliaryExcretionRow + phhIdentityHeterogeneityRow + phhProteomeBudgetRow + phhAbsoluteProteomeAtlasRow + phhTransporterInventoryRow + phhProteinFunctionalEvidenceRow + proteinSignalIntakeRow + phhInjuryValidationRow + humanSchBileAcidsRow + evidenceIntakeRow + publishedModelRow + externalValidationRow + publishedLineageRow + nutritionalContextRow + fluxEvidenceRow + phhRow + authorityRow + reactionAuthorityRow + kineticTransferRow + auditRow + placeholderRow +
+    externalReviewRow + wholeCellAuthorityRow + legacyCalibrationAuthorityRow + visualAnatomyRow + capabilityAtlasRow + cytosolTransportRowDisplay + mechanicsAndConstraintRow + metabolicContextProgressRow + metabolicSupportRepairRow + spatialTransportDataPlaneRow + profileRow + geometryReferenceRow + human3dRow + zonationRow + openAtlasRow + homeostasisRow + homeostasisV3Row + endocrineRow + validationProtocolRow + healthyPhhValidationRow + phhSpheroidProtocolRow + phhGlucoseObservabilityRow + energyRedoxRow + phhAlbuminSecretionRow + phhCypFunctionRow + phhBiliaryExcretionRow + phhIdentityHeterogeneityRow + phhProteomeBudgetRow + phhAbsoluteProteomeAtlasRow + phhTransporterInventoryRow + phhProteinFunctionalEvidenceRow + proteinSignalIntakeRow + phhInjuryValidationRow + humanSchBileAcidsRow + evidenceReadinessRow + evidenceIntakeRow + publishedModelRow + externalValidationRow + publishedLineageRow + nutritionalContextRow + fluxEvidenceRow + phhRow + authorityRow + reactionAuthorityRow + kineticTransferRow + auditRow + placeholderRow +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Source-backed</span><span>BSEP/MRP2 directionality; intracellular/extracellular measurement distinction; cholestasis → ER stress; human bile-acid death-mode constraint.</span></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--model">Model state</span><span>Mass-conserving intracellular → canalicular relative pools. CYP7A1 feedback and basolateral escape are explicitly not modeled.</span></div>` +
     `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Derived</span><span>Stress-time exposure and fate evidence; no calibrated time-to-death or canalicular pressure.</span></div>` +
@@ -5037,17 +5060,87 @@ function scheduleResize() {
 window.addEventListener("resize", scheduleResize);
 const viewportResizeObserver = new ResizeObserver(scheduleResize);
 viewportResizeObserver.observe(viewportElement);
+
+let animationFrameId: number | null = null;
+let animationTimerId: number | null = null;
+let renderLoopStarted = false;
+let viewportIntersecting = true;
+let activeRenderSuspension = renderSuspensionReason(
+  document.hidden,
+  viewportIntersecting
+);
+
+function resetPerformanceWindow(now = performance.now()): void {
+  performanceWindowStartedAt = now;
+  performanceWindowFrameCount = 0;
+  performanceWindowWorkMs = 0;
+  performanceWindowMaxWorkMs = 0;
+  performanceWindowLongFrameCount = 0;
+  performanceWindowFluidStepCount = 0;
+  performanceStageWorkMs.clear();
+}
+
+function cancelScheduledRender(): void {
+  if (animationFrameId !== null) {
+    window.cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+  if (animationTimerId !== null) {
+    window.clearTimeout(animationTimerId);
+    animationTimerId = null;
+  }
+}
+
+function syncRenderLoopAvailability(): void {
+  const previousSuspension = activeRenderSuspension;
+  activeRenderSuspension = renderSuspensionReason(
+    document.hidden,
+    viewportIntersecting
+  );
+  document.documentElement.dataset.cellRenderSuspended =
+    activeRenderSuspension ?? "none";
+  if (activeRenderSuspension) {
+    cancelScheduledRender();
+    return;
+  }
+  if (!renderLoopStarted) return;
+  if (previousSuspension !== null) {
+    const now = performance.now();
+    lastFrame = now;
+    resetPerformanceWindow(now);
+  }
+  scheduleNextAnimationFrame();
+}
+
+document.addEventListener("visibilitychange", syncRenderLoopAvailability);
+const viewportVisibilityObserver = new IntersectionObserver((entries) => {
+  const entry = entries.find((candidate) => candidate.target === viewportElement);
+  if (!entry) return;
+  viewportIntersecting = entry.isIntersecting && entry.intersectionRatio > 0;
+  syncRenderLoopAvailability();
+}, { threshold: 0.001 });
+viewportVisibilityObserver.observe(viewportElement);
+window.addEventListener("pagehide", cancelScheduledRender);
+window.addEventListener("pageshow", () => {
+  const now = performance.now();
+  lastFrame = now;
+  resetPerformanceWindow(now);
+  syncRenderLoopAvailability();
+});
+
 loadScene(DEFAULT_SCENE_ID);
 resize();
 updatePlayIcon();
-window.setTimeout(() => {
-  requestAnimationFrame(animate);
-}, 0);
+renderLoopStarted = true;
+syncRenderLoopAvailability();
 
 function animate() {
   const frameWorkStartedAt = performance.now();
   const now = frameWorkStartedAt;
-  const delta = Math.min(48, now - lastFrame);
+  const delta = Math.min(
+    BROWSER_RUNTIME_POLICY.clock.maximum_visible_frame_delta_ms,
+    Math.max(0, now - lastFrame)
+  );
   lastFrame = now;
   const iterations = Math.max(1, Math.round(delta / 3.2));
 
@@ -5102,14 +5195,28 @@ function animate() {
   performanceWindowFrameCount += 1;
   performanceWindowWorkMs += frameWorkMs;
   performanceWindowMaxWorkMs = Math.max(performanceWindowMaxWorkMs, frameWorkMs);
-  if (delta > 33.34) performanceWindowLongFrameCount += 1;
+  if (delta > renderLongFrameThresholdMs(renderQualityTier)) {
+    performanceWindowLongFrameCount += 1;
+  }
   const performanceWindowElapsedMs = performance.now() - performanceWindowStartedAt;
-  if (performanceWindowElapsedMs >= 2000) {
+  if (
+    performanceWindowElapsedMs >=
+    BROWSER_RUNTIME_POLICY.quality.measurement_window_ms
+  ) {
+    const averageWorkMs =
+      performanceWindowWorkMs / performanceWindowFrameCount;
+    const longFrameRatio =
+      performanceWindowLongFrameCount / performanceWindowFrameCount;
     const dataset = document.documentElement.dataset;
     dataset.cellPerfFps = ((performanceWindowFrameCount * 1000) / performanceWindowElapsedMs).toFixed(1);
-    dataset.cellPerfWorkMs = (performanceWindowWorkMs / performanceWindowFrameCount).toFixed(2);
+    dataset.cellPerfWorkMs = averageWorkMs.toFixed(2);
     dataset.cellPerfMaxWorkMs = performanceWindowMaxWorkMs.toFixed(2);
     dataset.cellPerfLongFrames = String(performanceWindowLongFrameCount);
+    dataset.cellPerfLongFrameRatio = longFrameRatio.toFixed(3);
+    dataset.cellPerfFluidStepHz = (
+      (performanceWindowFluidStepCount * 1000) /
+      performanceWindowElapsedMs
+    ).toFixed(1);
     dataset.cellPerfDomNodes = String(document.getElementsByTagName("*").length);
     if (realRenderer) {
       dataset.cellPerfDrawCalls = String(realRenderer.info.render.calls);
@@ -5134,30 +5241,51 @@ function animate() {
         ])
       )
     );
-    performanceWindowStartedAt = performance.now();
-    performanceWindowFrameCount = 0;
-    performanceWindowWorkMs = 0;
-    performanceWindowMaxWorkMs = 0;
-    performanceWindowLongFrameCount = 0;
-    performanceStageWorkMs.clear();
+    if (renderWorkloadGraceWindows > 0) {
+      renderWorkloadGraceWindows -= 1;
+      renderWorkloadBreachWindows = 0;
+    } else {
+      const workloadDecision = evaluateRenderWorkloadWindow(
+        renderQualityTier,
+        renderWorkloadBreachWindows,
+        { averageWorkMs, longFrameRatio }
+      );
+      renderWorkloadBreachWindows =
+        workloadDecision.consecutiveBreachWindows;
+      if (workloadDecision.degraded) {
+        applyRenderQualityTier(workloadDecision.tier);
+      }
+    }
+    resetPerformanceWindow();
   }
   scheduleNextAnimationFrame();
 }
 
 function scheduleNextAnimationFrame(): void {
-  const delayMs =
-    renderQualityTier === "full"
-      ? 0
-      : renderQualityTier === "balanced"
-        ? 16
-        : 50;
-  if (delayMs === 0) {
-    requestAnimationFrame(animate);
+  if (
+    !renderLoopStarted ||
+    activeRenderSuspension !== null ||
+    animationFrameId !== null ||
+    animationTimerId !== null
+  ) {
     return;
   }
-  window.setTimeout(() => {
-    requestAnimationFrame(animate);
-  }, delayMs);
+  const requestFrame = () => {
+    if (activeRenderSuspension !== null || animationFrameId !== null) return;
+    animationFrameId = window.requestAnimationFrame(() => {
+      animationFrameId = null;
+      if (activeRenderSuspension === null) animate();
+    });
+  };
+  const delayMs = renderFrameDelayMs(renderQualityTier);
+  if (delayMs <= 0) {
+    requestFrame();
+  } else {
+    animationTimerId = window.setTimeout(() => {
+      animationTimerId = null;
+      requestFrame();
+    }, delayMs);
+  }
 }
 
 function measurePerformanceStage<T>(stage: string, work: () => T): T {
@@ -9062,7 +9190,8 @@ function buildOrganelleScene() {
       trailTails,
       collides: (x, y, z, tracerRadius) => obstacles.collides(x, y, z, tracerRadius),
       deformationSignature: "rest",
-      obstacleSyncElapsedS: 0
+      obstacleSyncElapsedS: 0,
+      fieldStepElapsedS: 0
     };
   }
 
@@ -9543,10 +9672,12 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
   }
 
   if (livingCell && running) {
-    const simDt = clamp((realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND) / CELL_VISUAL_STEP_ITERATIONS, 0.005, 0.08);
-    measurePerformanceStage("biology", () => {
-      livingCell?.step(simDt, CELL_VISUAL_STEP_ITERATIONS);
-    }); // accelerated, frame-rate independent visual clock
+    const plan = visualSimulationStepPlan(realDeltaS);
+    if (plan.iterations > 0) {
+      measurePerformanceStage("biology", () => {
+        livingCell?.step(plan.stepS, plan.iterations);
+      });
+    }
   }
   if (livingCell) {
     const s = livingCell.snapshot();

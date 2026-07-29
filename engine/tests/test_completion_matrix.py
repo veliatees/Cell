@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 50
-    assert summary["closed_count"] == 28
+    assert summary["entry_count"] == 53
+    assert summary["closed_count"] == 31
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -100,6 +100,40 @@ def test_browser_bundle_budget_is_closed_without_biological_authority() -> None:
         "maximum_initial_js_gzip_bytes"
     ]
     assert metrics["required_deferred_entry_count"] == 6
+    assert metrics["automatic_biological_parameter_activation_count"] == 0
+
+
+def test_browser_runtime_policy_suspends_hidden_work_without_biological_authority() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    runtime = entries["browser_runtime_workload_policy"]
+    metrics = runtime["observed_metrics"]
+    assert runtime["status"] == "closed"
+    assert metrics["document_visibility_suspension_guard_count"] == 1
+    assert metrics["viewport_intersection_suspension_guard_count"] == 1
+    assert metrics["suspended_elapsed_discard_guard_count"] == 1
+    assert metrics["single_pending_render_guard_count"] == 1
+    assert metrics["quality_tier_count"] == 3
+    assert metrics["initial_load_grace_window_count"] == 2
+    assert metrics["visual_fluid_cadence_tier_count"] == 3
+    assert metrics["total_frame_work_governor_count"] == 1
+    assert metrics["visual_clock_conservation_test_count"] == 1
+    assert metrics["automatic_biological_parameter_activation_count"] == 0
+
+
+def test_snapshot_export_reuse_is_isolated_and_biologically_inert() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    export = entries["scientific_snapshot_export_recomputation_firewall"]
+    metrics = export["observed_metrics"]
+
+    assert export["status"] == "closed"
+    assert metrics["cache_surface_count"] == 7
+    assert metrics["stat_invalidated_file_cache_count"] == 2
+    assert metrics["defensive_copy_surface_count"] == 4
+    assert metrics["immutable_return_surface_count"] == 2
+    assert metrics["custom_input_cache_bypass_surface_count"] == 3
+    assert metrics["scientific_payload_equivalence_excluded_path_count"] == 1
     assert metrics["automatic_biological_parameter_activation_count"] == 0
 
 
