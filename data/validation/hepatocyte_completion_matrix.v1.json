@@ -1323,6 +1323,52 @@
       ]
     },
     {
+      "id": "phh_evidence_readiness_preflight",
+      "title": "Unified PHH evidence readiness preflight",
+      "status": "closed",
+      "scope": "Repository-level identity verification, delivery discovery, structural-validator dispatch and quarantine reporting for every declared PHH evidence contract; no biological parameter, model-fit or predictive claim.",
+      "current_capability": "One checksum-pinned registry discovers all 15 versioned intake contracts, dispatches only statically registered validators, preserves dependency-aware mobility and geometry links, quarantines one malformed delivery without stopping the remaining audit, and exposes one read-only CLI and snapshot surface.",
+      "observed_metrics": {
+        "registry_contract_count": 15,
+        "contract_identity_verified_count": 15,
+        "validator_surface_count": 15,
+        "delivery_present_count": 0,
+        "rejected_intake_count": 0,
+        "target_gap_count": 19,
+        "target_gap_ids": [
+          "active_intracellular_transport_model",
+          "active_protein_copies",
+          "cellular_memory_laws",
+          "cytosol_experimental_validation",
+          "damage_fate_recovery_calibration",
+          "donor_3d_morphology_mechanics",
+          "donor_state_model",
+          "energy_redox_quantitation",
+          "fluid_structure_interaction",
+          "healthy_phh_cytosol_parameters",
+          "hepatocyte_fba_execution",
+          "hepatocyte_quantity_harvest",
+          "local_non_affine_membrane_coupling",
+          "macromolecular_crowding_physics",
+          "organelle_fluid_boundaries",
+          "quantitative_poroelastic_cfd",
+          "quantitative_reaction_core",
+          "reaction_fluid_coupling",
+          "receptor_signaling_kinetics"
+        ],
+        "quantitatively_authorized_item_count": 0,
+        "automatic_parameter_activation_count": 0,
+        "automatic_state_coupling_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "data/evidence_intake/phh_evidence_readiness_registry.v1.json",
+        "engine/cell_engine/validation/evidence_readiness.py",
+        "scripts/audit_phh_evidence_readiness.py",
+        "engine/tests/test_evidence_readiness.py"
+      ]
+    },
+    {
       "id": "browser_startup_bundle_budget",
       "title": "Browser startup bundle budget",
       "status": "closed",
@@ -1331,8 +1377,8 @@
       "observed_metrics": {
         "production_manifest_gate_count": 1,
         "initial_js_chunk_count": 2,
-        "initial_js_raw_bytes": 942685,
-        "initial_js_gzip_bytes": 257281,
+        "initial_js_raw_bytes": 944195,
+        "initial_js_gzip_bytes": 257633,
         "maximum_initial_js_raw_bytes": 980000,
         "maximum_initial_js_gzip_bytes": 275000,
         "required_deferred_entry_count": 6,
@@ -1421,8 +1467,8 @@
     }
   ],
   "summary": {
-    "entry_count": 52,
-    "closed_count": 30,
+    "entry_count": 53,
+    "closed_count": 31,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

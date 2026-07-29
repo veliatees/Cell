@@ -2339,6 +2339,7 @@ export type EngineSnapshot = {
     phh_injury_validation?: EnginePhhInjuryValidation;
     human_sch_bile_acids?: EngineHumanSchBileAcids;
     evidence_intake?: EnginePhhEvidenceIntake;
+    phh_evidence_readiness?: EnginePhhEvidenceReadiness;
     published_glucose_model?: EnginePublishedGlucoseModelContext;
     published_glucose_lineage?: EnginePublishedGlucoseLineage;
     published_glucose_external_validation?: EnginePublishedGlucoseExternalValidation;
@@ -3189,6 +3190,72 @@ export type EnginePhhEvidenceIntake = {
   authoritative_coupling_enabled: false;
   blockers: string[];
   sha256_by_file?: Record<string, string>;
+};
+
+export type EnginePhhEvidenceReadiness = {
+  version: "phh_evidence_readiness_v1";
+  registry_id: "phh_evidence_readiness_registry_v1";
+  status:
+    | "contracts_verified_awaiting_external_evidence"
+    | "deliveries_structurally_audited_manual_review_required"
+    | "delivery_quarantine_active";
+  registry_path: string;
+  registry_sha256: string;
+  incoming_root: string;
+  scientific_authority: false;
+  biological_parameter_activation: false;
+  entries: {
+    id: string;
+    status:
+      | "awaiting_delivery"
+      | "delivery_structurally_audited"
+      | "rejected_invalid_delivery";
+    contract_path: string;
+    contract_sha256: string;
+    contract_schema_version: string;
+    contract_id: string;
+    contract_identity_verified: true;
+    validator_surface: string;
+    validator_surface_registered: true;
+    delivery_kind: "directory_bundle" | "csv" | "json";
+    delivery_path: string;
+    delivery_present: boolean;
+    intake_snapshot_version: string | null;
+    intake_status: string;
+    delivered_artifact_count: number;
+    delivered_record_count: number;
+    structurally_complete_item_count: number;
+    quantitatively_authorized_item_count: number;
+    target_gap_ids: string[];
+    blocker_count: number;
+    validation_error: string | null;
+    automatic_parameter_activation: false;
+    automatic_state_coupling: false;
+  }[];
+  target_gap_ids: string[];
+  policy: {
+    manual_primary_source_review_required: true;
+    invalid_delivery_quarantined: true;
+    automatic_parameter_activation: false;
+    automatic_state_coupling: false;
+    predictive_authority: false;
+  };
+  summary: {
+    registry_contract_count: number;
+    contract_identity_verified_count: number;
+    validator_surface_count: number;
+    delivery_present_count: number;
+    delivered_artifact_count: number;
+    delivered_record_count: number;
+    structurally_complete_item_count: number;
+    quantitatively_authorized_item_count: number;
+    rejected_intake_count: number;
+    awaiting_intake_count: number;
+    structurally_audited_intake_count: number;
+    target_gap_count: number;
+    automatic_parameter_activation_count: number;
+    automatic_state_coupling_count: number;
+  };
 };
 
 export type EngineSbmlDocumentManifest = {
@@ -5036,6 +5103,7 @@ export type EngineSnapshotSummary = {
   phhInjuryValidation: EnginePhhInjuryValidation | null;
   humanSchBileAcids: EngineHumanSchBileAcids | null;
   evidenceIntake: EnginePhhEvidenceIntake | null;
+  evidenceReadiness: EnginePhhEvidenceReadiness | null;
   publishedGlucoseModel: EnginePublishedGlucoseModelContext | null;
   publishedGlucoseLineage: EnginePublishedGlucoseLineage | null;
   publishedGlucoseExternalValidation: EnginePublishedGlucoseExternalValidation | null;
@@ -5427,6 +5495,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     phhInjuryValidation: snapshot.state.phh_injury_validation ?? null,
     humanSchBileAcids: snapshot.state.human_sch_bile_acids ?? null,
     evidenceIntake: snapshot.state.evidence_intake ?? null,
+    evidenceReadiness: snapshot.state.phh_evidence_readiness ?? null,
     publishedGlucoseModel: snapshot.state.published_glucose_model ?? null,
     publishedGlucoseLineage: snapshot.state.published_glucose_lineage ?? null,
     publishedGlucoseExternalValidation: snapshot.state.published_glucose_external_validation ?? null,

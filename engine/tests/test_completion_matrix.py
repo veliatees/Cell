@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 52
-    assert summary["closed_count"] == 30
+    assert summary["entry_count"] == 53
+    assert summary["closed_count"] == 31
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1

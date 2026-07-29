@@ -159,6 +159,10 @@ from cell_engine.validation.hepatic_flux import (
     validate_unified_nutritional_context,
 )
 from cell_engine.validation.evidence_intake import evidence_intake_snapshot
+from cell_engine.validation.evidence_readiness import (
+    phh_evidence_readiness_snapshot,
+    validate_phh_evidence_readiness_snapshot,
+)
 from cell_engine.validation.hepatocyte_quantities import validate_quantity_harvest
 from cell_engine.io.brian2 import brian2_communication_snapshot
 from cell_engine.ml.generative import (
@@ -684,6 +688,35 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         blockers.append("external PHH evidence bundle failed structural validation")
     else:
         checks.append("external PHH evidence intake is fail-closed and requires manual primary-source curation")
+
+    try:
+        evidence_readiness = phh_evidence_readiness_snapshot()
+        validate_phh_evidence_readiness_snapshot(evidence_readiness)
+        readiness_summary = evidence_readiness["summary"]
+        if (
+            readiness_summary["registry_contract_count"] != 15
+            or readiness_summary["contract_identity_verified_count"] != 15
+            or readiness_summary["validator_surface_count"] != 15
+        ):
+            raise ValueError(
+                "not every PHH evidence contract has a verified validator"
+            )
+        if readiness_summary["rejected_intake_count"]:
+            raise ValueError("one or more PHH evidence deliveries were rejected")
+        if (
+            readiness_summary["quantitatively_authorized_item_count"]
+            or readiness_summary["automatic_parameter_activation_count"]
+            or readiness_summary["automatic_state_coupling_count"]
+        ):
+            raise ValueError(
+                "unreviewed evidence escaped into quantitative or runtime authority"
+            )
+        checks.append(
+            "all 15 PHH evidence contracts have checksum-verified identities and "
+            "registered fail-closed preflight validators"
+        )
+    except (OSError, ValueError, UnicodeError, json.JSONDecodeError) as exc:
+        blockers.append(f"invalid unified PHH evidence readiness preflight: {exc}")
 
     try:
         for profile_id in ("fed_peak", "postabsorptive", "prolonged_fasted"):
