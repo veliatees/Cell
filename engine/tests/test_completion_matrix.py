@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 47
-    assert summary["closed_count"] == 25
+    assert summary["entry_count"] == 48
+    assert summary["closed_count"] == 26
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -66,6 +66,23 @@ def test_render_integrity_is_closed_without_claiming_cross_gpu_pixel_identity() 
     assert visual["observed_metrics"]["automated_viewport_count"] == 2
     assert visual["observed_metrics"]["exact_cross_gpu_pixel_baseline_count"] == 0
     assert visual["observed_metrics"]["exact_cross_gpu_pixel_equivalence_claim"] is False
+
+
+def test_context_snapshot_matrix_is_lossless_and_biologically_inert() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    context_matrix = entries["context_snapshot_matrix_integrity"]
+    metrics = context_matrix["observed_metrics"]
+    assert context_matrix["status"] == "closed"
+    assert metrics["canonical_snapshot_count"] == 1
+    assert metrics["context_overlay_count"] == 40
+    assert metrics["zone_count"] == 3
+    assert metrics["nutrition_profile_count"] == 3
+    assert metrics["experiment_count"] == 4
+    assert metrics["offline_exact_reconstruction_verifier_count"] == 1
+    assert metrics["runtime_base_identity_guard_count"] == 1
+    assert metrics["runtime_state_surface_guard_count"] == 1
+    assert metrics["automatic_biological_parameter_activation_count"] == 0
 
 
 def test_organelle_boundaries_report_geometry_adapter_without_mesh_overclaim() -> None:

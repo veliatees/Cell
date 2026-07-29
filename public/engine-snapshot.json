@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-28T14:25:28.497180+00:00",
+    "created_at_utc": "2026-07-29T06:25:01.761956+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -15545,7 +15545,7 @@
       "version": "hepatocyte_capability_atlas_v1"
     },
     "hepatocyte_completion_matrix": {
-      "date_verified": "2026-07-26",
+      "date_verified": "2026-07-29",
       "entries": [
         {
           "code_surfaces": [
@@ -16783,6 +16783,33 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/io/context_overlays.py",
+            "scripts/export_context_matrix.py",
+            "public/context-snapshot-manifest.v1.json",
+            "src/engineSnapshot.ts",
+            "engine/tests/test_context_overlays.py",
+            "src/engineSnapshot.test.ts"
+          ],
+          "current_capability": "One canonical full snapshot plus 40 base-identity-bound overlays replace duplicated context snapshots. Python verifies exact target reconstruction and checksums before atomic publication; TypeScript rechecks base identity, state-surface identity and declared context before rendering.",
+          "id": "context_snapshot_matrix_integrity",
+          "observed_metrics": {
+            "automatic_biological_parameter_activation_count": 0,
+            "canonical_snapshot_count": 1,
+            "context_overlay_count": 40,
+            "experiment_count": 4,
+            "nutrition_profile_count": 3,
+            "offline_exact_reconstruction_verifier_count": 1,
+            "runtime_base_identity_guard_count": 1,
+            "runtime_state_surface_guard_count": 1,
+            "zone_count": 3
+          },
+          "remaining_requirements": [],
+          "scope": "Lossless transport of the engine snapshot across every browser-selectable zone, nutrition and experiment context; no biological-model or parameter claim.",
+          "status": "closed",
+          "title": "Canonical browser context-snapshot matrix"
+        },
+        {
+          "code_surfaces": [
             "playwright.config.ts",
             "tests/visual/render-integrity.spec.ts",
             "src/main.ts"
@@ -16838,8 +16865,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 12,
-        "closed_count": 25,
-        "entry_count": 47,
+        "closed_count": 26,
+        "entry_count": 48,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
