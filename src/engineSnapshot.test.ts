@@ -2724,3 +2724,75 @@ describe("engine snapshot client", () => {
     expect(diagnostics[0]).toContain("unavailable");
   });
 });
+
+describe("engine-authoritative organelle placement", () => {
+  const summary = summarizeEngineSnapshot(publicEngineSnapshot as unknown as EngineSnapshot, "/engine-snapshot.json");
+
+  it("exposes the placement with grounded discrete counts", () => {
+    const placement = summary.organellePlacement;
+    expect(placement).not.toBeNull();
+    if (!placement) return;
+    expect(placement.version).toBe("organelle_placement_v1");
+    expect(placement.body_count_by_organelle.nucleus).toBe(1);
+    expect(placement.body_count_by_organelle.mitochondria).toBe(1000);
+    expect(placement.body_count_by_organelle.lysosomes).toBe(400);
+    expect(placement.body_count_by_organelle.peroxisomes).toBe(500);
+    expect(placement.bodies.length).toBe(1901);
+  });
+
+  it("keeps network organelles as regions and never fakes them as spheres", () => {
+    const placement = summary.organellePlacement;
+    if (!placement) return;
+    const regionIds = placement.regions.map((r) => r.organelle_id);
+    for (const id of ["rough_er", "smooth_er", "golgi", "glycogen", "lipid_droplets"]) {
+      expect(regionIds).toContain(id);
+      expect(placement.body_count_by_organelle[id]).toBeUndefined();
+    }
+  });
+
+  it("declares that exact coordinates are not measured", () => {
+    const placement = summary.organellePlacement;
+    if (!placement) return;
+    expect(placement.not_grounded).toContain("exact per-organelle coordinates");
+    expect(placement.blockers.length).toBeGreaterThan(0);
+  });
+
+  it("returns null placement when the state omits it", () => {
+    expect(
+      summarizeEngineSnapshot(snapshotWithRawState({ organelle_placement: undefined }), "/no-placement.json")
+        .organellePlacement
+    ).toBeNull();
+  });
+});
+
+describe("cytoplasm dynamics (stochastic organelle motion basis)", () => {
+  const summary = summarizeEngineSnapshot(publicEngineSnapshot as unknown as EngineSnapshot, "/engine-snapshot.json");
+
+  it("exposes grounded motion parameters and is never a reaction authority", () => {
+    const dyn = summary.cytoplasmDynamics;
+    expect(dyn).not.toBeNull();
+    if (!dyn) return;
+    expect(dyn.is_reaction_transport_authority).toBe(false);
+    expect(dyn.active_transport_speed_um_s).toBeGreaterThan(0);
+    expect(dyn.stir_coherence_length_um).toBeGreaterThan(0);
+    expect(dyn.organelle_motility.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("gives smaller organelles a larger thermal diffusion coefficient", () => {
+    const dyn = summary.cytoplasmDynamics;
+    if (!dyn) return;
+    const byId = new Map(dyn.organelle_motility.map((m) => [m.organelle_id, m]));
+    const mito = byId.get("mitochondria");
+    const lyso = byId.get("lysosomes");
+    const nucleus = byId.get("nucleus");
+    if (mito && lyso) expect(lyso.thermal_diffusion_um2_s).toBeGreaterThan(mito.thermal_diffusion_um2_s);
+    if (mito && nucleus) expect(mito.thermal_diffusion_um2_s).toBeGreaterThan(nucleus.thermal_diffusion_um2_s);
+  });
+
+  it("returns null when the state omits it", () => {
+    expect(
+      summarizeEngineSnapshot(snapshotWithRawState({ cytoplasm_dynamics: undefined }), "/no-cyto.json")
+        .cytoplasmDynamics
+    ).toBeNull();
+  });
+});

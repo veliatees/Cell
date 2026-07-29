@@ -19,6 +19,85 @@ export type EngineOrganelleState = {
   active_processes?: string[];
 };
 
+// Engine-authoritative 3D organelle placement: a deterministic, solid-body,
+// non-overlapping population whose counts, per-body volumes and coarse location
+// bias are grounded, while the exact coordinates are a seeded realization (see
+// engine/cell_engine/quantitative/organelle_placement.py). The renderer shows
+// these positions; it does not invent its own.
+export type EngineOrganelleBody = {
+  organelle_id: string;
+  index: number;
+  center_um: [number, number, number];
+  radius_um: number;
+  volume_um3: number;
+  organism: string;
+  quality: string;
+  source: string;
+};
+
+export type EngineOrganelleRegion = {
+  organelle_id: string;
+  name: string;
+  location: string;
+  volume_fraction_pct: number;
+  target_volume_um3: number;
+  centroid_um: [number, number, number];
+  organism: string;
+  quality: string;
+  source: string;
+  discrete: boolean;
+  reason: string;
+};
+
+export type EngineOrganellePlacement = {
+  version: string;
+  seed: number;
+  cell_volume_um3: number;
+  cell_envelope_radius_um: number;
+  nucleus_radius_um: number;
+  bodies: EngineOrganelleBody[];
+  regions: EngineOrganelleRegion[];
+  unplaced: { organelle_id: string; name: string; reason: string }[];
+  body_count_by_organelle: Record<string, number>;
+  placed_body_volume_um3: number;
+  discrete_volume_fraction_pct: number;
+  honesty_status: string;
+  grounded: string[];
+  not_grounded: string[];
+  blockers: string[];
+  source_ids: string[];
+};
+
+// Visual/kinematic cytoplasm dynamics (see engine cytoplasm_dynamics.py). Drives
+// organelle motion: a size-dependent thermal diffusion coefficient per organelle
+// plus a grounded active-transport speed for the coherent stirring field. Never a
+// reaction-transport authority (is_reaction_transport_authority is always false).
+export type EngineOrganelleMotility = {
+  organelle_id: string;
+  radius_um: number;
+  relative_effective_viscosity: number;
+  thermal_diffusion_um2_s: number;
+};
+
+export type EngineCytoplasmDynamics = {
+  version: string;
+  is_reaction_transport_authority: boolean;
+  temperature_k: number;
+  water_viscosity_pa_s: number;
+  crowder_radius_nm: number;
+  lsdv_exponent: number;
+  active_transport_speed_um_s: number;
+  active_transport_speed_uncertainty_um_s: number;
+  stir_coherence_length_um: number;
+  stir_coherence_time_s: number;
+  organelle_motility: EngineOrganelleMotility[];
+  honesty_status: string;
+  grounded: string[];
+  not_grounded: string[];
+  blockers: string[];
+  source_ids: string[];
+};
+
 export type EngineDivisionOrganelleInventory = {
   mitochondria: number;
   mitochondrial_fragments: number;
@@ -2345,6 +2424,8 @@ export type EngineSnapshot = {
     published_glucose_external_validation?: EnginePublishedGlucoseExternalValidation;
     intercellular_communication?: EngineIntercellularCommunication;
     spatial_world?: EngineSpatialWorld;
+    organelle_placement?: EngineOrganellePlacement;
+    cytoplasm_dynamics?: EngineCytoplasmDynamics;
     spatial_state?: EngineCellSpatialState | null;
     physical_validation?: EnginePhysicalValidation;
     brian2_communication?: EngineBrian2Communication;
@@ -5109,6 +5190,8 @@ export type EngineSnapshotSummary = {
   publishedGlucoseExternalValidation: EnginePublishedGlucoseExternalValidation | null;
   intercellularCommunication: EngineIntercellularCommunication | null;
   spatialWorld: EngineSpatialWorld | null;
+  organellePlacement: EngineOrganellePlacement | null;
+  cytoplasmDynamics: EngineCytoplasmDynamics | null;
   spatialState: EngineCellSpatialState | null;
   physicalValidation: EnginePhysicalValidation | null;
   brian2Communication: EngineBrian2Communication | null;
@@ -5501,6 +5584,8 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     publishedGlucoseExternalValidation: snapshot.state.published_glucose_external_validation ?? null,
     intercellularCommunication: snapshot.state.intercellular_communication ?? null,
     spatialWorld: snapshot.state.spatial_world ?? null,
+    organellePlacement: snapshot.state.organelle_placement ?? null,
+    cytoplasmDynamics: snapshot.state.cytoplasm_dynamics ?? null,
     spatialState: snapshot.state.spatial_state ?? null,
     physicalValidation: snapshot.state.physical_validation ?? null,
     brian2Communication: snapshot.state.brian2_communication ?? null,
