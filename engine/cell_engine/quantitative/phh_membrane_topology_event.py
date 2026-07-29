@@ -96,6 +96,13 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _display_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(ROOT.resolve()))
+    except ValueError:
+        return str(path.resolve())
+
+
 def _has_value(record: dict[str, Any], field: str) -> bool:
     value = record[field]
     if value is None:
@@ -394,7 +401,7 @@ def phh_membrane_topology_event_intake_snapshot(
             if not records
             else "records_audited_runtime_activation_requires_authorized_record"
         ),
-        "delivery_path": str(path.relative_to(ROOT)),
+        "delivery_path": _display_path(path),
         "contract_sha256": _sha256(path),
         "target_event_kinds": TARGET_EVENT_KINDS,
         "required_record_fields": REQUIRED_RECORD_FIELDS,

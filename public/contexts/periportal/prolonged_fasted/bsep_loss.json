@@ -3,17 +3,17 @@
     "exact_reconstruction_verified": true,
     "removed_state_key_count": 0,
     "state_override_count": 25,
-    "target_snapshot_sha256": "2699f61d419c0b1d2477235afd69146b1acdbbb8f8e5565bbc76d210831f1163",
-    "target_state_key_count": 85,
-    "target_state_key_sha256": "421d38cda01ff90a8fc92e4372ed01dcb7527de997ec55ad3cfdaa01da766b18"
+    "target_snapshot_sha256": "62141d02f110fa6e6581a207e080a527f468b095a737a00e2d16fcb84169ffa1",
+    "target_state_key_count": 86,
+    "target_state_key_sha256": "3a331d0c0fa40b2d3f2f461ce4e73f75818ef418b6d27020860075b8a2420f50"
   },
   "base_identity": {
-    "created_at_utc": "2026-07-29T11:36:53.576149+00:00",
+    "created_at_utc": "2026-07-29T12:20:29.119849+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "schema_version": "cell-engine.snapshot.v1",
-    "snapshot_sha256": "6027dd5364bfd33aecc7ca1f26b60da5237c45ca42921fd8f42e03d982808d1e",
-    "state_key_count": 85,
-    "state_key_sha256": "421d38cda01ff90a8fc92e4372ed01dcb7527de997ec55ad3cfdaa01da766b18"
+    "snapshot_sha256": "939bdde31bf986824a4e58393bd665015bfa46bc8d5c1d69cd7153823fb545da",
+    "state_key_count": 86,
+    "state_key_sha256": "3a331d0c0fa40b2d3f2f461ce4e73f75818ef418b6d27020860075b8a2420f50"
   },
   "removed_state_keys": [],
   "schema_version": "cell-engine.context-overlay.v1",
@@ -4661,6 +4661,7 @@
             "nine primary-human-hepatocyte APAP and bile-acid injury observations retain exact dose, time, assay and death-mode context while generalized fate laws remain blocked",
             "four-donor human SCH Table 4 bile-acid compartments retain source aggregation, censoring and culture-context boundaries",
             "external PHH evidence intake is fail-closed and requires manual primary-source curation",
+            "all 15 PHH evidence contracts have checksum-verified identities and registered fail-closed preflight validators",
             "published hepatic glucose model is checksum-audited and quarantined as a non-authoritative shadow prediction",
             "legacy author-model lineage reproduces 5 of 5 reported targets under recovered repository conditions while exact publication equivalence remains unresolved",
             "published glucose shadow has one unit-matched contextual human HGO comparison plus 16 blocked PHH targets with no pass claim",
@@ -4721,6 +4722,7 @@
             "nine primary-human-hepatocyte APAP and bile-acid injury observations retain exact dose, time, assay and death-mode context while generalized fate laws remain blocked",
             "four-donor human SCH Table 4 bile-acid compartments retain source aggregation, censoring and culture-context boundaries",
             "external PHH evidence intake is fail-closed and requires manual primary-source curation",
+            "all 15 PHH evidence contracts have checksum-verified identities and registered fail-closed preflight validators",
             "published hepatic glucose model is checksum-audited and quarantined as a non-authoritative shadow prediction",
             "legacy author-model lineage reproduces 5 of 5 reported targets under recovered repository conditions while exact publication equivalence remains unresolved",
             "published glucose shadow has one unit-matched contextual human HGO comparison plus 16 blocked PHH targets with no pass claim",
@@ -10889,7 +10891,7 @@
     "zone": "periportal"
   },
   "target_metadata": {
-    "created_at_utc": "2026-07-29T11:37:04.148344+00:00",
+    "created_at_utc": "2026-07-29T12:20:40.089613+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   }
