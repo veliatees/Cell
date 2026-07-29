@@ -57,6 +57,13 @@ biology rather than tuned to look right.
   checksums, same-cell mesh identity, spatial boundary conditions and
   donor/study-disjoint held-out data are required; zero mechanics trajectories
   or parameters are currently authorized.
+- **Two-way intracellular boundary mechanics** — stochastic organelle motion is
+  constrained against the current membrane triangles and queues the opposite
+  dimensionless membrane load; the cut-cell cytosol pressure field also queues
+  mean-removed dimensionless traction. The live surface preserves volume,
+  winding and the conservative one-percent engineering area guard. Newtons,
+  pascals and healthy-PHH sustainability thresholds remain null until the
+  donor-resolved mechanics gate is satisfied.
 - **A verified constraint-model software layer** — the checksum-pinned 43 MB
   Human-GEM v2.0.0 SBML/FBC artifact now streams into an exact sparse model
   representation with 55,198 stoichiometric terms, bounds, the generic biomass
@@ -341,8 +348,10 @@ can propose a volume-preserving, self-intersection-free membrane response while
 reporting force balance and pressure work. Topology-preserving midpoint edge
 bisection can also transfer surface fields and barycentric tracers without
 changing area or volume. The live renderer still uses the star-shaped membrane
-path; neither pressure feedback nor adaptive remeshing is applied to it, and no
-PHH mechanical coefficient has been assigned.
+path. It now consumes organelle contact penalties and mean-removed cut-cell
+pressure traction in dimensionless numerical units; adaptive remeshing is not
+automatic, and no PHH force, pressure, compliance or failure coefficient has
+been assigned.
 
 What is still depth-work (the road ahead is depth, not a new approach):
 
@@ -547,6 +556,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 158: Human baseline lifecycle timing firewall v1](docs/milestones/158-human-baseline-lifecycle-timing-firewall-v1.md)
 - [Milestone 159: Browser runtime workload and cadence v1](docs/milestones/159-browser-runtime-workload-cadence-v1.md)
 - [Milestone 162: Human sinusoid cutaway visual v1](docs/milestones/162-human-sinusoid-cutaway-visual-v1.md)
+- [Milestone 163: Intracellular boundary mechanics v1](docs/milestones/163-intracellular-boundary-mechanics-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

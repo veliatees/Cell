@@ -264,6 +264,9 @@ describe("dimensionless cytosol numerical kernel", () => {
     expect(diagnostics.divergenceRmsAfter).toBeLessThan(diagnostics.divergenceRmsBefore);
     expect(diagnostics.divergenceMaxAfter).toBeGreaterThanOrEqual(0);
     expect(diagnostics.biologicalUnitsAssigned).toBe(false);
+    expect(first.sampleDimensionlessPressure(0, 0, 0)).not.toBeNull();
+    expect(first.sampleDimensionlessPressure(20, 0, 0)).toBeNull();
+    expect(CYTOSOL_NUMERICAL_CONTRACT.dimensionlessPressureSamplingEnabled).toBe(true);
   });
 
   it("rebuilds the fluid domain around moving organelle volumes", () => {
