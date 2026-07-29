@@ -813,13 +813,32 @@ engine already models, so rendered atoms and simulated flux describe the same pr
   below quantification remain censored because raw donor records and
   analyte-specific LLOQs are unavailable.
 
-## Hepatocyte Visual Anatomy V2
+## Hepatocyte Visual Anatomy V3
 
 - Wisse et al., "Fixation methods for electron microscopy of human and other
   liver": https://pmc.ncbi.nlm.nih.gov/articles/PMC2887580/. Human wedge-biopsy
   microscopy supports fenestrae grouped in sieve plates, the sinusoidal
   interface, and a `105 nm` human mean fenestra diameter. The source warns that
   dried SEM dimensions shrink, so no other SEM dimension is transferred.
+- Puhl et al., "Noninvasive in vivo analysis of the human hepatic
+  microcirculation using orthogonal polarization spectral imaging":
+  https://doi.org/10.1097/01.TP.0000056634.18191.1A. Four liver regions in 11
+  healthy living donors report a mean sinusoid diameter of `8.8 +/- 0.9 um`
+  and sinusoidal red-cell velocity of `0.97 +/- 0.43 mm/s`. The diameter sets
+  the renderer lumen caliber. The accessible report does not identify the
+  plus/minus statistic, so the project does not relabel it SD or SEM. Velocity
+  is retained as evidence but does not drive the deliberately slow inspection
+  animation.
+- Evans and Fung, "Improved measurements of the erythrocyte geometry":
+  https://doi.org/10.1016/0026-2862(72)90069-6. Human erythrocyte microscopy
+  supplies the `3.91 um` rest radius and the dimensionless biconcave profile
+  coefficients `0.207161`, `2.002558`, and `-1.122762`. The renderer transfers
+  the rest surface only; it does not infer sinusoid-specific RBC mechanics.
+- Horn et al., "The sinusoidal lining cells in 'normal' human liver":
+  https://doi.org/10.1111/j.1600-0676.1986.tb00275.x. SEM of 13 biopsies
+  reports separate zone-1 and zone-3 fenestra frequencies and porosities.
+  Because no midlobular value is measured, the Zone-2 renderer does not
+  interpolate a pore density or porosity.
 - Ishii et al., "The intermediate filaments in human hepatocytes":
   https://pubmed.ncbi.nlm.nih.gov/3914103/. Human biopsy microscopy supports a
   cytoplasmic intermediate-filament mesh attached to junctional complexes,
