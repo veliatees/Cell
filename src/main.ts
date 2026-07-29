@@ -101,8 +101,11 @@ import type {
   EngineSpatialBody,
   EngineSpatialPairRelation,
   EngineSurfaceDeformationState,
-  EngineSnapshotSummary
+  EngineSnapshotSummary,
+  EngineOrganelleBody,
+  EngineCytoplasmDynamics
 } from "./engineSnapshot";
+import { CytoplasmFlowField } from "./physics/cytoplasmFlow";
 import { engineSnapshotEndpointFromLocation } from "./engineSnapshotEndpoint";
 import {
   HEPATOCYTE_RENDER_RADIUS_WORLD,
@@ -683,6 +686,13 @@ async function refreshExternalEngineSnapshot(forceRefresh = false) {
     externalEngineSummary = null;
     externalEngineDiagnostic = `${result.diagnostic}; TS visual model remains active.`;
   }
+  // If the organelle scene is showing and the engine placement availability
+  // changed (typically: the snapshot finished loading after the scene was first
+  // built), rebuild once so the authoritative organelle geometry is used.
+  const placementNow = !!(externalEngineSummary?.organellePlacement?.bodies.length);
+  if (mode === "organelles" && placementNow !== organelleSceneUsedEnginePlacement) {
+    loadScene(EUKARYOTE_SCENE_ID);
+  }
   reportStaticRevision += 1;
   setMetricLabels(mode);
   updateDivisionDemoGate();
@@ -753,6 +763,10 @@ let membrane: MembraneSystem | null = null;
 let membraneIsVesicle = false;
 let reaction: ReactionSystem | null = null;
 let organelleGroup: THREE.Group | null = null; // schematic whole-cell anatomy
+// Whether the currently built organelle scene used the engine's authoritative
+// organelle placement. Lets an async snapshot arrival rebuild the scene once,
+// so the real placement replaces the schematic scatter without a manual reload.
+let organelleSceneUsedEnginePlacement = false;
 let organelleFrameCenterX = 0;
 let communicationGroup: THREE.Group | null = null;
 let communicationSceneSignature = "";
@@ -1095,6 +1109,7 @@ type MotionTarget = {
   phase: number;
   spin: number;
   axis: THREE.Vector3;
+  offset: THREE.Vector3; // accumulated stochastic displacement from base
 };
 const organelleMotions: MotionTarget[] = [];
 // Glycogen granules: shown/hidden per-frame so the store visibly fills (fed) and
@@ -1129,8 +1144,20 @@ type OrganellePopulation = {
   obstacleRadius: number;
   obstacleHalfLength: number;
   currentPos: Float32Array; // 3 * count, exact renderer centers from the latest matrix update
+  diffusionUm2S: number; // engine thermal diffusion coefficient for this organelle type (0 = ungrounded fallback)
+  bodyRadiusWorld: number; // drawn radius (world units) for membrane containment
 };
 const organellePopulations: OrganellePopulation[] = [];
+// Shared stochastic cytoplasm motion, driven by the engine's cytoplasm_dynamics
+// contract: a coherent active-stirring flow field that carries all organelles
+// together, plus a size-dependent thermal Brownian step per organelle type.
+let cytoplasmFlow: CytoplasmFlowField | null = null;
+let cytoplasmActiveSpeedWorldPerS = 0; // grounded active-transport speed, world units/s
+let cytoplasmWorldPerUm = 1;
+let cytoplasmDiffusionByOrganelle: Record<string, number> = {}; // engine id -> um^2/s
+let lastCytoplasmMotionT = 0;
+let lastOrganelleMotionT = 0;
+const _cytoFlow = { x: 0, y: 0, z: 0 };
 // --- Nucleus gene expression (central dogma made visible) -------------------
 // Loci mirror source-backed engine states. A transcript is emitted only for a
 // recorded expression event; unknown gene-specific kinetics remain unknown.
@@ -3261,15 +3288,57 @@ const _popMat = new THREE.Matrix4();
 const _popColor = new THREE.Color();
 const _anchorPos = new THREE.Vector3();
 const _anchorNorm = new THREE.Vector3();
+const SQRT3 = 1.7320508075688772;
+// Keep a body fully inside the star-shaped (truncated-octahedron) plasma membrane:
+// the placement envelope is a sphere, but the rendered membrane dips inward at the
+// hexagonal faces, so bodies must be pulled in along their own direction.
+function clampInsideMembrane(pos: THREE.Vector3, bodyRadiusWorld: number): void {
+  if (!membraneSim) return;
+  const r = pos.length();
+  if (r < 1e-4) return;
+  // Organelles fill the cell up to the membrane and may touch it; only stop a
+  // body's centre from crossing the surface (allow the body to reach it, and a
+  // slight indent). This is a motion safety-net, not an inward avoidance gap.
+  const surfaceR = membraneRestRadiusAlongDirection(membraneSim, pos.x, pos.y, pos.z);
+  const maxR = surfaceR - bodyRadiusWorld * 0.35;
+  if (maxR > 0.05 && r > maxR) pos.multiplyScalar(maxR / r);
+}
 function updateOrganellePopulations(t: number, updateColor: boolean) {
+  // Simulated seconds since the last update (clamped against pauses / big jumps).
+  const dt = Math.min(Math.max(t - lastCytoplasmMotionT, 0), 0.1);
+  lastCytoplasmMotionT = t;
+  const flow = cytoplasmFlow;
+  const activeSpeed = cytoplasmActiveSpeedWorldPerS;
   for (const pop of organellePopulations) {
     const count = pop.scale.length;
     const step = pop.step;
     const bstep = pop.brightStep;
+    // Grounded stochastic motion when the engine supplies this organelle's thermal
+    // diffusion coefficient and a stirring field; else the legacy caged jiggle.
+    const physical = flow !== null && pop.diffusionUm2S > 0 && dt > 0;
+    // Per-axis thermal Brownian std dev, sqrt(2 D dt) in um -> world units. Tiny
+    // for large organelles (nucleus barely moves), larger for small vesicles.
+    const sigmaWorld = physical ? Math.sqrt(2 * pop.diffusionUm2S * dt) * cytoplasmWorldPerUm : 0;
     for (let i = 0; i < count; i += 1) {
-      let ox = pop.offset[i * 3] + (Math.random() * 2 - 1) * step;
-      let oy = pop.offset[i * 3 + 1] + (Math.random() * 2 - 1) * step;
-      let oz = pop.offset[i * 3 + 2] + (Math.random() * 2 - 1) * step;
+      let ox = pop.offset[i * 3];
+      let oy = pop.offset[i * 3 + 1];
+      let oz = pop.offset[i * 3 + 2];
+      const bx = pop.basePos[i * 3], by = pop.basePos[i * 3 + 1], bz = pop.basePos[i * 3 + 2];
+      const mf = membraneCoupledFactor(bx, by, bz, t);
+      if (physical) {
+        // Coherent active stirring: advect by the shared incompressible flow at
+        // this organelle's position (grounded WIF-B9 transport speed), so
+        // neighbours stream together like a stirred cytoplasm. Then a small,
+        // size-dependent thermal Brownian step on top.
+        flow!.sampleInto(_cytoFlow, bx * mf + ox, by * mf + oy, bz * mf + oz, t);
+        ox += _cytoFlow.x * activeSpeed * dt + (Math.random() * 2 - 1) * sigmaWorld * SQRT3;
+        oy += _cytoFlow.y * activeSpeed * dt + (Math.random() * 2 - 1) * sigmaWorld * SQRT3;
+        oz += _cytoFlow.z * activeSpeed * dt + (Math.random() * 2 - 1) * sigmaWorld * SQRT3;
+      } else {
+        ox += (Math.random() * 2 - 1) * step;
+        oy += (Math.random() * 2 - 1) * step;
+        oz += (Math.random() * 2 - 1) * step;
+      }
       const cage = pop.cage[i];
       const d2 = ox * ox + oy * oy + oz * oz;
       if (d2 > cage * cage) {
@@ -3281,11 +3350,8 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
       pop.offset[i * 3] = ox;
       pop.offset[i * 3 + 1] = oy;
       pop.offset[i * 3 + 2] = oz;
-      // Ride the membrane deformation (attenuated by depth), then add the caged
-      // random walk on top.
-      const bx = pop.basePos[i * 3], by = pop.basePos[i * 3 + 1], bz = pop.basePos[i * 3 + 2];
-      const mf = membraneCoupledFactor(bx, by, bz, t);
       _popPos.set(bx * mf + ox, by * mf + oy, bz * mf + oz);
+      clampInsideMembrane(_popPos, pop.bodyRadiusWorld);
       _popQuat.set(pop.baseQuat[i * 4], pop.baseQuat[i * 4 + 1], pop.baseQuat[i * 4 + 2], pop.baseQuat[i * 4 + 3]);
       const sc = pop.scale[i];
       _popScale.set(sc, sc, sc);
@@ -3891,10 +3957,29 @@ function updateOrganelleMotion(t: number) {
   const mechanics = cellCycle.mechanics;
   const mitoticRedistribution =
     mechanics.stage === "none" ? 0 : Math.min(1, 0.25 + mechanics.progress * 0.75);
+  const dt = Math.min(Math.max(t - lastOrganelleMotionT, 0), 0.1);
+  lastOrganelleMotionT = t;
+  const flow = cytoplasmFlow;
+  const activeSpeed = cytoplasmActiveSpeedWorldPerS;
+  const stochastic = flow !== null && activeSpeed > 0 && dt > 0;
   for (const m of organelleMotions) {
-    const dx = Math.sin(t * m.speed + m.phase) * m.amp;
-    const dy = Math.sin(t * m.speed * 0.73 + m.phase * 1.7) * m.amp * 0.38;
-    const dz = Math.cos(t * m.speed * 0.91 + m.phase * 0.6) * m.amp * 0.62;
+    if (stochastic) {
+      // Same coherent cytoplasmic stirring field as the instanced organelles,
+      // scaled by this organelle's mobility budget (amp) so large anchored
+      // structures (nucleus) barely drift while smaller ones move more. No
+      // deterministic sinusoid — the motion is stochastic and correlated.
+      flow!.sampleInto(_cytoFlow, m.base.x + m.offset.x, m.base.y + m.offset.y, m.base.z + m.offset.z, t);
+      const mob = m.amp;
+      const j = mob * 0.03;
+      m.offset.x += _cytoFlow.x * activeSpeed * dt * mob * 4 + (Math.random() * 2 - 1) * j;
+      m.offset.y += _cytoFlow.y * activeSpeed * dt * mob * 4 + (Math.random() * 2 - 1) * j;
+      m.offset.z += _cytoFlow.z * activeSpeed * dt * mob * 4 + (Math.random() * 2 - 1) * j;
+      const cage = mob * 1.6;
+      if (m.offset.lengthSq() > cage * cage) m.offset.setLength(cage);
+    }
+    const dx = m.offset.x;
+    const dy = m.offset.y;
+    const dz = m.offset.z;
     const poleBias = Math.sign(m.base.x || Math.sin(m.phase)) * mitoticRedistribution * 0.5;
     // Ride the membrane deformation (depth-attenuated) beneath the local jiggle.
     const mf = membraneCoupledFactor(m.base.x, m.base.y, m.base.z, t);
@@ -7276,10 +7361,50 @@ function buildOrganelleScene() {
     return v.lengthSq() < 1e-4 ? new THREE.Vector3(1, 0, 0) : v.normalize();
   };
   const trackMotion = (object: THREE.Object3D, base: THREE.Vector3, amp: number, speed: number, spin = 0.004, phase = rnd() * Math.PI * 2) => {
-    organelleMotions.push({ object, base: base.clone(), amp, speed, phase, spin, axis: randDir() });
+    organelleMotions.push({ object, base: base.clone(), amp, speed, phase, spin, axis: randDir(), offset: new THREE.Vector3() });
   };
   const nmToWorld = (nm: number) => (nm / 1000) / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
   const umToWorld = (um: number) => um / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
+  // Engine-authoritative organelle placement (real counts, solid non-overlapping
+  // positions). When present, the discrete scattered populations (mitochondria,
+  // lysosomes, peroxisomes) are rendered at the engine's coordinates instead of
+  // a schematic scatter, and the nucleus is recentred to the engine's central
+  // position so the two agree on one geometry. The engine frame is origin-centred
+  // and its cell envelope maps exactly onto the rendered membrane (CELL_R).
+  const enginePlacement = externalEngineSummary?.organellePlacement ?? null;
+  const hasEnginePlacement = !!enginePlacement && enginePlacement.bodies.length > 0;
+  organelleSceneUsedEnginePlacement = hasEnginePlacement;
+  // Stochastic cytoplasm motion from the engine's grounded cytoplasm_dynamics:
+  // a coherent active-stirring flow field (magnitude = measured WIF-B9 hepatocyte
+  // transport speed) plus size-dependent thermal diffusion per organelle type.
+  const cytoDyn: EngineCytoplasmDynamics | null = externalEngineSummary?.cytoplasmDynamics ?? null;
+  cytoplasmWorldPerUm = 1 / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
+  cytoplasmDiffusionByOrganelle = {};
+  lastCytoplasmMotionT = 0;
+  if (cytoDyn) {
+    cytoplasmActiveSpeedWorldPerS = cytoDyn.active_transport_speed_um_s * cytoplasmWorldPerUm;
+    for (const m of cytoDyn.organelle_motility) cytoplasmDiffusionByOrganelle[m.organelle_id] = m.thermal_diffusion_um2_s;
+    cytoplasmFlow = new CytoplasmFlowField(
+      20260729,
+      cytoDyn.stir_coherence_length_um * cytoplasmWorldPerUm,
+      cytoDyn.stir_coherence_time_s
+    );
+  } else {
+    cytoplasmFlow = null;
+    cytoplasmActiveSpeedWorldPerS = 0;
+  }
+  const ENGINE_KIND_TO_ID: Record<string, string> = {
+    mitochondria: "mitochondria",
+    lysosome: "lysosomes",
+    peroxisome: "peroxisomes"
+  };
+  const enginePlacementBodies = (kind: string | null): EngineOrganelleBody[] | null => {
+    if (!enginePlacement || !kind) return null;
+    const id = ENGINE_KIND_TO_ID[kind];
+    if (!id) return null;
+    const bodies = enginePlacement.bodies.filter((b) => b.organelle_id === id);
+    return bodies.length > 0 ? bodies : null;
+  };
   // Sinusoid sits outside the cell. Its normalized renderer shell clears the
   // maximum membrane excursion, leaving the Space of Disse as a real gap.
   const sinusoidAnchor = new THREE.Vector3(-CELL_R * 1.45, -1.0, 0);
@@ -7474,22 +7599,49 @@ function buildOrganelleScene() {
     // unscaled radius, so up-scaled instances interpenetrated.)
     const exclR = opts.collisionRadius * (1 + jitter) + cageR;
 
-    // Non-overlapping placement (excluded volume) via the shared spatial hash.
-    // If the cytoplasm jams before all copies fit, we render only what fits
-    // without overlap rather than force interpenetration (honest).
+    // Engine-authoritative path: when the snapshot carries a real, solid-body,
+    // non-overlapping organelle population for this kind, render it at the
+    // engine's true count and coordinates instead of the schematic scatter. Each
+    // instance is scaled so its drawn size matches the engine's per-body
+    // equivalent-sphere radius. The bodies are inserted into the shared spatial
+    // hash so later schematic populations (e.g. lipid droplets) still avoid them.
     const placed: THREE.Vector3[] = [];
-    for (let i = 0; i < count; i += 1) {
-      let found: THREE.Vector3 | null = null;
-      for (let t = 0; t < 130; t += 1) {
-        const cand = interiorPoint(rMax);
-        if (cand.length() + exclR > rMax) continue;
-        if (organelleCollides(cand.x, cand.y, cand.z, exclR)) continue;
-        hashInsert(cand.x, cand.y, cand.z, exclR);
-        found = cand;
-        break;
+    let engineScale: number[] | null = null;
+    const engineRadiusWorld: number[] = [];
+    const engineBodies = enginePlacementBodies(kind ?? null);
+    if (engineBodies) {
+      geo.computeBoundingSphere();
+      const nominalRadius = geo.boundingSphere?.radius ?? 1;
+      engineScale = [];
+      for (const b of engineBodies) {
+        const p = new THREE.Vector3(
+          umToWorld(b.center_um[0]),
+          umToWorld(b.center_um[1]),
+          umToWorld(b.center_um[2])
+        );
+        const radiusWorld = umToWorld(b.radius_um);
+        hashInsert(p.x, p.y, p.z, radiusWorld);
+        placed.push(p);
+        engineScale.push(radiusWorld / nominalRadius);
+        engineRadiusWorld.push(radiusWorld);
       }
-      if (!found) break;
-      placed.push(found);
+    } else {
+      // Non-overlapping placement (excluded volume) via the shared spatial hash.
+      // If the cytoplasm jams before all copies fit, we render only what fits
+      // without overlap rather than force interpenetration (honest).
+      for (let i = 0; i < count; i += 1) {
+        let found: THREE.Vector3 | null = null;
+        for (let t = 0; t < 130; t += 1) {
+          const cand = interiorPoint(rMax);
+          if (cand.length() + exclR > rMax) continue;
+          if (organelleCollides(cand.x, cand.y, cand.z, exclR)) continue;
+          hashInsert(cand.x, cand.y, cand.z, exclR);
+          found = cand;
+          break;
+        }
+        if (!found) break;
+        placed.push(found);
+      }
     }
     const actual = placed.length;
     if (actual === 0) return null;
@@ -7531,7 +7683,8 @@ function buildOrganelleScene() {
       centroid.add(pos);
       e.set(rnd() * Math.PI * 2, rnd() * Math.PI * 2, rnd() * Math.PI * 2);
       q.setFromEuler(e);
-      const sc = 1 + jitter * (rnd() - 0.5) * 2;
+      // Engine bodies carry their own true size; only the schematic scatter jitters.
+      const sc = engineScale ? engineScale[i] : 1 + jitter * (rnd() - 0.5) * 2;
       scl.set(sc, sc, sc);
       m4.compose(pos, q, scl);
       inst.setMatrixAt(i, m4);
@@ -7546,7 +7699,10 @@ function buildOrganelleScene() {
       baseQuat[i * 4 + 2] = q.z;
       baseQuat[i * 4 + 3] = q.w;
       scaleArr[i] = sc;
-      cageArr[i] = cageR;
+      // For engine bodies, allow motion up to ~0.4 of the organelle radius. The
+      // coherent stirring field moves neighbours together (small relative
+      // motion), so this stays overlap-safe while the motion is visible.
+      cageArr[i] = engineScale ? Math.max(cageR, engineRadiusWorld[i] * 0.4) : cageR;
       // Stable optical variation only; activity comes from the engine-level
       // organelle signal, not arbitrary per-instance flashing.
       const b0 = 0.82 + rnd() * 0.22;
@@ -7556,7 +7712,9 @@ function buildOrganelleScene() {
     }
     inst.instanceMatrix.needsUpdate = true;
     if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
-    inst.userData.label = `${opts.label} View-dependent LOD draws a deterministic subset of this renderer pool.`;
+    inst.userData.label = engineScale
+      ? `${kind} — ${actual.toLocaleString()} bodies at the engine's solid, non-overlapping placement (grounded count and per-body volume; exact per-organelle coordinates are a seeded realization, not measured). View-dependent LOD draws a deterministic subset.`
+      : `${opts.label} View-dependent LOD draws a deterministic subset of this renderer pool.`;
     group.add(inst);
     if (kind) addPos(kind, centroid.multiplyScalar(1 / actual));
     // NOTE: deliberately NOT added to the activity-glow buckets. A shared
@@ -7580,7 +7738,9 @@ function buildOrganelleScene() {
       obstacleShape: opts.obstacleShape ?? "sphere",
       obstacleRadius: opts.obstacleRadius ?? opts.collisionRadius,
       obstacleHalfLength: opts.obstacleHalfLength ?? 0,
-      currentPos
+      currentPos,
+      diffusionUm2S: kind ? (cytoplasmDiffusionByOrganelle[ENGINE_KIND_TO_ID[kind] ?? ""] ?? 0) : 0,
+      bodyRadiusWorld: engineScale && engineRadiusWorld.length > 0 ? engineRadiusWorld[0] : (opts.obstacleRadius ?? opts.collisionRadius)
     });
     return inst;
   };
@@ -7619,8 +7779,8 @@ function buildOrganelleScene() {
     geo.setAttribute("color", new THREE.BufferAttribute(domainColors, 3));
     geo.setIndex(Array.from(membraneSim.faces));
     const mat = new THREE.MeshStandardMaterial({
-      color: "#ffffff", emissive: "#5d7194", emissiveIntensity: 0.05, vertexColors: true,
-      roughness: 0.5, metalness: 0.03, transparent: true, opacity: 0.12,
+      color: "#ffffff", emissive: "#5d7194", emissiveIntensity: 0.07, vertexColors: true,
+      roughness: 0.5, metalness: 0.03, transparent: true, opacity: 0.22,
       depthWrite: false, side: THREE.DoubleSide
     });
     organelleMembrane = new THREE.Mesh(geo, mat);
@@ -8368,7 +8528,12 @@ function buildOrganelleScene() {
   }
 
   // --- Nucleus + envelope + nucleolus + nuclear pores ---
-  const nuc = new THREE.Vector3(-3.4, 1.4, -1.2);
+  // With an engine placement, the nucleus is the engine's central body, so the
+  // rendered nucleus is recentred to the origin to agree with it. Without one,
+  // the schematic anatomical-cutaway offset is kept.
+  const nuc = hasEnginePlacement
+    ? new THREE.Vector3(0, 0, 0)
+    : new THREE.Vector3(-3.4, 1.4, -1.2);
   occupied.push({ c: nuc, r: 5.1 }); // reserve the nucleus volume (incl. ER shell)
   const nucleusBody = mesh(organicSphere(4.6, 0.04), "#b07ed8", nuc, { opacity: 0.26, emissive: 0.08, label: "Nucleus — stores the DNA and controls gene expression" });
   const nuclearEnvelope = mesh(organicSphere(4.75, 0.04), "#caa3e6", nuc, { opacity: 0.12, emissive: 0.05, label: "Nuclear envelope — double membrane studded with pores" });
