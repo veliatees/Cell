@@ -18,11 +18,8 @@ import {
   Waves
 } from "lucide";
 import * as THREE from "three";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
-import { PDBLoader } from "three/examples/jsm/loaders/PDBLoader.js";
+import type { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import type { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import {
   IonSimulation,
   SCENE_PRESETS,
@@ -96,19 +93,17 @@ import {
   deterministicDisplayJitter,
   dimensionlessRouteProgress
 } from "./physics/transportModes";
-import {
-  engineSnapshotEndpointFromLocation,
-  loadEngineSnapshot,
-  loadEngineSnapshotArtifact,
-  type EngineDivisionCell,
-  type EngineDivisionEvent,
-  type EngineSnapshotLoadResult,
-  type EngineIntercellularCommunication,
-  type EngineSpatialBody,
-  type EngineSpatialPairRelation,
-  type EngineSurfaceDeformationState,
-  type EngineSnapshotSummary
+import type {
+  EngineDivisionCell,
+  EngineDivisionEvent,
+  EngineSnapshotLoadResult,
+  EngineIntercellularCommunication,
+  EngineSpatialBody,
+  EngineSpatialPairRelation,
+  EngineSurfaceDeformationState,
+  EngineSnapshotSummary
 } from "./engineSnapshot";
+import { engineSnapshotEndpointFromLocation } from "./engineSnapshotEndpoint";
 import {
   HEPATOCYTE_RENDER_RADIUS_WORLD,
   HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT,
@@ -124,6 +119,26 @@ import {
 import { contactPatchDecision } from "./contactVisualization";
 import { perspectiveFrameScale } from "./visualFraming";
 import "./styles.css";
+
+let engineSnapshotModulePromise:
+  | Promise<typeof import("./engineSnapshot")>
+  | null = null;
+
+function loadEngineSnapshotModule(): Promise<typeof import("./engineSnapshot")> {
+  engineSnapshotModulePromise ??= import("./engineSnapshot");
+  return engineSnapshotModulePromise;
+}
+
+let pdbLoaderModulePromise:
+  | Promise<typeof import("three/examples/jsm/loaders/PDBLoader.js")>
+  | null = null;
+
+function loadPdbLoaderModule() {
+  pdbLoaderModulePromise ??= import(
+    "three/examples/jsm/loaders/PDBLoader.js"
+  );
+  return pdbLoaderModulePromise;
+}
 
 const app = document.querySelector<HTMLDivElement>("#app");
 
@@ -558,9 +573,12 @@ async function loadCachedEngineSnapshot(
     const activeLoad = engineSnapshotLoads.get(url);
     if (activeLoad) return activeLoad;
   }
-  const load = url === canonicalContextBaseSnapshotUrl
-    ? loadEngineSnapshot(url)
-    : (async () => {
+  const load = (async () => {
+    const snapshotModule = await loadEngineSnapshotModule();
+    if (url === canonicalContextBaseSnapshotUrl) {
+      return snapshotModule.loadEngineSnapshot(url);
+    }
+    return (async () => {
         const base = await loadCachedEngineSnapshot(
           canonicalContextBaseSnapshotUrl,
           forceRefresh
@@ -572,8 +590,9 @@ async function loadCachedEngineSnapshot(
             diagnostic: `Context overlay base unavailable: ${base.diagnostic}`
           } satisfies EngineSnapshotLoadResult;
         }
-        return loadEngineSnapshotArtifact(url, base.snapshot);
+        return snapshotModule.loadEngineSnapshotArtifact(url, base.snapshot);
       })();
+  })();
   engineSnapshotLoads.set(url, load);
   try {
     const result = await load;
@@ -1179,6 +1198,18 @@ let performanceWindowWorkMs = 0;
 let performanceWindowMaxWorkMs = 0;
 let performanceWindowLongFrameCount = 0;
 const performanceStageWorkMs = new Map<string, number>();
+type RenderQualityTier = "full" | "balanced" | "essential";
+const RENDER_QUALITY_ORDER: Record<RenderQualityTier, number> = {
+  full: 0,
+  balanced: 1,
+  essential: 2
+};
+const SLOW_RENDER_FRAME_MS = 45;
+const SLOW_RENDER_FRAMES_PER_DEGRADE = 2;
+let renderQualityTier: RenderQualityTier = "full";
+let renderSlowFrameStreak = 0;
+let renderFastPlainFrameCount = 0;
+let performanceVisualAnatomyLodCap: VisualAnatomyLod | null = null;
 let dragState: { x: number; y: number; theta: number; phi: number } | null = null;
 let cameraDistance = 6.5;
 let baselineEnergyEv = simulation.snapshot().totalEnergyEv;
@@ -1249,6 +1280,7 @@ function makeRenderer(): RendererHandle {
 
 const renderer = makeRenderer();
 let activePixelRatio = Math.min(window.devicePixelRatio, 1.5);
+document.documentElement.dataset.cellRenderQuality = renderQualityTier;
 renderer.setPixelRatio(activePixelRatio);
 renderer.setSize(viewportElement.clientWidth, viewportElement.clientHeight);
 viewportElement.append(renderer.domElement);
@@ -2020,31 +2052,112 @@ scene.add(ambient, key, fill, rim, backCyan);
 // falls back gracefully to a plain render if the GL context can't support it. ---
 let composer: EffectComposer | null = null;
 let bloomPass: UnrealBloomPass | null = null;
+let bloomInitializationStarted = false;
+let bloomPerformanceDisabled = false;
 let lastCalcium = 0; // latest calcium-transient value (0..1), shared with the overlay
-if (realRenderer) {
+async function initializeBloomComposer(): Promise<void> {
+  if (
+    !realRenderer ||
+    composer ||
+    bloomPerformanceDisabled ||
+    renderQualityTier !== "full"
+  ) return;
   try {
-    composer = new EffectComposer(realRenderer);
-    composer.addPass(new RenderPass(scene, camera));
-    bloomPass = new UnrealBloomPass(
+    const [
+      { EffectComposer: EffectComposerCtor },
+      { RenderPass },
+      { UnrealBloomPass: UnrealBloomPassCtor },
+      { OutputPass }
+    ] = await Promise.all([
+      import("three/examples/jsm/postprocessing/EffectComposer.js"),
+      import("three/examples/jsm/postprocessing/RenderPass.js"),
+      import("three/examples/jsm/postprocessing/UnrealBloomPass.js"),
+      import("three/examples/jsm/postprocessing/OutputPass.js")
+    ]);
+    if (bloomPerformanceDisabled || renderQualityTier !== "full") return;
+    const nextComposer = new EffectComposerCtor(realRenderer);
+    nextComposer.addPass(new RenderPass(scene, camera));
+    const nextBloomPass = new UnrealBloomPassCtor(
       new THREE.Vector2(viewportElement.clientWidth, viewportElement.clientHeight),
       0.62, // strength (modulated live by cell energy/calcium below)
       0.5,  // radius
       0.82  // threshold — only the bright emissive cores bloom
     );
-    composer.addPass(bloomPass);
-    composer.addPass(new OutputPass());
-    composer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    composer.setSize(viewportElement.clientWidth, viewportElement.clientHeight);
+    nextComposer.addPass(nextBloomPass);
+    nextComposer.addPass(new OutputPass());
+    nextComposer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    nextComposer.setSize(
+      viewportElement.clientWidth,
+      viewportElement.clientHeight
+    );
+    bloomPass = nextBloomPass;
+    composer = nextComposer;
   } catch {
     composer = null;
     bloomPass = null;
   }
 }
 
+function applyRenderQualityTier(next: RenderQualityTier): void {
+  if (RENDER_QUALITY_ORDER[next] <= RENDER_QUALITY_ORDER[renderQualityTier]) {
+    return;
+  }
+  renderQualityTier = next;
+  renderSlowFrameStreak = 0;
+  document.documentElement.dataset.cellRenderQuality = next;
+  if (next !== "full") {
+    bloomPerformanceDisabled = true;
+    composer?.dispose();
+    composer = null;
+    bloomPass = null;
+  }
+  const nextPixelRatio =
+    next === "balanced"
+      ? Math.min(window.devicePixelRatio, 1)
+      : Math.min(window.devicePixelRatio, 0.75);
+  if (nextPixelRatio !== activePixelRatio) {
+    activePixelRatio = nextPixelRatio;
+    renderer.setPixelRatio(activePixelRatio);
+    renderer.setSize(
+      viewportElement.clientWidth,
+      viewportElement.clientHeight
+    );
+  }
+  performanceVisualAnatomyLodCap =
+    next === "essential" ? "overview" : "cellular";
+  activeVisualAnatomyLod = null;
+  updateVisualAnatomyLod();
+}
+
 /** Render the active scene through the bloom composer when available. */
 function renderFrame() {
+  const startedAt = performance.now();
   if (composer) composer.render();
   else renderer.render(scene, camera);
+  const elapsedMs = performance.now() - startedAt;
+  if (elapsedMs > SLOW_RENDER_FRAME_MS) {
+    renderSlowFrameStreak += 1;
+    renderFastPlainFrameCount = 0;
+  } else {
+    renderSlowFrameStreak = Math.max(0, renderSlowFrameStreak - 1);
+    if (!composer && renderQualityTier === "full") {
+      renderFastPlainFrameCount += 1;
+    }
+  }
+  if (renderSlowFrameStreak >= SLOW_RENDER_FRAMES_PER_DEGRADE) {
+    applyRenderQualityTier(
+      renderQualityTier === "full" ? "balanced" : "essential"
+    );
+  } else if (
+    !bloomInitializationStarted &&
+    renderFastPlainFrameCount >= 2 &&
+    renderQualityTier === "full"
+  ) {
+    bloomInitializationStarted = true;
+    window.setTimeout(() => {
+      void initializeBloomComposer();
+    }, 0);
+  }
 }
 
 const grid = new THREE.GridHelper(8, 32, "#243142", "#16202d");
@@ -3713,7 +3826,16 @@ function updateMembraneMicrovilli(): void {
 }
 
 function updateVisualAnatomyLod(): void {
-  const next = visualAnatomyLod(cameraDistance, viewportElement.clientWidth);
+  const requested = visualAnatomyLod(
+    cameraDistance,
+    viewportElement.clientWidth
+  );
+  const next =
+    performanceVisualAnatomyLodCap &&
+    ANATOMY_LOD_ORDER[requested] >
+      ANATOMY_LOD_ORDER[performanceVisualAnatomyLodCap]
+      ? performanceVisualAnatomyLodCap
+      : requested;
   if (next === activeVisualAnatomyLod) return;
   activeVisualAnatomyLod = next;
   const level = ANATOMY_LOD_ORDER[next];
@@ -4916,7 +5038,9 @@ viewportResizeObserver.observe(viewportElement);
 loadScene(DEFAULT_SCENE_ID);
 resize();
 updatePlayIcon();
-animate();
+window.setTimeout(() => {
+  requestAnimationFrame(animate);
+}, 0);
 
 function animate() {
   const frameWorkStartedAt = performance.now();
@@ -5015,7 +5139,23 @@ function animate() {
     performanceWindowLongFrameCount = 0;
     performanceStageWorkMs.clear();
   }
-  requestAnimationFrame(animate);
+  scheduleNextAnimationFrame();
+}
+
+function scheduleNextAnimationFrame(): void {
+  const delayMs =
+    renderQualityTier === "full"
+      ? 0
+      : renderQualityTier === "balanced"
+        ? 16
+        : 50;
+  if (delayMs === 0) {
+    requestAnimationFrame(animate);
+    return;
+  }
+  window.setTimeout(() => {
+    requestAnimationFrame(animate);
+  }, delayMs);
 }
 
 function measurePerformanceStage<T>(stage: string, work: () => T): T {
@@ -5775,9 +5915,19 @@ async function buildProteinScene() {
   const baseUrl =
     (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/";
 
+  let PdbLoaderCtor: (
+    typeof import("three/examples/jsm/loaders/PDBLoader.js")
+  )["PDBLoader"];
+  try {
+    PdbLoaderCtor = (await loadPdbLoaderModule()).PDBLoader;
+  } catch {
+    return;
+  }
+  if (proteinGroup !== targetGroup) return;
+
   // PDBLoader is async (XHR). Build the meshes in the callback. Guard against the
   // scene having been switched away while the file was loading.
-  new PDBLoader().load(`${baseUrl}glucokinase.pdb`, (pdb) => {
+  new PdbLoaderCtor().load(`${baseUrl}glucokinase.pdb`, (pdb) => {
     if (proteinGroup !== targetGroup) return;
     const geometryAtoms = pdb.geometryAtoms;
     const geometryBonds = pdb.geometryBonds;
@@ -9043,6 +9193,15 @@ async function embedRealProteins(
 ) {
   const BASE = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/";
   const live = () => organelleGroup === targetGroup && !!targetGroup.parent;
+  let PdbLoaderCtor: (
+    typeof import("three/examples/jsm/loaders/PDBLoader.js")
+  )["PDBLoader"];
+  try {
+    PdbLoaderCtor = (await loadPdbLoaderModule()).PDBLoader;
+  } catch {
+    return;
+  }
+  if (!live()) return;
 
   // True world-units-per-Angstrom: rendering at this scale would be sub-pixel.
   const worldPerAngstromTrue = ctx.nmToWorld(0.1);
@@ -9050,7 +9209,7 @@ async function embedRealProteins(
   // PDBLoader is callback-based; wrap it so we can await all 7 in parallel.
   const loadPdb = (url: string) =>
     new Promise<{ geometryAtoms: THREE.BufferGeometry }>((resolve, reject) =>
-      new PDBLoader().load(url, (pdb) => resolve(pdb), undefined, reject)
+      new PdbLoaderCtor().load(url, (pdb) => resolve(pdb), undefined, reject)
     );
 
   let manifest: RealProteinEntry[];

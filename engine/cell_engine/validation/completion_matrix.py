@@ -57,6 +57,9 @@ from cell_engine.quantitative.reaction_transport_coupling import (
     reaction_transport_coupling_intake_snapshot,
 )
 from cell_engine.validation.capability_atlas import hepatocyte_capability_atlas_snapshot
+from cell_engine.validation.browser_bundle_budget import (
+    browser_bundle_budget_snapshot,
+)
 from cell_engine.validation.external_review import external_validation_snapshot
 from cell_engine.validation.reaction_evidence_atlas import build_reaction_evidence_atlas
 from cell_engine.validation.hepatocyte_quantities import (
@@ -180,6 +183,9 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     metabolic_bundle = metabolic["phh_execution_bundle_intake"]
     external = external_validation_snapshot()["summary"]
     donor_generative = generative_donor_manifest_intake_snapshot()
+    browser_bundle = browser_bundle_budget_snapshot()
+    browser_bundle_limits = browser_bundle["limits"]
+    browser_bundle_verified = browser_bundle["last_verified_build"]
 
     entries = (
         _entry(
@@ -2313,6 +2319,43 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "browser_startup_bundle_budget",
+            "Browser startup bundle budget",
+            "closed",
+            "Production-artifact loading and parsing cost for the browser entry graph; no biological-model or accuracy claim.",
+            "The production build emits a manifest, recursively measures the initial JavaScript and CSS graph, requires the snapshot interpreter, PDB parser and four bloom modules to remain deferred, and fails when an explicit engineering byte budget is exceeded.",
+            {
+                "production_manifest_gate_count": 1,
+                "initial_js_chunk_count": browser_bundle_verified[
+                    "initial_js_chunk_count"
+                ],
+                "initial_js_raw_bytes": browser_bundle_verified[
+                    "initial_js_raw_bytes"
+                ],
+                "initial_js_gzip_bytes": browser_bundle_verified[
+                    "initial_js_gzip_bytes"
+                ],
+                "maximum_initial_js_raw_bytes": browser_bundle_limits[
+                    "maximum_initial_js_raw_bytes"
+                ],
+                "maximum_initial_js_gzip_bytes": browser_bundle_limits[
+                    "maximum_initial_js_gzip_bytes"
+                ],
+                "required_deferred_entry_count": browser_bundle_verified[
+                    "required_deferred_entry_count"
+                ],
+                "automatic_biological_parameter_activation_count": 0,
+            },
+            (),
+            (
+                "vite.config.ts",
+                "scripts/check_browser_bundle.mjs",
+                "data/validation/browser_bundle_budget.v1.json",
+                "src/main.ts",
+                "engine/tests/test_browser_bundle_budget.py",
+            ),
+        ),
+        _entry(
             "visual_regression_automation",
             "Automated browser render-integrity regression",
             "closed",
@@ -3353,6 +3396,23 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 0
     ):
         raise ValueError("browser context-snapshot matrix contract changed")
+    browser_bundle_metrics = by_id["browser_startup_bundle_budget"][
+        "observed_metrics"
+    ]
+    if (
+        browser_bundle_metrics["production_manifest_gate_count"] != 1
+        or browser_bundle_metrics["initial_js_chunk_count"] != 2
+        or browser_bundle_metrics["initial_js_raw_bytes"]
+        > browser_bundle_metrics["maximum_initial_js_raw_bytes"]
+        or browser_bundle_metrics["initial_js_gzip_bytes"]
+        > browser_bundle_metrics["maximum_initial_js_gzip_bytes"]
+        or browser_bundle_metrics["required_deferred_entry_count"] != 6
+        or browser_bundle_metrics[
+            "automatic_biological_parameter_activation_count"
+        ]
+        != 0
+    ):
+        raise ValueError("browser startup bundle budget contract changed")
     if by_id["independent_scientific_validation"]["observed_metrics"]["externally_reviewed_claim_count"] != 0:
         raise ValueError("external validation count changed without result intake")
 

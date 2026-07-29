@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 48
-    assert summary["closed_count"] == 26
+    assert summary["entry_count"] == 49
+    assert summary["closed_count"] == 27
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 12
     assert summary["external_action_required_count"] == 1
@@ -82,6 +82,24 @@ def test_context_snapshot_matrix_is_lossless_and_biologically_inert() -> None:
     assert metrics["offline_exact_reconstruction_verifier_count"] == 1
     assert metrics["runtime_base_identity_guard_count"] == 1
     assert metrics["runtime_state_surface_guard_count"] == 1
+    assert metrics["automatic_biological_parameter_activation_count"] == 0
+
+
+def test_browser_bundle_budget_is_closed_without_biological_authority() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    browser_bundle = entries["browser_startup_bundle_budget"]
+    metrics = browser_bundle["observed_metrics"]
+    assert browser_bundle["status"] == "closed"
+    assert metrics["production_manifest_gate_count"] == 1
+    assert metrics["initial_js_chunk_count"] == 2
+    assert metrics["initial_js_raw_bytes"] <= metrics[
+        "maximum_initial_js_raw_bytes"
+    ]
+    assert metrics["initial_js_gzip_bytes"] <= metrics[
+        "maximum_initial_js_gzip_bytes"
+    ]
+    assert metrics["required_deferred_entry_count"] == 6
     assert metrics["automatic_biological_parameter_activation_count"] == 0
 
 

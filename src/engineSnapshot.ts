@@ -5117,9 +5117,14 @@ type SnapshotResponse = {
 
 export type SnapshotFetcher = (url: string) => Promise<SnapshotResponse>;
 
-export function engineSnapshotEndpointFromLocation(locationLike: Pick<Location, "href">): string {
+export function engineSnapshotEndpointFromLocation(
+  locationLike: Pick<Location, "href">
+): string {
   const url = new URL(locationLike.href);
-  return url.searchParams.get("engineSnapshot") || new URL("engine-snapshot.json", url).pathname;
+  return (
+    url.searchParams.get("engineSnapshot") ||
+    new URL("engine-snapshot.json", url).pathname
+  );
 }
 
 export async function loadEngineSnapshot(url: string, fetcher: SnapshotFetcher = defaultSnapshotFetcher): Promise<EngineSnapshotLoadResult> {

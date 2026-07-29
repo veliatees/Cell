@@ -160,6 +160,7 @@ linked to its dependencies.
 - Whole-cell runtime authority firewall: `milestones/154-whole-cell-runtime-authority-firewall-v1.md`
 - Legacy calibration authority firewall: `milestones/155-legacy-calibration-authority-firewall-v1.md`
 - Canonical browser context snapshot overlay matrix: `milestones/156-canonical-context-snapshot-overlay-matrix-v1.md`
+- Browser first-render code splitting and production bundle budget: `milestones/157-browser-first-render-code-splitting-budget-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

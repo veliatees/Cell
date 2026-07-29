@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-07-29T06:25:01.761956+00:00",
+    "created_at_utc": "2026-07-29T07:19:05.078559+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -16810,6 +16810,31 @@
         },
         {
           "code_surfaces": [
+            "vite.config.ts",
+            "scripts/check_browser_bundle.mjs",
+            "data/validation/browser_bundle_budget.v1.json",
+            "src/main.ts",
+            "engine/tests/test_browser_bundle_budget.py"
+          ],
+          "current_capability": "The production build emits a manifest, recursively measures the initial JavaScript and CSS graph, requires the snapshot interpreter, PDB parser and four bloom modules to remain deferred, and fails when an explicit engineering byte budget is exceeded.",
+          "id": "browser_startup_bundle_budget",
+          "observed_metrics": {
+            "automatic_biological_parameter_activation_count": 0,
+            "initial_js_chunk_count": 2,
+            "initial_js_gzip_bytes": 255954,
+            "initial_js_raw_bytes": 938612,
+            "maximum_initial_js_gzip_bytes": 275000,
+            "maximum_initial_js_raw_bytes": 980000,
+            "production_manifest_gate_count": 1,
+            "required_deferred_entry_count": 6
+          },
+          "remaining_requirements": [],
+          "scope": "Production-artifact loading and parsing cost for the browser entry graph; no biological-model or accuracy claim.",
+          "status": "closed",
+          "title": "Browser startup bundle budget"
+        },
+        {
+          "code_surfaces": [
             "playwright.config.ts",
             "tests/visual/render-integrity.spec.ts",
             "src/main.ts"
@@ -16865,8 +16890,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 12,
-        "closed_count": 26,
-        "entry_count": 48,
+        "closed_count": 27,
+        "entry_count": 49,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
