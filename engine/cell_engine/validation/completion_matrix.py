@@ -57,6 +57,9 @@ from cell_engine.quantitative.reaction_transport_coupling import (
     reaction_transport_coupling_intake_snapshot,
 )
 from cell_engine.validation.capability_atlas import hepatocyte_capability_atlas_snapshot
+from cell_engine.validation.baseline_lifecycle_timing import (
+    baseline_lifecycle_timing_snapshot,
+)
 from cell_engine.validation.browser_bundle_budget import (
     browser_bundle_budget_snapshot,
 )
@@ -186,6 +189,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     browser_bundle = browser_bundle_budget_snapshot()
     browser_bundle_limits = browser_bundle["limits"]
     browser_bundle_verified = browser_bundle["last_verified_build"]
+    baseline_lifecycle = baseline_lifecycle_timing_snapshot()
 
     entries = (
         _entry(
@@ -221,6 +225,53 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "engine/cell_engine/core/runtime_authority.py",
                 "engine/cell_engine/core/engine.py",
                 "engine/tests/test_runtime_authority.py",
+            ),
+        ),
+        _entry(
+            "human_baseline_lifecycle_timing_firewall",
+            "Human baseline lifecycle timing firewall",
+            "closed",
+            "Canonical quiescent human-hepatocyte division and regeneration timing metadata; no phase-duration or proliferation-rate claim.",
+            "The baseline snapshot declares a human regeneration context, publishes no absent phase durations, marks the unavailable healthy-human timing profile as non-executable and refuses G0 exit until an explicit authorized timing profile is selected.",
+            {
+                "canonical_human_cell_species_count": int(
+                    baseline_lifecycle["canonical_cell_species"] == "human"
+                ),
+                "baseline_human_regeneration_species_count": int(
+                    baseline_lifecycle["baseline_regeneration_species"]
+                    == "human"
+                ),
+                "baseline_cross_species_default_count": baseline_lifecycle[
+                    "cross_species_default_count"
+                ],
+                "baseline_timing_execution_authorized_count": int(
+                    bool(
+                        baseline_lifecycle[
+                            "baseline_division_timing_profile"
+                        ]["execution_authorized"]
+                    )
+                ),
+                "baseline_regeneration_numeric_reference_count": int(
+                    bool(
+                        baseline_lifecycle[
+                            "regeneration_timing_reference_available"
+                        ]
+                    )
+                ),
+                "automatic_phase_timing_parameter_count": baseline_lifecycle[
+                    "automatic_phase_timing_parameter_count"
+                ],
+                "automatic_division_event_count": baseline_lifecycle[
+                    "automatic_division_event_count"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/stochastic/cell_cycle.py",
+                "engine/cell_engine/stochastic/whole_cell.py",
+                "engine/cell_engine/validation/baseline_lifecycle_timing.py",
+                "scripts/export_engine_snapshot.py",
+                "engine/tests/test_baseline_lifecycle_timing.py",
             ),
         ),
         _entry(
@@ -2466,6 +2517,32 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 0
     ):
         raise ValueError("whole-cell runtime escaped its authority firewall")
+    baseline_lifecycle_metrics = by_id[
+        "human_baseline_lifecycle_timing_firewall"
+    ]["observed_metrics"]
+    if (
+        baseline_lifecycle_metrics["canonical_human_cell_species_count"] != 1
+        or baseline_lifecycle_metrics[
+            "baseline_human_regeneration_species_count"
+        ]
+        != 1
+        or baseline_lifecycle_metrics["baseline_cross_species_default_count"]
+        != 0
+        or baseline_lifecycle_metrics[
+            "baseline_timing_execution_authorized_count"
+        ]
+        != 0
+        or baseline_lifecycle_metrics[
+            "baseline_regeneration_numeric_reference_count"
+        ]
+        != 0
+        or baseline_lifecycle_metrics[
+            "automatic_phase_timing_parameter_count"
+        ]
+        != 0
+        or baseline_lifecycle_metrics["automatic_division_event_count"] != 0
+    ):
+        raise ValueError("human baseline lifecycle timing escaped fail-closed")
     calibration_authority_metrics = by_id[
         "legacy_calibration_authority_firewall"
     ]["observed_metrics"]

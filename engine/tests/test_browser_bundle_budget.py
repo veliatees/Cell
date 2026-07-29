@@ -19,6 +19,7 @@ def test_browser_bundle_budget_is_measured_and_scientifically_inert() -> None:
     assert budget["scientific_authority"] is False
     assert verified["initial_js_chunk_count"] == 2
     assert verified["required_deferred_entry_count"] == 6
+    assert verified["initial_css_gzip_bytes"] == 7087
     assert verified["initial_js_raw_bytes"] <= limits[
         "maximum_initial_js_raw_bytes"
     ]

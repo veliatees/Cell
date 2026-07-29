@@ -8,6 +8,7 @@ from cell_engine.core.random import EngineRng
 from cell_engine.quantitative.geometry import build_hepatocyte_geometry, molecules_from_concentration_mM
 from cell_engine.quantitative.phh_profiles import phh_profile
 from cell_engine.stochastic.cell_cycle import (
+    HUMAN_HEPATOCYTE_TIMING_UNAVAILABLE_PROFILE,
     RAT_HEPATOCYTE_PHX_REFERENCE_TIMING_PROFILE,
     CellCycleParams,
     CellCycleState,
@@ -42,10 +43,13 @@ from cell_engine.stochastic.urea_cycle import build_urea_cycle_network
 # A non-zero risk requires ``cytokinesis_failure_calibrated=True`` and an explicit
 # context-specific calibration supplied by the caller.
 HEPATOCYTE_CYTOKINESIS_FAILURE_PROBABILITY = 0.0
-WHOLE_CELL_CYCLE = CellCycleParams(
-    nutrient_species="glucose",
-    regeneration_signal_active=False,
-    cytokinesis_failure_probability=HEPATOCYTE_CYTOKINESIS_FAILURE_PROBABILITY,
+WHOLE_CELL_CYCLE = apply_timing_profile(
+    CellCycleParams(
+        nutrient_species="glucose",
+        regeneration_signal_active=False,
+        cytokinesis_failure_probability=HEPATOCYTE_CYTOKINESIS_FAILURE_PROBABILITY,
+    ),
+    HUMAN_HEPATOCYTE_TIMING_UNAVAILABLE_PROFILE,
 )
 PROLIFERATING_HEPATOCYTE_CYCLE = CellCycleParams(
     nutrient_species="glucose",

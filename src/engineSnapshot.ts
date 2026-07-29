@@ -114,6 +114,7 @@ export type EngineDivisionSnapshot = {
     m_duration_s?: number;
     time_compressed?: boolean;
     biological_reference?: boolean;
+    execution_authorized?: boolean;
     source_ids?: string[];
     notes?: string;
   };
@@ -5073,6 +5074,7 @@ export type EngineDivisionDisplayState = {
   timingProfileId: string | null;
   timeCompressed: boolean | null;
   biologicalReference: boolean | null;
+  timingExecutionAuthorized: boolean | null;
 };
 
 export type EngineSnapshotLoadResult =
@@ -5470,7 +5472,8 @@ export function summarizeEngineDivisionDisplay(division: EngineDivisionSnapshot 
       blockedBy: [],
       timingProfileId: null,
       timeCompressed: null,
-      biologicalReference: null
+      biologicalReference: null,
+      timingExecutionAuthorized: null
     };
   }
 
@@ -5479,13 +5482,16 @@ export function summarizeEngineDivisionDisplay(division: EngineDivisionSnapshot 
   const timingProfileId = division.timing_profile?.id ?? null;
   const timeCompressed = division.timing_profile?.time_compressed ?? null;
   const biologicalReference = division.timing_profile?.biological_reference ?? null;
+  const timingExecutionAuthorized =
+    division.timing_profile?.execution_authorized ?? null;
   const common = {
     available: true,
     isCheckpointBlocked: blockedBy.length > 0,
     blockedBy,
     timingProfileId,
     timeCompressed,
-    biologicalReference
+    biologicalReference,
+    timingExecutionAuthorized
   };
 
   if (!event) {
@@ -5697,6 +5703,7 @@ function isEngineDivisionTimingProfile(value: unknown): value is NonNullable<Eng
     optionalNumber(value.m_duration_s) &&
     optionalBoolean(value.time_compressed) &&
     optionalBoolean(value.biological_reference) &&
+    optionalBoolean(value.execution_authorized) &&
     optionalStringArray(value.source_ids) &&
     optionalString(value.notes)
   );

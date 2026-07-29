@@ -223,6 +223,20 @@ def regeneration_timing_profile(
     )
 
 
+def regeneration_timing_reference_available(
+    profile: HepatocyteRegenerationTimingProfile,
+) -> bool:
+    """Return true only when a sourced numerical timing interval exists."""
+    return bool(
+        profile.source_ids
+        and (
+            profile.dna_synthesis_onset_h is not None
+            or profile.dna_synthesis_peak_h is not None
+            or profile.mass_restoration_days is not None
+        )
+    )
+
+
 @dataclass(frozen=True)
 class HepatocyteRegenerationInput:
     """Qualitative regeneration context.

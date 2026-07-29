@@ -4178,7 +4178,9 @@ function renderExternalEngineStatus(): string {
   const divisionEvent = s.division?.latest_event ?? s.division?.events.at(-1);
   const divisionDisplay = s.divisionDisplay;
   const divisionTiming = s.division?.timing_profile
-    ? `${s.division.timing_profile.id ?? "timing"} ${s.division.timing_profile.time_compressed ? "compressed" : "real-time"}`
+    ? s.division.timing_profile.execution_authorized === false
+      ? `${s.division.timing_profile.id ?? "timing"} blocked · no authorized human phase durations`
+      : `${s.division.timing_profile.id ?? "timing"} ${s.division.timing_profile.time_compressed ? "compressed" : "real-time"}`
     : "timing -";
   const displayReason = divisionDisplay.available
     ? `display ${divisionDisplay.reason.replaceAll("_", " ")}`
@@ -4193,9 +4195,9 @@ function renderExternalEngineStatus(): string {
       : "division -";
   const regen = s.regenerationContext;
   const timingPeak = regen?.timing_profile?.dna_synthesis_peak_h;
-  const timingText = timingPeak
+  const timingText = regen?.timing_is_real_world_reference && timingPeak
     ? `${regen?.timing_profile?.species ?? "unknown"} DNA synth peak ${timingPeak[0]}-${timingPeak[1]}h`
-    : "no active regeneration timing";
+    : "no sourced numeric regeneration timing";
   const directAxes = regen?.decision?.direct_mitogen_axes
     ?.map((axis) => `${axis.axis ?? "axis"} ${axis.active ? "active" : "blocked"}`)
     .join(" · ");

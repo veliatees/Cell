@@ -204,16 +204,33 @@ class CellCycleTimingProfile:
 
     id: str
     label: str
-    g1_min_duration_s: float
-    s_duration_s: float
-    g2_min_duration_s: float
-    m_duration_s: float
+    g1_min_duration_s: float | None
+    s_duration_s: float | None
+    g2_min_duration_s: float | None
+    m_duration_s: float | None
     time_compressed: bool
     biological_reference: bool
+    execution_authorized: bool
     source_ids: tuple[str, ...]
     notes: str = ""
 
 
+HUMAN_HEPATOCYTE_TIMING_UNAVAILABLE_PROFILE = CellCycleTimingProfile(
+    id="human_hepatocyte_timing_unavailable",
+    label="human hepatocyte cell-cycle timing unavailable",
+    g1_min_duration_s=None,
+    s_duration_s=None,
+    g2_min_duration_s=None,
+    m_duration_s=None,
+    time_compressed=False,
+    biological_reference=False,
+    execution_authorized=False,
+    source_ids=(),
+    notes=(
+        "Healthy-human hepatocyte phase durations are not available in the "
+        "declared context. The cell remains quiescent and no timing law executes."
+    ),
+)
 COMPRESSED_DEMO_TIMING = CellCycleTimingProfile(
     id="compressed_demo",
     label="compressed visualization/demo timing",
@@ -223,6 +240,7 @@ COMPRESSED_DEMO_TIMING = CellCycleTimingProfile(
     m_duration_s=5.0,
     time_compressed=True,
     biological_reference=False,
+    execution_authorized=True,
     source_ids=("cell_cycle_timing",),
     notes="Not biological time. Used only so tests and browser demos can show a full cycle quickly.",
 )
@@ -235,6 +253,7 @@ MAMMALIAN_REFERENCE_TIMING_PROFILE = CellCycleTimingProfile(
     m_duration_s=1.0 * 3600.0,
     time_compressed=False,
     biological_reference=True,
+    execution_authorized=True,
     source_ids=("cell_cycle_timing",),
     notes="Generic mammalian tissue-culture anchor; not hepatocyte-specific.",
 )
@@ -247,6 +266,7 @@ HELA_REFERENCE_TIMING_PROFILE = CellCycleTimingProfile(
     m_duration_s=1.10 * 3600.0,
     time_compressed=False,
     biological_reference=True,
+    execution_authorized=True,
     source_ids=("hela_phase_timing",),
     notes="Measured HeLa timing, useful as a mammalian benchmark but not hepatocyte-specific.",
 )
@@ -259,6 +279,7 @@ RAT_HEPATOCYTE_PHX_REFERENCE_TIMING_PROFILE = CellCycleTimingProfile(
     m_duration_s=1.0 * 3600.0,
     time_compressed=False,
     biological_reference=True,
+    execution_authorized=True,
     source_ids=("rat_hepatocyte_phx_timing", "cell_cycle_timing"),
     notes=(
         "Rat PHx anchor: S phase begins around 18 h and DNA synthesis peaks 21-24 h. "
@@ -269,6 +290,7 @@ RAT_HEPATOCYTE_PHX_REFERENCE_TIMING_PROFILE = CellCycleTimingProfile(
 CELL_CYCLE_TIMING_PROFILES: dict[str, CellCycleTimingProfile] = {
     profile.id: profile
     for profile in (
+        HUMAN_HEPATOCYTE_TIMING_UNAVAILABLE_PROFILE,
         COMPRESSED_DEMO_TIMING,
         MAMMALIAN_REFERENCE_TIMING_PROFILE,
         HELA_REFERENCE_TIMING_PROFILE,
@@ -278,28 +300,52 @@ CELL_CYCLE_TIMING_PROFILES: dict[str, CellCycleTimingProfile] = {
 
 
 def cell_cycle_timing_profile_snapshot(profile: CellCycleTimingProfile) -> dict[str, object]:
-    return {
+    snapshot: dict[str, object] = {
         "id": profile.id,
         "label": profile.label,
-        "g1_min_duration_s": profile.g1_min_duration_s,
-        "s_duration_s": profile.s_duration_s,
-        "g2_min_duration_s": profile.g2_min_duration_s,
-        "m_duration_s": profile.m_duration_s,
         "time_compressed": profile.time_compressed,
         "biological_reference": profile.biological_reference,
+        "execution_authorized": profile.execution_authorized,
         "source_ids": profile.source_ids,
         "notes": profile.notes,
     }
+    if profile.execution_authorized:
+        snapshot.update(
+            {
+                "g1_min_duration_s": profile.g1_min_duration_s,
+                "s_duration_s": profile.s_duration_s,
+                "g2_min_duration_s": profile.g2_min_duration_s,
+                "m_duration_s": profile.m_duration_s,
+            }
+        )
+    return snapshot
 
 
 def apply_timing_profile(params: CellCycleParams, profile: CellCycleTimingProfile | str) -> CellCycleParams:
     selected = CELL_CYCLE_TIMING_PROFILES[profile] if isinstance(profile, str) else profile
+    if not selected.execution_authorized:
+        return replace(
+            params,
+            g1_min_duration_s=None,
+            s_duration_s=None,
+            g2_min_duration_s=None,
+            m_duration_s=None,
+            timing_profile=selected,
+        )
+    durations = (
+        selected.g1_min_duration_s,
+        selected.s_duration_s,
+        selected.g2_min_duration_s,
+        selected.m_duration_s,
+    )
+    if any(duration is None for duration in durations):
+        raise ValueError("authorized cell-cycle timing profile requires four durations")
     return replace(
         params,
-        g1_min_duration_s=selected.g1_min_duration_s,
-        s_duration_s=selected.s_duration_s,
-        g2_min_duration_s=selected.g2_min_duration_s,
-        m_duration_s=selected.m_duration_s,
+        g1_min_duration_s=float(selected.g1_min_duration_s),
+        s_duration_s=float(selected.s_duration_s),
+        g2_min_duration_s=float(selected.g2_min_duration_s),
+        m_duration_s=float(selected.m_duration_s),
         timing_profile=selected,
     )
 
@@ -357,6 +403,15 @@ def division_readiness(state: CellCycleState, params: CellCycleParams) -> Divisi
             "quiescent G0; not committed to division",
             _FUCCI_COLOR["G0"],
         )
+    if not params.timing_profile.execution_authorized:
+        return DivisionReadiness(
+            phase,
+            0.0,
+            0.0,
+            True,
+            "human hepatocyte cell-cycle timing unavailable",
+            _FUCCI_COLOR[phase],
+        )
 
     if phase == "G1":
         size_progress = min(1.0, state.biomass / params.g1s_biomass)
@@ -403,10 +458,10 @@ class CellCycleParams:
 
     g1s_biomass: float = 2.0        # size checkpoint to leave G1
     g2m_biomass: float = 3.5        # size checkpoint to leave G2
-    g1_min_duration_s: float = 0.0  # demo default; real profiles set hours
-    s_duration_s: float = 20.0      # demo default; real profiles set hours
-    g2_min_duration_s: float = 0.0  # demo default; real profiles set hours
-    m_duration_s: float = 5.0       # demo default; real profiles set hours
+    g1_min_duration_s: float | None = 0.0  # demo default; real profiles set hours
+    s_duration_s: float | None = 20.0      # demo default; real profiles set hours
+    g2_min_duration_s: float | None = 0.0  # demo default; real profiles set hours
+    m_duration_s: float | None = 5.0       # demo default; real profiles set hours
     growth_per_s: float = 0.05      # biomass added per second when fed
     timing_profile: CellCycleTimingProfile = field(default_factory=lambda: COMPRESSED_DEMO_TIMING)
     genome_species: tuple[str, ...] = ("gene",)
@@ -572,6 +627,8 @@ def _mitogen_signal_active(params: CellCycleParams) -> bool:
 
 
 def _g0_exit_permitted(state: CellCycleState, params: CellCycleParams) -> bool:
+    if not params.timing_profile.execution_authorized:
+        return False
     p53_active, p21_active = _p53_p21_axis_active(params)
     return (
         params.oncogene_active
@@ -653,7 +710,17 @@ def evaluate_cell_cycle_control(state: CellCycleState, params: CellCycleParams) 
         _node(nodes, "nutrient availability", "present" if fed else "absent", fed, True, "cell_cycle_checkpoints")
         _node(nodes, "mitogen/regeneration signal", "elevated" if mitogen else "baseline", mitogen, True, "hepatocyte_quiescence_regeneration")
         _node(nodes, "DNA integrity", "intact" if dna_intact else "damaged", dna_intact, True, "cell_cycle_checkpoints")
-        exit_permitted = fed and mitogen and dna_intact and not p53_active and not p21_active
+        timing_authorized = params.timing_profile.execution_authorized
+        exit_permitted = (
+            timing_authorized
+            and fed
+            and mitogen
+            and dna_intact
+            and not p53_active
+            and not p21_active
+        )
+        if not timing_authorized:
+            blocked.append("human hepatocyte cell-cycle timing unavailable")
         supported.append(
             "G0 exit permitted; enter G1"
             if exit_permitted
@@ -663,8 +730,21 @@ def evaluate_cell_cycle_control(state: CellCycleState, params: CellCycleParams) 
             g1_s_committed=False,
             g2_m_committed=False,
             metaphase_anaphase_permitted=False,
+            blocked_by=tuple(blocked),
             supported_by=tuple(supported),
             nodes=tuple(nodes),
+            sources=tuple(sorted(sources)),
+        )
+
+    if not params.timing_profile.execution_authorized:
+        return CellCycleControlDecision(
+            g1_s_committed=False,
+            g2_m_committed=False,
+            metaphase_anaphase_permitted=False,
+            blocked_by=("human hepatocyte cell-cycle timing unavailable",),
+            uncalibrated=(
+                "No active phase-duration law is authorized for this human hepatocyte context.",
+            ),
             sources=tuple(sorted(sources)),
         )
 
@@ -942,6 +1022,14 @@ def step(state: CellCycleState, dt_s: float, params: CellCycleParams) -> CellCyc
     """
     if state.ready_to_divide:
         return state
+    if not params.timing_profile.execution_authorized:
+        held_time = state.phase_time_s + dt_s
+        return replace(
+            state,
+            phase_time_s=held_time,
+            ready_to_divide=False,
+            cytokinesis=state.cytokinesis,
+        )
 
     if state.phase == "G0":
         if _g0_exit_permitted(state, params):

@@ -3,15 +3,15 @@
     "exact_reconstruction_verified": true,
     "removed_state_key_count": 0,
     "state_override_count": 23,
-    "target_snapshot_sha256": "fae023c21ba594c0037d6e87901aa6b4822bf1e95fa1036e8fce19ae4f090a69",
+    "target_snapshot_sha256": "9482ef9a628b75232faf0d049fa23bab988dfbb02785e7832c14f2379e0acba1",
     "target_state_key_count": 85,
     "target_state_key_sha256": "421d38cda01ff90a8fc92e4372ed01dcb7527de997ec55ad3cfdaa01da766b18"
   },
   "base_identity": {
-    "created_at_utc": "2026-07-29T07:19:05.078559+00:00",
+    "created_at_utc": "2026-07-29T10:00:33.063067+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "schema_version": "cell-engine.snapshot.v1",
-    "snapshot_sha256": "586cdf0f9066711eec4b95f1a5daaf935ddeb6bb353da22aaa164d1fc3064e6d",
+    "snapshot_sha256": "332f6749416f3343a557baa433c5c4556038bed37ec8d40e9532cbdd89f5c916",
     "state_key_count": 85,
     "state_key_sha256": "421d38cda01ff90a8fc92e4372ed01dcb7527de997ec55ad3cfdaa01da766b18"
   },
@@ -64,7 +64,9 @@
         {
           "biomass": 1.0,
           "checkpoint_control": {
-            "blocked_by": [],
+            "blocked_by": [
+              "human hepatocyte cell-cycle timing unavailable"
+            ],
             "g1_s_committed": false,
             "g2_m_committed": false,
             "metaphase_anaphase_permitted": false,
@@ -114,7 +116,7 @@
           "cytokinesis": {
             "abscission_readiness": 0.0,
             "bridge_present": false,
-            "bridge_tension": 0.25,
+            "bridge_tension": 0.0,
             "chromosome_alignment": 0.0,
             "cleavage_origin_um": [
               0.0,
@@ -174,18 +176,12 @@
       "events": [],
       "latest_event": null,
       "timing_profile": {
-        "biological_reference": true,
-        "g1_min_duration_s": 64800.0,
-        "g2_min_duration_s": 36000.0,
-        "id": "rat_hepatocyte_phx_reference",
-        "label": "rat hepatocyte post-PHx first-cycle timing",
-        "m_duration_s": 3600.0,
-        "notes": "Rat PHx anchor: S phase begins around 18 h and DNA synthesis peaks 21-24 h. S/M durations use generic mammalian anchors until hepatocyte-specific phase durations are added.",
-        "s_duration_s": 21600.0,
-        "source_ids": [
-          "rat_hepatocyte_phx_timing",
-          "cell_cycle_timing"
-        ],
+        "biological_reference": false,
+        "execution_authorized": false,
+        "id": "human_hepatocyte_timing_unavailable",
+        "label": "human hepatocyte cell-cycle timing unavailable",
+        "notes": "Healthy-human hepatocyte phase durations are not available in the declared context. The cell remains quiescent and no timing law executes.",
+        "source_ids": [],
         "time_compressed": false
       }
     },
@@ -10775,7 +10771,7 @@
     "zone": "periportal"
   },
   "target_metadata": {
-    "created_at_utc": "2026-07-29T07:19:51.980084+00:00",
+    "created_at_utc": "2026-07-29T10:02:08.535696+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   }

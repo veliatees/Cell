@@ -10,6 +10,7 @@ from cell_engine.quantitative.geometry import (
 from cell_engine.stochastic.cell_cycle import (
     CELL_CYCLE_SOURCES,
     CELL_CYCLE_TIMING_PROFILES,
+    HUMAN_HEPATOCYTE_TIMING_UNAVAILABLE_PROFILE,
     CellCycleParams,
     CellCycleState,
     RAT_HEPATOCYTE_PHX_REFERENCE_TIMING_PROFILE,
@@ -322,6 +323,10 @@ class CellCycleTimingTests(unittest.TestCase):
         self.assertTrue(params.timing_profile.time_compressed)
         self.assertFalse(params.timing_profile.biological_reference)
         self.assertIn("compressed_demo", CELL_CYCLE_TIMING_PROFILES)
+        self.assertIn(
+            "human_hepatocyte_timing_unavailable",
+            CELL_CYCLE_TIMING_PROFILES,
+        )
 
     def test_real_hepatocyte_timing_blocks_fast_g1_entry(self):
         params = apply_timing_profile(CellCycleParams(), RAT_HEPATOCYTE_PHX_REFERENCE_TIMING_PROFILE)
@@ -353,7 +358,35 @@ class CellCycleTimingTests(unittest.TestCase):
         self.assertEqual(snapshot["id"], "rat_hepatocyte_phx_reference")
         self.assertFalse(snapshot["time_compressed"])
         self.assertTrue(snapshot["biological_reference"])
+        self.assertTrue(snapshot["execution_authorized"])
         self.assertIn("rat_hepatocyte_phx_timing", snapshot["source_ids"])
+
+    def test_unavailable_human_timing_blocks_execution_and_hides_durations(self):
+        params = apply_timing_profile(
+            CellCycleParams(regeneration_signal_active=True),
+            HUMAN_HEPATOCYTE_TIMING_UNAVAILABLE_PROFILE,
+        )
+        state = CellCycleState(phase="G0", counts=dict(_FED))
+        control = evaluate_cell_cycle_control(state, params)
+        after = step(state, 60.0, params)
+        snapshot = cell_cycle_timing_profile_snapshot(params.timing_profile)
+
+        self.assertFalse(params.timing_profile.execution_authorized)
+        self.assertIsNone(params.timing_profile.g1_min_duration_s)
+        self.assertIsNone(params.timing_profile.s_duration_s)
+        self.assertIsNone(params.g1_min_duration_s)
+        self.assertIsNone(params.s_duration_s)
+        self.assertFalse(control.g1_s_committed)
+        self.assertIn(
+            "human hepatocyte cell-cycle timing unavailable",
+            control.blocked_by,
+        )
+        self.assertEqual(after.phase, "G0")
+        self.assertFalse(after.ready_to_divide)
+        self.assertFalse(snapshot["execution_authorized"])
+        self.assertFalse(snapshot["biological_reference"])
+        self.assertNotIn("g1_min_duration_s", snapshot)
+        self.assertNotIn("s_duration_s", snapshot)
 
 
 class DivisionReadinessTests(unittest.TestCase):
