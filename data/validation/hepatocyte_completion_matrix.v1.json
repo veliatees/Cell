@@ -1305,8 +1305,8 @@
       "observed_metrics": {
         "production_manifest_gate_count": 1,
         "initial_js_chunk_count": 2,
-        "initial_js_raw_bytes": 938799,
-        "initial_js_gzip_bytes": 256016,
+        "initial_js_raw_bytes": 942685,
+        "initial_js_gzip_bytes": 257281,
         "maximum_initial_js_raw_bytes": 980000,
         "maximum_initial_js_gzip_bytes": 275000,
         "required_deferred_entry_count": 6,
@@ -1319,6 +1319,34 @@
         "data/validation/browser_bundle_budget.v1.json",
         "src/main.ts",
         "engine/tests/test_browser_bundle_budget.py"
+      ]
+    },
+    {
+      "id": "browser_runtime_workload_policy",
+      "title": "Browser runtime workload and cadence policy",
+      "status": "closed",
+      "scope": "Browser render scheduling, visual-fluid cadence and device-load degradation; no biological-model, timescale or accuracy claim.",
+      "current_capability": "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone.",
+      "observed_metrics": {
+        "document_visibility_suspension_guard_count": 1,
+        "viewport_intersection_suspension_guard_count": 1,
+        "suspended_elapsed_discard_guard_count": 1,
+        "single_pending_render_guard_count": 1,
+        "quality_tier_count": 3,
+        "initial_load_grace_window_count": 2,
+        "visual_fluid_cadence_tier_count": 3,
+        "total_frame_work_governor_count": 1,
+        "visual_clock_conservation_test_count": 1,
+        "automatic_biological_parameter_activation_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "data/validation/browser_runtime_policy.v1.json",
+        "src/runtime/renderCadence.ts",
+        "src/runtime/renderCadence.test.ts",
+        "src/main.ts",
+        "engine/cell_engine/validation/browser_runtime_policy.py",
+        "engine/tests/test_browser_runtime_policy.py"
       ]
     },
     {
@@ -1367,8 +1395,8 @@
     }
   ],
   "summary": {
-    "entry_count": 50,
-    "closed_count": 28,
+    "entry_count": 51,
+    "closed_count": 29,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,

@@ -78,6 +78,11 @@ biology rather than tuned to look right.
   core is separately cacheable. The production manifest gate keeps initial
   JavaScript below explicit raw/gzip budgets and fails if deferred modules drift
   back into the startup graph.
+- **A browser runtime workload policy** — hidden tabs and offscreen cell
+  viewports suspend rendering, the dimensionless cytosol field advances on a
+  tested quality-tier cadence, visible visual time is substepped without
+  low-FPS clock loss, and total frame work can lower quality without changing
+  the Python engine or any biological parameter.
 - **A fail-closed human lifecycle baseline** — the quiescent human hepatocyte no
   longer inherits rat cell-cycle or mouse regeneration timing metadata. Missing
   healthy-human phase durations are omitted, marked non-executable and cannot
@@ -540,6 +545,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 156: Canonical context snapshot overlay matrix v1](docs/milestones/156-canonical-context-snapshot-overlay-matrix-v1.md)
 - [Milestone 157: Browser first-render code splitting and budget v1](docs/milestones/157-browser-first-render-code-splitting-budget-v1.md)
 - [Milestone 158: Human baseline lifecycle timing firewall v1](docs/milestones/158-human-baseline-lifecycle-timing-firewall-v1.md)
+- [Milestone 159: Browser runtime workload and cadence v1](docs/milestones/159-browser-runtime-workload-cadence-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
