@@ -8,7 +8,9 @@ gate explicit for every reaction in the integrated hepatocyte fuel network.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
+from functools import lru_cache
 import json
 from pathlib import Path
 from typing import Literal
@@ -244,7 +246,7 @@ def _blockers(
     return tuple(blockers)
 
 
-def build_kinetic_transfer_audit(
+def _build_kinetic_transfer_audit(
     network: ReactionNetwork | None = None,
 ) -> KineticTransferAudit:
     manifest = _load_manifest()
@@ -432,6 +434,19 @@ def build_kinetic_transfer_audit(
             "No published parameter is activated in the integrated network by this audit.",
         ),
     )
+
+
+@lru_cache(maxsize=1)
+def _default_kinetic_transfer_audit() -> KineticTransferAudit:
+    return _build_kinetic_transfer_audit()
+
+
+def build_kinetic_transfer_audit(
+    network: ReactionNetwork | None = None,
+) -> KineticTransferAudit:
+    if network is not None:
+        return _build_kinetic_transfer_audit(network)
+    return deepcopy(_default_kinetic_transfer_audit())
 
 
 def validate_kinetic_transfer_audit(audit: KineticTransferAudit) -> None:

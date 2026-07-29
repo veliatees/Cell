@@ -119,3 +119,11 @@ def test_contract_detects_legacy_runtime_conflicts_and_activates_nothing() -> No
     assert summary["initialized_compartment_pool_count"] == 0
     assert summary["executable_process_count"] == 0
     assert summary["activated_parameter_count"] == 0
+
+
+def test_immutable_default_contract_is_reused_without_recomputation() -> None:
+    first = build_compartmental_energy_redox_contract()
+    second = build_compartmental_energy_redox_contract()
+
+    assert first is second
+    assert first.numerical_execution_enabled is False

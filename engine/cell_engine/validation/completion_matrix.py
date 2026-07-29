@@ -71,6 +71,9 @@ from cell_engine.validation.reaction_evidence_atlas import build_reaction_eviden
 from cell_engine.validation.hepatocyte_quantities import (
     hepatocyte_quantity_harvest_snapshot,
 )
+from cell_engine.validation.scientific_snapshot_export_policy import (
+    scientific_snapshot_export_policy_snapshot,
+)
 
 
 VERSION = "hepatocyte_completion_matrix_v1"
@@ -193,6 +196,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     browser_bundle_limits = browser_bundle["limits"]
     browser_bundle_verified = browser_bundle["last_verified_build"]
     browser_runtime = browser_runtime_policy_snapshot()
+    snapshot_export_policy = scientific_snapshot_export_policy_snapshot()
+    snapshot_cache_surfaces = snapshot_export_policy["cache_surfaces"]
     baseline_lifecycle = baseline_lifecycle_timing_snapshot()
 
     entries = (
@@ -2374,6 +2379,55 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "scientific_snapshot_export_recomputation_firewall",
+            "Scientific snapshot export recomputation firewall",
+            "closed",
+            "Process-local reuse of identical default scientific snapshot computations with explicit invalidation and output-isolation rules; no biological-model, parameter or validation claim.",
+            "Seven audited reuse surfaces eliminate repeated PHH proteome scans, SBML parsing and default evidence reconstruction. File-backed SBML caches are stat-invalidated, custom scientific inputs bypass default caches, mutable public results are defensive copies and scientific payload equivalence excludes only the creation timestamp.",
+            {
+                "cache_surface_count": len(snapshot_cache_surfaces),
+                "stat_invalidated_file_cache_count": sum(
+                    item["cache_lifetime"]
+                    == "stat_invalidated_process_local"
+                    for item in snapshot_cache_surfaces
+                ),
+                "defensive_copy_surface_count": sum(
+                    item["return_policy"] == "defensive_deepcopy"
+                    for item in snapshot_cache_surfaces
+                ),
+                "immutable_return_surface_count": sum(
+                    item["return_policy"]
+                    in {
+                        "immutable_tuple_graph",
+                        "immutable_frozen_dataclass_graph",
+                    }
+                    for item in snapshot_cache_surfaces
+                ),
+                "custom_input_cache_bypass_surface_count": sum(
+                    bool(item["custom_arguments_bypass_cache"])
+                    for item in snapshot_cache_surfaces
+                ),
+                "scientific_payload_equivalence_excluded_path_count": len(
+                    snapshot_export_policy["scientific_output_equivalence"][
+                        "excluded_volatile_paths"
+                    ]
+                ),
+                "automatic_biological_parameter_activation_count": int(
+                    bool(snapshot_export_policy["biological_parameter_activation"])
+                ),
+            },
+            (),
+            (
+                "data/validation/scientific_snapshot_export_policy.v1.json",
+                "engine/cell_engine/io/sbml.py",
+                "engine/cell_engine/quantitative/phh_proteome_atlas.py",
+                "engine/cell_engine/validation/kinetic_transfer.py",
+                "engine/cell_engine/validation/reaction_evidence_atlas.py",
+                "engine/cell_engine/quantitative/metabolic_constraint_shell.py",
+                "engine/tests/test_scientific_snapshot_export_policy.py",
+            ),
+        ),
+        _entry(
             "browser_startup_bundle_budget",
             "Browser startup bundle budget",
             "closed",
@@ -3540,6 +3594,28 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 0
     ):
         raise ValueError("browser context-snapshot matrix contract changed")
+    snapshot_export_metrics = by_id[
+        "scientific_snapshot_export_recomputation_firewall"
+    ]["observed_metrics"]
+    if (
+        snapshot_export_metrics["cache_surface_count"] != 7
+        or snapshot_export_metrics["stat_invalidated_file_cache_count"] != 2
+        or snapshot_export_metrics["defensive_copy_surface_count"] != 4
+        or snapshot_export_metrics["immutable_return_surface_count"] != 2
+        or snapshot_export_metrics[
+            "custom_input_cache_bypass_surface_count"
+        ]
+        != 3
+        or snapshot_export_metrics[
+            "scientific_payload_equivalence_excluded_path_count"
+        ]
+        != 1
+        or snapshot_export_metrics[
+            "automatic_biological_parameter_activation_count"
+        ]
+        != 0
+    ):
+        raise ValueError("scientific snapshot export cache contract changed")
     browser_bundle_metrics = by_id["browser_startup_bundle_budget"][
         "observed_metrics"
     ]
