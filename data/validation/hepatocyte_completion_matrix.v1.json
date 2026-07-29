@@ -1273,6 +1273,31 @@
       ]
     },
     {
+      "id": "browser_startup_bundle_budget",
+      "title": "Browser startup bundle budget",
+      "status": "closed",
+      "scope": "Production-artifact loading and parsing cost for the browser entry graph; no biological-model or accuracy claim.",
+      "current_capability": "The production build emits a manifest, recursively measures the initial JavaScript and CSS graph, requires the snapshot interpreter, PDB parser and four bloom modules to remain deferred, and fails when an explicit engineering byte budget is exceeded.",
+      "observed_metrics": {
+        "production_manifest_gate_count": 1,
+        "initial_js_chunk_count": 2,
+        "initial_js_raw_bytes": 938612,
+        "initial_js_gzip_bytes": 255954,
+        "maximum_initial_js_raw_bytes": 980000,
+        "maximum_initial_js_gzip_bytes": 275000,
+        "required_deferred_entry_count": 6,
+        "automatic_biological_parameter_activation_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "vite.config.ts",
+        "scripts/check_browser_bundle.mjs",
+        "data/validation/browser_bundle_budget.v1.json",
+        "src/main.ts",
+        "engine/tests/test_browser_bundle_budget.py"
+      ]
+    },
+    {
       "id": "visual_regression_automation",
       "title": "Automated browser render-integrity regression",
       "status": "closed",
@@ -1318,8 +1343,8 @@
     }
   ],
   "summary": {
-    "entry_count": 48,
-    "closed_count": 26,
+    "entry_count": 49,
+    "closed_count": 27,
     "partial_count": 8,
     "blocked_missing_evidence_count": 12,
     "external_action_required_count": 1,
