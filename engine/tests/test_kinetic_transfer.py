@@ -90,6 +90,17 @@ class KineticTransferAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "cover the active network exactly"):
             build_kinetic_transfer_audit(truncated)
 
+    def test_default_audit_cache_returns_an_isolated_copy(self) -> None:
+        first = build_kinetic_transfer_audit()
+        first.source_model["sha256"] = "mutated"
+        first.relationship_counts["outside_source_scope"] = -1
+
+        second = build_kinetic_transfer_audit()
+
+        self.assertIsNot(first, second)
+        self.assertNotEqual(second.source_model["sha256"], "mutated")
+        self.assertEqual(second.relationship_counts["outside_source_scope"], 24)
+
 
 if __name__ == "__main__":
     unittest.main()

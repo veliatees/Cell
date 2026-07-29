@@ -292,3 +292,15 @@ def test_exact_release_pin_removed_only_the_artifact_identity_blocker() -> None:
     assert any("independent flux validation" in item for item in blockers)
     assert not any("have not been audited" in item for item in blockers)
     assert any("structural audit exceptions" in item for item in blockers)
+
+
+def test_default_constraint_shell_cache_returns_an_isolated_copy() -> None:
+    first = metabolic_constraint_shell_snapshot()
+    first["candidate_reconstruction"]["model_version"] = "mutated"
+    first["gates"]["fba_execution_allowed"] = True
+
+    second = metabolic_constraint_shell_snapshot()
+
+    assert first is not second
+    assert second["candidate_reconstruction"]["model_version"] == "2.0.0"
+    assert second["gates"]["fba_execution_allowed"] is False

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
+from functools import lru_cache
 import json
 from pathlib import Path
 
@@ -148,6 +150,15 @@ def _load_manifest() -> dict[str, object]:
 
 
 def metabolic_constraint_shell_snapshot() -> dict[str, object]:
+    return deepcopy(_cached_metabolic_constraint_shell_snapshot())
+
+
+@lru_cache(maxsize=1)
+def _cached_metabolic_constraint_shell_snapshot() -> dict[str, object]:
+    return _build_metabolic_constraint_shell_snapshot()
+
+
+def _build_metabolic_constraint_shell_snapshot() -> dict[str, object]:
     """Expose every input required before FBA/FVA can influence the cell state."""
 
     manifest = _load_manifest()

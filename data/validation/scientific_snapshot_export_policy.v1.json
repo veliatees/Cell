@@ -1,0 +1,79 @@
+{
+  "schema_version": "cell.scientific-snapshot-export-policy.v1",
+  "purpose": "Process-local recomputation and output-isolation policy for scientific snapshot export",
+  "scientific_authority": false,
+  "biological_parameter_activation": false,
+  "cache_surfaces": [
+    {
+      "id": "sbml_document_inspection",
+      "scope": "file_identity",
+      "cache_lifetime": "stat_invalidated_process_local",
+      "invalidation_keys": [
+        "resolved_path",
+        "mtime_ns",
+        "size_bytes"
+      ],
+      "custom_arguments_bypass_cache": false,
+      "return_policy": "defensive_deepcopy"
+    },
+    {
+      "id": "sbml_reaction_fingerprints",
+      "scope": "file_identity",
+      "cache_lifetime": "stat_invalidated_process_local",
+      "invalidation_keys": [
+        "resolved_path",
+        "mtime_ns",
+        "size_bytes"
+      ],
+      "custom_arguments_bypass_cache": false,
+      "return_policy": "immutable_tuple_graph"
+    },
+    {
+      "id": "phh_proteome_gene_accession_indexes",
+      "scope": "pinned_default_artifact",
+      "cache_lifetime": "process_local",
+      "invalidation_keys": [],
+      "custom_arguments_bypass_cache": true,
+      "return_policy": "source_record_identity_preserved"
+    },
+    {
+      "id": "compartmental_energy_redox_contract",
+      "scope": "default_contract",
+      "cache_lifetime": "process_local",
+      "invalidation_keys": [],
+      "custom_arguments_bypass_cache": false,
+      "return_policy": "immutable_frozen_dataclass_graph"
+    },
+    {
+      "id": "kinetic_transfer_audit",
+      "scope": "default_network_only",
+      "cache_lifetime": "process_local",
+      "invalidation_keys": [],
+      "custom_arguments_bypass_cache": true,
+      "return_policy": "defensive_deepcopy"
+    },
+    {
+      "id": "reaction_evidence_atlas",
+      "scope": "default_network_and_transfer_only",
+      "cache_lifetime": "process_local",
+      "invalidation_keys": [],
+      "custom_arguments_bypass_cache": true,
+      "return_policy": "defensive_deepcopy"
+    },
+    {
+      "id": "metabolic_constraint_shell",
+      "scope": "default_snapshot",
+      "cache_lifetime": "process_local",
+      "invalidation_keys": [],
+      "custom_arguments_bypass_cache": false,
+      "return_policy": "defensive_deepcopy"
+    }
+  ],
+  "scientific_output_equivalence": {
+    "required": true,
+    "excluded_volatile_paths": [
+      "metadata.created_at_utc"
+    ],
+    "automatic_biological_parameter_activation_count": 0
+  }
+}

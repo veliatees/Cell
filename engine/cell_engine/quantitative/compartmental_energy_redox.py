@@ -14,6 +14,7 @@ presence only. Nothing in this contract is numerically executable.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 import json
 from pathlib import Path
 
@@ -486,11 +487,10 @@ def _processes() -> tuple[EnergyRedoxProcess, ...]:
 
 
 def _proteome_evidence(processes: tuple[EnergyRedoxProcess, ...]) -> tuple[EnergyRedoxGeneEvidence, ...]:
-    atlas = load_phh_proteome_atlas()
     genes = sorted({gene for process in processes for gene in process.mediator_gene_symbols})
     evidence: list[EnergyRedoxGeneEvidence] = []
     for gene in genes:
-        groups = protein_groups_for_gene(gene, payload=atlas)
+        groups = protein_groups_for_gene(gene)
         observations = tuple(
             DonorProteinGroupObservation(
                 group_id=str(record["group_id"]),
@@ -632,6 +632,7 @@ def _runtime_conflicts() -> tuple[EnergyRedoxRuntimeConflict, ...]:
     )
 
 
+@lru_cache(maxsize=1)
 def build_compartmental_energy_redox_contract() -> CompartmentalEnergyRedoxContract:
     compartments = _compartments()
     pools = _pools()

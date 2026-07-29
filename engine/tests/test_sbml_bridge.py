@@ -3,6 +3,7 @@ import unittest
 
 from cell_engine.io.sbml import (
     RoadRunnerAdapter,
+    inspect_sbml_document,
     inspect_sbml_reaction_fingerprints,
     load_sbml_subset,
     simulate_sbml_subset,
@@ -94,6 +95,15 @@ class SbmlBridgeTests(unittest.TestCase):
             ("f_gly", "GLUT2_Vmax", "GLUT2_k_glc", "GLUT2_keq"),
         )
         self.assertEqual(glut2.boundary_species_ids, ("glc_ext",))
+
+    def test_cached_document_inspection_returns_a_defensive_manifest_copy(self) -> None:
+        first = inspect_sbml_document(EXECUTABLE_MODEL_PATH)
+        first.element_counts["reaction"] = -1
+        second = inspect_sbml_document(EXECUTABLE_MODEL_PATH)
+
+        self.assertIsNot(first, second)
+        self.assertEqual(second.element_counts["reaction"], 36)
+        self.assertEqual(second.sha256, first.sha256)
 
     def test_official_nonkinetic_supplement_has_null_equation_digests(self) -> None:
         fingerprints = inspect_sbml_reaction_fingerprints(OFFICIAL_MODEL_PATH)
