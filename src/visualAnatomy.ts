@@ -25,6 +25,21 @@ export const VISUAL_ANATOMY_SOURCES = {
     url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC2887580/",
     supports: ["human LSEC fenestra mean diameter", "Space of Disse", "sinusoidal hepatocyte microvilli"]
   },
+  humanSinusoidMicrocirculation: {
+    id: "puhl2003_human_liver_ops_microcirculation",
+    url: "https://doi.org/10.1097/01.TP.0000056634.18191.1A",
+    supports: ["healthy-donor in-vivo mean sinusoid diameter", "healthy-donor sinusoidal red-cell velocity"]
+  },
+  humanSinusoidFenestraZonation: {
+    id: "horn1986_normal_human_liver_sem",
+    url: "https://doi.org/10.1111/j.1600-0676.1986.tb00275.x",
+    supports: ["human zone-1 and zone-3 fenestra frequency", "human zone-1 and zone-3 LSEC porosity; no zone-2 interpolation"]
+  },
+  humanErythrocyteGeometry: {
+    id: "evans_fung1972_human_erythrocyte_geometry",
+    url: "https://doi.org/10.1016/0026-2862(72)90069-6",
+    supports: ["human erythrocyte rest radius", "experiment-derived biconcave profile coefficients"]
+  },
   hepaticErTopology: {
     id: "jiang2021_hepatic_er_3d",
     url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC8648385/",
@@ -67,10 +82,41 @@ export const VISUAL_ANATOMY_SOURCES = {
   }
 } as const;
 
-// Mean diameter reported from tangentially sectioned human liver sinusoidal
-// endothelium. This is the only numeric ultrastructural dimension transferred
-// into the renderer by this visual-anatomy contract.
+// Human sinusoid and erythrocyte dimensions transferred into the renderer.
+// Puhl et al. measured the microcirculation in 11 healthy living liver donors.
+// Evans and Fung derived the biconcave erythrocyte profile from human cells.
+// The flow velocity is retained as evidence but is not used as animation speed:
+// whole-cell inspection is necessarily a disclosed slow-motion view.
 export const HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM = 105;
+export const HUMAN_HEALTHY_SINUSOID_MEAN_DIAMETER_UM = 8.8;
+export const HUMAN_HEALTHY_SINUSOID_DIAMETER_REPORTED_PLUS_MINUS_UM = 0.9;
+export const HUMAN_HEALTHY_SINUSOID_RBC_VELOCITY_MEAN_UM_PER_S = 970;
+export const HUMAN_HEALTHY_SINUSOID_RBC_VELOCITY_REPORTED_PLUS_MINUS_UM_PER_S = 430;
+export const HUMAN_RBC_EVANS_FUNG_RADIUS_UM = 3.91;
+export const HUMAN_RBC_EVANS_FUNG_DIAMETER_UM = HUMAN_RBC_EVANS_FUNG_RADIUS_UM * 2;
+export const HUMAN_RBC_EVANS_FUNG_COEFFICIENTS = {
+  c0: 0.207161,
+  c1: 2.002558,
+  c2: -1.122762
+} as const;
+
+export function evansFungRbcHalfThicknessUm(normalizedRadius: number): number {
+  if (!Number.isFinite(normalizedRadius) || normalizedRadius < 0 || normalizedRadius > 1) {
+    throw new Error("Evans-Fung radius must be finite and within [0, 1].");
+  }
+  const radiusSquared = normalizedRadius * normalizedRadius;
+  const polynomial =
+    HUMAN_RBC_EVANS_FUNG_COEFFICIENTS.c0
+    + HUMAN_RBC_EVANS_FUNG_COEFFICIENTS.c1 * radiusSquared
+    + HUMAN_RBC_EVANS_FUNG_COEFFICIENTS.c2 * radiusSquared * radiusSquared;
+  return (
+    0.5
+    * HUMAN_RBC_EVANS_FUNG_RADIUS_UM
+    * Math.sqrt(Math.max(0, 1 - radiusSquared))
+    * polynomial
+  );
+}
+
 export const ISOLATED_PHH_MEDIAN_DIAMETER_UM = 18.4;
 export const HISTORICAL_IN_SITU_PHH_MEAN_VOLUME_UM3 = 2850;
 // Aggregate normal-control 3D median and MAD from Segovia-Miranda et al.

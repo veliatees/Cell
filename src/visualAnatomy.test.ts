@@ -5,12 +5,19 @@ import {
   HEPATOCYTE_RENDER_RADIUS_WORLD,
   HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT,
   HISTORICAL_IN_SITU_PHH_MEAN_VOLUME_UM3,
+  HUMAN_HEALTHY_SINUSOID_DIAMETER_REPORTED_PLUS_MINUS_UM,
+  HUMAN_HEALTHY_SINUSOID_MEAN_DIAMETER_UM,
+  HUMAN_HEALTHY_SINUSOID_RBC_VELOCITY_MEAN_UM_PER_S,
+  HUMAN_HEALTHY_SINUSOID_RBC_VELOCITY_REPORTED_PLUS_MINUS_UM_PER_S,
   HUMAN_NC_3D_HEPATOCYTE_MEDIAN_VOLUME_UM3,
   HUMAN_NC_3D_LIPID_DROPLET_VOLUME_FRACTION,
   HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM,
+  HUMAN_RBC_EVANS_FUNG_DIAMETER_UM,
+  HUMAN_RBC_EVANS_FUNG_RADIUS_UM,
   ISOLATED_PHH_MEDIAN_DIAMETER_UM,
   VISUAL_ANATOMY_REQUIREMENTS,
   VISUAL_ANATOMY_SOURCES,
+  evansFungRbcHalfThicknessUm,
   membraneDomainForDirection,
   normalizeDisplaySphereScalesToVolumeFraction,
   visualAnatomyCoverage,
@@ -26,11 +33,27 @@ describe("visual anatomy contract", () => {
 
   it("keeps the human fenestra dimension in nanometres", () => {
     expect(HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM).toBe(105);
+    expect(HUMAN_HEALTHY_SINUSOID_MEAN_DIAMETER_UM).toBe(8.8);
+    expect(HUMAN_HEALTHY_SINUSOID_DIAMETER_REPORTED_PLUS_MINUS_UM).toBe(0.9);
+    expect(HUMAN_HEALTHY_SINUSOID_RBC_VELOCITY_MEAN_UM_PER_S).toBe(970);
+    expect(HUMAN_HEALTHY_SINUSOID_RBC_VELOCITY_REPORTED_PLUS_MINUS_UM_PER_S).toBe(430);
     expect(HISTORICAL_IN_SITU_PHH_MEAN_VOLUME_UM3).toBe(2850);
     expect(HUMAN_NC_3D_HEPATOCYTE_MEDIAN_VOLUME_UM3).toBe(5657.07116);
     expect(ISOLATED_PHH_MEDIAN_DIAMETER_UM).toBe(18.4);
     expect(2 * HEPATOCYTE_RENDER_RADIUS_WORLD * HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT)
       .toBeCloseTo(HEPATOCYTE_REFERENCE_EQUIVALENT_DIAMETER_UM, 12);
+  });
+
+  it("reproduces the measured Evans-Fung human erythrocyte rest profile", () => {
+    expect(HUMAN_RBC_EVANS_FUNG_RADIUS_UM).toBe(3.91);
+    expect(HUMAN_RBC_EVANS_FUNG_DIAMETER_UM).toBe(7.82);
+    expect(evansFungRbcHalfThicknessUm(0)).toBeCloseTo(0.405, 3);
+    expect(evansFungRbcHalfThicknessUm(1)).toBeCloseTo(0, 12);
+    expect(evansFungRbcHalfThicknessUm(0.7)).toBeGreaterThan(
+      evansFungRbcHalfThicknessUm(0)
+    );
+    expect(() => evansFungRbcHalfThicknessUm(-0.01)).toThrow();
+    expect(() => evansFungRbcHalfThicknessUm(1.01)).toThrow();
   });
 
   it("normalizes renderer lipid samples to the measured aggregate NC volume fraction", () => {
