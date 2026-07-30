@@ -3453,7 +3453,12 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
       pop.offset[i * 3 + 1] = _popPos.y - coupledBaseY;
       pop.offset[i * 3 + 2] = _popPos.z - coupledBaseZ;
       _popQuat.set(pop.baseQuat[i * 4], pop.baseQuat[i * 4 + 1], pop.baseQuat[i * 4 + 2], pop.baseQuat[i * 4 + 3]);
-      const sc = pop.scale[i];
+      // Vitality also drives size: a declining body shrinks, and once it drops
+      // below its type's clearance threshold it fades toward removal
+      // (mitophagy/pexophagy/autophagy) — a subtle, visible individual decline.
+      const clearance = pop.vitalityModel ? pop.vitalityModel.clearance_vitality_threshold : 0;
+      const dyingFade = clearance > 0 && vit < clearance ? Math.max(0.12, vit / clearance) : 1;
+      const sc = pop.scale[i] * (0.62 + 0.38 * vit) * dyingFade;
       _popScale.set(sc, sc, sc);
       _popMat.compose(_popPos, _popQuat, _popScale);
       pop.mesh.setMatrixAt(i, _popMat);
