@@ -10349,9 +10349,13 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     // ATP / β-oxidation / degradative activity without blooming to white. Each is
     // normalised to its own typical activity so they pulse on their own level.
     const POP_GLOW_REF: Partial<Record<OrganelleId, number>> = { mitochondria: 0.95, peroxisome: 0.35, lysosome: 0.5 };
+    // Active organelles glow (cheap: per-population material, not per instance).
+    // Stronger contrast than before + a gentle activity-proportional shimmer so a
+    // hard-working population reads as visibly, cinematically alive.
     for (const p of popGlowMats) {
       const norm = Math.min(1, activityOf(p.kind) / (POP_GLOW_REF[p.kind] ?? 1));
-      p.mat.emissiveIntensity = (0.1 + 0.32 * norm) * (0.4 + 0.6 * healthOf(p.kind));
+      const shimmer = 1 + 0.14 * norm * Math.sin(s.elapsedS * 2.1 + p.kind.length);
+      p.mat.emissiveIntensity = (0.12 + 0.62 * norm) * (0.4 + 0.6 * healthOf(p.kind)) * shimmer;
     }
     // Publish per-type engine health so each body's vitality can track its
     // organelle type's real state (engine id keys match pop.vitalityModel).
