@@ -108,7 +108,9 @@ import type {
   EngineSurfaceDeformationState,
   EngineSnapshotSummary,
   EngineOrganelleBody,
-  EngineCytoplasmDynamics
+  EngineCytoplasmDynamics,
+  EngineOrganelleInstanceVitality,
+  EngineOrganelleVitalityModel
 } from "./engineSnapshot";
 import { CytoplasmFlowField } from "./physics/cytoplasmFlow";
 import { engineSnapshotEndpointFromLocation } from "./engineSnapshotEndpoint";
@@ -1120,6 +1122,7 @@ type MotionTarget = {
   spin: number;
   axis: THREE.Vector3;
   offset: THREE.Vector3; // accumulated stochastic displacement from base
+  thermVel: THREE.Vector3; // Ornstein-Uhlenbeck thermal velocity (correlated, not white)
 };
 const organelleMotions: MotionTarget[] = [];
 // Glycogen granules: shown/hidden per-frame so the store visibly fills (fed) and
@@ -1146,6 +1149,11 @@ type OrganellePopulation = {
   baseQuat: Float32Array; // 4 * count
   scale: Float32Array; // count
   offset: Float32Array; // 3 * count, current random-walk displacement from base
+  thermVel: Float32Array; // 3 * count, Ornstein-Uhlenbeck thermal velocity (world/s), correlated
+  vitality: Float32Array; // count, per-instance "will-to-live" 0..1 (engine-authored heterogeneity)
+  vitalityTarget: Float32Array; // count, each body's own set-point it fluctuates around
+  declineSus: Float32Array; // count, per-instance fragility multiplier (~1)
+  vitalityModel: EngineOrganelleVitalityModel | null; // per-type vitality dynamics
   cage: Float32Array; // count, max displacement radius (< neighbour clearance)
   step: number; // per-frame random increment (world units)
   bright: Float32Array; // count, per-instance brightness (independent random walk)
@@ -1166,6 +1174,11 @@ let cytoplasmFlow: CytoplasmFlowField | null = null;
 let cytoplasmActiveSpeedWorldPerS = 0; // grounded active-transport speed, world units/s
 let cytoplasmWorldPerUm = 1;
 let cytoplasmDiffusionByOrganelle: Record<string, number> = {}; // engine id -> um^2/s
+// Per-instance organelle vitality (engine organelle_instance_vitality.py): each
+// body's own "will-to-live". Indexed engine id -> instances (by body index) and
+// the per-type dynamics model. Drives per-instance brightness + motion liveliness.
+let organelleVitalityByOrganelle: Record<string, EngineOrganelleInstanceVitality[]> = {};
+let organelleVitalityModelByOrganelle: Record<string, EngineOrganelleVitalityModel> = {};
 let lastCytoplasmMotionT = 0;
 let lastOrganelleMotionT = 0;
 const _cytoFlow = { x: 0, y: 0, z: 0 };
@@ -3300,6 +3313,17 @@ const _popColor = new THREE.Color();
 const _anchorPos = new THREE.Vector3();
 const _anchorNorm = new THREE.Vector3();
 const SQRT3 = 1.7320508075688772;
+// Cytoplasm is crowded and overdamped, so a caged organelle's stochastic motion
+// is temporally CORRELATED over a confinement-relaxation time — it is not white
+// per-frame noise. Integrating the thermal term as an Ornstein-Uhlenbeck velocity
+// keeps the same long-time diffusion (D) but removes the unphysical ~60 Hz
+// tremble: real organelles sit nearly still and drift/run smoothly. Disclosed
+// visual time constant, not a measured value.
+const CYTO_THERMAL_CORRELATION_S = 0.8;
+// Disclosed visual timescale over which each organelle's own vitality fluctuates
+// around its engine-authored set-point. The magnitude is schematic (the engine
+// flags it non-authoritative); it only animates per-instance look/liveliness.
+const VITALITY_FLUX_TAU_S = 26;
 // Resolve a drawn organelle against the current membrane triangles. The body is
 // reflected into the admissible domain while the equal-and-opposite numerical
 // penalty is queued for the next membrane step. Physical force remains unknown.
@@ -3349,28 +3373,51 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
     // Grounded stochastic motion when the engine supplies this organelle's thermal
     // diffusion coefficient and a stirring field; else the legacy caged jiggle.
     const physical = flow !== null && pop.diffusionUm2S > 0 && dt > 0;
-    // Per-axis thermal Brownian std dev, sqrt(2 D dt) in um -> world units. Tiny
-    // for large organelles (nucleus barely moves), larger for small vesicles.
-    const sigmaWorld = physical ? Math.sqrt(2 * pop.diffusionUm2S * dt) * cytoplasmWorldPerUm : 0;
     for (let i = 0; i < count; i += 1) {
       let ox = pop.offset[i * 3];
       let oy = pop.offset[i * 3 + 1];
       let oz = pop.offset[i * 3 + 2];
       const bx = pop.basePos[i * 3], by = pop.basePos[i * 3 + 1], bz = pop.basePos[i * 3 + 2];
       const mf = membraneCoupledFactor(bx, by, bz, t);
+      // Each body's own life: fluctuate its vitality around its engine-authored
+      // set-point (Ornstein-Uhlenbeck), amplitude scaled by per-instance fragility.
+      // Low vitality => dimmer and more sluggish, so individuals visibly differ.
+      let vit = pop.vitality[i];
+      if (dt > 0) {
+        const decayV = Math.exp(-dt / VITALITY_FLUX_TAU_S);
+        const amp = 0.12 * pop.declineSus[i];
+        vit = pop.vitalityTarget[i] + (vit - pop.vitalityTarget[i]) * decayV
+          + (Math.random() * 2 - 1) * amp * SQRT3 * Math.sqrt(Math.max(0, 1 - decayV * decayV));
+        vit = vit < 0 ? 0 : vit > 1 ? 1 : vit;
+        pop.vitality[i] = vit;
+      }
+      const vitFactor = 0.4 + 0.6 * vit; // sluggish when unwell
+      // Overdamped, confined thermal motion as an Ornstein-Uhlenbeck velocity:
+      // temporally correlated so it drifts smoothly instead of trembling every
+      // frame, while the long-time diffusion still equals the engine's D. The
+      // grounded path additionally advects by the shared incompressible stirring
+      // field so neighbours stream together (active transport dominates the
+      // visible motion; thermal is a small smooth wobble).
+      const decay = dt > 0 ? Math.exp(-dt / CYTO_THERMAL_CORRELATION_S) : 1;
+      const velScale = physical
+        ? Math.sqrt(pop.diffusionUm2S / CYTO_THERMAL_CORRELATION_S) * cytoplasmWorldPerUm
+        : step / CYTO_THERMAL_CORRELATION_S;
+      const gain = velScale * SQRT3 * Math.sqrt(Math.max(0, 1 - decay * decay));
+      const tvx = pop.thermVel[i * 3] * decay + (Math.random() * 2 - 1) * gain;
+      const tvy = pop.thermVel[i * 3 + 1] * decay + (Math.random() * 2 - 1) * gain;
+      const tvz = pop.thermVel[i * 3 + 2] * decay + (Math.random() * 2 - 1) * gain;
+      pop.thermVel[i * 3] = tvx;
+      pop.thermVel[i * 3 + 1] = tvy;
+      pop.thermVel[i * 3 + 2] = tvz;
       if (physical) {
-        // Coherent active stirring: advect by the shared incompressible flow at
-        // this organelle's position (grounded WIF-B9 transport speed), so
-        // neighbours stream together like a stirred cytoplasm. Then a small,
-        // size-dependent thermal Brownian step on top.
         flow!.sampleInto(_cytoFlow, bx * mf + ox, by * mf + oy, bz * mf + oz, t);
-        ox += _cytoFlow.x * activeSpeed * dt + (Math.random() * 2 - 1) * sigmaWorld * SQRT3;
-        oy += _cytoFlow.y * activeSpeed * dt + (Math.random() * 2 - 1) * sigmaWorld * SQRT3;
-        oz += _cytoFlow.z * activeSpeed * dt + (Math.random() * 2 - 1) * sigmaWorld * SQRT3;
+        ox += (_cytoFlow.x * activeSpeed + tvx) * dt * vitFactor;
+        oy += (_cytoFlow.y * activeSpeed + tvy) * dt * vitFactor;
+        oz += (_cytoFlow.z * activeSpeed + tvz) * dt * vitFactor;
       } else {
-        ox += (Math.random() * 2 - 1) * step;
-        oy += (Math.random() * 2 - 1) * step;
-        oz += (Math.random() * 2 - 1) * step;
+        ox += tvx * dt * vitFactor;
+        oy += tvy * dt * vitFactor;
+        oz += tvz * dt * vitFactor;
       }
       const cage = pop.cage[i];
       const d2 = ox * ox + oy * oy + oz * oz;
@@ -3412,7 +3459,10 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
           : pop.bright[i];
         const b = THREE.MathUtils.clamp(nextBrightness, 0.72, 1.12);
         pop.bright[i] = b;
-        _popColor.setRGB(b, b, b);
+        // Modulate by the body's own vitality: a declining organelle reads dimmer.
+        const vitShade = 0.5 + 0.5 * vit;
+        const shaded = b * vitShade;
+        _popColor.setRGB(shaded, shaded, shaded);
         pop.mesh.setColorAt(i, _popColor);
       }
     }
@@ -4079,10 +4129,19 @@ function updateOrganelleMotion(t: number) {
       // deterministic sinusoid — the motion is stochastic and correlated.
       flow!.sampleInto(_cytoFlow, m.base.x + m.offset.x, m.base.y + m.offset.y, m.base.z + m.offset.z, t);
       const mob = m.amp;
-      const j = mob * 0.03;
-      m.offset.x += _cytoFlow.x * activeSpeed * dt * mob * 4 + (Math.random() * 2 - 1) * j;
-      m.offset.y += _cytoFlow.y * activeSpeed * dt * mob * 4 + (Math.random() * 2 - 1) * j;
-      m.offset.z += _cytoFlow.z * activeSpeed * dt * mob * 4 + (Math.random() * 2 - 1) * j;
+      // Correlated (Ornstein-Uhlenbeck) thermal wobble instead of per-frame white
+      // jitter: large anchored structures (nucleus) barely drift, all move smoothly.
+      const decay = Math.exp(-dt / CYTO_THERMAL_CORRELATION_S);
+      const velScale = (mob * 0.03) / CYTO_THERMAL_CORRELATION_S;
+      const gain = velScale * SQRT3 * Math.sqrt(Math.max(0, 1 - decay * decay));
+      m.thermVel.set(
+        m.thermVel.x * decay + (Math.random() * 2 - 1) * gain,
+        m.thermVel.y * decay + (Math.random() * 2 - 1) * gain,
+        m.thermVel.z * decay + (Math.random() * 2 - 1) * gain
+      );
+      m.offset.x += (_cytoFlow.x * activeSpeed * mob * 4 + m.thermVel.x) * dt;
+      m.offset.y += (_cytoFlow.y * activeSpeed * mob * 4 + m.thermVel.y) * dt;
+      m.offset.z += (_cytoFlow.z * activeSpeed * mob * 4 + m.thermVel.z) * dt;
       const cage = mob * 1.6;
       if (m.offset.lengthSq() > cage * cage) m.offset.setLength(cage);
     }
@@ -7491,7 +7550,7 @@ function buildOrganelleScene() {
     return v.lengthSq() < 1e-4 ? new THREE.Vector3(1, 0, 0) : v.normalize();
   };
   const trackMotion = (object: THREE.Object3D, base: THREE.Vector3, amp: number, speed: number, spin = 0.004, phase = rnd() * Math.PI * 2) => {
-    organelleMotions.push({ object, base: base.clone(), amp, speed, phase, spin, axis: randDir(), offset: new THREE.Vector3() });
+    organelleMotions.push({ object, base: base.clone(), amp, speed, phase, spin, axis: randDir(), offset: new THREE.Vector3(), thermVel: new THREE.Vector3() });
   };
   const nmToWorld = (nm: number) => (nm / 1000) / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
   const umToWorld = (um: number) => um / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
@@ -7511,6 +7570,22 @@ function buildOrganelleScene() {
   cytoplasmWorldPerUm = 1 / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
   cytoplasmDiffusionByOrganelle = {};
   lastCytoplasmMotionT = 0;
+  // Index the engine's per-instance vitality by organelle id (bodies ordered by
+  // their engine index) plus the per-type dynamics model.
+  organelleVitalityByOrganelle = {};
+  organelleVitalityModelByOrganelle = {};
+  const vitalityField = externalEngineSummary?.organelleInstanceVitality ?? null;
+  if (vitalityField) {
+    for (const inst of vitalityField.instances) {
+      (organelleVitalityByOrganelle[inst.organelle_id] ??= []).push(inst);
+    }
+    for (const id of Object.keys(organelleVitalityByOrganelle)) {
+      organelleVitalityByOrganelle[id].sort((a, b) => a.index - b.index);
+    }
+    for (const model of vitalityField.models) {
+      organelleVitalityModelByOrganelle[model.organelle_id] = model;
+    }
+  }
   if (cytoDyn) {
     cytoplasmActiveSpeedWorldPerS = cytoDyn.active_transport_speed_um_s * cytoplasmWorldPerUm;
     for (const m of cytoDyn.organelle_motility) cytoplasmDiffusionByOrganelle[m.organelle_id] = m.thermal_diffusion_um2_s;
@@ -7804,7 +7879,23 @@ function buildOrganelleScene() {
     const baseQuat = new Float32Array(actual * 4);
     const scaleArr = new Float32Array(actual);
     const offsetArr = new Float32Array(actual * 3); // starts at rest
+    const thermVelArr = new Float32Array(actual * 3); // OU thermal velocity, starts at rest
     const currentPos = new Float32Array(actual * 3);
+    // Per-instance vitality: each body its own life. Pull the engine's authored
+    // heterogeneous values (by organelle id + body index); default healthy (1).
+    const engineId = kind ? ENGINE_KIND_TO_ID[kind] ?? null : null;
+    const vitalityInstances = engineId ? organelleVitalityByOrganelle[engineId] ?? null : null;
+    const vitalityModel = engineId ? organelleVitalityModelByOrganelle[engineId] ?? null : null;
+    const vitalityArr = new Float32Array(actual);
+    const vitalityTargetArr = new Float32Array(actual);
+    const declineSusArr = new Float32Array(actual);
+    for (let i = 0; i < actual; i += 1) {
+      const src = vitalityInstances ? vitalityInstances[i % vitalityInstances.length] : null;
+      const v = src ? src.vitality : 1;
+      vitalityArr[i] = v;
+      vitalityTargetArr[i] = v; // each body fluctuates around its own healthy set-point
+      declineSusArr[i] = src ? src.decline_susceptibility : 1;
+    }
     const bodyRadiusWorld = new Float32Array(actual);
     const contactFace = new Int32Array(actual);
     const cageArr = new Float32Array(actual);
@@ -7871,6 +7962,11 @@ function buildOrganelleScene() {
       baseQuat,
       scale: scaleArr,
       offset: offsetArr,
+      thermVel: thermVelArr,
+      vitality: vitalityArr,
+      vitalityTarget: vitalityTargetArr,
+      declineSus: declineSusArr,
+      vitalityModel,
       cage: cageArr,
       step: opts.step ?? 0.03,
       bright: brightArr,

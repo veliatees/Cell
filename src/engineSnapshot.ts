@@ -98,6 +98,43 @@ export type EngineCytoplasmDynamics = {
   source_ids: string[];
 };
 
+// Per-instance organelle vitality (see engine organelle_instance_vitality.py):
+// each individual body's own leaky-integrator "will-to-live", so one mitochondrion
+// can thrive while its neighbour declines. Visual/kinematic — never a reaction
+// authority (is_reaction_transport_authority is always false); magnitudes schematic.
+export type EngineOrganelleVitalityModel = {
+  organelle_id: string;
+  baseline_vitality: number;
+  initial_vitality_spread: number;
+  mean_turnover_age_h: number;
+  recovery_time_constant_h: number;
+  stress_sensitivity: number;
+  clearance_vitality_threshold: number;
+  turns_over: boolean;
+};
+
+export type EngineOrganelleInstanceVitality = {
+  organelle_id: string;
+  index: number;
+  vitality: number;
+  health: number;
+  age_h: number;
+  decline_susceptibility: number;
+};
+
+export type EngineOrganelleInstanceVitalityField = {
+  version: string;
+  is_reaction_transport_authority: boolean;
+  models: EngineOrganelleVitalityModel[];
+  instances: EngineOrganelleInstanceVitality[];
+  instance_count_by_organelle: Record<string, number>;
+  honesty_status: string;
+  grounded: string[];
+  not_grounded: string[];
+  blockers: string[];
+  source_ids: string[];
+};
+
 export type EngineDivisionOrganelleInventory = {
   mitochondria: number;
   mitochondrial_fragments: number;
@@ -2426,6 +2463,7 @@ export type EngineSnapshot = {
     spatial_world?: EngineSpatialWorld;
     organelle_placement?: EngineOrganellePlacement;
     cytoplasm_dynamics?: EngineCytoplasmDynamics;
+    organelle_instance_vitality?: EngineOrganelleInstanceVitalityField;
     spatial_state?: EngineCellSpatialState | null;
     physical_validation?: EnginePhysicalValidation;
     brian2_communication?: EngineBrian2Communication;
@@ -5192,6 +5230,7 @@ export type EngineSnapshotSummary = {
   spatialWorld: EngineSpatialWorld | null;
   organellePlacement: EngineOrganellePlacement | null;
   cytoplasmDynamics: EngineCytoplasmDynamics | null;
+  organelleInstanceVitality: EngineOrganelleInstanceVitalityField | null;
   spatialState: EngineCellSpatialState | null;
   physicalValidation: EnginePhysicalValidation | null;
   brian2Communication: EngineBrian2Communication | null;
@@ -5586,6 +5625,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     spatialWorld: snapshot.state.spatial_world ?? null,
     organellePlacement: snapshot.state.organelle_placement ?? null,
     cytoplasmDynamics: snapshot.state.cytoplasm_dynamics ?? null,
+    organelleInstanceVitality: snapshot.state.organelle_instance_vitality ?? null,
     spatialState: snapshot.state.spatial_state ?? null,
     physicalValidation: snapshot.state.physical_validation ?? null,
     brian2Communication: snapshot.state.brian2_communication ?? null,
