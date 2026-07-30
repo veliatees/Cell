@@ -1377,8 +1377,8 @@
       "observed_metrics": {
         "production_manifest_gate_count": 1,
         "initial_js_chunk_count": 2,
-        "initial_js_raw_bytes": 963124,
-        "initial_js_gzip_bytes": 263833,
+        "initial_js_raw_bytes": 963236,
+        "initial_js_gzip_bytes": 263892,
         "maximum_initial_js_raw_bytes": 980000,
         "maximum_initial_js_gzip_bytes": 275000,
         "required_deferred_entry_count": 6,
