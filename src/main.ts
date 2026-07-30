@@ -10333,8 +10333,10 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     for (const o of s.organelles) eff[o.id] = o.efficiency;
     const activityOf = (kind: OrganelleId) => engineSignal?.activity[kind] ?? s.activity[kind];
     const healthOf = (kind: OrganelleId) => engineSignal?.health[kind] ?? eff[kind] ?? 1;
+    // Every organelle glows in its OWN emissive colour: a visible resting glow
+    // (floor) so nothing looks dead, plus a strong activity-driven boost on top.
     const glowOf = (kind: keyof OrganelleActivity, gain: number) =>
-      (0.06 + 1.4 * Math.min(1, activityOf(kind) * gain)) * (0.25 + 0.75 * healthOf(kind));
+      (0.4 + 1.15 * Math.min(1, activityOf(kind) * gain)) * (0.35 + 0.65 * healthOf(kind));
     // Mitochondria glow with how hard they are making ATP right now.
     const mitoGlow = glowOf("mitochondria", 1 / 0.95);
     for (const m of organelleMitos) {
@@ -10355,7 +10357,9 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     for (const p of popGlowMats) {
       const norm = Math.min(1, activityOf(p.kind) / (POP_GLOW_REF[p.kind] ?? 1));
       const shimmer = 1 + 0.14 * norm * Math.sin(s.elapsedS * 2.1 + p.kind.length);
-      p.mat.emissiveIntensity = (0.12 + 0.62 * norm) * (0.4 + 0.6 * healthOf(p.kind)) * shimmer;
+      // Visible resting glow in the population's own colour (floor 0.34), brighter
+      // where the type is genuinely active.
+      p.mat.emissiveIntensity = (0.34 + 0.55 * norm) * (0.4 + 0.6 * healthOf(p.kind)) * shimmer;
     }
     // Publish per-type engine health so each body's vitality can track its
     // organelle type's real state (engine id keys match pop.vitalityModel).
