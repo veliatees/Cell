@@ -1179,6 +1179,10 @@ let cytoplasmDiffusionByOrganelle: Record<string, number> = {}; // engine id -> 
 // the per-type dynamics model. Drives per-instance brightness + motion liveliness.
 let organelleVitalityByOrganelle: Record<string, EngineOrganelleInstanceVitality[]> = {};
 let organelleVitalityModelByOrganelle: Record<string, EngineOrganelleVitalityModel> = {};
+// Latest engine per-type organelle health (0..1), keyed by engine organelle id.
+// Lets each body's vitality set-point track its organelle type's real state: when
+// the engine says mitochondria are failing, those bodies visibly dim and slow.
+let organelleVitalityHealthById: Record<string, number> = {};
 let lastCytoplasmMotionT = 0;
 let lastOrganelleMotionT = 0;
 const _cytoFlow = { x: 0, y: 0, z: 0 };
@@ -3386,7 +3390,14 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
       if (dt > 0) {
         const decayV = Math.exp(-dt / VITALITY_FLUX_TAU_S);
         const amp = 0.12 * pop.declineSus[i];
-        vit = pop.vitalityTarget[i] + (vit - pop.vitalityTarget[i]) * decayV
+        // Set-point tracks this organelle TYPE's real engine health: when the
+        // type is failing, every body of it is pulled down (still around its own
+        // heterogeneous base), so an organelle problem visibly propagates.
+        const engineHealth = pop.vitalityModel
+          ? organelleVitalityHealthById[pop.vitalityModel.organelle_id] ?? 1
+          : 1;
+        const tgt = pop.vitalityTarget[i] * (0.35 + 0.65 * engineHealth);
+        vit = tgt + (vit - tgt) * decayV
           + (Math.random() * 2 - 1) * amp * SQRT3 * Math.sqrt(Math.max(0, 1 - decayV * decayV));
         vit = vit < 0 ? 0 : vit > 1 ? 1 : vit;
         pop.vitality[i] = vit;
@@ -10337,6 +10348,14 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       const norm = Math.min(1, activityOf(p.kind) / (POP_GLOW_REF[p.kind] ?? 1));
       p.mat.emissiveIntensity = (0.1 + 0.32 * norm) * (0.4 + 0.6 * healthOf(p.kind));
     }
+    // Publish per-type engine health so each body's vitality can track its
+    // organelle type's real state (engine id keys match pop.vitalityModel).
+    organelleVitalityHealthById = {
+      mitochondria: healthOf("mitochondria"),
+      lysosomes: healthOf("lysosome"),
+      peroxisomes: healthOf("peroxisome"),
+      nucleus: healthOf("nucleus")
+    };
     // --- Local cinematic dynamics ---
     // Schematic pulses make the renderer legible; they are not a Python-engine
     // calcium time series. The snapshot card above remains the authority.
