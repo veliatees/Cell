@@ -68,6 +68,23 @@ export type MembraneSimRemeshResult = {
   biologicalMechanicsAssigned: false;
 };
 
+export type MembraneExternalLoadFrame = {
+  vertexLoads: ArrayLike<number>;
+  loadUnit: "dimensionless_numerical";
+  biologicalForceAssigned: false;
+};
+
+export type MembraneStepDiagnostics = {
+  externalLoadApplied: boolean;
+  dimensionlessExternalLoadResultant: [number, number, number];
+  physicalForceN: null;
+  areaRatio: number;
+  volumeRatio: number;
+  engineeringAreaGuardUtilization: number;
+  engineeringAreaGuardExceeded: boolean;
+  quantitativeHealthyPhhMechanicsEnabled: false;
+};
+
 // Evans et al. reported 2-4% human red-cell membrane area expansion at lysis.
 // One percent is the engine-wide conservative engineering guard: half the lower
 // failure reference. It is not a PHH stretch or rupture measurement.
@@ -699,7 +716,26 @@ export function computeNormals(sim: MembraneSim): void {
 
 const _lap = { arr: new Float32Array(0) };
 
-export function stepMembrane(sim: MembraneSim, dt: number): void {
+export function stepMembrane(
+  sim: MembraneSim,
+  dt: number,
+  externalLoad?: MembraneExternalLoadFrame
+): MembraneStepDiagnostics {
+  if (!Number.isFinite(dt) || dt < 0) {
+    throw new RangeError("membrane step must be finite and non-negative");
+  }
+  if (
+    externalLoad !== undefined &&
+    (
+      externalLoad.loadUnit !== "dimensionless_numerical" ||
+      externalLoad.biologicalForceAssigned !== false ||
+      externalLoad.vertexLoads.length !== sim.pos.length
+    )
+  ) {
+    throw new RangeError(
+      "external membrane load must be a dimensionless, size-matched vertex field"
+    );
+  }
   const { n, pos, force, edgeA, edgeB, restLen, restLap, normals } = sim;
   force.fill(0);
 
@@ -747,7 +783,29 @@ export function stepMembrane(sim: MembraneSim, dt: number): void {
     addGrad(cc, a, b);
   }
 
-  // 4) Overdamped integration (low-Reynolds): x ← x + (dt/γ)·F, with a per-step
+  // 4) Optional intracellular loading. This input is explicitly dimensionless:
+  //    organelle contact penalties and cut-cell pressure tractions may deform
+  //    the renderer, but cannot become healthy-PHH newtons without calibration.
+  const loadResultant: [number, number, number] = [0, 0, 0];
+  if (externalLoad) {
+    for (let vertex = 0; vertex < n; vertex += 1) {
+      const offset = vertex * 3;
+      const fx = externalLoad.vertexLoads[offset];
+      const fy = externalLoad.vertexLoads[offset + 1];
+      const fz = externalLoad.vertexLoads[offset + 2];
+      if (![fx, fy, fz].every(Number.isFinite)) {
+        throw new RangeError("external membrane vertex loads must be finite");
+      }
+      force[offset] += fx;
+      force[offset + 1] += fy;
+      force[offset + 2] += fz;
+      loadResultant[0] += fx;
+      loadResultant[1] += fy;
+      loadResultant[2] += fz;
+    }
+  }
+
+  // 5) Overdamped integration (low-Reynolds): x ← x + (dt/γ)·F, with a per-step
   //    displacement cap for safety against any transient force spike.
   const scale = dt / sim.gamma;
   const cap = sim.radius * 0.015;
@@ -759,6 +817,21 @@ export function stepMembrane(sim: MembraneSim, dt: number): void {
   }
   enforceWholeCellMembraneGeometry(sim);
   computeNormals(sim);
+  const metrics = membraneGeometryMetrics(sim);
+  const areaStrain = Math.max(0, metrics.areaRatio - 1);
+  return {
+    externalLoadApplied: externalLoad !== undefined,
+    dimensionlessExternalLoadResultant: loadResultant,
+    physicalForceN: null,
+    areaRatio: metrics.areaRatio,
+    volumeRatio: metrics.volumeRatio,
+    engineeringAreaGuardUtilization:
+      areaStrain / MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT,
+    engineeringAreaGuardExceeded:
+      metrics.areaRatio >
+      1 + MEMBRANE_ELASTIC_AREA_STRAIN_LIMIT + 1e-6,
+    quantitativeHealthyPhhMechanicsEnabled: false
+  };
 }
 
 function enforceWholeCellMembraneGeometry(sim: MembraneSim): void {
