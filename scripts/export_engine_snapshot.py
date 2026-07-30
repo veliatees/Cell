@@ -78,6 +78,10 @@ from cell_engine.quantitative.cytoplasm_dynamics import (
     CYTOPLASM_DYNAMICS_SOURCES,
     cytoplasm_dynamics_snapshot,
 )
+from cell_engine.quantitative.organelle_instance_vitality import (
+    VITALITY_SOURCES,
+    organelle_instance_vitality_snapshot,
+)
 from cell_engine.quantitative.homeostasis_v3 import HOMEOSTASIS_V3_SOURCES, human_nutritional_homeostasis_v3_snapshot
 from cell_engine.quantitative.endocrine import ENDOCRINE_SOURCES, human_endocrine_context_snapshot
 from cell_engine.quantitative.published_glucose_model import (
@@ -433,6 +437,7 @@ def main() -> None:
                     **CYTOSOL_TRANSPORT_SOURCES,
                     **METABOLIC_CONSTRAINT_SOURCES,
                     **PLACEMENT_SOURCES,
+                    **VITALITY_SOURCES,
                     **phh_baseline.sources,
                 }),
                 "phh_baseline": {
@@ -509,6 +514,7 @@ def main() -> None:
                 "spatial_world": spatial_world_snapshot(spatial_world),
                 "organelle_placement": organelle_placement_snapshot(),
                 "cytoplasm_dynamics": cytoplasm_dynamics_snapshot(),
+                "organelle_instance_vitality": organelle_instance_vitality_snapshot(),
                 "physical_validation": physical_validation_snapshot(),
                 "intercellular_communication": hepatocyte_communication_snapshot(spatial_world),
                 "brian2_communication": brian2_communication_snapshot(),
