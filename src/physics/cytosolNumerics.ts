@@ -168,6 +168,7 @@ export const CYTOSOL_NUMERICAL_CONTRACT = Object.freeze({
   quantitativePoroelasticSolver: false,
   reactionCouplingEnabled: false,
   membranePressureFeedbackEnabled: false,
+  dimensionlessPressureSamplingEnabled: true,
   boundaryReactionRole: "dimensionless_diagnostic_pending_PHH_mechanics"
 });
 
@@ -1413,6 +1414,48 @@ export class CytosolProjectionGrid {
     target[offset + 1] = vy / weightSum;
     target[offset + 2] = vz / weightSum;
     return true;
+  }
+
+  sampleDimensionlessPressure(x: number, y: number, z: number): number | null {
+    if (![x, y, z].every(Number.isFinite)) {
+      throw new RangeError("pressure sample must be finite");
+    }
+    const gx = (x + this.halfExtent) / this.spacing - 0.5;
+    const gy = (y + this.halfExtent) / this.spacing - 0.5;
+    const gz = (z + this.halfExtent) / this.spacing - 0.5;
+    const i0 = Math.floor(gx);
+    const j0 = Math.floor(gy);
+    const k0 = Math.floor(gz);
+    if (
+      i0 < 0 ||
+      j0 < 0 ||
+      k0 < 0 ||
+      i0 >= this.resolution - 1 ||
+      j0 >= this.resolution - 1 ||
+      k0 >= this.resolution - 1
+    ) {
+      return null;
+    }
+    const tx = gx - i0;
+    const ty = gy - j0;
+    const tz = gz - k0;
+    let pressure = 0;
+    let weightSum = 0;
+    for (let dz = 0; dz <= 1; dz += 1) {
+      for (let dy = 0; dy <= 1; dy += 1) {
+        for (let dx = 0; dx <= 1; dx += 1) {
+          const index = this.index(i0 + dx, j0 + dy, k0 + dz);
+          if (!this.fluidMask[index]) continue;
+          const weight =
+            (dx ? tx : 1 - tx) *
+            (dy ? ty : 1 - ty) *
+            (dz ? tz : 1 - tz);
+          pressure += this.pressure[index] * weight;
+          weightSum += weight;
+        }
+      }
+    }
+    return weightSum > 1e-12 ? pressure / weightSum : null;
   }
 
   cellCenter(index: number, target: Float32Array, offset = 0): void {
