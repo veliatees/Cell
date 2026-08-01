@@ -98,36 +98,40 @@ export type EngineCytoplasmDynamics = {
   source_ids: string[];
 };
 
-// Per-instance organelle vitality (see engine organelle_instance_vitality.py):
-// each individual body's own leaky-integrator "will-to-live", so one mitochondrion
-// can thrive while its neighbour declines. Visual/kinematic — never a reaction
-// authority (is_reaction_transport_authority is always false); magnitudes schematic.
+// Per-instance organelle evidence scaffold. Stable body identities are retained,
+// but healthy-adult PHH vitality, age, turnover and clearance measurements remain
+// null and cannot affect runtime geometry or transport.
 export type EngineOrganelleVitalityModel = {
   organelle_id: string;
-  baseline_vitality: number;
-  initial_vitality_spread: number;
-  mean_turnover_age_h: number;
-  recovery_time_constant_h: number;
-  stress_sensitivity: number;
-  clearance_vitality_threshold: number;
-  turns_over: boolean;
+  baseline_vitality: number | null;
+  initial_vitality_spread: number | null;
+  mean_turnover_age_h: number | null;
+  recovery_time_constant_h: number | null;
+  stress_sensitivity: number | null;
+  clearance_vitality_threshold: number | null;
+  turns_over: boolean | null;
+  quantitative_runtime_enabled: boolean;
 };
 
 export type EngineOrganelleInstanceVitality = {
   organelle_id: string;
   index: number;
-  vitality: number;
-  health: number;
-  age_h: number;
-  decline_susceptibility: number;
+  vitality: number | null;
+  health: number | null;
+  age_h: number | null;
+  decline_susceptibility: number | null;
 };
 
 export type EngineOrganelleInstanceVitalityField = {
   version: string;
   is_reaction_transport_authority: boolean;
+  quantitative_runtime_enabled: boolean;
+  runtime_geometry_coupling_enabled: boolean;
   models: EngineOrganelleVitalityModel[];
   instances: EngineOrganelleInstanceVitality[];
   instance_count_by_organelle: Record<string, number>;
+  quantitative_model_parameter_count: number;
+  quantified_instance_count: number;
   honesty_status: string;
   grounded: string[];
   not_grounded: string[];

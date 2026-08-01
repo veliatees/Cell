@@ -166,6 +166,8 @@ linked to its dependencies.
 - Browser runtime workload and cadence policy: `milestones/159-browser-runtime-workload-cadence-v1.md`
 - Two-way dimensionless organelle/cytosol-to-membrane loading with fail-closed
   healthy-PHH force limits: `milestones/163-intracellular-boundary-mechanics-v1.md`
+- Stable per-organelle identities with null quantitative state, fail-closed
+  runtime authority and unified geometry: `milestones/164-organelle-instance-evidence-firewall-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`
