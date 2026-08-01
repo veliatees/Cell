@@ -108,9 +108,7 @@ import type {
   EngineSurfaceDeformationState,
   EngineSnapshotSummary,
   EngineOrganelleBody,
-  EngineCytoplasmDynamics,
-  EngineOrganelleInstanceVitality,
-  EngineOrganelleVitalityModel
+  EngineCytoplasmDynamics
 } from "./engineSnapshot";
 import { CytoplasmFlowField } from "./physics/cytoplasmFlow";
 import { engineSnapshotEndpointFromLocation } from "./engineSnapshotEndpoint";
@@ -1150,13 +1148,9 @@ type OrganellePopulation = {
   scale: Float32Array; // count
   offset: Float32Array; // 3 * count, current random-walk displacement from base
   thermVel: Float32Array; // 3 * count, Ornstein-Uhlenbeck thermal velocity (world/s), correlated
-  vitality: Float32Array; // count, per-instance "will-to-live" 0..1 (engine-authored heterogeneity)
-  vitalityTarget: Float32Array; // count, each body's own set-point it fluctuates around
-  declineSus: Float32Array; // count, per-instance fragility multiplier (~1)
-  vitalityModel: EngineOrganelleVitalityModel | null; // per-type vitality dynamics
   cage: Float32Array; // count, max displacement radius (< neighbour clearance)
   step: number; // per-frame random increment (world units)
-  bright: Float32Array; // count, per-instance brightness (independent random walk)
+  bright: Float32Array; // count, stable per-instance optical variation
   brightStep: number; // zero disables ungrounded activity-like blinking
   obstacleShape: "sphere" | "capsule";
   obstacleRadius: number;
@@ -1174,15 +1168,6 @@ let cytoplasmFlow: CytoplasmFlowField | null = null;
 let cytoplasmActiveSpeedWorldPerS = 0; // grounded active-transport speed, world units/s
 let cytoplasmWorldPerUm = 1;
 let cytoplasmDiffusionByOrganelle: Record<string, number> = {}; // engine id -> um^2/s
-// Per-instance organelle vitality (engine organelle_instance_vitality.py): each
-// body's own "will-to-live". Indexed engine id -> instances (by body index) and
-// the per-type dynamics model. Drives per-instance brightness + motion liveliness.
-let organelleVitalityByOrganelle: Record<string, EngineOrganelleInstanceVitality[]> = {};
-let organelleVitalityModelByOrganelle: Record<string, EngineOrganelleVitalityModel> = {};
-// Latest engine per-type organelle health (0..1), keyed by engine organelle id.
-// Lets each body's vitality set-point track its organelle type's real state: when
-// the engine says mitochondria are failing, those bodies visibly dim and slow.
-let organelleVitalityHealthById: Record<string, number> = {};
 let lastCytoplasmMotionT = 0;
 let lastOrganelleMotionT = 0;
 const _cytoFlow = { x: 0, y: 0, z: 0 };
@@ -3324,10 +3309,6 @@ const SQRT3 = 1.7320508075688772;
 // tremble: real organelles sit nearly still and drift/run smoothly. Disclosed
 // visual time constant, not a measured value.
 const CYTO_THERMAL_CORRELATION_S = 0.8;
-// Disclosed visual timescale over which each organelle's own vitality fluctuates
-// around its engine-authored set-point. The magnitude is schematic (the engine
-// flags it non-authoritative); it only animates per-instance look/liveliness.
-const VITALITY_FLUX_TAU_S = 26;
 // Resolve a drawn organelle against the current membrane triangles. The body is
 // reflected into the admissible domain while the equal-and-opposite numerical
 // penalty is queued for the next membrane step. Physical force remains unknown.
@@ -3383,26 +3364,6 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
       let oz = pop.offset[i * 3 + 2];
       const bx = pop.basePos[i * 3], by = pop.basePos[i * 3 + 1], bz = pop.basePos[i * 3 + 2];
       const mf = membraneCoupledFactor(bx, by, bz, t);
-      // Each body's own life: fluctuate its vitality around its engine-authored
-      // set-point (Ornstein-Uhlenbeck), amplitude scaled by per-instance fragility.
-      // Low vitality => dimmer and more sluggish, so individuals visibly differ.
-      let vit = pop.vitality[i];
-      if (dt > 0) {
-        const decayV = Math.exp(-dt / VITALITY_FLUX_TAU_S);
-        const amp = 0.12 * pop.declineSus[i];
-        // Set-point tracks this organelle TYPE's real engine health: when the
-        // type is failing, every body of it is pulled down (still around its own
-        // heterogeneous base), so an organelle problem visibly propagates.
-        const engineHealth = pop.vitalityModel
-          ? organelleVitalityHealthById[pop.vitalityModel.organelle_id] ?? 1
-          : 1;
-        const tgt = pop.vitalityTarget[i] * (0.35 + 0.65 * engineHealth);
-        vit = tgt + (vit - tgt) * decayV
-          + (Math.random() * 2 - 1) * amp * SQRT3 * Math.sqrt(Math.max(0, 1 - decayV * decayV));
-        vit = vit < 0 ? 0 : vit > 1 ? 1 : vit;
-        pop.vitality[i] = vit;
-      }
-      const vitFactor = 0.4 + 0.6 * vit; // sluggish when unwell
       // Overdamped, confined thermal motion as an Ornstein-Uhlenbeck velocity:
       // temporally correlated so it drifts smoothly instead of trembling every
       // frame, while the long-time diffusion still equals the engine's D. The
@@ -3422,13 +3383,13 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
       pop.thermVel[i * 3 + 2] = tvz;
       if (physical) {
         flow!.sampleInto(_cytoFlow, bx * mf + ox, by * mf + oy, bz * mf + oz, t);
-        ox += (_cytoFlow.x * activeSpeed + tvx) * dt * vitFactor;
-        oy += (_cytoFlow.y * activeSpeed + tvy) * dt * vitFactor;
-        oz += (_cytoFlow.z * activeSpeed + tvz) * dt * vitFactor;
+        ox += (_cytoFlow.x * activeSpeed + tvx) * dt;
+        oy += (_cytoFlow.y * activeSpeed + tvy) * dt;
+        oz += (_cytoFlow.z * activeSpeed + tvz) * dt;
       } else {
-        ox += tvx * dt * vitFactor;
-        oy += tvy * dt * vitFactor;
-        oz += tvz * dt * vitFactor;
+        ox += tvx * dt;
+        oy += tvy * dt;
+        oz += tvz * dt;
       }
       const cage = pop.cage[i];
       const d2 = ox * ox + oy * oy + oz * oz;
@@ -3453,12 +3414,10 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
       pop.offset[i * 3 + 1] = _popPos.y - coupledBaseY;
       pop.offset[i * 3 + 2] = _popPos.z - coupledBaseZ;
       _popQuat.set(pop.baseQuat[i * 4], pop.baseQuat[i * 4 + 1], pop.baseQuat[i * 4 + 2], pop.baseQuat[i * 4 + 3]);
-      // Vitality also drives size: a declining body shrinks, and once it drops
-      // below its type's clearance threshold it fades toward removal
-      // (mitophagy/pexophagy/autophagy) — a subtle, visible individual decline.
-      const clearance = pop.vitalityModel ? pop.vitalityModel.clearance_vitality_threshold : 0;
-      const dyingFade = clearance > 0 && vit < clearance ? Math.max(0.12, vit / clearance) : 1;
-      const sc = pop.scale[i] * (0.62 + 0.38 * vit) * dyingFade;
+      // The engine has no calibrated healthy-PHH per-organelle size-response law.
+      // Preserve the placement scale exactly so the rendered body, conservative
+      // membrane bound and cytosol obstacle describe one geometry.
+      const sc = pop.scale[i];
       _popScale.set(sc, sc, sc);
       _popMat.compose(_popPos, _popQuat, _popScale);
       pop.mesh.setMatrixAt(i, _popMat);
@@ -3475,10 +3434,7 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
           : pop.bright[i];
         const b = THREE.MathUtils.clamp(nextBrightness, 0.72, 1.12);
         pop.bright[i] = b;
-        // Modulate by the body's own vitality: a declining organelle reads dimmer.
-        const vitShade = 0.5 + 0.5 * vit;
-        const shaded = b * vitShade;
-        _popColor.setRGB(shaded, shaded, shaded);
+        _popColor.setRGB(b, b, b);
         pop.mesh.setColorAt(i, _popColor);
       }
     }
@@ -7583,25 +7539,18 @@ function buildOrganelleScene() {
   // a coherent active-stirring flow field (magnitude = measured WIF-B9 hepatocyte
   // transport speed) plus size-dependent thermal diffusion per organelle type.
   const cytoDyn: EngineCytoplasmDynamics | null = externalEngineSummary?.cytoplasmDynamics ?? null;
+  const organelleInstanceState = externalEngineSummary?.organelleInstanceVitality ?? null;
+  if (
+    organelleInstanceState?.quantitative_runtime_enabled ||
+    organelleInstanceState?.runtime_geometry_coupling_enabled
+  ) {
+    throw new Error(
+      "Per-instance organelle kinetics cannot drive the renderer without a calibrated healthy-PHH runtime law."
+    );
+  }
   cytoplasmWorldPerUm = 1 / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
   cytoplasmDiffusionByOrganelle = {};
   lastCytoplasmMotionT = 0;
-  // Index the engine's per-instance vitality by organelle id (bodies ordered by
-  // their engine index) plus the per-type dynamics model.
-  organelleVitalityByOrganelle = {};
-  organelleVitalityModelByOrganelle = {};
-  const vitalityField = externalEngineSummary?.organelleInstanceVitality ?? null;
-  if (vitalityField) {
-    for (const inst of vitalityField.instances) {
-      (organelleVitalityByOrganelle[inst.organelle_id] ??= []).push(inst);
-    }
-    for (const id of Object.keys(organelleVitalityByOrganelle)) {
-      organelleVitalityByOrganelle[id].sort((a, b) => a.index - b.index);
-    }
-    for (const model of vitalityField.models) {
-      organelleVitalityModelByOrganelle[model.organelle_id] = model;
-    }
-  }
   if (cytoDyn) {
     cytoplasmActiveSpeedWorldPerS = cytoDyn.active_transport_speed_um_s * cytoplasmWorldPerUm;
     for (const m of cytoDyn.organelle_motility) cytoplasmDiffusionByOrganelle[m.organelle_id] = m.thermal_diffusion_um2_s;
@@ -7897,21 +7846,6 @@ function buildOrganelleScene() {
     const offsetArr = new Float32Array(actual * 3); // starts at rest
     const thermVelArr = new Float32Array(actual * 3); // OU thermal velocity, starts at rest
     const currentPos = new Float32Array(actual * 3);
-    // Per-instance vitality: each body its own life. Pull the engine's authored
-    // heterogeneous values (by organelle id + body index); default healthy (1).
-    const engineId = kind ? ENGINE_KIND_TO_ID[kind] ?? null : null;
-    const vitalityInstances = engineId ? organelleVitalityByOrganelle[engineId] ?? null : null;
-    const vitalityModel = engineId ? organelleVitalityModelByOrganelle[engineId] ?? null : null;
-    const vitalityArr = new Float32Array(actual);
-    const vitalityTargetArr = new Float32Array(actual);
-    const declineSusArr = new Float32Array(actual);
-    for (let i = 0; i < actual; i += 1) {
-      const src = vitalityInstances ? vitalityInstances[i % vitalityInstances.length] : null;
-      const v = src ? src.vitality : 1;
-      vitalityArr[i] = v;
-      vitalityTargetArr[i] = v; // each body fluctuates around its own healthy set-point
-      declineSusArr[i] = src ? src.decline_susceptibility : 1;
-    }
     const bodyRadiusWorld = new Float32Array(actual);
     const contactFace = new Int32Array(actual);
     const cageArr = new Float32Array(actual);
@@ -7964,9 +7898,9 @@ function buildOrganelleScene() {
       : `${opts.label} View-dependent LOD draws a deterministic subset of this renderer pool.`;
     group.add(inst);
     if (kind) addPos(kind, centroid.multiplyScalar(1 / actual));
-    // NOTE: deliberately NOT added to the activity-glow buckets. A shared
-    // emissiveIntensity would make every organelle pulse in unison (unphysical);
-    // instead each instance's brightness does its own independent random walk.
+    // Per-instance colour is stable optical variation. The shared material may
+    // show the engine's aggregate organelle-type activity, but it is not an
+    // individual-organelle vitality or age measurement.
     organellePopulations.push({
       mesh: inst,
       visibleCount: {
@@ -7979,10 +7913,6 @@ function buildOrganelleScene() {
       scale: scaleArr,
       offset: offsetArr,
       thermVel: thermVelArr,
-      vitality: vitalityArr,
-      vitalityTarget: vitalityTargetArr,
-      declineSus: declineSusArr,
-      vitalityModel,
       cage: cageArr,
       step: opts.step ?? 0.03,
       bright: brightArr,
@@ -10361,14 +10291,6 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       // where the type is genuinely active.
       p.mat.emissiveIntensity = (0.34 + 0.55 * norm) * (0.4 + 0.6 * healthOf(p.kind)) * shimmer;
     }
-    // Publish per-type engine health so each body's vitality can track its
-    // organelle type's real state (engine id keys match pop.vitalityModel).
-    organelleVitalityHealthById = {
-      mitochondria: healthOf("mitochondria"),
-      lysosomes: healthOf("lysosome"),
-      peroxisomes: healthOf("peroxisome"),
-      nucleus: healthOf("nucleus")
-    };
     // --- Local cinematic dynamics ---
     // Schematic pulses make the renderer legible; they are not a Python-engine
     // calcium time series. The snapshot card above remains the authority.

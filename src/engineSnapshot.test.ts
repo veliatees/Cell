@@ -2796,3 +2796,50 @@ describe("cytoplasm dynamics (stochastic organelle motion basis)", () => {
     ).toBeNull();
   });
 });
+
+describe("per-instance organelle evidence firewall", () => {
+  const summary = summarizeEngineSnapshot(publicEngineSnapshot as unknown as EngineSnapshot, "/engine-snapshot.json");
+
+  it("retains stable organelle identities without inventing quantitative state", () => {
+    const field = summary.organelleInstanceVitality;
+    expect(field).not.toBeNull();
+    if (!field) return;
+    expect(field.version).toBe("organelle_instance_vitality_v2");
+    expect(field.instances).toHaveLength(1_901);
+    expect(field.quantitative_model_parameter_count).toBe(0);
+    expect(field.quantified_instance_count).toBe(0);
+    expect(field.quantitative_runtime_enabled).toBe(false);
+    expect(field.runtime_geometry_coupling_enabled).toBe(false);
+    expect(field.is_reaction_transport_authority).toBe(false);
+  });
+
+  it("keeps every unmeasured model parameter and per-body value null", () => {
+    const field = summary.organelleInstanceVitality;
+    if (!field) return;
+    for (const model of field.models) {
+      expect(model.baseline_vitality).toBeNull();
+      expect(model.initial_vitality_spread).toBeNull();
+      expect(model.mean_turnover_age_h).toBeNull();
+      expect(model.recovery_time_constant_h).toBeNull();
+      expect(model.stress_sensitivity).toBeNull();
+      expect(model.clearance_vitality_threshold).toBeNull();
+      expect(model.turns_over).toBeNull();
+      expect(model.quantitative_runtime_enabled).toBe(false);
+    }
+    for (const instance of field.instances) {
+      expect(instance.vitality).toBeNull();
+      expect(instance.health).toBeNull();
+      expect(instance.age_h).toBeNull();
+      expect(instance.decline_susceptibility).toBeNull();
+    }
+  });
+
+  it("returns null when the state omits the scaffold", () => {
+    expect(
+      summarizeEngineSnapshot(
+        snapshotWithRawState({ organelle_instance_vitality: undefined }),
+        "/no-organelle-instance-state.json"
+      ).organelleInstanceVitality
+    ).toBeNull();
+  });
+});

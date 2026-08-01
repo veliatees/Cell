@@ -64,6 +64,12 @@ biology rather than tuned to look right.
   winding and the conservative one-percent engineering area guard. Newtons,
   pascals and healthy-PHH sustainability thresholds remain null until the
   donor-resolved mechanics gate is satisfied.
+- **An organelle-instance evidence firewall** — 1,901 stable discrete-body
+  identities remain available for future longitudinal data, while all
+  unmeasured vitality, age, recovery, turnover and clearance fields are null.
+  Zero per-instance parameters or observations can affect motion, geometry,
+  transport or clearance. Rendered, membrane-contact and cytosol-obstacle scales
+  now share the placement geometry.
 - **A verified constraint-model software layer** — the checksum-pinned 43 MB
   Human-GEM v2.0.0 SBML/FBC artifact now streams into an exact sparse model
   representation with 55,198 stoichiometric terms, bounds, the generic biomass
@@ -557,6 +563,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 159: Browser runtime workload and cadence v1](docs/milestones/159-browser-runtime-workload-cadence-v1.md)
 - [Milestone 162: Human sinusoid cutaway visual v1](docs/milestones/162-human-sinusoid-cutaway-visual-v1.md)
 - [Milestone 163: Intracellular boundary mechanics v1](docs/milestones/163-intracellular-boundary-mechanics-v1.md)
+- [Milestone 164: Organelle instance evidence firewall v1](docs/milestones/164-organelle-instance-evidence-firewall-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)
