@@ -798,7 +798,13 @@ let proteinFieldSpin = 0;
 let organelleJiggleTargets:
   | { obj: THREE.Object3D; base: THREE.Vector3; seed: number; offset: THREE.Vector3; thermVel: THREE.Vector3 }[]
   | null = null;
-const ORGANELLE_JIGGLE_RE = /mitochond|lysosome|peroxisome|ribosome|golgi|vesicle|granule|endosome|cargo/i;
+// Every intracellular organelle single is carried by the shared cytoplasm flow.
+// Includes the large anchored structures (ER network, centrosome) so nothing
+// inside the cell sits frozen; the small cage keeps big structures gently swaying
+// rather than drifting. (Extracellular structures — sinusoid, canaliculus, tight
+// junctions — and membrane-embedded proteins are deliberately excluded: they ride
+// the membrane or the vessel, not the cytoplasm.)
+const ORGANELLE_JIGGLE_RE = /mitochond|lysosome|peroxisome|ribosome|golgi|vesicle|granule|endosome|cargo|reticulum|centrosome|centriole/i;
 let livingCell: LivingCell | null = null; // the metabolic model behind the organelle scene
 const organelleMitos: THREE.Mesh[] = []; // mitochondria meshes (glow with ATP production)
 let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by cell status)
