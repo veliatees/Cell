@@ -798,6 +798,19 @@ let proteinFieldSpin = 0;
 let organelleJiggleTargets:
   | { obj: THREE.Object3D; base: THREE.Vector3; seed: number; offset: THREE.Vector3; thermVel: THREE.Vector3 }[]
   | null = null;
+// Instanced stores (glycogen rosettes, lipid droplets) whose per-instance matrices
+// are baked at build time. To make them move WITH the cytoplasm like every other
+// organelle, each registers its base positions + scales here and its matrices are
+// re-advected each frame by the shared flow field + correlated (OU) thermal wobble.
+type InstancedFlowTarget = {
+  mesh: THREE.InstancedMesh;
+  base: Float32Array; // 3 * n
+  scale: Float32Array; // n
+  offset: Float32Array; // 3 * n
+  thermVel: Float32Array; // 3 * n
+  cage: number; // max displacement (world units) — small, keeps clusters coherent
+};
+let instancedFlowTargets: InstancedFlowTarget[] = [];
 // Every intracellular organelle single is carried by the shared cytoplasm flow.
 // Includes the large anchored structures (ER network, centrosome) so nothing
 // inside the cell sits frozen; the small cage keeps big structures gently swaying
@@ -4143,6 +4156,51 @@ function updateOrganelleMotion(t: number) {
   }
 }
 
+// Advect baked-matrix instanced stores (glycogen rosettes, lipid droplets) by the
+// shared cytoplasm flow + correlated (OU) thermal wobble, so they move with the
+// cytoplasm like every other organelle instead of sitting frozen. Only the
+// currently visible instances ([0, count)) are updated (glycogen count tracks the
+// engine's real store level).
+function updateInstancedFlowTargets(dt: number, tNow: number) {
+  if (instancedFlowTargets.length === 0) return;
+  const jdt = Math.min(Math.max(dt, 0), 0.1);
+  if (jdt <= 0) return;
+  const flow = cytoplasmFlow;
+  const active = cytoplasmActiveSpeedWorldPerS;
+  const decay = Math.exp(-jdt / CYTO_THERMAL_CORRELATION_S);
+  const gain = (0.045 / CYTO_THERMAL_CORRELATION_S) * SQRT3 * Math.sqrt(Math.max(0, 1 - decay * decay));
+  _popQuat.identity();
+  for (const tgt of instancedFlowTargets) {
+    const n = Math.min(tgt.mesh.count, tgt.scale.length);
+    const cage2 = tgt.cage * tgt.cage;
+    for (let i = 0; i < n; i += 1) {
+      const bx = tgt.base[i * 3], by = tgt.base[i * 3 + 1], bz = tgt.base[i * 3 + 2];
+      let ox = tgt.offset[i * 3], oy = tgt.offset[i * 3 + 1], oz = tgt.offset[i * 3 + 2];
+      const tvx = tgt.thermVel[i * 3] * decay + (Math.random() * 2 - 1) * gain;
+      const tvy = tgt.thermVel[i * 3 + 1] * decay + (Math.random() * 2 - 1) * gain;
+      const tvz = tgt.thermVel[i * 3 + 2] * decay + (Math.random() * 2 - 1) * gain;
+      tgt.thermVel[i * 3] = tvx; tgt.thermVel[i * 3 + 1] = tvy; tgt.thermVel[i * 3 + 2] = tvz;
+      if (flow && active > 0) {
+        flow.sampleInto(_cytoFlow, bx + ox, by + oy, bz + oz, tNow);
+        ox += (_cytoFlow.x * active + tvx) * jdt;
+        oy += (_cytoFlow.y * active + tvy) * jdt;
+        oz += (_cytoFlow.z * active + tvz) * jdt;
+      } else {
+        ox += tvx * jdt; oy += tvy * jdt; oz += tvz * jdt;
+      }
+      const c2 = ox * ox + oy * oy + oz * oz;
+      if (c2 > cage2) { const s = tgt.cage / Math.sqrt(c2); ox *= s; oy *= s; oz *= s; }
+      tgt.offset[i * 3] = ox; tgt.offset[i * 3 + 1] = oy; tgt.offset[i * 3 + 2] = oz;
+      const sc = tgt.scale[i];
+      _popPos.set(bx + ox, by + oy, bz + oz);
+      _popScale.set(sc, sc, sc);
+      _popMat.compose(_popPos, _popQuat, _popScale);
+      tgt.mesh.setMatrixAt(i, _popMat);
+    }
+    tgt.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+
 function createDivisionOverlay(): DivisionOverlay {
   const group = new THREE.Group();
   group.name = "Model-backed mitotic apparatus";
@@ -7468,6 +7526,7 @@ function buildOrganelleScene() {
   clearIonVisuals();
   clearWaterVisuals();
 
+  instancedFlowTargets = [];
   organelleMitos.length = 0;
   organelleMembrane = null;
   membraneSim = null;
@@ -9201,11 +9260,17 @@ function buildOrganelleScene() {
         CELL_R,
         HUMAN_NC_3D_LIPID_DROPLET_VOLUME_FRACTION
       );
+      const lipBase = new Float32Array(lipidTotal * 3);
+      const lipScale = new Float32Array(lipidTotal);
       for (let i = 0; i < lipidTotal; i += 1) {
         const sc = displayScales[i];
         ls.set(sc, sc, sc);
         lm.compose(lipidPositions[i], lq, ls);
         lipidInstanced.setMatrixAt(i, lm);
+        lipBase[i * 3] = lipidPositions[i].x;
+        lipBase[i * 3 + 1] = lipidPositions[i].y;
+        lipBase[i * 3 + 2] = lipidPositions[i].z;
+        lipScale[i] = sc;
         fluidSupplementalStaticObstacles.push({
           id: `lipid-droplet-${i}`,
           kind: "sphere",
@@ -9214,6 +9279,13 @@ function buildOrganelleScene() {
         });
       }
       lipidInstanced.instanceMatrix.needsUpdate = true;
+      // Lipid droplets drift gently with the cytoplasm too (larger cage than the
+      // tiny glycogen granules).
+      instancedFlowTargets.push({
+        mesh: lipidInstanced, base: lipBase, scale: lipScale,
+        offset: new Float32Array(lipidTotal * 3), thermVel: new Float32Array(lipidTotal * 3),
+        cage: 0.32
+      });
       lipidInstanced.userData.label = "Lipid droplets - ER-derived neutral-lipid stores bounded by a phospholipid monolayer. Combined display volume is normalized to the 0.507807% normal-control human 3D median from Segovia-Miranda et al.; sample count and size variation are renderer-only, and no nutrition-dependent PHH response law is asserted.";
       lipidInstanced.userData.hoverKind = "communication-organelle";
       group.add(lipidInstanced);
@@ -9543,13 +9615,26 @@ function buildOrganelleScene() {
     const gm = new THREE.Matrix4();
     const gq = new THREE.Quaternion();
     const gs = new THREE.Vector3();
+    const glyBase = new Float32Array(glycogenTotal * 3);
+    const glyScale = new Float32Array(glycogenTotal);
     for (let i = 0; i < glycogenTotal; i += 1) {
       const sc = 0.8 + rnd() * 0.7;
       gs.set(sc, sc, sc);
       gm.compose(glycogenPositions[i], gq, gs);
       glycogenInstanced.setMatrixAt(i, gm);
+      glyBase[i * 3] = glycogenPositions[i].x;
+      glyBase[i * 3 + 1] = glycogenPositions[i].y;
+      glyBase[i * 3 + 2] = glycogenPositions[i].z;
+      glyScale[i] = sc;
     }
     glycogenInstanced.instanceMatrix.needsUpdate = true;
+    // Rosettes drift coherently with the cytoplasm (granules in a cluster sample
+    // the flow at nearly the same point); small cage keeps clusters together.
+    instancedFlowTargets.push({
+      mesh: glycogenInstanced, base: glyBase, scale: glyScale,
+      offset: new Float32Array(glycogenTotal * 3), thermVel: new Float32Array(glycogenTotal * 3),
+      cage: 0.22
+    });
     glycogenInstanced.userData.label = "Glycogen rosettes - cytosolic β-particles (clustered into α-particle rosettes) that are the hepatocyte's glucose store, packed among the organelles beside the smooth ER. The number shown tracks the engine's real glycogen level: it fills after feeding and mobilises during fasting.";
     glycogenInstanced.userData.hoverKind = "communication-organelle";
     group.add(glycogenInstanced);
@@ -10226,6 +10311,8 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       if (tgt.offset.lengthSq() > jCage * jCage) tgt.offset.setLength(jCage);
       tgt.obj.position.set(b.x + tgt.offset.x, b.y + tgt.offset.y, b.z + tgt.offset.z);
     }
+    // Glycogen rosettes + lipid droplets (baked-matrix instanced stores) drift too.
+    updateInstancedFlowTargets(realDeltaS, tNow);
   }
 
   if (livingCell && running) {
