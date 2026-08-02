@@ -795,7 +795,9 @@ let proteinFieldGroup: THREE.Group | null = null; // per-voxel protein populatio
 let proteinFieldSpin = 0;
 // Organelles that get a gentle Brownian jiggle (real organelles are never still:
 // motor transport on cytoskeletal tracks + thermal motion). Cached once per scene.
-let organelleJiggleTargets: { obj: THREE.Object3D; base: THREE.Vector3; seed: number }[] | null = null;
+let organelleJiggleTargets:
+  | { obj: THREE.Object3D; base: THREE.Vector3; seed: number; offset: THREE.Vector3; thermVel: THREE.Vector3 }[]
+  | null = null;
 const ORGANELLE_JIGGLE_RE = /mitochond|lysosome|peroxisome|ribosome|golgi|vesicle|granule|endosome|cargo/i;
 let livingCell: LivingCell | null = null; // the metabolic model behind the organelle scene
 const organelleMitos: THREE.Mesh[] = []; // mitochondria meshes (glow with ATP production)
@@ -10174,27 +10176,49 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     const growthScale = visualRadiusScaleFromBiomass(cellCycle.biomass);
     organelleGroup.scale.setScalar(growthScale);
 
-    // Per-organelle Brownian jiggle: organelles are never still in a real cell.
-    // Built once (cheap), then a few sin() per organelle per frame -- CPU-light.
+    // Every remaining organelle single (ribosome clusters, Golgi, peroxisomes,
+    // vesicles, granules, endosomes, cargo) is carried by the SAME shared
+    // incompressible cytoplasm flow field + correlated (Ornstein-Uhlenbeck)
+    // thermal wobble as the instanced populations and tracked singles -- no
+    // deterministic sin() cheap trick, and it means these organelles are actually
+    // moved by the cytoplasm, streaming together with their neighbours.
     if (organelleJiggleTargets === null) {
       organelleJiggleTargets = [];
-      let n = 0;
       organelleGroup.traverse((o) => {
         if (o instanceof THREE.InstancedMesh || o instanceof THREE.Points) return;
         if (ORGANELLE_JIGGLE_RE.test((o.userData?.label as string) ?? "")) {
-          organelleJiggleTargets!.push({ obj: o, base: o.position.clone(), seed: (n++) * 0.61 });
+          organelleJiggleTargets!.push({
+            obj: o, base: o.position.clone(), seed: organelleJiggleTargets!.length * 0.61,
+            offset: new THREE.Vector3(), thermVel: new THREE.Vector3()
+          });
         }
       });
     }
-    const tJ = tNow;
-    for (const t of organelleJiggleTargets) {
-      const { base: b, seed: s } = t;
-      const a = 0.055; // small, in cell-radius display units
-      t.obj.position.set(
-        b.x + Math.sin(tJ * 0.9 + s) * a + Math.sin(tJ * 2.4 + s * 1.4) * a * 0.35,
-        b.y + Math.sin(tJ * 0.75 + s * 1.7) * a + Math.sin(tJ * 2.0 + s) * a * 0.35,
-        b.z + Math.sin(tJ * 1.05 + s * 0.6) * a,
+    const jDt = Math.min(Math.max(realDeltaS, 0), 0.1);
+    const jFlow = cytoplasmFlow;
+    const jActive = cytoplasmActiveSpeedWorldPerS;
+    const jDecay = jDt > 0 ? Math.exp(-jDt / CYTO_THERMAL_CORRELATION_S) : 1;
+    const jGain = (0.05 / CYTO_THERMAL_CORRELATION_S) * SQRT3 * Math.sqrt(Math.max(0, 1 - jDecay * jDecay));
+    const jCage = 0.09; // small, in cell-radius display units
+    for (const tgt of organelleJiggleTargets) {
+      const b = tgt.base;
+      tgt.thermVel.set(
+        tgt.thermVel.x * jDecay + (Math.random() * 2 - 1) * jGain,
+        tgt.thermVel.y * jDecay + (Math.random() * 2 - 1) * jGain,
+        tgt.thermVel.z * jDecay + (Math.random() * 2 - 1) * jGain
       );
+      if (jFlow && jActive > 0) {
+        jFlow.sampleInto(_cytoFlow, b.x + tgt.offset.x, b.y + tgt.offset.y, b.z + tgt.offset.z, tNow);
+        tgt.offset.x += (_cytoFlow.x * jActive + tgt.thermVel.x) * jDt;
+        tgt.offset.y += (_cytoFlow.y * jActive + tgt.thermVel.y) * jDt;
+        tgt.offset.z += (_cytoFlow.z * jActive + tgt.thermVel.z) * jDt;
+      } else {
+        tgt.offset.x += tgt.thermVel.x * jDt;
+        tgt.offset.y += tgt.thermVel.y * jDt;
+        tgt.offset.z += tgt.thermVel.z * jDt;
+      }
+      if (tgt.offset.lengthSq() > jCage * jCage) tgt.offset.setLength(jCage);
+      tgt.obj.position.set(b.x + tgt.offset.x, b.y + tgt.offset.y, b.z + tgt.offset.z);
     }
   }
 
