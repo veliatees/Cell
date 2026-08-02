@@ -811,13 +811,9 @@ type InstancedFlowTarget = {
   cage: number; // max displacement (world units) — small, keeps clusters coherent
 };
 let instancedFlowTargets: InstancedFlowTarget[] = [];
-// Every intracellular organelle single is carried by the shared cytoplasm flow.
-// Includes the large anchored structures (ER network, centrosome) so nothing
-// inside the cell sits frozen; the small cage keeps big structures gently swaying
-// rather than drifting. (Extracellular structures — sinusoid, canaliculus, tight
-// junctions — and membrane-embedded proteins are deliberately excluded: they ride
-// the membrane or the vessel, not the cytoplasm.)
-const ORGANELLE_JIGGLE_RE = /mitochond|lysosome|peroxisome|ribosome|golgi|vesicle|granule|endosome|cargo|reticulum|centrosome|centriole/i;
+// (Intracellular cytoplasm-drift coverage is now a catch-all over every drawable
+// body under the cell with a small exclusion set — see buildOrganelleScene's
+// render loop — so no inclusion regex is needed here.)
 let livingCell: LivingCell | null = null; // the metabolic model behind the organelle scene
 const organelleMitos: THREE.Mesh[] = []; // mitochondria meshes (glow with ATP production)
 let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by cell status)
@@ -10279,14 +10275,47 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     // moved by the cytoplasm, streaming together with their neighbours.
     if (organelleJiggleTargets === null) {
       organelleJiggleTargets = [];
-      organelleGroup.traverse((o) => {
-        if (o instanceof THREE.InstancedMesh || o instanceof THREE.Points) return;
-        if (ORGANELLE_JIGGLE_RE.test((o.userData?.label as string) ?? "")) {
-          organelleJiggleTargets!.push({
-            obj: o, base: o.position.clone(), seed: organelleJiggleTargets!.length * 0.61,
-            offset: new THREE.Vector3(), thermVel: new THREE.Vector3()
-          });
+      // Catch-all: EVERY intracellular body drifts with the cytoplasm. We include
+      // every Mesh / InstancedMesh / Points under the cell and exclude only what
+      // must not stream: (1) the cytoskeleton and cutaway edges — they are
+      // Line/LineSegments, so they are naturally excluded (not Mesh/Points), and
+      // biologically they move the cytoplasm rather than the reverse; (2) the
+      // deformable plasma membrane (by reference); (3) membrane-embedded proteins
+      // and extracellular structures (by label); (4) bodies already driven per
+      // instance by another system (instanced populations, glycogen/lipid stores,
+      // tracked singles). Everything else — organelle bodies, ER, centrosome, mRNA,
+      // ribosomes, cytosolic solutes, vesicle/cargo clouds — is carried by the flow.
+      const handled = new Set<THREE.Object3D>();
+      if (organelleMembrane) handled.add(organelleMembrane);
+      // Overlay / external-body layers are diagnostic, not cytoplasm — prune their
+      // whole subtrees (ancestorDrives picks up children).
+      if (organelleInteractionLayer) handled.add(organelleInteractionLayer);
+      if (organelleVoxelOverlay) handled.add(organelleVoxelOverlay);
+      for (const p of organellePopulations) handled.add(p.mesh);
+      for (const t of instancedFlowTargets) handled.add(t.mesh);
+      for (const m of organelleMotions) handled.add(m.object);
+      const STATIC_RE = /plasma|receptor|carrier|pump|channel|aquaporin|glycoprotein|adhesion|integral membrane|membrane collar|lipid head|lipid tail|sinusoid|disse|lsec|endothelial|fenestra|sieve|canaliculus|bile|apical|tight.?junction|microvill|halo/i;
+      const isDrawable = (o: THREE.Object3D): boolean =>
+        (o as THREE.Mesh).isMesh === true || (o as THREE.Points).isPoints === true;
+      const isStatic = (o: THREE.Object3D): boolean =>
+        STATIC_RE.test((o.userData?.label as string) ?? "");
+      // Only the TOPMOST drawable body in any chain is drifted; its sub-parts ride
+      // it rigidly. So skip an object if any ancestor is already a mover (a tracked
+      // single, or another drawable that will itself drift) — otherwise a child
+      // would double-move relative to its parent (e.g. cristae vs mitochondrion).
+      const ancestorDrives = (o: THREE.Object3D): boolean => {
+        for (let p = o.parent; p; p = p.parent) {
+          if (handled.has(p)) return true;
+          if (isDrawable(p) && !isStatic(p)) return true;
         }
+        return false;
+      };
+      organelleGroup.traverse((o) => {
+        if (!isDrawable(o) || handled.has(o) || isStatic(o) || ancestorDrives(o)) return;
+        organelleJiggleTargets!.push({
+          obj: o, base: o.position.clone(), seed: organelleJiggleTargets!.length * 0.61,
+          offset: new THREE.Vector3(), thermVel: new THREE.Vector3()
+        });
       });
     }
     const jDt = Math.min(Math.max(realDeltaS, 0), 0.1);
