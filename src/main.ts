@@ -4168,7 +4168,11 @@ function updateInstancedFlowTargets(dt: number, tNow: number) {
   const flow = cytoplasmFlow;
   const active = cytoplasmActiveSpeedWorldPerS;
   const decay = Math.exp(-jdt / CYTO_THERMAL_CORRELATION_S);
-  const gain = (0.045 / CYTO_THERMAL_CORRELATION_S) * SQRT3 * Math.sqrt(Math.max(0, 1 - decay * decay));
+  // Keep the INDEPENDENT thermal wobble small so a rosette/cluster doesn't scatter;
+  // the coherent active-transport advection (below) is what carries them, and it
+  // moves neighbours together (they sample the same flow), so a larger cage lets
+  // the cytoplasm visibly stream them without tearing clusters apart.
+  const gain = (0.02 / CYTO_THERMAL_CORRELATION_S) * SQRT3 * Math.sqrt(Math.max(0, 1 - decay * decay));
   _popQuat.identity();
   for (const tgt of instancedFlowTargets) {
     const n = Math.min(tgt.mesh.count, tgt.scale.length);
@@ -9284,7 +9288,7 @@ function buildOrganelleScene() {
       instancedFlowTargets.push({
         mesh: lipidInstanced, base: lipBase, scale: lipScale,
         offset: new Float32Array(lipidTotal * 3), thermVel: new Float32Array(lipidTotal * 3),
-        cage: 0.32
+        cage: 0.7
       });
       lipidInstanced.userData.label = "Lipid droplets - ER-derived neutral-lipid stores bounded by a phospholipid monolayer. Combined display volume is normalized to the 0.507807% normal-control human 3D median from Segovia-Miranda et al.; sample count and size variation are renderer-only, and no nutrition-dependent PHH response law is asserted.";
       lipidInstanced.userData.hoverKind = "communication-organelle";
@@ -9633,7 +9637,7 @@ function buildOrganelleScene() {
     instancedFlowTargets.push({
       mesh: glycogenInstanced, base: glyBase, scale: glyScale,
       offset: new Float32Array(glycogenTotal * 3), thermVel: new Float32Array(glycogenTotal * 3),
-      cage: 0.22
+      cage: 0.9
     });
     glycogenInstanced.userData.label = "Glycogen rosettes - cytosolic β-particles (clustered into α-particle rosettes) that are the hepatocyte's glucose store, packed among the organelles beside the smooth ER. The number shown tracks the engine's real glycogen level: it fills after feeding and mobilises during fasting.";
     glycogenInstanced.userData.hoverKind = "communication-organelle";
@@ -10290,7 +10294,10 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     const jActive = cytoplasmActiveSpeedWorldPerS;
     const jDecay = jDt > 0 ? Math.exp(-jDt / CYTO_THERMAL_CORRELATION_S) : 1;
     const jGain = (0.05 / CYTO_THERMAL_CORRELATION_S) * SQRT3 * Math.sqrt(Math.max(0, 1 - jDecay * jDecay));
-    const jCage = 0.09; // small, in cell-radius display units
+    // Longer leash so the cytoplasm visibly carries these organelles (the coherent
+    // flow streams neighbours together); still bounded so large anchored structures
+    // (ER network, centrosome) only sway rather than wander off.
+    const jCage = 0.28;
     for (const tgt of organelleJiggleTargets) {
       const b = tgt.base;
       tgt.thermVel.set(
