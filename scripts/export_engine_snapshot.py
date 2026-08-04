@@ -78,6 +78,10 @@ from cell_engine.quantitative.cytoplasm_dynamics import (
     CYTOPLASM_DYNAMICS_SOURCES,
     cytoplasm_dynamics_snapshot,
 )
+from cell_engine.quantitative.p53_dynamics import (
+    P53_DYNAMICS_SOURCES,
+    p53_dynamics_snapshot,
+)
 from cell_engine.quantitative.organelle_instance_vitality import (
     VITALITY_SOURCES,
     organelle_instance_vitality_snapshot,
@@ -438,6 +442,7 @@ def main() -> None:
                     **METABOLIC_CONSTRAINT_SOURCES,
                     **PLACEMENT_SOURCES,
                     **VITALITY_SOURCES,
+                    **P53_DYNAMICS_SOURCES,
                     **phh_baseline.sources,
                 }),
                 "phh_baseline": {
@@ -514,6 +519,7 @@ def main() -> None:
                 "spatial_world": spatial_world_snapshot(spatial_world),
                 "organelle_placement": organelle_placement_snapshot(),
                 "cytoplasm_dynamics": cytoplasm_dynamics_snapshot(),
+                "p53_dynamics": p53_dynamics_snapshot(),
                 "organelle_instance_vitality": organelle_instance_vitality_snapshot(),
                 "physical_validation": physical_validation_snapshot(),
                 "intercellular_communication": hepatocyte_communication_snapshot(spatial_world),

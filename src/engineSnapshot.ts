@@ -98,6 +98,39 @@ export type EngineCytoplasmDynamics = {
   source_ids: string[];
 };
 
+// Grounded p53-Mdm2 pulsatile fate module (see engine p53_dynamics.py). A
+// single-cell DNA-damage response: digital, frequency-encoded p53 pulses
+// (~5.5 h period) whose temporal pattern decides fate (pulsed -> recovery,
+// sustained -> senescence, irreparable -> apoptosis; p53-knockout ->
+// proliferation with unresolved damage). Never a reaction-transport authority.
+export type EngineP53FateResponse = {
+  scenario: string;
+  dna_damage_input: number;
+  p53_functional: boolean;
+  mdm2_inhibited: boolean;
+  n_pulses: number;
+  mean_pulse_period_h: number | null;
+  peak_p53: number;
+  sustained: boolean;
+  cumulative_p53: number;
+  cumulative_damage_exposure: number;
+  retained_damage: number;
+  fate: string;
+};
+
+export type EngineP53Dynamics = {
+  version: string;
+  is_reaction_transport_authority: boolean;
+  measured_pulse_period_h: number;
+  model_pulse_period_h: number | null;
+  responses: EngineP53FateResponse[];
+  honesty_status: string;
+  grounded: string[];
+  not_grounded: string[];
+  blockers: string[];
+  source_ids: string[];
+};
+
 // Per-instance organelle evidence scaffold. Stable body identities are retained,
 // but healthy-adult PHH vitality, age, turnover and clearance measurements remain
 // null and cannot affect runtime geometry or transport.
@@ -2467,6 +2500,7 @@ export type EngineSnapshot = {
     spatial_world?: EngineSpatialWorld;
     organelle_placement?: EngineOrganellePlacement;
     cytoplasm_dynamics?: EngineCytoplasmDynamics;
+    p53_dynamics?: EngineP53Dynamics;
     organelle_instance_vitality?: EngineOrganelleInstanceVitalityField;
     spatial_state?: EngineCellSpatialState | null;
     physical_validation?: EnginePhysicalValidation;
@@ -5234,6 +5268,7 @@ export type EngineSnapshotSummary = {
   spatialWorld: EngineSpatialWorld | null;
   organellePlacement: EngineOrganellePlacement | null;
   cytoplasmDynamics: EngineCytoplasmDynamics | null;
+  p53Dynamics: EngineP53Dynamics | null;
   organelleInstanceVitality: EngineOrganelleInstanceVitalityField | null;
   spatialState: EngineCellSpatialState | null;
   physicalValidation: EnginePhysicalValidation | null;
@@ -5629,6 +5664,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     spatialWorld: snapshot.state.spatial_world ?? null,
     organellePlacement: snapshot.state.organelle_placement ?? null,
     cytoplasmDynamics: snapshot.state.cytoplasm_dynamics ?? null,
+    p53Dynamics: snapshot.state.p53_dynamics ?? null,
     organelleInstanceVitality: snapshot.state.organelle_instance_vitality ?? null,
     spatialState: snapshot.state.spatial_state ?? null,
     physicalValidation: snapshot.state.physical_validation ?? null,

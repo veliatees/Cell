@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-08-01T19:40:30.457385+00:00",
+    "created_at_utc": "2026-08-04T23:21:07.563273+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -6925,6 +6925,14 @@
         "title": "Auto-Encoding Variational Bayes",
         "url": "https://arxiv.org/abs/1312.6114"
       },
+      "batchelor2008_atm_recurrent_initiation": {
+        "date_verified": "2026-08-05",
+        "id": "batchelor2008_atm_recurrent_initiation",
+        "notes": "Recurrent ATM re-activation (Wip1 negative feedback) keeps re-triggering p53 pulses while damage persists; motivates the damage-gated drive used here.",
+        "source_type": "primary_paper",
+        "title": "Recurrent initiation: a mechanism for triggering p53 pulses in response to DNA damage",
+        "url": "https://doi.org/10.1016/j.molcel.2008.03.016"
+      },
       "bi2006_human_schh_taurocholate_transport": {
         "date_verified": "2026-07-22",
         "id": "bi2006_human_schh_taurocholate_transport",
@@ -7004,6 +7012,14 @@
         "source_type": "primary_paper",
         "title": "ATP transport through VDAC and the VDAC-tubulin complex probed by equilibrium and nonequilibrium MD simulations",
         "url": "https://doi.org/10.1021/bi4011495"
+      },
+      "cilibertonovaktyson2005_p53mdm2_oscillations": {
+        "date_verified": "2026-08-05",
+        "id": "cilibertonovaktyson2005_p53mdm2_oscillations",
+        "notes": "Reduced ODE model in which saturated (Michaelis-Menten) Mdm2-mediated p53 degradation plus an Mdm2 nuclear-import delay generates the oscillations; the structural template for this module's equations.",
+        "source_type": "primary_model",
+        "title": "Steady states and oscillations in the p53/Mdm2 network",
+        "url": "https://doi.org/10.4161/cc.4.3.1548"
       },
       "cimadamore2023_slc25a4_exchange": {
         "date_verified": "2026-07-20",
@@ -7148,6 +7164,14 @@
         "source_type": "database",
         "title": "GEO Series GSE289636: primary human hepatocyte single-cell RNA-seq",
         "url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE289636"
+      },
+      "gevazatorsky2006_p53_oscillations": {
+        "date_verified": "2026-08-05",
+        "id": "gevazatorsky2006_p53_oscillations",
+        "notes": "Quantified p53/Mdm2 oscillations, mean period ~5.5 h, conserved across cells; period is the tightly conserved quantity, amplitude carries most variability.",
+        "source_type": "primary_paper",
+        "title": "Oscillations and variability in the p53 system",
+        "url": "https://doi.org/10.1038/msb4100068"
       },
       "gilibili2017_human_mrp2_probe_substrates": {
         "date_verified": "2026-07-22",
@@ -7653,6 +7677,14 @@
         "title": "Nanoscale Viscosity of Cytoplasm Is Conserved in Human Cell Lines",
         "url": "https://doi.org/10.1021/acs.jpclett.0c01748"
       },
+      "lahav2004_p53_mdm2_pulses": {
+        "date_verified": "2026-08-05",
+        "id": "lahav2004_p53_mdm2_pulses",
+        "notes": "Live single-cell imaging (MCF7): p53 responds to gamma irradiation in a series of discrete pulses of fixed amplitude/duration; the number of pulses increases with dose (digital, frequency-encoded). Not hepatocytes.",
+        "source_type": "primary_paper",
+        "title": "Dynamics of the p53-Mdm2 feedback loop in individual cells",
+        "url": "https://doi.org/10.1038/ng1293"
+      },
       "legacy_atp_exchange_fixture_v1": {
         "date_verified": "2026-07-20",
         "id": "legacy_atp_exchange_fixture_v1",
@@ -7876,6 +7908,14 @@
         "source_type": "primary_paper",
         "title": "Systematic analysis of protein turnover in primary cells",
         "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5814408/"
+      },
+      "purvis2012_p53_dynamics_control_fate": {
+        "date_verified": "2026-08-05",
+        "id": "purvis2012_p53_dynamics_control_fate",
+        "notes": "Pulsed p53 permits recovery; sustained p53 (Mdm2 inhibition) drives senescence. Fate is set by the temporal pattern, not the level -- basis for the fate split.",
+        "source_type": "primary_paper",
+        "title": "p53 dynamics control cell fate",
+        "url": "https://doi.org/10.1126/science.1218351"
       },
       "rawicz2000_bilayer_elasticity": {
         "date_verified": "2026-07-14",
@@ -17009,8 +17049,8 @@
           "observed_metrics": {
             "automatic_biological_parameter_activation_count": 0,
             "initial_js_chunk_count": 2,
-            "initial_js_gzip_bytes": 263542,
-            "initial_js_raw_bytes": 962426,
+            "initial_js_gzip_bytes": 264285,
+            "initial_js_raw_bytes": 964679,
             "maximum_initial_js_gzip_bytes": 275000,
             "maximum_initial_js_raw_bytes": 980000,
             "production_manifest_gate_count": 1,
@@ -67097,6 +67137,136 @@
         "risk_per_hour": 0.0,
         "transport_delay_s": 4.341
       }
+    },
+    "p53_dynamics": {
+      "blockers": [
+        "not a reaction-transport authority: sets no rate, diffusivity or concentration field",
+        "single-cell fate contract, not a validated clinical or hepatocyte-specific predictor"
+      ],
+      "grounded": [
+        "saturated-degradation negative-feedback oscillator mechanism (Ciliberto-Novak-Tyson 2005)",
+        "digital / frequency-encoded pulses, conserved ~5.5 h period (Lahav 2004, Geva-Zatorsky 2006)",
+        "recurrent ATM gating keeps pulses firing while damage persists (Batchelor 2008)",
+        "dynamics control fate: pulsed -> recovery, sustained -> senescence (Purvis 2012)",
+        "p53-knockout removes the checkpoint -> higher retained-damage exposure (known biology)"
+      ],
+      "honesty_status": "grounded_pulsatile_mechanism_and_fate_split_with_period_tuned_parameters",
+      "is_reaction_transport_authority": false,
+      "measured_pulse_period_h": 5.5,
+      "model_pulse_period_h": 5.711999999999873,
+      "not_grounded": [
+        "kinetic parameters tuned to the measured ~5.5 h period, NOT fit to hepatocyte p53 time courses",
+        "concentrations, damage and repair are normalised (dimensionless), not absolute molecule/DSB counts",
+        "fate thresholds are schematic decision boundaries informed by, not fit to, the fate studies"
+      ],
+      "responses": [
+        {
+          "cumulative_damage_exposure": 0.0,
+          "cumulative_p53": 8.252714662252957,
+          "dna_damage_input": 0.0,
+          "fate": "homeostatic_recovery",
+          "mdm2_inhibited": false,
+          "mean_pulse_period_h": null,
+          "n_pulses": 0,
+          "p53_functional": true,
+          "peak_p53": 0.13576372146832097,
+          "retained_damage": 0.0,
+          "scenario": "undamaged",
+          "sustained": false
+        },
+        {
+          "cumulative_damage_exposure": 3.0953385648461382,
+          "cumulative_p53": 12.552655589630554,
+          "dna_damage_input": 0.4,
+          "fate": "recovery_after_pulsed_arrest",
+          "mdm2_inhibited": false,
+          "mean_pulse_period_h": null,
+          "n_pulses": 1,
+          "p53_functional": true,
+          "peak_p53": 1.1590001477129952,
+          "retained_damage": 6.872059073832987e-05,
+          "scenario": "low_damage",
+          "sustained": false
+        },
+        {
+          "cumulative_damage_exposure": 10.95995216642639,
+          "cumulative_p53": 16.315142894561255,
+          "dna_damage_input": 1.5,
+          "fate": "recovery_after_pulsed_arrest",
+          "mdm2_inhibited": false,
+          "mean_pulse_period_h": 6.17199999999945,
+          "n_pulses": 3,
+          "p53_functional": true,
+          "peak_p53": 1.7927242615417702,
+          "retained_damage": 0.00022053319323549523,
+          "scenario": "moderate_damage",
+          "sustained": false
+        },
+        {
+          "cumulative_damage_exposure": 35.73981709732195,
+          "cumulative_p53": 20.263755977792872,
+          "dna_damage_input": 5.0,
+          "fate": "recovery_after_pulsed_arrest",
+          "mdm2_inhibited": false,
+          "mean_pulse_period_h": 5.711999999999873,
+          "n_pulses": 4,
+          "p53_functional": true,
+          "peak_p53": 1.8133774150608444,
+          "retained_damage": 0.0006147595712771938,
+          "scenario": "high_repairable_damage",
+          "sustained": false
+        },
+        {
+          "cumulative_damage_exposure": 575.9999999999685,
+          "cumulative_p53": 42.08811227037013,
+          "dna_damage_input": 8.0,
+          "fate": "apoptosis",
+          "mdm2_inhibited": false,
+          "mean_pulse_period_h": 5.585999999999337,
+          "n_pulses": 13,
+          "p53_functional": true,
+          "peak_p53": 1.813878764325734,
+          "retained_damage": 8.0,
+          "scenario": "irreparable_damage",
+          "sustained": false
+        },
+        {
+          "cumulative_damage_exposure": 13.625418956160912,
+          "cumulative_p53": 8.252714662252957,
+          "dna_damage_input": 1.5,
+          "fate": "proliferation_with_unresolved_damage",
+          "mdm2_inhibited": false,
+          "mean_pulse_period_h": null,
+          "n_pulses": 0,
+          "p53_functional": false,
+          "peak_p53": 0.13576372146832097,
+          "retained_damage": 0.0005441542501859579,
+          "scenario": "moderate_damage_p53_knockout",
+          "sustained": false
+        },
+        {
+          "cumulative_damage_exposure": 4.773141169728929,
+          "cumulative_p53": 122.02742147711334,
+          "dna_damage_input": 0.8,
+          "fate": "senescence",
+          "mdm2_inhibited": true,
+          "mean_pulse_period_h": null,
+          "n_pulses": 1,
+          "p53_functional": true,
+          "peak_p53": 5.852968996413624,
+          "retained_damage": 4.177753845276374e-06,
+          "scenario": "mdm2_inhibited_nutlin_like",
+          "sustained": true
+        }
+      ],
+      "source_ids": [
+        "lahav2004_p53_mdm2_pulses",
+        "gevazatorsky2006_p53_oscillations",
+        "batchelor2008_atm_recurrent_initiation",
+        "purvis2012_p53_dynamics_control_fate",
+        "cilibertonovaktyson2005_p53mdm2_oscillations"
+      ],
+      "version": "p53_dynamics_pulsatile_fate_v1"
     },
     "pathway_results": [],
     "phh_3d_mesh_boundary_intake": {
