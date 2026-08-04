@@ -3,17 +3,17 @@
     "exact_reconstruction_verified": true,
     "removed_state_key_count": 0,
     "state_override_count": 0,
-    "target_snapshot_sha256": "a4d63a13305bee014fd6a6e004c33c9b073af96d0e4bd8febdf6cfc9ed983f7a",
-    "target_state_key_count": 89,
-    "target_state_key_sha256": "1614930681f02d19615c29a47c00e89b1416b08a9a6b0111716638a88d3fe4e6"
+    "target_snapshot_sha256": "df43a485c246dd5be1e38a1993269cc1b4aaf172d9967f12fade7e1449cc910b",
+    "target_state_key_count": 90,
+    "target_state_key_sha256": "a4e56ce4614ec2d07cebcdd4adf85a224f7e49fe021d5a4d1a6b03796df70100"
   },
   "base_identity": {
-    "created_at_utc": "2026-08-01T19:40:30.457385+00:00",
+    "created_at_utc": "2026-08-04T23:21:07.563273+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "schema_version": "cell-engine.snapshot.v1",
-    "snapshot_sha256": "b3f20dda10ecbf4ab539d11eed37e4aea3e94bb8c237983c137cc16dbf6524fd",
-    "state_key_count": 89,
-    "state_key_sha256": "1614930681f02d19615c29a47c00e89b1416b08a9a6b0111716638a88d3fe4e6"
+    "snapshot_sha256": "2d455488227b610b1ede00f80cf40b5c5b64aeab6511334e12286263639e57be",
+    "state_key_count": 90,
+    "state_key_sha256": "a4e56ce4614ec2d07cebcdd4adf85a224f7e49fe021d5a4d1a6b03796df70100"
   },
   "removed_state_keys": [],
   "schema_version": "cell-engine.context-overlay.v1",
@@ -1523,7 +1523,7 @@
     "zone": "midlobular"
   },
   "target_metadata": {
-    "created_at_utc": "2026-08-01T19:40:37.568781+00:00",
+    "created_at_utc": "2026-08-04T23:21:15.668686+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   }
