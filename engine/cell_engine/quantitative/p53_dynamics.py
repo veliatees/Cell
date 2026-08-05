@@ -237,6 +237,45 @@ def _classify_fate(
     return "recovery_after_pulsed_arrest"
 
 
+# --- population-scale reduction of the fate law -------------------------------
+# Running the full ODE per cell per generation is intractable at population
+# scale, but the *fate ladder as a function of damage* is the invariant the ODE
+# encodes: below the response threshold a cell divides; a repairable dose arrests
+# it (p53 pulses, repair, no division); persistent arrest tips it into
+# senescence (chronic p53 activity, stress-induced senescence); a dose beyond
+# repair capacity kills it. A checkpoint-null (p53-knockout) cell skips arrest
+# and keeps dividing with its unresolved damage until a catastrophic load. This
+# reduction reuses the same grounded thresholds; it is NOT a second model.
+DIVISION_SAFE_DAMAGE = 0.15            # below this, no checkpoint engagement -> divide
+SENESCENCE_ARREST_LIMIT = 3           # consecutive arrested generations -> senescence
+CHECKPOINT_NULL_LETHAL_DAMAGE = 10.0  # mitotic catastrophe ceiling for p53-null cells
+
+
+def population_fate_from_damage(
+    damage: float,
+    *,
+    p53_functional: bool,
+    consecutive_arrests: int = 0,
+) -> str:
+    """Per-generation fate for a cell carrying ``damage`` (population-scale
+    reduction of :func:`simulate_p53_response`; same thresholds, no ODE).
+
+    Returns one of: ``divide`` (proliferation-competent this generation),
+    ``arrest_and_repair``, ``senescence``, ``apoptosis``,
+    ``divide_with_unresolved_damage`` (checkpoint-null)."""
+    if not p53_functional:
+        if damage > CHECKPOINT_NULL_LETHAL_DAMAGE:
+            return "apoptosis"           # even a null cell dies at catastrophic load
+        return "divide_with_unresolved_damage"
+    if damage > REPAIR_CAPACITY:
+        return "apoptosis"
+    if damage < DIVISION_SAFE_DAMAGE:
+        return "divide"
+    if consecutive_arrests >= SENESCENCE_ARREST_LIMIT:
+        return "senescence"
+    return "arrest_and_repair"
+
+
 def simulate_p53_response(
     dna_damage_input: float,
     *,
