@@ -131,6 +131,48 @@ export type EngineP53Dynamics = {
   source_ids: string[];
 };
 
+// Minimal heritable cell-population substrate (see engine cell_population.py).
+// One p53-gated fate law instantiated N times; a rare checkpoint-null subclone
+// expands to dominance ONLY under chronic genotoxic stress. Clonal dominance is
+// an emergent readout of composition, never a scripted transformation rule.
+export type EngineCellPopulationGeneration = {
+  generation: number;
+  alive: number;
+  cycling: number;
+  senescent: number;
+  checkpoint_null_fraction: number;
+  mean_damage: number;
+  divisions: number;
+  apoptoses: number;
+  new_senescent: number;
+};
+
+export type EngineCellPopulationOutcome = {
+  version: string;
+  is_reaction_transport_authority: boolean;
+  scenario: string;
+  seed: number;
+  generations: number;
+  carrying_capacity: number;
+  genotoxic_stress_per_generation: number;
+  initial_checkpoint_null_fraction: number;
+  final_checkpoint_null_fraction: number;
+  final_alive: number;
+  generations_to_null_majority: number | null;
+  transformation_emerged: boolean;
+  checkpoint_null_fraction_series: number[];
+  alive_series: number[];
+  mean_damage_series: number[];
+  timeline: EngineCellPopulationGeneration[];
+  honesty_status: string;
+  grounded: string[];
+  not_grounded: string[];
+  blockers: string[];
+  source_ids: string[];
+};
+
+export type EngineCellPopulation = Record<string, EngineCellPopulationOutcome>;
+
 // Per-instance organelle evidence scaffold. Stable body identities are retained,
 // but healthy-adult PHH vitality, age, turnover and clearance measurements remain
 // null and cannot affect runtime geometry or transport.
@@ -2501,6 +2543,7 @@ export type EngineSnapshot = {
     organelle_placement?: EngineOrganellePlacement;
     cytoplasm_dynamics?: EngineCytoplasmDynamics;
     p53_dynamics?: EngineP53Dynamics;
+    cell_population?: EngineCellPopulation;
     organelle_instance_vitality?: EngineOrganelleInstanceVitalityField;
     spatial_state?: EngineCellSpatialState | null;
     physical_validation?: EnginePhysicalValidation;
@@ -5269,6 +5312,7 @@ export type EngineSnapshotSummary = {
   organellePlacement: EngineOrganellePlacement | null;
   cytoplasmDynamics: EngineCytoplasmDynamics | null;
   p53Dynamics: EngineP53Dynamics | null;
+  cellPopulation: EngineCellPopulation | null;
   organelleInstanceVitality: EngineOrganelleInstanceVitalityField | null;
   spatialState: EngineCellSpatialState | null;
   physicalValidation: EnginePhysicalValidation | null;
@@ -5665,6 +5709,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     organellePlacement: snapshot.state.organelle_placement ?? null,
     cytoplasmDynamics: snapshot.state.cytoplasm_dynamics ?? null,
     p53Dynamics: snapshot.state.p53_dynamics ?? null,
+    cellPopulation: snapshot.state.cell_population ?? null,
     organelleInstanceVitality: snapshot.state.organelle_instance_vitality ?? null,
     spatialState: snapshot.state.spatial_state ?? null,
     physicalValidation: snapshot.state.physical_validation ?? null,
