@@ -19,10 +19,10 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 55
+    assert summary["entry_count"] == 56
     assert summary["closed_count"] == 31
     assert summary["partial_count"] == 8
-    assert summary["blocked_missing_evidence_count"] == 14
+    assert summary["blocked_missing_evidence_count"] == 15
     assert summary["external_action_required_count"] == 1
     assert summary["not_applicable_at_model_scale_count"] == 1
     assert summary["biological_accuracy_pct"] is None
@@ -201,6 +201,22 @@ def test_memory_and_active_cargo_engineering_remain_biologically_fail_closed() -
     assert cargo["trajectory_intake_contract_count"] == 1
     assert cargo["delivered_phh_route_count"] == 0
     assert cargo["quantitatively_authorized_phh_route_count"] == 0
+
+
+def test_cytoplasm_motion_preserves_evidence_without_runtime_transfer() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    motion = entries["healthy_phh_cytoplasm_organelle_motion"]
+    metrics = motion["observed_metrics"]
+
+    assert motion["status"] == "blocked_missing_evidence"
+    assert metrics["cross_context_observation_count"] == 3
+    assert metrics["healthy_phh_numeric_motion_parameter_count"] == 0
+    assert metrics["healthy_phh_organelle_motility_record_count"] == 0
+    assert metrics["engine_renderer_numeric_parameter_count"] == 0
+    assert metrics["cargo_speed_to_bulk_flow_transfer_count"] == 0
+    assert metrics["nanoprobe_to_micron_organelle_extrapolation_count"] == 0
+    assert metrics["biological_renderer_motion_enabled_count"] == 0
 
 
 def test_local_membrane_and_generative_data_planes_are_partial_or_blocked() -> None:

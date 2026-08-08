@@ -68,30 +68,51 @@ export type EngineOrganellePlacement = {
   source_ids: string[];
 };
 
-// Visual/kinematic cytoplasm dynamics (see engine cytoplasm_dynamics.py). Drives
-// organelle motion: a size-dependent thermal diffusion coefficient per organelle
-// plus a grounded active-transport speed for the coherent stirring field. Never a
-// reaction-transport authority (is_reaction_transport_authority is always false).
-export type EngineOrganelleMotility = {
-  organelle_id: string;
-  radius_um: number;
-  relative_effective_viscosity: number;
-  thermal_diffusion_um2_s: number;
+// Evidence-only cytoplasm/organelle-motion boundary. Cross-context observations
+// are retained, but none may parameterize renderer motion or healthy-PHH state.
+export type EngineCytoplasmMotionObservation = {
+  id: string;
+  biological_system: string;
+  entity_or_probe: string;
+  observable: string;
+  value: number | [number, number];
+  uncertainty: number | null;
+  unit: string;
+  evidence_role: string;
+  interpretation: string;
+  healthy_phh_context_match: boolean;
+  may_parameterize_healthy_phh_bulk_flow: boolean;
+  may_parameterize_healthy_phh_organelle_motion: boolean;
+  may_parameterize_reaction_transport: boolean;
+  source_ids: string[];
+};
+
+export type EngineHealthyPhhCytoplasmMotionParameterSlots = {
+  bulk_cytosol_velocity_um_s: null;
+  bulk_flow_coherence_length_um: null;
+  bulk_flow_coherence_time_s: null;
+  cytosol_dynamic_viscosity_pa_s: null;
+  organelle_diffusivity_um2_s: null;
+  organelle_active_velocity_um_s: null;
+  motor_engagement_fraction: null;
+  active_fluctuation_spectrum: null;
 };
 
 export type EngineCytoplasmDynamics = {
   version: string;
+  status: string;
   is_reaction_transport_authority: boolean;
-  temperature_k: number;
-  water_viscosity_pa_s: number;
-  crowder_radius_nm: number;
-  lsdv_exponent: number;
-  active_transport_speed_um_s: number;
-  active_transport_speed_uncertainty_um_s: number;
-  stir_coherence_length_um: number;
-  stir_coherence_time_s: number;
-  organelle_motility: EngineOrganelleMotility[];
-  honesty_status: string;
+  quantitative_runtime_enabled: boolean;
+  biological_renderer_motion_enabled: boolean;
+  authoritative_state_coupling_allowed: boolean;
+  cross_context_cargo_speed_applied_to_bulk_flow: boolean;
+  nanoprobe_viscosity_extrapolated_to_micron_organelles: boolean;
+  stokes_einstein_organelle_diffusion_emitted: boolean;
+  renderer_numeric_parameter_count: number;
+  healthy_phh_numeric_motion_parameter_count: number;
+  healthy_phh_organelle_motility_record_count: number;
+  cross_context_observations: EngineCytoplasmMotionObservation[];
+  healthy_phh_parameter_slots: EngineHealthyPhhCytoplasmMotionParameterSlots;
   grounded: string[];
   not_grounded: string[];
   blockers: string[];

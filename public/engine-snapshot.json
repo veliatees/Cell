@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-08-08T21:22:29.769468+00:00",
+    "created_at_utc": "2026-08-08T21:52:48.036987+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -5375,68 +5375,111 @@
       "whole_tissue_observation_registry_ready": true
     },
     "cytoplasm_dynamics": {
-      "active_transport_speed_um_s": 0.246,
-      "active_transport_speed_uncertainty_um_s": 0.032,
+      "authoritative_state_coupling_allowed": false,
+      "biological_renderer_motion_enabled": false,
       "blockers": [
-        "not a reaction-transport authority: sets no rate, diffusivity or concentration field",
-        "motion is a visual realization, not a measured per-organelle trajectory"
+        "matched healthy-PHH 3D intracellular particle/organelle trajectories are absent",
+        "cargo- and organelle-resolved motor engagement measurements are absent",
+        "matched PHH rheology, geometry and force-deformation trajectories are absent",
+        "donor- and study-disjoint held-out motion validation is absent"
       ],
-      "crowder_radius_nm": 20.0,
-      "grounded": [
-        "length-scale-dependent effective viscosity (Kwapiszewska 2020, incl. HepG2)",
-        "GFP small-probe effective-viscosity anchor (Swaminathan 1997)",
-        "active-transport characteristic speed (Fort 2011, WIF-B9 hepatocyte, 0.246 um/s)",
-        "Stokes-Einstein thermal diffusion law"
-      ],
-      "honesty_status": "visual_kinematic_motion_grounded_in_hepatocyte_viscosity_and_active_transport_speed",
-      "is_reaction_transport_authority": false,
-      "lsdv_exponent": 0.57,
-      "not_grounded": [
-        "effective viscosity extrapolated from 0.65-81 nm probes to um organelles",
-        "coherent stirring-field length and time scales (disclosed visual model)",
-        "per-organelle active-transport engagement (only the speed is measured)"
-      ],
-      "organelle_motility": [
+      "cross_context_cargo_speed_applied_to_bulk_flow": false,
+      "cross_context_observations": [
         {
-          "organelle_id": "lysosomes",
-          "radius_um": 0.32320719020026534,
-          "relative_effective_viscosity": 45.516040416625486,
-          "thermal_diffusion_um2_s": 0.02233787725161696
+          "biological_system": "six human cell lines including HepG2; not primary human hepatocytes",
+          "entity_or_probe": "FCS probes",
+          "evidence_role": "cross_context_scale_dependence_reference",
+          "healthy_phh_context_match": false,
+          "id": "human_cell_line_nanoprobe_radius_range",
+          "interpretation": "Supports probe-scale-dependent intracellular mobility; it does not identify micrometre-organelle diffusion or healthy-PHH rheology.",
+          "may_parameterize_healthy_phh_bulk_flow": false,
+          "may_parameterize_healthy_phh_organelle_motion": false,
+          "may_parameterize_reaction_transport": false,
+          "observable": "reported hydrodynamic-radius range",
+          "source_ids": [
+            "kwapiszewska2020_cytoplasm_nanoviscosity"
+          ],
+          "uncertainty": null,
+          "unit": "nm",
+          "value": [
+            0.65,
+            81.0
+          ]
         },
         {
-          "organelle_id": "mitochondria",
-          "radius_um": 0.6464143804005306,
-          "relative_effective_viscosity": 45.65821722966241,
-          "thermal_diffusion_um2_s": 0.011134159254313642
+          "biological_system": "CHO cell cytoplasm",
+          "entity_or_probe": "green fluorescent protein",
+          "evidence_role": "cross_context_probe_specific_reference",
+          "healthy_phh_context_match": false,
+          "id": "cho_gfp_translational_relative_viscosity",
+          "interpretation": "A CHO GFP mobility ratio is probe- and cell-context-specific and is not a whole-cytoplasm or organelle-scale viscosity.",
+          "may_parameterize_healthy_phh_bulk_flow": false,
+          "may_parameterize_healthy_phh_organelle_motion": false,
+          "may_parameterize_reaction_transport": false,
+          "observable": "translational effective viscosity relative to aqueous saline",
+          "source_ids": [
+            "swaminathan1997_gfp_cytoplasmic_diffusion"
+          ],
+          "uncertainty": null,
+          "unit": "dimensionless_ratio",
+          "value": 3.2
         },
         {
-          "organelle_id": "nucleus",
-          "radius_um": 4.374867530946841,
-          "relative_effective_viscosity": 45.70478443143001,
-          "thermal_diffusion_um2_s": 0.001643466348749285
-        },
-        {
-          "organelle_id": "peroxisomes",
-          "radius_um": 0.34345889028774595,
-          "relative_effective_viscosity": 45.53767438357948,
-          "thermal_diffusion_um2_s": 0.02101076079882051
+          "biological_system": "polarized WIF-B9 hepatocyte cell line",
+          "entity_or_probe": "microtubule-dependent Cx32 vesicle cargo",
+          "evidence_role": "cross_context_cargo_transport_reference",
+          "healthy_phh_context_match": false,
+          "id": "wif_b9_cx32_vesicle_speed",
+          "interpretation": "This is cargo-specific kinesin/microtubule transport, not bulk cytosol advection and not a universal organelle velocity.",
+          "may_parameterize_healthy_phh_bulk_flow": false,
+          "may_parameterize_healthy_phh_organelle_motion": false,
+          "may_parameterize_reaction_transport": false,
+          "observable": "directed cargo speed",
+          "source_ids": [
+            "fort2011_hepatocyte_connexin_kinesin_transport"
+          ],
+          "uncertainty": 0.032,
+          "unit": "um/s",
+          "value": 0.246
         }
       ],
+      "grounded": [
+        "probe-scale dependence in the source-specific human-cell-line context",
+        "CHO GFP translational mobility in its source assay",
+        "WIF-B9 Cx32 vesicle cargo speed in its source assay",
+        "mechanistic separation of passive mobility, active cargo and bulk flow"
+      ],
+      "healthy_phh_numeric_motion_parameter_count": 0,
+      "healthy_phh_organelle_motility_record_count": 0,
+      "healthy_phh_parameter_slots": {
+        "active_fluctuation_spectrum": null,
+        "bulk_cytosol_velocity_um_s": null,
+        "bulk_flow_coherence_length_um": null,
+        "bulk_flow_coherence_time_s": null,
+        "cytosol_dynamic_viscosity_pa_s": null,
+        "motor_engagement_fraction": null,
+        "organelle_active_velocity_um_s": null,
+        "organelle_diffusivity_um2_s": null
+      },
+      "is_reaction_transport_authority": false,
+      "nanoprobe_viscosity_extrapolated_to_micron_organelles": false,
+      "not_grounded": [
+        "healthy-PHH bulk cytosol velocity or coherent flow field",
+        "healthy-PHH cytosol viscosity or poroelastic constitutive law",
+        "per-organelle healthy-PHH diffusion or active-transport velocity",
+        "motor engagement, pause, reversal or confinement distributions",
+        "organelle-motion-to-membrane physical force calibration"
+      ],
+      "quantitative_runtime_enabled": false,
+      "renderer_numeric_parameter_count": 0,
       "source_ids": [
-        "moeendarbary2013_poroelastic_cytoplasm",
         "kwapiszewska2020_cytoplasm_nanoviscosity",
         "swaminathan1997_gfp_cytoplasmic_diffusion",
-        "guo2017_cytoplasm_size_speed_mechanics",
-        "jiang2020_human_hepatocyte_diffusion_mri",
-        "guo2014_motor_driven_cytoplasm",
-        "fort2011_hepatocyte_connexin_kinesin_transport",
-        "murray2008_primary_rat_hepatocyte_endosome_transport"
+        "fort2011_hepatocyte_connexin_kinesin_transport"
       ],
-      "stir_coherence_length_um": 3.8687356472478966,
-      "stir_coherence_time_s": 6.0,
-      "temperature_k": 310.15,
-      "version": "cytoplasm_dynamics_visual_v1",
-      "water_viscosity_pa_s": 0.0006913
+      "status": "cross_context_observations_healthy_phh_motion_blocked",
+      "stokes_einstein_organelle_diffusion_emitted": false,
+      "version": "cytoplasm_motion_authority_v2"
     },
     "cytosol_transport": {
       "blockers": [
@@ -16187,6 +16230,34 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/quantitative/cytoplasm_dynamics.py",
+            "src/physics/cytoplasmRendererMotion.ts",
+            "src/physics/cytoplasmFlow.ts",
+            "src/main.ts"
+          ],
+          "current_capability": "Three cross-context measurements remain source-preserved, while the retired nanoprobe-to-organelle and Cx32-cargo-to-bulk-flow transfers now emit no runtime parameter. Browser movement is independently declared in renderer world units and wall-clock time.",
+          "id": "healthy_phh_cytoplasm_organelle_motion",
+          "observed_metrics": {
+            "biological_renderer_motion_enabled_count": 0,
+            "cargo_speed_to_bulk_flow_transfer_count": 0,
+            "cross_context_observation_count": 3,
+            "engine_renderer_numeric_parameter_count": 0,
+            "healthy_phh_numeric_motion_parameter_count": 0,
+            "healthy_phh_organelle_motility_record_count": 0,
+            "nanoprobe_to_micron_organelle_extrapolation_count": 0
+          },
+          "remaining_requirements": [
+            "Matched healthy-PHH 3D organelle and intracellular-particle trajectories.",
+            "Cargo/organelle identity, motor engagement, pauses, reversals and confinement.",
+            "Matched rheology, geometry and force-deformation measurements.",
+            "Donor- and study-disjoint held-out validation."
+          ],
+          "scope": "Bulk cytosol motion, per-organelle mobility and motor engagement in healthy primary human hepatocytes.",
+          "status": "blocked_missing_evidence",
+          "title": "Healthy-PHH cytoplasm and organelle motion"
+        },
+        {
+          "code_surfaces": [
             "engine/cell_engine/quantitative/cytosol_transport.py"
           ],
           "current_capability": "One healthy-human in-vivo restricted-water MRI target and ten cross-context references are registered; neither calibrates PHH cytosol mechanics.",
@@ -17183,8 +17254,8 @@
           "observed_metrics": {
             "automatic_biological_parameter_activation_count": 0,
             "initial_js_chunk_count": 2,
-            "initial_js_gzip_bytes": 264286,
-            "initial_js_raw_bytes": 964679,
+            "initial_js_gzip_bytes": 265435,
+            "initial_js_raw_bytes": 968721,
             "maximum_initial_js_gzip_bytes": 275000,
             "maximum_initial_js_raw_bytes": 980000,
             "production_manifest_gate_count": 1,
@@ -17279,9 +17350,9 @@
       },
       "summary": {
         "biological_accuracy_pct": null,
-        "blocked_missing_evidence_count": 14,
+        "blocked_missing_evidence_count": 15,
         "closed_count": 31,
-        "entry_count": 55,
+        "entry_count": 56,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
@@ -24475,6 +24546,7 @@
         "reaction_evidence_atlas",
         "reaction_evidence_intake",
         "cytosol_transport",
+        "cytoplasm_dynamics",
         "metabolic_constraint_shell",
         "hepatocyte_completion_matrix",
         "phh_evidence_readiness",
@@ -24526,7 +24598,7 @@
         "spatial_world",
         "physical_validation"
       ],
-      "policy": "quantitative_state wins on overlapping aggregate species; whole_cell_runtime_authority requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of legacy relative-pool dynamics; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires a donor-resolved write, verified-removal persistence, first-response and rechallenge-response trajectory plus a frozen held-out-validated law and never treats an event log as memory; cytosol_transport keeps passive aqueous projection separate from deterministic dimensionless cargo rendering, applies outer-membrane cut-cell geometric conservation and subgrid organelle interception only as numerical boundary treatments, forbids a single global viscosity/crowding multiplier and gates fluid coupling per reaction; receptor_signaling_trajectory_intake requires donor-matched density, binding, occupancy, trafficking, response and frozen heldout stages but cannot activate a receptor or signal; active_protein_localization_intake requires donor-matched total, localized, active, denominator and functional measurements but cannot infer active copies or scale rates; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+      "policy": "quantitative_state wins on overlapping aggregate species; whole_cell_runtime_authority requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of legacy relative-pool dynamics; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires a donor-resolved write, verified-removal persistence, first-response and rechallenge-response trajectory plus a frozen held-out-validated law and never treats an event log as memory; cytosol_transport keeps passive aqueous projection separate from deterministic dimensionless cargo rendering, applies outer-membrane cut-cell geometric conservation and subgrid organelle interception only as numerical boundary treatments, forbids a single global viscosity/crowding multiplier and gates fluid coupling per reaction; cytoplasm_dynamics retains cross-context motion observations but exports zero healthy-PHH motion parameters, while browser staging uses only independent renderer-world and wall-clock values; receptor_signaling_trajectory_intake requires donor-matched density, binding, occupancy, trafficking, response and frozen heldout stages but cannot activate a receptor or signal; active_protein_localization_intake requires donor-matched total, localized, active, denominator and functional measurements but cannot infer active copies or scale rates; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
       "primary_state_path": "quantitative_state",
       "quantitative_biochemical_dynamics_executed": false,
       "runtime_authoritative_sections": [

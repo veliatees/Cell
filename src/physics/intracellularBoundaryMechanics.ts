@@ -29,7 +29,7 @@ export type IntracellularBoundaryLoadDiagnostics = {
 };
 
 export const INTRACELLULAR_BOUNDARY_MECHANICS_CONTRACT = Object.freeze({
-  version: "intracellular_boundary_mechanics_v1",
+  version: "intracellular_boundary_mechanics_v2",
   role: "dimensionless_runtime_geometry_and_reaction_diagnostics",
   organelleContactModel:
     "sphere_against_current_triangle_mesh_with_overdamped_nonpenetration_projection",
@@ -40,6 +40,8 @@ export const INTRACELLULAR_BOUNDARY_MECHANICS_CONTRACT = Object.freeze({
   loadDistribution:
     "closest_triangle_barycentric_weights_for_organelle_contact_and_equal_triangle_weights_for_pressure",
   actionReactionBalanced: true,
+  rendererStagingLoadAcceptedAsDimensionlessGeometryInput: true,
+  rendererStagingLoadCanClaimBiologicalMechanics: false,
   biologicalForceAssigned: false,
   biologicalPressureAssigned: false,
   healthyPhhSustainableForceAssigned: false,

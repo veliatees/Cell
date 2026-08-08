@@ -1,20 +1,17 @@
-// Shared stochastic cytoplasmic flow field (active-stirring model).
+// Seeded renderer flow basis for coherent intracellular staging.
 //
-// Real hepatocyte organelles move mostly by active, motor-driven cytoplasmic
-// stirring, and they move *together* — the cytoplasm is a medium, not a bag of
-// independent jitterers. This field supplies that coherent motion: a smooth,
-// slowly time-varying, INCOMPRESSIBLE velocity field that all organelles are
-// advected by, so they stream together while preserving cytoplasmic volume.
+// This is a visual/numerical field, not a healthy-PHH cytosol velocity model.
+// It gives nearby display objects correlated motion without claiming that every
+// organelle is passively advected by one biological bulk flow.
 //
 // Incompressibility is exact by construction: the field is the curl of a smooth
 // vector potential built from a few seeded sinusoidal modes, and the curl of any
 // field is divergence-free. For a single mode Psi = A*cos(k·x + w t + p), the
 // curl is (k × A)*(-sin(k·x + w t + p)); summing modes stays divergence-free.
 //
-// The field is dimensionless (RMS ~ 1); the caller scales it by the grounded
-// active-transport speed (Fort 2011 WIF-B9 hepatocyte, ~0.246 um/s) from the
-// engine's cytoplasm_dynamics contract. Coherence length/time are a disclosed
-// visual model, not a measured cytoplasmic velocity field.
+// The field is dimensionless (RMS ~ 1). The caller scales it only with values in
+// cytoplasmRendererMotion.ts, expressed in renderer world units and wall-clock
+// render seconds. Engine evidence values never parameterize this class.
 
 type Vec3 = { x: number; y: number; z: number };
 
@@ -41,8 +38,8 @@ function mulberry32(seed: number): () => number {
 export class CytoplasmFlowField {
   private readonly modes: FlowMode[];
 
-  // coherenceLength: characteristic spatial scale of the stirring (world units).
-  // coherenceTime: characteristic time over which the pattern evolves (seconds).
+  // coherenceLength: renderer world units.
+  // coherenceTime: elapsed wall-clock render seconds.
   constructor(
     seed: number,
     coherenceLength: number,

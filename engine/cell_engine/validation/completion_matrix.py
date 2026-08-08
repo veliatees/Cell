@@ -31,6 +31,7 @@ from cell_engine.quantitative.compartmental_energy_redox import (
     compartmental_energy_redox_snapshot,
 )
 from cell_engine.quantitative.cell_population import cell_population_snapshot
+from cell_engine.quantitative.cytoplasm_dynamics import cytoplasm_dynamics_snapshot
 from cell_engine.quantitative.cytosol_transport import cytosol_transport_snapshot
 from cell_engine.quantitative.energy_redox_trajectory import (
     energy_redox_trajectory_intake_snapshot,
@@ -129,6 +130,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     calibration_authority_summary = calibration_authority["summary"]
     cytosol = cytosol_transport_snapshot()
     cytosol_summary = cytosol["summary"]
+    cytoplasm_motion = cytoplasm_dynamics_snapshot()
     capability = hepatocyte_capability_atlas_snapshot()["summary"]
     reactions = build_reaction_evidence_atlas()["summary"]
     reaction_intake = reaction_evidence_intake_snapshot()
@@ -822,6 +824,52 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "engine/cell_engine/quantitative/active_cargo_trajectory.py",
                 "data/evidence_intake/phh_active_cargo_trajectory_contract.v1.json",
                 "src/physics/transportModes.ts",
+                "src/main.ts",
+            ),
+        ),
+        _entry(
+            "healthy_phh_cytoplasm_organelle_motion",
+            "Healthy-PHH cytoplasm and organelle motion",
+            "blocked_missing_evidence",
+            "Bulk cytosol motion, per-organelle mobility and motor engagement in healthy primary human hepatocytes.",
+            "Three cross-context measurements remain source-preserved, while the retired nanoprobe-to-organelle and Cx32-cargo-to-bulk-flow transfers now emit no runtime parameter. Browser movement is independently declared in renderer world units and wall-clock time.",
+            {
+                "cross_context_observation_count": len(
+                    cytoplasm_motion["cross_context_observations"]
+                ),
+                "healthy_phh_numeric_motion_parameter_count": cytoplasm_motion[
+                    "healthy_phh_numeric_motion_parameter_count"
+                ],
+                "healthy_phh_organelle_motility_record_count": cytoplasm_motion[
+                    "healthy_phh_organelle_motility_record_count"
+                ],
+                "engine_renderer_numeric_parameter_count": cytoplasm_motion[
+                    "renderer_numeric_parameter_count"
+                ],
+                "cargo_speed_to_bulk_flow_transfer_count": int(
+                    cytoplasm_motion[
+                        "cross_context_cargo_speed_applied_to_bulk_flow"
+                    ]
+                ),
+                "nanoprobe_to_micron_organelle_extrapolation_count": int(
+                    cytoplasm_motion[
+                        "nanoprobe_viscosity_extrapolated_to_micron_organelles"
+                    ]
+                ),
+                "biological_renderer_motion_enabled_count": int(
+                    cytoplasm_motion["biological_renderer_motion_enabled"]
+                ),
+            },
+            (
+                "Matched healthy-PHH 3D organelle and intracellular-particle trajectories.",
+                "Cargo/organelle identity, motor engagement, pauses, reversals and confinement.",
+                "Matched rheology, geometry and force-deformation measurements.",
+                "Donor- and study-disjoint held-out validation.",
+            ),
+            (
+                "engine/cell_engine/quantitative/cytoplasm_dynamics.py",
+                "src/physics/cytoplasmRendererMotion.ts",
+                "src/physics/cytoplasmFlow.ts",
                 "src/main.ts",
             ),
         ),
@@ -2946,6 +2994,33 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or active_transport_metrics["quantitatively_authorized_phh_route_count"] != 0
     ):
         raise ValueError("dimensionless cargo renderer escaped into PHH transport")
+    cytoplasm_motion_metrics = by_id[
+        "healthy_phh_cytoplasm_organelle_motion"
+    ]["observed_metrics"]
+    if (
+        cytoplasm_motion_metrics["cross_context_observation_count"] != 3
+        or cytoplasm_motion_metrics[
+            "healthy_phh_numeric_motion_parameter_count"
+        ]
+        != 0
+        or cytoplasm_motion_metrics[
+            "healthy_phh_organelle_motility_record_count"
+        ]
+        != 0
+        or cytoplasm_motion_metrics["engine_renderer_numeric_parameter_count"]
+        != 0
+        or cytoplasm_motion_metrics["cargo_speed_to_bulk_flow_transfer_count"]
+        != 0
+        or cytoplasm_motion_metrics[
+            "nanoprobe_to_micron_organelle_extrapolation_count"
+        ]
+        != 0
+        or cytoplasm_motion_metrics[
+            "biological_renderer_motion_enabled_count"
+        ]
+        != 0
+    ):
+        raise ValueError("cytoplasm motion escaped its healthy-PHH evidence firewall")
     local_boundary_metrics = by_id["local_non_affine_membrane_coupling"][
         "observed_metrics"
     ]

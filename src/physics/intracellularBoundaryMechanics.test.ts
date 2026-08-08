@@ -207,5 +207,13 @@ describe("intracellular boundary mechanics", () => {
       INTRACELLULAR_BOUNDARY_MECHANICS_CONTRACT
         .quantitativeHealthyPhhMechanicsEnabled
     ).toBe(false);
+    expect(
+      INTRACELLULAR_BOUNDARY_MECHANICS_CONTRACT
+        .rendererStagingLoadAcceptedAsDimensionlessGeometryInput
+    ).toBe(true);
+    expect(
+      INTRACELLULAR_BOUNDARY_MECHANICS_CONTRACT
+        .rendererStagingLoadCanClaimBiologicalMechanics
+    ).toBe(false);
   });
 });

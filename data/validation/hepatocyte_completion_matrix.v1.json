@@ -443,6 +443,34 @@
       ]
     },
     {
+      "id": "healthy_phh_cytoplasm_organelle_motion",
+      "title": "Healthy-PHH cytoplasm and organelle motion",
+      "status": "blocked_missing_evidence",
+      "scope": "Bulk cytosol motion, per-organelle mobility and motor engagement in healthy primary human hepatocytes.",
+      "current_capability": "Three cross-context measurements remain source-preserved, while the retired nanoprobe-to-organelle and Cx32-cargo-to-bulk-flow transfers now emit no runtime parameter. Browser movement is independently declared in renderer world units and wall-clock time.",
+      "observed_metrics": {
+        "cross_context_observation_count": 3,
+        "healthy_phh_numeric_motion_parameter_count": 0,
+        "healthy_phh_organelle_motility_record_count": 0,
+        "engine_renderer_numeric_parameter_count": 0,
+        "cargo_speed_to_bulk_flow_transfer_count": 0,
+        "nanoprobe_to_micron_organelle_extrapolation_count": 0,
+        "biological_renderer_motion_enabled_count": 0
+      },
+      "remaining_requirements": [
+        "Matched healthy-PHH 3D organelle and intracellular-particle trajectories.",
+        "Cargo/organelle identity, motor engagement, pauses, reversals and confinement.",
+        "Matched rheology, geometry and force-deformation measurements.",
+        "Donor- and study-disjoint held-out validation."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/cytoplasm_dynamics.py",
+        "src/physics/cytoplasmRendererMotion.ts",
+        "src/physics/cytoplasmFlow.ts",
+        "src/main.ts"
+      ]
+    },
+    {
       "id": "cytosol_experimental_validation",
       "title": "Healthy-PHH cytosol experimental validation",
       "status": "blocked_missing_evidence",
@@ -1436,8 +1464,8 @@
       "observed_metrics": {
         "production_manifest_gate_count": 1,
         "initial_js_chunk_count": 2,
-        "initial_js_raw_bytes": 964679,
-        "initial_js_gzip_bytes": 264286,
+        "initial_js_raw_bytes": 968721,
+        "initial_js_gzip_bytes": 265435,
         "maximum_initial_js_raw_bytes": 980000,
         "maximum_initial_js_gzip_bytes": 275000,
         "required_deferred_entry_count": 6,
@@ -1526,10 +1554,10 @@
     }
   ],
   "summary": {
-    "entry_count": 55,
+    "entry_count": 56,
     "closed_count": 31,
     "partial_count": 8,
-    "blocked_missing_evidence_count": 14,
+    "blocked_missing_evidence_count": 15,
     "external_action_required_count": 1,
     "not_applicable_at_model_scale_count": 1,
     "biological_accuracy_pct": null

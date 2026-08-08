@@ -2604,10 +2604,10 @@ describe("engine snapshot client", () => {
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.delivered_bundle_count).toBe(0);
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.runtime_flux_coupling_allowed).toBe(false);
       expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(55);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(56);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(31);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.partial_count).toBe(8);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(14);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(15);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.biological_accuracy_pct).toBeNull();
       expect(result.summary.evidenceReadiness?.summary.registry_contract_count).toBe(15);
       expect(result.summary.evidenceReadiness?.summary.contract_identity_verified_count).toBe(15);
@@ -2765,28 +2765,39 @@ describe("engine-authoritative organelle placement", () => {
   });
 });
 
-describe("cytoplasm dynamics (stochastic organelle motion basis)", () => {
+describe("cytoplasm motion evidence authority", () => {
   const summary = summarizeEngineSnapshot(publicEngineSnapshot as unknown as EngineSnapshot, "/engine-snapshot.json");
 
-  it("exposes grounded motion parameters and is never a reaction authority", () => {
+  it("retains source observations while every healthy-PHH motion gate is closed", () => {
     const dyn = summary.cytoplasmDynamics;
     expect(dyn).not.toBeNull();
     if (!dyn) return;
+    expect(dyn.version).toBe("cytoplasm_motion_authority_v2");
     expect(dyn.is_reaction_transport_authority).toBe(false);
-    expect(dyn.active_transport_speed_um_s).toBeGreaterThan(0);
-    expect(dyn.stir_coherence_length_um).toBeGreaterThan(0);
-    expect(dyn.organelle_motility.length).toBeGreaterThanOrEqual(4);
+    expect(dyn.quantitative_runtime_enabled).toBe(false);
+    expect(dyn.biological_renderer_motion_enabled).toBe(false);
+    expect(dyn.authoritative_state_coupling_allowed).toBe(false);
+    expect(dyn.healthy_phh_numeric_motion_parameter_count).toBe(0);
+    expect(dyn.healthy_phh_organelle_motility_record_count).toBe(0);
+    expect(dyn.cross_context_observations).toHaveLength(3);
   });
 
-  it("gives smaller organelles a larger thermal diffusion coefficient", () => {
+  it("does not turn a cargo speed or nanoprobe result into bulk flow", () => {
     const dyn = summary.cytoplasmDynamics;
     if (!dyn) return;
-    const byId = new Map(dyn.organelle_motility.map((m) => [m.organelle_id, m]));
-    const mito = byId.get("mitochondria");
-    const lyso = byId.get("lysosomes");
-    const nucleus = byId.get("nucleus");
-    if (mito && lyso) expect(lyso.thermal_diffusion_um2_s).toBeGreaterThan(mito.thermal_diffusion_um2_s);
-    if (mito && nucleus) expect(mito.thermal_diffusion_um2_s).toBeGreaterThan(nucleus.thermal_diffusion_um2_s);
+    expect(dyn.cross_context_cargo_speed_applied_to_bulk_flow).toBe(false);
+    expect(dyn.nanoprobe_viscosity_extrapolated_to_micron_organelles).toBe(false);
+    expect(dyn.stokes_einstein_organelle_diffusion_emitted).toBe(false);
+    expect(dyn.renderer_numeric_parameter_count).toBe(0);
+    expect(Object.values(dyn.healthy_phh_parameter_slots).every((value) => value === null)).toBe(true);
+    expect(
+      dyn.cross_context_observations.every((observation) =>
+        !observation.healthy_phh_context_match
+        && !observation.may_parameterize_healthy_phh_bulk_flow
+        && !observation.may_parameterize_healthy_phh_organelle_motion
+        && !observation.may_parameterize_reaction_transport
+      )
+    ).toBe(true);
   });
 
   it("returns null when the state omits it", () => {

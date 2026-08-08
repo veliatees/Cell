@@ -111,6 +111,11 @@ import type {
   EngineCytoplasmDynamics
 } from "./engineSnapshot";
 import { CytoplasmFlowField } from "./physics/cytoplasmFlow";
+import {
+  CYTOPLASM_RENDERER_MOTION_CONTRACT,
+  createCytoplasmRendererRng,
+  populationRendererNoiseScaleWorld
+} from "./physics/cytoplasmRendererMotion";
 import { engineSnapshotEndpointFromLocation } from "./engineSnapshotEndpoint";
 import {
   HEPATOCYTE_RENDER_RADIUS_WORLD,
@@ -793,21 +798,19 @@ let proteinGroup: THREE.Group | null = null; // real atomic structure (PDB)
 let proteinSpin = 0;
 let proteinFieldGroup: THREE.Group | null = null; // per-voxel protein population field
 let proteinFieldSpin = 0;
-// Organelles that get a gentle Brownian jiggle (real organelles are never still:
-// motor transport on cytoskeletal tracks + thermal motion). Cached once per scene.
+// Drawable bodies receiving bounded renderer staging. Cached once per scene;
+// this collection has no biological motion or transport authority.
 let organelleJiggleTargets:
-  | { obj: THREE.Object3D; base: THREE.Vector3; seed: number; offset: THREE.Vector3; thermVel: THREE.Vector3 }[]
+  | { obj: THREE.Object3D; base: THREE.Vector3; offset: THREE.Vector3; rendererVelocity: THREE.Vector3 }[]
   | null = null;
 // Instanced stores (glycogen rosettes, lipid droplets) whose per-instance matrices
-// are baked at build time. To make them move WITH the cytoplasm like every other
-// organelle, each registers its base positions + scales here and its matrices are
-// re-advected each frame by the shared flow field + correlated (OU) thermal wobble.
+// are baked at build time. Their bounded display offsets use renderer-world units.
 type InstancedFlowTarget = {
   mesh: THREE.InstancedMesh;
   base: Float32Array; // 3 * n
   scale: Float32Array; // n
   offset: Float32Array; // 3 * n
-  thermVel: Float32Array; // 3 * n
+  rendererVelocity: Float32Array; // 3 * n correlated renderer velocity state
   cage: number; // max displacement (world units) — small, keeps clusters coherent
 };
 let instancedFlowTargets: InstancedFlowTarget[] = [];
@@ -1131,13 +1134,12 @@ let sinusoidPlasmaField: SinusoidPlasmaField | null = null;
 type MotionTarget = {
   object: THREE.Object3D;
   base: THREE.Vector3;
-  amp: number;
-  speed: number;
+  rendererMobility: number;
   phase: number;
   spin: number;
   axis: THREE.Vector3;
   offset: THREE.Vector3; // accumulated stochastic displacement from base
-  thermVel: THREE.Vector3; // Ornstein-Uhlenbeck thermal velocity (correlated, not white)
+  rendererVelocity: THREE.Vector3;
 };
 const organelleMotions: MotionTarget[] = [];
 // Glycogen granules: shown/hidden per-frame so the store visibly fills (fed) and
@@ -1153,38 +1155,35 @@ let lipidInstanced: THREE.InstancedMesh | null = null;
 let lipidTotal = 0;
 // Instanced organelle display populations. Proxy-derived sample counts remain
 // explicitly non-human and are never presented as measured PHH counts. Each
-// instance does a bounded RANDOM WALK confined to its own cage —
-// genuine stochastic motion (not a repeating oscillation), and because the cage
-// radius is smaller than the clearance left at placement, moving never makes two
-// organelles interpenetrate.
+// instance receives bounded renderer staging inside its reserved collision cage.
 type OrganellePopulation = {
   mesh: THREE.InstancedMesh;
   visibleCount: Record<VisualAnatomyLod, number>;
   basePos: Float32Array; // 3 * count
   baseQuat: Float32Array; // 4 * count
   scale: Float32Array; // count
-  offset: Float32Array; // 3 * count, current random-walk displacement from base
-  thermVel: Float32Array; // 3 * count, Ornstein-Uhlenbeck thermal velocity (world/s), correlated
+  offset: Float32Array; // 3 * count, current renderer displacement from base
+  rendererVelocity: Float32Array; // 3 * count, correlated renderer velocity state
   cage: Float32Array; // count, max displacement radius (< neighbour clearance)
-  step: number; // per-frame random increment (world units)
+  rendererNoiseScaleWorld: number;
   bright: Float32Array; // count, stable per-instance optical variation
   brightStep: number; // zero disables ungrounded activity-like blinking
   obstacleShape: "sphere" | "capsule";
   obstacleRadius: number;
   obstacleHalfLength: number;
   currentPos: Float32Array; // 3 * count, exact renderer centers from the latest matrix update
-  diffusionUm2S: number; // engine thermal diffusion coefficient for this organelle type (0 = ungrounded fallback)
   bodyRadiusWorld: Float32Array; // exact drawn bounding radius per instance
   contactFace: Int32Array; // current local membrane face hint for fast exact contact
 };
 const organellePopulations: OrganellePopulation[] = [];
-// Shared stochastic cytoplasm motion, driven by the engine's cytoplasm_dynamics
-// contract: a coherent active-stirring flow field that carries all organelles
-// together, plus a size-dependent thermal Brownian step per organelle type.
+// Shared renderer-only motion. Its wall-clock and world-unit parameters live in
+// cytoplasmRendererMotion.ts and consume no biological measurement from the
+// engine's evidence-only cytoplasm-motion snapshot.
 let cytoplasmFlow: CytoplasmFlowField | null = null;
-let cytoplasmActiveSpeedWorldPerS = 0; // grounded active-transport speed, world units/s
-let cytoplasmWorldPerUm = 1;
-let cytoplasmDiffusionByOrganelle: Record<string, number> = {}; // engine id -> um^2/s
+let cytoplasmRendererElapsedS = 0;
+let cytoplasmRendererRng = createCytoplasmRendererRng(
+  CYTOPLASM_RENDERER_MOTION_CONTRACT.stochasticMotion.seed
+);
 let lastCytoplasmMotionT = 0;
 let lastOrganelleMotionT = 0;
 const _cytoFlow = { x: 0, y: 0, z: 0 };
@@ -3319,13 +3318,6 @@ const _popColor = new THREE.Color();
 const _anchorPos = new THREE.Vector3();
 const _anchorNorm = new THREE.Vector3();
 const SQRT3 = 1.7320508075688772;
-// Cytoplasm is crowded and overdamped, so a caged organelle's stochastic motion
-// is temporally CORRELATED over a confinement-relaxation time — it is not white
-// per-frame noise. Integrating the thermal term as an Ornstein-Uhlenbeck velocity
-// keeps the same long-time diffusion (D) but removes the unphysical ~60 Hz
-// tremble: real organelles sit nearly still and drift/run smoothly. Disclosed
-// visual time constant, not a measured value.
-const CYTO_THERMAL_CORRELATION_S = 0.8;
 // Resolve a drawn organelle against the current membrane triangles. The body is
 // reflected into the admissible domain while the equal-and-opposite numerical
 // penalty is queued for the next membrane step. Physical force remains unknown.
@@ -3363,50 +3355,48 @@ function resolveIntracellularBodyBoundary(
   return faceHint;
 }
 function updateOrganellePopulations(t: number, updateColor: boolean) {
-  // Simulated seconds since the last update (clamped against pauses / big jumps).
-  const dt = Math.min(Math.max(t - lastCytoplasmMotionT, 0), 0.1);
+  const motion = CYTOPLASM_RENDERER_MOTION_CONTRACT;
+  const stochastic = motion.stochasticMotion;
+  // Wall-clock renderer seconds, clamped after pauses. This is not biological time.
+  const dt = Math.min(
+    Math.max(t - lastCytoplasmMotionT, 0),
+    stochastic.maximumDeltaRenderS
+  );
   lastCytoplasmMotionT = t;
   const flow = cytoplasmFlow;
-  const activeSpeed = cytoplasmActiveSpeedWorldPerS;
+  const flowSpeed = motion.flow.advectionSpeedWorldPerRenderS;
   for (const pop of organellePopulations) {
     const count = pop.scale.length;
-    const step = pop.step;
     const bstep = pop.brightStep;
-    // Grounded stochastic motion when the engine supplies this organelle's thermal
-    // diffusion coefficient and a stirring field; else the legacy caged jiggle.
-    const physical = flow !== null && pop.diffusionUm2S > 0 && dt > 0;
     for (let i = 0; i < count; i += 1) {
       let ox = pop.offset[i * 3];
       let oy = pop.offset[i * 3 + 1];
       let oz = pop.offset[i * 3 + 2];
       const bx = pop.basePos[i * 3], by = pop.basePos[i * 3 + 1], bz = pop.basePos[i * 3 + 2];
       const mf = membraneCoupledFactor(bx, by, bz, t);
-      // Overdamped, confined thermal motion as an Ornstein-Uhlenbeck velocity:
-      // temporally correlated so it drifts smoothly instead of trembling every
-      // frame, while the long-time diffusion still equals the engine's D. The
-      // grounded path additionally advects by the shared incompressible stirring
-      // field so neighbours stream together (active transport dominates the
-      // visible motion; thermal is a small smooth wobble).
-      const decay = dt > 0 ? Math.exp(-dt / CYTO_THERMAL_CORRELATION_S) : 1;
-      const velScale = physical
-        ? Math.sqrt(pop.diffusionUm2S / CYTO_THERMAL_CORRELATION_S) * cytoplasmWorldPerUm
-        : step / CYTO_THERMAL_CORRELATION_S;
+      // Correlated renderer noise avoids frame-rate jitter. Its scale and time
+      // constant are staging choices, not Brownian diffusion or PHH rheology.
+      const decay = dt > 0
+        ? Math.exp(-dt / stochastic.correlationTimeRenderS)
+        : 1;
+      const velScale =
+        pop.rendererNoiseScaleWorld / stochastic.correlationTimeRenderS;
       const gain = velScale * SQRT3 * Math.sqrt(Math.max(0, 1 - decay * decay));
-      const tvx = pop.thermVel[i * 3] * decay + (Math.random() * 2 - 1) * gain;
-      const tvy = pop.thermVel[i * 3 + 1] * decay + (Math.random() * 2 - 1) * gain;
-      const tvz = pop.thermVel[i * 3 + 2] * decay + (Math.random() * 2 - 1) * gain;
-      pop.thermVel[i * 3] = tvx;
-      pop.thermVel[i * 3 + 1] = tvy;
-      pop.thermVel[i * 3 + 2] = tvz;
-      if (physical) {
-        flow!.sampleInto(_cytoFlow, bx * mf + ox, by * mf + oy, bz * mf + oz, t);
-        ox += (_cytoFlow.x * activeSpeed + tvx) * dt;
-        oy += (_cytoFlow.y * activeSpeed + tvy) * dt;
-        oz += (_cytoFlow.z * activeSpeed + tvz) * dt;
+      const rvx = pop.rendererVelocity[i * 3] * decay + (cytoplasmRendererRng() * 2 - 1) * gain;
+      const rvy = pop.rendererVelocity[i * 3 + 1] * decay + (cytoplasmRendererRng() * 2 - 1) * gain;
+      const rvz = pop.rendererVelocity[i * 3 + 2] * decay + (cytoplasmRendererRng() * 2 - 1) * gain;
+      pop.rendererVelocity[i * 3] = rvx;
+      pop.rendererVelocity[i * 3 + 1] = rvy;
+      pop.rendererVelocity[i * 3 + 2] = rvz;
+      if (flow && dt > 0) {
+        flow.sampleInto(_cytoFlow, bx * mf + ox, by * mf + oy, bz * mf + oz, t);
+        ox += (_cytoFlow.x * flowSpeed + rvx) * dt;
+        oy += (_cytoFlow.y * flowSpeed + rvy) * dt;
+        oz += (_cytoFlow.z * flowSpeed + rvz) * dt;
       } else {
-        ox += tvx * dt;
-        oy += tvy * dt;
-        oz += tvz * dt;
+        ox += rvx * dt;
+        oy += rvy * dt;
+        oz += rvz * dt;
       }
       const cage = pop.cage[i];
       const d2 = ox * ox + oy * oy + oz * oz;
@@ -3447,7 +3437,7 @@ function updateOrganellePopulations(t: number, updateColor: boolean) {
       // per-frame instance-colour re-upload for the whole (crowded) population.
       if (updateColor) {
         const nextBrightness = bstep > 0
-          ? THREE.MathUtils.lerp(pop.bright[i], 1, 0.01) + (Math.random() * 2 - 1) * bstep
+          ? THREE.MathUtils.lerp(pop.bright[i], 1, 0.01) + (cytoplasmRendererRng() * 2 - 1) * bstep
           : pop.bright[i];
         const b = THREE.MathUtils.clamp(nextBrightness, 0.72, 1.12);
         pop.bright[i] = b;
@@ -4102,36 +4092,40 @@ function updateVisualAnatomyLod(): void {
 }
 
 function updateOrganelleMotion(t: number) {
+  const motion = CYTOPLASM_RENDERER_MOTION_CONTRACT;
+  const stochasticMotion = motion.stochasticMotion;
   const mechanics = cellCycle.mechanics;
   const mitoticRedistribution =
     mechanics.stage === "none" ? 0 : Math.min(1, 0.25 + mechanics.progress * 0.75);
-  const dt = Math.min(Math.max(t - lastOrganelleMotionT, 0), 0.1);
+  const dt = Math.min(
+    Math.max(t - lastOrganelleMotionT, 0),
+    stochasticMotion.maximumDeltaRenderS
+  );
   lastOrganelleMotionT = t;
   const flow = cytoplasmFlow;
-  const activeSpeed = cytoplasmActiveSpeedWorldPerS;
-  const stochastic = flow !== null && activeSpeed > 0 && dt > 0;
+  const flowSpeed = motion.flow.advectionSpeedWorldPerRenderS;
+  const stochastic = flow !== null && dt > 0;
   for (const m of organelleMotions) {
     if (stochastic) {
-      // Same coherent cytoplasmic stirring field as the instanced organelles,
-      // scaled by this organelle's mobility budget (amp) so large anchored
-      // structures (nucleus) barely drift while smaller ones move more. No
-      // deterministic sinusoid — the motion is stochastic and correlated.
+      // The same renderer field keeps nearby display objects visually coherent.
+      // Per-object mobility is a staging budget, not motor occupancy or velocity.
       flow!.sampleInto(_cytoFlow, m.base.x + m.offset.x, m.base.y + m.offset.y, m.base.z + m.offset.z, t);
-      const mob = m.amp;
-      // Correlated (Ornstein-Uhlenbeck) thermal wobble instead of per-frame white
-      // jitter: large anchored structures (nucleus) barely drift, all move smoothly.
-      const decay = Math.exp(-dt / CYTO_THERMAL_CORRELATION_S);
-      const velScale = (mob * 0.03) / CYTO_THERMAL_CORRELATION_S;
+      const mob = m.rendererMobility;
+      const decay = Math.exp(-dt / stochasticMotion.correlationTimeRenderS);
+      const velScale =
+        (mob * stochasticMotion.trackedNoiseScalePerMobility)
+        / stochasticMotion.correlationTimeRenderS;
       const gain = velScale * SQRT3 * Math.sqrt(Math.max(0, 1 - decay * decay));
-      m.thermVel.set(
-        m.thermVel.x * decay + (Math.random() * 2 - 1) * gain,
-        m.thermVel.y * decay + (Math.random() * 2 - 1) * gain,
-        m.thermVel.z * decay + (Math.random() * 2 - 1) * gain
+      m.rendererVelocity.set(
+        m.rendererVelocity.x * decay + (cytoplasmRendererRng() * 2 - 1) * gain,
+        m.rendererVelocity.y * decay + (cytoplasmRendererRng() * 2 - 1) * gain,
+        m.rendererVelocity.z * decay + (cytoplasmRendererRng() * 2 - 1) * gain
       );
-      m.offset.x += (_cytoFlow.x * activeSpeed * mob * 4 + m.thermVel.x) * dt;
-      m.offset.y += (_cytoFlow.y * activeSpeed * mob * 4 + m.thermVel.y) * dt;
-      m.offset.z += (_cytoFlow.z * activeSpeed * mob * 4 + m.thermVel.z) * dt;
-      const cage = mob * 1.6;
+      const flowScale = flowSpeed * mob * stochasticMotion.trackedFlowMobilityMultiplier;
+      m.offset.x += (_cytoFlow.x * flowScale + m.rendererVelocity.x) * dt;
+      m.offset.y += (_cytoFlow.y * flowScale + m.rendererVelocity.y) * dt;
+      m.offset.z += (_cytoFlow.z * flowScale + m.rendererVelocity.z) * dt;
+      const cage = mob * stochasticMotion.trackedCageMobilityMultiplier;
       if (m.offset.lengthSq() > cage * cage) m.offset.setLength(cage);
     }
     const dx = m.offset.x;
@@ -4152,23 +4146,21 @@ function updateOrganelleMotion(t: number) {
   }
 }
 
-// Advect baked-matrix instanced stores (glycogen rosettes, lipid droplets) by the
-// shared cytoplasm flow + correlated (OU) thermal wobble, so they move with the
-// cytoplasm like every other organelle instead of sitting frozen. Only the
-// currently visible instances ([0, count)) are updated (glycogen count tracks the
-// engine's real store level).
+// Stage baked-matrix stores with the same renderer field. The values below are
+// visual world units; they do not encode molecular diffusion or active transport.
 function updateInstancedFlowTargets(dt: number, tNow: number) {
   if (instancedFlowTargets.length === 0) return;
-  const jdt = Math.min(Math.max(dt, 0), 0.1);
+  const motion = CYTOPLASM_RENDERER_MOTION_CONTRACT;
+  const stochastic = motion.stochasticMotion;
+  const jdt = Math.min(Math.max(dt, 0), stochastic.maximumDeltaRenderS);
   if (jdt <= 0) return;
   const flow = cytoplasmFlow;
-  const active = cytoplasmActiveSpeedWorldPerS;
-  const decay = Math.exp(-jdt / CYTO_THERMAL_CORRELATION_S);
-  // Keep the INDEPENDENT thermal wobble small so a rosette/cluster doesn't scatter;
-  // the coherent active-transport advection (below) is what carries them, and it
-  // moves neighbours together (they sample the same flow), so a larger cage lets
-  // the cytoplasm visibly stream them without tearing clusters apart.
-  const gain = (0.02 / CYTO_THERMAL_CORRELATION_S) * SQRT3 * Math.sqrt(Math.max(0, 1 - decay * decay));
+  const flowSpeed = motion.flow.advectionSpeedWorldPerRenderS;
+  const decay = Math.exp(-jdt / stochastic.correlationTimeRenderS);
+  const gain =
+    (stochastic.instancedStoreNoiseScaleWorld / stochastic.correlationTimeRenderS)
+    * SQRT3
+    * Math.sqrt(Math.max(0, 1 - decay * decay));
   _popQuat.identity();
   for (const tgt of instancedFlowTargets) {
     const n = Math.min(tgt.mesh.count, tgt.scale.length);
@@ -4176,17 +4168,19 @@ function updateInstancedFlowTargets(dt: number, tNow: number) {
     for (let i = 0; i < n; i += 1) {
       const bx = tgt.base[i * 3], by = tgt.base[i * 3 + 1], bz = tgt.base[i * 3 + 2];
       let ox = tgt.offset[i * 3], oy = tgt.offset[i * 3 + 1], oz = tgt.offset[i * 3 + 2];
-      const tvx = tgt.thermVel[i * 3] * decay + (Math.random() * 2 - 1) * gain;
-      const tvy = tgt.thermVel[i * 3 + 1] * decay + (Math.random() * 2 - 1) * gain;
-      const tvz = tgt.thermVel[i * 3 + 2] * decay + (Math.random() * 2 - 1) * gain;
-      tgt.thermVel[i * 3] = tvx; tgt.thermVel[i * 3 + 1] = tvy; tgt.thermVel[i * 3 + 2] = tvz;
-      if (flow && active > 0) {
+      const rvx = tgt.rendererVelocity[i * 3] * decay + (cytoplasmRendererRng() * 2 - 1) * gain;
+      const rvy = tgt.rendererVelocity[i * 3 + 1] * decay + (cytoplasmRendererRng() * 2 - 1) * gain;
+      const rvz = tgt.rendererVelocity[i * 3 + 2] * decay + (cytoplasmRendererRng() * 2 - 1) * gain;
+      tgt.rendererVelocity[i * 3] = rvx;
+      tgt.rendererVelocity[i * 3 + 1] = rvy;
+      tgt.rendererVelocity[i * 3 + 2] = rvz;
+      if (flow) {
         flow.sampleInto(_cytoFlow, bx + ox, by + oy, bz + oz, tNow);
-        ox += (_cytoFlow.x * active + tvx) * jdt;
-        oy += (_cytoFlow.y * active + tvy) * jdt;
-        oz += (_cytoFlow.z * active + tvz) * jdt;
+        ox += (_cytoFlow.x * flowSpeed + rvx) * jdt;
+        oy += (_cytoFlow.y * flowSpeed + rvy) * jdt;
+        oz += (_cytoFlow.z * flowSpeed + rvz) * jdt;
       } else {
-        ox += tvx * jdt; oy += tvy * jdt; oz += tvz * jdt;
+        ox += rvx * jdt; oy += rvy * jdt; oz += rvz * jdt;
       }
       const c2 = ox * ox + oy * oy + oz * oz;
       if (c2 > cage2) { const s = tgt.cage / Math.sqrt(c2); ox *= s; oy *= s; oz *= s; }
@@ -7588,8 +7582,8 @@ function buildOrganelleScene() {
     const v = new THREE.Vector3(rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1);
     return v.lengthSq() < 1e-4 ? new THREE.Vector3(1, 0, 0) : v.normalize();
   };
-  const trackMotion = (object: THREE.Object3D, base: THREE.Vector3, amp: number, speed: number, spin = 0.004, phase = rnd() * Math.PI * 2) => {
-    organelleMotions.push({ object, base: base.clone(), amp, speed, phase, spin, axis: randDir(), offset: new THREE.Vector3(), thermVel: new THREE.Vector3() });
+  const trackMotion = (object: THREE.Object3D, base: THREE.Vector3, rendererMobility: number, spin = 0.004, phase = rnd() * Math.PI * 2) => {
+    organelleMotions.push({ object, base: base.clone(), rendererMobility, phase, spin, axis: randDir(), offset: new THREE.Vector3(), rendererVelocity: new THREE.Vector3() });
   };
   const nmToWorld = (nm: number) => (nm / 1000) / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
   const umToWorld = (um: number) => um / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
@@ -7602,9 +7596,9 @@ function buildOrganelleScene() {
   const enginePlacement = externalEngineSummary?.organellePlacement ?? null;
   const hasEnginePlacement = !!enginePlacement && enginePlacement.bodies.length > 0;
   organelleSceneUsedEnginePlacement = hasEnginePlacement;
-  // Stochastic cytoplasm motion from the engine's grounded cytoplasm_dynamics:
-  // a coherent active-stirring flow field (magnitude = measured WIF-B9 hepatocyte
-  // transport speed) plus size-dependent thermal diffusion per organelle type.
+  // The engine section is evidence-only. Any future attempt to grant it runtime
+  // authority fails here; the visual field below consumes only the explicit
+  // renderer-world/wall-clock contract.
   const cytoDyn: EngineCytoplasmDynamics | null = externalEngineSummary?.cytoplasmDynamics ?? null;
   const organelleInstanceState = externalEngineSummary?.organelleInstanceVitality ?? null;
   if (
@@ -7615,21 +7609,37 @@ function buildOrganelleScene() {
       "Per-instance organelle kinetics cannot drive the renderer without a calibrated healthy-PHH runtime law."
     );
   }
-  cytoplasmWorldPerUm = 1 / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
-  cytoplasmDiffusionByOrganelle = {};
-  lastCytoplasmMotionT = 0;
-  if (cytoDyn) {
-    cytoplasmActiveSpeedWorldPerS = cytoDyn.active_transport_speed_um_s * cytoplasmWorldPerUm;
-    for (const m of cytoDyn.organelle_motility) cytoplasmDiffusionByOrganelle[m.organelle_id] = m.thermal_diffusion_um2_s;
-    cytoplasmFlow = new CytoplasmFlowField(
-      20260729,
-      cytoDyn.stir_coherence_length_um * cytoplasmWorldPerUm,
-      cytoDyn.stir_coherence_time_s
+  if (
+    cytoDyn
+    && (
+      cytoDyn.quantitative_runtime_enabled
+      || cytoDyn.biological_renderer_motion_enabled
+      || cytoDyn.authoritative_state_coupling_allowed
+      || cytoDyn.cross_context_cargo_speed_applied_to_bulk_flow
+      || cytoDyn.nanoprobe_viscosity_extrapolated_to_micron_organelles
+      || cytoDyn.stokes_einstein_organelle_diffusion_emitted
+      || (cytoDyn.renderer_numeric_parameter_count ?? 0) !== 0
+      || (cytoDyn.healthy_phh_numeric_motion_parameter_count ?? 0) !== 0
+      || (cytoDyn.healthy_phh_organelle_motility_record_count ?? 0) !== 0
+    )
+  ) {
+    throw new Error(
+      "Cytoplasm evidence cannot drive renderer motion or healthy-PHH state."
     );
-  } else {
-    cytoplasmFlow = null;
-    cytoplasmActiveSpeedWorldPerS = 0;
   }
+  const rendererMotion = CYTOPLASM_RENDERER_MOTION_CONTRACT;
+  cytoplasmRendererElapsedS = 0;
+  lastCytoplasmMotionT = 0;
+  lastOrganelleMotionT = 0;
+  cytoplasmRendererRng = createCytoplasmRendererRng(
+    rendererMotion.stochasticMotion.seed
+  );
+  cytoplasmFlow = new CytoplasmFlowField(
+    rendererMotion.flow.seed,
+    rendererMotion.flow.coherenceLengthCellRadiusFraction * CELL_R,
+    rendererMotion.flow.evolutionPeriodRenderS,
+    rendererMotion.flow.modeCount
+  );
   const ENGINE_KIND_TO_ID: Record<string, string> = {
     mitochondria: "mitochondria",
     lysosome: "lysosomes",
@@ -7818,7 +7828,6 @@ function buildOrganelleScene() {
       jitterScale?: number;
       collisionRadius: number;
       cage?: number;
-      step?: number;
       obstacleShape?: "sphere" | "capsule";
       obstacleRadius?: number;
       obstacleHalfLength?: number;
@@ -7831,7 +7840,7 @@ function buildOrganelleScene() {
     // diffusion coefficient, confinement length or organelle trajectory.
     const cageR = opts.cage ?? 0.13;
     // Reserve the MAX-scaled bounding radius (collisionRadius * (1+jitter)) + cage,
-    // so even the largest-jittered instance, at the far edge of its random-walk
+    // so even the largest-staged instance, at the far edge of its renderer
     // cage, still cannot overlap a neighbour. (The earlier bug reserved only the
     // unscaled radius, so up-scaled instances interpenetrated.)
     const exclR = opts.collisionRadius * (1 + jitter) + cageR;
@@ -7911,7 +7920,7 @@ function buildOrganelleScene() {
     const baseQuat = new Float32Array(actual * 4);
     const scaleArr = new Float32Array(actual);
     const offsetArr = new Float32Array(actual * 3); // starts at rest
-    const thermVelArr = new Float32Array(actual * 3); // OU thermal velocity, starts at rest
+    const rendererVelocityArr = new Float32Array(actual * 3);
     const currentPos = new Float32Array(actual * 3);
     const bodyRadiusWorld = new Float32Array(actual);
     const contactFace = new Int32Array(actual);
@@ -7947,10 +7956,16 @@ function buildOrganelleScene() {
       baseQuat[i * 4 + 2] = q.z;
       baseQuat[i * 4 + 3] = q.w;
       scaleArr[i] = sc;
-      // For engine bodies, allow motion up to ~0.4 of the organelle radius. The
-      // coherent stirring field moves neighbours together (small relative
-      // motion), so this stays overlap-safe while the motion is visible.
-      cageArr[i] = engineScale ? Math.max(cageR, engineRadiusWorld[i] * 0.4) : cageR;
+      // The cage is renderer geometry only. It keeps staging bounded and cannot
+      // be read as a PHH confinement length or organelle trajectory statistic.
+      cageArr[i] = engineScale
+        ? Math.max(
+            cageR,
+            engineRadiusWorld[i]
+              * CYTOPLASM_RENDERER_MOTION_CONTRACT.stochasticMotion
+                .engineBodyCageRadiusFraction
+          )
+        : cageR;
       // Stable optical variation only; activity comes from the engine-level
       // organelle signal, not arbitrary per-instance flashing.
       const b0 = 0.82 + rnd() * 0.22;
@@ -7979,16 +7994,17 @@ function buildOrganelleScene() {
       baseQuat,
       scale: scaleArr,
       offset: offsetArr,
-      thermVel: thermVelArr,
+      rendererVelocity: rendererVelocityArr,
       cage: cageArr,
-      step: opts.step ?? 0.03,
+      rendererNoiseScaleWorld: populationRendererNoiseScaleWorld(
+        kind ? (ENGINE_KIND_TO_ID[kind] ?? kind) : null
+      ),
       bright: brightArr,
       brightStep: 0,
       obstacleShape: opts.obstacleShape ?? "sphere",
       obstacleRadius: opts.obstacleRadius ?? opts.collisionRadius,
       obstacleHalfLength: opts.obstacleHalfLength ?? 0,
       currentPos,
-      diffusionUm2S: kind ? (cytoplasmDiffusionByOrganelle[ENGINE_KIND_TO_ID[kind] ?? ""] ?? 0) : 0,
       bodyRadiusWorld,
       contactFace
     });
@@ -8807,9 +8823,9 @@ function buildOrganelleScene() {
   if (diseaseSceneVisuals) diseaseSceneVisuals.fateHalo = fateHalo.material as THREE.MeshStandardMaterial;
   tagGlow("nucleus", nucleolus);
   const nucleusPhase = rnd() * Math.PI * 2;
-  trackMotion(nucleusBody, nucleusBody.position, 0.035, 0.12, 0.0012, nucleusPhase);
-  trackMotion(nuclearEnvelope, nuclearEnvelope.position, 0.035, 0.12, 0.001, nucleusPhase);
-  trackMotion(nucleolus, nucleolus.position, 0.05, 0.18, 0.002, nucleusPhase + 0.4);
+  trackMotion(nucleusBody, nucleusBody.position, 0.035, 0.0012, nucleusPhase);
+  trackMotion(nuclearEnvelope, nuclearEnvelope.position, 0.035, 0.001, nucleusPhase);
+  trackMotion(nucleolus, nucleolus.position, 0.05, 0.002, nucleusPhase + 0.4);
   addPos("nucleus", nuc);
   // nuclear pores — dots on the envelope
   const poreN = 60;
@@ -8827,7 +8843,7 @@ function buildOrganelleScene() {
     new THREE.PointsMaterial({ color: "#7c4fb0", size: 0.45, map: DISC_TEXTURE, alphaTest: 0.4, transparent: true })
   );
   group.add(nuclearPores);
-  trackMotion(nuclearPores, nuclearPores.position, 0.035, 0.12, 0.001, nucleusPhase);
+  trackMotion(nuclearPores, nuclearPores.position, 0.035, 0.001, nucleusPhase);
 
   // --- Chromatin: packed DNA filling the nucleoplasm (heterochromatin denser at
   // the periphery, euchromatin looser inside). A point haze, purely structural. ---
@@ -8849,7 +8865,7 @@ function buildOrganelleScene() {
     );
     chromatin.userData.label = "Chromatin — the cell's DNA packed with histones; denser (heterochromatin, silenced) at the nuclear rim, looser (euchromatin, active) inside";
     group.add(chromatin);
-    trackMotion(chromatin, chromatin.position, 0.03, 0.1, 0.0008, nucleusPhase);
+    trackMotion(chromatin, chromatin.position, 0.03, 0.0008, nucleusPhase);
   }
 
   // --- Gene loci + central-dogma transcription (see updateNucleusExpression) ---
@@ -9088,7 +9104,7 @@ function buildOrganelleScene() {
       halfExtents: [1.18, 0.65, 1.28],
       boundarySampling: "conservative_subgrid"
     }));
-    trackMotion(stack, pos, 0.08, 0.16 + rnd() * 0.08, 0.002);
+    trackMotion(stack, pos, 0.08, 0.002);
     const nCis = 5;
     for (let i = 0; i < nCis; i += 1) {
       const r = 0.9 - i * 0.09;
@@ -9110,7 +9126,7 @@ function buildOrganelleScene() {
         parent: stack
       });
       tagGlow("golgi", vesicle);
-      trackMotion(vesicle, vesicle.position, 0.1, 0.34 + rnd() * 0.18, 0.006);
+      trackMotion(vesicle, vesicle.position, 0.1, 0.006);
     }
   }
 
@@ -9139,7 +9155,7 @@ function buildOrganelleScene() {
     sub.position.copy(p);
     sub.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3);
     group.add(sub);
-    trackMotion(sub, p, 0.18, 0.32 + rnd() * 0.18, 0.006 + rnd() * 0.006);
+    trackMotion(sub, p, 0.18, 0.006 + rnd() * 0.006);
     const z = new THREE.Vector3();
     const mitoOuter = mesh(new THREE.CapsuleGeometry(0.78, len, 8, 18), "#ff8a5c", z, { opacity: 0.82, emissive: 0.14, rough: 0.5, label: "Mitochondrion — the cell's power plant; makes ATP", parent: sub });
     organelleMitos.push(mitoOuter);
@@ -9173,7 +9189,6 @@ function buildOrganelleScene() {
       obstacleRadius: 0.5,
       obstacleHalfLength: 0.2,
       cage: 0.05,
-      step: 0.035,
       label: `Mitochondria - real hepatocyte-scale ovoids (~0.6×1.2 µm) packed by excluded volume toward the ~18-20% volume fraction reported for hepatocyte cytoplasm (Blouin, Bolender & Weibel 1977, rat parenchyma stereology; human is the same order). The packer keeps whatever fits without overlap; exact per-cell count and donor morphometry are not claimed.`
     }
   );
@@ -9190,7 +9205,7 @@ function buildOrganelleScene() {
       label: isLysosome ? "Lysosome — acidic digestion, endosomes and autophagy" : "Peroxisome — fatty-acid oxidation and peroxide detox"
     });
     tagGlow(isLysosome ? "lysosome" : "peroxisome", lys);
-    trackMotion(lys, p, 0.22, 0.3 + rnd() * 0.25, 0.01);
+    trackMotion(lys, p, 0.22, 0.01);
     addPos(isLysosome ? "lysosome" : "peroxisome", p);
   }
   const heroLyso = Math.floor(HERO_VESICLES / 2);
@@ -9205,7 +9220,6 @@ function buildOrganelleScene() {
       emissive: 0.16,
       collisionRadius: 0.34,
       cage: 0.12,
-      step: 0.045,
       jitterScale: 0.18,
       label: `Peroxisomes - ${PEROX_DISPLAY_SAMPLES.toLocaleString()} non-overlapping renderer samples. Display budget and size do not encode a human-hepatocyte count, density or morphometry.`
     }
@@ -9220,7 +9234,6 @@ function buildOrganelleScene() {
       emissive: 0.16,
       collisionRadius: 0.36,
       cage: 0.12,
-      step: 0.045,
       jitterScale: 0.18,
       label: `Lysosomes - ${LYSO_DISPLAY_SAMPLES.toLocaleString()} non-overlapping renderer samples. Display budget and size do not encode a human-hepatocyte count, density or morphometry.`
     }
@@ -9283,7 +9296,7 @@ function buildOrganelleScene() {
       // tiny glycogen granules).
       instancedFlowTargets.push({
         mesh: lipidInstanced, base: lipBase, scale: lipScale,
-        offset: new Float32Array(lipidTotal * 3), thermVel: new Float32Array(lipidTotal * 3),
+        offset: new Float32Array(lipidTotal * 3), rendererVelocity: new Float32Array(lipidTotal * 3),
         cage: 0.7
       });
       lipidInstanced.userData.label = "Lipid droplets - ER-derived neutral-lipid stores bounded by a phospholipid monolayer. Combined display volume is normalized to the 0.507807% normal-control human 3D median from Segovia-Miranda et al.; sample count and size variation are renderer-only, and no nutrition-dependent PHH response law is asserted.";
@@ -9632,7 +9645,7 @@ function buildOrganelleScene() {
     // the flow at nearly the same point); small cage keeps clusters together.
     instancedFlowTargets.push({
       mesh: glycogenInstanced, base: glyBase, scale: glyScale,
-      offset: new Float32Array(glycogenTotal * 3), thermVel: new Float32Array(glycogenTotal * 3),
+      offset: new Float32Array(glycogenTotal * 3), rendererVelocity: new Float32Array(glycogenTotal * 3),
       cage: 0.9
     });
     glycogenInstanced.userData.label = "Glycogen rosettes - cytosolic β-particles (clustered into α-particle rosettes) that are the hepatocyte's glucose store, packed among the organelles beside the smooth ER. The number shown tracks the engine's real glycogen level: it fills after feeding and mobilises during fasting.";
@@ -9653,7 +9666,7 @@ function buildOrganelleScene() {
   });
   tagGlow("glycolysis", glycolysisNode);
   addPos("glycolysis", glycolysisAnchor);
-  trackMotion(glycolysisNode, glycolysisAnchor, 0.16, 0.42, 0.008);
+  trackMotion(glycolysisNode, glycolysisAnchor, 0.16, 0.008);
 
   // Sparse transport tracers make the aqueous cytosol legible without drawing
   // individual water molecules. A coarse Eulerian grid now projects the seeded
@@ -10256,35 +10269,32 @@ async function embedRealProteins(
 }
 
 function renderOrganelleScene(realDeltaS = 1 / 60) {
+  const rendererMotion = CYTOPLASM_RENDERER_MOTION_CONTRACT;
+  const rendererMotionDeltaS = running && organelleGroup && !dragState
+    ? Math.min(
+        Math.max(realDeltaS, 0),
+        rendererMotion.stochasticMotion.maximumDeltaRenderS
+      )
+    : 0;
+  cytoplasmRendererElapsedS += rendererMotionDeltaS;
+  const rendererMotionTimeS = cytoplasmRendererElapsedS;
   if (organelleGroup && !dragState) {
-    // Real hepatocytes don't spin. Instead of rotating, the cell drifts gently
-    // (cells migrate/jostle in tissue); orientation is yours to drag.
-    const tNow = performance.now() / 1000;
-    organelleGroup.position.x = Math.sin(tNow * 0.16) * 0.14;
-    organelleGroup.position.y = Math.sin(tNow * 0.11 + 1.0) * 0.10;
+    // Keep the cell anchored. Whole-cell migration/jostling requires a tissue
+    // mechanics model and must not be invented by the renderer.
+    organelleGroup.position.set(0, 0, 0);
     // Visible growth: biomass is treated as relative volume/mass, so radius
     // scales with the cube root. Membrane area then follows radius^2.
     const growthScale = visualRadiusScaleFromBiomass(cellCycle.biomass);
     organelleGroup.scale.setScalar(growthScale);
 
-    // Every remaining organelle single (ribosome clusters, Golgi, peroxisomes,
-    // vesicles, granules, endosomes, cargo) is carried by the SAME shared
-    // incompressible cytoplasm flow field + correlated (Ornstein-Uhlenbeck)
-    // thermal wobble as the instanced populations and tracked singles -- no
-    // deterministic sin() cheap trick, and it means these organelles are actually
-    // moved by the cytoplasm, streaming together with their neighbours.
+    // Remaining drawable bodies receive bounded coherent renderer staging. This
+    // is a legibility layer, not a claim that ER, ribosomes and soluble species
+    // share one measured advection law.
     if (organelleJiggleTargets === null) {
       organelleJiggleTargets = [];
-      // Catch-all: EVERY intracellular body drifts with the cytoplasm. We include
-      // every Mesh / InstancedMesh / Points under the cell and exclude only what
-      // must not stream: (1) the cytoskeleton and cutaway edges — they are
-      // Line/LineSegments, so they are naturally excluded (not Mesh/Points), and
-      // biologically they move the cytoplasm rather than the reverse; (2) the
-      // deformable plasma membrane (by reference); (3) membrane-embedded proteins
-      // and extracellular structures (by label); (4) bodies already driven per
-      // instance by another system (instanced populations, glycogen/lipid stores,
-      // tracked singles). Everything else — organelle bodies, ER, centrosome, mRNA,
-      // ribosomes, cytosolic solutes, vesicle/cargo clouds — is carried by the flow.
+      // Catch-all selection is purely a scene-graph rule. Mesh/point objects that
+      // have their own driver, belong to the membrane/extracellular scene, or are
+      // diagnostic overlays are excluded.
       const handled = new Set<THREE.Object3D>();
       if (organelleMembrane) handled.add(organelleMembrane);
       // Overlay / external-body layers are diagnostic, not cytoplasm — prune their
@@ -10313,42 +10323,50 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       organelleGroup.traverse((o) => {
         if (!isDrawable(o) || handled.has(o) || isStatic(o) || ancestorDrives(o)) return;
         organelleJiggleTargets!.push({
-          obj: o, base: o.position.clone(), seed: organelleJiggleTargets!.length * 0.61,
-          offset: new THREE.Vector3(), thermVel: new THREE.Vector3()
+          obj: o,
+          base: o.position.clone(),
+          offset: new THREE.Vector3(),
+          rendererVelocity: new THREE.Vector3()
         });
       });
     }
-    const jDt = Math.min(Math.max(realDeltaS, 0), 0.1);
+    const jDt = rendererMotionDeltaS;
     const jFlow = cytoplasmFlow;
-    const jActive = cytoplasmActiveSpeedWorldPerS;
-    const jDecay = jDt > 0 ? Math.exp(-jDt / CYTO_THERMAL_CORRELATION_S) : 1;
-    const jGain = (0.05 / CYTO_THERMAL_CORRELATION_S) * SQRT3 * Math.sqrt(Math.max(0, 1 - jDecay * jDecay));
-    // Longer leash so the cytoplasm visibly carries these organelles (the coherent
-    // flow streams neighbours together); still bounded so large anchored structures
-    // (ER network, centrosome) only sway rather than wander off.
-    const jCage = 0.28;
+    const jFlowSpeed = rendererMotion.flow.advectionSpeedWorldPerRenderS;
+    const correlation = rendererMotion.stochasticMotion.correlationTimeRenderS;
+    const jDecay = jDt > 0 ? Math.exp(-jDt / correlation) : 1;
+    const jGain =
+      (rendererMotion.stochasticMotion.catchAllNoiseScaleWorld / correlation)
+      * SQRT3
+      * Math.sqrt(Math.max(0, 1 - jDecay * jDecay));
+    const jCage = rendererMotion.stochasticMotion.catchAllCageWorld;
     for (const tgt of organelleJiggleTargets) {
       const b = tgt.base;
-      tgt.thermVel.set(
-        tgt.thermVel.x * jDecay + (Math.random() * 2 - 1) * jGain,
-        tgt.thermVel.y * jDecay + (Math.random() * 2 - 1) * jGain,
-        tgt.thermVel.z * jDecay + (Math.random() * 2 - 1) * jGain
+      tgt.rendererVelocity.set(
+        tgt.rendererVelocity.x * jDecay + (cytoplasmRendererRng() * 2 - 1) * jGain,
+        tgt.rendererVelocity.y * jDecay + (cytoplasmRendererRng() * 2 - 1) * jGain,
+        tgt.rendererVelocity.z * jDecay + (cytoplasmRendererRng() * 2 - 1) * jGain
       );
-      if (jFlow && jActive > 0) {
-        jFlow.sampleInto(_cytoFlow, b.x + tgt.offset.x, b.y + tgt.offset.y, b.z + tgt.offset.z, tNow);
-        tgt.offset.x += (_cytoFlow.x * jActive + tgt.thermVel.x) * jDt;
-        tgt.offset.y += (_cytoFlow.y * jActive + tgt.thermVel.y) * jDt;
-        tgt.offset.z += (_cytoFlow.z * jActive + tgt.thermVel.z) * jDt;
+      if (jFlow) {
+        jFlow.sampleInto(
+          _cytoFlow,
+          b.x + tgt.offset.x,
+          b.y + tgt.offset.y,
+          b.z + tgt.offset.z,
+          rendererMotionTimeS
+        );
+        tgt.offset.x += (_cytoFlow.x * jFlowSpeed + tgt.rendererVelocity.x) * jDt;
+        tgt.offset.y += (_cytoFlow.y * jFlowSpeed + tgt.rendererVelocity.y) * jDt;
+        tgt.offset.z += (_cytoFlow.z * jFlowSpeed + tgt.rendererVelocity.z) * jDt;
       } else {
-        tgt.offset.x += tgt.thermVel.x * jDt;
-        tgt.offset.y += tgt.thermVel.y * jDt;
-        tgt.offset.z += tgt.thermVel.z * jDt;
+        tgt.offset.x += tgt.rendererVelocity.x * jDt;
+        tgt.offset.y += tgt.rendererVelocity.y * jDt;
+        tgt.offset.z += tgt.rendererVelocity.z * jDt;
       }
       if (tgt.offset.lengthSq() > jCage * jCage) tgt.offset.setLength(jCage);
       tgt.obj.position.set(b.x + tgt.offset.x, b.y + tgt.offset.y, b.z + tgt.offset.z);
     }
-    // Glycogen rosettes + lipid droplets (baked-matrix instanced stores) drift too.
-    updateInstancedFlowTargets(realDeltaS, tNow);
+    updateInstancedFlowTargets(rendererMotionDeltaS, rendererMotionTimeS);
   }
 
   if (livingCell && running) {
@@ -10386,10 +10404,13 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       updateVisualAnatomyLod();
       updateMembraneMicrovilli();
       updateSinusoidBloodFlow(s.elapsedS);
-      updateOrganelleMotion(s.elapsedS);
+      updateOrganelleMotion(rendererMotionTimeS);
     });
     if (heavyFrame) {
-      measurePerformanceStage("organelle-populations", () => updateOrganellePopulations(s.elapsedS, colorFrame));
+      measurePerformanceStage(
+        "organelle-populations",
+        () => updateOrganellePopulations(rendererMotionTimeS, colorFrame)
+      );
     }
     // Rebuild moving analytic organelle boundaries only after all organelle
     // transforms have advanced; the projected cytosol therefore sees this frame,
