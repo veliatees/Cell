@@ -1,116 +1,143 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import json
-import unittest
+from math import nan
+
+import pytest
 
 from cell_engine.quantitative.cell_population import (
     CELL_POPULATION_SOURCES,
+    CellPopulationAuthorityError,
+    CellPopulationCandidateParameters,
     build_cell_population,
     cell_population_snapshot,
+    population_fate_from_damage,
     simulate_cell_population,
 )
-from cell_engine.quantitative.p53_dynamics import population_fate_from_damage
 
 
-class FateReductionTest(unittest.TestCase):
-    def test_reduction_matches_the_fate_ladder(self) -> None:
-        self.assertEqual(population_fate_from_damage(0.05, p53_functional=True), "divide")
-        self.assertEqual(
-            population_fate_from_damage(2.0, p53_functional=True), "arrest_and_repair"
-        )
-        self.assertEqual(
-            population_fate_from_damage(2.0, p53_functional=True, consecutive_arrests=3),
-            "senescence",
-        )
-        self.assertEqual(population_fate_from_damage(99.0, p53_functional=True), "apoptosis")
-        self.assertEqual(
-            population_fate_from_damage(2.0, p53_functional=False),
-            "divide_with_unresolved_damage",
-        )
-        self.assertEqual(
-            population_fate_from_damage(99.0, p53_functional=False), "apoptosis"
-        )
+def _software_fixture_parameters() -> CellPopulationCandidateParameters:
+    return CellPopulationCandidateParameters(
+        initial_cells=24,
+        initial_checkpoint_null_fraction=0.125,
+        carrying_capacity=48,
+        cycles=8,
+        stress_relative_sigma=0.1,
+        division_partition_noise=0.05,
+        repair_fraction_per_cycle=0.5,
+        division_safe_damage=0.2,
+        repair_capacity=2.0,
+        senescence_arrest_limit=2,
+        checkpoint_null_lethal_damage=4.0,
+    )
 
 
-class EmergenceTest(unittest.TestCase):
-    def test_no_selection_without_stress(self) -> None:
-        # Same law, no damage: the checkpoint-null subclone has no advantage.
-        out = simulate_cell_population(
-            genotoxic_stress_per_generation=0.0, initial_null_fraction=0.02, seed=7
-        )
-        self.assertAlmostEqual(
-            out.final_checkpoint_null_fraction,
-            out.initial_checkpoint_null_fraction,
-            delta=0.01,
-        )
-        self.assertFalse(out.transformation_emerged)
-
-    def test_checkpoint_null_clone_expands_under_chronic_stress(self) -> None:
-        out = simulate_cell_population(
-            scenario="selection",
-            genotoxic_stress_per_generation=0.45,
-            initial_null_fraction=0.02,
-            seed=7,
-        )
-        self.assertTrue(out.transformation_emerged)
-        self.assertGreater(out.final_checkpoint_null_fraction, 0.5)
-        self.assertGreater(
-            out.final_checkpoint_null_fraction, out.initial_checkpoint_null_fraction
-        )
-        self.assertIsNotNone(out.generations_to_null_majority)
-
-    def test_pure_wildtype_cannot_expand_under_stress(self) -> None:
-        # Without the checkpoint-null clone, chronic damage cannot produce
-        # expansion -- the population contracts. Expansion is specific to
-        # checkpoint loss + selection, not to stress alone.
-        out = simulate_cell_population(
-            scenario="wt_control",
-            genotoxic_stress_per_generation=0.6,
-            initial_null_fraction=0.0,
-            seed=7,
-        )
-        self.assertFalse(out.transformation_emerged)
-        self.assertEqual(out.final_checkpoint_null_fraction, 0.0)
-        self.assertLess(out.final_alive, out.carrying_capacity)
+def test_public_snapshot_contains_no_built_in_scenario_or_transformation_claim() -> None:
+    snapshot = cell_population_snapshot()
+    json.dumps(snapshot)
+    assert snapshot["status"] == "software_kernel_only_no_phh_population_execution"
+    assert snapshot["bundled_biological_parameter_set_count"] == 0
+    assert snapshot["canonical_simulated_scenario_count"] == 0
+    assert snapshot["canonical_transformation_claim_count"] == 0
+    assert snapshot["healthy_phh_calibrated_population_parameter_count"] == 0
+    assert snapshot["quantitative_validation_allowed"] is False
+    assert snapshot["predictive_execution_allowed"] is False
+    assert "transformation_emerged" not in json.dumps(snapshot)
 
 
-class ContractTest(unittest.TestCase):
-    def test_determinism(self) -> None:
-        a = simulate_cell_population(genotoxic_stress_per_generation=0.45, seed=3)
-        b = simulate_cell_population(genotoxic_stress_per_generation=0.45, seed=3)
-        self.assertEqual(
-            a.checkpoint_null_fraction_series, b.checkpoint_null_fraction_series
+@pytest.mark.parametrize(
+    "purpose",
+    (
+        "quantitative_validation",
+        "predictive_execution",
+        "authoritative_cell_state_coupling",
+    ),
+)
+def test_scientific_population_uses_fail_closed(purpose: str) -> None:
+    with pytest.raises(CellPopulationAuthorityError):
+        simulate_cell_population(
+            purpose=purpose,  # type: ignore[arg-type]
+            parameters=_software_fixture_parameters(),
+            scenario="blocked-purpose-test",
+            genotoxic_stress_per_cycle=0.0,
+            seed=2,
         )
 
-    def test_different_seed_changes_trajectory_not_law(self) -> None:
-        a = simulate_cell_population(genotoxic_stress_per_generation=0.45, seed=1)
-        b = simulate_cell_population(genotoxic_stress_per_generation=0.45, seed=2)
-        # Same emergent outcome (selection), different exact trajectory.
-        self.assertTrue(a.transformation_emerged and b.transformation_emerged)
-        self.assertNotEqual(
-            a.checkpoint_null_fraction_series, b.checkpoint_null_fraction_series
+
+def test_fixture_fate_ladder_requires_explicit_parameters_and_purpose() -> None:
+    parameters = _software_fixture_parameters()
+    assert (
+        population_fate_from_damage(
+            0.1,
+            checkpoint_functional=True,
+            consecutive_arrests=0,
+            parameters=parameters,
+            purpose="software_fixture",
+        )
+        == "candidate_divide"
+    )
+    assert (
+        population_fate_from_damage(
+            3.0,
+            checkpoint_functional=True,
+            consecutive_arrests=0,
+            parameters=parameters,
+            purpose="software_fixture",
+        )
+        == "candidate_death"
+    )
+
+
+def test_fixture_kernel_is_deterministic_and_non_authoritative() -> None:
+    arguments = {
+        "purpose": "software_fixture",
+        "parameters": _software_fixture_parameters(),
+        "scenario": "bookkeeping-fixture",
+        "genotoxic_stress_per_cycle": 0.3,
+        "seed": 7,
+    }
+    first = simulate_cell_population(**arguments)  # type: ignore[arg-type]
+    second = simulate_cell_population(**arguments)  # type: ignore[arg-type]
+    assert first == second
+    assert first.parameter_authority == "caller_supplied_non_authoritative_candidate"
+    assert first.is_reaction_transport_authority is False
+    assert len(first.timeline) <= _software_fixture_parameters().cycles
+
+
+def test_invalid_candidate_parameters_are_rejected() -> None:
+    parameters = _software_fixture_parameters()
+    invalid = CellPopulationCandidateParameters(
+        **{
+            **parameters.__dict__,
+            "initial_checkpoint_null_fraction": 1.5,
+        }
+    )
+    with pytest.raises(ValueError, match="within"):
+        simulate_cell_population(
+            purpose="software_fixture",
+            parameters=invalid,
+            scenario="invalid-fixture",
+            genotoxic_stress_per_cycle=0.0,
+            seed=0,
         )
 
-    def test_not_a_reaction_transport_authority(self) -> None:
-        out = simulate_cell_population(genotoxic_stress_per_generation=0.45)
-        self.assertFalse(out.is_reaction_transport_authority)
 
-    def test_snapshot_is_json_serialisable_and_populated(self) -> None:
-        snap = cell_population_snapshot()
-        json.dumps(snap)  # must not raise
-        self.assertIn("chronic_stress_clonal_selection", snap)
-        self.assertTrue(snap["chronic_stress_clonal_selection"]["transformation_emerged"])
-        self.assertFalse(snap["unstressed_neutral"]["transformation_emerged"])
-        self.assertFalse(
-            snap["chronic_stress_all_wildtype_control"]["transformation_emerged"]
+def test_non_finite_population_parameter_is_rejected() -> None:
+    invalid = replace(_software_fixture_parameters(), stress_relative_sigma=nan)
+    with pytest.raises(ValueError, match="finite"):
+        simulate_cell_population(
+            purpose="software_fixture",
+            parameters=invalid,
+            scenario="non-finite-fixture",
+            genotoxic_stress_per_cycle=0.0,
+            seed=0,
         )
 
-    def test_scenarios_share_sources(self) -> None:
-        outcomes = build_cell_population()
-        for outcome in outcomes.values():
-            for sid in outcome.source_ids:
-                self.assertIn(sid, CELL_POPULATION_SOURCES)
 
-
-if __name__ == "__main__":
-    unittest.main()
+def test_authority_contract_and_sources_are_complete() -> None:
+    authority = build_cell_population()
+    assert authority.required_evidence
+    assert authority.blockers
+    for source_id in authority.source_ids:
+        assert source_id in CELL_POPULATION_SOURCES

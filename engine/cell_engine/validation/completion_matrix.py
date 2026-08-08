@@ -30,6 +30,7 @@ from cell_engine.quantitative.active_protein_localization import (
 from cell_engine.quantitative.compartmental_energy_redox import (
     compartmental_energy_redox_snapshot,
 )
+from cell_engine.quantitative.cell_population import cell_population_snapshot
 from cell_engine.quantitative.cytosol_transport import cytosol_transport_snapshot
 from cell_engine.quantitative.energy_redox_trajectory import (
     energy_redox_trajectory_intake_snapshot,
@@ -46,6 +47,7 @@ from cell_engine.quantitative.phh_3d_mesh_boundary import (
 from cell_engine.quantitative.phh_protein_functional_evidence import (
     phh_protein_functional_evidence_snapshot,
 )
+from cell_engine.quantitative.p53_dynamics import p53_dynamics_snapshot
 from cell_engine.quantitative.phh_injury_validation import phh_injury_validation_snapshot
 from cell_engine.quantitative.reaction_evidence_intake import (
     reaction_evidence_intake_snapshot,
@@ -80,7 +82,7 @@ from cell_engine.validation.scientific_snapshot_export_policy import (
 
 
 VERSION = "hepatocyte_completion_matrix_v1"
-DATE_VERIFIED = "2026-07-29"
+DATE_VERIFIED = "2026-08-08"
 GapStatus = Literal[
     "closed",
     "partial",
@@ -204,6 +206,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     evidence_readiness = phh_evidence_readiness_snapshot()
     evidence_readiness_summary = evidence_readiness["summary"]
     baseline_lifecycle = baseline_lifecycle_timing_snapshot()
+    p53_dynamics = p53_dynamics_snapshot()
+    cell_population = cell_population_snapshot()
 
     entries = (
         _entry(
@@ -286,6 +290,102 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "engine/cell_engine/validation/baseline_lifecycle_timing.py",
                 "scripts/export_engine_snapshot.py",
                 "engine/tests/test_baseline_lifecycle_timing.py",
+            ),
+        ),
+        _entry(
+            "healthy_phh_p53_ddr_dynamics",
+            "Healthy-PHH p53/MDM2 damage-response dynamics",
+            "blocked_missing_evidence",
+            "Time-resolved p53/MDM2 signaling and fate decisions in healthy adult primary human hepatocytes.",
+            "A cross-context reduced ODE remains available only behind an explicit software-fixture or exploratory-purpose gate. The canonical snapshot executes zero scenarios. Heldring 2022 contributes 50-donor PHH transcript endpoints at 8 h and 24 h and directly documents failed HepG2-to-PHH translation for TP53-MDM2, but supplies no time-resolved PHH protein trajectory.",
+            {
+                "explicit_purpose_guard_count": int(
+                    bool(p53_dynamics["explicit_purpose_required"])
+                ),
+                "project_tuned_candidate_parameter_count": p53_dynamics[
+                    "project_tuned_candidate_parameter_count"
+                ],
+                "healthy_phh_numeric_parameter_count": p53_dynamics[
+                    "healthy_phh_numeric_parameter_count"
+                ],
+                "healthy_phh_time_resolved_protein_trajectory_count": p53_dynamics[
+                    "healthy_phh_time_resolved_protein_trajectory_count"
+                ],
+                "healthy_phh_transcript_donor_count": p53_dynamics[
+                    "healthy_phh_transcript_donor_count"
+                ],
+                "healthy_phh_transcript_timepoint_count": p53_dynamics[
+                    "healthy_phh_transcript_timepoint_count"
+                ],
+                "public_simulated_scenario_count": p53_dynamics[
+                    "public_simulated_scenario_count"
+                ],
+                "quantitative_validation_allowed_count": int(
+                    bool(p53_dynamics["quantitative_validation_allowed"])
+                ),
+                "predictive_execution_allowed_count": int(
+                    bool(p53_dynamics["predictive_execution_allowed"])
+                ),
+                "authoritative_state_coupling_allowed_count": int(
+                    bool(
+                        p53_dynamics[
+                            "authoritative_cell_state_coupling_allowed"
+                        ]
+                    )
+                ),
+            },
+            (
+                "Time-resolved PHH p53, phosphorylated-p53 and MDM2 protein trajectories under a defined damage protocol.",
+                "Matched repair, arrest, senescence, apoptosis and recovery outcomes with uncertainty.",
+                "Donor-conditioned calibration and donor-disjoint held-out validation.",
+            ),
+            (
+                "engine/cell_engine/quantitative/p53_dynamics.py",
+                "data/published_models/heldring2022_p53_phh_translation.v1.json",
+                "engine/tests/test_p53_dynamics.py",
+            ),
+        ),
+        _entry(
+            "healthy_phh_clonal_population_dynamics",
+            "Healthy-PHH clonal population dynamics",
+            "blocked_missing_evidence",
+            "Donor-, genotype-, ploidy-, niche- and injury-resolved hepatocyte lineage dynamics and transformation risk.",
+            "A deterministic population bookkeeping kernel accepts only caller-supplied non-authoritative parameters. It bundles no biological parameter set, executes no canonical scenario and emits no transformation claim. Human liver clonal and PHH transformation studies define the missing spatial and multihit evidence rather than supplying a shortcut threshold.",
+            {
+                "explicit_purpose_guard_count": int(
+                    bool(cell_population["explicit_purpose_required"])
+                ),
+                "bundled_biological_parameter_set_count": cell_population[
+                    "bundled_biological_parameter_set_count"
+                ],
+                "canonical_simulated_scenario_count": cell_population[
+                    "canonical_simulated_scenario_count"
+                ],
+                "canonical_transformation_claim_count": cell_population[
+                    "canonical_transformation_claim_count"
+                ],
+                "healthy_phh_calibrated_population_parameter_count": cell_population[
+                    "healthy_phh_calibrated_population_parameter_count"
+                ],
+                "quantitative_validation_allowed_count": int(
+                    bool(cell_population["quantitative_validation_allowed"])
+                ),
+                "predictive_execution_allowed_count": int(
+                    bool(cell_population["predictive_execution_allowed"])
+                ),
+                "authoritative_state_coupling_allowed_count": int(
+                    bool(
+                        cell_population[
+                            "authoritative_cell_state_coupling_allowed"
+                        ]
+                    )
+                ),
+            },
+            tuple(cell_population["required_evidence"]),
+            (
+                "engine/cell_engine/quantitative/cell_population.py",
+                "engine/tests/test_cell_population.py",
+                "docs/14-cancer-roadmap.md",
             ),
         ),
         _entry(
@@ -2717,6 +2817,37 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or baseline_lifecycle_metrics["automatic_division_event_count"] != 0
     ):
         raise ValueError("human baseline lifecycle timing escaped fail-closed")
+    p53_metrics = by_id["healthy_phh_p53_ddr_dynamics"]["observed_metrics"]
+    if (
+        p53_metrics["explicit_purpose_guard_count"] != 1
+        or p53_metrics["project_tuned_candidate_parameter_count"] != 34
+        or p53_metrics["healthy_phh_numeric_parameter_count"] != 0
+        or p53_metrics["healthy_phh_time_resolved_protein_trajectory_count"] != 0
+        or p53_metrics["healthy_phh_transcript_donor_count"] != 50
+        or p53_metrics["healthy_phh_transcript_timepoint_count"] != 2
+        or p53_metrics["public_simulated_scenario_count"] != 0
+        or p53_metrics["quantitative_validation_allowed_count"] != 0
+        or p53_metrics["predictive_execution_allowed_count"] != 0
+        or p53_metrics["authoritative_state_coupling_allowed_count"] != 0
+    ):
+        raise ValueError("p53 dynamics escaped its PHH evidence firewall")
+    population_metrics = by_id["healthy_phh_clonal_population_dynamics"][
+        "observed_metrics"
+    ]
+    if (
+        population_metrics["explicit_purpose_guard_count"] != 1
+        or population_metrics["bundled_biological_parameter_set_count"] != 0
+        or population_metrics["canonical_simulated_scenario_count"] != 0
+        or population_metrics["canonical_transformation_claim_count"] != 0
+        or population_metrics[
+            "healthy_phh_calibrated_population_parameter_count"
+        ]
+        != 0
+        or population_metrics["quantitative_validation_allowed_count"] != 0
+        or population_metrics["predictive_execution_allowed_count"] != 0
+        or population_metrics["authoritative_state_coupling_allowed_count"] != 0
+    ):
+        raise ValueError("cell-population kernel escaped its PHH evidence firewall")
     calibration_authority_metrics = by_id[
         "legacy_calibration_authority_firewall"
     ]["observed_metrics"]

@@ -19,10 +19,10 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 53
+    assert summary["entry_count"] == 55
     assert summary["closed_count"] == 31
     assert summary["partial_count"] == 8
-    assert summary["blocked_missing_evidence_count"] == 12
+    assert summary["blocked_missing_evidence_count"] == 14
     assert summary["external_action_required_count"] == 1
     assert summary["not_applicable_at_model_scale_count"] == 1
     assert summary["biological_accuracy_pct"] is None
@@ -55,6 +55,21 @@ def test_legacy_calibration_is_closed_only_as_a_fixture_score_firewall() -> None
     assert metrics["source_backed_target_count"] == 0
     assert metrics["biologically_authorized_target_count"] == 0
     assert metrics["scientific_authority_purpose_count"] == 0
+
+
+def test_p53_and_population_models_publish_no_unearned_phh_outcomes() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    p53 = entries["healthy_phh_p53_ddr_dynamics"]
+    population = entries["healthy_phh_clonal_population_dynamics"]
+    assert p53["status"] == "blocked_missing_evidence"
+    assert p53["observed_metrics"]["healthy_phh_numeric_parameter_count"] == 0
+    assert p53["observed_metrics"]["public_simulated_scenario_count"] == 0
+    assert p53["observed_metrics"]["authoritative_state_coupling_allowed_count"] == 0
+    assert population["status"] == "blocked_missing_evidence"
+    assert population["observed_metrics"]["bundled_biological_parameter_set_count"] == 0
+    assert population["observed_metrics"]["canonical_simulated_scenario_count"] == 0
+    assert population["observed_metrics"]["canonical_transformation_claim_count"] == 0
 
 
 def test_render_integrity_is_closed_without_claiming_cross_gpu_pixel_identity() -> None:

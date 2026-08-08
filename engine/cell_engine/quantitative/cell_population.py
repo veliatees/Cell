@@ -1,123 +1,111 @@
-"""Minimal heritable cell-population substrate with p53-gated fate and selection.
+"""Fail-closed cell-population kernel and PHH clonal-dynamics evidence contract.
 
-This is the "not-a-mirror" increment of the cancer roadmap: transformation
-(clonal dominance) must **emerge** from the substrate, never be coded. There is
-no rule anywhere that says "stress > threshold -> cancer"; there is only
+The kernel can test inheritance, stochastic partitioning and finite-capacity
+bookkeeping. It contains no built-in biological parameter set and publishes no
+canonical cancer/transformation scenario. A caller must supply every numerical
+assumption and declare a software-fixture or exploratory purpose.
 
-  1. ONE hepatocyte fate law, instantiated N times. Per-cell differences live in
-     STATE values, not in code -- heterogeneity is same-law/different-state,
-     seeded from stochastic damage accrual and division partitioning
-     (Elowitz & Swain 2002 intrinsic/extrinsic noise).
-  2. The grounded p53 fate contract (population-scale reduction, see
-     ``p53_dynamics.population_fate_from_damage``) deciding each cell's fate per
-     generation: divide / arrest+repair / senescence / apoptosis, and -- for a
-     checkpoint-null (p53-knockout) cell -- divide-with-unresolved-damage.
-  3. A finite niche (carrying capacity + contact inhibition): cells that arrest,
-     senesce or apoptose vacate the competition for division slots; the survivors
-     that still divide fill the open slots by a neutral lottery.
-
-From those ingredients alone, a rare checkpoint-null subclone expands to
-dominance **only** under chronic genotoxic stress (wild-type cells arrest,
-senesce or die while the null clone keeps dividing with its inherited damage);
-without stress the same subclone stays neutral, and a pure wild-type population
-under the same stress simply contracts. Clonal dominance is a *readout* of the
-composition, not a driver: no cell is ever labelled "cancer".
-
-HONESTY / firewall:
-- ``is_reaction_transport_authority`` is always ``False``.
-- Damage, stress and repair are normalised to the p53 contract's scale, NOT
-  absolute DSB counts; the endogenous double-strand-break rate (Vilenchik &
-  Knudson 2003) only anchors the *relative* chronic-vs-acute magnitude.
-- Carrying capacity and the niche lottery are a minimal contact-inhibition
-  abstraction, not a measured tissue geometry. "Generations" are damage-response
-  cycles, not calendar time (hepatocytes are largely quiescent in homeostasis).
-- Checkpoint loss enabling expansion under damage is known biology
-  (Kastenhuber & Lowe 2017; Hanahan & Weinberg 2011); this module demonstrates
-  the dynamic, it is not a validated tumourigenesis predictor.
+This boundary matters because p53 loss alone is not an experimentally calibrated
+healthy-PHH transformation law. Human liver studies establish spatial clonal
+expansion, while a direct PHH transformation experiment required defined
+combinations of oncogenic factors and an in-vivo host context. Those observations
+define evidence requirements; they do not authorize a project-defined threshold.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from math import isfinite
+from typing import Literal
 
 from cell_engine.core.provenance import SourceReference
 from cell_engine.core.random import EngineRng
 from cell_engine.core.serialization import to_plain
-from cell_engine.quantitative.p53_dynamics import (
-    REPAIR_CAPACITY,
-    population_fate_from_damage,
-)
 
-DATE_VERIFIED = "2026-08-05"
-VERSION = "cell_population_emergent_selection_v1"
 
-# --- population / selection parameters (normalised; disclosed abstractions) ---
-DEFAULT_INITIAL_CELLS = 200
-DEFAULT_CARRYING_CAPACITY = 400
-DEFAULT_GENERATIONS = 40
-DEFAULT_INITIAL_NULL_FRACTION = 0.02   # rare checkpoint-null founder subclone
-REPAIR_PER_GENERATION = 0.55           # fraction of damage a p53-competent
-#                                        arrested cell clears per generation
-STRESS_RELATIVE_SIGMA = 0.4            # cell-to-cell variability in accrued damage
-DIVISION_PARTITION_NOISE = 0.15        # heritable damage-partitioning noise
-# Emergence readout thresholds (disclosed; they classify the outcome, not drive it)
-TRANSFORMATION_FRACTION_GAIN = 0.2
-TRANSFORMATION_MAJORITY = 0.5
+DATE_VERIFIED = "2026-08-08"
+VERSION = "cell_population_authority_v2"
+
+CellPopulationPurpose = Literal[
+    "software_fixture",
+    "exploratory_candidate",
+    "quantitative_validation",
+    "predictive_execution",
+    "authoritative_cell_state_coupling",
+]
+
+
+class CellPopulationAuthorityError(RuntimeError):
+    """Raised when the uncalibrated population kernel is requested scientifically."""
+
 
 CELL_POPULATION_SOURCES: dict[str, SourceReference] = {
-    "vilenchik_knudson2003_endogenous_dsb": SourceReference(
-        id="vilenchik_knudson2003_endogenous_dsb",
-        title="Endogenous DNA double-strand breaks: production, fidelity of repair, and induction of cancer",
-        url="https://doi.org/10.1073/pnas.2135498100",
+    "brunner2019_somatic_liver_clones": SourceReference(
+        id="brunner2019_somatic_liver_clones",
+        title="Somatic mutations and clonal dynamics in healthy and cirrhotic human liver",
+        url="https://doi.org/10.1038/s41586-019-1670-9",
         source_type="primary_paper",
         date_verified=DATE_VERIFIED,
         notes=(
-            "Estimates ~50 endogenous DSBs per cell per day, the great majority faithfully "
-            "repaired; anchors the relative magnitude of chronic vs acute genotoxic stress. "
-            "Not a hepatocyte-specific rate; used only to scale normalised damage."
+            "Human liver sequencing and spatial clone evidence. It supports the "
+            "existence of somatic selection, not this repository's numerical kernel."
         ),
     ),
-    "elowitz_swain2002_intrinsic_extrinsic_noise": SourceReference(
-        id="elowitz_swain2002_intrinsic_extrinsic_noise",
-        title="Stochastic gene expression in a single cell",
-        url="https://doi.org/10.1126/science.1070919",
+    "braun2023_periportal_expansion": SourceReference(
+        id="braun2023_periportal_expansion",
+        title=(
+            "Hepatocytes undergo punctuated expansion dynamics from a periportal "
+            "stem cell niche in normal human liver"
+        ),
+        url="https://pubmed.ncbi.nlm.nih.gov/37088309/",
         source_type="primary_paper",
         date_verified=DATE_VERIFIED,
         notes=(
-            "Intrinsic/extrinsic noise decomposition: identical genotypes diverge in state. "
-            "Grounds the same-law/different-state basis for population heterogeneity here."
+            "Lineage, mitochondrial-sequence and spatial modelling evidence for "
+            "human hepatocyte clonal expansion. It demonstrates that niche and "
+            "geometry belong in a quantitative population model."
         ),
     ),
-    "kastenhuber_lowe2017_p53_in_context": SourceReference(
-        id="kastenhuber_lowe2017_p53_in_context",
-        title="Putting p53 in Context",
-        url="https://doi.org/10.1016/j.cell.2017.08.028",
-        source_type="review",
-        date_verified=DATE_VERIFIED,
-        notes=(
-            "Review: loss of p53 checkpoint function permits survival and proliferation of "
-            "damaged cells, enabling clonal expansion under stress. Context for the emergent readout."
+    "jiang2022_defined_phh_transformation": SourceReference(
+        id="jiang2022_defined_phh_transformation",
+        title=(
+            "Transforming primary human hepatocytes into hepatocellular carcinoma "
+            "with genetically defined factors"
         ),
-    ),
-    "hanahan_weinberg2011_hallmarks": SourceReference(
-        id="hanahan_weinberg2011_hallmarks",
-        title="Hallmarks of cancer: the next generation",
-        url="https://doi.org/10.1016/j.cell.2011.02.013",
-        source_type="review",
+        url="https://doi.org/10.15252/embr.202154275",
+        source_type="primary_paper",
         date_verified=DATE_VERIFIED,
         notes=(
-            "Evading growth suppressors and replicative immortality as acquired capabilities; "
-            "framing for why a checkpoint-null clone can outcompete under selection."
+            "PHHs from multiple donors were transformed in an immunodeficient-mouse "
+            "liver context using defined oncogenic combinations. This does not "
+            "support a p53-null-only or dimensionless stress-threshold rule."
         ),
     ),
 }
 
 
 @dataclass(frozen=True)
+class CellPopulationCandidateParameters:
+    """All numerical assumptions required by the non-authoritative kernel."""
+
+    initial_cells: int
+    initial_checkpoint_null_fraction: float
+    carrying_capacity: int
+    cycles: int
+    stress_relative_sigma: float
+    division_partition_noise: float
+    repair_fraction_per_cycle: float
+    division_safe_damage: float
+    repair_capacity: float
+    senescence_arrest_limit: int
+    checkpoint_null_lethal_damage: float
+
+
+@dataclass(frozen=True)
 class CellAgent:
     cell_id: int
-    p53_functional: bool      # heritable checkpoint competence
-    dna_damage: float         # normalised, on the p53 contract's damage scale
+    checkpoint_functional: bool
+    damage: float
     generation: int
     consecutive_arrests: int
     senescent: bool
@@ -132,133 +120,319 @@ class PopulationGeneration:
     checkpoint_null_fraction: float
     mean_damage: float
     divisions: int
-    apoptoses: int
+    deaths: int
     new_senescent: int
 
 
 @dataclass(frozen=True)
-class CellPopulationOutcome:
+class CellPopulationCandidateOutcome:
     version: str
+    purpose: str
+    parameter_authority: str
     is_reaction_transport_authority: bool
     scenario: str
     seed: int
-    generations: int
+    cycles_requested: int
     carrying_capacity: int
-    genotoxic_stress_per_generation: float
+    genotoxic_stress_per_cycle: float
     initial_checkpoint_null_fraction: float
     final_checkpoint_null_fraction: float
     final_alive: int
-    generations_to_null_majority: int | None
-    transformation_emerged: bool
+    checkpoint_null_majority_generation: int | None
+    checkpoint_null_majority_reached: bool
     checkpoint_null_fraction_series: tuple[float, ...]
     alive_series: tuple[int, ...]
     mean_damage_series: tuple[float, ...]
     timeline: tuple[PopulationGeneration, ...]
-    honesty_status: str
-    grounded: tuple[str, ...]
-    not_grounded: tuple[str, ...]
-    blockers: tuple[str, ...]
-    source_ids: tuple[str, ...]
 
     def to_dict(self) -> dict[str, object]:
         return to_plain(self)
 
 
+@dataclass(frozen=True)
+class CellPopulationAuthority:
+    version: str
+    status: str
+    is_reaction_transport_authority: bool
+    explicit_purpose_required: bool
+    software_fixture_execution_allowed: bool
+    exploratory_candidate_execution_allowed: bool
+    quantitative_validation_allowed: bool
+    predictive_execution_allowed: bool
+    authoritative_cell_state_coupling_allowed: bool
+    bundled_biological_parameter_set_count: int
+    canonical_simulated_scenario_count: int
+    canonical_transformation_claim_count: int
+    healthy_phh_calibrated_population_parameter_count: int
+    required_evidence: tuple[str, ...]
+    blockers: tuple[str, ...]
+    source_ids: tuple[str, ...]
+    policy: str
+
+    def to_dict(self) -> dict[str, object]:
+        return to_plain(self)
+
+
+def build_cell_population() -> CellPopulationAuthority:
+    authority = CellPopulationAuthority(
+        version=VERSION,
+        status="software_kernel_only_no_phh_population_execution",
+        is_reaction_transport_authority=False,
+        explicit_purpose_required=True,
+        software_fixture_execution_allowed=True,
+        exploratory_candidate_execution_allowed=True,
+        quantitative_validation_allowed=False,
+        predictive_execution_allowed=False,
+        authoritative_cell_state_coupling_allowed=False,
+        bundled_biological_parameter_set_count=0,
+        canonical_simulated_scenario_count=0,
+        canonical_transformation_claim_count=0,
+        healthy_phh_calibrated_population_parameter_count=0,
+        required_evidence=(
+            "donor-resolved lineage or clone trajectories with genotype and ploidy",
+            "injury, nutrient, zonation and tissue-niche context for every trajectory",
+            "time-resolved proliferation, arrest, senescence, death and clearance observations",
+            "spatial cell-neighbour and portal-central geometry with boundary conditions",
+            "measurement-operator definitions and uncertainty for each readout",
+            "donor-disjoint held-out validation and independent biological review",
+        ),
+        blockers=(
+            "No matched healthy-PHH dataset identifies the kernel's population parameters.",
+            "The p53 candidate itself has no healthy-PHH quantitative or fate authority.",
+            "No bundled data map a checkpoint genotype to cycle-resolved PHH fate probabilities.",
+            "No spatial niche, immune clearance or multicellular validation authorizes a transformation readout.",
+        ),
+        source_ids=tuple(CELL_POPULATION_SOURCES),
+        policy=(
+            "The generic kernel may be exercised with caller-supplied software-fixture "
+            "or exploratory parameters. No built-in scenario, threshold or outcome may "
+            "be presented as healthy-PHH clonal evolution or cancer prediction."
+        ),
+    )
+    validate_cell_population_authority(authority)
+    return authority
+
+
+def validate_cell_population_authority(authority: CellPopulationAuthority) -> None:
+    if (
+        authority.version != VERSION
+        or authority.status != "software_kernel_only_no_phh_population_execution"
+        or not authority.explicit_purpose_required
+    ):
+        raise ValueError("cell-population authority identity changed")
+    if (
+        not authority.software_fixture_execution_allowed
+        or not authority.exploratory_candidate_execution_allowed
+        or authority.quantitative_validation_allowed
+        or authority.predictive_execution_allowed
+        or authority.authoritative_cell_state_coupling_allowed
+    ):
+        raise ValueError("cell-population kernel escaped its scientific-use firewall")
+    if (
+        authority.bundled_biological_parameter_set_count != 0
+        or authority.canonical_simulated_scenario_count != 0
+        or authority.canonical_transformation_claim_count != 0
+        or authority.healthy_phh_calibrated_population_parameter_count != 0
+        or not authority.blockers
+    ):
+        raise ValueError("cell-population evidence gate changed without validation")
+
+
+def assert_cell_population_authority(
+    purpose: CellPopulationPurpose,
+) -> CellPopulationAuthority:
+    authority = build_cell_population()
+    allowed = {
+        "software_fixture": authority.software_fixture_execution_allowed,
+        "exploratory_candidate": authority.exploratory_candidate_execution_allowed,
+        "quantitative_validation": authority.quantitative_validation_allowed,
+        "predictive_execution": authority.predictive_execution_allowed,
+        "authoritative_cell_state_coupling": (
+            authority.authoritative_cell_state_coupling_allowed
+        ),
+    }
+    if purpose not in allowed:
+        raise ValueError(f"Unsupported cell-population purpose: {purpose}")
+    if not allowed[purpose]:
+        raise CellPopulationAuthorityError(
+            f"{purpose} is blocked for the cell-population kernel: "
+            + "; ".join(authority.blockers)
+        )
+    return authority
+
+
+def validate_candidate_parameters(
+    parameters: CellPopulationCandidateParameters,
+) -> None:
+    if (
+        parameters.initial_cells <= 0
+        or parameters.carrying_capacity <= 0
+        or parameters.cycles <= 0
+    ):
+        raise ValueError("population sizes and cycles must be positive")
+    if parameters.initial_cells > parameters.carrying_capacity:
+        raise ValueError("initial_cells cannot exceed carrying_capacity")
+    numeric_values = (
+        parameters.initial_checkpoint_null_fraction,
+        parameters.stress_relative_sigma,
+        parameters.division_partition_noise,
+        parameters.repair_fraction_per_cycle,
+        parameters.division_safe_damage,
+        parameters.repair_capacity,
+        parameters.checkpoint_null_lethal_damage,
+    )
+    if any(not isfinite(value) for value in numeric_values):
+        raise ValueError("cell-population candidate parameters must be finite")
+    if not 0.0 <= parameters.initial_checkpoint_null_fraction <= 1.0:
+        raise ValueError("initial checkpoint-null fraction must be within [0, 1]")
+    if (
+        parameters.stress_relative_sigma < 0.0
+        or parameters.division_partition_noise < 0.0
+    ):
+        raise ValueError("noise terms must be non-negative")
+    if not 0.0 <= parameters.repair_fraction_per_cycle <= 1.0:
+        raise ValueError("repair fraction must be within [0, 1]")
+    if (
+        parameters.division_safe_damage < 0.0
+        or parameters.repair_capacity <= parameters.division_safe_damage
+        or parameters.checkpoint_null_lethal_damage <= parameters.repair_capacity
+        or parameters.senescence_arrest_limit < 0
+    ):
+        raise ValueError("candidate fate boundaries must be ordered and non-negative")
+
+
+def population_fate_from_damage(
+    damage: float,
+    *,
+    checkpoint_functional: bool,
+    consecutive_arrests: int,
+    parameters: CellPopulationCandidateParameters,
+    purpose: CellPopulationPurpose,
+) -> str:
+    """Evaluate the caller-supplied candidate fate ladder after authority checks."""
+
+    assert_cell_population_authority(purpose)
+    validate_candidate_parameters(parameters)
+    return _candidate_population_fate(
+        damage,
+        checkpoint_functional=checkpoint_functional,
+        consecutive_arrests=consecutive_arrests,
+        parameters=parameters,
+    )
+
+
+def _candidate_population_fate(
+    damage: float,
+    *,
+    checkpoint_functional: bool,
+    consecutive_arrests: int,
+    parameters: CellPopulationCandidateParameters,
+) -> str:
+    if not isfinite(damage) or damage < 0.0:
+        raise ValueError("damage must be finite and non-negative")
+    if not checkpoint_functional:
+        if damage > parameters.checkpoint_null_lethal_damage:
+            return "candidate_death"
+        return "candidate_divide_with_unresolved_damage"
+    if damage > parameters.repair_capacity:
+        return "candidate_death"
+    if damage < parameters.division_safe_damage:
+        return "candidate_divide"
+    if consecutive_arrests >= parameters.senescence_arrest_limit:
+        return "candidate_senescence"
+    return "candidate_arrest_and_repair"
+
+
 def simulate_cell_population(
     *,
-    scenario: str = "",
-    n_initial: int = DEFAULT_INITIAL_CELLS,
-    initial_null_fraction: float = DEFAULT_INITIAL_NULL_FRACTION,
-    genotoxic_stress_per_generation: float = 0.0,
-    carrying_capacity: int = DEFAULT_CARRYING_CAPACITY,
-    generations: int = DEFAULT_GENERATIONS,
-    seed: int = 0,
-) -> CellPopulationOutcome:
-    """Evolve a heritable cell population under the p53-gated fate law and a
-    finite niche. Deterministic for a given seed (uses :class:`EngineRng`)."""
-    if n_initial <= 0 or carrying_capacity <= 0 or generations <= 0:
-        raise ValueError("n_initial, carrying_capacity and generations must be positive")
+    purpose: CellPopulationPurpose,
+    parameters: CellPopulationCandidateParameters,
+    scenario: str,
+    genotoxic_stress_per_cycle: float,
+    seed: int,
+) -> CellPopulationCandidateOutcome:
+    """Exercise generic population bookkeeping with explicit candidate inputs."""
+
+    assert_cell_population_authority(purpose)
+    validate_candidate_parameters(parameters)
+    if not scenario.strip():
+        raise ValueError("scenario must be non-empty")
+    if not isfinite(genotoxic_stress_per_cycle) or genotoxic_stress_per_cycle < 0.0:
+        raise ValueError("genotoxic_stress_per_cycle must be finite and non-negative")
 
     rng = EngineRng(seed)
-    n_null0 = round(n_initial * initial_null_fraction)
-    cells: list[CellAgent] = [
+    n_null = round(
+        parameters.initial_cells * parameters.initial_checkpoint_null_fraction
+    )
+    cells = [
         CellAgent(
-            cell_id=i,
-            p53_functional=(i >= n_null0),
-            dna_damage=0.0,
+            cell_id=index,
+            checkpoint_functional=index >= n_null,
+            damage=0.0,
             generation=0,
             consecutive_arrests=0,
             senescent=False,
         )
-        for i in range(n_initial)
+        for index in range(parameters.initial_cells)
     ]
-    next_id = n_initial
-
-    initial_null_frac = _null_fraction(cells)
+    next_id = parameters.initial_cells
+    initial_null_fraction = _null_fraction(cells)
     timeline: list[PopulationGeneration] = []
     null_series: list[float] = []
     alive_series: list[int] = []
     damage_series: list[float] = []
-    generations_to_majority: int | None = None
+    majority_generation: int | None = None
 
-    for gen in range(1, generations + 1):
+    for generation in range(1, parameters.cycles + 1):
         survivors: list[CellAgent] = []
         dividers: list[CellAgent] = []
-        apoptoses = 0
+        deaths = 0
         new_senescent = 0
 
         for cell in cells:
-            damage = cell.dna_damage
-            if genotoxic_stress_per_generation > 0.0:
-                damage = max(
+            damage = cell.damage
+            if genotoxic_stress_per_cycle > 0.0:
+                damage += max(
                     0.0,
-                    damage
-                    + max(
-                        0.0,
-                        rng.gauss(
-                            genotoxic_stress_per_generation,
-                            genotoxic_stress_per_generation * STRESS_RELATIVE_SIGMA,
-                        ),
+                    rng.gauss(
+                        genotoxic_stress_per_cycle,
+                        genotoxic_stress_per_cycle * parameters.stress_relative_sigma,
                     ),
                 )
             if cell.senescent:
-                # Senescent cells never divide, but they are not immortal: under
-                # continued genotoxic stress their damage still accrues and a
-                # sufficiently damaged senescent cell undergoes secondary
-                # apoptosis, vacating the niche. No immune clearance is modelled.
-                if damage > REPAIR_CAPACITY:
-                    apoptoses += 1
+                if damage > parameters.repair_capacity:
+                    deaths += 1
                     continue
-                survivors.append(replace(cell, dna_damage=damage))
+                survivors.append(replace(cell, damage=damage))
                 continue
-            fate = population_fate_from_damage(
+
+            fate = _candidate_population_fate(
                 damage,
-                p53_functional=cell.p53_functional,
+                checkpoint_functional=cell.checkpoint_functional,
                 consecutive_arrests=cell.consecutive_arrests,
+                parameters=parameters,
             )
-            if fate == "apoptosis":
-                apoptoses += 1
+            if fate == "candidate_death":
+                deaths += 1
                 continue
-            if fate == "senescence":
+            if fate == "candidate_senescence":
                 new_senescent += 1
-                survivors.append(replace(cell, dna_damage=damage, senescent=True))
+                survivors.append(replace(cell, damage=damage, senescent=True))
                 continue
-            if fate == "arrest_and_repair":
+            if fate == "candidate_arrest_and_repair":
                 survivors.append(
                     replace(
                         cell,
-                        dna_damage=damage * (1.0 - REPAIR_PER_GENERATION),
+                        damage=damage * (1.0 - parameters.repair_fraction_per_cycle),
                         consecutive_arrests=cell.consecutive_arrests + 1,
                     )
                 )
                 continue
-            # "divide" or "divide_with_unresolved_damage"
-            survivors.append(replace(cell, dna_damage=damage, consecutive_arrests=0))
-            dividers.append(replace(cell, dna_damage=damage))
+            survivor = replace(cell, damage=damage, consecutive_arrests=0)
+            survivors.append(survivor)
+            dividers.append(survivor)
 
-        # Finite niche: contact inhibition caps the population. Cells that
-        # arrested / senesced / died are not in `dividers`, so they cede slots.
-        open_slots = max(0, carrying_capacity - len(survivors))
+        open_slots = max(0, parameters.carrying_capacity - len(survivors))
         if len(dividers) > open_slots:
             dividers = _neutral_lottery(dividers, open_slots, rng)
 
@@ -266,14 +440,15 @@ def simulate_cell_population(
         for parent in dividers:
             daughter_damage = max(
                 0.0,
-                parent.dna_damage * (1.0 + rng.gauss(0.0, DIVISION_PARTITION_NOISE)),
+                parent.damage
+                * (1.0 + rng.gauss(0.0, parameters.division_partition_noise)),
             )
             offspring.append(
                 CellAgent(
                     cell_id=next_id,
-                    p53_functional=parent.p53_functional,  # heritable
-                    dna_damage=daughter_damage,
-                    generation=gen,
+                    checkpoint_functional=parent.checkpoint_functional,
+                    damage=daughter_damage,
+                    generation=generation,
                     consecutive_arrests=0,
                     senescent=False,
                 )
@@ -281,116 +456,72 @@ def simulate_cell_population(
             next_id += 1
 
         cells = survivors + offspring
-
-        null_frac = _null_fraction(cells)
+        null_fraction = _null_fraction(cells)
         alive = len(cells)
-        cycling = sum(1 for c in cells if not c.senescent)
+        cycling = sum(not cell.senescent for cell in cells)
         senescent = alive - cycling
-        mean_damage = (sum(c.dna_damage for c in cells) / alive) if alive else 0.0
+        mean_damage = sum(cell.damage for cell in cells) / alive if alive else 0.0
         timeline.append(
             PopulationGeneration(
-                generation=gen,
+                generation=generation,
                 alive=alive,
                 cycling=cycling,
                 senescent=senescent,
-                checkpoint_null_fraction=null_frac,
+                checkpoint_null_fraction=null_fraction,
                 mean_damage=mean_damage,
                 divisions=len(dividers),
-                apoptoses=apoptoses,
+                deaths=deaths,
                 new_senescent=new_senescent,
             )
         )
-        null_series.append(null_frac)
+        null_series.append(null_fraction)
         alive_series.append(alive)
         damage_series.append(mean_damage)
-        if generations_to_majority is None and null_frac > TRANSFORMATION_MAJORITY:
-            generations_to_majority = gen
+        if majority_generation is None and null_fraction > 0.5:
+            majority_generation = generation
         if alive == 0:
             break
 
-    final_null = null_series[-1] if null_series else initial_null_frac
-    transformation_emerged = (
-        final_null - initial_null_frac >= TRANSFORMATION_FRACTION_GAIN
-        and final_null > TRANSFORMATION_MAJORITY
-    )
-    return CellPopulationOutcome(
+    return CellPopulationCandidateOutcome(
         version=VERSION,
+        purpose=purpose,
+        parameter_authority="caller_supplied_non_authoritative_candidate",
         is_reaction_transport_authority=False,
-        scenario=scenario or f"stress={genotoxic_stress_per_generation:g}",
+        scenario=scenario,
         seed=seed,
-        generations=generations,
-        carrying_capacity=carrying_capacity,
-        genotoxic_stress_per_generation=genotoxic_stress_per_generation,
-        initial_checkpoint_null_fraction=initial_null_frac,
-        final_checkpoint_null_fraction=final_null,
+        cycles_requested=parameters.cycles,
+        carrying_capacity=parameters.carrying_capacity,
+        genotoxic_stress_per_cycle=genotoxic_stress_per_cycle,
+        initial_checkpoint_null_fraction=initial_null_fraction,
+        final_checkpoint_null_fraction=(
+            null_series[-1] if null_series else initial_null_fraction
+        ),
         final_alive=alive_series[-1] if alive_series else 0,
-        generations_to_null_majority=generations_to_majority,
-        transformation_emerged=transformation_emerged,
+        checkpoint_null_majority_generation=majority_generation,
+        checkpoint_null_majority_reached=majority_generation is not None,
         checkpoint_null_fraction_series=tuple(null_series),
         alive_series=tuple(alive_series),
         mean_damage_series=tuple(damage_series),
         timeline=tuple(timeline),
-        honesty_status=(
-            "emergent_clonal_selection_from_one_fate_law_no_transformation_rule"
-        ),
-        grounded=(
-            "one hepatocyte fate law instantiated N times; heterogeneity is same-law/different-state (Elowitz-Swain 2002)",
-            "per-cell fate is the grounded p53 contract's population-scale reduction (see p53_dynamics)",
-            "checkpoint loss enabling expansion of damaged cells under stress is known biology (Kastenhuber-Lowe 2017, Hanahan-Weinberg 2011)",
-            "clonal dominance is a readout of composition; no cell is labelled 'cancer' and no stress->transformation rule exists",
-        ),
-        not_grounded=(
-            "damage, stress and repair are normalised to the p53 contract's scale, not absolute DSB counts",
-            "endogenous DSB rate (Vilenchik-Knudson 2003) only anchors relative chronic-vs-acute magnitude",
-            "carrying capacity and the niche lottery are a minimal contact-inhibition abstraction, not measured tissue geometry",
-            "generations are damage-response cycles, not calendar time",
-        ),
-        blockers=(
-            "not a reaction-transport authority: sets no rate, diffusivity or concentration field",
-            "a minimal population demonstrator, not a validated tumourigenesis predictor",
-        ),
-        source_ids=tuple(CELL_POPULATION_SOURCES),
     )
 
 
 def _null_fraction(cells: list[CellAgent]) -> float:
     if not cells:
         return 0.0
-    return sum(1 for c in cells if not c.p53_functional) / len(cells)
+    return sum(not cell.checkpoint_functional for cell in cells) / len(cells)
 
 
 def _neutral_lottery(
     dividers: list[CellAgent], keep: int, rng: EngineRng
 ) -> list[CellAgent]:
-    """Pick ``keep`` division slots by a neutral, deterministic lottery: the
-    competition for space is unbiased -- any selective difference must come from
-    *who is in the pool*, not from a rigged draw."""
     if keep <= 0:
         return []
-    keyed = sorted(((rng.random(), i, c) for i, c in enumerate(dividers)))
-    return [c for _, _, c in keyed[:keep]]
+    keyed = sorted((rng.random(), index, cell) for index, cell in enumerate(dividers))
+    return [cell for _, _, cell in keyed[:keep]]
 
 
-# Scenario panel exported in the engine snapshot: the neutral control, the
-# emergent selection case, and the pure-wild-type control that cannot expand.
-_SCENARIO_PANEL: tuple[tuple[str, float, float], ...] = (
-    ("unstressed_neutral", 0.0, DEFAULT_INITIAL_NULL_FRACTION),
-    ("chronic_stress_clonal_selection", 0.45, DEFAULT_INITIAL_NULL_FRACTION),
-    ("chronic_stress_all_wildtype_control", 0.6, 0.0),
-)
+def cell_population_snapshot() -> dict[str, object]:
+    """Return only the authority contract; no invented scenario is executed."""
 
-
-def build_cell_population(*, seed: int = 0) -> dict[str, CellPopulationOutcome]:
-    return {
-        name: simulate_cell_population(
-            scenario=name,
-            genotoxic_stress_per_generation=stress,
-            initial_null_fraction=null0,
-            seed=seed,
-        )
-        for name, stress, null0 in _SCENARIO_PANEL
-    }
-
-
-def cell_population_snapshot(*, seed: int = 0) -> dict[str, object]:
-    return {name: outcome.to_dict() for name, outcome in build_cell_population(seed=seed).items()}
+    return build_cell_population().to_dict()

@@ -1,0 +1,45 @@
+{
+  "schema_version": "published_model_artifact_manifest_v1",
+  "record_id": "heldring2022_p53_phh_translation",
+  "title": "Model-based translation of DNA damage signaling dynamics across cell types",
+  "article": {
+    "doi": "10.1371/journal.pcbi.1010264",
+    "url": "https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1010264",
+    "publication_date": "2022-07-08"
+  },
+  "artifact": {
+    "repository": "Zenodo",
+    "record_id": 6458438,
+    "doi": "10.5281/zenodo.6458438",
+    "version": "v1.1",
+    "filename": "lacdr-tox/heldring_phh_code-v1.1.zip",
+    "size_bytes": 17340023,
+    "checksum_algorithm": "md5",
+    "checksum": "10be64daac7e3e3a59b0d4184b31a2f0",
+    "download_url": "https://zenodo.org/api/records/6458438/files/lacdr-tox/heldring_phh_code-v1.1.zip/content",
+    "zenodo_license_metadata": "other-open",
+    "vendored_in_repository": false
+  },
+  "primary_human_hepatocyte_evidence": {
+    "enrolled_donor_count": 54,
+    "excluded_nonconfluent_donor_count": 4,
+    "analysed_donor_count": 50,
+    "assay": "TempO-Seq S1500+ transcript panel",
+    "perturbation": "cisplatin",
+    "timepoints_h": [8, 24],
+    "time_resolved_phh_protein_trajectory_available": false
+  },
+  "translation_result": {
+    "source_model_context": "HepG2 fluorescent reporter protein dynamics",
+    "phh_tp53_mdm2_relationship_reproduced": false,
+    "healthy_phh_kinetic_parameter_authority": false,
+    "healthy_phh_predictive_authority": false
+  },
+  "project_use": {
+    "evidence_and_reproducibility_reference": true,
+    "automatic_parameter_import": false,
+    "automatic_runtime_activation": false,
+    "authoritative_cell_state_coupling": false
+  },
+  "verified_at": "2026-08-08"
+}

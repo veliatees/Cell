@@ -1,6 +1,6 @@
 {
   "version": "hepatocyte_completion_matrix_v1",
-  "date_verified": "2026-07-29",
+  "date_verified": "2026-08-08",
   "status": "mixed_completion_with_fail_closed_biological_activation",
   "score_policy": "No average realism or biological-accuracy percentage is identifiable. Closed statuses apply only to each entry's exact scope.",
   "status_semantics": {
@@ -54,6 +54,65 @@
         "engine/cell_engine/validation/baseline_lifecycle_timing.py",
         "scripts/export_engine_snapshot.py",
         "engine/tests/test_baseline_lifecycle_timing.py"
+      ]
+    },
+    {
+      "id": "healthy_phh_p53_ddr_dynamics",
+      "title": "Healthy-PHH p53/MDM2 damage-response dynamics",
+      "status": "blocked_missing_evidence",
+      "scope": "Time-resolved p53/MDM2 signaling and fate decisions in healthy adult primary human hepatocytes.",
+      "current_capability": "A cross-context reduced ODE remains available only behind an explicit software-fixture or exploratory-purpose gate. The canonical snapshot executes zero scenarios. Heldring 2022 contributes 50-donor PHH transcript endpoints at 8 h and 24 h and directly documents failed HepG2-to-PHH translation for TP53-MDM2, but supplies no time-resolved PHH protein trajectory.",
+      "observed_metrics": {
+        "explicit_purpose_guard_count": 1,
+        "project_tuned_candidate_parameter_count": 34,
+        "healthy_phh_numeric_parameter_count": 0,
+        "healthy_phh_time_resolved_protein_trajectory_count": 0,
+        "healthy_phh_transcript_donor_count": 50,
+        "healthy_phh_transcript_timepoint_count": 2,
+        "public_simulated_scenario_count": 0,
+        "quantitative_validation_allowed_count": 0,
+        "predictive_execution_allowed_count": 0,
+        "authoritative_state_coupling_allowed_count": 0
+      },
+      "remaining_requirements": [
+        "Time-resolved PHH p53, phosphorylated-p53 and MDM2 protein trajectories under a defined damage protocol.",
+        "Matched repair, arrest, senescence, apoptosis and recovery outcomes with uncertainty.",
+        "Donor-conditioned calibration and donor-disjoint held-out validation."
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/p53_dynamics.py",
+        "data/published_models/heldring2022_p53_phh_translation.v1.json",
+        "engine/tests/test_p53_dynamics.py"
+      ]
+    },
+    {
+      "id": "healthy_phh_clonal_population_dynamics",
+      "title": "Healthy-PHH clonal population dynamics",
+      "status": "blocked_missing_evidence",
+      "scope": "Donor-, genotype-, ploidy-, niche- and injury-resolved hepatocyte lineage dynamics and transformation risk.",
+      "current_capability": "A deterministic population bookkeeping kernel accepts only caller-supplied non-authoritative parameters. It bundles no biological parameter set, executes no canonical scenario and emits no transformation claim. Human liver clonal and PHH transformation studies define the missing spatial and multihit evidence rather than supplying a shortcut threshold.",
+      "observed_metrics": {
+        "explicit_purpose_guard_count": 1,
+        "bundled_biological_parameter_set_count": 0,
+        "canonical_simulated_scenario_count": 0,
+        "canonical_transformation_claim_count": 0,
+        "healthy_phh_calibrated_population_parameter_count": 0,
+        "quantitative_validation_allowed_count": 0,
+        "predictive_execution_allowed_count": 0,
+        "authoritative_state_coupling_allowed_count": 0
+      },
+      "remaining_requirements": [
+        "donor-resolved lineage or clone trajectories with genotype and ploidy",
+        "injury, nutrient, zonation and tissue-niche context for every trajectory",
+        "time-resolved proliferation, arrest, senescence, death and clearance observations",
+        "spatial cell-neighbour and portal-central geometry with boundary conditions",
+        "measurement-operator definitions and uncertainty for each readout",
+        "donor-disjoint held-out validation and independent biological review"
+      ],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/cell_population.py",
+        "engine/tests/test_cell_population.py",
+        "docs/14-cancer-roadmap.md"
       ]
     },
     {
@@ -1467,10 +1526,10 @@
     }
   ],
   "summary": {
-    "entry_count": 53,
+    "entry_count": 55,
     "closed_count": 31,
     "partial_count": 8,
-    "blocked_missing_evidence_count": 12,
+    "blocked_missing_evidence_count": 14,
     "external_action_required_count": 1,
     "not_applicable_at_model_scale_count": 1,
     "biological_accuracy_pct": null

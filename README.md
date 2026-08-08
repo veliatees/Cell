@@ -158,12 +158,13 @@ biology rather than tuned to look right.
   single-cell transcriptomes are available as assay-matched validation surfaces.
   Product criteria and censored records never become simulation thresholds or
   biological zeros.
-- **DNA damage & repair** — stochastic double-strand-break repair with a p53
-  fate decision keyed to the DSB burden (~30 DSB/Gy).
-- **Life and death** — cell-cycle states, biomass growth, division (binomial
-  partitioning of real molecule counts), cancer-like loss of checkpoint control,
-  and a **death decision that distinguishes apoptosis from necrosis** via the ATP
-  switch (Leist/Eguchi 1997).
+- **DNA damage & repair** - a schematic stochastic DSB layer and a reduced
+  p53/MDM2 candidate exist for software and exploratory work. The p53 candidate
+  is not PHH-calibrated, executes no canonical fate panel, and cannot drive
+  quantitative validation, prediction, or authoritative cell state.
+- **Life and death** - cell-cycle, biomass, count-partitioning and death-state
+  software substrates exist. Their legacy thresholds remain schematic; the
+  project makes no current healthy-PHH cancer-transition or treatment claim.
 - **A unified whole cell** — metabolism + expression + cycle composed into one
   network that lives, grows, expresses, divides, or arrests when starved.
 - **Host–pathogen & tissue** — a viral infection that hijacks host resources, and
@@ -378,9 +379,11 @@ What is still depth-work (the road ahead is depth, not a new approach):
   but the broad whole-cell reaction network is not yet fully fused into that
   lattice with source-backed per-reaction kinetics;
 - volume dynamics at division and quantitative CDK/cyclin/p53 kinetics are not
-  yet modelled; the current checkpoint layer is qualitative and source-traced,
-  with real-time phase anchors available separately from the accelerated browser
-  demo.
+  yet PHH-authorized. A cross-context p53/MDM2 ODE is retained only behind an
+  explicit exploratory-purpose gate. Heldring 2022 adds 50-donor PHH transcript
+  endpoints at 8 h and 24 h, but also shows that a HepG2-derived model misses the
+  PHH TP53-MDM2 relationship; time-resolved PHH protein and fate data remain the
+  activation requirement.
 
 This is an open-ended research programme, not a checklist with an end. The
 direction and the next steps are tracked in the depth roadmap

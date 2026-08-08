@@ -2,6 +2,21 @@
 
 Date created: 2026-07-10
 
+## Current authority status
+
+As of Milestone 165, the reduced p53/MDM2 ODE and the heritable population
+kernel are software/exploratory candidates only. The project publishes no
+canonical p53 fate panel, no p53-null selection scenario and no
+`transformation_emerged` result. Both modules fail closed for quantitative
+validation, prediction and authoritative hepatocyte-state coupling.
+
+This correction follows direct PHH evidence from Heldring et al. (2022): their
+50-donor cisplatin transcript panel supports human variability at 8 h and 24 h,
+but the HepG2-derived model did not reproduce the PHH TP53-MDM2 relationship.
+The population kernel likewise has no measured PHH parameter set. It remains a
+generic inheritance and finite-capacity bookkeeping tool until lineage,
+genotype, ploidy, niche, fate and held-out validation data are jointly supplied.
+
 ## Purpose
 
 This document preserves the cancer research direction without prematurely
@@ -25,6 +40,7 @@ validation.
 ## Non-negotiable scientific rules
 
 - There is no universal `cancer_score` and no single normal-to-cancer switch.
+- Checkpoint loss or p53 loss alone is not coded as transformation.
 - A driver alteration is not sufficient evidence of malignant transformation.
 - Mutation, epigenetic state, expression, protein activity, morphology and
   phenotype are separate state layers.

@@ -98,80 +98,66 @@ export type EngineCytoplasmDynamics = {
   source_ids: string[];
 };
 
-// Grounded p53-Mdm2 pulsatile fate module (see engine p53_dynamics.py). A
-// single-cell DNA-damage response: digital, frequency-encoded p53 pulses
-// (~5.5 h period) whose temporal pattern decides fate (pulsed -> recovery,
-// sustained -> senescence, irreparable -> apoptosis; p53-knockout ->
-// proliferation with unresolved damage). Never a reaction-transport authority.
-export type EngineP53FateResponse = {
-  scenario: string;
-  dna_damage_input: number;
-  p53_functional: boolean;
-  mdm2_inhibited: boolean;
-  n_pulses: number;
-  mean_pulse_period_h: number | null;
-  peak_p53: number;
-  sustained: boolean;
-  cumulative_p53: number;
-  cumulative_damage_exposure: number;
-  retained_damage: number;
-  fate: string;
+// PHH evidence boundary for the cross-context p53/MDM2 candidate. The public
+// snapshot contains no simulated fate panel and cannot drive cell state.
+export type EngineP53EvidenceContext = {
+  id: string;
+  biological_system: string;
+  assay: string;
+  donor_count: number | null;
+  timepoints_h: number[];
+  evidence_role: string;
+  healthy_phh_time_resolved_protein_dynamics: boolean;
+  quantitative_parameter_authority: boolean;
+  predictive_authority: boolean;
+  source_ids: string[];
 };
 
 export type EngineP53Dynamics = {
   version: string;
+  status: string;
   is_reaction_transport_authority: boolean;
-  measured_pulse_period_h: number;
-  model_pulse_period_h: number | null;
-  responses: EngineP53FateResponse[];
-  honesty_status: string;
-  grounded: string[];
-  not_grounded: string[];
+  explicit_purpose_required: boolean;
+  software_fixture_execution_allowed: boolean;
+  exploratory_candidate_execution_allowed: boolean;
+  quantitative_validation_allowed: boolean;
+  predictive_execution_allowed: boolean;
+  authoritative_cell_state_coupling_allowed: boolean;
+  healthy_phh_numeric_parameter_count: number;
+  healthy_phh_time_resolved_protein_trajectory_count: number;
+  healthy_phh_transcript_donor_count: number;
+  healthy_phh_transcript_timepoint_count: number;
+  project_tuned_candidate_parameter_count: number;
+  public_simulated_scenario_count: number;
+  evidence_contexts: EngineP53EvidenceContext[];
+  structurally_supported: string[];
+  not_established_for_healthy_phh: string[];
   blockers: string[];
   source_ids: string[];
+  policy: string;
 };
 
-// Minimal heritable cell-population substrate (see engine cell_population.py).
-// One p53-gated fate law instantiated N times; a rare checkpoint-null subclone
-// expands to dominance ONLY under chronic genotoxic stress. Clonal dominance is
-// an emergent readout of composition, never a scripted transformation rule.
-export type EngineCellPopulationGeneration = {
-  generation: number;
-  alive: number;
-  cycling: number;
-  senescent: number;
-  checkpoint_null_fraction: number;
-  mean_damage: number;
-  divisions: number;
-  apoptoses: number;
-  new_senescent: number;
-};
-
-export type EngineCellPopulationOutcome = {
+// Generic inheritance/population bookkeeping kernel. Every numerical input is
+// caller supplied; the canonical snapshot publishes no transformation result.
+export type EngineCellPopulation = {
   version: string;
+  status: string;
   is_reaction_transport_authority: boolean;
-  scenario: string;
-  seed: number;
-  generations: number;
-  carrying_capacity: number;
-  genotoxic_stress_per_generation: number;
-  initial_checkpoint_null_fraction: number;
-  final_checkpoint_null_fraction: number;
-  final_alive: number;
-  generations_to_null_majority: number | null;
-  transformation_emerged: boolean;
-  checkpoint_null_fraction_series: number[];
-  alive_series: number[];
-  mean_damage_series: number[];
-  timeline: EngineCellPopulationGeneration[];
-  honesty_status: string;
-  grounded: string[];
-  not_grounded: string[];
+  explicit_purpose_required: boolean;
+  software_fixture_execution_allowed: boolean;
+  exploratory_candidate_execution_allowed: boolean;
+  quantitative_validation_allowed: boolean;
+  predictive_execution_allowed: boolean;
+  authoritative_cell_state_coupling_allowed: boolean;
+  bundled_biological_parameter_set_count: number;
+  canonical_simulated_scenario_count: number;
+  canonical_transformation_claim_count: number;
+  healthy_phh_calibrated_population_parameter_count: number;
+  required_evidence: string[];
   blockers: string[];
   source_ids: string[];
+  policy: string;
 };
-
-export type EngineCellPopulation = Record<string, EngineCellPopulationOutcome>;
 
 // Per-instance organelle evidence scaffold. Stable body identities are retained,
 // but healthy-adult PHH vitality, age, turnover and clearance measurements remain

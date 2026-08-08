@@ -1,114 +1,95 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import json
-import unittest
+from math import nan
+
+import pytest
 
 from cell_engine.quantitative.p53_dynamics import (
-    MEASURED_PULSE_PERIOD_H,
+    EXPLORATORY_CANDIDATE_PARAMETERS,
     P53_DYNAMICS_SOURCES,
-    atm_signal,
+    P53DynamicsAuthorityError,
     build_p53_dynamics,
     p53_dynamics_snapshot,
     simulate_p53_response,
 )
 
 
-class QuiescenceTest(unittest.TestCase):
-    def test_undamaged_cell_does_not_pulse(self) -> None:
-        r = simulate_p53_response(0.0)
-        self.assertEqual(r.n_pulses, 0)
-        self.assertLess(r.peak_p53, 0.4)
-        self.assertEqual(r.fate, "homeostatic_recovery")
-
-    def test_atm_gate_is_monotone_and_bounded(self) -> None:
-        self.assertEqual(atm_signal(0.0), 0.0)
-        self.assertGreater(atm_signal(1.0), atm_signal(0.2))
-        self.assertLess(atm_signal(100.0), 1.0 + 1e-9)
-
-
-class DigitalDoseEncodingTest(unittest.TestCase):
-    def test_pulse_count_increases_with_dose(self) -> None:
-        # Lahav 2004: dose is encoded in the NUMBER of pulses, not their size.
-        low = simulate_p53_response(0.4)
-        mid = simulate_p53_response(1.5)
-        high = simulate_p53_response(3.0)
-        self.assertLessEqual(low.n_pulses, mid.n_pulses)
-        self.assertLess(mid.n_pulses, high.n_pulses)
-
-    def test_amplitude_is_roughly_fixed_across_dose(self) -> None:
-        # Amplitude (peak) is the conserved digital feature once pulsing engages.
-        mid = simulate_p53_response(1.5)
-        high = simulate_p53_response(3.0)
-        self.assertGreater(mid.peak_p53, 1.0)
-        self.assertLess(abs(mid.peak_p53 - high.peak_p53), 0.3)
-
-    def test_model_period_matches_measured_5_5h(self) -> None:
-        r = simulate_p53_response(5.0)
-        self.assertIsNotNone(r.mean_pulse_period_h)
-        assert r.mean_pulse_period_h is not None
-        self.assertAlmostEqual(r.mean_pulse_period_h, MEASURED_PULSE_PERIOD_H, delta=1.0)
+def test_public_contract_is_phh_fail_closed_and_does_not_run_scenarios() -> None:
+    snapshot = p53_dynamics_snapshot()
+    json.dumps(snapshot)
+    assert snapshot["status"] == "cross_context_candidate_phh_execution_blocked"
+    assert snapshot["explicit_purpose_required"] is True
+    assert snapshot["healthy_phh_numeric_parameter_count"] == 0
+    assert snapshot["healthy_phh_time_resolved_protein_trajectory_count"] == 0
+    assert snapshot["public_simulated_scenario_count"] == 0
+    assert snapshot["quantitative_validation_allowed"] is False
+    assert snapshot["predictive_execution_allowed"] is False
+    assert snapshot["authoritative_cell_state_coupling_allowed"] is False
+    assert "responses" not in snapshot
+    assert "model_pulse_period_h" not in snapshot
 
 
-class FateSplitTest(unittest.TestCase):
-    def test_pulsed_response_recovers(self) -> None:
-        r = simulate_p53_response(1.5)
-        self.assertGreater(r.n_pulses, 0)
-        self.assertEqual(r.fate, "recovery_after_pulsed_arrest")
-        self.assertLess(r.retained_damage, 0.01)
-
-    def test_sustained_p53_drives_senescence(self) -> None:
-        # Purvis 2012: sustained p53 (Mdm2 inhibited) -> senescence, not recovery.
-        r = simulate_p53_response(0.8, mdm2_inhibited=True)
-        self.assertEqual(r.fate, "senescence")
-
-    def test_irreparable_damage_drives_apoptosis(self) -> None:
-        r = simulate_p53_response(8.0)
-        self.assertEqual(r.fate, "apoptosis")
-        self.assertGreater(r.retained_damage, 0.5)
+def test_heldring_phh_context_is_recorded_without_protein_authority() -> None:
+    snapshot = p53_dynamics_snapshot()
+    contexts = {context["id"]: context for context in snapshot["evidence_contexts"]}
+    heldring = contexts["heldring_phh_cisplatin_transcript_panel"]
+    assert heldring["donor_count"] == 50
+    assert heldring["timepoints_h"] == [8.0, 24.0]
+    assert heldring["healthy_phh_time_resolved_protein_dynamics"] is False
+    assert heldring["quantitative_parameter_authority"] is False
+    assert heldring["predictive_authority"] is False
 
 
-class KnockoutValidationTest(unittest.TestCase):
-    def test_p53_knockout_never_pulses(self) -> None:
-        r = simulate_p53_response(1.5, p53_functional=False)
-        self.assertEqual(r.n_pulses, 0)
-        self.assertEqual(r.fate, "proliferation_with_unresolved_damage")
+@pytest.mark.parametrize(
+    "purpose",
+    (
+        "quantitative_validation",
+        "predictive_execution",
+        "authoritative_cell_state_coupling",
+    ),
+)
+def test_scientific_uses_fail_closed(purpose: str) -> None:
+    with pytest.raises(P53DynamicsAuthorityError):
+        simulate_p53_response(1.0, purpose=purpose)  # type: ignore[arg-type]
 
-    def test_knockout_retains_more_cumulative_damage_than_wildtype(self) -> None:
-        # Free known-biology check: losing p53 leaves the cell with a higher
-        # cumulative damage exposure (the substrate for later transformation).
-        wt = simulate_p53_response(1.5, p53_functional=True)
-        ko = simulate_p53_response(1.5, p53_functional=False)
-        self.assertGreater(
-            ko.cumulative_damage_exposure, wt.cumulative_damage_exposure
+
+def test_explicit_software_fixture_is_deterministic_and_labelled() -> None:
+    first = simulate_p53_response(1.5, purpose="software_fixture", hours=8.0)
+    second = simulate_p53_response(1.5, purpose="software_fixture", hours=8.0)
+    assert first == second
+    assert first.purpose == "software_fixture"
+    assert first.parameter_authority == "project_tuned_cross_context_candidate"
+    assert first.candidate_fate_label.startswith("candidate_")
+    assert first.cumulative_p53 > 0.0
+
+
+def test_candidate_parameters_are_disclosed_but_not_public_outputs() -> None:
+    authority = build_p53_dynamics()
+    assert authority.project_tuned_candidate_parameter_count == len(
+        EXPLORATORY_CANDIDATE_PARAMETERS.__dataclass_fields__
+    )
+    snapshot_text = json.dumps(authority.to_dict())
+    assert '"ks_p_drive"' not in snapshot_text
+    assert '"repair_capacity"' not in snapshot_text
+
+
+def test_all_registered_sources_resolve() -> None:
+    for source_id in p53_dynamics_snapshot()["source_ids"]:
+        assert source_id in P53_DYNAMICS_SOURCES
+
+
+def test_negative_damage_is_rejected() -> None:
+    with pytest.raises(ValueError, match="non-negative"):
+        simulate_p53_response(-1.0, purpose="software_fixture")
+
+
+def test_non_finite_candidate_parameter_is_rejected() -> None:
+    parameters = replace(EXPLORATORY_CANDIDATE_PARAMETERS, ks_p_drive=nan)
+    with pytest.raises(ValueError, match="finite"):
+        simulate_p53_response(
+            1.0,
+            purpose="software_fixture",
+            parameters=parameters,
         )
-
-
-class ContractTest(unittest.TestCase):
-    def test_determinism(self) -> None:
-        a = simulate_p53_response(1.5)
-        b = simulate_p53_response(1.5)
-        self.assertEqual(a.cumulative_p53, b.cumulative_p53)
-        self.assertEqual(a.n_pulses, b.n_pulses)
-
-    def test_not_a_reaction_transport_authority(self) -> None:
-        dyn = build_p53_dynamics()
-        self.assertFalse(dyn.is_reaction_transport_authority)
-
-    def test_snapshot_is_json_serialisable_and_populated(self) -> None:
-        snap = p53_dynamics_snapshot()
-        text = json.dumps(snap)  # must not raise
-        self.assertIn("responses", snap)
-        self.assertEqual(len(snap["responses"]), 7)
-        self.assertGreater(len(snap["source_ids"]), 0)
-        for sid in snap["source_ids"]:
-            self.assertIn(sid, P53_DYNAMICS_SOURCES)
-
-    def test_honesty_fields_present(self) -> None:
-        snap = p53_dynamics_snapshot()
-        self.assertTrue(snap["grounded"])
-        self.assertTrue(snap["not_grounded"])
-        self.assertTrue(snap["blockers"])
-
-
-if __name__ == "__main__":
-    unittest.main()

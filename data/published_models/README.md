@@ -3,6 +3,18 @@
 This directory stores generated validation results for externally published
 models. It does not contain fitted project parameters.
 
+## Heldring 2022 p53/PHH translation
+
+`heldring2022_p53_phh_translation.v1.json` pins the article and Zenodo v1.1
+code/data archive identity. It records the distinction between the 50-donor PHH
+TempO-Seq endpoints at 8 h and 24 h and the time-resolved HepG2 reporter data
+used to build the published model.
+
+The publication reports that the HepG2-derived model did not reproduce the PHH
+TP53-MDM2 relationship. The manifest is therefore a reproducibility and
+negative-translation record, not a healthy-PHH parameter import. It authorizes
+zero automatic model execution or cell-state coupling.
+
 ## Human-GEM v2.0.0
 
 `human_gem_v2.0.0.manifest.json` pins the official Human-GEM release to an
