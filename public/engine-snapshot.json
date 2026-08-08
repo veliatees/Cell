@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-08-08T21:52:48.036987+00:00",
+    "created_at_utc": "2026-08-08T22:29:43.573024+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -15971,16 +15971,22 @@
         },
         {
           "code_surfaces": [
-            "engine/cell_engine/quantitative/cytosol_transport.py"
+            "engine/cell_engine/quantitative/cytosol_transport.py",
+            "engine/cell_engine/quantitative/phh_state.py",
+            "src/engineSnapshot.ts"
           ],
-          "current_capability": "The value remains visible for legacy exploratory reaction-volume compatibility and is explicitly barred from quantitative fluid/reaction use.",
+          "current_capability": "The value remains visible only for legacy exploratory reaction-volume compatibility. Static whole-liver context exports null cytosol volume and zero converted counts.",
           "id": "legacy_cytosol_fraction_quarantine",
           "observed_metrics": {
             "legacy_fraction": 0.52,
-            "quantitative_use_allowed": false
+            "quantitative_context_count_converted_pool_count": 0,
+            "quantitative_context_dynamic_execution_allowed": false,
+            "quantitative_context_effective_cytosol_volume_count": 0,
+            "quantitative_context_single_cell_initialization_allowed": false,
+            "quantitative_fluid_or_reaction_use_allowed": false
           },
           "remaining_requirements": [],
-          "scope": "Prevention of the legacy fraction from parameterizing quantitative fluid or reaction claims.",
+          "scope": "Prevention of the legacy fraction from parameterizing quantitative fluid, reaction, per-cell pool or molecule-count claims.",
           "status": "closed",
           "title": "Legacy 0.52 cytosol-fraction quarantine"
         },
@@ -17254,8 +17260,8 @@
           "observed_metrics": {
             "automatic_biological_parameter_activation_count": 0,
             "initial_js_chunk_count": 2,
-            "initial_js_gzip_bytes": 265435,
-            "initial_js_raw_bytes": 968721,
+            "initial_js_gzip_bytes": 265419,
+            "initial_js_raw_bytes": 968837,
             "maximum_initial_js_gzip_bytes": 275000,
             "maximum_initial_js_raw_bytes": 980000,
             "production_manifest_gate_count": 1,
@@ -24495,7 +24501,6 @@
     "model_authority": {
       "authoritative_biochemical_state_coupling_executed": false,
       "authoritative_sections": [
-        "quantitative_state",
         "quantitative_state.geometry_reference",
         "human_hepatocyte_3d_morphometry.normal_control_cell_volume_um3",
         "human_hepatocyte_3d_morphometry.normal_control_lipid_droplet_volume_percent",
@@ -24598,8 +24603,11 @@
         "spatial_world",
         "physical_validation"
       ],
-      "policy": "quantitative_state wins on overlapping aggregate species; whole_cell_runtime_authority requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of legacy relative-pool dynamics; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires a donor-resolved write, verified-removal persistence, first-response and rechallenge-response trajectory plus a frozen held-out-validated law and never treats an event log as memory; cytosol_transport keeps passive aqueous projection separate from deterministic dimensionless cargo rendering, applies outer-membrane cut-cell geometric conservation and subgrid organelle interception only as numerical boundary treatments, forbids a single global viscosity/crowding multiplier and gates fluid coupling per reaction; cytoplasm_dynamics retains cross-context motion observations but exports zero healthy-PHH motion parameters, while browser staging uses only independent renderer-world and wall-clock values; receptor_signaling_trajectory_intake requires donor-matched density, binding, occupancy, trafficking, response and frozen heldout stages but cannot activate a receptor or signal; active_protein_localization_intake requires donor-matched total, localized, active, denominator and functional measurements but cannot infer active copies or scale rates; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
-      "primary_state_path": "quantitative_state",
+      "context_only_sections": [
+        "quantitative_state"
+      ],
+      "policy": "quantitative_state is static whole-liver context only and cannot initialize one cell, convert counts or run dynamics; whole_cell_runtime_authority requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of legacy relative-pool dynamics; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires a donor-resolved write, verified-removal persistence, first-response and rechallenge-response trajectory plus a frozen held-out-validated law and never treats an event log as memory; cytosol_transport keeps passive aqueous projection separate from deterministic dimensionless cargo rendering, applies outer-membrane cut-cell geometric conservation and subgrid organelle interception only as numerical boundary treatments, forbids a single global viscosity/crowding multiplier and gates fluid coupling per reaction; cytoplasm_dynamics retains cross-context motion observations but exports zero healthy-PHH motion parameters, while browser staging uses only independent renderer-world and wall-clock values; receptor_signaling_trajectory_intake requires donor-matched density, binding, occupancy, trafficking, response and frozen heldout stages but cannot activate a receptor or signal; active_protein_localization_intake requires donor-matched total, localized, active, denominator and functional measurements but cannot infer active copies or scale rates; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+      "primary_context_path": "quantitative_state",
       "quantitative_biochemical_dynamics_executed": false,
       "runtime_authoritative_sections": [
         "spatial_state",
@@ -70078,6 +70086,7 @@
         "apparent_atp_exchange_observation_ready": true,
         "blocking_measurements": [
           "matched donor and nutritional state",
+          "matched single-cell compartment volumes and pool-specific denominators",
           "per-cell total protein and membrane-protein mass for the modeled cell",
           "canalicular surface-localized BSEP and MRP2 copy numbers",
           "matched intracellular bile-acid substrate concentrations",
@@ -70086,7 +70095,7 @@
         ],
         "direct_initialization_ready": false,
         "energy_turnover_ready": false,
-        "metabolic_pool_initialization_ready": true,
+        "metabolic_pool_initialization_ready": false,
         "whole_cell_transport_flux_ready": false
       },
       "scientific_release": {
@@ -70094,6 +70103,7 @@
         "predictive": {
           "blockers": [
             "matched donor and nutritional state",
+            "matched single-cell compartment volumes and pool-specific denominators",
             "per-cell total protein and membrane-protein mass for the modeled cell",
             "canalicular surface-localized BSEP and MRP2 copy numbers",
             "matched intracellular bile-acid substrate concentrations",
@@ -70195,10 +70205,10 @@
           "checks": [
             "the whole-cell relative-pool runtime requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative PHH state-coupling use",
             "legacy relative-pool residuals are fixture-only, require an explicit purpose and reject biological calibration, quantitative validation and predictive model selection",
-            "source-traceable metabolic pool initialization",
+            "aggregate liver metabolic observations remain static context and cannot initialize a single-cell pool",
             "human-liver apparent Pi-to-ATP exchange retained as an assay observation",
             "mitochondrial ATP synthesis and cellular ATP demand remain uninitialized",
-            "unified quantitative PHH state excludes relative schematic units",
+            "source-backed liver context excludes relative units, per-cell count conversion and dynamic state authority",
             "human-specific zonation context cannot apply unmeasured flux or oxygen scaling",
             "sinusoid v2 enables sourced perfusion while uncalibrated cell and zonal fluxes fail closed",
             "human mixed-meal trajectory is retained at organ scale and cannot invent per-cell flux",
@@ -70256,10 +70266,10 @@
           "checks": [
             "the whole-cell relative-pool runtime requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative PHH state-coupling use",
             "legacy relative-pool residuals are fixture-only, require an explicit purpose and reject biological calibration, quantitative validation and predictive model selection",
-            "source-traceable metabolic pool initialization",
+            "aggregate liver metabolic observations remain static context and cannot initialize a single-cell pool",
             "human-liver apparent Pi-to-ATP exchange retained as an assay observation",
             "mitochondrial ATP synthesis and cellular ATP demand remain uninitialized",
-            "unified quantitative PHH state excludes relative schematic units",
+            "source-backed liver context excludes relative units, per-cell count conversion and dynamic state authority",
             "human-specific zonation context cannot apply unmeasured flux or oxygen scaling",
             "sinusoid v2 enables sourced perfusion while uncalibrated cell and zonal fluxes fail closed",
             "human mixed-meal trajectory is retained at organ scale and cannot invent per-cell flux",
@@ -77294,10 +77304,17 @@
       "version": "published_hepatic_glucose_shadow_v1"
     },
     "quantitative_state": {
-      "authority": "authoritative_research_preview",
+      "authority": "source_backed_context_only",
       "cell_volume_l": 5.657071160000001e-12,
-      "effective_cytosol_volume_l": 2.9416770032000006e-12,
+      "cell_volume_role": "independent_geometry_reference_not_pool_denominator",
+      "concentration_to_count_conversion_allowed": false,
+      "count_converted_pool_count": 0,
+      "dynamic_execution_allowed": false,
+      "dynamic_pool_count": 0,
+      "effective_cytosol_volume_fraction": null,
+      "effective_cytosol_volume_l": null,
       "energy_charge": 0.7212449255751014,
+      "energy_charge_basis": "derived_from_whole_liver_tissue_equivalent_adenylates",
       "geometry_reference": {
         "aggregate_lipid_droplet_reference": {
           "fraction_of_cell_volume": 0.00507807,
@@ -77397,20 +77414,23 @@
       },
       "limitations": [
         "Tissue-equivalent pools are not compartment-resolved isolated-PHH measurements.",
-        "Effective molecule counts use the lumped model cytosol and are not direct copy-number measurements.",
-        "This baseline is static; source-backed substrate transport and redox dynamics remain blocked."
+        "The aggregate cell-volume reference is not a valid denominator for whole-liver pool observations.",
+        "The legacy 0.52 cytosol fraction is not used and no per-cell molecule count is emitted.",
+        "This context is static; single-cell initialization, substrate transport and redox dynamics remain blocked."
       ],
       "pools": {
         "ADP": {
           "biological_basis": "whole_tissue_equivalent_mM",
           "compartment": "whole_tissue_equivalent",
-          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
-          "effective_lumped_model_count": 2184602168.367046,
+          "count_basis": "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          "dynamic_execution_allowed": false,
+          "effective_lumped_model_count": null,
           "evidence": "derived",
           "high": null,
           "id": "ADP",
           "low": null,
           "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+          "single_cell_initialization_allowed": false,
           "source_ids": [
             "human_liver_adenylates_1992",
             "human_liver_phosphorus_mrs_2017"
@@ -77421,13 +77441,15 @@
         "AMP": {
           "biological_basis": "whole_tissue_equivalent_mM",
           "compartment": "whole_tissue_equivalent",
-          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
-          "effective_lumped_model_count": 830895696.5156711,
+          "count_basis": "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          "dynamic_execution_allowed": false,
+          "effective_lumped_model_count": null,
           "evidence": "derived",
           "high": null,
           "id": "AMP",
           "low": null,
           "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+          "single_cell_initialization_allowed": false,
           "source_ids": [
             "human_liver_adenylates_1992",
             "human_liver_phosphorus_mrs_2017"
@@ -77438,13 +77460,15 @@
         "ATP": {
           "biological_basis": "whole_tissue_equivalent_mM",
           "compartment": "whole_tissue_equivalent",
-          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
-          "effective_lumped_model_count": 3883737188.2080817,
+          "count_basis": "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          "dynamic_execution_allowed": false,
+          "effective_lumped_model_count": null,
           "evidence": "derived",
           "high": null,
           "id": "ATP",
           "low": null,
           "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+          "single_cell_initialization_allowed": false,
           "source_ids": [
             "human_liver_adenylates_1992",
             "human_liver_phosphorus_mrs_2017"
@@ -77455,13 +77479,15 @@
         "NAD_plus": {
           "biological_basis": "whole_tissue_equivalent_mM",
           "compartment": "whole_tissue_equivalent",
-          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
-          "effective_lumped_model_count": 1180058607.1863017,
+          "count_basis": "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          "dynamic_execution_allowed": false,
+          "effective_lumped_model_count": null,
           "evidence": "derived",
           "high": null,
           "id": "NAD_plus",
           "low": null,
           "notes": "Total tissue NAD+; no cytosol/matrix split is inferred.",
+          "single_cell_initialization_allowed": false,
           "source_ids": [
             "human_liver_adenylates_1992",
             "human_liver_phosphorus_mrs_2017"
@@ -77472,13 +77498,15 @@
         "glucose_blood": {
           "biological_basis": "human_plasma_mM",
           "compartment": "blood_boundary",
-          "count_basis": "unavailable_no_anatomical_blood_control_volume",
+          "count_basis": "not_applicable_blood_boundary_without_anatomical_control_volume",
+          "dynamic_execution_allowed": false,
           "effective_lumped_model_count": null,
           "evidence": "derived",
           "high": 5.6,
           "id": "glucose_blood",
           "low": 3.9,
           "notes": "Midpoint of the curated fasting plasma range; used only at the sinusoidal boundary.",
+          "single_cell_initialization_allowed": false,
           "source_ids": [
             "hmdb_2022"
           ],
@@ -77488,13 +77516,15 @@
         "glycogen": {
           "biological_basis": "in_vivo_liver_mM",
           "compartment": "whole_liver_tissue",
-          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
-          "effective_lumped_model_count": 405677919327.31104,
+          "count_basis": "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          "dynamic_execution_allowed": false,
+          "effective_lumped_model_count": null,
           "evidence": "measured",
           "high": 263.0,
           "id": "glycogen",
           "low": 195.0,
           "notes": "Healthy volunteers without carbohydrate preparation; bounds are mean +/- SEM.",
+          "single_cell_initialization_allowed": false,
           "source_ids": [
             "human_liver_glycogen_overnight_1996"
           ],
@@ -77504,7 +77534,10 @@
       },
       "profile_id": "postabsorptive",
       "profile_label": "Postabsorptive / overnight fast",
-      "status": "source_backed_baseline_not_dynamic"
+      "single_cell_initialization_allowed": false,
+      "single_cell_measured_pool_count": 0,
+      "status": "source_backed_liver_context_single_cell_state_blocked",
+      "version": "quantitative_phh_context_v2"
     },
     "reaction_authority": {
       "authority_counts": {

@@ -326,12 +326,13 @@
   ],
   "readiness": {
     "direct_initialization_ready": false,
-    "metabolic_pool_initialization_ready": true,
+    "metabolic_pool_initialization_ready": false,
     "apparent_atp_exchange_observation_ready": true,
     "energy_turnover_ready": false,
     "whole_cell_transport_flux_ready": false,
     "blocking_measurements": [
       "matched donor and nutritional state",
+      "matched single-cell compartment volumes and pool-specific denominators",
       "per-cell total protein and membrane-protein mass for the modeled cell",
       "canalicular surface-localized BSEP and MRP2 copy numbers",
       "matched intracellular bile-acid substrate concentrations",

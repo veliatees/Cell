@@ -1142,10 +1142,8 @@ type MotionTarget = {
   rendererVelocity: THREE.Vector3;
 };
 const organelleMotions: MotionTarget[] = [];
-// Glycogen granules: shown/hidden per-frame so the store visibly fills (fed) and
-// mobilises (fasted) with the model's glycogen pool.
-// Glycogen is drawn as one instanced β-particle population; the visible instance
-// count is driven by the real engine glycogen store (fills fed, mobilises fasted).
+// Glycogen granules are a fixed sampled display population. Whole-liver glycogen
+// contexts cannot identify one cell's granule count.
 let glycogenInstanced: THREE.InstancedMesh | null = null;
 let glycogenTotal = 0;
 // Lipid droplets are renderer samples. Their combined rest volume is normalized
@@ -2416,19 +2414,21 @@ const METRIC_LABELS: Record<Mode, MetricLabels> = {
 function setMetricLabels(m: Mode) {
   app?.classList.toggle("is-organelle-mode", m === "organelles");
   app?.classList.toggle("is-communication-mode", m === "communication");
-  const hasQuantitativePhhState = m === "organelles" && externalEngineSummary?.quantitativeState;
+  const hasHumanLiverContext = Boolean(
+    m === "organelles" && externalEngineSummary?.quantitativeState
+  );
   if (leftPanelTitleText) {
     leftPanelTitleText.textContent = m === "communication"
       ? "Spatial Cell State"
       : m === "organelles"
-        ? hasQuantitativePhhState ? "Quantitative PHH State" : "Schematic Cell State"
+        ? hasHumanLiverContext ? "Human Liver Context" : "Schematic Cell State"
         : "System Readout";
   }
   if (rightPanelTitleText) {
-    rightPanelTitleText.textContent = m === "communication" ? "Contact Evidence" : m === "organelles" ? "Cell Activity" : "Environment";
+    rightPanelTitleText.textContent = m === "communication" ? "Contact Evidence" : m === "organelles" ? "Schematic Activity" : "Environment";
   }
-  const labels = hasQuantitativePhhState
-    ? { distance: "Glycogen (mM)", force: "ATP (mM)", potential: "ADP (mM)", kinetic: "Energy charge", total: "Context", drift: "NAD+ (mM)" }
+  const labels = hasHumanLiverContext
+    ? { distance: "Liver glycogen (mM eq.)", force: "Liver ATP (mM eq.)", potential: "Liver ADP (mM eq.)", kinetic: "Tissue energy charge", total: "Nutrition context", drift: "Liver NAD+ (mM eq.)" }
     : METRIC_LABELS[m];
   for (const key of Object.keys(labelEls) as (keyof typeof labelEls)[]) {
     const el = labelEls[key];
@@ -2441,8 +2441,8 @@ function setMetricLabels(m: Mode) {
       m === "communication"
         ? "<code>SpatialWorld → surface patch → enter / stay / exit → CellSpatialState</code><code>Contact input is on during enter/stay and off at exit; elapsed duration is not causal</code><code>Patch geometry may be resolved while force, junction gating and receptor activation remain blocked</code>"
         : m === "organelles"
-        ? hasQuantitativePhhState
-          ? "<code>PHH quantitative_state is the primary metric source</code><code>Tissue-equivalent mM; not isolated cytosol measurements</code><code>Effective counts are model-derived, not measured copy numbers</code><code>Relative organelle pools remain schematic visual state</code>"
+        ? hasHumanLiverContext
+          ? "<code>Static source-backed whole-liver context</code><code>Not an isolated-PHH or compartment concentration</code><code>Single-cell initialization, count conversion and dynamics are blocked</code><code>Organelle activity remains schematic renderer state</code>"
           : "<code>Relative organelle pools are schematic renderer state</code><code>Route particles are schematic families unless snapshot-bound</code><code>Unknown/offline state is shown, not invented</code>"
         : "<code>F = k q1 q2 / (ε r²)</code><code>U = k q1 q2 / (ε r)</code><code>U_ex = B·exp(-r/ρ)</code><code>KE = ½ m v²</code>";
   }
@@ -3993,14 +3993,14 @@ function updateIntracellularFluid(realDeltaS: number, refreshMovingBoundaries: b
   visual.trails.geometry.computeBoundingSphere();
 }
 
-// Feeding/fasting: fill or mobilise the glycogen store and refresh the readout.
+// Feeding/fasting context badge and explicitly schematic fallback animation.
 let lastNutritionBadgeMs = 0;
 function updateNutritionVisual(s: CellSnapshot) {
   const engineNutrition = externalEngineSummary?.nutritionalContext;
-  const frac = engineNutrition
-    ? clamp(engineNutrition.glycogen_value / 316.0, 0.04, 1)
-    : clamp(s.glycogenStore01, 0.04, 1);
-  // Function: the number of glycogen β-particles shown IS the real store level.
+  // Whole-liver glycogen observations do not identify one hepatocyte's granule
+  // count. A loaded scientific context therefore leaves the sampled population
+  // unchanged; only the explicitly schematic local fallback may animate count.
+  const frac = engineNutrition ? 1 : clamp(s.glycogenStore01, 0.04, 1);
   if (glycogenInstanced) glycogenInstanced.count = Math.max(0, Math.round(glycogenTotal * frac));
   // No human PHH dose-time law links these nutritional profiles to droplet
   // volume, so the healthy aggregate 3D baseline remains static and explicit.
@@ -4012,19 +4012,26 @@ function updateNutritionVisual(s: CellSnapshot) {
   const profile = engineNutrition?.profile_id;
   const label = profile === "fed_peak" ? "FED PEAK" : profile === "prolonged_fasted" ? "PROLONGED FAST" : profile === "postabsorptive" ? "POSTABSORPTIVE" : s.fedState === "fed" ? "FED" : s.fedState === "fasting" ? "FASTED" : "post-absorptive";
   const cls = profile === "fed_peak" ? "is-fed" : profile === "prolonged_fasted" ? "is-fasted" : profile === "postabsorptive" ? "is-post" : s.fedState === "fed" ? "is-fed" : s.fedState === "fasting" ? "is-fasted" : "is-post";
-  const clock = engineNutrition ? engineNutrition.profile_label : `${s.hoursSinceMeal.toFixed(1)} h since meal`;
-  const glycogen = engineNutrition ? engineNutrition.glycogen_value : s.glycogenMM;
+  const clock = engineNutrition
+    ? engineNutrition.profile_label
+    : `${s.hoursSinceMeal.toFixed(1)} h schematic clock`;
   const bloodGlucose = engineNutrition?.blood_glucose_target_mM;
   const boundaryText = engineNutrition
     ? bloodGlucose == null ? "blood glucose unavailable · ketones unavailable" : `blood glucose <b>${bloodGlucose.toFixed(2)} mM</b> · ketones unavailable`
-    : `blood glucose <b>${s.bloodGlucoseMM.toFixed(1)} mM</b> · ketones <b>${s.ketoneMM.toFixed(2)} mM</b>`;
+    : "browser fixture only · no PHH concentration claim";
+  const glycogenText = engineNutrition
+    ? `liver glycogen context <b>${engineNutrition.glycogen_value.toFixed(1)} ${engineNutrition.glycogen_unit.replaceAll("_", " ")}</b> · single-cell granule count unknown`
+    : `schematic glycogen fill <b>${Math.round(frac * 100)}%</b>`;
+  const glycogenBar = engineNutrition
+    ? ""
+    : `<div class="nutrition-badge__bar"><span style="width:${Math.round(frac * 100)}%"></span></div>`;
   nutritionBadge.className = `nutrition-badge ${cls}`;
   nutritionBadge.innerHTML =
     `<div class="nutrition-badge__head"><span class="nutrition-badge__state">${label}</span>` +
     `<span class="nutrition-badge__clock">${clock}</span></div>` +
-    `<div class="nutrition-badge__row">glycogen store <b>${glycogen.toFixed(1)} mM</b> (${Math.round(frac * 100)}%)</div>` +
+    `<div class="nutrition-badge__row">${glycogenText}</div>` +
     `<div class="nutrition-badge__row">${boundaryText}</div>` +
-    `<div class="nutrition-badge__bar"><span style="width:${Math.round(frac * 100)}%"></span></div>`;
+    glycogenBar;
 }
 
 // The LOD proteome point clouds ride the same deforming surface.
@@ -4753,10 +4760,10 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
   const profile = phh?.selected_profile ? phh.profiles?.[phh.selected_profile] : null;
   const pool = (id: string) => profile?.pools[id]?.value_mM;
   const profileRow = profile
-    ? `<div class="phh-profile"><div class="phh-profile__head"><b>${profile.label}</b><span>${phh?.scientific_release?.research_preview.passed ? "research preview ready" : "release blocked"}</span></div><div class="phh-profile__grid"><span>ATP <b>${pool("ATP")?.toFixed(2)} mM</b></span><span>ADP <b>${pool("ADP")?.toFixed(2)} mM</b></span><span>AMP <b>${pool("AMP")?.toFixed(2)} mM</b></span><span>EC <b>${profile.energy_charge.toFixed(3)}</b></span><span>Glycogen <b>${pool("glycogen")?.toFixed(1)} mM</b></span><span>NAD+ <b>${pool("NAD_plus")?.toFixed(2)} mM</b></span></div></div>`
+    ? `<div class="phh-profile"><div class="phh-profile__head"><b>${profile.label}</b><span>static liver context · single-cell state blocked</span></div><div class="phh-profile__grid"><span>Liver ATP equivalent <b>${pool("ATP")?.toFixed(2)} mM</b></span><span>Liver ADP equivalent <b>${pool("ADP")?.toFixed(2)} mM</b></span><span>Liver AMP equivalent <b>${pool("AMP")?.toFixed(2)} mM</b></span><span>Tissue EC <b>${profile.energy_charge.toFixed(3)}</b></span><span>Liver glycogen <b>${pool("glycogen")?.toFixed(1)} mM</b></span><span>Liver NAD+ equivalent <b>${pool("NAD_plus")?.toFixed(2)} mM</b></span></div></div>`
     : "";
   const phhRow = phh
-    ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">PHH anchors</span><span>${phh.anchor_count} quantitative records · aggregate metabolic pools ${phh.readiness.metabolic_pool_initialization_ready ? "ready" : "blocked"} · apparent Pi→ATP exchange observation ${phh.readiness.apparent_atp_exchange_observation_ready ? "ready" : "blocked"} · cellular ATP turnover ${phh.readiness.energy_turnover_ready ? "ready" : "blocked"} · predictive transport ${phh.readiness.whole_cell_transport_flux_ready ? "ready" : "blocked"}.</span></div>`
+    ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Human anchors</span><span>${phh.anchor_count} quantitative records · single-cell metabolic initialization ${phh.readiness.metabolic_pool_initialization_ready ? "ready" : "blocked"} · apparent Pi→ATP exchange observation ${phh.readiness.apparent_atp_exchange_observation_ready ? "ready" : "blocked"} · cellular ATP turnover ${phh.readiness.energy_turnover_ready ? "ready" : "blocked"} · predictive transport ${phh.readiness.whole_cell_transport_flux_ready ? "ready" : "blocked"}.</span></div>`
     : "";
   const auditRow = audit
     ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--derived">Audit</span><span>${audit.authoritative_surfaces.length} source-backed validation surfaces · ${audit.blocked_or_disabled_surfaces.length} blocked or disabled model surfaces.</span></div>`
@@ -4840,7 +4847,7 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
       })()
     : "";
   const authorityRow = summary?.quantitativeState
-    ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Unified state</span><span>Primary metrics use source-traceable quantitative_state; overlapping relative pools are quarantined as schematic visual state.</span></div>`
+    ? `<div class="evidence-row"><span class="evidence-tag evidence-tag--source">Static context</span><span>Primary metrics preserve source-traceable whole-liver observations. Effective cytosol volume, per-cell counts, single-cell initialization and dynamics are null or blocked; relative organelle pools remain schematic visual state.</span></div>`
     : "";
   const wholeCellAuthority = summary?.wholeCellRuntimeAuthority;
   const schematicRuntime = summary?.schematicVisualState;
@@ -7903,9 +7910,8 @@ function buildOrganelleScene() {
       opacity,
       depthWrite: opacity >= 0.6
     });
-    // Function: couple this population's glow to its real engine activity × health
-    // (mitochondria brighten with how hard they are making ATP, peroxisomes with
-    // β-oxidation, lysosomes with degradative load). These use a GENTLE mapping
+    // Couple this population's glow to explicitly schematic activity and health
+    // channels. These use a gentle mapping
     // (not the discrete organelles' aggressive one) because a dense instanced
     // population would otherwise bloom to white; per-instance colour heterogeneity
     // keeps the shared activity level from reading as a unison strobe.
@@ -9641,14 +9647,14 @@ function buildOrganelleScene() {
       glyScale[i] = sc;
     }
     glycogenInstanced.instanceMatrix.needsUpdate = true;
-    // Rosettes drift coherently with the cytoplasm (granules in a cluster sample
-    // the flow at nearly the same point); small cage keeps clusters together.
+    // Rosettes receive coherent renderer staging; a small cage keeps the sampled
+    // clusters together without claiming a measured intracellular trajectory.
     instancedFlowTargets.push({
       mesh: glycogenInstanced, base: glyBase, scale: glyScale,
       offset: new Float32Array(glycogenTotal * 3), rendererVelocity: new Float32Array(glycogenTotal * 3),
       cage: 0.9
     });
-    glycogenInstanced.userData.label = "Glycogen rosettes - cytosolic β-particles (clustered into α-particle rosettes) that are the hepatocyte's glucose store, packed among the organelles beside the smooth ER. The number shown tracks the engine's real glycogen level: it fills after feeding and mobilises during fasting.";
+    glycogenInstanced.userData.label = "Glycogen rosettes - sampled cytosolic beta-particle clusters shown for anatomy. Display count and positions are not measured for one PHH; whole-liver glycogen context is reported in the panel only.";
     glycogenInstanced.userData.hoverKind = "communication-organelle";
     group.add(glycogenInstanced);
     registerAnatomyLod(glycogenInstanced, "cellular");
@@ -10430,9 +10436,8 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     );
     updateDivisionOverlay(cellCycle.mechanics);
     updateResolvedDivisionVisual(realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND, s.elapsedS);
-    // Each organelle glows with ITS OWN activity — driven by its own internal
-    // cycle in the model (steady powerhouses, bursty shippers/digesters). A
-    // faulted organelle dims, so you can see where the cell is failing.
+    // Each organelle glow follows the explicitly schematic activity/health
+    // fixture. It improves legibility but is not a PHH activity measurement.
     const eff: Record<string, number> = {};
     for (const o of s.organelles) eff[o.id] = o.efficiency;
     const activityOf = (kind: OrganelleId) => engineSignal?.activity[kind] ?? s.activity[kind];
@@ -10441,7 +10446,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     // (floor) so nothing looks dead, plus a strong activity-driven boost on top.
     const glowOf = (kind: keyof OrganelleActivity, gain: number) =>
       (0.4 + 1.15 * Math.min(1, activityOf(kind) * gain)) * (0.35 + 0.65 * healthOf(kind));
-    // Mitochondria glow with how hard they are making ATP right now.
+    // Mitochondrial glow is a schematic animation channel, not an ATP-rate readout.
     const mitoGlow = glowOf("mitochondria", 1 / 0.95);
     for (const m of organelleMitos) {
       (m.material as THREE.MeshStandardMaterial).emissiveIntensity = mitoGlow;
@@ -10451,8 +10456,8 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       for (const mat of g.mats) mat.emissiveIntensity = e;
     }
     // Dense instanced populations (mitochondria/peroxisomes/lysosomes): a gentle
-    // activity-driven brightening (0.1..~0.42) so they visibly respond to real
-    // ATP / β-oxidation / degradative activity without blooming to white. Each is
+    // activity-driven brightening (0.1..~0.42) so schematic ATP-production,
+    // beta-oxidation and degradation channels remain visible. Each is
     // normalised to its own typical activity so they pulse on their own level.
     const POP_GLOW_REF: Partial<Record<OrganelleId, number>> = { mitochondria: 0.95, peroxisome: 0.35, lysosome: 0.5 };
     // Active organelles glow (cheap: per-population material, not per instance).
@@ -10462,7 +10467,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       const norm = Math.min(1, activityOf(p.kind) / (POP_GLOW_REF[p.kind] ?? 1));
       const shimmer = 1 + 0.14 * norm * Math.sin(s.elapsedS * 2.1 + p.kind.length);
       // Visible resting glow in the population's own colour (floor 0.34), brighter
-      // where the type is genuinely active.
+      // where the schematic channel is active.
       p.mat.emissiveIntensity = (0.34 + 0.55 * norm) * (0.4 + 0.6 * healthOf(p.kind)) * shimmer;
     }
     // --- Local cinematic dynamics ---
@@ -10518,7 +10523,9 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     lastEnergyCharge = visualEnergyCharge;
     setText(values.total, quantitative ? quantitative.profile_id : displayStatus);
     if (values.total) {
-      values.total.style.color = displayStatus === "dying" ? "#ff8a8a" : displayStatus === "senescent" ? "#d9a6ff" : displayStatus === "stressed" ? "#ffcf6b" : "#7ee0a8";
+      values.total.style.color = quantitative
+        ? ""
+        : displayStatus === "dying" ? "#ff8a8a" : displayStatus === "senescent" ? "#d9a6ff" : displayStatus === "stressed" ? "#ffcf6b" : "#7ee0a8";
     }
     setText(values.drift, quantitative ? quantitative.pools.NAD_plus.value.toFixed(2) : cargoFidelity.toFixed(2));
     if (values.drift) values.drift.style.color = "";

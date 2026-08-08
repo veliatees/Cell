@@ -187,15 +187,21 @@
       "id": "legacy_cytosol_fraction_quarantine",
       "title": "Legacy 0.52 cytosol-fraction quarantine",
       "status": "closed",
-      "scope": "Prevention of the legacy fraction from parameterizing quantitative fluid or reaction claims.",
-      "current_capability": "The value remains visible for legacy exploratory reaction-volume compatibility and is explicitly barred from quantitative fluid/reaction use.",
+      "scope": "Prevention of the legacy fraction from parameterizing quantitative fluid, reaction, per-cell pool or molecule-count claims.",
+      "current_capability": "The value remains visible only for legacy exploratory reaction-volume compatibility. Static whole-liver context exports null cytosol volume and zero converted counts.",
       "observed_metrics": {
         "legacy_fraction": 0.52,
-        "quantitative_use_allowed": false
+        "quantitative_fluid_or_reaction_use_allowed": false,
+        "quantitative_context_effective_cytosol_volume_count": 0,
+        "quantitative_context_count_converted_pool_count": 0,
+        "quantitative_context_single_cell_initialization_allowed": false,
+        "quantitative_context_dynamic_execution_allowed": false
       },
       "remaining_requirements": [],
       "code_surfaces": [
-        "engine/cell_engine/quantitative/cytosol_transport.py"
+        "engine/cell_engine/quantitative/cytosol_transport.py",
+        "engine/cell_engine/quantitative/phh_state.py",
+        "src/engineSnapshot.ts"
       ]
     },
     {
@@ -1464,8 +1470,8 @@
       "observed_metrics": {
         "production_manifest_gate_count": 1,
         "initial_js_chunk_count": 2,
-        "initial_js_raw_bytes": 968721,
-        "initial_js_gzip_bytes": 265435,
+        "initial_js_raw_bytes": 968837,
+        "initial_js_gzip_bytes": 265419,
         "maximum_initial_js_raw_bytes": 980000,
         "maximum_initial_js_gzip_bytes": 275000,
         "required_deferred_entry_count": 6,

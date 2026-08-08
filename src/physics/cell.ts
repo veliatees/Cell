@@ -204,12 +204,9 @@ export type CellSnapshot = {
   elapsedS: number;
   // Feeding / fasting state (stochastic meals; see updateExternal).
   nutrition: number; // 0..1, 1 = just-fed peak, decays toward fasted
-  hoursSinceMeal: number; // physiological hours since the last meal
+  hoursSinceMeal: number; // schematic compressed-time fixture
   fedState: "fed" | "postabsorptive" | "fasting";
-  bloodGlucoseMM: number;
-  ketoneMM: number;
-  glycogenMM: number; // grounded hepatic glycogen store (real molar, ~75 mM full)
-  glycogenStore01: number; // 0..1 fill of the glycogen store (drives the granule visual)
+  glycogenStore01: number; // normalized schematic fill used only without engine context
   // convenience aliases used by the viewer readout
   glucoseIn: number;
   atp: number;
@@ -217,25 +214,17 @@ export type CellSnapshot = {
 };
 
 const ATP_TOTAL = 1;
-// Nutritional clock: physiological hours advanced per simulated second. Meals and
-// fasting play out on an HOURS axis compressed for viewing (a ~5 h inter-meal gap
-// ~= 35 s on-screen; a 10 h fast ~= 75 s), separate from the fast metabolic clock.
+// Renderer-local nutrition fixture. These compressed intervals are display
+// assumptions, not a measured PHH meal or glycogen trajectory.
 const HOURS_PER_SIM_SEC = 0.0267;
-const MAX_FAST_HOURS = 10; // a meal is forced by 10 h — a normal overnight fast
+const MAX_FAST_HOURS = 10;
 const MEAN_MEAL_INTERVAL_H = 4.5;
 
-// --- Grounded hepatic glycogen store (what the granule visual + readout show) ---
-// Store size is the engine's real molar value (cell_engine/stochastic/signaling.py
-// run_glycogen_control: 75 mM glucosyl, liver range ~50-100 mM). The engine grounds
-// the SCALE and the hormone CONTROL, but its rate constant (0.20/s) is a fast
-// short-run value, not the physiological depletion time — so we calibrate the
-// depletion to literature: liver glycogen sustains blood glucose ~12-24 h of
-// fasting (half-life ~8 h here → ~75 mM down to ~20 mM by ~16 h). Advanced on the
-// physiological (hours) clock, not the fast metabolic clock.
-const GLYCOGEN_FULL_MM = 75; // engine value (signaling.py); fed store
-const GLYCOGEN_MAX_MM = 90; // a well-fed liver can overfill somewhat
-const GLYCOGEN_SYNTH_PER_H = 0.7; // fed refill rate (toward the cap)
-const GLYCOGEN_BREAK_PER_H = 0.13; // fasted depletion (~40% gone in a 10 h fast)
+// Normalized renderer fixture only. It has no molar, per-cell or kinetic claim.
+const GLYCOGEN_FIXTURE_INITIAL = 0.75;
+const GLYCOGEN_FIXTURE_MAX = 0.9;
+const GLYCOGEN_FIXTURE_SYNTH_PER_H = 0.7;
+const GLYCOGEN_FIXTURE_BREAK_PER_H = 0.13;
 const ALL_IDS: OrganelleId[] = [
   "membrane",
   "glycolysis",
@@ -427,13 +416,12 @@ export class LivingCell {
   private hepatocyte: HepatocyteState = blankHepatocyte();
   private fidelity: IntracellularFidelity = blankFidelity();
   private elapsed = 0;
-  // Stochastic feeding: physiological hours since the last meal, the (stochastic)
-  // interval until the next meal, and the resulting nutrient level (0..1).
+  // Schematic feeding interval and nutrient level used by the browser fixture.
   private mealClockH = 0;
   private nextMealH = 3.5;
   private mealSize = 1.0;
   private nutrition = 0.7;
-  private glycogenMM = GLYCOGEN_FULL_MM; // grounded hepatic glycogen store (real mM)
+  private glycogenFixture01 = GLYCOGEN_FIXTURE_INITIAL;
   private lowAtp = 0;
   private prevStatus: CellSnapshot["status"] = "healthy";
   private senescent = false;
@@ -643,18 +631,22 @@ export class LivingCell {
       1
     );
     const nutrition = this.nutrition;
-    // Grounded hepatic glycogen store, advanced on the physiological (hours) clock:
-    // insulin-like drive (fed) stores glucose toward the cap; glucagon/AMPK-like
-    // drive (fasting) mobilises it over a literature-calibrated ~12-24 h.
+    // Renderer-only glycogen fixture advanced on its compressed display clock.
     const dPhysH = dt * HOURS_PER_SIM_SEC;
     // Reciprocal insulin/glucagon switching: synthesis dominates only when clearly
     // fed, mobilisation only when clearly fasting (so the store fills then depletes,
     // rather than sitting near full).
     const fedDrive = clamp((nutrition - 0.4) / 0.4, 0, 1);
     const fastDrive = clamp((0.5 - nutrition) / 0.4, 0, 1);
-    const glySynth = GLYCOGEN_SYNTH_PER_H * fedDrive * (GLYCOGEN_MAX_MM - this.glycogenMM);
-    const glyBreak = GLYCOGEN_BREAK_PER_H * fastDrive * this.glycogenMM;
-    this.glycogenMM = clamp(this.glycogenMM + (glySynth - glyBreak) * dPhysH, 0, GLYCOGEN_MAX_MM);
+    const glySynth = GLYCOGEN_FIXTURE_SYNTH_PER_H * fedDrive * (
+      GLYCOGEN_FIXTURE_MAX - this.glycogenFixture01
+    );
+    const glyBreak = GLYCOGEN_FIXTURE_BREAK_PER_H * fastDrive * this.glycogenFixture01;
+    this.glycogenFixture01 = clamp(
+      this.glycogenFixture01 + (glySynth - glyBreak) * dPhysH,
+      0,
+      GLYCOGEN_FIXTURE_MAX
+    );
     const target = {
       // Glucose availability stays perfusion-driven (the liver buffers blood
       // glucose); the fed/fasted swing is carried by insulin/glucagon → glycogen,
@@ -1757,14 +1749,11 @@ export class LivingCell {
       nutrition: this.nutrition,
       hoursSinceMeal: this.mealClockH,
       fedState: this.nutrition > 0.6 ? "fed" : this.nutrition > 0.3 ? "postabsorptive" : "fasting",
-      // Liver holds blood glucose remarkably stable; ketones now come from the real
-      // ketone pool (fat-derived fasting fuel), not a cosmetic function of nutrition.
-      bloodGlucoseMM: 4.7 + 2.0 * this.nutrition,
-      ketoneMM: clamp(0.05 + this.p.ketones * 1.8, 0.03, 8),
-      glycogenMM: this.glycogenMM,
-      // Granule fill spans the realistic cycling range (~35–90 mM) so the store
-      // visibly mobilises/refills; the mM readout carries the true grounded value.
-      glycogenStore01: clamp((this.glycogenMM - 35) / 55, 0.03, 1),
+      glycogenStore01: clamp(
+        (this.glycogenFixture01 - 0.35) / 0.55,
+        0.03,
+        1
+      ),
       glucoseIn: this.p.glucose,
       atp: this.p.atp,
       protein: this.p.foldedProtein

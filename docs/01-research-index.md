@@ -174,6 +174,9 @@ linked to its dependencies.
 - Cross-context cytoplasm-motion evidence firewall, removal of nanoprobe-to-
   organelle and cargo-to-bulk-flow transfers, and deterministic renderer-only
   motion: `milestones/166-cytoplasm-motion-authority-firewall-v1.md`
+- Whole-liver context denominator firewall, removal of legacy 0.52-based
+  per-cell counts, and strict browser snapshot validation:
+  `milestones/167-human-liver-context-denominator-firewall-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

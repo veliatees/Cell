@@ -50,9 +50,13 @@ class PhhBaselineTests(unittest.TestCase):
         readiness = snapshot["readiness"]
         assert isinstance(readiness, dict)
         self.assertFalse(readiness["whole_cell_transport_flux_ready"])
-        self.assertTrue(readiness["metabolic_pool_initialization_ready"])
+        self.assertFalse(readiness["metabolic_pool_initialization_ready"])
         self.assertTrue(readiness["apparent_atp_exchange_observation_ready"])
         self.assertFalse(readiness["energy_turnover_ready"])
+        self.assertIn(
+            "matched single-cell compartment volumes and pool-specific denominators",
+            readiness["blocking_measurements"],
+        )
 
     def test_nutritional_profiles_preserve_measured_glycogen_order(self) -> None:
         fed = PHH_NUTRITIONAL_PROFILES["fed_peak"]

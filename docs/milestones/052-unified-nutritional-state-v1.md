@@ -30,6 +30,13 @@ When a Python snapshot is loaded, the nutrition badge and visible glycogen
 granule fraction use the selected quantitative PHH context. Browser-local
 stochastic meal timing no longer overrides the authoritative label or readout.
 
+> **Authority correction (Milestone 167):** These glycogen observations are
+> whole-liver or tissue-equivalent context, not isolated single-cell pool
+> measurements. They no longer drive one displayed hepatocyte's sampled
+> granule count. The renderer's local fallback now exposes only a normalized,
+> explicitly schematic fill value and makes no glucose, ketone or glycogen
+> concentration claim.
+
 ## Context Matrix
 
 The deterministic exporter generates 36 combinations:

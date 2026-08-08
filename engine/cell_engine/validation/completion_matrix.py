@@ -48,6 +48,7 @@ from cell_engine.quantitative.phh_3d_mesh_boundary import (
 from cell_engine.quantitative.phh_protein_functional_evidence import (
     phh_protein_functional_evidence_snapshot,
 )
+from cell_engine.quantitative.phh_state import quantitative_phh_state_snapshot
 from cell_engine.quantitative.p53_dynamics import p53_dynamics_snapshot
 from cell_engine.quantitative.phh_injury_validation import phh_injury_validation_snapshot
 from cell_engine.quantitative.reaction_evidence_intake import (
@@ -130,6 +131,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     calibration_authority_summary = calibration_authority["summary"]
     cytosol = cytosol_transport_snapshot()
     cytosol_summary = cytosol["summary"]
+    quantitative_context = quantitative_phh_state_snapshot()
     cytoplasm_motion = cytoplasm_dynamics_snapshot()
     capability = hepatocyte_capability_atlas_snapshot()["summary"]
     reactions = build_reaction_evidence_atlas()["summary"]
@@ -483,14 +485,30 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "legacy_cytosol_fraction_quarantine",
             "Legacy 0.52 cytosol-fraction quarantine",
             "closed",
-            "Prevention of the legacy fraction from parameterizing quantitative fluid or reaction claims.",
-            "The value remains visible for legacy exploratory reaction-volume compatibility and is explicitly barred from quantitative fluid/reaction use.",
+            "Prevention of the legacy fraction from parameterizing quantitative fluid, reaction, per-cell pool or molecule-count claims.",
+            "The value remains visible only for legacy exploratory reaction-volume compatibility. Static whole-liver context exports null cytosol volume and zero converted counts.",
             {
                 "legacy_fraction": cytosol["legacy_runtime_conflict"]["cytosol_volume_fraction"],
-                "quantitative_use_allowed": cytosol["legacy_runtime_conflict"]["may_parameterize_quantitative_fluid_or_reaction_model"],
+                "quantitative_fluid_or_reaction_use_allowed": cytosol["legacy_runtime_conflict"]["may_parameterize_quantitative_fluid_or_reaction_model"],
+                "quantitative_context_effective_cytosol_volume_count": int(
+                    quantitative_context["effective_cytosol_volume_l"] is not None
+                ),
+                "quantitative_context_count_converted_pool_count": quantitative_context[
+                    "count_converted_pool_count"
+                ],
+                "quantitative_context_single_cell_initialization_allowed": quantitative_context[
+                    "single_cell_initialization_allowed"
+                ],
+                "quantitative_context_dynamic_execution_allowed": quantitative_context[
+                    "dynamic_execution_allowed"
+                ],
             },
             (),
-            ("engine/cell_engine/quantitative/cytosol_transport.py",),
+            (
+                "engine/cell_engine/quantitative/cytosol_transport.py",
+                "engine/cell_engine/quantitative/phh_state.py",
+                "src/engineSnapshot.ts",
+            ),
         ),
         _entry(
             "quantitative_poroelastic_cfd",
@@ -2839,6 +2857,28 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 0
     ):
         raise ValueError("whole-cell runtime escaped its authority firewall")
+    legacy_cytosol_metrics = by_id["legacy_cytosol_fraction_quarantine"][
+        "observed_metrics"
+    ]
+    if (
+        legacy_cytosol_metrics["legacy_fraction"] != 0.52
+        or legacy_cytosol_metrics["quantitative_fluid_or_reaction_use_allowed"]
+        or legacy_cytosol_metrics[
+            "quantitative_context_effective_cytosol_volume_count"
+        ]
+        != 0
+        or legacy_cytosol_metrics[
+            "quantitative_context_count_converted_pool_count"
+        ]
+        != 0
+        or legacy_cytosol_metrics[
+            "quantitative_context_single_cell_initialization_allowed"
+        ]
+        or legacy_cytosol_metrics[
+            "quantitative_context_dynamic_execution_allowed"
+        ]
+    ):
+        raise ValueError("legacy cytosol fraction escaped quantitative-state quarantine")
     baseline_lifecycle_metrics = by_id[
         "human_baseline_lifecycle_timing_firewall"
     ]["observed_metrics"]

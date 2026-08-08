@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
 
 from cell_engine.quantitative.phh_state import (
-    EFFECTIVE_CYTOSOL_VOLUME_FRACTION,
+    AUTHORITY,
+    VERSION,
     build_quantitative_phh_state,
     schematic_visual_state_snapshot,
     validate_quantitative_phh_state,
@@ -11,13 +13,15 @@ from cell_engine.quantitative.phh_state import (
 
 
 class QuantitativePhhStateTests(unittest.TestCase):
-    def test_postabsorptive_state_is_real_units_and_source_traceable(self) -> None:
+    def test_postabsorptive_context_preserves_units_and_provenance(self) -> None:
         state = build_quantitative_phh_state("postabsorptive")
         validate_quantitative_phh_state(state)
 
-        self.assertEqual(state.authority, "authoritative_research_preview")
+        self.assertEqual(state.version, VERSION)
+        self.assertEqual(state.authority, AUTHORITY)
         self.assertEqual(state.profile_id, "postabsorptive")
-        self.assertAlmostEqual(state.effective_cytosol_volume_l, state.cell_volume_l * EFFECTIVE_CYTOSOL_VOLUME_FRACTION)
+        self.assertIsNone(state.effective_cytosol_volume_fraction)
+        self.assertIsNone(state.effective_cytosol_volume_l)
         self.assertTrue(all(pool.unit == "mM" for pool in state.pools.values()))
         self.assertTrue(all(pool.source_ids for pool in state.pools.values()))
 
@@ -28,15 +32,37 @@ class QuantitativePhhStateTests(unittest.TestCase):
         amp = state.pools["AMP"].value
         self.assertAlmostEqual(state.energy_charge, (atp + 0.5 * adp) / (atp + adp + amp))
 
-    def test_effective_counts_do_not_claim_direct_measurement(self) -> None:
+    def test_aggregate_context_cannot_emit_single_cell_counts(self) -> None:
         state = build_quantitative_phh_state()
-        self.assertGreater(state.pools["ATP"].effective_lumped_model_count or 0, 0)
-        self.assertIn("not_direct_single_cell_measurement", state.pools["ATP"].count_basis)
-        self.assertIsNone(state.pools["glucose_blood"].effective_lumped_model_count)
+        self.assertFalse(state.concentration_to_count_conversion_allowed)
+        self.assertFalse(state.single_cell_initialization_allowed)
+        self.assertFalse(state.dynamic_execution_allowed)
+        self.assertEqual(state.single_cell_measured_pool_count, 0)
+        self.assertEqual(state.count_converted_pool_count, 0)
+        self.assertEqual(state.dynamic_pool_count, 0)
+        self.assertTrue(
+            all(pool.effective_lumped_model_count is None for pool in state.pools.values())
+        )
+        self.assertIn("blocked_without_matched", state.pools["ATP"].count_basis)
         self.assertEqual(
             state.pools["glucose_blood"].count_basis,
-            "unavailable_no_anatomical_blood_control_volume",
+            "not_applicable_blood_boundary_without_anatomical_control_volume",
         )
+
+    def test_validator_rejects_count_promotion(self) -> None:
+        state = build_quantitative_phh_state()
+        contaminated = replace(
+            state,
+            pools={
+                **state.pools,
+                "ATP": replace(
+                    state.pools["ATP"],
+                    effective_lumped_model_count=1.0,
+                ),
+            },
+        )
+        with self.assertRaisesRegex(ValueError, "gained single-cell authority"):
+            validate_quantitative_phh_state(contaminated)
 
     def test_schematic_state_cannot_drive_quantitative_validation(self) -> None:
         schematic = schematic_visual_state_snapshot(

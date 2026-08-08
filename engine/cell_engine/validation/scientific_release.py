@@ -249,9 +249,13 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         blockers.append(f"invalid legacy calibration authority: {exc}")
 
     if registry.metabolic_pool_initialization_ready:
-        checks.append("source-traceable metabolic pool initialization")
+        blockers.append(
+            "aggregate liver observations were incorrectly authorized for single-cell pool initialization"
+        )
     else:
-        blockers.append("metabolic pool initialization is not ready")
+        checks.append(
+            "aggregate liver metabolic observations remain static context and cannot initialize a single-cell pool"
+        )
     if registry.apparent_atp_exchange_observation_ready:
         checks.append("human-liver apparent Pi-to-ATP exchange retained as an assay observation")
     else:
@@ -273,7 +277,9 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         for species, pool in quantitative_state.pools.items():
             if not set(pool.source_ids) <= source_ids:
                 blockers.append(f"quantitative_state.{species} lacks registered provenance")
-        checks.append("unified quantitative PHH state excludes relative schematic units")
+        checks.append(
+            "source-backed liver context excludes relative units, per-cell count conversion and dynamic state authority"
+        )
     except ValueError as exc:
         blockers.append(f"invalid unified quantitative PHH state: {exc}")
 

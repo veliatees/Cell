@@ -3,15 +3,15 @@
     "exact_reconstruction_verified": true,
     "removed_state_key_count": 0,
     "state_override_count": 13,
-    "target_snapshot_sha256": "66e242fd0ecc7bee12fab9dc5ff98217abac407097050c135c2331af33eed63e",
+    "target_snapshot_sha256": "9bcf0417c4e20dfbcf441b929066f45d8fba05ab9b41d3a0ac83405405a93af2",
     "target_state_key_count": 91,
     "target_state_key_sha256": "a5154187b3a283f63e2ce2a7e7af660786a66dd2aa167885ce13ec42f9e6a075"
   },
   "base_identity": {
-    "created_at_utc": "2026-08-08T21:52:48.036987+00:00",
+    "created_at_utc": "2026-08-08T22:29:43.573024+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "schema_version": "cell-engine.snapshot.v1",
-    "snapshot_sha256": "f3e3dec4a3dc893721971ac05c2cdc7bc6d011805beef5f183f8cadaf22b04d6",
+    "snapshot_sha256": "74f0da28ef9d1f48150b0a7d3e4c6c5d33bce748ee709811c396dd709ac11423",
     "state_key_count": 91,
     "state_key_sha256": "a5154187b3a283f63e2ce2a7e7af660786a66dd2aa167885ce13ec42f9e6a075"
   },
@@ -4041,6 +4041,7 @@
         "apparent_atp_exchange_observation_ready": true,
         "blocking_measurements": [
           "matched donor and nutritional state",
+          "matched single-cell compartment volumes and pool-specific denominators",
           "per-cell total protein and membrane-protein mass for the modeled cell",
           "canalicular surface-localized BSEP and MRP2 copy numbers",
           "matched intracellular bile-acid substrate concentrations",
@@ -4049,7 +4050,7 @@
         ],
         "direct_initialization_ready": false,
         "energy_turnover_ready": false,
-        "metabolic_pool_initialization_ready": true,
+        "metabolic_pool_initialization_ready": false,
         "whole_cell_transport_flux_ready": false
       },
       "scientific_release": {
@@ -4057,6 +4058,7 @@
         "predictive": {
           "blockers": [
             "matched donor and nutritional state",
+            "matched single-cell compartment volumes and pool-specific denominators",
             "per-cell total protein and membrane-protein mass for the modeled cell",
             "canalicular surface-localized BSEP and MRP2 copy numbers",
             "matched intracellular bile-acid substrate concentrations",
@@ -4158,10 +4160,10 @@
           "checks": [
             "the whole-cell relative-pool runtime requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative PHH state-coupling use",
             "legacy relative-pool residuals are fixture-only, require an explicit purpose and reject biological calibration, quantitative validation and predictive model selection",
-            "source-traceable metabolic pool initialization",
+            "aggregate liver metabolic observations remain static context and cannot initialize a single-cell pool",
             "human-liver apparent Pi-to-ATP exchange retained as an assay observation",
             "mitochondrial ATP synthesis and cellular ATP demand remain uninitialized",
-            "unified quantitative PHH state excludes relative schematic units",
+            "source-backed liver context excludes relative units, per-cell count conversion and dynamic state authority",
             "human-specific zonation context cannot apply unmeasured flux or oxygen scaling",
             "sinusoid v2 enables sourced perfusion while uncalibrated cell and zonal fluxes fail closed",
             "human mixed-meal trajectory is retained at organ scale and cannot invent per-cell flux",
@@ -4219,10 +4221,10 @@
           "checks": [
             "the whole-cell relative-pool runtime requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative PHH state-coupling use",
             "legacy relative-pool residuals are fixture-only, require an explicit purpose and reject biological calibration, quantitative validation and predictive model selection",
-            "source-traceable metabolic pool initialization",
+            "aggregate liver metabolic observations remain static context and cannot initialize a single-cell pool",
             "human-liver apparent Pi-to-ATP exchange retained as an assay observation",
             "mitochondrial ATP synthesis and cellular ATP demand remain uninitialized",
-            "unified quantitative PHH state excludes relative schematic units",
+            "source-backed liver context excludes relative units, per-cell count conversion and dynamic state authority",
             "human-specific zonation context cannot apply unmeasured flux or oxygen scaling",
             "sinusoid v2 enables sourced perfusion while uncalibrated cell and zonal fluxes fail closed",
             "human mixed-meal trajectory is retained at organ scale and cannot invent per-cell flux",
@@ -4772,10 +4774,17 @@
       "version": "published_hepatic_glucose_shadow_v1"
     },
     "quantitative_state": {
-      "authority": "authoritative_research_preview",
+      "authority": "source_backed_context_only",
       "cell_volume_l": 5.657071160000001e-12,
-      "effective_cytosol_volume_l": 2.9416770032000006e-12,
+      "cell_volume_role": "independent_geometry_reference_not_pool_denominator",
+      "concentration_to_count_conversion_allowed": false,
+      "count_converted_pool_count": 0,
+      "dynamic_execution_allowed": false,
+      "dynamic_pool_count": 0,
+      "effective_cytosol_volume_fraction": null,
+      "effective_cytosol_volume_l": null,
       "energy_charge": 0.7212449255751014,
+      "energy_charge_basis": "derived_from_whole_liver_tissue_equivalent_adenylates",
       "geometry_reference": {
         "aggregate_lipid_droplet_reference": {
           "fraction_of_cell_volume": 0.00507807,
@@ -4875,20 +4884,23 @@
       },
       "limitations": [
         "Tissue-equivalent pools are not compartment-resolved isolated-PHH measurements.",
-        "Effective molecule counts use the lumped model cytosol and are not direct copy-number measurements.",
-        "This baseline is static; source-backed substrate transport and redox dynamics remain blocked."
+        "The aggregate cell-volume reference is not a valid denominator for whole-liver pool observations.",
+        "The legacy 0.52 cytosol fraction is not used and no per-cell molecule count is emitted.",
+        "This context is static; single-cell initialization, substrate transport and redox dynamics remain blocked."
       ],
       "pools": {
         "ADP": {
           "biological_basis": "whole_tissue_equivalent_mM",
           "compartment": "whole_tissue_equivalent",
-          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
-          "effective_lumped_model_count": 2184602168.367046,
+          "count_basis": "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          "dynamic_execution_allowed": false,
+          "effective_lumped_model_count": null,
           "evidence": "derived",
           "high": null,
           "id": "ADP",
           "low": null,
           "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+          "single_cell_initialization_allowed": false,
           "source_ids": [
             "human_liver_adenylates_1992",
             "human_liver_phosphorus_mrs_2017"
@@ -4899,13 +4911,15 @@
         "AMP": {
           "biological_basis": "whole_tissue_equivalent_mM",
           "compartment": "whole_tissue_equivalent",
-          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
-          "effective_lumped_model_count": 830895696.5156711,
+          "count_basis": "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          "dynamic_execution_allowed": false,
+          "effective_lumped_model_count": null,
           "evidence": "derived",
           "high": null,
           "id": "AMP",
           "low": null,
           "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+          "single_cell_initialization_allowed": false,
           "source_ids": [
             "human_liver_adenylates_1992",
             "human_liver_phosphorus_mrs_2017"
@@ -4916,13 +4930,15 @@
         "ATP": {
           "biological_basis": "whole_tissue_equivalent_mM",
           "compartment": "whole_tissue_equivalent",
-          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
-          "effective_lumped_model_count": 3883737188.2080817,
+          "count_basis": "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          "dynamic_execution_allowed": false,
+          "effective_lumped_model_count": null,
           "evidence": "derived",
           "high": null,
           "id": "ATP",
           "low": null,
           "notes": "Control human-liver HPLC mean converted with 1.054 kg/L liver density.",
+          "single_cell_initialization_allowed": false,
           "source_ids": [
             "human_liver_adenylates_1992",
             "human_liver_phosphorus_mrs_2017"
@@ -4933,13 +4949,15 @@
         "NAD_plus": {
           "biological_basis": "whole_tissue_equivalent_mM",
           "compartment": "whole_tissue_equivalent",
-          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
-          "effective_lumped_model_count": 1180058607.1863017,
+          "count_basis": "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          "dynamic_execution_allowed": false,
+          "effective_lumped_model_count": null,
           "evidence": "derived",
           "high": null,
           "id": "NAD_plus",
           "low": null,
           "notes": "Total tissue NAD+; no cytosol/matrix split is inferred.",
+          "single_cell_initialization_allowed": false,
           "source_ids": [
             "human_liver_adenylates_1992",
             "human_liver_phosphorus_mrs_2017"
@@ -4950,13 +4968,15 @@
         "glycogen": {
           "biological_basis": "mmol_glucosyl_per_kg_wet_liver",
           "compartment": "whole_liver_tissue",
-          "count_basis": "effective_lumped_cytosol_count_not_direct_single_cell_measurement",
-          "effective_lumped_model_count": 69975012285.71523,
+          "count_basis": "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          "dynamic_execution_allowed": false,
+          "effective_lumped_model_count": null,
           "evidence": "derived",
           "high": 55.0,
           "id": "glycogen",
           "low": 24.0,
           "notes": "Midpoint of the reported biopsy range; tissue-mass denominator retained as an effective lumped-model value.",
+          "single_cell_initialization_allowed": false,
           "source_ids": [
             "human_liver_glycogen_starvation_1973"
           ],
@@ -4966,7 +4986,10 @@
       },
       "profile_id": "prolonged_fasted",
       "profile_label": "Prolonged fast",
-      "status": "source_backed_baseline_not_dynamic"
+      "single_cell_initialization_allowed": false,
+      "single_cell_measured_pool_count": 0,
+      "status": "source_backed_liver_context_single_cell_state_blocked",
+      "version": "quantitative_phh_context_v2"
     },
     "sinusoid_homeostasis": {
       "anatomical_sinusoid_volume_l": null,
@@ -8919,7 +8942,7 @@
     "zone": "pericentral"
   },
   "target_metadata": {
-    "created_at_utc": "2026-08-08T21:53:44.106300+00:00",
+    "created_at_utc": "2026-08-08T22:30:43.034503+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   }

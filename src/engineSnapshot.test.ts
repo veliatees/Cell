@@ -4,6 +4,7 @@ import publicBsepOverlay from "../public/experiments/bsep_loss.json";
 import {
   connectEngineSnapshotStream,
   engineSnapshotEndpointFromLocation,
+  isEngineQuantitativePhhContext,
   loadEngineSnapshot,
   loadEngineSnapshotArtifact,
   summarizeEngineSnapshot,
@@ -286,19 +287,58 @@ const snapshot: EngineSnapshot = {
       albumin: { value: 0.21, unit: "relative_pool_0_1", compartment_id: "golgi" }
     },
     quantitative_state: {
+      version: "quantitative_phh_context_v2",
       profile_id: "postabsorptive",
       profile_label: "Postabsorptive / overnight fast",
-      status: "source_backed_baseline_not_dynamic",
-      authority: "authoritative_research_preview",
+      status: "source_backed_liver_context_single_cell_state_blocked",
+      authority: "source_backed_context_only",
       cell_volume_l: 3.261760666984704e-12,
-      effective_cytosol_volume_l: 1.696115546832046e-12,
+      cell_volume_role: "independent_geometry_reference_not_pool_denominator",
+      effective_cytosol_volume_fraction: null,
+      effective_cytosol_volume_l: null,
+      concentration_to_count_conversion_allowed: false,
+      single_cell_initialization_allowed: false,
+      dynamic_execution_allowed: false,
+      single_cell_measured_pool_count: 0,
+      count_converted_pool_count: 0,
+      dynamic_pool_count: 0,
       energy_charge: 0.721245,
+      energy_charge_basis: "derived_from_whole_liver_tissue_equivalent_adenylates",
       pools: {
         ATP: {
           id: "ATP", value: 2.19232, unit: "mM", biological_basis: "whole_tissue_equivalent_mM",
           compartment: "whole_tissue_equivalent", low: null, high: null, evidence: "derived",
-          source_ids: ["human_liver_adenylates_1992"], effective_lumped_model_count: 2334194863,
-          count_basis: "effective_lumped_cytosol_count_not_direct_single_cell_measurement", notes: ""
+          source_ids: ["human_liver_adenylates_1992"], effective_lumped_model_count: null,
+          count_basis: "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          single_cell_initialization_allowed: false, dynamic_execution_allowed: false, notes: ""
+        },
+        ADP: {
+          id: "ADP", value: 1.23318, unit: "mM", biological_basis: "whole_tissue_equivalent_mM",
+          compartment: "whole_tissue_equivalent", low: null, high: null, evidence: "derived",
+          source_ids: ["human_liver_adenylates_1992"], effective_lumped_model_count: null,
+          count_basis: "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          single_cell_initialization_allowed: false, dynamic_execution_allowed: false, notes: ""
+        },
+        AMP: {
+          id: "AMP", value: 0.46903, unit: "mM", biological_basis: "whole_tissue_equivalent_mM",
+          compartment: "whole_tissue_equivalent", low: null, high: null, evidence: "derived",
+          source_ids: ["human_liver_adenylates_1992"], effective_lumped_model_count: null,
+          count_basis: "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          single_cell_initialization_allowed: false, dynamic_execution_allowed: false, notes: ""
+        },
+        NAD_plus: {
+          id: "NAD_plus", value: 0.666128, unit: "mM", biological_basis: "whole_tissue_equivalent_mM",
+          compartment: "whole_tissue_equivalent", low: null, high: null, evidence: "derived",
+          source_ids: ["human_liver_adenylates_1992"], effective_lumped_model_count: null,
+          count_basis: "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          single_cell_initialization_allowed: false, dynamic_execution_allowed: false, notes: ""
+        },
+        glycogen: {
+          id: "glycogen", value: 229, unit: "mM", biological_basis: "in_vivo_liver_mM",
+          compartment: "whole_liver_tissue", low: 195, high: 263, evidence: "measured",
+          source_ids: ["human_liver_glycogen_overnight_1996"], effective_lumped_model_count: null,
+          count_basis: "blocked_without_matched_single_cell_compartment_volume_and_denominator",
+          single_cell_initialization_allowed: false, dynamic_execution_allowed: false, notes: ""
         }
       },
       limitations: ["Tissue-equivalent pools are not compartment-resolved isolated-PHH measurements."]
@@ -1698,6 +1738,32 @@ const snapshotWithRawState = (overrides: Record<string, unknown>): EngineSnapsho
 });
 
 describe("engine snapshot client", () => {
+  it("accepts only the fail-closed human-liver context contract", async () => {
+    const context = snapshot.state.quantitative_state;
+    if (!context) throw new Error("fixture is missing quantitative context");
+    expect(isEngineQuantitativePhhContext(context)).toBe(true);
+    const contaminated = {
+      ...context,
+      pools: {
+        ...context.pools,
+        ATP: {
+          ...context.pools.ATP,
+          effective_lumped_model_count: 2_334_194_863
+        }
+      }
+    };
+    expect(isEngineQuantitativePhhContext(contaminated)).toBe(false);
+
+    const invalidSnapshot = snapshotWithRawState({ quantitative_state: contaminated });
+    const result = await loadEngineSnapshot("/invalid-count.json", async () => ({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => invalidSnapshot
+    }));
+    expect(result.status).toBe("missing");
+  });
+
   it("summarizes engine state for UI readouts", () => {
     const summary = summarizeEngineSnapshot(snapshot, "/engine-snapshot.json");
     expect(summary.cellType).toBe("hepatocyte");
@@ -1731,8 +1797,10 @@ describe("engine snapshot client", () => {
     expect(summary.cellularResponse?.canalicular_bile_acids).toBeCloseTo(0.01);
     expect(summary.phhBaseline?.anchor_count).toBe(7);
     expect(summary.phhBaseline?.readiness.whole_cell_transport_flux_ready).toBe(false);
-    expect(summary.quantitativeState?.authority).toBe("authoritative_research_preview");
+    expect(summary.quantitativeState?.authority).toBe("source_backed_context_only");
     expect(summary.quantitativeState?.pools.ATP.value).toBeCloseTo(2.19232);
+    expect(summary.quantitativeState?.effective_cytosol_volume_l).toBeNull();
+    expect(summary.quantitativeState?.count_converted_pool_count).toBe(0);
     expect(summary.wholeCellRuntimeAuthority?.explicit_purpose_required).toBe(true);
     expect(summary.wholeCellRuntimeAuthority?.summary.quantitative_authority_surface_count).toBe(0);
     expect(summary.legacyCalibrationAuthority?.status).toBe("software_fixture_only");
@@ -2439,6 +2507,24 @@ describe("engine snapshot client", () => {
 
     expect(result.status).toBe("loaded");
     if (result.status === "loaded") {
+      expect(result.summary.quantitativeState?.version).toBe(
+        "quantitative_phh_context_v2"
+      );
+      expect(result.summary.quantitativeState?.effective_cytosol_volume_l).toBeNull();
+      expect(result.summary.quantitativeState?.count_converted_pool_count).toBe(0);
+      expect(
+        Object.values(result.summary.quantitativeState?.pools ?? {}).every(
+          (pool) => pool.effective_lumped_model_count === null
+        )
+      ).toBe(true);
+      expect(result.summary.phhBaseline?.readiness.metabolic_pool_initialization_ready).toBe(false);
+      expect(result.summary.modelAuthority?.primary_context_path).toBe(
+        "quantitative_state"
+      );
+      expect(result.summary.modelAuthority?.primary_state_path).toBeUndefined();
+      expect(result.summary.modelAuthority?.context_only_sections).toContain(
+        "quantitative_state"
+      );
       expect(result.summary.hepatocyteCapabilityAtlas?.summary.feature_template_count).toBe(38);
       expect(result.summary.hepatocyteCapabilityAtlas?.summary.filled_parameter_slot_count).toBe(0);
       expect(result.summary.cellularMemoryContract?.event_log_is_memory).toBe(false);

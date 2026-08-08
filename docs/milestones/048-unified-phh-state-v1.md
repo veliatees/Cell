@@ -1,5 +1,12 @@
 # Milestone 048 - Unified PHH State v1
 
+> **Corrected authority note (Milestone 167):** The legacy 52% cytosol fraction
+> has no healthy-PHH morphometric source. Tissue-equivalent liver observations
+> can therefore no longer be converted into effective per-cell molecule counts.
+> The current snapshot retains these values as static human-liver context only;
+> cytosol volume, count conversion, single-cell initialization and dynamics all
+> fail closed.
+>
 > Historical scale note: Milestone 079 replaces the original `3.2617607 pL`
 > conversion volume with the directly measured in-situ human mean of `2.85 pL`.
 

@@ -2,7 +2,7 @@
 
 > A source-grounded, real-units **stochastic simulation of a hepatocyte (liver cell)** — reaching from single molecules to tissue, checked against measured biology rather than tuned to look right.
 
-![Current Cell Engine browser interface showing the source-backed hepatocyte organelle network, sinusoid, quantitative PHH state, scientific overlays, and live engine history](docs/images/hepatocyte-hero.png)
+![Current Cell Engine browser interface showing the source-backed hepatocyte organelle network, sinusoid, static human-liver context, scientific overlays, and live engine history](docs/images/hepatocyte-hero.png)
 
 *Live browser capture of the current `Hepatocyte - organelle network` scene; this
 is renderer output from the running application, not concept art.*
@@ -571,6 +571,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 164: Organelle instance evidence firewall v1](docs/milestones/164-organelle-instance-evidence-firewall-v1.md)
 - [Milestone 165: p53 and population authority firewall v1](docs/milestones/165-p53-population-authority-firewall-v1.md)
 - [Milestone 166: Cytoplasm motion authority firewall v1](docs/milestones/166-cytoplasm-motion-authority-firewall-v1.md)
+- [Milestone 167: Human-liver context denominator firewall v1](docs/milestones/167-human-liver-context-denominator-firewall-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

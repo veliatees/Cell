@@ -100,6 +100,20 @@ def test_context_snapshot_matrix_is_lossless_and_biologically_inert() -> None:
     assert metrics["automatic_biological_parameter_activation_count"] == 0
 
 
+def test_legacy_cytosol_fraction_cannot_create_single_cell_pool_counts() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    quarantine = entries["legacy_cytosol_fraction_quarantine"]
+    metrics = quarantine["observed_metrics"]
+    assert quarantine["status"] == "closed"
+    assert metrics["legacy_fraction"] == 0.52
+    assert metrics["quantitative_fluid_or_reaction_use_allowed"] is False
+    assert metrics["quantitative_context_effective_cytosol_volume_count"] == 0
+    assert metrics["quantitative_context_count_converted_pool_count"] == 0
+    assert metrics["quantitative_context_single_cell_initialization_allowed"] is False
+    assert metrics["quantitative_context_dynamic_execution_allowed"] is False
+
+
 def test_browser_bundle_budget_is_closed_without_biological_authority() -> None:
     matrix = build_hepatocyte_completion_matrix()
     entries = {entry["id"]: entry for entry in matrix["entries"]}

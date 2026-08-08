@@ -2612,12 +2612,14 @@ export type EngineIntegratedMetabolism = {
 export type EngineModelAuthority = {
   status: string;
   primary_state_path?: string;
+  primary_context_path?: string;
   schematic_state_path?: string;
   runtime_execution_purpose?: string;
   schematic_dynamics_executed?: boolean;
   quantitative_biochemical_dynamics_executed?: boolean;
   authoritative_biochemical_state_coupling_executed?: boolean;
   authoritative_sections: string[];
+  context_only_sections?: string[];
   runtime_authoritative_sections?: string[];
   shadow_sections?: string[];
   schematic_sections: string[];
@@ -2634,18 +2636,29 @@ export type EngineQuantitativePool = {
   high: number | null;
   evidence: "measured" | "derived";
   source_ids: string[];
-  effective_lumped_model_count: number | null;
+  effective_lumped_model_count: null;
   count_basis: string;
+  single_cell_initialization_allowed: false;
+  dynamic_execution_allowed: false;
   notes: string;
 };
 
 export type EngineQuantitativePhhState = {
+  version: "quantitative_phh_context_v2";
   profile_id: string;
   profile_label: string;
-  status: string;
-  authority: "authoritative_research_preview";
+  status: "source_backed_liver_context_single_cell_state_blocked";
+  authority: "source_backed_context_only";
   cell_volume_l: number;
-  effective_cytosol_volume_l: number;
+  cell_volume_role: "independent_geometry_reference_not_pool_denominator";
+  effective_cytosol_volume_fraction: null;
+  effective_cytosol_volume_l: null;
+  concentration_to_count_conversion_allowed: false;
+  single_cell_initialization_allowed: false;
+  dynamic_execution_allowed: false;
+  single_cell_measured_pool_count: 0;
+  count_converted_pool_count: 0;
+  dynamic_pool_count: 0;
   geometry_reference?: {
     version: "human_hepatocyte_geometry_reference_v2";
     status: string;
@@ -2714,6 +2727,7 @@ export type EngineQuantitativePhhState = {
     limitations: string[];
   };
   energy_charge: number;
+  energy_charge_basis: "derived_from_whole_liver_tissue_equivalent_adenylates";
   pools: Record<string, EngineQuantitativePool>;
   limitations: string[];
 };
@@ -6065,6 +6079,60 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+export function isEngineQuantitativePhhContext(
+  value: unknown
+): value is EngineQuantitativePhhState {
+  if (!isRecord(value) || !isRecord(value.pools)) return false;
+  const pools = value.pools;
+  const requiredPools = ["ATP", "ADP", "AMP", "NAD_plus", "glycogen"];
+  if (!requiredPools.every((id) => Object.hasOwn(pools, id))) return false;
+  if (
+    value.version !== "quantitative_phh_context_v2"
+    || value.status !== "source_backed_liver_context_single_cell_state_blocked"
+    || value.authority !== "source_backed_context_only"
+    || !isString(value.profile_id)
+    || !isString(value.profile_label)
+    || !isFiniteNumber(value.cell_volume_l)
+    || value.cell_volume_l <= 0
+    || value.cell_volume_role !== "independent_geometry_reference_not_pool_denominator"
+    || value.effective_cytosol_volume_fraction !== null
+    || value.effective_cytosol_volume_l !== null
+    || value.concentration_to_count_conversion_allowed !== false
+    || value.single_cell_initialization_allowed !== false
+    || value.dynamic_execution_allowed !== false
+    || value.single_cell_measured_pool_count !== 0
+    || value.count_converted_pool_count !== 0
+    || value.dynamic_pool_count !== 0
+    || !isFiniteNumber(value.energy_charge)
+    || value.energy_charge < 0
+    || value.energy_charge > 1
+    || value.energy_charge_basis
+      !== "derived_from_whole_liver_tissue_equivalent_adenylates"
+    || !Array.isArray(value.limitations)
+    || !value.limitations.every(isString)
+  ) return false;
+  return Object.values(pools).every((pool) => (
+    isRecord(pool)
+    && isString(pool.id)
+    && isFiniteNumber(pool.value)
+    && pool.value >= 0
+    && pool.unit === "mM"
+    && isString(pool.biological_basis)
+    && isString(pool.compartment)
+    && (pool.low === null || isFiniteNumber(pool.low))
+    && (pool.high === null || isFiniteNumber(pool.high))
+    && (pool.evidence === "measured" || pool.evidence === "derived")
+    && Array.isArray(pool.source_ids)
+    && pool.source_ids.length > 0
+    && pool.source_ids.every(isString)
+    && pool.effective_lumped_model_count === null
+    && isString(pool.count_basis)
+    && pool.single_cell_initialization_allowed === false
+    && pool.dynamic_execution_allowed === false
+    && isString(pool.notes)
+  ));
+}
+
 function isNumberArray(value: unknown): value is number[] {
   return Array.isArray(value) && value.every(isFiniteNumber);
 }
@@ -8431,6 +8499,7 @@ function isEngineSnapshot(value: unknown): value is EngineSnapshot {
     typeof candidate.state.elapsed_s === "number" &&
     typeof candidate.state.status === "string" &&
     !!candidate.state.pools &&
+    (candidate.state.quantitative_state === undefined || isEngineQuantitativePhhContext(candidate.state.quantitative_state)) &&
     (candidate.state.healthy_phh_glucose_validation === undefined || isEngineHealthyPhhGlucoseValidation(candidate.state.healthy_phh_glucose_validation)) &&
     (candidate.state.phh_spheroid_validation_protocol === undefined || isEnginePhhSpheroidValidationProtocol(candidate.state.phh_spheroid_validation_protocol)) &&
     (candidate.state.phh_glucose_observability === undefined || isEnginePhhGlucoseObservability(candidate.state.phh_glucose_observability)) &&
