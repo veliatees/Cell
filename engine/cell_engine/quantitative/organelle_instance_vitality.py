@@ -114,8 +114,9 @@ _MODELS: tuple[OrganelleVitalityModel, ...] = tuple(
     for organelle_id in _MODEL_IDS
 )
 
-# These are the organelle types represented by discrete solid bodies in the
-# placement contract. Network organelles retain model slots but no fake bodies.
+# These are the organelle types represented by discrete proxy bodies in the
+# placement contract. Network organelles retain model slots but no invented
+# discrete bodies.
 _DISCRETE_BODY_TYPES = frozenset(
     ("nucleus", "mitochondria", "lysosomes", "peroxisomes")
 )
@@ -194,7 +195,7 @@ def build_organelle_instance_vitality(
         quantified_instance_count=0,
         honesty_status="identity_scaffold_only_all_quantitative_fields_null",
         grounded=(
-            "discrete organelle identities and counts from organelle_placement",
+            "stable numerical identities derived from the mixed-species organelle placement proxy",
             "within-cell mitochondrial functional heterogeneity exists in primary rat hepatocytes",
             "mitophagy and pexophagy exist in mammalian in-vivo liver contexts",
         ),
@@ -205,6 +206,7 @@ def build_organelle_instance_vitality(
             "healthy-adult PHH clearance thresholds and size-response laws",
         ),
         blockers=(
+            "placement identity count is a cross-species runtime proxy, not a measured healthy-PHH inventory",
             "no matched longitudinal healthy-adult PHH single-organelle trajectories",
             "no donor-resolved calibration and donor/study-disjoint validation",
             "cross-species pathway evidence cannot authorize PHH numerical values",

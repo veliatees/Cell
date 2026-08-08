@@ -1,19 +1,19 @@
-"""Grounded quantitative reference for human-hepatocyte anatomy and proteins.
+"""Species-tagged quantitative references for hepatocyte anatomy and proteins.
 
-These are the numbers that let the model render organelles at their true counts
-and seed proteins at their true copy numbers (RDME). Every value is one of:
-measured (with citation), an explicitly flagged order-of-magnitude estimate, or
-None. Nothing here is fabricated.
+This registry preserves measurements, explicit order-of-magnitude references
+and nulls with their original biological denominator. It does not establish the
+true organelle inventory or protein population of one healthy human hepatocyte.
 
 PROVENANCE / HONESTY (full citations + caveats in docs/12-hepatocyte-quantitative.md):
-- The gold-standard organelle stereology is RAT (Weibel 1969; Blouin 1977;
-  Loud 1968); rows carry ``organism="rat"`` and are used as the best available
-  proxy for human, cross-checked where human data exist (Niu 2022).
+- The available organelle stereology is RAT (Weibel 1969; Blouin 1977;
+  Loud 1968). Rows carry ``organism="rat"`` and may be used only as an explicit
+  cross-species renderer/collision proxy, not as healthy-PHH parameters.
 - Protein copy references are the detected-donor medians and observed ranges
   transcribed from Wisniewski et al. 2016 Supplementary Table 2. The workbook
   denominator is explicitly one nucleus, not one hepatocyte. They therefore
-  initialize only a reference-nucleus population and cannot be doubled for a
-  binucleate cell without a matched scaling model.
+  remain static reference-nucleus observations and cannot be relabelled as one
+  cell, surface-active copies, or doubled for a binucleate cell without a
+  matched scaling model.
 
 ``public/cell_quantitative.json`` mirrors this module for the renderer;
 ``tests/test_hepatocyte_counts.py`` asserts the two agree so they cannot drift.

@@ -270,6 +270,21 @@ def test_local_membrane_and_generative_data_planes_are_partial_or_blocked() -> N
     assert donor["observed_metrics"]["validated_generative_donor_models"] == 0
 
 
+def test_organelle_geometry_remains_a_mixed_species_runtime_proxy() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    morphology = entries["donor_3d_morphology_mechanics"]
+    metrics = morphology["observed_metrics"]
+    assert morphology["status"] == "partial"
+    assert metrics["mixed_species_organelle_geometry_proxy_count"] == 1
+    assert metrics["cross_species_proxy_body_count"] == 1901
+    assert metrics["healthy_phh_discrete_count_parameter_count"] == 0
+    assert metrics["healthy_phh_discrete_volume_fraction_parameter_count"] == 0
+    assert metrics["measured_per_organelle_coordinate_count"] == 0
+    assert metrics["healthy_phh_organelle_geometry_authority_count"] == 0
+    assert metrics["quantitative_contact_force_authority_count"] == 0
+
+
 def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked() -> None:
     matrix = build_hepatocyte_completion_matrix()
     entries = {entry["id"]: entry for entry in matrix["entries"]}

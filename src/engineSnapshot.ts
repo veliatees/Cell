@@ -19,11 +19,10 @@ export type EngineOrganelleState = {
   active_processes?: string[];
 };
 
-// Engine-authoritative 3D organelle placement: a deterministic, solid-body,
-// non-overlapping population whose counts, per-body volumes and coarse location
-// bias are grounded, while the exact coordinates are a seeded realization (see
-// engine/cell_engine/quantitative/organelle_placement.py). The renderer shows
-// these positions; it does not invent its own.
+// Engine-canonical collision/renderer geometry. The outer volume is an
+// aggregate human reference, while discrete organelle inputs are predominantly
+// rat proxies. Exact coordinates are a seeded realization; this is not
+// healthy-PHH organelle morphometry.
 export type EngineOrganelleBody = {
   organelle_id: string;
   index: number;
@@ -50,7 +49,18 @@ export type EngineOrganelleRegion = {
 };
 
 export type EngineOrganellePlacement = {
-  version: string;
+  version: "organelle_placement_v2";
+  status: "mixed_species_seeded_organelle_geometry_proxy";
+  runtime_geometry_role: "engine_collision_and_renderer_proxy_only";
+  healthy_phh_biological_authority: false;
+  quantitative_contact_force_authority: false;
+  uses_cross_species_organelle_parameters: true;
+  healthy_phh_discrete_count_parameter_count: 0;
+  healthy_phh_discrete_volume_fraction_parameter_count: 0;
+  cross_species_proxy_body_count: number;
+  human_aggregate_region_count: number;
+  measured_per_organelle_coordinate_count: 0;
+  donor_resolved_mesh_count: 0;
   seed: number;
   cell_volume_um3: number;
   cell_envelope_radius_um: number;
@@ -61,12 +71,19 @@ export type EngineOrganellePlacement = {
   body_count_by_organelle: Record<string, number>;
   placed_body_volume_um3: number;
   discrete_volume_fraction_pct: number;
-  honesty_status: string;
-  grounded: string[];
-  not_grounded: string[];
+  source_bound_inputs: string[];
+  not_biologically_identified: string[];
   blockers: string[];
   source_ids: string[];
 };
+
+const REQUIRED_ORGANELLE_PLACEMENT_SOURCE_IDS = [
+  "segovia_miranda2019_human_liver_3d_morphometry",
+  "weibel1969_rat_liver_stereology",
+  "blouin1977_rat_liver_stereology",
+  "loud1968_rat_liver_stereology",
+  "organelle_placement_method"
+] as const;
 
 // Evidence-only cytoplasm/organelle-motion boundary. Cross-context observations
 // are retained, but none may parameterize renderer motion or healthy-PHH state.
@@ -2621,6 +2638,7 @@ export type EngineModelAuthority = {
   authoritative_sections: string[];
   context_only_sections?: string[];
   runtime_authoritative_sections?: string[];
+  runtime_geometry_proxy_sections?: string[];
   shadow_sections?: string[];
   schematic_sections: string[];
   policy: string;
@@ -6133,6 +6151,98 @@ export function isEngineQuantitativePhhContext(
   ));
 }
 
+export function isEngineOrganellePlacementProxy(
+  value: unknown
+): value is EngineOrganellePlacement {
+  if (
+    !isRecord(value)
+    || value.version !== "organelle_placement_v2"
+    || value.status !== "mixed_species_seeded_organelle_geometry_proxy"
+    || value.runtime_geometry_role !== "engine_collision_and_renderer_proxy_only"
+    || value.healthy_phh_biological_authority !== false
+    || value.quantitative_contact_force_authority !== false
+    || value.uses_cross_species_organelle_parameters !== true
+    || value.healthy_phh_discrete_count_parameter_count !== 0
+    || value.healthy_phh_discrete_volume_fraction_parameter_count !== 0
+    || value.measured_per_organelle_coordinate_count !== 0
+    || value.donor_resolved_mesh_count !== 0
+    || !isFiniteNumber(value.seed)
+    || !isFiniteNumber(value.cell_volume_um3)
+    || value.cell_volume_um3 <= 0
+    || !isFiniteNumber(value.cell_envelope_radius_um)
+    || value.cell_envelope_radius_um <= 0
+    || !isFiniteNumber(value.nucleus_radius_um)
+    || value.nucleus_radius_um <= 0
+    || !Array.isArray(value.bodies)
+    || !Array.isArray(value.regions)
+    || !Array.isArray(value.unplaced)
+    || !isRecord(value.body_count_by_organelle)
+    || !isFiniteNumber(value.placed_body_volume_um3)
+    || !isFiniteNumber(value.discrete_volume_fraction_pct)
+    || !Array.isArray(value.source_bound_inputs)
+    || value.source_bound_inputs.length === 0
+    || !value.source_bound_inputs.every(isString)
+    || !Array.isArray(value.not_biologically_identified)
+    || value.not_biologically_identified.length === 0
+    || !value.not_biologically_identified.every(isString)
+    || !Array.isArray(value.blockers)
+    || value.blockers.length === 0
+    || !value.blockers.every(isString)
+    || !Array.isArray(value.source_ids)
+    || value.source_ids.length !== REQUIRED_ORGANELLE_PLACEMENT_SOURCE_IDS.length
+    || !value.source_ids.every(isString)
+  ) return false;
+  const bodies = value.bodies;
+  const regions = value.regions;
+  if (!bodies.every((body) => (
+    isRecord(body)
+    && isString(body.organelle_id)
+    && isFiniteNumber(body.index)
+    && isNumberTuple3(body.center_um)
+    && isFiniteNumber(body.radius_um)
+    && body.radius_um > 0
+    && isFiniteNumber(body.volume_um3)
+    && body.volume_um3 > 0
+    && isString(body.organism)
+    && isString(body.quality)
+    && isString(body.source)
+  ))) return false;
+  if (!regions.every((region) => (
+    isRecord(region)
+    && isString(region.organelle_id)
+    && isString(region.name)
+    && isString(region.location)
+    && isFiniteNumber(region.volume_fraction_pct)
+    && isFiniteNumber(region.target_volume_um3)
+    && isNumberTuple3(region.centroid_um)
+    && isString(region.organism)
+    && isString(region.quality)
+    && isString(region.source)
+    && region.discrete === false
+    && isString(region.reason)
+  ))) return false;
+  if (!value.unplaced.every((entry) => (
+    isRecord(entry)
+    && isString(entry.organelle_id)
+    && isString(entry.name)
+    && isString(entry.reason)
+  ))) return false;
+  if (!Object.values(value.body_count_by_organelle).every((count) => (
+    isFiniteNumber(count) && count >= 0 && Number.isInteger(count)
+  ))) return false;
+  const bodyLedgerTotal = Object.values(value.body_count_by_organelle)
+    .reduce<number>((total, count) => total + Number(count), 0);
+  const crossSpeciesBodyCount = bodies.filter((body) => body.organism !== "human").length;
+  const humanAggregateRegionCount = regions.filter((region) => region.organism === "human").length;
+  const sourceIds = new Set(value.source_ids);
+  return (
+    value.cross_species_proxy_body_count === crossSpeciesBodyCount
+    && value.human_aggregate_region_count === humanAggregateRegionCount
+    && bodyLedgerTotal === bodies.length
+    && REQUIRED_ORGANELLE_PLACEMENT_SOURCE_IDS.every((sourceId) => sourceIds.has(sourceId))
+  );
+}
+
 function isNumberArray(value: unknown): value is number[] {
   return Array.isArray(value) && value.every(isFiniteNumber);
 }
@@ -8518,6 +8628,7 @@ function isEngineSnapshot(value: unknown): value is EngineSnapshot {
     (candidate.state.human_liver_open_atlas === undefined || isEngineHumanLiverOpenAtlas(candidate.state.human_liver_open_atlas)) &&
     (candidate.state.intercellular_communication === undefined || isEngineIntercellularCommunication(candidate.state.intercellular_communication)) &&
     (candidate.state.spatial_world === undefined || isEngineSpatialWorld(candidate.state.spatial_world)) &&
+    (candidate.state.organelle_placement === undefined || isEngineOrganellePlacementProxy(candidate.state.organelle_placement)) &&
     (candidate.state.spatial_state === undefined || candidate.state.spatial_state === null || isEngineCellSpatialState(candidate.state.spatial_state)) &&
     (candidate.state.physical_validation === undefined || isEnginePhysicalValidation(candidate.state.physical_validation)) &&
     (candidate.state.external_validation_program === undefined || isEngineExternalValidationProgram(candidate.state.external_validation_program)) &&

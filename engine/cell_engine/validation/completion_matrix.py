@@ -39,6 +39,7 @@ from cell_engine.quantitative.energy_redox_trajectory import (
 from cell_engine.quantitative.intracellular_mobility import (
     intracellular_mobility_intake_snapshot,
 )
+from cell_engine.quantitative.organelle_placement import organelle_placement_snapshot
 from cell_engine.quantitative.metabolic_constraint_shell import (
     metabolic_constraint_shell_snapshot,
 )
@@ -132,6 +133,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     cytosol = cytosol_transport_snapshot()
     cytosol_summary = cytosol["summary"]
     quantitative_context = quantitative_phh_state_snapshot()
+    organelle_placement = organelle_placement_snapshot()
     cytoplasm_motion = cytoplasm_dynamics_snapshot()
     capability = hepatocyte_capability_atlas_snapshot()["summary"]
     reactions = build_reaction_evidence_atlas()["summary"]
@@ -1275,8 +1277,27 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Donor-resolved 3D morphology and mechanics",
             "partial",
             "In-situ hepatocyte surface, organelle distribution, cortex, adhesion and membrane mechanics.",
-            "Human aggregate 3D volume and verified proxy geometry exist. Checksum-frozen donor mesh and mechanics contracts now share cell/mesh identifiers and require raw loading-relaxation trajectories, spatial boundary conditions and held-out donors. No donor mesh, mechanics trajectory or matched PHH parameter set is registered.",
+            "Human aggregate 3D volume and a verified mixed-species runtime geometry proxy exist. The proxy combines predominantly rat organelle records with aggregate human cell volume and has zero healthy-PHH morphology authority. Checksum-frozen donor mesh and mechanics contracts require raw loading-relaxation trajectories, spatial boundary conditions and held-out donors. No donor mesh, mechanics trajectory or matched PHH parameter set is registered.",
             {
+                "mixed_species_organelle_geometry_proxy_count": 1,
+                "cross_species_proxy_body_count": organelle_placement[
+                    "cross_species_proxy_body_count"
+                ],
+                "healthy_phh_discrete_count_parameter_count": organelle_placement[
+                    "healthy_phh_discrete_count_parameter_count"
+                ],
+                "healthy_phh_discrete_volume_fraction_parameter_count": organelle_placement[
+                    "healthy_phh_discrete_volume_fraction_parameter_count"
+                ],
+                "measured_per_organelle_coordinate_count": organelle_placement[
+                    "measured_per_organelle_coordinate_count"
+                ],
+                "healthy_phh_organelle_geometry_authority_count": int(
+                    bool(organelle_placement["healthy_phh_biological_authority"])
+                ),
+                "quantitative_contact_force_authority_count": int(
+                    bool(organelle_placement["quantitative_contact_force_authority"])
+                ),
                 "mesh_intake_contract_count": 1,
                 "mesh_target_structure_count": mesh_boundary_intake["summary"][
                     "target_structure_count"
@@ -1317,6 +1338,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             (
                 "engine/cell_engine/validation/physical_validation.py",
                 "engine/cell_engine/quantitative/human_hepatocyte_3d_morphometry.py",
+                "engine/cell_engine/quantitative/organelle_placement.py",
                 "engine/cell_engine/quantitative/phh_3d_mesh_boundary.py",
                 "engine/cell_engine/quantitative/phh_mechanics_calibration.py",
                 "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json",
@@ -3849,7 +3871,20 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         "observed_metrics"
     ]
     if (
-        mechanics_metrics["mechanics_calibration_intake_contract_count"] != 1
+        mechanics_metrics["mixed_species_organelle_geometry_proxy_count"] != 1
+        or mechanics_metrics["cross_species_proxy_body_count"] != 1901
+        or mechanics_metrics["healthy_phh_discrete_count_parameter_count"] != 0
+        or mechanics_metrics[
+            "healthy_phh_discrete_volume_fraction_parameter_count"
+        ]
+        != 0
+        or mechanics_metrics["measured_per_organelle_coordinate_count"] != 0
+        or mechanics_metrics[
+            "healthy_phh_organelle_geometry_authority_count"
+        ]
+        != 0
+        or mechanics_metrics["quantitative_contact_force_authority_count"] != 0
+        or mechanics_metrics["mechanics_calibration_intake_contract_count"] != 1
         or mechanics_metrics["mechanics_target_quantity_count"] != 15
         or mechanics_metrics["delivered_mechanics_trajectory_count"] != 0
         or mechanics_metrics["spatial_fsi_ready_trajectory_count"] != 0

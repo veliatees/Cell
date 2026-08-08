@@ -3,15 +3,15 @@
     "exact_reconstruction_verified": true,
     "removed_state_key_count": 0,
     "state_override_count": 24,
-    "target_snapshot_sha256": "1294647dae193b7089817d9364d49b36b360ab68b5e42a48c396495aa0bf1a33",
+    "target_snapshot_sha256": "7f9b64541993d98479841323a39594e799e03cfa26d82709ad0ee2c5a6fb430c",
     "target_state_key_count": 91,
     "target_state_key_sha256": "a5154187b3a283f63e2ce2a7e7af660786a66dd2aa167885ce13ec42f9e6a075"
   },
   "base_identity": {
-    "created_at_utc": "2026-08-08T22:29:43.573024+00:00",
+    "created_at_utc": "2026-08-08T23:17:14.005812+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "schema_version": "cell-engine.snapshot.v1",
-    "snapshot_sha256": "74f0da28ef9d1f48150b0a7d3e4c6c5d33bce748ee709811c396dd709ac11423",
+    "snapshot_sha256": "6d376a2d4c4210cdc172f21b37382ace8142fd603e9781e0fae58755bf5706a0",
     "state_key_count": 91,
     "state_key_sha256": "a5154187b3a283f63e2ce2a7e7af660786a66dd2aa167885ce13ec42f9e6a075"
   },
@@ -4882,7 +4882,7 @@
         "whole_cell_transport_flux_ready": false
       },
       "scientific_release": {
-        "authoritative_scope": "Healthy PHH aggregate metabolic observations, nutritional glycogen contexts, and apparent Pi-to-ATP exchange retained only in its original assay space. The source-supported energy/redox compartment and process graph is authoritative as non-executable structure; all organelle initial values, ATP demand, OXPHOS, antioxidant kinetics and predictive coupling remain blocked. Human zonation, postabsorptive glucose perfusion, measured endocrine observations, exact PHH glucose/albumin/CYP/BEI operators, donor-resolved proteome references and bile-acid endpoints retain their declared assay and denominator limits. The quantity harvest and PHH injury observations retain species, dose, time, assay and death-mode context without automatic runtime activation. Reaction authority and kinetic-transfer firewalls keep the integrated fuel runtime exploratory. The whole-cell execution firewall likewise requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of relative-pool dynamics. Legacy calibration residuals are labeled software fixtures, expose only a fixture-fit score and reject biological calibration, validation and model selection purposes. Published glucose execution remains shadow/diagnostic. Runtime contact geometry is engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, Brian2 biochemical execution and generative-state coupling remain blocked. External scientific review is organized by explicit context, claim, reviewer role and independence rules; no external report, prospective result, independent reproduction or whole-cell biological-accuracy percentage is claimed.",
+        "authoritative_scope": "Healthy PHH aggregate metabolic observations, nutritional glycogen contexts, and apparent Pi-to-ATP exchange retained only in its original assay space. The source-supported energy/redox compartment and process graph is authoritative as non-executable structure; all organelle initial values, ATP demand, OXPHOS, antioxidant kinetics and predictive coupling remain blocked. Human zonation, postabsorptive glucose perfusion, measured endocrine observations, exact PHH glucose/albumin/CYP/BEI operators, donor-resolved proteome references and bile-acid endpoints retain their declared assay and denominator limits. The quantity harvest and PHH injury observations retain species, dose, time, assay and death-mode context without automatic runtime activation. Reaction authority and kinetic-transfer firewalls keep the integrated fuel runtime exploratory. The whole-cell execution firewall likewise requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of relative-pool dynamics. Legacy calibration residuals are labeled software fixtures, expose only a fixture-fit score and reject biological calibration, validation and model selection purposes. Published glucose execution remains shadow/diagnostic. Runtime external-body contact geometry is engine-authoritative; internal organelle placement is a mixed-species collision/renderer proxy with zero healthy-PHH morphology authority. Force, adhesion, mechanotransduction, receptor kinetics, Brian2 biochemical execution and generative-state coupling remain blocked. External scientific review is organized by explicit context, claim, reviewer role and independence rules; no external report, prospective result, independent reproduction or whole-cell biological-accuracy percentage is claimed.",
         "predictive": {
           "blockers": [
             "matched donor and nutritional state",
@@ -4892,6 +4892,7 @@
             "matched intracellular bile-acid substrate concentrations",
             "compartment-resolved ATP, ADP and phosphate time courses with matched PHH oxygen consumption",
             "held-out primary-human-hepatocyte trajectory data",
+            "mixed-species organelle placement does not identify healthy-PHH counts, distributions or meshes",
             "external review: no claim has an independent domain-review result",
             "external review: no claim has an uncertainty-qualified same-assay validation result",
             "external review: no claim has a prospective independent PHH result",
@@ -4992,6 +4993,7 @@
             "human-liver apparent Pi-to-ATP exchange retained as an assay observation",
             "mitochondrial ATP synthesis and cellular ATP demand remain uninitialized",
             "source-backed liver context excludes relative units, per-cell count conversion and dynamic state authority",
+            "the mixed-species organelle scaffold is restricted to engine collision and renderer geometry with zero healthy-PHH morphology authority",
             "human-specific zonation context cannot apply unmeasured flux or oxygen scaling",
             "sinusoid v2 enables sourced perfusion while uncalibrated cell and zonal fluxes fail closed",
             "human mixed-meal trajectory is retained at organ scale and cannot invent per-cell flux",
@@ -5053,6 +5055,7 @@
             "human-liver apparent Pi-to-ATP exchange retained as an assay observation",
             "mitochondrial ATP synthesis and cellular ATP demand remain uninitialized",
             "source-backed liver context excludes relative units, per-cell count conversion and dynamic state authority",
+            "the mixed-species organelle scaffold is restricted to engine collision and renderer geometry with zero healthy-PHH morphology authority",
             "human-specific zonation context cannot apply unmeasured flux or oxygen scaling",
             "sinusoid v2 enables sourced perfusion while uncalibrated cell and zonal fluxes fail closed",
             "human mixed-meal trajectory is retained at organ scale and cannot invent per-cell flux",
@@ -10243,7 +10246,7 @@
     "zone": "pericentral"
   },
   "target_metadata": {
-    "created_at_utc": "2026-08-08T22:30:30.070644+00:00",
+    "created_at_utc": "2026-08-08T23:19:18.168363+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   }

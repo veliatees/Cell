@@ -1,18 +1,19 @@
 # Cell
 
-> A source-grounded, real-units **stochastic simulation of a hepatocyte (liver cell)** — reaching from single molecules to tissue, checked against measured biology rather than tuned to look right.
+> An evidence-gated **hepatocyte research-software prototype** combining source-preserved observations, verified numerical kernels, explicitly exploratory cell fixtures, and an interactive 3-D scene. It is not yet a predictive digital twin.
 
-![Current Cell Engine browser interface showing the source-backed hepatocyte organelle network, sinusoid, static human-liver context, scientific overlays, and live engine history](docs/images/hepatocyte-hero.png)
+![Current Cell Engine browser interface showing the hepatocyte research scene, mixed-species organelle geometry proxy, sinusoid, scientific overlays, and live engine history](docs/images/hepatocyte-hero.png)
 
 *Live browser capture of the current `Hepatocyte - organelle network` scene; this
 is renderer output from the running application, not concept art.*
 
 **Contents:** [What It Is Now](#what-it-is-now) · [Run The Prototype](#run-the-prototype) · [Verify](#verify) · [Current Target Cell Type](#current-target-cell-type) · [Status — honest accounting](#status--honest-accounting) · [Documentation Map](#documentation-map)
 
-A research-first, source-grounded simulation of a **hepatocyte (liver cell)**,
-built the way the whole-cell modelling field builds them: a stochastic, real-units
-biochemical engine, validated against measured data, with an interactive 3-D scene
-on top.
+A research-first platform for building a **hepatocyte (liver-cell) digital twin**.
+It keeps biological observations, numerical software validation, exploratory
+models, and predictive authority as separate machine-checked layers, with an
+interactive 3-D scene on top. The current release provides substantial research
+infrastructure; it does not claim a quantitatively validated whole cell.
 
 The project began as a bottom-up "atom → molecule → membrane → cell" experiment.
 That proved computationally unrealistic on consumer hardware (as it is for every
@@ -22,15 +23,18 @@ molecular-scale pieces remain as background/zoom-in scenes, not the focus.
 
 ## What It Is Now
 
-A running, hepatocyte-scale **stochastic kinetic cell**, in real units, that
-reaches from single molecules up to tissue — and is checked against measured
-biology rather than tuned to look right.
+A running hepatocyte-oriented research prototype spanning molecular references,
+single-cell software fixtures, spatial mechanics kernels, and tissue-oriented
+interfaces. Human measurements retain their original units, denominators, assay
+contexts, and provenance. Only explicitly authorized data may become active
+single-cell state; much of the current dynamic cell remains exploratory.
 
 ### The engine (`engine/cell_engine`)
 
-- **Real units** — concentrations and molecule counts tied to a grounded
-  hepatocyte volume; authoritative values carry provenance, while unsupported
-  active rates are explicitly audited and quarantined as exploratory.
+- **Unit-aware evidence surfaces** — human observations retain their reported
+  units and denominators. Geometry references, whole-liver context, per-nucleus
+  proteomics, and assay outputs are not silently converted into one-cell pools.
+  The legacy normalized runtime is explicitly exploratory.
 - **A reaction-authority firewall** — pathway topology and numerical rates are
   audited separately. The current integrated fuel network is honestly exposed
   as `0 / 36` source-backed reaction parameterizations: two ATP-turnover rates
@@ -64,12 +68,13 @@ biology rather than tuned to look right.
   winding and the conservative one-percent engineering area guard. Newtons,
   pascals and healthy-PHH sustainability thresholds remain null until the
   donor-resolved mechanics gate is satisfied.
-- **An organelle-instance evidence firewall** — 1,901 stable discrete-body
-  identities remain available for future longitudinal data, while all
-  unmeasured vitality, age, recovery, turnover and clearance fields are null.
-  Zero per-instance parameters or observations can affect motion, geometry,
-  transport or clearance. Rendered, membrane-contact and cytosol-obstacle scales
-  now share the placement geometry.
+- **An organelle-geometry and instance firewall** — 1,901 stable discrete-body
+  identities remain available for collision, rendering, and future longitudinal
+  data. Their inventory combines an aggregate human cell volume with
+  predominantly rat stereology; coordinates are seeded, not measured. The
+  scaffold therefore has zero healthy-PHH count, volume-fraction, distribution,
+  mesh, or quantitative-contact authority. All unmeasured vitality, age,
+  recovery, turnover, and clearance fields remain null.
 - **A verified constraint-model software layer** — the checksum-pinned 43 MB
   Human-GEM v2.0.0 SBML/FBC artifact now streams into an exact sparse model
   representation with 55,198 stoichiometric terms, bounds, the generic biomass
@@ -102,11 +107,11 @@ biology rather than tuned to look right.
   advance the cycle; cross-species timing profiles remain explicit opt-in
   benchmarks only.
 - **A stochastic reaction core** — exact Gillespie SSA for low-copy species and
-  the chemical Langevin equation (an SDE) for high-copy species, the same hybrid
-  the field's whole-cell models use, verified against analytic results (Poisson
-  birth–death, binomial partitioning, Hill kinetics).
+  the chemical Langevin equation for high-copy species, verified against analytic
+  software fixtures such as Poisson birth-death and binomial partitioning. This
+  validates the numerical implementation, not the current PHH parameterization.
 
-### The cell's processes (each tested, each grounded or honestly flagged)
+### The cell's processes (software-tested and authority-labelled)
 
 - **Energy & carbon metabolism** — glycolysis, pentose-phosphate, TCA and
   oxidative-phosphorylation topology with explicit reaction authority. The new
@@ -119,8 +124,9 @@ biology rather than tuned to look right.
 - **Nitrogen & redox** — the **urea cycle** and the **glutathione/NADPH** couple,
   with software conservation tests. Legacy glutathione and OXPHOS kinetics are
   explicitly placeholder fixtures, not healthy-PHH predictions.
-- **Gene expression** — stochastic gene → mRNA → protein with a **two-state
-  promoter**, reproducing transcriptional bursting (super-Poissonian mRNA).
+- **Gene-expression software fixture** — stochastic gene → mRNA → protein with a
+  two-state promoter reproduces the expected super-Poissonian bursting pattern.
+  Healthy-PHH locus-specific rates and future-state coupling are not identified.
 - **Human endocrine context** — measured healthy-human mixed-meal plasma glucose,
   insulin and glucagon plus tracer-derived hepatic-output observations and a
   causal glucagon-clamp glycogen benchmark. Legacy normalized hormone switches
@@ -143,13 +149,15 @@ biology rather than tuned to look right.
   tracer estimate of 10.55 +/- 0.22. The -5.0% contextual residual is reported
   without a pass claim because boundaries, timing, donors and data independence
   are not matched.
-- **Membrane transport** — polarized vectorial flux through real transporters
-  (GLUT2, NTCP, OATP, Na⁺/K⁺-ATPase, BSEP, MRP2); a BSEP defect reproduces
-  cholestasis.
-- **Calcium signalling** — IP₃R-mediated cytosolic Ca²⁺ **oscillations** whose
-  frequency rises with agonist (Goldbeter 1990).
-- **Lipid metabolism** — de novo lipogenesis, β-oxidation and VLDL secretion;
-  steatosis emerges when synthesis outpaces export.
+- **Membrane-transport topology fixture** — polarized channels use the biological
+  identities GLUT2, NTCP, OATP, Na+/K+-ATPase, BSEP, and MRP2. Current loss-of-
+  function scenarios are qualitative; no active surface-copy, calibrated flux,
+  or predictive cholestasis claim is made.
+- **Calcium-signalling fixture** — a cross-context Goldbeter-style IP3R model
+  produces agonist-dependent oscillations, without healthy-PHH kinetic authority.
+- **Lipid-metabolism fixture** — de novo lipogenesis, beta-oxidation, and VLDL
+  topology are represented with relative pools. Steatosis-like states are
+  exploratory outcomes, not calibrated predictions.
 - **Albumin secretion** - six commercial PHH batch endpoints are represented in
   the exact 24 h ELISA unit. ER, Golgi, exocytosis and degradation rates remain
   blocked because the available PHH assay does not resolve them.
@@ -165,12 +173,12 @@ biology rather than tuned to look right.
 - **Life and death** - cell-cycle, biomass, count-partitioning and death-state
   software substrates exist. Their legacy thresholds remain schematic; the
   project makes no current healthy-PHH cancer-transition or treatment claim.
-- **A unified whole cell** — metabolism + expression + cycle composed into one
-  network that lives, grows, expresses, divides, or arrests when starved.
-- **Host–pathogen & tissue** — a viral infection that hijacks host resources, and
-  a multicellular tissue where coupled hepatocytes clear ammonia collectively and
-  suffer **dose-dependent drug injury** (paracetamol overdose → centrilobular-style
-  necrosis as cells die).
+- **A unified exploratory cell** — metabolism, expression, and lifecycle software
+  fixtures are composed into one normalized network. Its growth, arrest,
+  division, and death outcomes are not biological predictions.
+- **Host-pathogen and tissue fixtures** — legacy viral-infection and coupled-cell
+  demonstrations exercise future interfaces. Their infection, ammonia-clearance,
+  APAP-injury, and necrosis outcomes are qualitative software scenarios only.
 - **Spatial reaction–diffusion numerics** — tested voxel diffusion, no-flux mass
   conservation and analytic `λ = √(D/k)` behaviour. The numerical kernels are
   not labelled as glucose, ATP or another PHH species until species-specific
@@ -195,17 +203,17 @@ reproductions; whole-cell biological accuracy therefore remains unidentifiable.
 
 ### The browser scene (TypeScript + Three.js)
 
-A polarized hepatocyte with a **fenestrated sinusoidal endothelium** (sieve-plate
-pores, LSEC nuclei), a canalicular bile groove, true-size membrane-protein
-footprints, and blood-side cargo crossing the endothelium through many fenestrae.
-The scene only ever shows the engine's state — it never fakes biology.
+A polarized hepatocyte scene with a **fenestrated sinusoidal endothelium**
+(sieve-plate pores and LSEC nuclei), a canalicular bile groove, visibility-
+magnified deposited protein structures, and schematic blood-side cargo. The
+scene combines source-bound scale references, engine runtime geometry proxies,
+and clearly labelled visual samples; it is not a microscopy reconstruction.
 
 Recent additions make more of the engine visible and keep it physically honest:
 
-- **The central dogma, animated.** Inside the interphase nucleus, gene loci with
-  two-state promoters flare as they fire transcription bursts; mRNA transcripts
-  stream to a nuclear pore, exit, and head into the cytoplasm — burst intensity
-  tracking the engine's mRNA pool.
+- **The central dogma, animated.** Inside the interphase nucleus, schematic gene
+  loci flare and mRNA tracers move through a nuclear-pore route. Their cadence
+  follows the exploratory normalized runtime, not a measured PHH trajectory.
 - **Explicit nutritional contexts.** Fed peak, postabsorptive and prolonged-fast
   selections load source-backed liver-glycogen references. Blood glucose,
   insulin, glucagon and ketones appear only where the selected profile has a
@@ -255,12 +263,11 @@ biological defaults and no public output path. A future field must carry
 parameter-level provenance, held-out same-context validation and independent
 review authorization before the renderer can expose it.
 
-This is **not** a predictive digital twin, and it does not pretend to be. It is an
-early-stage, source-grounded model whose architecture is now field-aligned and
-whose individual behaviours are tested. Coverage is still a fraction of a real
-hepatocyte. Exploratory or cross-context numbers are kept behind explicit
-scientific gates and cannot authorize a quantitative PHH claim. See the honest
-accounting under "Status".
+This is **not** a predictive digital twin. It is an early-stage, evidence-gated
+research platform whose numerical kernels and individual contracts are tested.
+Coverage is still a fraction of a real hepatocyte. Exploratory or cross-context
+numbers are kept behind explicit scientific gates and cannot authorize a
+quantitative PHH claim. See the honest accounting under "Status".
 
 ## Run The Prototype
 
@@ -272,14 +279,15 @@ npm run dev
 Then open the local URL printed by Vite. The app starts on the **hepatocyte
 organelle scene**: a whole cell with nucleus, mitochondria, ER, Golgi,
 lysosome/endosome, peroxisome, ribosomes, glycogen granules, plasma-membrane
-transport proteins, a sinusoidal blood-facing vessel, and a canalicular bile
-groove.
+transport-protein structure references, a sinusoidal blood-facing environment,
+and a canalicular bile groove. Internal discrete organelles are a mixed-species
+runtime geometry proxy, not measured healthy-PHH counts or coordinates.
 
 Below it, **legacy zoom-in scenes** from the original molecular-scale phase are
 kept as background: the lipid vesicle, ion, water (SPC/E), solvation, diffusion,
 membrane, and chemistry building blocks. These are no longer the project's focus —
 the science now lives in the cell-scale stochastic engine — but they remain
-source-grounded and are useful for intuition. See
+individually scoped by their own assumptions and are useful for intuition. See
 [docs/06-one-reality.md](docs/06-one-reality.md) and
 [docs/sources.md](docs/sources.md).
 
@@ -319,14 +327,15 @@ against.
 
 ## Status — honest accounting
 
-The single most important rule of this project: **nothing is faked.** Every
-constant is either measured (with a citation), a justified modelling assumption
-(named as such — e.g. "near-equilibrium step, rate non-flux-determining"), or an
-explicitly flagged placeholder. No number is ever dressed up as real biology.
+The central project rule is that biological authority must be explicit. Every
+constant should be measured with a citation, derived transparently, or labelled
+as an assumption or placeholder. Automated firewalls increasingly enforce that
+rule; continuing audits may still discover legacy claims that need correction,
+and those corrections are versioned rather than hidden.
 
-What is real now: the engine has hybrid stochastic machinery, explicit units,
-source-backed structural topology, denominator-preserved human observations and
-machine-enforced authority gates. The energy/redox layer now distinguishes
+What is implemented and evidence-backed now: the engine has verified stochastic
+machinery, unit-aware data structures, denominator-preserved human observations,
+and machine-enforced authority gates. The energy/redox layer now distinguishes
 cytosol, mitochondrial intermembrane space and matrix, ER lumen and peroxisome;
 it does not infer organelle concentrations or kinetics from whole-liver values.
 The division module separates compressed demo timing from
@@ -375,9 +384,10 @@ What is still depth-work (the road ahead is depth, not a new approach):
   hundreds of grounded reactions; genome-scale models thousands);
 - validation is a handful of checkpoints, not a broad comparison against
   metabolomics / fluxomics / perturbation data;
-- the project now has a 3-D voxel RDME layer and exported glucose/ATP fields,
-  but the broad whole-cell reaction network is not yet fully fused into that
-  lattice with source-backed per-reaction kinetics;
+- the project has a generic 3-D voxel reaction-diffusion numerical layer, but
+  the former quantitative glucose/ATP browser fields were retired. No PHH
+  species is bound until species-specific mobility, reaction kinetics, and
+  same-context validation pass their gates;
 - volume dynamics at division and quantitative CDK/cyclin/p53 kinetics are not
   yet PHH-authorized. A cross-context p53/MDM2 ODE is retained only behind an
   explicit exploratory-purpose gate. Heldring 2022 adds 50-donor PHH transcript
@@ -572,6 +582,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 165: p53 and population authority firewall v1](docs/milestones/165-p53-population-authority-firewall-v1.md)
 - [Milestone 166: Cytoplasm motion authority firewall v1](docs/milestones/166-cytoplasm-motion-authority-firewall-v1.md)
 - [Milestone 167: Human-liver context denominator firewall v1](docs/milestones/167-human-liver-context-denominator-firewall-v1.md)
+- [Milestone 168: Organelle geometry and public-claim firewall v1](docs/milestones/168-organelle-geometry-public-claim-firewall-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

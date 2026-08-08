@@ -37,8 +37,10 @@ cannot silently authorize healthy-PHH numerical parameters.
 ## Implemented contract
 
 `organelle_instance_vitality_v2` retains 1,901 stable discrete-body identities
-from the authoritative placement contract. Every unmeasured quantitative field
-is now `null`:
+from the runtime placement contract. Milestone 168 later clarified that this
+identity count is a mixed-species seeded geometry proxy, not a measured
+healthy-PHH organelle inventory. Every unmeasured quantitative field is now
+`null`:
 
 - vitality and health;
 - organelle age and turnover time;

@@ -29,6 +29,7 @@ class ScientificModelAuditTests(unittest.TestCase):
         self.assertIn("external_validation_readiness_program", {surface.id for surface in drivers})
         self.assertIn("phh_injury_exact_protocol_operator", {surface.id for surface in drivers})
         self.assertIn("phh_injury_donor_disjoint_evaluation_gate", {surface.id for surface in drivers})
+        self.assertIn("organelle_placement_authority_firewall", {surface.id for surface in drivers})
         self.assertNotIn("published_hepatic_glucose_shadow_model", {surface.id for surface in drivers})
 
     def test_known_unsupported_surfaces_are_blocked_or_disabled(self) -> None:
@@ -63,6 +64,23 @@ class ScientificModelAuditTests(unittest.TestCase):
         self.assertIn("rawicz2000_bilayer_elasticity", by_id["cell_contact_geometry"].source_ids)
         self.assertIn("guillou2016_membrane_surface_reservoirs", by_id["cell_contact_geometry"].source_ids)
         self.assertFalse(by_id["cell_contact_geometry"].drives_scientific_validation)
+        self.assertEqual(
+            by_id["organelle_placement_authority_firewall"].default_snapshot_role,
+            "mixed_species_runtime_geometry_proxy_only",
+        )
+        self.assertIs(
+            by_id["organelle_placement_authority_firewall"].drives_scientific_validation,
+            True,
+        )
+        self.assertEqual(
+            set(by_id["organelle_placement_authority_firewall"].source_ids),
+            {
+                "segovia_miranda2019_human_liver_3d_morphometry",
+                "weibel1969_rat_liver_stereology",
+                "blouin1977_rat_liver_stereology",
+                "loud1968_rat_liver_stereology",
+            },
+        )
         self.assertEqual(by_id["integrated_reaction_authority"].status, "derived")
         self.assertFalse(by_id["integrated_reaction_authority"].drives_scientific_validation)
         self.assertEqual(by_id["published_reaction_kinetic_transfer_audit"].status, "derived")

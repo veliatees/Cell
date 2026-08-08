@@ -1,15 +1,16 @@
-# Human hepatocyte — quantitative reference (organelle counts/sizes, protein copy numbers)
+# Hepatocyte quantitative reference registry
 
-This is the sourced numerical foundation that lets the model render organelles
-at their sourced counts/sizes and seed selected proteins at measured copies per
-reference nucleus. It is consumed by the engine (`cell_engine/quantitative/hepatocyte_counts.py`,
-the canonical source of truth) and mirrored for the renderer in
+This registry preserves species, denominator, quality, and provenance for
+hepatocyte-related quantities. It supplies a mixed-species renderer/collision
+proxy and static protein references; it does not define the organelle inventory
+or active protein population of one healthy human hepatocyte. It is consumed by
+the engine (`cell_engine/quantitative/hepatocyte_counts.py`) and mirrored in
 `public/cell_quantitative.json` (a test asserts the two agree).
 
-**Honesty rule.** Every value is one of: measured (with citation), an explicitly
-flagged *order-of-magnitude* estimate, or absent (`null`/`None`). Nothing is
-fabricated. The flags are not decoration — they mark how much weight a number
-can bear. Read the caveats below before using any figure.
+**Authority rule.** Every value is measured in its stated context, explicitly
+order-of-magnitude, derived, or absent (`null`/`None`). These labels determine
+what the value may drive. Read the organism and denominator caveats before using
+any figure.
 
 ## Cell-level
 
@@ -27,18 +28,20 @@ can bear. Read the caveats below before using any figure.
 
 ## Organelles
 
-Volume fractions are rat stereology (best available proxy for human). The
-**characteristic diameter** is *derived* (equivalent-sphere from volume fraction
-÷ count), not measured — see `characteristic_diameter_um()`.
+With the exception of the aggregate human lipid-droplet fraction, the listed
+organelle fractions are rat stereology. They are cross-species context, not a
+numerical proxy authorized for healthy PHH. The **characteristic diameter** is
+derived by combining fraction, count, and the selected cell volume; it is not a
+measurement and cannot be interpreted as human morphometry.
 
 The active volume anchor is the direct normal-control 3D median
 `5 657.07116 µm³`. Its `22.1070608 µm` volume-equivalent diameter is a
 conversion geometry, not a claim that an in-situ polarized hepatocyte is
 spherical. Duarte's older `2 850 µm³` stereology mean and Olander's `18.4 µm`
 isolated-cell median remain separate cross-checks; they are not averaged. All
-absolute compartment volumes, the renderer, RDME lattice,
-concentration-to-count conversion and contact world consume the same active
-reference rather than carrying independent cell sizes.
+aggregate geometry references and renderer use the same active volume. The
+project does not use it to convert whole-liver concentrations or per-nucleus
+abundances into one-cell molecule counts.
 
 | Organelle | Count/cell | Vol. fraction | Derived ⌀ | Location | Quality | Source |
 |---|---|---|---|---|---|---|
@@ -53,11 +56,11 @@ reference rather than carrying independent cell sizes.
 | Glycogen | rosettes | 6 % (3–12, fed) | — | cytosol | order-of-mag | Loud 1968 |
 | Lipid droplets | count unavailable | 0.507807 % median (MAD 0.403178 percentage points; n=5 reconstructions) | distribution unavailable | cytosol (ER-derived) | measured aggregate healthy-human 3D volume fraction | Segovia-Miranda 2019 Fig. 3i |
 
-> **Mitochondria are one heterogeneous population, not several "types."** Hepatocyte
-> mitochondria are discrete **spherical/oblong** units (~0.7 × 1.5 µm) — not the
-> filamentous reticulum seen in many cell lines — kept heterogeneous in size/shape
-> by ongoing fission↔fusion. The model's `mitochondria` and `mitochondrialFragments`
-> fields track that single population's fission state, not two distinct organelles.
+> **One semantic population, proxy geometry.** The model's `mitochondria` and
+> `mitochondrialFragments` fields describe states of one mitochondrial population,
+> not two organelle types. The current runtime bodies are equivalent-volume
+> spheres derived from rat context; no donor-resolved healthy-human mitochondrial
+> shape or network distribution is encoded.
 >
 > **Lipid droplets** are ER-derived neutral-lipid stores bounded by a phospholipid
 > *monolayer* (not a bilayer organelle). Their count and volume are strongly
@@ -180,26 +183,25 @@ the source IDs alongside every experiment.
 
 ## Growth and membrane geometry contract
 
-The cell-cycle biomass proxy is interpreted as relative cell volume. Therefore
-the engine and visualizer share the same derived geometry: radius scales as
-`biomass^(1/3)` and membrane area as `biomass^(2/3)`. During cytokinesis, two
+The exploratory cell-cycle biomass proxy is interpreted as relative cell volume.
+The corresponding software geometry scales radius as `biomass^(1/3)` and
+membrane area as `biomass^(2/3)`. During cytokinesis, two
 equal-volume daughters require more total area than the mother; the exact
 equivalent-sphere requirement is computed before partition. Existing
 `membrane_supply` can limit that insertion, exposing a membrane deficit instead
-of allowing unbounded elastic stretching. This is a shape-model approximation,
-not a claim that a hepatocyte is a perfect sphere.
+of allowing unbounded elastic stretching. This is a normalized engineering
+fixture, not healthy-PHH growth or membrane mechanics.
 
 ## CAVEATS (read before use)
 
-1. **Rat vs human — the biggest caveat.** The gold-standard hepatocyte
-   stereology (Weibel 1969; Blouin 1977; Loud 1968) is all **rat**. Human
-   ultrastructural morphometry at that rigor largely does not exist openly. Rat
-   organelle fractions are used as the best proxy; the cross-check holds —
-   rat mitochondrial *volume* fraction ~20% (Weibel) agrees with human
-   mitochondrial *protein-mass* fraction ~23% (Niu 2022), independent methods —
-   so treat rat fractions as good to ~±30% for human. Where human data exist
-   (protein mass/molecules, cell diameter, binucleate fraction) they are used and
-   labelled human.
+1. **Rat vs human — the biggest caveat.** The available classic hepatocyte
+   stereology (Weibel 1969; Blouin 1977; Loud 1968) is all **rat**. It remains
+   useful as explicitly cross-species context, but it does not identify a
+   healthy-PHH organelle count or volume fraction. Rat mitochondrial volume
+   fraction and human mitochondrial protein-mass fraction are different
+   observables and cannot validate one another numerically. No numerical
+   rat-to-human uncertainty or transfer law is assigned. Where human data exist,
+   their original aggregate, tissue, nucleus or cell denominator is retained.
 2. **Protein groups are measured, but not molecule identities.** Supplementary
    Table 2 is now checksum-locked and transcribed donor by donor. A MaxQuant
    group can contain several accessions or genes; the group-level value cannot

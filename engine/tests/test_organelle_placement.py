@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
 from math import sqrt
 
 from cell_engine.quantitative.hepatocyte_counts import CELL_VOLUME_UM3, ORGANELLE_BY_ID
@@ -10,6 +11,7 @@ from cell_engine.quantitative.organelle_placement import (
     build_organelle_placement,
     organelle_placement_snapshot,
     truncated_octahedron_scale_um,
+    validate_organelle_placement,
 )
 
 
@@ -18,7 +20,7 @@ def _distance(a: tuple[float, float, float], b: tuple[float, float, float]) -> f
 
 
 class OrganelleCountTest(unittest.TestCase):
-    def test_discrete_bodies_match_grounded_counts(self) -> None:
+    def test_discrete_bodies_match_declared_cross_species_proxy_counts(self) -> None:
         placement = build_organelle_placement(seed=3)
         # nucleus (1), mitochondria (1000), lysosomes (400), peroxisomes (500).
         self.assertEqual(placement.body_count_by_organelle["nucleus"], 1)
@@ -27,13 +29,13 @@ class OrganelleCountTest(unittest.TestCase):
             self.assertEqual(
                 placement.body_count_by_organelle[organelle_id],
                 expected,
-                f"{organelle_id} population must equal its grounded count",
+                f"{organelle_id} population must equal its declared proxy count",
             )
 
     def test_all_bodies_were_packed(self) -> None:
         placement = build_organelle_placement(seed=3)
         shortfall = [b for b in placement.blockers if "could not be packed" in b]
-        self.assertEqual(shortfall, [], "every grounded body must fit without overlap")
+        self.assertEqual(shortfall, [], "every declared proxy body must fit without overlap")
 
 
 class SolidBodyTest(unittest.TestCase):
@@ -84,15 +86,15 @@ class SolidBodyTest(unittest.TestCase):
 
 
 class VolumeConsistencyTest(unittest.TestCase):
-    def test_body_volume_matches_grounded_fraction(self) -> None:
+    def test_body_volume_matches_declared_cross_species_proxy_fraction(self) -> None:
         placement = build_organelle_placement(seed=1)
         for organelle_id in ("mitochondria", "lysosomes", "peroxisomes"):
             organelle = ORGANELLE_BY_ID[organelle_id]
-            grounded_total = (organelle.volume_fraction_pct / 100.0) * CELL_VOLUME_UM3
+            proxy_total = (organelle.volume_fraction_pct / 100.0) * CELL_VOLUME_UM3
             placed_total = sum(
                 b.volume_um3 for b in placement.bodies if b.organelle_id == organelle_id
             )
-            self.assertAlmostEqual(placed_total, grounded_total, places=6)
+            self.assertAlmostEqual(placed_total, proxy_total, places=6)
 
     def test_total_discrete_volume_fits_in_the_cell(self) -> None:
         placement = build_organelle_placement(seed=1)
@@ -117,6 +119,31 @@ class DeterminismTest(unittest.TestCase):
 
 
 class FailClosedHonestyTest(unittest.TestCase):
+    def test_mixed_species_proxy_has_zero_healthy_phh_authority(self) -> None:
+        placement = build_organelle_placement(seed=0)
+        self.assertEqual(placement.version, "organelle_placement_v2")
+        self.assertEqual(
+            placement.status,
+            "mixed_species_seeded_organelle_geometry_proxy",
+        )
+        self.assertEqual(
+            placement.runtime_geometry_role,
+            "engine_collision_and_renderer_proxy_only",
+        )
+        self.assertTrue(placement.uses_cross_species_organelle_parameters)
+        self.assertFalse(placement.healthy_phh_biological_authority)
+        self.assertFalse(placement.quantitative_contact_force_authority)
+        self.assertEqual(placement.healthy_phh_discrete_count_parameter_count, 0)
+        self.assertEqual(
+            placement.healthy_phh_discrete_volume_fraction_parameter_count,
+            0,
+        )
+        self.assertEqual(placement.cross_species_proxy_body_count, 1901)
+        self.assertEqual(placement.human_aggregate_region_count, 1)
+        self.assertEqual(placement.measured_per_organelle_coordinate_count, 0)
+        self.assertEqual(placement.donor_resolved_mesh_count, 0)
+        validate_organelle_placement(placement)
+
     def test_network_organelles_are_regions_not_spheres(self) -> None:
         placement = build_organelle_placement(seed=0)
         region_ids = {r.organelle_id for r in placement.regions}
@@ -136,9 +163,27 @@ class FailClosedHonestyTest(unittest.TestCase):
 
     def test_positions_are_not_claimed_as_measured(self) -> None:
         placement = build_organelle_placement(seed=0)
-        self.assertIn("exact per-organelle coordinates", placement.not_grounded)
+        self.assertIn(
+            "exact per-organelle coordinates",
+            placement.not_biologically_identified,
+        )
         self.assertTrue(placement.blockers)
-        self.assertTrue(set(placement.source_ids) <= set(PLACEMENT_SOURCES))
+        self.assertEqual(set(placement.source_ids), set(PLACEMENT_SOURCES))
+        self.assertEqual(len(placement.source_ids), len(PLACEMENT_SOURCES))
+
+    def test_validator_rejects_promotion_to_healthy_phh_authority(self) -> None:
+        placement = build_organelle_placement(seed=0)
+        with self.assertRaisesRegex(ValueError, "gained healthy-PHH authority"):
+            validate_organelle_placement(
+                replace(placement, healthy_phh_biological_authority=True)
+            )
+
+    def test_validator_rejects_an_incomplete_source_ledger(self) -> None:
+        placement = build_organelle_placement(seed=0)
+        with self.assertRaisesRegex(ValueError, "source ledger is incomplete"):
+            validate_organelle_placement(
+                replace(placement, source_ids=placement.source_ids[:-1])
+            )
 
 
 class SnapshotTest(unittest.TestCase):
@@ -147,9 +192,9 @@ class SnapshotTest(unittest.TestCase):
 
         payload = organelle_placement_snapshot(seed=5)
         restored = json.loads(json.dumps(payload))
-        self.assertEqual(restored["version"], "organelle_placement_v1")
+        self.assertEqual(restored["version"], "organelle_placement_v2")
         self.assertEqual(len(restored["bodies"]), len(payload["bodies"]))
-        self.assertIn("honesty_status", restored)
+        self.assertFalse(restored["healthy_phh_biological_authority"])
 
 
 if __name__ == "__main__":

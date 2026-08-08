@@ -191,9 +191,9 @@ const VISUAL_ANATOMY_COVERAGE = visualAnatomyCoverage();
 const sceneOptions =
   `<optgroup label="Hepatocyte (organelles)">` +
   `<option value="${EUKARYOTE_SCENE_ID}">Hepatocyte — organelle network</option>` +
-  `</optgroup><optgroup label="Real proteins">` +
-  `<option value="${PROTEIN_SCENE_ID}">Glucokinase — real structure (PDB 1V4S)</option>` +
-  `<option value="${PROTEIN_FIELD_SCENE_ID}">Protein populations — true copy numbers (RDME voxel field)</option>` +
+  `</optgroup><optgroup label="Protein references">` +
+  `<option value="${PROTEIN_SCENE_ID}">Glucokinase — deposited structure (PDB 1V4S)</option>` +
+  `<option value="${PROTEIN_FIELD_SCENE_ID}">Protein abundance references — donor medians (display field)</option>` +
   `</optgroup><optgroup label="The cell (molecular scale)">` +
   MEMBRANE_SCENES.map(opt).join("") +
   `</optgroup><optgroup label="Building blocks · ions">` +
@@ -430,8 +430,8 @@ const timeScaleBadge = document.createElement("div");
 timeScaleBadge.className = "time-scale-badge";
 timeScaleBadge.style.display = "none";
 viewportElement.append(timeScaleBadge);
-// Feeding/fasting readout (organelle scene): stochastic meals on a compressed
-// hours clock; glycogen granules fill/deplete with the state.
+// Feeding/fasting readout: source-bound context when a Python snapshot is
+// loaded, otherwise an explicitly schematic compressed-clock fixture.
 const nutritionBadge = document.createElement("div");
 nutritionBadge.className = "nutrition-badge";
 nutritionBadge.style.display = "none";
@@ -455,8 +455,8 @@ membraneDomainLegend.innerHTML =
   '<span><i style="--domain-color:#d9e778"></i>bile-facing</span>';
 viewportElement.append(membraneDomainLegend);
 
-// After a real division the viewport splits into one card per daughter cell —
-// each showing that daughter's own state and (inheritance-derived) activity.
+// After a browser-local division demonstration, the viewport splits into one
+// card per daughter fixture with separately advanced normalized state.
 const divisionPanelsEl = document.createElement("div");
 divisionPanelsEl.className = "division-panels";
 divisionPanelsEl.style.display = "none";
@@ -472,13 +472,13 @@ function updateDivisionPanels(visible: boolean) {
   }
   divisionPanelsEl.style.display = "grid";
   const sourceLabel = latestVisualDivisionSource === "engine" ? "Engine daughter" : "Browser-local demo daughter";
-  const activityLabel = latestVisualDivisionSource === "engine" ? "live mitochondrial / ATP activity" : "schematic local activity";
+  const activityLabel = latestVisualDivisionSource === "engine" ? "exploratory mitochondrial / ATP channel" : "schematic local activity";
   const statusColor = (st: string) => (st === "dying" ? "#ff8a8a" : st === "stressed" ? "#ffcf6b" : st === "senescent" ? "#d9a6ff" : "#7ee0a8");
   divisionPanelsEl.innerHTML = cells
     .map((cell, i) => {
       const c = cell.state;
       const color = FUCCI[c.phase] ?? "#9fe6ff";
-      // Real per-cell activity if the daughter is living; else inheritance proxy.
+      // Independently advanced exploratory activity, else an inheritance proxy.
       const activity = cell.mitoActivity >= 0 ? cell.mitoActivity : Math.min(1, c.organelles.mitochondria / 6e8);
       const ec = cell.energyCharge >= 0 ? ` · EC ${cell.energyCharge.toFixed(2)}` : "";
       const st = cell.status ? ` · <b style="color:${statusColor(cell.status)}">${cell.status}</b>` : "";
@@ -698,7 +698,7 @@ async function refreshExternalEngineSnapshot(forceRefresh = false) {
   }
   // If the organelle scene is showing and the engine placement availability
   // changed (typically: the snapshot finished loading after the scene was first
-  // built), rebuild once so the authoritative organelle geometry is used.
+  // built), rebuild once so the engine-canonical runtime proxy is used.
   const placementNow = !!(externalEngineSummary?.organellePlacement?.bodies.length);
   if (mode === "organelles" && placementNow !== organelleSceneUsedEnginePlacement) {
     loadScene(EUKARYOTE_SCENE_ID);
@@ -773,9 +773,9 @@ let membrane: MembraneSystem | null = null;
 let membraneIsVesicle = false;
 let reaction: ReactionSystem | null = null;
 let organelleGroup: THREE.Group | null = null; // schematic whole-cell anatomy
-// Whether the currently built organelle scene used the engine's authoritative
-// organelle placement. Lets an async snapshot arrival rebuild the scene once,
-// so the real placement replaces the schematic scatter without a manual reload.
+// Whether the current scene uses the engine-canonical mixed-species placement
+// proxy. Async snapshot arrival can replace the browser fallback without a
+// manual reload; this does not promote the proxy to healthy-PHH morphometry.
 let organelleSceneUsedEnginePlacement = false;
 let organelleFrameCenterX = 0;
 let communicationGroup: THREE.Group | null = null;
@@ -794,7 +794,7 @@ const communicationDeformationVisuals: CommunicationDeformationVisual[] = [];
 let communicationDeformationProgress = 1;
 // Renderer staging only. The engine carries no unmeasured biological time law.
 const COMMUNICATION_DEFORMATION_RENDER_TRANSITION_S = 1.25;
-let proteinGroup: THREE.Group | null = null; // real atomic structure (PDB)
+let proteinGroup: THREE.Group | null = null; // deposited atomic structure (PDB)
 let proteinSpin = 0;
 let proteinFieldGroup: THREE.Group | null = null; // per-voxel protein population field
 let proteinFieldSpin = 0;
@@ -1077,9 +1077,8 @@ let resolvedDivisionVisual: ResolvedDivisionVisual | null = null;
 // Each organelle pulses with its OWN activity (its own loop in the cell model).
 type GlowGroup = { kind: keyof OrganelleActivity; mats: THREE.MeshStandardMaterial[]; base: number; gain: number };
 let organelleGlow: GlowGroup[] = [];
-// Instanced-population materials whose emissive tracks real organelle activity
-// with a gentle mapping (mitochondria/peroxisomes/lysosomes) — kept separate from
-// the discrete-organelle glow so a dense population does not bloom to white.
+// Instanced-population materials whose emissive follows the normalized
+// exploratory activity fixture. This is display state, not an assay readout.
 let popGlowMats: { mat: THREE.MeshStandardMaterial; kind: keyof OrganelleActivity }[] = [];
 let ribosomeMat: THREE.PointsMaterial | null = null; // ribosomes brighten with translation
 type FlowPacket = {
@@ -1418,8 +1417,8 @@ function drawCalciumTrace() {
 // does not by itself prove G0, so grey G0 here is engine-backed quiescence rather
 // than a claimed FUCCI channel. DNA content and cyclin levels report position too.
 // growth advances ONLY while the cell is energised, and the G1/G2 checkpoints hold
-// it when stressed (a DNA-damage/health proxy), so it tracks the cell's real state,
-// not a blind clock. ---
+// it when stressed (a DNA-damage/health proxy), so it follows the exploratory
+// state instead of advancing as a blind clock. ---
 const IDLE_DIVISION_MECHANICS = (): DivisionMechanicsState => ({
   stage: "none",
   progress: 0,
@@ -1863,8 +1862,8 @@ function createResolvedDivisionVisual(cells: VisualCellInstance[], outcome: Divi
     const mitoMats = makeCellParticleCloud(state, radius, "mitochondria", cellGroup);
     makeCellParticleCloud(state, radius, "vesicles", cellGroup);
 
-    // Each daughter is a real living cell: its own metabolic model runs, so its
-    // mitochondria glow and its panel report its own activity — not a static sphere.
+    // Each daughter fixture advances its own normalized browser model, so the
+    // two panels need not share identical display activity.
     const living = new LivingCell(undefined, 0.85, true);
 
     group.add(cellGroup);
@@ -1891,8 +1890,8 @@ function updateResolvedDivisionVisual(simSeconds: number, elapsedS: number) {
     visual.cytoplasmMat.opacity = 0.06 + pulse * 0.02;
     for (const mat of visual.nucleusMats) mat.emissiveIntensity = 0.12 + pulse * 0.08;
 
-    // Each daughter is alive: step its own metabolism and let its mitochondria
-    // glow with its real ATP activity, its membrane take on its own health.
+    // Advance each browser fixture independently and map its normalized ATP and
+    // status channels to display materials.
     visual.living.step(simSeconds * 0.5, 1);
     const snap = visual.living.snapshot();
     visual.mitoActivity = Math.min(1, snap.activity.mitochondria / 0.95);
@@ -5214,7 +5213,7 @@ function renderEvidenceBoundary(summary: EngineSnapshotSummary | null): string {
   );
 }
 
-/** HMDB validation badges: the integrated cell's concentrations vs measured ranges. */
+/** Exact-context HMDB blood-boundary range checks; not whole-cell validation. */
 function renderHmdbValidation(im: EngineSnapshotSummary["integratedMetabolism"]): string {
   if (!im) return "";
   const badges = im.metabolites
@@ -5229,15 +5228,14 @@ function renderHmdbValidation(im: EngineSnapshotSummary["integratedMetabolism"])
     .join("");
   return (
     `<div class="hmdb-validation">` +
-    `<span class="hmdb-validation__title">HMDB blood boundary · ${im.state} — ` +
-    `<strong>${im.n_in_range}/${im.n_scored}</strong> measured pools in range · ${im.unavailable?.length ?? 0} transport-gated</span>` +
+    `<span class="hmdb-validation__title">HMDB blood-boundary range check · ${im.state} — ` +
+    `<strong>${im.n_in_range}/${im.n_scored}</strong> reported blood pools within range · ${im.unavailable?.length ?? 0} transport-gated</span>` +
     `<div class="hmdb-badges">${badges}</div>` +
     `</div>`
   );
 }
 
-/** Compact "is this cell real?" readout for the Cell State panel: the integrated
- *  cell's concentrations validated against measured (HMDB) physiological ranges. */
+/** Compact blood-boundary observation check for the left panel. */
 function updateCellValidation(im: EngineSnapshotSummary["integratedMetabolism"]): void {
   if (!cellValidationEl) return;
   if (!im) {
@@ -5251,9 +5249,9 @@ function updateCellValidation(im: EngineSnapshotSummary["integratedMetabolism"])
   const tone = frac >= 0.5 ? "good" : frac > 0 ? "partial" : "none";
   cellValidationEl.className = `cell-validation cell-validation--${tone}`;
   cellValidationEl.innerHTML =
-    `<span class="cell-validation__label">Compartment-correct validation</span>` +
+    `<span class="cell-validation__label">Blood-boundary range check</span>` +
     `<span class="cell-validation__score"><strong>${im.n_in_range}</strong> / ${im.n_scored} ` +
-    `measured blood pools in range · ${im.unavailable?.length ?? 0} transport-gated</span>`;
+    `reported blood pools within range · ${im.unavailable?.length ?? 0} transport-gated</span>`;
 }
 
 function labelEngineOrganelle(id: string): string {
@@ -7558,8 +7556,8 @@ function buildOrganelleScene() {
   const tagGlow = (kind: keyof OrganelleActivity, m: THREE.Mesh) => {
     (glowBuckets[kind] ??= []).push(m.material as THREE.MeshStandardMaterial);
   };
-  // Track each kind's centroid so we can give the model real ATP transport
-  // distances (mitochondria = source; far organelles get ATP later).
+  // Track display centroids for the exploratory ATP-delay fixture. These are
+  // proxy distances, not measured intracellular transport paths.
   const posAcc: Partial<Record<keyof OrganelleActivity, { s: THREE.Vector3; n: number }>> = {};
   const addPos = (kind: keyof OrganelleActivity, v: THREE.Vector3) => {
     const a = (posAcc[kind] ??= { s: new THREE.Vector3(), n: 0 });
@@ -7594,8 +7592,8 @@ function buildOrganelleScene() {
   };
   const nmToWorld = (nm: number) => (nm / 1000) / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
   const umToWorld = (um: number) => um / HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
-  // Engine-authoritative organelle placement (real counts, solid non-overlapping
-  // positions). When present, the discrete scattered populations (mitochondria,
+  // Engine-canonical organelle placement proxy (mixed-species counts and
+  // equivalent-volume, non-overlapping bodies). When present, discrete populations (mitochondria,
   // lysosomes, peroxisomes) are rendered at the engine's coordinates instead of
   // a schematic scatter, and the nucleus is recentred to the engine's central
   // position so the two agree on one geometry. The engine frame is origin-centred
@@ -7982,7 +7980,7 @@ function buildOrganelleScene() {
     inst.instanceMatrix.needsUpdate = true;
     if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
     inst.userData.label = engineScale
-      ? `${kind} — ${actual.toLocaleString()} bodies at the engine's solid, non-overlapping placement (grounded count and per-body volume; exact per-organelle coordinates are a seeded realization, not measured). View-dependent LOD draws a deterministic subset.`
+      ? `${kind} — ${actual.toLocaleString()} mixed-species proxy bodies in the engine's non-overlapping runtime geometry. Predominantly rat count/fraction inputs are combined with aggregate human cell volume; exact coordinates are seeded, not measured. View-dependent LOD draws a deterministic subset.`
       : `${opts.label} View-dependent LOD draws a deterministic subset of this renderer pool.`;
     group.add(inst);
     if (kind) addPos(kind, centroid.multiplyScalar(1 / actual));
@@ -9139,15 +9137,14 @@ function buildOrganelleScene() {
   // --- Metabolic organelle LOD populations. Whole-cell mode intentionally has
   // no second set of enlarged hero organelles. These are performance/readability
   // budgets only; they are not counts, densities, or volume-fraction estimates.
-  // Real-size, real-density crowding targets. Mitochondria occupy ~18-20% of
-  // hepatocyte volume (Blouin, Bolender & Weibel, J Cell Biol 1977, 72:441 -
-  // rat parenchyma stereology; human hepatocyte is the same order, ~1000-2000
-  // mitochondria per cell). The key to reaching the true fraction WITHOUT any
+  // Cross-species renderer reference. Rat parenchyma stereology reports a
+  // mitochondrial fraction near 20%; it does not identify a healthy-human
+  // count or volume fraction. The key to reaching the declared proxy fraction without
   // interpenetration is shape: real hepatocyte mitochondria are round-ish ovoids
   // (~0.6-1 µm), not thin rods. A near-spherical ovoid fills ~58% of its bounding
   // sphere, and random non-overlap packing of those spheres reaches ~34%, so the
   // achievable mitochondrial volume fraction is ~0.58×0.34 ≈ 18-20% - the
-  // measured value - reached purely by excluded-volume placement.
+  // overlap is excluded-volume placement.
   const MITO_DISPLAY_SAMPLES = 3000;
   const PEROX_DISPLAY_SAMPLES = 300;
   const LYSO_DISPLAY_SAMPLES = 200;
@@ -9176,9 +9173,8 @@ function buildOrganelleScene() {
     }
   }
   // One round-ovoid display population. A ~0.66 µm-wide, ~0.92 µm-long ovoid
-  // (14 world units represent the 9.2 µm reference radius) - real hepatocyte mitochondrial
-  // shape, near-spherical so bounding-sphere packing is efficient and the
-  // measured ~18-20% volume fraction is reached without interpenetration.
+  // (14 world units represent the 9.2 µm reference radius). The ovoid proxy
+  // keeps bounding-sphere packing efficient without claiming human morphometry.
   addOrganellePopulation(
     "mitochondria",
     MITO_DISPLAY_SAMPLES - HERO_MITO,
@@ -9195,7 +9191,7 @@ function buildOrganelleScene() {
       obstacleRadius: 0.5,
       obstacleHalfLength: 0.2,
       cage: 0.05,
-      label: `Mitochondria - real hepatocyte-scale ovoids (~0.6×1.2 µm) packed by excluded volume toward the ~18-20% volume fraction reported for hepatocyte cytoplasm (Blouin, Bolender & Weibel 1977, rat parenchyma stereology; human is the same order). The packer keeps whatever fits without overlap; exact per-cell count and donor morphometry are not claimed.`
+      label: `Mitochondria - ovoid renderer proxies packed without overlap from explicit rat parenchyma count/fraction context (Blouin, Bolender & Weibel 1977) inside the aggregate-human-volume cell proxy. This is not a healthy-PHH count, volume fraction, shape distribution or donor reconstruction.`
     }
   );
 
@@ -9593,12 +9589,12 @@ function buildOrganelleScene() {
   registerAnatomyLod(cortex, "cellular");
 
   // Hepatocytes store glucose as cytosolic glycogen. In the fed liver this fills
-  // large cytoplasmic regions as rosettes of β-particles clustered into
-  // α-particles, characteristically alongside the smooth ER. It is drawn as one
+  // cytoplasmic regions as rosettes of beta-particles clustered into
+  // alpha-particles, characteristically alongside the smooth ER. It is drawn as one
   // instanced β-particle population, seeded in several rosette clusters spread
   // through the cytosol and packed into the gaps between organelles (excluded
-  // volume). The visible instance count is later driven by the real store, so
-  // the rosettes visibly fill after feeding and deplete during fasting.
+  // volume). With a loaded engine context the sample count remains fixed because
+  // whole-liver glycogen does not identify one cell's granule population.
   const glycogenPositions: THREE.Vector3[] = [];
   const glycogenTargets = 720;
   const rosetteClusters = 11;
@@ -9855,8 +9851,8 @@ function buildOrganelleScene() {
     gain: 1 / ref[kind]
   }));
 
-  // Give the model real ATP transport distances: mitochondria are the source,
-  // each organelle's distance to the nearest-on-average mito sets its delay τ.
+  // Feed proxy centroid distances into the exploratory ATP-delay fixture;
+  // these distances and delays have no healthy-PHH transport authority.
   const centroid = (k: keyof OrganelleActivity) => {
     const a = posAcc[k];
     return a && a.n > 0 ? a.s.clone().multiplyScalar(1 / a.n) : new THREE.Vector3();
@@ -9910,7 +9906,7 @@ function buildOrganelleScene() {
 
   if (sceneNote) {
     sceneNote.textContent =
-      `Visual anatomy v5 · ${VISUAL_ANATOMY_COVERAGE.toFixed(0)}% project renderer rubric, not biological realism. Blood-facing context uses the reported ${HUMAN_HEALTHY_SINUSOID_MEAN_DIAMETER_UM.toFixed(1)} ± ${HUMAN_HEALTHY_SINUSOID_DIAMETER_REPORTED_PLUS_MINUS_UM.toFixed(1)} µm healthy-human sinusoid mean, ${HUMAN_RBC_EVANS_FUNG_DIAMETER_UM.toFixed(2)} µm Evans-Fung erythrocytes and ${HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM} nm human fenestrae. Vessel path, cutaway, RBC count and slow-motion playback are renderer-only; intracellular flow remains dimensionless and quantitative EM registration is still incomplete.`;
+      `Visual anatomy v5 · ${VISUAL_ANATOMY_COVERAGE.toFixed(0)}% project renderer rubric, not biological realism. Blood-facing context uses the reported ${HUMAN_HEALTHY_SINUSOID_MEAN_DIAMETER_UM.toFixed(1)} ± ${HUMAN_HEALTHY_SINUSOID_DIAMETER_REPORTED_PLUS_MINUS_UM.toFixed(1)} µm healthy-human sinusoid mean, ${HUMAN_RBC_EVANS_FUNG_DIAMETER_UM.toFixed(2)} µm Evans-Fung erythrocytes and ${HUMAN_LSEC_FENESTRA_MEAN_DIAMETER_NM} nm human fenestrae. Internal discrete organelles are a mixed-species collision/renderer proxy, not a measured healthy-PHH inventory or distribution. Vessel path, cutaway, RBC count and slow-motion playback are renderer-only; intracellular flow remains dimensionless and quantitative EM registration is still incomplete.`;
   }
   if (compositionEl && netChargeEl) {
     const chip = (c: string, t: string) => `<span class="chip"><span class="chip__dot" style="background:${c}"></span>${t}</span>`;
@@ -9921,14 +9917,12 @@ function buildOrganelleScene() {
 }
 
 // ---------------------------------------------------------------------------
-// Real protein structures embedded in the hepatocyte scene.
+// Deposited protein structures embedded in the hepatocyte scene.
 //
-// Anti-fake mandate: every rendered atom is a real atom read from the deposited
-// .pdb file. Positions/orientations follow real biology (OPM membrane normal for
-// calibrated structures; the manifest's caveats are carried verbatim into each
-// object's userData.label). The ONLY non-physical move is a uniform visibility
-// magnification (these molecules are sub-pixel at true cell scale) — and that
-// magnification factor + the structure's true size are stated in every label.
+// Rendered atoms come from filtered ATOM records in each deposited structure.
+// OPM orientation is retained where the manifest documents it; placement on
+// this particular cell is a domain-level renderer proxy. A shared visibility
+// magnification is disclosed because proteins are sub-pixel at cell scale.
 // ---------------------------------------------------------------------------
 interface RealProteinEntry {
   id: string;
@@ -9973,7 +9967,7 @@ async function embedRealProteins(
   }
   if (!live()) return;
 
-  // True world-units-per-Angstrom: rendering at this scale would be sub-pixel.
+  // Physical world-units-per-Angstrom conversion; direct display is sub-pixel.
   const worldPerAngstromTrue = ctx.nmToWorld(0.1);
 
   // PDBLoader is callback-based; wrap it so we can await all 7 in parallel.
@@ -10048,7 +10042,7 @@ async function embedRealProteins(
         }
 
         // Bounding box / centroid over the atoms we will actually KEEP, so the
-        // true protein span (not a DUM slab or an aid chain) sets size + center.
+        // deposited protein span (not a DUM slab or an aid chain) sets size + center.
         const bbox = new THREE.Box3();
         const v = new THREE.Vector3();
         for (const i of keepIndices) bbox.expandByPoint(v.set(pos.getX(i), pos.getY(i), pos.getZ(i)));
@@ -10069,7 +10063,7 @@ async function embedRealProteins(
     return;
   }
 
-  // ONE shared magnification across the membrane proteome so their REAL relative
+  // ONE shared magnification across the structure references so their deposited relative
   // sizes are preserved (NKA > GLUT2 > NTCP, BSEP/MRP2 ...). Largest membrane
   // structure renders ~2.0 world units; the rest scale proportionally.
   const membraneSpans = loadedList
@@ -10264,8 +10258,8 @@ async function embedRealProteins(
     const caveatText = extraCaveat.length ? ` | ${extraCaveat.join("; ")}` : "";
 
     const label =
-      `Real atom structure reference — ${entry.name} (${entry.gene}); ${domainText}; ${idText}, ${provenance}; ` +
-      `${orientationText}; ${drawCount.toLocaleString()} real atoms drawn${strideText}; ${magText}${caveatText}`;
+      `Deposited structure reference — ${entry.name} (${entry.gene}); ${domainText}; ${idText}, ${provenance}; ` +
+      `${orientationText}; ${drawCount.toLocaleString()} deposited ATOM records drawn${strideText}; ${magText}${caveatText}`;
     atoms.userData.label = label;
     atoms.userData.hoverKind = "real-protein";
 

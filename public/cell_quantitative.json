@@ -1,5 +1,5 @@
 {
-  "_note": "Human hepatocyte quantitative reference. Every value is measured+cited, an explicitly flagged order-of-magnitude estimate, or null. NOT fabricated. Honesty flags and rat-vs-human provenance are preserved from the source research pass; see docs/12-hepatocyte-quantitative.md for full citations and caveats. Sizes are NOT stored here when not directly measured; characteristic diameters are derived at consumption from volumeFractionPct + countTypical (see engine quantitative/hepatocyte_counts.py).",
+  "_note": "Species- and denominator-tagged hepatocyte reference registry. Rat organelle stereology is cross-species context only and does not define a healthy human hepatocyte. Human protein values are static per-reference-nucleus observations, not active copies in one cell. See docs/12-hepatocyte-quantitative.md for citations and caveats. Characteristic organelle diameters are arithmetic proxy values derived at consumption from volumeFractionPct + countTypical.",
   "generated": "2026-07-17",
   "cell": {
     "organism": "human",
@@ -27,7 +27,7 @@
       "location": "dispersed cytoplasm", "renderable": true,
       "organism": "rat", "quality": "order-of-magnitude",
       "source": "weibel1969(volume)/loud1968(count)",
-      "note": "Rat ~20% volume (Weibel 1969); human mitochondrial protein-mass fraction ~23% (Niu 2022) cross-checks. Count ~500-2500, commonly ~1000-1500. Derived char. diameter ~1 um (elongated)."
+      "note": "Rat ~20% volume (Weibel 1969) and order-of-magnitude rat count context. Human mitochondrial protein-mass fraction is a different observable and does not validate this fraction or count. Derived characteristic diameter is a mixed-context geometry proxy, not human morphometry."
     },
     {
       "id": "rough_er", "name": "Rough endoplasmic reticulum",

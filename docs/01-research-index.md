@@ -177,6 +177,9 @@ linked to its dependencies.
 - Whole-liver context denominator firewall, removal of legacy 0.52-based
   per-cell counts, and strict browser snapshot validation:
   `milestones/167-human-liver-context-denominator-firewall-v1.md`
+- Mixed-species organelle geometry authority firewall, complete rat/human source
+  ledger, and public/browser claim correction:
+  `milestones/168-organelle-geometry-public-claim-firewall-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

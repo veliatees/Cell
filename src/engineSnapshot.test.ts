@@ -4,6 +4,7 @@ import publicBsepOverlay from "../public/experiments/bsep_loss.json";
 import {
   connectEngineSnapshotStream,
   engineSnapshotEndpointFromLocation,
+  isEngineOrganellePlacementProxy,
   isEngineQuantitativePhhContext,
   loadEngineSnapshot,
   loadEngineSnapshotArtifact,
@@ -2525,6 +2526,12 @@ describe("engine snapshot client", () => {
       expect(result.summary.modelAuthority?.context_only_sections).toContain(
         "quantitative_state"
       );
+      expect(result.summary.modelAuthority?.runtime_geometry_proxy_sections).toContain(
+        "organelle_placement"
+      );
+      expect(result.summary.modelAuthority?.runtime_authoritative_sections).not.toContain(
+        "organelle_placement"
+      );
       expect(result.summary.hepatocyteCapabilityAtlas?.summary.feature_template_count).toBe(38);
       expect(result.summary.hepatocyteCapabilityAtlas?.summary.filled_parameter_slot_count).toBe(0);
       expect(result.summary.cellularMemoryContract?.event_log_is_memory).toBe(false);
@@ -2811,19 +2818,37 @@ describe("engine snapshot client", () => {
   });
 });
 
-describe("engine-authoritative organelle placement", () => {
+describe("mixed-species organelle runtime geometry proxy", () => {
   const summary = summarizeEngineSnapshot(publicEngineSnapshot as unknown as EngineSnapshot, "/engine-snapshot.json");
 
-  it("exposes the placement with grounded discrete counts", () => {
+  it("exposes the declared proxy counts without healthy-PHH authority", () => {
     const placement = summary.organellePlacement;
     expect(placement).not.toBeNull();
     if (!placement) return;
-    expect(placement.version).toBe("organelle_placement_v1");
+    expect(placement.version).toBe("organelle_placement_v2");
+    expect(placement.status).toBe("mixed_species_seeded_organelle_geometry_proxy");
+    expect(placement.runtime_geometry_role).toBe("engine_collision_and_renderer_proxy_only");
+    expect(placement.healthy_phh_biological_authority).toBe(false);
+    expect(placement.quantitative_contact_force_authority).toBe(false);
+    expect(placement.uses_cross_species_organelle_parameters).toBe(true);
+    expect(placement.healthy_phh_discrete_count_parameter_count).toBe(0);
+    expect(placement.healthy_phh_discrete_volume_fraction_parameter_count).toBe(0);
+    expect(placement.cross_species_proxy_body_count).toBe(1901);
+    expect(placement.human_aggregate_region_count).toBe(1);
+    expect(placement.measured_per_organelle_coordinate_count).toBe(0);
+    expect(placement.donor_resolved_mesh_count).toBe(0);
     expect(placement.body_count_by_organelle.nucleus).toBe(1);
     expect(placement.body_count_by_organelle.mitochondria).toBe(1000);
     expect(placement.body_count_by_organelle.lysosomes).toBe(400);
     expect(placement.body_count_by_organelle.peroxisomes).toBe(500);
     expect(placement.bodies.length).toBe(1901);
+    expect(placement.source_ids).toEqual(expect.arrayContaining([
+      "segovia_miranda2019_human_liver_3d_morphometry",
+      "weibel1969_rat_liver_stereology",
+      "blouin1977_rat_liver_stereology",
+      "loud1968_rat_liver_stereology",
+      "organelle_placement_method"
+    ]));
   });
 
   it("keeps network organelles as regions and never fakes them as spheres", () => {
@@ -2836,11 +2861,31 @@ describe("engine-authoritative organelle placement", () => {
     }
   });
 
-  it("declares that exact coordinates are not measured", () => {
+  it("declares that exact coordinates and healthy-PHH inventory are not identified", () => {
     const placement = summary.organellePlacement;
     if (!placement) return;
-    expect(placement.not_grounded).toContain("exact per-organelle coordinates");
+    expect(placement.not_biologically_identified).toContain("exact per-organelle coordinates");
+    expect(placement.not_biologically_identified).toContain(
+      "healthy-PHH discrete organelle counts and volume fractions"
+    );
     expect(placement.blockers.length).toBeGreaterThan(0);
+    expect(isEngineOrganellePlacementProxy(placement)).toBe(true);
+  });
+
+  it("rejects a proxy promoted to healthy-PHH geometry", () => {
+    const placement = summary.organellePlacement;
+    if (!placement) return;
+    const contaminated = structuredClone(placement) as unknown as Record<string, unknown>;
+    contaminated.healthy_phh_biological_authority = true;
+    expect(isEngineOrganellePlacementProxy(contaminated)).toBe(false);
+  });
+
+  it("rejects an incomplete biological source ledger", () => {
+    const placement = summary.organellePlacement;
+    if (!placement) return;
+    const contaminated = structuredClone(placement) as unknown as Record<string, unknown>;
+    contaminated.source_ids = placement.source_ids.slice(0, -1);
+    expect(isEngineOrganellePlacementProxy(contaminated)).toBe(false);
   });
 
   it("returns null placement when the state omits it", () => {

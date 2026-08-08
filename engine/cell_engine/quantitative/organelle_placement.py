@@ -1,21 +1,15 @@
-"""Engine-authoritative 3D organelle placement.
+"""Mixed-species seeded organelle placement for runtime geometry only.
 
-This turns the *grounded* hepatocyte organelle inventory (counts, volume
-fractions and coarse location categories in ``hepatocyte_counts.ORGANELLES``)
-into a population of **solid, non-overlapping** 3D bodies with explicit
-positions, so the spatial engine — and the renderer that only ever shows engine
-state — has a real geometric substrate instead of a schematic scatter.
+The outer-cell volume is an aggregate normal-control human-liver reference,
+whereas the discrete organelle counts, volume fractions and coarse location
+categories in ``hepatocyte_counts.ORGANELLES`` are predominantly rat
+stereology or order-of-magnitude context. Combining them produces a useful,
+deterministic collision and renderer proxy. It does not produce a measured
+healthy-PHH organelle population, a donor cell, or human organelle morphometry.
 
-HONESTY (this is the load-bearing distinction for the whole project):
-
-- **Grounded:** how many of each organelle there are, each organelle's size
-  (from volume fraction / count -> equivalent-sphere volume), and the coarse
-  location category ("central", "dispersed cytoplasm", "near canalicular pole").
-- **NOT grounded:** the exact (x, y, z) of any individual organelle. The
-  positions here are a *deterministic stochastic realization* that is
-  self-consistent with the grounded counts, volumes and location bias — a seeded
-  sample, not measured per-organelle coordinates. Re-running with the same seed
-  reproduces it exactly.
+The exact (x, y, z) coordinates are rejection-sampled from a fixed seed. The
+same seed reproduces the same non-overlapping numerical scaffold, but neither
+the coordinates nor the equivalent-volume spheres are microscopy observations.
 
 Because of that, this module does **not** flip the existing
 ``may_parameterize_organelle_shapes_from_human_3d`` firewall (which requires a
@@ -23,8 +17,9 @@ measured human 3D EM organelle mesh). It exposes its own scoped status.
 
 Organelles whose source gives **no discrete count** (rough/smooth ER, Golgi,
 glycogen, lipid droplets) are networks/aggregates, not countable spheres. They
-are returned as flagged *regions* (target volume + centroid), never faked as N
-spheres. Ribosomes (no volume fraction) are reported as unplaced.
+are returned as flagged *regions* (target proxy volume + centroid), never
+converted into N spheres. Ribosomes (no volume fraction) are reported as
+unplaced.
 
 Bodies are packed with no interpenetration: no body overlaps another, none
 enters the nucleus, and every body stays inside an equivalent-sphere cell
@@ -51,27 +46,78 @@ from cell_engine.quantitative.hepatocyte_counts import (
     ORGANELLES,
     OrganelleQuantity,
 )
+from cell_engine.quantitative.human_hepatocyte_3d_morphometry import (
+    HUMAN_HEPATOCYTE_3D_MORPHOMETRY_SOURCES,
+)
 
 Vector3 = tuple[float, float, float]
 
-DATE_VERIFIED = "2026-07-29"
+DATE_VERIFIED = "2026-08-08"
+VERSION = "organelle_placement_v2"
+STATUS = "mixed_species_seeded_organelle_geometry_proxy"
+RUNTIME_GEOMETRY_ROLE = "engine_collision_and_renderer_proxy_only"
 
-PLACEMENT_SOURCES: dict[str, SourceReference] = {
+PLACEMENT_SOURCES: dict[str, SourceReference] = dict(
+    HUMAN_HEPATOCYTE_3D_MORPHOMETRY_SOURCES
+)
+PLACEMENT_SOURCES.update({
+    "weibel1969_rat_liver_stereology": SourceReference(
+        id="weibel1969_rat_liver_stereology",
+        title=(
+            "Correlated morphometric and biochemical studies on the liver "
+            "cell. I. Morphometric model, stereologic methods, and normal "
+            "morphometric data for rat liver"
+        ),
+        url="https://pubmed.ncbi.nlm.nih.gov/4891915/",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes=(
+            "Rat hepatocyte stereology retained only as explicitly "
+            "cross-species organelle context."
+        ),
+    ),
+    "blouin1977_rat_liver_stereology": SourceReference(
+        id="blouin1977_rat_liver_stereology",
+        title=(
+            "Distribution of organelles and membranes between hepatocytes "
+            "and nonhepatocytes in the rat liver parenchyma"
+        ),
+        url="https://pubmed.ncbi.nlm.nih.gov/833203/",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes=(
+            "Rat liver stereology retained only as explicitly cross-species "
+            "organelle and membrane-domain context."
+        ),
+    ),
+    "loud1968_rat_liver_stereology": SourceReference(
+        id="loud1968_rat_liver_stereology",
+        title=(
+            "A quantitative stereological description of the ultrastructure "
+            "of normal rat liver parenchymal cells"
+        ),
+        url="https://pubmed.ncbi.nlm.nih.gov/5645844/",
+        source_type="primary_paper",
+        date_verified=DATE_VERIFIED,
+        notes=(
+            "Rat liver ultrastructure retained only as explicitly "
+            "cross-species organelle context."
+        ),
+    ),
     "organelle_placement_method": SourceReference(
         id="organelle_placement_method",
-        title="Seeded solid-body organelle packing consistent with grounded counts/volumes",
+        title="Seeded solid-body packing of mixed-species organelle proxy inputs",
         url="https://en.wikipedia.org/wiki/Random_sequential_adsorption",
         source_type="project_assumption",
         date_verified=DATE_VERIFIED,
         notes=(
             "Positions are a deterministic rejection-sampled realization "
-            "(non-overlapping spheres, nucleus-excluded, inside an "
-            "equivalent-sphere cell envelope) that reproduces the grounded "
-            "organelle counts, per-body volumes and coarse location bias. It is "
-            "NOT a measured per-organelle coordinate set."
+            "of predominantly rat organelle counts, volume fractions and "
+            "location categories inside an aggregate-human-volume cell proxy. "
+            "It is not a measured human organelle population or coordinate set."
         ),
     ),
-}
+})
 
 # Coarse location categories are the only spatial information the sources give.
 CENTRAL = "central"
@@ -133,6 +179,17 @@ class UnplacedOrganelle:
 @dataclass(frozen=True)
 class OrganellePlacement:
     version: str
+    status: str
+    runtime_geometry_role: str
+    healthy_phh_biological_authority: bool
+    quantitative_contact_force_authority: bool
+    uses_cross_species_organelle_parameters: bool
+    healthy_phh_discrete_count_parameter_count: int
+    healthy_phh_discrete_volume_fraction_parameter_count: int
+    cross_species_proxy_body_count: int
+    human_aggregate_region_count: int
+    measured_per_organelle_coordinate_count: int
+    donor_resolved_mesh_count: int
     seed: int
     cell_volume_um3: float
     cell_envelope_radius_um: float
@@ -143,9 +200,8 @@ class OrganellePlacement:
     body_count_by_organelle: dict[str, int]
     placed_body_volume_um3: float
     discrete_volume_fraction_pct: float
-    honesty_status: str
-    grounded: tuple[str, ...]
-    not_grounded: tuple[str, ...]
+    source_bound_inputs: tuple[str, ...]
+    not_biologically_identified: tuple[str, ...]
     blockers: tuple[str, ...]
     source_ids: tuple[str, ...]
 
@@ -445,7 +501,15 @@ def build_organelle_placement(
     for b in bodies:
         body_counts[b.organelle_id] = body_counts.get(b.organelle_id, 0) + 1
 
+    cross_species_proxy_body_count = sum(
+        body.organism != "human" for body in bodies
+    )
+    human_aggregate_region_count = sum(
+        region.organism == "human" for region in regions
+    )
     blockers = [
+        "discrete organelle counts, fractions and location categories are predominantly rat proxies, not healthy-PHH parameters",
+        "rat organelle fractions are combined with an aggregate human cell volume and therefore form a mixed-species synthetic geometry",
         "individual organelle (x,y,z) is a seeded realization, not measured per-organelle coordinates",
         "cell shape is the volume-matched canonical hepatocyte polyhedron (space-filling proxy), not a donor membrane mesh",
         "ER/Golgi/glycogen/lipid are volume-only regions; no source-backed discrete count or mesh",
@@ -455,8 +519,19 @@ def build_organelle_placement(
             f"{organelle_id}: {shortfall} bodies could not be packed without overlap at this envelope/seed"
         )
 
-    return OrganellePlacement(
-        version="organelle_placement_v1",
+    placement = OrganellePlacement(
+        version=VERSION,
+        status=STATUS,
+        runtime_geometry_role=RUNTIME_GEOMETRY_ROLE,
+        healthy_phh_biological_authority=False,
+        quantitative_contact_force_authority=False,
+        uses_cross_species_organelle_parameters=True,
+        healthy_phh_discrete_count_parameter_count=0,
+        healthy_phh_discrete_volume_fraction_parameter_count=0,
+        cross_species_proxy_body_count=cross_species_proxy_body_count,
+        human_aggregate_region_count=human_aggregate_region_count,
+        measured_per_organelle_coordinate_count=0,
+        donor_resolved_mesh_count=0,
         seed=seed,
         cell_volume_um3=cell_volume_um3,
         cell_envelope_radius_um=envelope_radius_um,
@@ -467,22 +542,62 @@ def build_organelle_placement(
         body_count_by_organelle=body_counts,
         placed_body_volume_um3=placed_volume,
         discrete_volume_fraction_pct=100.0 * placed_volume / cell_volume_um3,
-        honesty_status=(
-            "seeded_solid_body_realization_consistent_with_grounded_counts_volumes_and_location_bias"
+        source_bound_inputs=(
+            "aggregate normal-control human cell-volume reference",
+            "rat and consensus organelle records retained with organism and quality tags",
+            "aggregate normal-control human lipid-droplet volume-fraction reference",
+            "deterministic non-overlap packing algorithm",
         ),
-        grounded=(
-            "organelle counts",
-            "per-organelle volume (from grounded volume fraction / count)",
-            "coarse location category",
-        ),
-        not_grounded=(
+        not_biologically_identified=(
+            "healthy-PHH discrete organelle counts and volume fractions",
             "exact per-organelle coordinates",
             "organelle mesh shape (spheres are equivalent-volume stand-ins)",
             "network organelle geometry (ER, Golgi, glycogen, lipid droplets)",
+            "contact force, stiffness or mechanotransduction",
         ),
         blockers=tuple(blockers),
         source_ids=tuple(PLACEMENT_SOURCES),
     )
+    validate_organelle_placement(placement)
+    return placement
+
+
+def validate_organelle_placement(placement: OrganellePlacement) -> None:
+    """Reject any promotion of the mixed-species scaffold to PHH authority."""
+
+    if (
+        placement.version != VERSION
+        or placement.status != STATUS
+        or placement.runtime_geometry_role != RUNTIME_GEOMETRY_ROLE
+    ):
+        raise ValueError("organelle placement authority contract changed")
+    if (
+        placement.healthy_phh_biological_authority
+        or placement.quantitative_contact_force_authority
+        or not placement.uses_cross_species_organelle_parameters
+        or placement.healthy_phh_discrete_count_parameter_count != 0
+        or placement.healthy_phh_discrete_volume_fraction_parameter_count != 0
+        or placement.measured_per_organelle_coordinate_count != 0
+        or placement.donor_resolved_mesh_count != 0
+    ):
+        raise ValueError("mixed-species organelle proxy gained healthy-PHH authority")
+    if placement.cross_species_proxy_body_count != sum(
+        body.organism != "human" for body in placement.bodies
+    ):
+        raise ValueError("cross-species organelle body count is inconsistent")
+    if placement.human_aggregate_region_count != sum(
+        region.organism == "human" for region in placement.regions
+    ):
+        raise ValueError("human aggregate organelle-region count is inconsistent")
+    if sum(placement.body_count_by_organelle.values()) != len(placement.bodies):
+        raise ValueError("organelle body-count ledger is inconsistent")
+    if not placement.source_bound_inputs or not placement.not_biologically_identified:
+        raise ValueError("organelle placement evidence boundary is incomplete")
+    if (
+        len(placement.source_ids) != len(PLACEMENT_SOURCES)
+        or set(placement.source_ids) != set(PLACEMENT_SOURCES)
+    ):
+        raise ValueError("organelle placement source ledger is incomplete")
 
 
 def organelle_placement_snapshot(*, seed: int = 0) -> dict[str, object]:

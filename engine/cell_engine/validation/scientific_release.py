@@ -113,6 +113,10 @@ from cell_engine.quantitative.phh_3d_mesh_boundary import (
 from cell_engine.quantitative.intracellular_mobility import (
     intracellular_mobility_intake_snapshot,
 )
+from cell_engine.quantitative.organelle_placement import (
+    build_organelle_placement,
+    validate_organelle_placement,
+)
 from cell_engine.quantitative.reaction_transport_coupling import (
     reaction_transport_coupling_intake_snapshot,
 )
@@ -217,6 +221,7 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
     human_sch_bile_acids = None
     integrated_reaction_authority = None
     kinetic_transfer = None
+    organelle_placement = None
 
     try:
         runtime_authority = build_whole_cell_runtime_authority()
@@ -282,6 +287,15 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         )
     except ValueError as exc:
         blockers.append(f"invalid unified quantitative PHH state: {exc}")
+
+    try:
+        organelle_placement = build_organelle_placement()
+        validate_organelle_placement(organelle_placement)
+        checks.append(
+            "the mixed-species organelle scaffold is restricted to engine collision and renderer geometry with zero healthy-PHH morphology authority"
+        )
+    except ValueError as exc:
+        blockers.append(f"invalid organelle-placement authority: {exc}")
 
     try:
         for zone in ("periportal", "midlobular", "pericentral"):
@@ -844,6 +858,13 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
 
     if target == "predictive":
         blockers.extend(registry.blocking_measurements)
+        if (
+            organelle_placement is None
+            or not organelle_placement.healthy_phh_biological_authority
+        ):
+            blockers.append(
+                "mixed-species organelle placement does not identify healthy-PHH counts, distributions or meshes"
+            )
         if external_validation_program is None:
             blockers.append("external scientific-review program is unavailable")
         else:
@@ -1096,8 +1117,10 @@ def scientific_release_snapshot() -> dict[str, object]:
             "Legacy calibration residuals are labeled software fixtures, expose only a "
             "fixture-fit score and reject biological calibration, validation and model "
             "selection purposes. "
-            "Published glucose execution remains shadow/diagnostic. Runtime contact geometry is "
-            "engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, "
+            "Published glucose execution remains shadow/diagnostic. Runtime external-body contact "
+            "geometry is engine-authoritative; internal organelle placement is a mixed-species "
+            "collision/renderer proxy with zero healthy-PHH morphology authority. Force, "
+            "adhesion, mechanotransduction, receptor kinetics, "
             "Brian2 biochemical execution and generative-state coupling remain blocked."
             " External scientific review is organized by explicit context, claim, reviewer role "
             "and independence rules; no external report, prospective result, independent "

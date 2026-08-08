@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-08-08T22:29:43.573024+00:00",
+    "created_at_utc": "2026-08-08T23:17:14.005812+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -7035,6 +7035,14 @@
         "title": "BioModels submission guidelines and agreement",
         "url": "https://www.ebi.ac.uk/biomodels/model/submission-guidelines-and-agreement"
       },
+      "blouin1977_rat_liver_stereology": {
+        "date_verified": "2026-08-08",
+        "id": "blouin1977_rat_liver_stereology",
+        "notes": "Rat liver stereology retained only as explicitly cross-species organelle and membrane-domain context.",
+        "source_type": "primary_paper",
+        "title": "Distribution of organelles and membranes between hepatocytes and nonhepatocytes in the rat liver parenchyma",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/833203/"
+      },
       "braun2023_periportal_expansion": {
         "date_verified": "2026-08-08",
         "id": "braun2023_periportal_expansion",
@@ -7851,6 +7859,14 @@
         "title": "Hepatoma secretory proteins migrate from rough endoplasmic reticulum to Golgi at characteristic rates",
         "url": "https://doi.org/10.1038/304080a0"
       },
+      "loud1968_rat_liver_stereology": {
+        "date_verified": "2026-08-08",
+        "id": "loud1968_rat_liver_stereology",
+        "notes": "Rat liver ultrastructure retained only as explicitly cross-species organelle context.",
+        "source_type": "primary_paper",
+        "title": "A quantitative stereological description of the ultrastructure of normal rat liver parenchymal cells",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/5645844/"
+      },
       "macparland2018_human_liver_atlas": {
         "date_verified": "2026-07-21",
         "id": "macparland2018_human_liver_atlas",
@@ -7972,11 +7988,11 @@
         "url": "https://doi.org/10.1002/jcp.30273"
       },
       "organelle_placement_method": {
-        "date_verified": "2026-07-29",
+        "date_verified": "2026-08-08",
         "id": "organelle_placement_method",
-        "notes": "Positions are a deterministic rejection-sampled realization (non-overlapping spheres, nucleus-excluded, inside an equivalent-sphere cell envelope) that reproduces the grounded organelle counts, per-body volumes and coarse location bias. It is NOT a measured per-organelle coordinate set.",
+        "notes": "Positions are a deterministic rejection-sampled realization of predominantly rat organelle counts, volume fractions and location categories inside an aggregate-human-volume cell proxy. It is not a measured human organelle population or coordinate set.",
         "source_type": "project_assumption",
-        "title": "Seeded solid-body organelle packing consistent with grounded counts/volumes",
+        "title": "Seeded solid-body packing of mixed-species organelle proxy inputs",
         "url": "https://en.wikipedia.org/wiki/Random_sequential_adsorption"
       },
       "oxphos_po_ratio": {
@@ -8110,7 +8126,7 @@
       "segovia_miranda2019_human_liver_3d_morphometry": {
         "date_verified": "2026-07-17",
         "id": "segovia_miranda2019_human_liver_3d_morphometry",
-        "notes": "Normal-control human liver 3D reconstructions report median hepatocyte volume 5657.07116 um3 across five reconstructions. The runtime preserves this volume but does not claim a measured mesh.",
+        "notes": "Normal-control human liver was reconstructed at 0.3 um isotropic voxel size. Supplementary Table 3 reports cell-volume and lipid-droplet-volume summaries across five NC reconstructions.",
         "source_type": "primary_paper",
         "title": "Three-dimensional spatially resolved geometrical and functional models of human liver tissue reveal new aspects of NAFLD progression",
         "url": "https://doi.org/10.1038/s41591-019-0660-7"
@@ -8210,6 +8226,14 @@
         "source_type": "primary_paper",
         "title": "Spatial transcriptomics of healthy and fibrotic human liver at single-cell resolution",
         "url": "https://www.nature.com/articles/s41467-024-55325-4"
+      },
+      "weibel1969_rat_liver_stereology": {
+        "date_verified": "2026-08-08",
+        "id": "weibel1969_rat_liver_stereology",
+        "notes": "Rat hepatocyte stereology retained only as explicitly cross-species organelle context.",
+        "source_type": "primary_paper",
+        "title": "Correlated morphometric and biochemical studies on the liver cell. I. Morphometric model, stereologic methods, and normal morphometric data for rat liver",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/4891915/"
       },
       "weiss2026_spatial_proteome": {
         "date_verified": "2026-07-15",
@@ -16541,23 +16565,31 @@
           "code_surfaces": [
             "engine/cell_engine/validation/physical_validation.py",
             "engine/cell_engine/quantitative/human_hepatocyte_3d_morphometry.py",
+            "engine/cell_engine/quantitative/organelle_placement.py",
             "engine/cell_engine/quantitative/phh_3d_mesh_boundary.py",
             "engine/cell_engine/quantitative/phh_mechanics_calibration.py",
             "data/evidence_intake/phh_3d_mesh_boundary_contract.v1.json",
             "data/evidence_intake/phh_mechanics_calibration_contract.v1.json"
           ],
-          "current_capability": "Human aggregate 3D volume and verified proxy geometry exist. Checksum-frozen donor mesh and mechanics contracts now share cell/mesh identifiers and require raw loading-relaxation trajectories, spatial boundary conditions and held-out donors. No donor mesh, mechanics trajectory or matched PHH parameter set is registered.",
+          "current_capability": "Human aggregate 3D volume and a verified mixed-species runtime geometry proxy exist. The proxy combines predominantly rat organelle records with aggregate human cell volume and has zero healthy-PHH morphology authority. Checksum-frozen donor mesh and mechanics contracts require raw loading-relaxation trajectories, spatial boundary conditions and held-out donors. No donor mesh, mechanics trajectory or matched PHH parameter set is registered.",
           "id": "donor_3d_morphology_mechanics",
           "observed_metrics": {
             "contact_ground_truth_mesh_count": 0,
+            "cross_species_proxy_body_count": 1901,
             "delivered_mechanics_trajectory_count": 0,
             "delivered_mesh_artifact_count": 0,
             "donor_resolved_in_situ_mesh_count": 0,
+            "healthy_phh_discrete_count_parameter_count": 0,
+            "healthy_phh_discrete_volume_fraction_parameter_count": 0,
+            "healthy_phh_organelle_geometry_authority_count": 0,
             "matched_phh_mechanical_parameter_sets": 0,
+            "measured_per_organelle_coordinate_count": 0,
             "mechanics_calibration_intake_contract_count": 1,
             "mechanics_target_quantity_count": 15,
             "mesh_intake_contract_count": 1,
             "mesh_target_structure_count": 11,
+            "mixed_species_organelle_geometry_proxy_count": 1,
+            "quantitative_contact_force_authority_count": 0,
             "spatial_fsi_ready_trajectory_count": 0,
             "structurally_ready_mesh_count": 0
           },
@@ -17260,8 +17292,8 @@
           "observed_metrics": {
             "automatic_biological_parameter_activation_count": 0,
             "initial_js_chunk_count": 2,
-            "initial_js_gzip_bytes": 265419,
-            "initial_js_raw_bytes": 968837,
+            "initial_js_gzip_bytes": 265443,
+            "initial_js_raw_bytes": 968985,
             "maximum_initial_js_gzip_bytes": 275000,
             "maximum_initial_js_raw_bytes": 980000,
             "production_manifest_gate_count": 1,
@@ -24606,15 +24638,17 @@
       "context_only_sections": [
         "quantitative_state"
       ],
-      "policy": "quantitative_state is static whole-liver context only and cannot initialize one cell, convert counts or run dynamics; whole_cell_runtime_authority requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of legacy relative-pool dynamics; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires a donor-resolved write, verified-removal persistence, first-response and rechallenge-response trajectory plus a frozen held-out-validated law and never treats an event log as memory; cytosol_transport keeps passive aqueous projection separate from deterministic dimensionless cargo rendering, applies outer-membrane cut-cell geometric conservation and subgrid organelle interception only as numerical boundary treatments, forbids a single global viscosity/crowding multiplier and gates fluid coupling per reaction; cytoplasm_dynamics retains cross-context motion observations but exports zero healthy-PHH motion parameters, while browser staging uses only independent renderer-world and wall-clock values; receptor_signaling_trajectory_intake requires donor-matched density, binding, occupancy, trafficking, response and frozen heldout stages but cannot activate a receptor or signal; active_protein_localization_intake requires donor-matched total, localized, active, denominator and functional measurements but cannot infer active copies or scale rates; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+      "policy": "quantitative_state is static whole-liver context only and cannot initialize one cell, convert counts or run dynamics; organelle_placement is a mixed-species seeded collision/renderer proxy and has no healthy-PHH count, morphology, mechanics or quantitative-contact authority; whole_cell_runtime_authority requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of legacy relative-pool dynamics; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires a donor-resolved write, verified-removal persistence, first-response and rechallenge-response trajectory plus a frozen held-out-validated law and never treats an event log as memory; cytosol_transport keeps passive aqueous projection separate from deterministic dimensionless cargo rendering, applies outer-membrane cut-cell geometric conservation and subgrid organelle interception only as numerical boundary treatments, forbids a single global viscosity/crowding multiplier and gates fluid coupling per reaction; cytoplasm_dynamics retains cross-context motion observations but exports zero healthy-PHH motion parameters, while browser staging uses only independent renderer-world and wall-clock values; receptor_signaling_trajectory_intake requires donor-matched density, binding, occupancy, trafficking, response and frozen heldout stages but cannot activate a receptor or signal; active_protein_localization_intake requires donor-matched total, localized, active, denominator and functional measurements but cannot infer active copies or scale rates; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
       "primary_context_path": "quantitative_state",
       "quantitative_biochemical_dynamics_executed": false,
       "runtime_authoritative_sections": [
         "spatial_state",
-        "spatial_world",
-        "organelle_placement"
+        "spatial_world"
       ],
       "runtime_execution_purpose": "schematic_visualization",
+      "runtime_geometry_proxy_sections": [
+        "organelle_placement"
+      ],
       "schematic_dynamics_executed": true,
       "schematic_sections": [
         "pools",
@@ -24996,12 +25030,13 @@
     },
     "organelle_instance_vitality": {
       "blockers": [
+        "placement identity count is a cross-species runtime proxy, not a measured healthy-PHH inventory",
         "no matched longitudinal healthy-adult PHH single-organelle trajectories",
         "no donor-resolved calibration and donor/study-disjoint validation",
         "cross-species pathway evidence cannot authorize PHH numerical values"
       ],
       "grounded": [
-        "discrete organelle identities and counts from organelle_placement",
+        "stable numerical identities derived from the mixed-species organelle placement proxy",
         "within-cell mitochondrial functional heterogeneity exists in primary rat hepatocytes",
         "mitophagy and pexophagy exist in mammalian in-vivo liver contexts"
       ],
@@ -40335,6 +40370,10 @@
       "quantitative_runtime_enabled": false,
       "runtime_geometry_coupling_enabled": false,
       "source_ids": [
+        "segovia_miranda2019_human_liver_3d_morphometry",
+        "weibel1969_rat_liver_stereology",
+        "blouin1977_rat_liver_stereology",
+        "loud1968_rat_liver_stereology",
         "organelle_placement_method",
         "collins2002_mitochondrial_heterogeneity",
         "mcwilliams2016_mito_qc",
@@ -40344,6 +40383,8 @@
     },
     "organelle_placement": {
       "blockers": [
+        "discrete organelle counts, fractions and location categories are predominantly rat proxies, not healthy-PHH parameters",
+        "rat organelle fractions are combined with an aggregate human cell volume and therefore form a mixed-species synthetic geometry",
         "individual organelle (x,y,z) is a seeded realization, not measured per-organelle coordinates",
         "cell shape is the volume-matched canonical hepatocyte polyhedron (space-filling proxy), not a donor membrane mesh",
         "ER/Golgi/glycogen/lipid are volume-only regions; no source-backed discrete count or mesh"
@@ -66972,20 +67013,24 @@
       },
       "cell_envelope_radius_um": 11.053530420708277,
       "cell_volume_um3": 5657.07116,
+      "cross_species_proxy_body_count": 1901,
       "discrete_volume_fraction_pct": 28.699999999999985,
-      "grounded": [
-        "organelle counts",
-        "per-organelle volume (from grounded volume fraction / count)",
-        "coarse location category"
-      ],
-      "honesty_status": "seeded_solid_body_realization_consistent_with_grounded_counts_volumes_and_location_bias",
-      "not_grounded": [
+      "donor_resolved_mesh_count": 0,
+      "healthy_phh_biological_authority": false,
+      "healthy_phh_discrete_count_parameter_count": 0,
+      "healthy_phh_discrete_volume_fraction_parameter_count": 0,
+      "human_aggregate_region_count": 1,
+      "measured_per_organelle_coordinate_count": 0,
+      "not_biologically_identified": [
+        "healthy-PHH discrete organelle counts and volume fractions",
         "exact per-organelle coordinates",
         "organelle mesh shape (spheres are equivalent-volume stand-ins)",
-        "network organelle geometry (ER, Golgi, glycogen, lipid droplets)"
+        "network organelle geometry (ER, Golgi, glycogen, lipid droplets)",
+        "contact force, stiffness or mechanotransduction"
       ],
       "nucleus_radius_um": 4.374867530946841,
       "placed_body_volume_um3": 1623.5794229199994,
+      "quantitative_contact_force_authority": false,
       "regions": [
         {
           "centroid_um": [
@@ -67073,10 +67118,22 @@
           "volume_fraction_pct": 0.507807
         }
       ],
+      "runtime_geometry_role": "engine_collision_and_renderer_proxy_only",
       "seed": 0,
+      "source_bound_inputs": [
+        "aggregate normal-control human cell-volume reference",
+        "rat and consensus organelle records retained with organism and quality tags",
+        "aggregate normal-control human lipid-droplet volume-fraction reference",
+        "deterministic non-overlap packing algorithm"
+      ],
       "source_ids": [
+        "segovia_miranda2019_human_liver_3d_morphometry",
+        "weibel1969_rat_liver_stereology",
+        "blouin1977_rat_liver_stereology",
+        "loud1968_rat_liver_stereology",
         "organelle_placement_method"
       ],
+      "status": "mixed_species_seeded_organelle_geometry_proxy",
       "unplaced": [
         {
           "name": "Ribosomes",
@@ -67084,7 +67141,8 @@
           "reason": "no volume fraction to size individual bodies"
         }
       ],
-      "version": "organelle_placement_v1"
+      "uses_cross_species_organelle_parameters": true,
+      "version": "organelle_placement_v2"
     },
     "organelles": {
       "cytoskeleton": {
@@ -70099,7 +70157,7 @@
         "whole_cell_transport_flux_ready": false
       },
       "scientific_release": {
-        "authoritative_scope": "Healthy PHH aggregate metabolic observations, nutritional glycogen contexts, and apparent Pi-to-ATP exchange retained only in its original assay space. The source-supported energy/redox compartment and process graph is authoritative as non-executable structure; all organelle initial values, ATP demand, OXPHOS, antioxidant kinetics and predictive coupling remain blocked. Human zonation, postabsorptive glucose perfusion, measured endocrine observations, exact PHH glucose/albumin/CYP/BEI operators, donor-resolved proteome references and bile-acid endpoints retain their declared assay and denominator limits. The quantity harvest and PHH injury observations retain species, dose, time, assay and death-mode context without automatic runtime activation. Reaction authority and kinetic-transfer firewalls keep the integrated fuel runtime exploratory. The whole-cell execution firewall likewise requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of relative-pool dynamics. Legacy calibration residuals are labeled software fixtures, expose only a fixture-fit score and reject biological calibration, validation and model selection purposes. Published glucose execution remains shadow/diagnostic. Runtime contact geometry is engine-authoritative, while force, adhesion, mechanotransduction, receptor kinetics, Brian2 biochemical execution and generative-state coupling remain blocked. External scientific review is organized by explicit context, claim, reviewer role and independence rules; no external report, prospective result, independent reproduction or whole-cell biological-accuracy percentage is claimed.",
+        "authoritative_scope": "Healthy PHH aggregate metabolic observations, nutritional glycogen contexts, and apparent Pi-to-ATP exchange retained only in its original assay space. The source-supported energy/redox compartment and process graph is authoritative as non-executable structure; all organelle initial values, ATP demand, OXPHOS, antioxidant kinetics and predictive coupling remain blocked. Human zonation, postabsorptive glucose perfusion, measured endocrine observations, exact PHH glucose/albumin/CYP/BEI operators, donor-resolved proteome references and bile-acid endpoints retain their declared assay and denominator limits. The quantity harvest and PHH injury observations retain species, dose, time, assay and death-mode context without automatic runtime activation. Reaction authority and kinetic-transfer firewalls keep the integrated fuel runtime exploratory. The whole-cell execution firewall likewise requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of relative-pool dynamics. Legacy calibration residuals are labeled software fixtures, expose only a fixture-fit score and reject biological calibration, validation and model selection purposes. Published glucose execution remains shadow/diagnostic. Runtime external-body contact geometry is engine-authoritative; internal organelle placement is a mixed-species collision/renderer proxy with zero healthy-PHH morphology authority. Force, adhesion, mechanotransduction, receptor kinetics, Brian2 biochemical execution and generative-state coupling remain blocked. External scientific review is organized by explicit context, claim, reviewer role and independence rules; no external report, prospective result, independent reproduction or whole-cell biological-accuracy percentage is claimed.",
         "predictive": {
           "blockers": [
             "matched donor and nutritional state",
@@ -70109,6 +70167,7 @@
             "matched intracellular bile-acid substrate concentrations",
             "compartment-resolved ATP, ADP and phosphate time courses with matched PHH oxygen consumption",
             "held-out primary-human-hepatocyte trajectory data",
+            "mixed-species organelle placement does not identify healthy-PHH counts, distributions or meshes",
             "external review: no claim has an independent domain-review result",
             "external review: no claim has an uncertainty-qualified same-assay validation result",
             "external review: no claim has a prospective independent PHH result",
@@ -70209,6 +70268,7 @@
             "human-liver apparent Pi-to-ATP exchange retained as an assay observation",
             "mitochondrial ATP synthesis and cellular ATP demand remain uninitialized",
             "source-backed liver context excludes relative units, per-cell count conversion and dynamic state authority",
+            "the mixed-species organelle scaffold is restricted to engine collision and renderer geometry with zero healthy-PHH morphology authority",
             "human-specific zonation context cannot apply unmeasured flux or oxygen scaling",
             "sinusoid v2 enables sourced perfusion while uncalibrated cell and zonal fluxes fail closed",
             "human mixed-meal trajectory is retained at organ scale and cannot invent per-cell flux",
@@ -70270,6 +70330,7 @@
             "human-liver apparent Pi-to-ATP exchange retained as an assay observation",
             "mitochondrial ATP synthesis and cellular ATP demand remain uninitialized",
             "source-backed liver context excludes relative units, per-cell count conversion and dynamic state authority",
+            "the mixed-species organelle scaffold is restricted to engine collision and renderer geometry with zero healthy-PHH morphology authority",
             "human-specific zonation context cannot apply unmeasured flux or oxygen scaling",
             "sinusoid v2 enables sourced perfusion while uncalibrated cell and zonal fluxes fail closed",
             "human mixed-meal trajectory is retained at organ scale and cannot invent per-cell flux",
@@ -85172,6 +85233,7 @@
         "human_hepatocyte_zonation_context",
         "human_liver_open_atlas",
         "human_hepatocyte_3d_morphometry",
+        "organelle_placement_authority_firewall",
         "phh_3d_mesh_boundary_intake",
         "sinusoid_glucose_homeostasis_v2",
         "human_nutritional_homeostasis_v3",
@@ -85399,6 +85461,20 @@
             "segovia_miranda2019_human_liver_3d_morphometry"
           ],
           "status": "source_backed"
+        },
+        {
+          "action": "retain deterministic non-overlapping collision and renderer geometry while preserving organism tags; prohibit healthy-PHH count, fraction, coordinate, mesh, mechanics and quantitative-contact claims",
+          "default_snapshot_role": "mixed_species_runtime_geometry_proxy_only",
+          "drives_scientific_validation": true,
+          "id": "organelle_placement_authority_firewall",
+          "limitations": "The scaffold combines an aggregate human cell-volume reference with predominantly rat organelle counts, fractions and coarse locations. All 1,901 discrete bodies are cross-species proxy bodies; zero healthy-PHH discrete parameters, measured per-organelle coordinates or donor meshes are available.",
+          "source_ids": [
+            "segovia_miranda2019_human_liver_3d_morphometry",
+            "weibel1969_rat_liver_stereology",
+            "blouin1977_rat_liver_stereology",
+            "loud1968_rat_liver_stereology"
+          ],
+          "status": "derived"
         },
         {
           "action": "accept only checksum-frozen canonical triangle meshes linked to exact healthy-human donors, imaging context, micrometre coordinates, frozen registration, independent external self-intersection audit and grid-convergence report; run repository topology and self-intersection audits without repairing or activating a mesh",

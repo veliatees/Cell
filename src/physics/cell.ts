@@ -1,5 +1,9 @@
 // ---------------------------------------------------------------------------
-// A living cell as an IMPERFECT, SPATIAL ORGANELLE NETWORK.
+// Exploratory normalized browser fixture for a spatial organelle network.
+//
+// This class drives schematic activity, flows and stress readouts in the
+// renderer. It is not the quantitative PHH authority surface and must not be
+// interpreted as a calibrated single-cell trajectory.
 //
 // Three ideas drive this model:
 //
@@ -7,30 +11,25 @@
 //    pools (glucose, pyruvate, amino acids, ATP/ADP, mRNA, protein, lipids,
 //    ROS, waste) and a
 //    set of independent organelle modules, each with its own Michaelis–Menten
-//    kinetics, all acting in parallel on the shared pools — real biochemistry,
-//    not a pipeline. ATP is the shared currency: mitochondria and glycolysis
-//    make it; pumps, nucleus, ribosomes, Golgi and maintenance spend it.
+//    kinetics, all acting in parallel on shared normalized pools. This preserves
+//    the intended compartment topology, but the rates and pool magnitudes are
+//    exploratory. ATP is the shared model currency.
 //
 // 2. ATP is not used the instant it is made. It must travel from where it is
 //    produced to where it is consumed. Each organelle therefore has a LOCAL ATP
-//    availability that lags the global pool with a diffusion time τ = x²/(6·D),
-//    where x is its distance from the energy source and D is the measured
-//    cytoplasmic ATP diffusion coefficient (~150 µm²/s, Hubley et al. 1996).
-//    Distant organelles feel ATP changes later — and can be starved of delivery
-//    even when the cell as a whole has ATP.
+//    availability that lags the global pool with the diffusion-timescale form
+//    τ = x²/(6·D). The bundled D is a cross-context literature reference, not a
+//    healthy-PHH measurement, so this delay is an exploratory visual fixture.
 //
 // 3. The cell is NOT perfect, because its environment is not perfect. Each
 //    organelle has an efficiency that degrades through probabilistic FAULTS.
-//    These faults are not "magic randomness": their hazard rate rises with
-//    stress (low local ATP, accumulated waste). What we call random is the
-//    uncomputable, deterministic detail of the conditions — modelled here as a
-//    probability. Organelles repair themselves over time (costing ATP).
+//    Fault hazards rise with normalized stress and repair consumes normalized
+//    ATP. Their rates and thresholds are project assumptions, not PHH estimates.
 //
-// Grounding: Michaelis–Menten (1913); conserved ATP+ADP pool; Fick diffusion
-// time for transport (measured D_ATP); chemical-Langevin noise (Gillespie 2000).
-// Rate constants and fault hazards are normalised/illustrative ASSUMPTIONS — the
-// structure (independent compartments, shared pools, transport delay, stress-
-// driven failure, conservation) is the real thing.
+// Mathematical references: Michaelis–Menten kinetics, ATP+ADP conservation,
+// the Fickian diffusion-timescale form and chemical-Langevin noise. These justify
+// software structure only; they do not validate this fixture's PHH parameters,
+// organelle rhythms, fault law, outcomes or time scale.
 // ---------------------------------------------------------------------------
 
 export type Pools = {
@@ -251,8 +250,9 @@ const STRESS_IDS: (keyof StressAxes)[] = [
   "senescence"
 ];
 
-// Measured cytoplasmic ATP diffusion coefficient (~150 µm²/s; Hubley, Locke &
-// Moerland 1996, Biochim. Biophys. Acta). Used for the transport delay τ=x²/6D.
+// Cross-context cytoplasmic ATP diffusion reference (~150 µm²/s; Hubley, Locke
+// & Moerland 1996). It is retained only in this exploratory renderer fixture and
+// is not a healthy-PHH transport parameter.
 const D_ATP_UM2_PER_S = 150;
 
 type OrganelleState = {
@@ -524,8 +524,9 @@ export class LivingCell {
 
   /**
    * Tell the model how far each organelle sits from the ATP source, so it can
-   * compute a real diffusion transport time τ = x²/(6 D). Distances are in the
-   * caller's length units; `micronsPerUnit` converts them to microns.
+   * compute the fixture's diffusion-timescale proxy τ = x²/(6 D). Distances are
+   * in caller units; `micronsPerUnit` converts them to microns. This method does
+   * not establish healthy-PHH ATP delivery time.
    */
   setGeometry(distances: Partial<Record<OrganelleId, number>>, micronsPerUnit: number) {
     for (const id of ALL_IDS) {
