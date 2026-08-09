@@ -2,16 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   BROWSER_RUNTIME_POLICY,
   accumulateCadencedStep,
+  browserFixtureStepPlan,
   evaluateRenderWorkloadWindow,
   numericalGridRefreshIntervalS,
-  renderSuspensionReason,
-  visualSimulationStepPlan
+  renderSuspensionReason
 } from "./renderCadence";
 
 describe("browser render cadence policy", () => {
   it("is explicitly engineering-only", () => {
     expect(BROWSER_RUNTIME_POLICY.scientific_authority).toBe(false);
     expect(BROWSER_RUNTIME_POLICY.biological_parameter_activation).toBe(false);
+    expect(BROWSER_RUNTIME_POLICY.local_fixture.public_unit_bearing_field_count).toBe(0);
+    expect(BROWSER_RUNTIME_POLICY.local_fixture.projected_survival_output_enabled).toBe(false);
+    expect(BROWSER_RUNTIME_POLICY.local_fixture.absolute_distance_transport_conversion_enabled).toBe(false);
   });
 
   it("suspends hidden and off-viewport rendering", () => {
@@ -47,12 +50,14 @@ describe("browser render cadence policy", () => {
     expect(numericalGridRefreshIntervalS("essential")).toBe(1);
   });
 
-  it("preserves visual-cell elapsed time across lower frame rates", () => {
-    const plan = visualSimulationStepPlan(1 / 15);
-    expect(plan.totalSimulationS).toBeCloseTo(1 / 3);
-    expect(plan.stepS * plan.iterations).toBeCloseTo(plan.totalSimulationS);
-    expect(plan.stepS).toBeLessThanOrEqual(
-      BROWSER_RUNTIME_POLICY.clock.maximum_visual_cell_substep_s
+  it("preserves the dimensionless fixture coordinate across lower frame rates", () => {
+    const plan = browserFixtureStepPlan(1 / 15);
+    expect(plan.totalFixtureSteps).toBeCloseTo(1 / 3);
+    expect(plan.fixtureStepDelta * plan.iterations).toBeCloseTo(
+      plan.totalFixtureSteps
+    );
+    expect(plan.fixtureStepDelta).toBeLessThanOrEqual(
+      BROWSER_RUNTIME_POLICY.clock.maximum_fixture_substep
     );
   });
 

@@ -10,29 +10,43 @@
 // 1. Each organelle runs its OWN loop. The cell is a set of shared metabolite
 //    pools (glucose, pyruvate, amino acids, ATP/ADP, mRNA, protein, lipids,
 //    ROS, waste) and a
-//    set of independent organelle modules, each with its own Michaelis–Menten
-//    kinetics, all acting in parallel on shared normalized pools. This preserves
-//    the intended compartment topology, but the rates and pool magnitudes are
-//    exploratory. ATP is the shared model currency.
+//    set of independent organelle modules, each with its own saturating response
+//    topology, all acting in parallel on shared normalized pools. This preserves
+//    the intended compartment graph, but no coefficient or pool magnitude is a
+//    measured kinetic parameter. ATP is only the shared fixture currency.
 //
-// 2. ATP is not used the instant it is made. It must travel from where it is
-//    produced to where it is consumed. Each organelle therefore has a LOCAL ATP
-//    availability that lags the global pool with the diffusion-timescale form
-//    τ = x²/(6·D). The bundled D is a cross-context literature reference, not a
-//    healthy-PHH measurement, so this delay is an exploratory visual fixture.
+// 2. Each organelle has a LOCAL relative ATP-access channel. It lags the shared
+//    pool according only to normalized near/far renderer geometry. No absolute
+//    distance, diffusivity, transport time, or healthy-PHH parameter is assigned.
 //
 // 3. The cell is NOT perfect, because its environment is not perfect. Each
 //    organelle has an efficiency that degrades through probabilistic FAULTS.
 //    Fault hazards rise with normalized stress and repair consumes normalized
 //    ATP. Their rates and thresholds are project assumptions, not PHH estimates.
 //
-// Mathematical references: Michaelis–Menten kinetics, ATP+ADP conservation,
-// the Fickian diffusion-timescale form and chemical-Langevin noise. These justify
-// software structure only; they do not validate this fixture's PHH parameters,
-// organelle rhythms, fault law, outcomes or time scale.
+// Mathematical references: Michaelis–Menten topology, normalized pool
+// conservation, and chemical-Langevin-style noise. These justify software
+// structure only; they do not validate this fixture's PHH parameters, organelle
+// rhythms, fault law, outcomes or time scale.
 // ---------------------------------------------------------------------------
 
-export type Pools = {
+export const NORMALIZED_CELL_FIXTURE_CONTRACT = Object.freeze({
+  version: "dimensionless_browser_cell_fixture_v2",
+  role: "software_and_renderer_fixture_only",
+  timeCoordinate: "dimensionless_fixture_step",
+  poolCoordinate: "relative_fixture_pool",
+  geometryCoupling: "monotonic_normalized_distance_ordering_only",
+  biologicalTimeUnitAssigned: false,
+  biologicalRateUnitAssigned: false,
+  absoluteDistanceUnitAssigned: false,
+  quantitativePhhAuthority: false,
+  predictiveAuthority: false,
+  projectedSurvivalEnabled: false,
+  biologicalFateOutputEnabled: false,
+  publicUnitBearingFieldCount: 0
+});
+
+export type NormalizedFixturePools = {
   glucose: number;
   glycogen: number;
   lactate: number;
@@ -60,7 +74,7 @@ export type Pools = {
   secreted: number;
 };
 
-export type ExternalPools = {
+type FixtureExternalPools = {
   glucose: number;
   aminoAcids: number;
   oxygen: number;
@@ -73,7 +87,7 @@ export type ExternalPools = {
   glucagon: number;
 };
 
-export type StressAxes = {
+export type NormalizedFixtureStressAxes = {
   energy: number;
   oxidative: number;
   detox: number;
@@ -99,47 +113,45 @@ export type OrganelleId =
   | "peroxisome"
   | "cytoskeleton";
 
-export type OrganelleActivity = Record<OrganelleId, number>;
+export type NormalizedFixtureOrganelleActivity = Record<OrganelleId, number>;
 
-/** Live per-organelle status for the report panel. */
-export type OrganelleReport = {
+/** Dimensionless per-organelle status for the renderer fixture. */
+export type NormalizedFixtureOrganelleReport = {
   id: OrganelleId;
   activity: number; // current flux through this organelle's loop
-  efficiency: number; // 0..1 — how well it is working (1 = healthy)
+  efficiency: number; // 0..1 relative renderer-fixture capacity
   atpAvailability: number; // 0..1 — local ATP it can actually reach right now
-  transportMs: number; // ms it takes ATP to diffuse here from the source
-  riskPerHour: number; // conditional fault probability converted to %/hour
+  relativeTransportLag: number;
   faultCause: string;
   faulted: boolean;
-  ageH: number; // biological age of this organelle population
-  turnoverHalfLifeH: number; // approximate turnover / renewal half-life
-  turnoverRiskPerHour: number; // probability of turnover event in the next hour
+  relativeAge: number;
+  relativeTurnoverScale: number;
   purpose: string;
   avoids: string;
   phase: number; // 0..1 — where it is in its own internal cycle
-  periodS: number; // length of its own cycle
+  relativeCyclePeriod: number;
 };
 
-export type CellEvent = {
+export type NormalizedFixtureEvent = {
   id: number;
-  t: number; // sim seconds
+  fixtureStep: number;
   severity: "info" | "warn" | "crit";
   text: string;
 };
 
-export type CellFlow = {
+export type NormalizedFixtureFlow = {
   id: string;
   from: string;
   to: string;
   cargo: string;
   value: number;
   mode: "diffusion" | "motor" | "vesicle" | "pore" | "carrier" | "signal" | "autophagy";
-  etaS: number;
+  relativeTransitLag: number;
   producedBy: string;
   usedBy: string;
 };
 
-export type HepatocyteState = {
+type HepatocyteFixtureInternalState = {
   cellType: "hepatocyte";
   zone: "periportal" | "midlobular" | "pericentral";
   insulin: number;
@@ -154,14 +166,14 @@ export type HepatocyteState = {
   glutathioneReserve: number;
   cytosolicCa: number;
   erCalcium: number;
-  cytosolicPh: number;
-  lysosomePh: number;
-  membranePotentialMv: number;
+  relativeCytosolicAcidity: number;
+  relativeLysosomalAcidification: number;
+  relativeMembranePolarization: number;
   sinusoidalImport: number;
   canalicularExport: number;
 };
 
-export type IntracellularFidelity = {
+export type NormalizedFixtureFidelity = {
   transcriptionAccuracy: number;
   translationAccuracy: number;
   foldingYield: number;
@@ -182,48 +194,50 @@ export type IntracellularFidelity = {
   };
 };
 
-export type CellSnapshot = {
-  pools: Pools;
-  external: ExternalPools;
+export type NormalizedHepatocyteFixtureReadout = {
+  fixtureRole: "hepatocyte_topology";
+  zoneTopology: "midlobular_proxy";
+  relativeBileExport: number;
+  relativeRedoxReserve: number;
+  relativePolarity: number;
+  relativeSinusoidalImport: number;
+  relativeCanalicularExport: number;
+};
+
+export type NormalizedCellFixtureSnapshot = {
+  pools: NormalizedFixturePools;
   adp: number;
   importFlux: number;
-  stress: StressAxes;
-  hepatocyte: HepatocyteState;
-  fidelity: IntracellularFidelity;
-  activity: OrganelleActivity;
-  flows: CellFlow[];
-  organelles: OrganelleReport[];
-  events: CellEvent[];
+  stress: NormalizedFixtureStressAxes;
+  hepatocyte: NormalizedHepatocyteFixtureReadout;
+  fidelity: NormalizedFixtureFidelity;
+  activity: NormalizedFixtureOrganelleActivity;
+  flows: NormalizedFixtureFlow[];
+  organelles: NormalizedFixtureOrganelleReport[];
+  events: NormalizedFixtureEvent[];
   energyCharge: number;
-  status: "healthy" | "stressed" | "senescent" | "dying";
-  cellAgeH: number;
-  senescenceRiskPerHour: number;
-  apoptosisRiskPerHour: number;
-  projectedMedianSurvivalH: number;
-  elapsedS: number;
-  // Feeding / fasting state (stochastic meals; see updateExternal).
+  status: "baseline_like" | "stress_like" | "senescence_like" | "failure_like";
+  fixtureStep: number;
+  // Relative feeding-state fixture; see updateExternal.
   nutrition: number; // 0..1, 1 = just-fed peak, decays toward fasted
-  hoursSinceMeal: number; // schematic compressed-time fixture
+  relativeNutritionPhase: number;
   fedState: "fed" | "postabsorptive" | "fasting";
   glycogenStore01: number; // normalized schematic fill used only without engine context
-  // convenience aliases used by the viewer readout
-  glucoseIn: number;
   atp: number;
-  protein: number;
 };
 
 const ATP_TOTAL = 1;
 // Renderer-local nutrition fixture. These compressed intervals are display
 // assumptions, not a measured PHH meal or glycogen trajectory.
-const HOURS_PER_SIM_SEC = 0.0267;
-const MAX_FAST_HOURS = 10;
-const MEAN_MEAL_INTERVAL_H = 4.5;
+const NUTRITION_PHASE_PER_FIXTURE_STEP = 0.0267;
+const MAX_NUTRITION_INTERVAL = 10;
+const MEAN_NUTRITION_INTERVAL = 4.5;
 
 // Normalized renderer fixture only. It has no molar, per-cell or kinetic claim.
 const GLYCOGEN_FIXTURE_INITIAL = 0.75;
 const GLYCOGEN_FIXTURE_MAX = 0.9;
-const GLYCOGEN_FIXTURE_SYNTH_PER_H = 0.7;
-const GLYCOGEN_FIXTURE_BREAK_PER_H = 0.13;
+const GLYCOGEN_FIXTURE_SYNTH_PER_PHASE = 0.7;
+const GLYCOGEN_FIXTURE_BREAK_PER_PHASE = 0.13;
 const ALL_IDS: OrganelleId[] = [
   "membrane",
   "glycolysis",
@@ -236,7 +250,7 @@ const ALL_IDS: OrganelleId[] = [
   "peroxisome",
   "cytoskeleton"
 ];
-const STRESS_IDS: (keyof StressAxes)[] = [
+const STRESS_IDS: (keyof NormalizedFixtureStressAxes)[] = [
   "energy",
   "oxidative",
   "detox",
@@ -250,20 +264,15 @@ const STRESS_IDS: (keyof StressAxes)[] = [
   "senescence"
 ];
 
-// Cross-context cytoplasmic ATP diffusion reference (~150 µm²/s; Hubley, Locke
-// & Moerland 1996). It is retained only in this exploratory renderer fixture and
-// is not a healthy-PHH transport parameter.
-const D_ATP_UM2_PER_S = 150;
-
 type OrganelleState = {
   eff: number; // efficiency 0..1
   avail: number; // local ATP availability (lags global atp)
-  tauS: number; // ATP transport time constant (s) = x²/(6 D)
-  riskPerHour: number;
+  relativeTransportLag: number;
+  relativeFaultPressure: number;
   faultCause: string;
   faulted: boolean; // currently in a faulted (low-efficiency) state
-  ageS: number; // age since last renewal/turnover
-  turnoverRiskPerHour: number;
+  relativeAge: number;
+  relativeTurnoverPressure: number;
   phase: number; // position in this organelle's OWN internal cycle [0,1)
 };
 
@@ -274,17 +283,17 @@ type OrganelleState = {
 // exact periods are illustrative ASSUMPTIONS; the independent-rhythm structure
 // is the point — no two organelles flow in lockstep.
 type CycleShape = "steady" | "wave" | "burst";
-const CYCLE: Record<OrganelleId, { periodS: number; shape: CycleShape; amp: number; offset: number }> = {
-  mitochondria: { periodS: 11, shape: "wave", amp: 0.18, offset: 0.0 }, // steady powerhouse, slow swell
-  glycolysis: { periodS: 5, shape: "wave", amp: 0.16, offset: 0.3 }, // continuous, quicker
-  membrane: { periodS: 7, shape: "wave", amp: 0.24, offset: 0.55 }, // transporters open/close
-  nucleus: { periodS: 18, shape: "burst", amp: 1, offset: 0.1 }, // transcriptional bursting
-  er: { periodS: 16, shape: "wave", amp: 0.22, offset: 0.62 }, // folding/lipid/Ca oscillations
-  ribosome: { periodS: 4, shape: "burst", amp: 1, offset: 0.7 }, // translational bursts
-  golgi: { periodS: 9, shape: "burst", amp: 1, offset: 0.45 }, // ships vesicle batches
-  lysosome: { periodS: 13, shape: "burst", amp: 1, offset: 0.85 }, // digests in pulses
-  peroxisome: { periodS: 19, shape: "wave", amp: 0.24, offset: 0.2 }, // detox / fatty-acid pulses
-  cytoskeleton: { periodS: 6, shape: "wave", amp: 0.28, offset: 0.38 } // motor/cortex remodeling
+const CYCLE: Record<OrganelleId, { periodFixtureSteps: number; shape: CycleShape; amp: number; offset: number }> = {
+  mitochondria: { periodFixtureSteps: 11, shape: "wave", amp: 0.18, offset: 0.0 }, // steady powerhouse, slow swell
+  glycolysis: { periodFixtureSteps: 5, shape: "wave", amp: 0.16, offset: 0.3 }, // continuous, quicker
+  membrane: { periodFixtureSteps: 7, shape: "wave", amp: 0.24, offset: 0.55 }, // transporters open/close
+  nucleus: { periodFixtureSteps: 18, shape: "burst", amp: 1, offset: 0.1 }, // transcriptional bursting
+  er: { periodFixtureSteps: 16, shape: "wave", amp: 0.22, offset: 0.62 }, // folding/lipid/Ca oscillations
+  ribosome: { periodFixtureSteps: 4, shape: "burst", amp: 1, offset: 0.7 }, // translational bursts
+  golgi: { periodFixtureSteps: 9, shape: "burst", amp: 1, offset: 0.45 }, // ships vesicle batches
+  lysosome: { periodFixtureSteps: 13, shape: "burst", amp: 1, offset: 0.85 }, // digests in pulses
+  peroxisome: { periodFixtureSteps: 19, shape: "wave", amp: 0.24, offset: 0.2 }, // detox / fatty-acid pulses
+  cytoskeleton: { periodFixtureSteps: 6, shape: "wave", amp: 0.28, offset: 0.38 } // motor/cortex remodeling
 };
 
 const BURST_K = 6; // sharpness of a burst pulse
@@ -297,7 +306,7 @@ const BURST_MEAN = (() => {
   return s / N;
 })();
 
-const STRESS_LABELS: Record<keyof StressAxes, string> = {
+const STRESS_LABELS: Record<keyof NormalizedFixtureStressAxes, string> = {
   energy: "ATP shortage / delivery bottleneck",
   oxidative: "oxidative stress / ROS load",
   detox: "xenobiotic / CYP detox burden",
@@ -313,74 +322,79 @@ const STRESS_LABELS: Record<keyof StressAxes, string> = {
 
 const FAULT_RULES: Record<
   OrganelleId,
-  { baseHazardPerS: number; weights: Partial<Record<keyof StressAxes, number>> }
+  { baseTransitionIntensity: number; weights: Partial<Record<keyof NormalizedFixtureStressAxes, number>> }
 > = {
-  membrane: { baseHazardPerS: 0.000001, weights: { membrane: 1.2, ionic: 0.9, energy: 0.5, oxidative: 0.35, cholestatic: 0.55 } },
-  glycolysis: { baseHazardPerS: 0.0000006, weights: { energy: 0.55, oxidative: 0.45, senescence: 0.25 } },
-  mitochondria: { baseHazardPerS: 0.0000012, weights: { oxidative: 1.3, energy: 0.6, senescence: 0.45, detox: 0.35 } },
-  nucleus: { baseHazardPerS: 0.0000006, weights: { genotoxic: 1.4, oxidative: 0.55, senescence: 0.7, energy: 0.25, detox: 0.25 } },
-  er: { baseHazardPerS: 0.0000009, weights: { proteotoxic: 1.2, trafficking: 0.75, energy: 0.45, ionic: 0.35, detox: 1.05, cholestatic: 0.55 } },
-  ribosome: { baseHazardPerS: 0.0000008, weights: { proteotoxic: 1.3, energy: 0.55, oxidative: 0.35 } },
-  golgi: { baseHazardPerS: 0.0000008, weights: { trafficking: 1.4, proteotoxic: 0.55, energy: 0.45, cholestatic: 0.5 } },
-  lysosome: { baseHazardPerS: 0.0000008, weights: { autophagy: 1.4, oxidative: 0.55, energy: 0.35, senescence: 0.3, detox: 0.3 } },
-  peroxisome: { baseHazardPerS: 0.0000008, weights: { oxidative: 1.2, detox: 0.75, autophagy: 0.45, senescence: 0.35 } },
-  cytoskeleton: { baseHazardPerS: 0.0000007, weights: { energy: 0.8, membrane: 0.55, trafficking: 0.75, ionic: 0.45 } }
+  membrane: { baseTransitionIntensity: 0.000001, weights: { membrane: 1.2, ionic: 0.9, energy: 0.5, oxidative: 0.35, cholestatic: 0.55 } },
+  glycolysis: { baseTransitionIntensity: 0.0000006, weights: { energy: 0.55, oxidative: 0.45, senescence: 0.25 } },
+  mitochondria: { baseTransitionIntensity: 0.0000012, weights: { oxidative: 1.3, energy: 0.6, senescence: 0.45, detox: 0.35 } },
+  nucleus: { baseTransitionIntensity: 0.0000006, weights: { genotoxic: 1.4, oxidative: 0.55, senescence: 0.7, energy: 0.25, detox: 0.25 } },
+  er: { baseTransitionIntensity: 0.0000009, weights: { proteotoxic: 1.2, trafficking: 0.75, energy: 0.45, ionic: 0.35, detox: 1.05, cholestatic: 0.55 } },
+  ribosome: { baseTransitionIntensity: 0.0000008, weights: { proteotoxic: 1.3, energy: 0.55, oxidative: 0.35 } },
+  golgi: { baseTransitionIntensity: 0.0000008, weights: { trafficking: 1.4, proteotoxic: 0.55, energy: 0.45, cholestatic: 0.5 } },
+  lysosome: { baseTransitionIntensity: 0.0000008, weights: { autophagy: 1.4, oxidative: 0.55, energy: 0.35, senescence: 0.3, detox: 0.3 } },
+  peroxisome: { baseTransitionIntensity: 0.0000008, weights: { oxidative: 1.2, detox: 0.75, autophagy: 0.45, senescence: 0.35 } },
+  cytoskeleton: { baseTransitionIntensity: 0.0000007, weights: { energy: 0.8, membrane: 0.55, trafficking: 0.75, ionic: 0.45 } }
 };
 
-const TURNOVER: Record<OrganelleId, { halfLifeH: number; purpose: string; avoids: string }> = {
+const TURNOVER: Record<OrganelleId, { relativeRenewalScale: number; purpose: string; avoids: string }> = {
   membrane: {
-    halfLifeH: 48,
+    relativeRenewalScale: 48,
     purpose: "selective exchange, receptor signalling, ion balance",
     avoids: "leakage, receptor desensitisation, ionic collapse"
   },
   glycolysis: {
-    halfLifeH: 24,
+    relativeRenewalScale: 24,
     purpose: "rapid cytosolic ATP and pyruvate production",
     avoids: "substrate exhaustion, acid/ROS burden"
   },
   mitochondria: {
-    halfLifeH: 17 * 24,
+    relativeRenewalScale: 17 * 24,
     purpose: "oxidative ATP production, metabolite buffering, survival signalling",
     avoids: "ROS runaway, membrane-potential collapse"
   },
   nucleus: {
-    halfLifeH: 2000,
+    relativeRenewalScale: 2000,
     purpose: "genome storage, transcription, repair decisions",
     avoids: "DNA damage, transcription noise, senescence locks"
   },
   er: {
-    halfLifeH: 72,
+    relativeRenewalScale: 72,
     purpose: "protein folding, glycosylation, lipid synthesis, Ca storage",
     avoids: "unfolded-protein stress, Ca leak, overloaded cargo"
   },
   ribosome: {
-    halfLifeH: 60,
+    relativeRenewalScale: 60,
     purpose: "decode mRNA into protein with bursty translation",
     avoids: "stalled translation, amino-acid shortage, misfolding"
   },
   golgi: {
-    halfLifeH: 48,
+    relativeRenewalScale: 48,
     purpose: "modify, sort, tag and ship ER cargo",
     avoids: "traffic jams, wrong-address cargo, stack fragmentation"
   },
   lysosome: {
-    halfLifeH: 72,
+    relativeRenewalScale: 72,
     purpose: "acidic degradation, recycling, autophagy completion",
     avoids: "pH loss, hydrolase shortage, undigested buildup"
   },
   peroxisome: {
-    halfLifeH: 36,
+    relativeRenewalScale: 36,
     purpose: "fatty-acid oxidation, H2O2/catalase detox, lipid metabolism",
     avoids: "peroxide accumulation, failed fission/import"
   },
   cytoskeleton: {
-    halfLifeH: 12,
+    relativeRenewalScale: 12,
     purpose: "organelle positioning, vesicle motors, cell shape/cortex tension",
     avoids: "transport failure, collapse, excess rigidity"
   }
 };
 
-function blankStress(): StressAxes {
+// Engineering-only separation between the fast renderer-fixture pool coordinate
+// and its slow lifecycle staging coordinate. This is not a unit conversion or a
+// PHH turnover estimate; changing it has no scientific interpretation.
+const RELATIVE_LIFECYCLE_COORDINATE_PER_FIXTURE_STEP = 0.00025;
+
+function blankStress(): NormalizedFixtureStressAxes {
   return {
     energy: 0,
     oxidative: 0,
@@ -405,31 +419,31 @@ function rhythmGain(shape: CycleShape, phase: number, amp: number): number {
   return 1 + amp * Math.sin(2 * Math.PI * phase); // steady / wave
 }
 
-export class LivingCell {
-  private p: Pools;
-  private external: ExternalPools;
+export class NormalizedCellFixture {
+  private p: NormalizedFixturePools;
+  private external: FixtureExternalPools;
   private org: Record<OrganelleId, OrganelleState>;
-  private act: OrganelleActivity;
-  private flows: CellFlow[] = [];
+  private act: NormalizedFixtureOrganelleActivity;
+  private flows: NormalizedFixtureFlow[] = [];
   private importFlux = 0;
-  private stress: StressAxes = blankStress();
-  private hepatocyte: HepatocyteState = blankHepatocyte();
-  private fidelity: IntracellularFidelity = blankFidelity();
-  private elapsed = 0;
-  // Schematic feeding interval and nutrient level used by the browser fixture.
-  private mealClockH = 0;
-  private nextMealH = 3.5;
+  private stress: NormalizedFixtureStressAxes = blankStress();
+  private hepatocyte: HepatocyteFixtureInternalState = blankHepatocyte();
+  private fidelity: NormalizedFixtureFidelity = blankFidelity();
+  private fixtureStep = 0;
+  // Dimensionless feeding interval and nutrient level used by the browser fixture.
+  private nutritionPhase = 0;
+  private nextNutritionPulse = 3.5;
   private mealSize = 1.0;
   private nutrition = 0.7;
   private glycogenFixture01 = GLYCOGEN_FIXTURE_INITIAL;
   private lowAtp = 0;
-  private prevStatus: CellSnapshot["status"] = "healthy";
+  private prevStatus: NormalizedCellFixtureSnapshot["status"] = "baseline_like";
   private senescent = false;
   private apoptosisCommitted = false;
-  private senescenceRiskPerHour = 0;
-  private apoptosisRiskPerHour = 0;
+  private senescenceTransitionPressure = 0;
+  private failureTransitionPressure = 0;
   private seed = 1357924680;
-  private events: CellEvent[] = [];
+  private events: NormalizedFixtureEvent[] = [];
   private eventId = 0;
 
   perfusion: number;
@@ -447,12 +461,12 @@ export class LivingCell {
       this.org[id] = {
         eff: 1,
         avail: 0.5,
-        tauS: 0.1,
-        riskPerHour: 0,
+        relativeTransportLag: 0.1,
+        relativeFaultPressure: 0,
         faultCause: "baseline maintenance risk",
         faulted: false,
-        ageS: TURNOVER[id].halfLifeH * 3600 * 0.08 * this.rand(),
-        turnoverRiskPerHour: 0,
+        relativeAge: TURNOVER[id].relativeRenewalScale * 0.08 * this.rand(),
+        relativeTurnoverPressure: 0,
         phase: CYCLE[id].offset
       };
     }
@@ -461,13 +475,13 @@ export class LivingCell {
 
   reset(perfusion = this.perfusion) {
     this.perfusion = perfusion;
-    this.elapsed = 0;
+    this.fixtureStep = 0;
     this.lowAtp = 0;
-    this.prevStatus = "healthy";
+    this.prevStatus = "baseline_like";
     this.senescent = false;
     this.apoptosisCommitted = false;
-    this.senescenceRiskPerHour = 0;
-    this.apoptosisRiskPerHour = 0;
+    this.senescenceTransitionPressure = 0;
+    this.failureTransitionPressure = 0;
     this.events = [];
     this.p = this.freshPools();
     this.external = this.freshExternal();
@@ -481,18 +495,18 @@ export class LivingCell {
       this.org[id] = {
         eff: 1,
         avail: 0.5,
-        tauS: 0.1,
-        riskPerHour: 0,
+        relativeTransportLag: 0.1,
+        relativeFaultPressure: 0,
         faultCause: "baseline maintenance risk",
         faulted: false,
-        ageS: TURNOVER[id].halfLifeH * 3600 * 0.08 * this.rand(),
-        turnoverRiskPerHour: 0,
+        relativeAge: TURNOVER[id].relativeRenewalScale * 0.08 * this.rand(),
+        relativeTurnoverPressure: 0,
         phase: CYCLE[id].offset
       };
     }
   }
 
-  private freshPools(): Pools {
+  private freshPools(): NormalizedFixturePools {
     return {
       glucose: 0.3,
       glycogen: 2.5,
@@ -523,21 +537,31 @@ export class LivingCell {
   }
 
   /**
-   * Tell the model how far each organelle sits from the ATP source, so it can
-   * compute the fixture's diffusion-timescale proxy τ = x²/(6 D). Distances are
-   * in caller units; `micronsPerUnit` converts them to microns. This method does
-   * not establish healthy-PHH ATP delivery time.
+   * Preserve only relative near/far ordering for renderer-fixture ATP access.
+   * Caller distances are normalized by the largest supplied distance; no
+   * micron conversion, diffusivity, or biological transport time is assigned.
    */
-  setGeometry(distances: Partial<Record<OrganelleId, number>>, micronsPerUnit: number) {
+  setRelativeGeometry(distances: Partial<Record<OrganelleId, number>>) {
+    const supplied = Object.values(distances);
+    if (
+      supplied.length === 0 ||
+      supplied.some((distance) => !Number.isFinite(distance) || distance < 0)
+    ) {
+      throw new RangeError("relative fixture geometry requires finite non-negative distances");
+    }
+    const maximumDistance = Math.max(...supplied, Number.EPSILON);
     for (const id of ALL_IDS) {
-      const x = distances[id];
-      if (x === undefined) continue;
-      const xUm = Math.max(0.2, x * micronsPerUnit);
-      this.org[id].tauS = Math.max(0.02, (xUm * xUm) / (6 * D_ATP_UM2_PER_S));
+      const distance = distances[id];
+      if (distance === undefined) continue;
+      const relativeDistance = distance / maximumDistance;
+      this.org[id].relativeTransportLag = Math.max(
+        Number.EPSILON,
+        relativeDistance * relativeDistance
+      );
     }
   }
 
-  private freshExternal(): ExternalPools {
+  private freshExternal(): FixtureExternalPools {
     const source = clamp(this.perfusion, 0, 1.2);
     return {
       glucose: 0.85 * source,
@@ -553,7 +577,7 @@ export class LivingCell {
     };
   }
 
-  private stressSignals(): StressAxes {
+  private stressSignals(): NormalizedFixtureStressAxes {
     const energy = clamp((0.48 - this.p.atp) / 0.48 + this.lowAtp / 9, 0, 1);
     const glutathioneLoss = clamp((0.35 - this.p.glutathione) / 0.35, 0, 1);
     const detox = clamp(
@@ -590,61 +614,60 @@ export class LivingCell {
     const trafficking = clamp(0.32 * this.p.foldedProtein + 0.42 * this.p.misroutedCargo + 0.45 * (1 - this.org.golgi.eff) + 0.35 * proteotoxic + 0.25 * (1 - this.org.cytoskeleton.eff) + 0.22 * cholestatic, 0, 1);
     const autophagy = clamp(0.65 * this.p.waste + 0.35 * this.p.misroutedCargo + 0.55 * (1 - this.org.lysosome.eff) + 0.3 * oxidative, 0, 1);
     const caStress = clamp((this.hepatocyte.cytosolicCa - 0.12) / 0.88, 0, 1);
-    const acidStress = clamp((7.12 - this.hepatocyte.cytosolicPh) / 0.5, 0, 1);
+    const acidStress = clamp(this.hepatocyte.relativeCytosolicAcidity, 0, 1);
     const ionic = clamp(0.55 * (1 - this.org.membrane.eff) + 0.35 * (1 - this.org.er.eff) + 0.6 * energy + 0.25 * caStress + 0.25 * acidStress, 0, 1);
-    const maxOrgAge = Math.max(...ALL_IDS.map((id) => this.org[id].ageS / (TURNOVER[id].halfLifeH * 3600)));
+    const maxOrgAge = Math.max(...ALL_IDS.map((id) => this.org[id].relativeAge / TURNOVER[id].relativeRenewalScale));
     const senescence = clamp((this.senescent ? 0.6 : 0) + 0.18 * maxOrgAge + 0.55 * genotoxic + 0.35 * oxidative + 0.18 * detox + 0.12 * cholestatic, 0, 1);
     return { energy, oxidative, detox, cholestatic, proteotoxic, genotoxic, membrane, trafficking, autophagy, ionic, senescence };
   }
 
-  private updateExternal(dt: number, f: ReturnType<LivingCell["fluxes"]>) {
+  private updateExternal(
+    fixtureDelta: number,
+    f: ReturnType<NormalizedCellFixture["fluxes"]>
+  ) {
     const source = clamp(this.perfusion, 0, 1.2);
-    // Stochastic feeding: advance the meal clock; when the (random, capped)
-    // interval elapses the organism eats and the clock resets. Nutrient level
-    // then follows a rise-peak-decline absorption curve (peak ~1.5 h) and decays
-    // toward the fasted floor over the following hours.
-    this.mealClockH += dt * HOURS_PER_SIM_SEC;
-    if (this.mealClockH >= this.nextMealH) {
-      this.mealClockH = 0;
+    // Advance a dimensionless nutrition pulse. The shape is a UI fixture and
+    // does not represent a meal interval, absorption time, or PHH trajectory.
+    this.nutritionPhase += fixtureDelta * NUTRITION_PHASE_PER_FIXTURE_STEP;
+    if (this.nutritionPhase >= this.nextNutritionPulse) {
+      this.nutritionPhase = 0;
       if (this.stochastic) {
-        // Fresh meal: a random SIZE (so the fed peak and its duration vary) and a
-        // random interval to the next one. The interval is exponential (memoryless
-        // eating) resampled into (1.2, 10] h — no artificial pile-up exactly at the
-        // 10 h overnight cap, so fasts are genuinely varied, not "always 10 h".
+        // Randomize the normalized pulse amplitude and interval so the renderer
+        // fixture does not repeat one perfectly periodic nutrition pattern.
         this.mealSize = 0.72 + 0.56 * this.rand();
-        let iv = MEAN_MEAL_INTERVAL_H;
+        let interval = MEAN_NUTRITION_INTERVAL;
         for (let k = 0; k < 6; k += 1) {
-          iv = -MEAN_MEAL_INTERVAL_H * Math.log(Math.max(1e-6, this.rand()));
-          if (iv >= 1.2 && iv <= MAX_FAST_HOURS) break;
+          interval = -MEAN_NUTRITION_INTERVAL * Math.log(Math.max(1e-6, this.rand()));
+          if (interval >= 1.2 && interval <= MAX_NUTRITION_INTERVAL) break;
         }
-        this.nextMealH = clamp(iv, 1.2, MAX_FAST_HOURS);
+        this.nextNutritionPulse = clamp(interval, 1.2, MAX_NUTRITION_INTERVAL);
       } else {
         this.mealSize = 1.0;
-        this.nextMealH = MEAN_MEAL_INTERVAL_H;
+        this.nextNutritionPulse = MEAN_NUTRITION_INTERVAL;
       }
     }
-    const h = this.mealClockH;
+    const phase = this.nutritionPhase;
     // Nutrient level: rise-peak-decline absorption scaled by this meal's size, so
     // a big meal keeps the cell fed longer and a small one only briefly.
     this.nutrition = clamp(
-      this.mealSize * (0.5 + 0.5 * (1 - Math.exp(-h / 0.7))) * Math.exp(-Math.max(0, h - 1.5) / 3.2),
+      this.mealSize * (0.5 + 0.5 * (1 - Math.exp(-phase / 0.7))) * Math.exp(-Math.max(0, phase - 1.5) / 3.2),
       0.06,
       1
     );
     const nutrition = this.nutrition;
     // Renderer-only glycogen fixture advanced on its compressed display clock.
-    const dPhysH = dt * HOURS_PER_SIM_SEC;
+    const nutritionPhaseDelta = fixtureDelta * NUTRITION_PHASE_PER_FIXTURE_STEP;
     // Reciprocal insulin/glucagon switching: synthesis dominates only when clearly
     // fed, mobilisation only when clearly fasting (so the store fills then depletes,
     // rather than sitting near full).
     const fedDrive = clamp((nutrition - 0.4) / 0.4, 0, 1);
     const fastDrive = clamp((0.5 - nutrition) / 0.4, 0, 1);
-    const glySynth = GLYCOGEN_FIXTURE_SYNTH_PER_H * fedDrive * (
+    const glySynth = GLYCOGEN_FIXTURE_SYNTH_PER_PHASE * fedDrive * (
       GLYCOGEN_FIXTURE_MAX - this.glycogenFixture01
     );
-    const glyBreak = GLYCOGEN_FIXTURE_BREAK_PER_H * fastDrive * this.glycogenFixture01;
+    const glyBreak = GLYCOGEN_FIXTURE_BREAK_PER_PHASE * fastDrive * this.glycogenFixture01;
     this.glycogenFixture01 = clamp(
-      this.glycogenFixture01 + (glySynth - glyBreak) * dPhysH,
+      this.glycogenFixture01 + (glySynth - glyBreak) * nutritionPhaseDelta,
       0,
       GLYCOGEN_FIXTURE_MAX
     );
@@ -666,24 +689,24 @@ export class LivingCell {
     // Perfusion replenishes extracellular substrate; transport and respiration
     // consume it. This makes starvation a consequence of the outside world, not
     // a hidden scalar directly feeding the cytosol.
-    this.external.glucose += dt * (0.09 * (target.glucose - this.external.glucose) - 0.18 * f.importGlc);
-    this.external.aminoAcids += dt * (0.07 * (target.aminoAcids - this.external.aminoAcids) - 0.16 * f.importAa);
-    this.external.oxygen += dt * (0.12 * (target.oxygen - this.external.oxygen) - 0.08 * f.mito);
-    this.external.fattyAcids += dt * (0.055 * (target.fattyAcids - this.external.fattyAcids) - 0.1 * f.importFa);
-    this.external.ammonia += dt * (0.04 * (target.ammonia - this.external.ammonia) - 0.08 * f.importAmmonia);
-    this.external.bilirubin += dt * (0.035 * (target.bilirubin - this.external.bilirubin) - 0.06 * f.importBilirubin);
-    this.external.bileAcids += dt * (0.045 * (target.bileAcids - this.external.bileAcids) - 0.04 * f.importBileAcids);
-    this.external.xenobiotic += dt * (0.035 * (target.xenobiotic - this.external.xenobiotic) - 0.07 * f.importXenobiotic);
-    this.external.insulin += dt * 0.14 * (target.insulin - this.external.insulin);
-    this.external.glucagon += dt * 0.14 * (target.glucagon - this.external.glucagon);
+    this.external.glucose += fixtureDelta * (0.09 * (target.glucose - this.external.glucose) - 0.18 * f.importGlc);
+    this.external.aminoAcids += fixtureDelta * (0.07 * (target.aminoAcids - this.external.aminoAcids) - 0.16 * f.importAa);
+    this.external.oxygen += fixtureDelta * (0.12 * (target.oxygen - this.external.oxygen) - 0.08 * f.mito);
+    this.external.fattyAcids += fixtureDelta * (0.055 * (target.fattyAcids - this.external.fattyAcids) - 0.1 * f.importFa);
+    this.external.ammonia += fixtureDelta * (0.04 * (target.ammonia - this.external.ammonia) - 0.08 * f.importAmmonia);
+    this.external.bilirubin += fixtureDelta * (0.035 * (target.bilirubin - this.external.bilirubin) - 0.06 * f.importBilirubin);
+    this.external.bileAcids += fixtureDelta * (0.045 * (target.bileAcids - this.external.bileAcids) - 0.04 * f.importBileAcids);
+    this.external.xenobiotic += fixtureDelta * (0.035 * (target.xenobiotic - this.external.xenobiotic) - 0.07 * f.importXenobiotic);
+    this.external.insulin += fixtureDelta * 0.14 * (target.insulin - this.external.insulin);
+    this.external.glucagon += fixtureDelta * 0.14 * (target.glucagon - this.external.glucagon);
 
     if (this.stochastic && this.perfusion > 0) {
-      if (this.rand() < dt * 0.18 * this.perfusion) this.external.glucose += 0.015 + 0.025 * this.rand();
-      if (this.rand() < dt * 0.12 * this.perfusion) this.external.aminoAcids += 0.01 + 0.02 * this.rand();
-      if (this.rand() < dt * 0.2 * this.perfusion) this.external.oxygen += 0.012 + 0.018 * this.rand();
-      if (this.rand() < dt * 0.07 * this.perfusion) this.external.fattyAcids += 0.008 + 0.015 * this.rand();
-      if (this.rand() < dt * 0.04 * this.perfusion) this.external.bileAcids += 0.004 + 0.012 * this.rand();
-      if (this.rand() < dt * 0.03 * this.perfusion) this.external.xenobiotic += 0.003 + 0.01 * this.rand();
+      if (this.rand() < fixtureDelta * 0.18 * this.perfusion) this.external.glucose += 0.015 + 0.025 * this.rand();
+      if (this.rand() < fixtureDelta * 0.12 * this.perfusion) this.external.aminoAcids += 0.01 + 0.02 * this.rand();
+      if (this.rand() < fixtureDelta * 0.2 * this.perfusion) this.external.oxygen += 0.012 + 0.018 * this.rand();
+      if (this.rand() < fixtureDelta * 0.07 * this.perfusion) this.external.fattyAcids += 0.008 + 0.015 * this.rand();
+      if (this.rand() < fixtureDelta * 0.04 * this.perfusion) this.external.bileAcids += 0.004 + 0.012 * this.rand();
+      if (this.rand() < fixtureDelta * 0.03 * this.perfusion) this.external.xenobiotic += 0.003 + 0.01 * this.rand();
     }
 
     this.external.glucose = clamp(this.external.glucose, 0, 1.2);
@@ -699,7 +722,7 @@ export class LivingCell {
     this.importFlux = f.sinusoidalImport;
   }
 
-  private computeHepatocyteState(f: ReturnType<LivingCell["fluxes"]> | null): HepatocyteState {
+  private computeHepatocyteState(f: ReturnType<NormalizedCellFixture["fluxes"]> | null): HepatocyteFixtureInternalState {
     const hormoneTotal = this.external.insulin + this.external.glucagon + 1e-6;
     const insulin = this.external.insulin / hormoneTotal;
     const glucagon = this.external.glucagon / hormoneTotal;
@@ -708,9 +731,23 @@ export class LivingCell {
     const polarity = f?.polarity ?? clamp(0.42 + 0.22 * this.org.cytoskeleton.eff + 0.16 * this.org.golgi.eff + 0.16 * this.org.membrane.eff - 0.4 * this.stress.cholestatic, 0.08, 1);
     const cytosolicCa = clamp(0.06 + 0.25 * this.stress.ionic + 0.12 * (1 - this.org.er.eff) + 0.08 * (1 - polarity), 0, 1);
     const erCalcium = clamp(0.78 - 0.45 * this.stress.ionic - 0.25 * (1 - this.org.er.eff), 0, 1);
-    const cytosolicPh = clamp(7.22 - 0.22 * this.stress.energy - 0.12 * this.p.lactate - 0.05 * this.stress.cholestatic, 6.65, 7.35);
-    const lysosomePh = clamp(5.0 + 0.7 * (1 - this.org.lysosome.eff) + 0.35 * this.stress.energy, 4.7, 6.6);
-    const membranePotentialMv = -72 + 22 * this.stress.ionic + 16 * this.stress.energy;
+    const relativeCytosolicAcidity = clamp(
+      0.42 * this.stress.energy +
+      0.28 * this.p.lactate +
+      0.18 * this.stress.cholestatic,
+      0,
+      1
+    );
+    const relativeLysosomalAcidification = clamp(
+      this.org.lysosome.eff * (1 - 0.45 * this.stress.energy),
+      0,
+      1
+    );
+    const relativeMembranePolarization = clamp(
+      1 - 0.55 * this.stress.ionic - 0.4 * this.stress.energy,
+      0,
+      1
+    );
     return {
       cellType: "hepatocyte",
       zone: this.hepatocyte.zone,
@@ -726,15 +763,15 @@ export class LivingCell {
       glutathioneReserve: clamp(this.p.glutathione, 0, 1),
       cytosolicCa,
       erCalcium,
-      cytosolicPh,
-      lysosomePh,
-      membranePotentialMv,
+      relativeCytosolicAcidity,
+      relativeLysosomalAcidification,
+      relativeMembranePolarization,
       sinusoidalImport: f?.sinusoidalImport ?? 0,
       canalicularExport: f?.canalicularExport ?? 0
     };
   }
 
-  private computeFidelity(f: ReturnType<LivingCell["fluxes"]> | null): IntracellularFidelity {
+  private computeFidelity(f: ReturnType<NormalizedCellFixture["fluxes"]> | null): NormalizedFixtureFidelity {
     if (!f) return blankFidelity();
     const ratio = (good: number, attempted: number) => clamp(good / Math.max(1e-6, attempted), 0, 1);
     const lossFlux =
@@ -778,7 +815,7 @@ export class LivingCell {
   }
 
   /** Each organelle's own loop: flux magnitudes this instant (effort × efficiency). */
-  private fluxes(p: Pools) {
+  private fluxes(p: NormalizedFixturePools) {
     const stress = this.stressSignals();
     const adp = Math.max(0, ATP_TOTAL - p.atp);
     const mm = (x: number, k: number) => x / (k + x);
@@ -954,11 +991,11 @@ export class LivingCell {
     };
   }
 
-  private computeFlows(f: ReturnType<LivingCell["fluxes"]>): CellFlow[] {
+  private computeFlows(f: ReturnType<NormalizedCellFixture["fluxes"]>): NormalizedFixtureFlow[] {
     const v = (x: number) => Math.max(0, x);
     const signal = v(0.12 * (f.importGlc + f.importAa) + 0.04 * this.org.membrane.eff);
     const waterExchange = v(0.22 * this.org.membrane.eff * (0.45 + 0.55 * this.perfusion));
-    const flows: CellFlow[] = [
+    const flows: NormalizedFixtureFlow[] = [
       {
         id: "outside-water",
         from: "outside",
@@ -966,7 +1003,7 @@ export class LivingCell {
         cargo: "water",
         value: waterExchange,
         mode: "pore",
-        etaS: 0.05,
+        relativeTransitLag: 0.05,
         producedBy: "extracellular water",
         usedBy: "aquaporins / cytosol osmotic equilibration"
       },
@@ -977,7 +1014,7 @@ export class LivingCell {
         cargo: "glucose",
         value: v(f.importGlc),
         mode: "carrier",
-        etaS: 0.2,
+        relativeTransitLag: 0.2,
         producedBy: "extracellular medium",
         usedBy: "carrier transporters"
       },
@@ -988,7 +1025,7 @@ export class LivingCell {
         cargo: "amino acids",
         value: v(f.importAa),
         mode: "carrier",
-        etaS: 0.2,
+        relativeTransitLag: 0.2,
         producedBy: "extracellular medium",
         usedBy: "carrier transporters"
       },
@@ -999,7 +1036,7 @@ export class LivingCell {
         cargo: "fatty acids",
         value: v(f.importFa),
         mode: "carrier",
-        etaS: 0.5,
+        relativeTransitLag: 0.5,
         producedBy: "extracellular medium",
         usedBy: "membrane / ER lipid metabolism"
       },
@@ -1010,7 +1047,7 @@ export class LivingCell {
         cargo: "returning bile acids",
         value: v(f.importBileAcids),
         mode: "carrier",
-        etaS: 0.3,
+        relativeTransitLag: 0.3,
         producedBy: "portal/sinusoidal blood",
         usedBy: "basolateral uptake transporters"
       },
@@ -1021,7 +1058,7 @@ export class LivingCell {
         cargo: "ammonia",
         value: v(f.importAmmonia),
         mode: "carrier",
-        etaS: 1.5,
+        relativeTransitLag: 1.5,
         producedBy: "portal/sinusoidal blood",
         usedBy: "mitochondrial urea-cycle entry"
       },
@@ -1032,7 +1069,7 @@ export class LivingCell {
         cargo: "bilirubin",
         value: v(f.importBilirubin),
         mode: "carrier",
-        etaS: 2,
+        relativeTransitLag: 2,
         producedBy: "albumin-bound bilirubin from blood",
         usedBy: "ER conjugation machinery"
       },
@@ -1043,7 +1080,7 @@ export class LivingCell {
         cargo: "xenobiotic",
         value: v(f.importXenobiotic),
         mode: "diffusion",
-        etaS: 3,
+        relativeTransitLag: 3,
         producedBy: "blood exposure",
         usedBy: "smooth ER / CYP detox"
       },
@@ -1054,7 +1091,7 @@ export class LivingCell {
         cargo: "glucose",
         value: v(f.importGlc),
         mode: "diffusion",
-        etaS: 0.5,
+        relativeTransitLag: 0.5,
         producedBy: "membrane import",
         usedBy: "cytosolic glycolysis"
       },
@@ -1065,7 +1102,7 @@ export class LivingCell {
         cargo: "stored glucose",
         value: v(f.glycogenSynth),
         mode: "diffusion",
-        etaS: 2,
+        relativeTransitLag: 2,
         producedBy: "fed insulin/glucokinase state",
         usedBy: "glycogen granules"
       },
@@ -1076,7 +1113,7 @@ export class LivingCell {
         cargo: "buffered glucose",
         value: v(f.glycogenBreakdown),
         mode: "diffusion",
-        etaS: 2,
+        relativeTransitLag: 2,
         producedBy: "glycogenolysis",
         usedBy: "cytosolic glucose pool"
       },
@@ -1087,7 +1124,7 @@ export class LivingCell {
         cargo: "pyruvate",
         value: v(f.glycolysis),
         mode: "diffusion",
-        etaS: 0.5,
+        relativeTransitLag: 0.5,
         producedBy: "glycolysis",
         usedBy: "mitochondria"
       },
@@ -1098,7 +1135,7 @@ export class LivingCell {
         cargo: "fatty-acid substrate",
         value: v(f.importFa + 0.18 * this.p.lipids),
         mode: "diffusion",
-        etaS: 2,
+        relativeTransitLag: 2,
         producedBy: "membrane import / ER lipids",
         usedBy: "peroxisomal beta-oxidation"
       },
@@ -1109,7 +1146,7 @@ export class LivingCell {
         cargo: "ATP",
         value: v(0.5 * f.glycolysis),
         mode: "diffusion",
-        etaS: 0.3,
+        relativeTransitLag: 0.3,
         producedBy: "glycolysis",
         usedBy: "cytosolic ATP pool"
       },
@@ -1120,7 +1157,7 @@ export class LivingCell {
         cargo: "ATP",
         value: v(0.18 * f.mito),
         mode: "diffusion",
-        etaS: 1,
+        relativeTransitLag: 1,
         producedBy: "mitochondria",
         usedBy: "membrane pumps"
       },
@@ -1131,7 +1168,7 @@ export class LivingCell {
         cargo: "ATP",
         value: v(0.12 * f.mito),
         mode: "diffusion",
-        etaS: 1,
+        relativeTransitLag: 1,
         producedBy: "mitochondria",
         usedBy: "transcription and DNA repair"
       },
@@ -1142,7 +1179,7 @@ export class LivingCell {
         cargo: "ATP",
         value: v(0.18 * f.mito),
         mode: "diffusion",
-        etaS: 1,
+        relativeTransitLag: 1,
         producedBy: "mitochondria",
         usedBy: "translation"
       },
@@ -1153,7 +1190,7 @@ export class LivingCell {
         cargo: "ROS / peroxide load",
         value: v(this.p.ros + 0.15 * f.mito),
         mode: "diffusion",
-        etaS: 2,
+        relativeTransitLag: 2,
         producedBy: "mitochondrial respiration",
         usedBy: "peroxisomal catalase detox"
       },
@@ -1164,7 +1201,7 @@ export class LivingCell {
         cargo: "urea",
         value: v(f.ureaCycle),
         mode: "diffusion",
-        etaS: 4,
+        relativeTransitLag: 4,
         producedBy: "mitochondria + cytosolic urea cycle",
         usedBy: "blood export"
       },
@@ -1175,7 +1212,7 @@ export class LivingCell {
         cargo: "mRNA",
         value: v(f.transcription),
         mode: "pore",
-        etaS: 0.05,
+        relativeTransitLag: 0.05,
         producedBy: "nucleus",
         usedBy: "ribosomes / rough ER"
       },
@@ -1186,7 +1223,7 @@ export class LivingCell {
         cargo: "nascent protein",
         value: v(f.translation),
         mode: "diffusion",
-        etaS: 5,
+        relativeTransitLag: 5,
         producedBy: "ribosomes",
         usedBy: "rough ER folding / glycosylation"
       },
@@ -1197,7 +1234,7 @@ export class LivingCell {
         cargo: "folded protein",
         value: v(f.erFoldingProduct),
         mode: "vesicle",
-        etaS: 900,
+        relativeTransitLag: 900,
         producedBy: "ER quality control",
         usedBy: "Golgi sorting"
       },
@@ -1208,7 +1245,7 @@ export class LivingCell {
         cargo: "misfolded protein / ERAD",
         value: v(f.foldingFailures + f.erRetention),
         mode: "diffusion",
-        etaS: 30,
+        relativeTransitLag: 30,
         producedBy: "failed ER folding / retained cargo",
         usedBy: "proteasome and chaperone quality control"
       },
@@ -1219,7 +1256,7 @@ export class LivingCell {
         cargo: "conjugated bile-acid pool",
         value: v(f.bileExportDelivered),
         mode: "carrier",
-        etaS: 1,
+        relativeTransitLag: 1,
         producedBy: "multi-compartment bile-acid synthesis and conjugation",
         usedBy: "BSEP/ABCB11 at the canalicular membrane"
       },
@@ -1230,7 +1267,7 @@ export class LivingCell {
         cargo: "missed bile-side cargo",
         value: v(f.canalicularMiss),
         mode: "autophagy",
-        etaS: 600,
+        relativeTransitLag: 600,
         producedBy: "failed canalicular targeting",
         usedBy: "endosome / lysosome recovery"
       },
@@ -1241,7 +1278,7 @@ export class LivingCell {
         cargo: "conjugated bilirubin",
         value: v(f.bilirubinConj + 0.35 * f.bileExport),
         mode: "carrier",
-        etaS: 1,
+        relativeTransitLag: 1,
         producedBy: "ER conjugation",
         usedBy: "canalicular MRP-like export"
       },
@@ -1252,7 +1289,7 @@ export class LivingCell {
         cargo: "phase I/II metabolites",
         value: v(f.phase2 + 0.45 * f.cypDetox),
         mode: "carrier",
-        etaS: 2,
+        relativeTransitLag: 2,
         producedBy: "CYP / conjugation detox",
         usedBy: "bile-side excretion"
       },
@@ -1263,7 +1300,7 @@ export class LivingCell {
         cargo: "glutathione reserve",
         value: v(f.phase2 + 0.25 * f.cypDetox),
         mode: "diffusion",
-        etaS: 0.8,
+        relativeTransitLag: 0.8,
         producedBy: "amino-acid metabolism",
         usedBy: "phase II detox / oxidative buffering"
       },
@@ -1274,7 +1311,7 @@ export class LivingCell {
         cargo: "lipids / membrane components",
         value: v(f.erLipid),
         mode: "vesicle",
-        etaS: 1800,
+        relativeTransitLag: 1800,
         producedBy: "smooth ER",
         usedBy: "plasma membrane renewal"
       },
@@ -1285,7 +1322,7 @@ export class LivingCell {
         cargo: "new protein",
         value: v(0.15 * f.translation),
         mode: "vesicle",
-        etaS: 900,
+        relativeTransitLag: 900,
         producedBy: "rough ER ribosomes",
         usedBy: "Golgi sorting"
       },
@@ -1296,7 +1333,7 @@ export class LivingCell {
         cargo: "secretory vesicle / membrane protein",
         value: v(f.golgiDelivered),
         mode: "motor",
-        etaS: 1800,
+        relativeTransitLag: 1800,
         producedBy: "Golgi",
         usedBy: "plasma membrane / secretion"
       },
@@ -1307,7 +1344,7 @@ export class LivingCell {
         cargo: "misrouted cargo",
         value: v(f.golgiMisroute + f.vesicleLost),
         mode: "vesicle",
-        etaS: 900,
+        relativeTransitLag: 900,
         producedBy: "Golgi sorting / motor delivery errors",
         usedBy: "lysosome cleanup"
       },
@@ -1318,7 +1355,7 @@ export class LivingCell {
         cargo: "albumin",
         value: v(f.albuminSynth),
         mode: "vesicle",
-        etaS: 900,
+        relativeTransitLag: 900,
         producedBy: "rough ER / Golgi secretion",
         usedBy: "blood plasma"
       },
@@ -1329,7 +1366,7 @@ export class LivingCell {
         cargo: "hydrolase enzymes",
         value: v(0.18 * f.golgi),
         mode: "vesicle",
-        etaS: 1200,
+        relativeTransitLag: 1200,
         producedBy: "Golgi",
         usedBy: "lysosome"
       },
@@ -1340,7 +1377,7 @@ export class LivingCell {
         cargo: "endocytosed cargo",
         value: v(0.18 * (f.importGlc + f.importAa + f.importFa) + 0.08 * f.lysosome),
         mode: "vesicle",
-        etaS: 600,
+        relativeTransitLag: 600,
         producedBy: "endocytosis",
         usedBy: "late endosome / lysosome"
       },
@@ -1351,7 +1388,7 @@ export class LivingCell {
         cargo: "damaged material",
         value: v(f.lysosome),
         mode: "autophagy",
-        etaS: 600,
+        relativeTransitLag: 600,
         producedBy: "cytosolic turnover",
         usedBy: "lysosome"
       },
@@ -1362,7 +1399,7 @@ export class LivingCell {
         cargo: "recycled amino acids",
         value: v(0.8 * f.lysosome),
         mode: "diffusion",
-        etaS: 2,
+        relativeTransitLag: 2,
         producedBy: "lysosome recycling",
         usedBy: "translation"
       },
@@ -1373,7 +1410,7 @@ export class LivingCell {
         cargo: "motor-track support",
         value: v(f.cytoskeleton),
         mode: "motor",
-        etaS: 30,
+        relativeTransitLag: 30,
         producedBy: "actin / microtubule remodeling",
         usedBy: "vesicle positioning"
       },
@@ -1384,7 +1421,7 @@ export class LivingCell {
         cargo: "signal",
         value: signal,
         mode: "signal",
-        etaS: 60,
+        relativeTransitLag: 60,
         producedBy: "glycoprotein receptors",
         usedBy: "gene expression"
       }
@@ -1392,16 +1429,20 @@ export class LivingCell {
     return flows.filter((flow) => flow.value > 1e-4);
   }
 
-  step(dt = 0.04, iterations = 1) {
+  step(fixtureDelta = 0.04, iterations = 1) {
     for (let it = 0; it < iterations; it += 1) {
-      // 1. ATP transport: each organelle's local availability relaxes toward the
-      //    global pool over its diffusion time τ — ATP takes time to arrive.
+      // Relative ATP access relaxes toward the shared fixture pool. The lag is
+      // dimensionless and preserves only near/far renderer ordering.
       for (const id of ALL_IDS) {
         const o = this.org[id];
-        o.avail += (dt / Math.max(o.tauS, dt)) * (this.p.atp - o.avail);
+        o.avail += (
+          fixtureDelta /
+          Math.max(o.relativeTransportLag, fixtureDelta)
+        ) * (this.p.atp - o.avail);
         o.avail = clamp(o.avail, 0, ATP_TOTAL);
-        // advance this organelle's OWN internal cycle, at its OWN period
-        o.phase = (o.phase + dt / CYCLE[id].periodS) % 1;
+        o.phase = (
+          o.phase + fixtureDelta / CYCLE[id].periodFixtureSteps
+        ) % 1;
       }
 
       const f = this.fluxes(this.p);
@@ -1435,7 +1476,7 @@ export class LivingCell {
           f.maintenance);
 
       const sat = (x: number, k: number) => x / (k + x);
-      const d: Pools = {
+      const d: NormalizedFixturePools = {
         glucose: f.importGlc + f.glycogenBreakdown + f.gluconeogenesis - f.glycolysis - f.glycogenSynth - 0.04 * this.p.glucose,
         glycogen: f.glycogenSynth - f.glycogenBreakdown - 0.006 * this.p.glycogen,
         lactate: 0.18 * f.glycolysis - f.gluconeogenesis - 0.08 * this.p.lactate,
@@ -1477,12 +1518,16 @@ export class LivingCell {
         secreted: f.golgiDelivered + 0.24 * this.p.albumin + 0.2 * this.p.urea + f.bileExportDelivered + 0.16 * this.p.detoxified
       };
 
-      for (const k of Object.keys(d) as (keyof Pools)[]) this.p[k] += dt * d[k];
-      this.updateExternal(dt, f);
+      for (const k of Object.keys(d) as (keyof NormalizedFixturePools)[]) {
+        this.p[k] += fixtureDelta * d[k];
+      }
+      this.updateExternal(fixtureDelta, f);
 
       // Chemical-Langevin noise per flux (vanishes as Ω grows).
       if (this.stochastic) {
-        const w = (flux: number) => Math.sqrt((Math.max(flux, 0) * dt) / this.omega) * this.gauss();
+        const w = (flux: number) => Math.sqrt(
+          (Math.max(flux, 0) * fixtureDelta) / this.omega
+        ) * this.gauss();
         this.p.glucose += w(f.importGlc) - w(f.glycolysis);
         this.p.glycogen += w(f.glycogenSynth) - w(f.glycogenBreakdown);
         this.p.lactate += 0.2 * w(f.glycolysis) - w(f.gluconeogenesis);
@@ -1512,8 +1557,8 @@ export class LivingCell {
       this.fidelity = this.computeFidelity(f);
 
       // 2. Imperfection: stress-driven probabilistic faults + repair.
-      this.updateHealth(dt, f);
-      this.updateLifecycle(dt, f);
+      this.updateHealth(fixtureDelta, f);
+      this.updateLifecycle(fixtureDelta, f);
 
       // record activity for visuals
       this.act = {
@@ -1531,13 +1576,20 @@ export class LivingCell {
       this.flows = this.computeFlows(f);
 
       const charge = this.p.atp / ATP_TOTAL;
-      this.lowAtp = clamp(this.lowAtp + (charge < 0.25 ? dt : -2 * dt), 0, 9);
-      this.elapsed += dt;
+      this.lowAtp = clamp(
+        this.lowAtp + (charge < 0.25 ? fixtureDelta : -2 * fixtureDelta),
+        0,
+        9
+      );
+      this.fixtureStep += fixtureDelta;
       this.trackStatus();
     }
   }
 
-  private updateHealth(dt: number, f: ReturnType<LivingCell["fluxes"]>) {
+  private updateHealth(
+    fixtureDelta: number,
+    f: ReturnType<NormalizedCellFixture["fluxes"]>
+  ) {
     const activityOf: Record<OrganelleId, number> = {
       membrane: f.sinusoidalImport + f.bileExport + f.naKPump,
       glycolysis: f.glycolysis + f.glycogenSynth + f.glycogenBreakdown + f.gluconeogenesis,
@@ -1565,45 +1617,58 @@ export class LivingCell {
       weightedStress = clamp(0.75 * weightedStress + 0.25 * localEnergyShortage, 0, 1);
       const load = Math.min(2, activityOf[id] / (0.15 + activityOf[id]));
       const stressGate = clamp((weightedStress - 0.22) / 0.78, 0, 1);
-      const hazard = rule.baseHazardPerS + 0.004 * stressGate ** 3 + 0.00035 * load * stressGate * stressGate;
+      const hazard = rule.baseTransitionIntensity + 0.004 * stressGate ** 3 + 0.00035 * load * stressGate * stressGate;
       const dominant = this.dominantCause(rule.weights);
-      o.riskPerHour = 100 * (1 - Math.exp(-hazard * 3600));
+      o.relativeFaultPressure = 1 - Math.exp(-hazard);
       o.faultCause = dominant;
 
-      if (!o.faulted && this.stochastic && this.rand() < hazard * dt) {
+      if (!o.faulted && this.stochastic && this.rand() < hazard * fixtureDelta) {
         const drop = 0.72 + 0.18 * this.rand() - 0.22 * weightedStress;
         o.eff = clamp(o.eff * drop, 0.05, 1);
         if (o.eff < 0.68 || weightedStress > 0.7) {
           o.faulted = true;
-          this.emit("warn", `${NAMES[id]} faulted — ${dominant} (risk ${o.riskPerHour.toFixed(1)}%/h, efficiency ${(o.eff * 100) | 0}%)`);
+          this.emit(
+            "warn",
+            `${NAMES[id]} fault-like fixture transition - ${dominant}`
+          );
         }
       }
       // Repair and quality control: pulled back toward function, faster when ATP
       // is available and slower under unresolved stress.
       const repairRate = (0.018 + 0.07 * o.avail) * (1 - 0.55 * weightedStress);
-      o.eff += dt * Math.max(0.004, repairRate) * (1 - o.eff);
+      o.eff += fixtureDelta * Math.max(0.004, repairRate) * (1 - o.eff);
       o.eff = clamp(o.eff, 0.05, 1);
       if (o.faulted && o.eff > 0.88 && weightedStress < 0.55) {
         o.faulted = false;
-        this.emit("info", `${NAMES[id]} repaired — back to ${(o.eff * 100) | 0}% (${activityOf[id] > 0.01 ? "working" : "idle"})`);
+        this.emit(
+          "info",
+          `${NAMES[id]} recovery-like fixture transition (${o.eff.toFixed(2)} relative capacity)`
+        );
       }
     }
   }
 
-  private updateLifecycle(dt: number, f: ReturnType<LivingCell["fluxes"]>) {
+  private updateLifecycle(
+    fixtureDelta: number,
+    f: ReturnType<NormalizedCellFixture["fluxes"]>
+  ) {
     const stressLoad = Math.max(...STRESS_IDS.map((axis) => this.stress[axis]));
     const energyGate = clamp(0.25 + 0.75 * this.p.atp, 0.25, 1);
     for (const id of ALL_IDS) {
       const o = this.org[id];
-      o.ageS += dt;
+      o.relativeAge +=
+        fixtureDelta * RELATIVE_LIFECYCLE_COORDINATE_PER_FIXTURE_STEP;
       const turnover = TURNOVER[id];
-      const base = Math.LN2 / (turnover.halfLifeH * 3600);
-      const ageFactor = clamp(o.ageS / (turnover.halfLifeH * 3600), 0, 3);
+      const base =
+        RELATIVE_LIFECYCLE_COORDINATE_PER_FIXTURE_STEP *
+        Math.LN2 /
+        turnover.relativeRenewalScale;
+      const ageFactor = clamp(o.relativeAge / turnover.relativeRenewalScale, 0, 3);
       const stressFactor = 1 + 10 * this.organelleStress(id) + 1.6 * ageFactor;
       const hazard = base * stressFactor * (id === "nucleus" ? 0.25 : 1);
-      o.turnoverRiskPerHour = 100 * (1 - Math.exp(-hazard * 3600));
+      o.relativeTurnoverPressure = 1 - Math.exp(-hazard);
 
-      if (this.stochastic && this.rand() < hazard * dt * energyGate) {
+      if (this.stochastic && this.rand() < hazard * fixtureDelta * energyGate) {
         this.renewOrganelle(id, f);
       }
     }
@@ -1611,16 +1676,16 @@ export class LivingCell {
     const chronicDamage = clamp(0.45 * this.stress.genotoxic + 0.35 * this.stress.oxidative + 0.3 * this.stress.senescence + 0.18 * this.stress.detox + 0.12 * this.stress.cholestatic, 0, 1);
     const senescenceHazard = (this.senescent ? 0 : 0.00000008) + 0.00012 * chronicDamage ** 3;
     const apoptosisHazard = (this.apoptosisCommitted ? 0.002 : 0) + 0.00018 * clamp(this.stress.energy + this.stress.genotoxic + this.stress.oxidative + 0.35 * this.stress.cholestatic - 1.35, 0, 1) ** 2;
-    this.senescenceRiskPerHour = 100 * (1 - Math.exp(-senescenceHazard * 3600));
-    this.apoptosisRiskPerHour = 100 * (1 - Math.exp(-apoptosisHazard * 3600));
+    this.senescenceTransitionPressure = 1 - Math.exp(-senescenceHazard);
+    this.failureTransitionPressure = 1 - Math.exp(-apoptosisHazard);
 
-    if (!this.senescent && this.stochastic && this.rand() < senescenceHazard * dt) {
+    if (!this.senescent && this.stochastic && this.rand() < senescenceHazard * fixtureDelta) {
       this.senescent = true;
-      this.emit("warn", `Cell entered senescence — chronic DNA/ROS/proteostasis pressure (risk ${this.senescenceRiskPerHour.toFixed(2)}%/h)`);
+      this.emit("warn", "Fixture entered a senescence-like stress state");
     }
-    if (!this.apoptosisCommitted && this.stochastic && this.rand() < apoptosisHazard * dt) {
+    if (!this.apoptosisCommitted && this.stochastic && this.rand() < apoptosisHazard * fixtureDelta) {
       this.apoptosisCommitted = true;
-      this.emit("crit", "Apoptosis program committed — damage/energy stress crossed the survival threshold");
+      this.emit("crit", "Fixture entered a failure-like committed state");
     }
   }
 
@@ -1636,30 +1701,35 @@ export class LivingCell {
     return clamp(weightSum > 0 ? weightedStress / weightSum : 0, 0, 1);
   }
 
-  private renewOrganelle(id: OrganelleId, f: ReturnType<LivingCell["fluxes"]>) {
+  private renewOrganelle(id: OrganelleId, f: ReturnType<NormalizedCellFixture["fluxes"]>) {
     const o = this.org[id];
-    o.ageS = 0;
+    o.relativeAge = 0;
     o.eff = clamp(o.eff + 0.08 + 0.16 * this.rand(), 0.05, 1);
     this.p.atp = clamp(this.p.atp - 0.015, 0, ATP_TOTAL);
     if (id === "mitochondria") {
       this.p.waste += 0.025;
       this.p.ros = Math.max(0, this.p.ros - 0.035);
-      this.emit("info", "Mitophagy/biogenesis turnover — damaged mitochondria replaced");
+        this.emit("info", "Mitochondrial turnover-like fixture transition");
     } else if (id === "lysosome") {
       this.p.waste = Math.max(0, this.p.waste - 0.05);
-      this.emit("info", "Lysosome renewal — hydrolase capacity refreshed");
+        this.emit("info", "Lysosome renewal-like fixture transition");
     } else if (id === "peroxisome") {
       this.p.ros = Math.max(0, this.p.ros - 0.05);
-      this.emit("info", "Peroxisome fission/import turnover — peroxide detox capacity refreshed");
+        this.emit("info", "Peroxisome turnover-like fixture transition");
     } else if (id === "cytoskeleton") {
-      this.emit("info", `Cytoskeleton remodelled — motor traffic adjusted (${f.cytoskeleton.toFixed(2)} support)`);
+        this.emit(
+          "info",
+          `Cytoskeleton-remodeling-like fixture transition (${f.cytoskeleton.toFixed(2)} relative support)`
+        );
     } else if (id !== "nucleus") {
-      this.emit("info", `${NAMES[id]} renewed — turnover replaced aged components`);
+      this.emit("info", `${NAMES[id]} renewal-like fixture transition`);
     }
   }
 
-  private dominantCause(weights: Partial<Record<keyof StressAxes, number>>): string {
-    let best: keyof StressAxes = "energy";
+  private dominantCause(
+    weights: Partial<Record<keyof NormalizedFixtureStressAxes, number>>
+  ): string {
+    let best: keyof NormalizedFixtureStressAxes = "energy";
     let score = -Infinity;
     for (const axis of STRESS_IDS) {
       const s = this.stress[axis] * (weights[axis] ?? 0);
@@ -1674,64 +1744,78 @@ export class LivingCell {
   private trackStatus() {
     const charge = this.p.atp / ATP_TOTAL;
     const stressLoad = Math.max(...STRESS_IDS.map((axis) => this.stress[axis]));
-    const status: CellSnapshot["status"] =
+    const status: NormalizedCellFixtureSnapshot["status"] =
       this.apoptosisCommitted || this.lowAtp > 6 || (charge < 0.18 && stressLoad > 0.7)
-        ? "dying"
+        ? "failure_like"
         : this.senescent
-          ? "senescent"
+          ? "senescence_like"
           : charge < 0.4 || stressLoad > 0.68
-            ? "stressed"
-            : "healthy";
+            ? "stress_like"
+            : "baseline_like";
     if (status !== this.prevStatus) {
-      if (status === "dying") this.emit("crit", "Cell is dying — ATP has collapsed");
-      else if (status === "senescent") this.emit("warn", "Cell is senescent — stable arrest / survival mode");
-      else if (status === "stressed") this.emit("warn", "Cell under energy stress");
-      else this.emit("info", "Cell back to healthy homeostasis");
+      if (status === "failure_like") {
+        this.emit("crit", "Fixture entered a failure-like energy state");
+      } else if (status === "senescence_like") {
+        this.emit("warn", "Fixture entered a senescence-like persistent state");
+      } else if (status === "stress_like") {
+        this.emit("warn", "Fixture entered an energy-stress-like state");
+      } else {
+        this.emit("info", "Fixture returned to its baseline-like state");
+      }
       this.prevStatus = status;
     }
   }
 
-  private emit(severity: CellEvent["severity"], text: string) {
-    this.events.push({ id: ++this.eventId, t: this.elapsed, severity, text });
+  private emit(severity: NormalizedFixtureEvent["severity"], text: string) {
+    this.events.push({
+      id: ++this.eventId,
+      fixtureStep: this.fixtureStep,
+      severity,
+      text
+    });
     if (this.events.length > 200) this.events.splice(0, this.events.length - 200);
   }
 
-  snapshot(): CellSnapshot {
+  snapshot(): NormalizedCellFixtureSnapshot {
     const charge = this.p.atp / ATP_TOTAL;
     const stressLoad = Math.max(...STRESS_IDS.map((axis) => this.stress[axis]));
-    const status: CellSnapshot["status"] =
+    const status: NormalizedCellFixtureSnapshot["status"] =
       this.apoptosisCommitted || this.lowAtp > 6 || (charge < 0.18 && stressLoad > 0.7)
-        ? "dying"
+        ? "failure_like"
         : this.senescent
-          ? "senescent"
+          ? "senescence_like"
           : charge < 0.4 || stressLoad > 0.68
-            ? "stressed"
-            : "healthy";
-    const organelles: OrganelleReport[] = ALL_IDS.map((id) => ({
+            ? "stress_like"
+            : "baseline_like";
+    const organelles: NormalizedFixtureOrganelleReport[] = ALL_IDS.map((id) => ({
       id,
       activity: this.act[id],
       efficiency: this.org[id].eff,
       atpAvailability: this.org[id].avail,
-      transportMs: this.org[id].tauS * 1000,
-      riskPerHour: this.org[id].riskPerHour,
+      relativeTransportLag: this.org[id].relativeTransportLag,
       faultCause: this.org[id].faultCause,
       faulted: this.org[id].faulted,
-      ageH: this.org[id].ageS / 3600,
-      turnoverHalfLifeH: TURNOVER[id].halfLifeH,
-      turnoverRiskPerHour: this.org[id].turnoverRiskPerHour,
+      relativeAge: this.org[id].relativeAge,
+      relativeTurnoverScale: TURNOVER[id].relativeRenewalScale,
       purpose: TURNOVER[id].purpose,
       avoids: TURNOVER[id].avoids,
       phase: this.org[id].phase,
-      periodS: CYCLE[id].periodS
+      relativeCyclePeriod: CYCLE[id].periodFixtureSteps
     }));
-    const survivalRisk = Math.max(this.apoptosisRiskPerHour, this.senescenceRiskPerHour * 0.2);
     return {
       pools: { ...this.p },
-      external: { ...this.external },
       adp: Math.max(0, ATP_TOTAL - this.p.atp),
       importFlux: this.importFlux,
       stress: { ...this.stress },
-      hepatocyte: { ...this.hepatocyte },
+      hepatocyte: {
+        fixtureRole: "hepatocyte_topology",
+        zoneTopology: "midlobular_proxy",
+        relativeBileExport: this.hepatocyte.bileExport,
+        relativeRedoxReserve: this.hepatocyte.glutathioneReserve,
+        relativePolarity: this.hepatocyte.polarity,
+        relativeSinusoidalImport: this.hepatocyte.sinusoidalImport,
+        relativeCanalicularExport: this.hepatocyte.canalicularExport
+      },
       fidelity: {
         ...this.fidelity,
         loss: { ...this.fidelity.loss }
@@ -1742,22 +1826,20 @@ export class LivingCell {
       events: this.events.slice(-60),
       energyCharge: charge,
       status,
-      cellAgeH: this.elapsed / 3600,
-      senescenceRiskPerHour: this.senescenceRiskPerHour,
-      apoptosisRiskPerHour: this.apoptosisRiskPerHour,
-      projectedMedianSurvivalH: survivalRisk > 0.001 ? (100 * Math.LN2) / survivalRisk : Infinity,
-      elapsedS: this.elapsed,
+      fixtureStep: this.fixtureStep,
       nutrition: this.nutrition,
-      hoursSinceMeal: this.mealClockH,
+      relativeNutritionPhase: clamp(
+        this.nutritionPhase / MAX_NUTRITION_INTERVAL,
+        0,
+        1
+      ),
       fedState: this.nutrition > 0.6 ? "fed" : this.nutrition > 0.3 ? "postabsorptive" : "fasting",
       glycogenStore01: clamp(
         (this.glycogenFixture01 - 0.35) / 0.55,
         0.03,
         1
       ),
-      glucoseIn: this.p.glucose,
-      atp: this.p.atp,
-      protein: this.p.foldedProtein
+      atp: this.p.atp
     };
   }
 
@@ -1814,7 +1896,7 @@ const NAMES: Record<OrganelleId, string> = {
   cytoskeleton: "Cytoskeleton"
 };
 
-function blankHepatocyte(): HepatocyteState {
+function blankHepatocyte(): HepatocyteFixtureInternalState {
   return {
     cellType: "hepatocyte",
     zone: "midlobular",
@@ -1830,15 +1912,15 @@ function blankHepatocyte(): HepatocyteState {
     glutathioneReserve: 0.82,
     cytosolicCa: 0.08,
     erCalcium: 0.75,
-    cytosolicPh: 7.2,
-    lysosomePh: 5.0,
-    membranePotentialMv: -70,
+    relativeCytosolicAcidity: 0.08,
+    relativeLysosomalAcidification: 0.92,
+    relativeMembranePolarization: 0.9,
     sinusoidalImport: 0,
     canalicularExport: 0
   };
 }
 
-function blankFidelity(): IntracellularFidelity {
+function blankFidelity(): NormalizedFixtureFidelity {
   return {
     transcriptionAccuracy: 1,
     translationAccuracy: 1,
@@ -1861,7 +1943,7 @@ function blankFidelity(): IntracellularFidelity {
   };
 }
 
-function blankActivity(): OrganelleActivity {
+function blankActivity(): NormalizedFixtureOrganelleActivity {
   return {
     membrane: 0,
     glycolysis: 0,

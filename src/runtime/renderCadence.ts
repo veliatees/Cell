@@ -17,6 +17,7 @@ export type BrowserRuntimePolicy = {
   scientific_authority: false;
   biological_parameter_activation: false;
   local_fixture: {
+    public_contract_version: "dimensionless_browser_cell_fixture_v2";
     runtime_role: "normalized_schematic_fallback_only";
     execute_when_python_snapshot_loading: false;
     execute_when_python_snapshot_loaded: false;
@@ -30,6 +31,11 @@ export type BrowserRuntimePolicy = {
     biological_rate_authority: false;
     display_biological_time_units: false;
     display_biological_rate_units: false;
+    unit_bearing_public_fields_allowed: false;
+    projected_survival_output_enabled: false;
+    absolute_distance_transport_conversion_enabled: false;
+    biological_fate_output_enabled: false;
+    public_unit_bearing_field_count: 0;
   };
   suspension: {
     when_document_hidden: true;
@@ -39,9 +45,9 @@ export type BrowserRuntimePolicy = {
   };
   clock: {
     maximum_visible_frame_delta_ms: number;
-    visual_cell_seconds_per_real_second: number;
-    maximum_visual_cell_substep_s: number;
-    minimum_visual_cell_substeps: number;
+    fixture_steps_per_render_second: number;
+    maximum_fixture_substep: number;
+    minimum_fixture_substeps: number;
   };
   quality: {
     measurement_window_ms: number;
@@ -139,31 +145,31 @@ export function accumulateCadencedStep(
   };
 }
 
-export type VisualSimulationStepPlan = {
-  totalSimulationS: number;
-  stepS: number;
+export type BrowserFixtureStepPlan = {
+  totalFixtureSteps: number;
+  fixtureStepDelta: number;
   iterations: number;
 };
 
-export function visualSimulationStepPlan(
-  realDeltaS: number
-): VisualSimulationStepPlan {
-  if (!Number.isFinite(realDeltaS) || realDeltaS < 0) {
+export function browserFixtureStepPlan(
+  renderDeltaS: number
+): BrowserFixtureStepPlan {
+  if (!Number.isFinite(renderDeltaS) || renderDeltaS < 0) {
     throw new RangeError("visible render delta must be finite and non-negative");
   }
   const clock = BROWSER_RUNTIME_POLICY.clock;
-  const totalSimulationS =
-    realDeltaS * clock.visual_cell_seconds_per_real_second;
-  if (totalSimulationS === 0) {
-    return { totalSimulationS: 0, stepS: 0, iterations: 0 };
+  const totalFixtureSteps =
+    renderDeltaS * clock.fixture_steps_per_render_second;
+  if (totalFixtureSteps === 0) {
+    return { totalFixtureSteps: 0, fixtureStepDelta: 0, iterations: 0 };
   }
   const iterations = Math.max(
-    clock.minimum_visual_cell_substeps,
-    Math.ceil(totalSimulationS / clock.maximum_visual_cell_substep_s)
+    clock.minimum_fixture_substeps,
+    Math.ceil(totalFixtureSteps / clock.maximum_fixture_substep)
   );
   return {
-    totalSimulationS,
-    stepS: totalSimulationS / iterations,
+    totalFixtureSteps,
+    fixtureStepDelta: totalFixtureSteps / iterations,
     iterations
   };
 }

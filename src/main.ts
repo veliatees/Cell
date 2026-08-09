@@ -64,7 +64,13 @@ import {
   type ReactionSnapshot,
   type ReactionSystem
 } from "./physics/reactions";
-import { LivingCell, type OrganelleActivity, type OrganelleId, type CellFlow, type CellSnapshot } from "./physics/cell";
+import {
+  NormalizedCellFixture,
+  type NormalizedCellFixtureSnapshot,
+  type NormalizedFixtureFlow,
+  type NormalizedFixtureOrganelleActivity,
+  type OrganelleId
+} from "./physics/cell";
 import {
   applyVolumePreservingAffineContactShape,
   createHepatocyteMembraneSim,
@@ -141,6 +147,7 @@ import { perspectiveFrameScale } from "./visualFraming";
 import {
   BROWSER_RUNTIME_POLICY,
   accumulateCadencedStep,
+  browserFixtureStepPlan,
   evaluateRenderWorkloadWindow,
   fluidStepIntervalS,
   numericalGridRefreshIntervalS,
@@ -148,7 +155,6 @@ import {
   renderLongFrameThresholdMs,
   renderQualityOrder,
   renderSuspensionReason,
-  visualSimulationStepPlan,
   type RenderQualityTier
 } from "./runtime/renderCadence";
 import {
@@ -842,7 +848,7 @@ let instancedFlowTargets: InstancedFlowTarget[] = [];
 // render loop — so no inclusion regex is needed here.)
 // Frozen normalized fallback state while a Python snapshot is loading/present;
 // it advances only after snapshot loading has definitively failed.
-let livingCell: LivingCell | null = null;
+let browserCellFixture: NormalizedCellFixture | null = null;
 const organelleMitos: THREE.Mesh[] = []; // mitochondria meshes (glow with ATP production)
 let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by cell status)
 // Whole-cell membrane geometry. This is an Eulerian micrometre-scale surface,
@@ -1089,7 +1095,7 @@ type ResolvedCellVisual = {
   cytoplasmMat: THREE.MeshStandardMaterial;
   nucleusMats: THREE.MeshStandardMaterial[];
   particleMats: THREE.MeshStandardMaterial[];
-  living: LivingCell | null;   // browser-fallback daughters only
+  localFixture: NormalizedCellFixture | null; // browser-fallback daughters only
   mitoActivity: number;        // normalized renderer channel, or -1 when absent
   energyCharge: number;        // normalized renderer channel, or -1 when absent
   status: string;              // renderer-fixture state; empty for engine daughters
@@ -1100,11 +1106,11 @@ type ResolvedDivisionVisual = {
 };
 let resolvedDivisionVisual: ResolvedDivisionVisual | null = null;
 // Each organelle pulses with its OWN activity (its own loop in the cell model).
-type GlowGroup = { kind: keyof OrganelleActivity; mats: THREE.MeshStandardMaterial[]; base: number; gain: number };
+type GlowGroup = { kind: keyof NormalizedFixtureOrganelleActivity; mats: THREE.MeshStandardMaterial[]; base: number; gain: number };
 let organelleGlow: GlowGroup[] = [];
 // Instanced-population materials whose emissive follows the normalized
 // exploratory activity fixture. This is display state, not an assay readout.
-let popGlowMats: { mat: THREE.MeshStandardMaterial; kind: keyof OrganelleActivity }[] = [];
+let popGlowMats: { mat: THREE.MeshStandardMaterial; kind: keyof NormalizedFixtureOrganelleActivity }[] = [];
 let ribosomeMat: THREE.PointsMaterial | null = null; // ribosomes brighten with translation
 type FlowPacket = {
   curve: THREE.CatmullRomCurve3;
@@ -1128,7 +1134,7 @@ type FlowVisual = {
   packets: FlowPacket[];
   routeIndex: number;
   lineCycle: number;
-  mode: CellFlow["mode"];
+  mode: NormalizedFixtureFlow["mode"];
 };
 const flowVisuals: FlowVisual[] = [];
 let organelleAnchors: Record<string, THREE.Vector3> = {};
@@ -1277,8 +1283,8 @@ let mode: Mode = "ions";
 let organelleFrameCount = 0;
 const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fit view
 const CELL_R = HEPATOCYTE_RENDER_RADIUS_WORLD;
-const CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND =
-  BROWSER_RUNTIME_POLICY.clock.visual_cell_seconds_per_real_second;
+const CELL_FIXTURE_STEPS_PER_RENDER_SECOND =
+  BROWSER_RUNTIME_POLICY.clock.fixture_steps_per_render_second;
 const MEMBRANE_SCALE = 1.6; // membrane positions are in σ (~1 nm); scale for display
 let running = true;
 let showClouds = true;
@@ -1884,13 +1890,15 @@ function createResolvedDivisionVisual(cells: VisualCellInstance[], outcome: Divi
 
     // Engine daughters must never acquire synthetic health or ATP trajectories.
     // Only an explicit snapshot-unavailable browser demo owns a local fixture.
-    const living = engineBacked ? null : new LivingCell(undefined, 0.85, true);
+    const localFixture = engineBacked
+      ? null
+      : new NormalizedCellFixture(undefined, 0.85, true);
 
     group.add(cellGroup);
     visuals.push({
       state, group: cellGroup, start, target, membraneMat, cytoplasmMat, nucleusMats,
       particleMats: mitoMats,
-      living,
+      localFixture,
       mitoActivity: engineBacked ? -1 : 0.3,
       energyCharge: engineBacked ? -1 : 0.85,
       status: engineBacked ? "" : "baseline-like"
@@ -1918,9 +1926,9 @@ function updateResolvedDivisionVisual(rendererDeltaS: number, rendererElapsedS: 
     // Engine-backed daughters remain neutral unless the engine supplies a
     // daughter-resolved activity channel. Local normalized trajectories run
     // only in the snapshot-unavailable fallback demo.
-    if (visual.living && localExecution.shouldAdvance) {
-      visual.living.step(rendererDeltaS * 0.5, 1);
-      const snap = visual.living.snapshot();
+    if (visual.localFixture && localExecution.shouldAdvance) {
+      visual.localFixture.step(rendererDeltaS * 0.5, 1);
+      const snap = visual.localFixture.snapshot();
       visual.mitoActivity = Math.min(1, snap.activity.mitochondria / 0.95);
       visual.energyCharge = snap.energyCharge;
       visual.status = browserLocalFixtureStatusView(
@@ -3049,11 +3057,11 @@ const FLOW_REF: Record<string, number> = {
   "receptor-nucleus": 0.18
 };
 
-function flowIntensity(flow: CellFlow): number {
+function flowIntensity(flow: NormalizedFixtureFlow): number {
   return clamp(flow.value / (FLOW_REF[flow.id] ?? 0.5), 0, 1);
 }
 
-const FLOW_DEFS: Record<string, { from: string; to: string; color: string; mode: CellFlow["mode"] }> = {
+const FLOW_DEFS: Record<string, { from: string; to: string; color: string; mode: NormalizedFixtureFlow["mode"] }> = {
   "outside-water": { from: "outside", to: "aquaporin", color: "#b8fff3", mode: "pore" },
   "outside-glucose": { from: "outside", to: "carrier", color: "#7ee0a8", mode: "carrier" },
   "outside-amino": { from: "outside", to: "carrier", color: "#b693ff", mode: "carrier" },
@@ -3094,7 +3102,7 @@ const FLOW_DEFS: Record<string, { from: string; to: string; color: string; mode:
 
 // Pure animation cadence. These values are cycles per display second and cannot
 // be interpreted as micrometres/second, run lengths, dwell times, or PHH rates.
-const FLOW_DISPLAY_CYCLES_PER_SECOND: Record<CellFlow["mode"], number> = {
+const FLOW_DISPLAY_CYCLES_PER_SECOND: Record<NormalizedFixtureFlow["mode"], number> = {
   carrier: 0.3,
   pore: 0.45,
   diffusion: 0.22,
@@ -3119,7 +3127,7 @@ function buildFlowCurve(
   id: string,
   routeIndex: number,
   cycle: number,
-  mode: CellFlow["mode"]
+  mode: NormalizedFixtureFlow["mode"]
 ) {
   const trackBound = mode === "vesicle" || mode === "motor" || mode === "autophagy";
   const geometryCycle = trackBound ? 0 : cycle;
@@ -3165,7 +3173,7 @@ function updateFlowLineGeometry(visual: FlowVisual) {
   visual.line.geometry = new THREE.BufferGeometry().setFromPoints(visual.curve.getPoints(46));
 }
 
-function flowPacketCount(mode: CellFlow["mode"]) {
+function flowPacketCount(mode: NormalizedFixtureFlow["mode"]) {
   // Passive aqueous motion is shown only by the projected cytosol field. Drawing
   // a second set of route-following "diffusion" spheres would mix mechanisms.
   if (mode === "diffusion") return 0;
@@ -3174,7 +3182,7 @@ function flowPacketCount(mode: CellFlow["mode"]) {
   return 4;
 }
 
-function packetWander(mode: CellFlow["mode"]) {
+function packetWander(mode: NormalizedFixtureFlow["mode"]) {
   if (mode === "carrier" || mode === "pore") return 0.16;
   if (mode === "signal") return 0.35;
   return 0.32;
@@ -3260,7 +3268,7 @@ function buildCellFlowVisuals(parent: THREE.Group) {
 }
 
 function updateFlowVisuals(
-  s: CellSnapshot,
+  s: NormalizedCellFixtureSnapshot,
   rendererElapsedS: number,
   localFixtureAdvancing: boolean
 ) {
@@ -4036,7 +4044,7 @@ function updateIntracellularFluid(realDeltaS: number, refreshMovingBoundaries: b
 
 // Feeding/fasting context badge and explicitly schematic fallback animation.
 let lastNutritionBadgeMs = 0;
-function updateNutritionVisual(s: CellSnapshot) {
+function updateNutritionVisual(s: NormalizedCellFixtureSnapshot) {
   const engineNutrition = externalEngineSummary?.nutritionalContext;
   const localFallback = pythonSnapshotAvailability === "missing";
   // Whole-liver glycogen observations do not identify one hepatocyte's granule
@@ -4426,7 +4434,7 @@ function updateDivisionOverlay(mechanics: DivisionMechanicsState) {
   }
 }
 
-function updateReportPanel(s: CellSnapshot) {
+function updateReportPanel(s: NormalizedCellFixtureSnapshot) {
   const now = performance.now();
   if (now - lastReportPanelUpdateMs < 250) return;
   lastReportPanelUpdateMs = now;
@@ -5841,7 +5849,7 @@ function clearWaterVisuals() {
   anatomyLodTargets.length = 0;
   activeVisualAnatomyLod = null;
   organelleJiggleTargets = null;
-  livingCell = null;
+  browserCellFixture = null;
   reportPanel.style.display = "none";
 
   for (const m of [membraneHeadMesh, membraneTailMesh, membraneSoluteMesh]) {
@@ -7635,16 +7643,16 @@ function buildOrganelleScene() {
   if (logReset) logReset.innerHTML = "";
   // Kept ready only for a definitive snapshot-unavailable fallback. The object
   // remains frozen during normal canonical snapshot operation.
-  livingCell = new LivingCell(undefined, 0.85, true);
+  browserCellFixture = new NormalizedCellFixture(undefined, 0.85, true);
   // Collect meshes per organelle kind so each can pulse with its own activity.
   const glowBuckets: Record<string, THREE.MeshStandardMaterial[]> = {};
-  const tagGlow = (kind: keyof OrganelleActivity, m: THREE.Mesh) => {
+  const tagGlow = (kind: keyof NormalizedFixtureOrganelleActivity, m: THREE.Mesh) => {
     (glowBuckets[kind] ??= []).push(m.material as THREE.MeshStandardMaterial);
   };
   // Track display centroids for the exploratory ATP-delay fixture. These are
   // proxy distances, not measured intracellular transport paths.
-  const posAcc: Partial<Record<keyof OrganelleActivity, { s: THREE.Vector3; n: number }>> = {};
-  const addPos = (kind: keyof OrganelleActivity, v: THREE.Vector3) => {
+  const posAcc: Partial<Record<keyof NormalizedFixtureOrganelleActivity, { s: THREE.Vector3; n: number }>> = {};
+  const addPos = (kind: keyof NormalizedFixtureOrganelleActivity, v: THREE.Vector3) => {
     const a = (posAcc[kind] ??= { s: new THREE.Vector3(), n: 0 });
     a.s.add(v);
     a.n += 1;
@@ -7906,7 +7914,7 @@ function buildOrganelleScene() {
     return randDir().multiplyScalar(0.5 * rMax);
   };
   const addOrganellePopulation = (
-    kind: keyof OrganelleActivity | null,
+    kind: keyof NormalizedFixtureOrganelleActivity | null,
     count: number,
     geo: THREE.BufferGeometry,
     color: string,
@@ -9917,7 +9925,7 @@ function buildOrganelleScene() {
 
   // Reference (≈ healthy steady-state) flux per kind, so each organelle's glow
   // is normalised to its own typical activity — each pulses on its own loop.
-  const ref: Record<keyof OrganelleActivity, number> = {
+  const ref: Record<keyof NormalizedFixtureOrganelleActivity, number> = {
     mitochondria: 0.95,
     glycolysis: 0.5,
     nucleus: 0.36,
@@ -9929,16 +9937,16 @@ function buildOrganelleScene() {
     cytoskeleton: 0.55,
     membrane: 0.78
   };
-  organelleGlow = (Object.keys(glowBuckets) as (keyof OrganelleActivity)[]).map((kind) => ({
+  organelleGlow = (Object.keys(glowBuckets) as (keyof NormalizedFixtureOrganelleActivity)[]).map((kind) => ({
     kind,
     mats: glowBuckets[kind],
     base: 0.1,
     gain: 1 / ref[kind]
   }));
 
-  // Feed proxy centroid distances into the exploratory ATP-delay fixture;
-  // these distances and delays have no healthy-PHH transport authority.
-  const centroid = (k: keyof OrganelleActivity) => {
+  // Feed only normalized near/far ordering into the local fixture. Scene scale,
+  // physical distance and diffusivity never cross this authority boundary.
+  const centroid = (k: keyof NormalizedFixtureOrganelleActivity) => {
     const a = posAcc[k];
     return a && a.n > 0 ? a.s.clone().multiplyScalar(1 / a.n) : new THREE.Vector3();
   };
@@ -9947,12 +9955,11 @@ function buildOrganelleScene() {
     return a && a.n > 0 ? a.s.clone().multiplyScalar(1 / a.n) : fallback.clone();
   };
   const mitoC = centroid("mitochondria");
-  const micronsPerUnit = HEPATOCYTE_RENDER_UM_PER_WORLD_UNIT;
-  const distances: Partial<Record<keyof OrganelleActivity, number>> = { mitochondria: 1.5, glycolysis: 0.5 };
-  for (const k of ["membrane", "nucleus", "er", "ribosome", "golgi", "lysosome", "peroxisome", "cytoskeleton"] as (keyof OrganelleActivity)[]) {
+  const distances: Partial<Record<keyof NormalizedFixtureOrganelleActivity, number>> = { mitochondria: 1.5, glycolysis: 0.5 };
+  for (const k of ["membrane", "nucleus", "er", "ribosome", "golgi", "lysosome", "peroxisome", "cytoskeleton"] as (keyof NormalizedFixtureOrganelleActivity)[]) {
     distances[k] = centroid(k).distanceTo(mitoC);
   }
-  livingCell.setGeometry(distances, micronsPerUnit);
+  browserCellFixture.setRelativeGeometry(distances);
 
   organelleAnchors = {
     outside: sinusoidAnchor.clone(),
@@ -10461,16 +10468,16 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     updateInstancedFlowTargets(rendererMotionDeltaS, rendererMotionTimeS);
   }
 
-  if (livingCell && running && localFixtureExecution.shouldAdvance) {
-    const plan = visualSimulationStepPlan(realDeltaS);
+  if (browserCellFixture && running && localFixtureExecution.shouldAdvance) {
+    const plan = browserFixtureStepPlan(realDeltaS);
     if (plan.iterations > 0) {
       measurePerformanceStage("biology", () => {
-        livingCell?.step(plan.stepS, plan.iterations);
+        browserCellFixture?.step(plan.fixtureStepDelta, plan.iterations);
       });
     }
   }
-  if (livingCell) {
-    const s = livingCell.snapshot();
+  if (browserCellFixture) {
+    const s = browserCellFixture.snapshot();
     const engineSignal = externalEngineSummary ? engineVisualSignal(externalEngineSummary) : null;
     // The crowded organelle scene is heavy; the membrane is near-rigid and the
     // organelle jiggle is slow, so both are refreshed on alternating frames
@@ -10521,10 +10528,10 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     syncVisualDivisionFromEngine(externalEngineSummary);
     updateCellCyclePanel(
       localFixtureExecution.shouldAdvance
-        ? realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND
+        ? realDeltaS * CELL_FIXTURE_STEPS_PER_RENDER_SECOND
         : 0,
       lastEnergyCharge,
-      s.status === "healthy"
+      s.status === "baseline_like"
     );
     updateDivisionOverlay(cellCycle.mechanics);
     updateResolvedDivisionVisual(rendererMotionDeltaS, rendererMotionTimeS);
@@ -10542,7 +10549,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       ?? (localFixtureExecution.shouldAdvance ? eff[kind] ?? 1 : 1);
     // Every organelle glows in its OWN emissive colour: a visible resting glow
     // (floor) so nothing looks dead, plus a strong activity-driven boost on top.
-    const glowOf = (kind: keyof OrganelleActivity, gain: number) =>
+    const glowOf = (kind: keyof NormalizedFixtureOrganelleActivity, gain: number) =>
       (0.4 + 1.15 * Math.min(1, activityOf(kind) * gain)) * (0.35 + 0.65 * healthOf(kind));
     // Mitochondrial glow is a schematic animation channel, not an ATP-rate readout.
     const mitoGlow = glowOf("mitochondria", 1 / 0.95);
@@ -10584,21 +10591,26 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     // Ribosomes brighten as translation runs (protein being built).
     if (ribosomeMat) ribosomeMat.opacity = 0.4 + 0.55 * Math.min(1, activityOf("ribosome") / 0.62);
     measurePerformanceStage("report-dom", () => updateReportPanel(s));
-    // The whole cell takes on its health: blue (healthy) → amber → red (dying).
+    // Canonical engine states and local fixture-like states share one display
+    // palette without treating the fixture as a biological fate prediction.
     if (organelleMembrane) {
       const visualStatus = externalEngineSummary?.status ?? s.status;
       const stressTint = engineSignal?.maxStress ?? 0;
       const col =
-        visualStatus === "dying"
+        visualStatus === "dying" || visualStatus === "failure_like"
           ? "#ff5a5a"
-          : visualStatus === "senescent"
+          : visualStatus === "senescent" || visualStatus === "senescence_like"
             ? "#c99cff"
-            : visualStatus === "stressed" || stressTint > 0.55
+            : visualStatus === "stressed" || visualStatus === "stress_like" || stressTint > 0.55
               ? "#ffc05a"
               : "#ffffff";
       const mat = organelleMembrane.material as THREE.MeshStandardMaterial;
       mat.color.set(col);
-      mat.emissive.set(visualStatus === "healthy" && stressTint <= 0.55 ? "#5d7194" : col);
+      mat.emissive.set(
+        (visualStatus === "healthy" || visualStatus === "baseline_like") && stressTint <= 0.55
+          ? "#5d7194"
+          : col
+      );
     }
     const display = externalEngineSummary;
     if (!display && !localFixtureExecution.shouldAdvance) {
@@ -10645,7 +10657,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       browserLocalFixtureElapsedLabel(
         pythonSnapshotAvailability,
         display?.elapsedS ?? null,
-        s.elapsedS
+        s.fixtureStep
       )
     );
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LivingCell } from "../physics/cell";
+import { NormalizedCellFixture } from "../physics/cell";
 import {
   assertBrowserLocalFixtureAuthority,
   browserLocalFixtureClockDisclosure,
@@ -31,7 +31,7 @@ describe("browser-local fixture authority", () => {
   });
 
   it("presents local state without biological time, rate, survival, or ETA claims", () => {
-    const cell = new LivingCell(undefined, 0.85, false);
+    const cell = new NormalizedCellFixture(undefined, 0.85, false);
     cell.step(0.04, 1);
     const snapshot = cell.snapshot();
     const execution = browserLocalFixtureExecution("missing");
@@ -41,9 +41,9 @@ describe("browser-local fixture authority", () => {
     const flowValue = browserLocalFixtureFlowValue(snapshot.flows[0]);
     const event = browserLocalFixtureEventText({
       id: 1,
-      t: 3600,
+      fixtureStep: 3600,
       severity: "crit",
-      text: "Cell is dying - ATP has collapsed"
+      text: "Fixture entered a failure-like energy state"
     });
     const publicText = [
       status.executionLabel,

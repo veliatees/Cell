@@ -156,6 +156,13 @@ def test_browser_runtime_policy_suspends_hidden_work_without_biological_authorit
     assert metrics["local_fixture_canonical_state_coupling_count"] == 0
     assert metrics["local_fixture_biological_time_authority_count"] == 0
     assert metrics["local_fixture_biological_rate_authority_count"] == 0
+    assert metrics["local_fixture_dimensionless_public_contract_count"] == 1
+    assert metrics["local_fixture_public_unit_bearing_field_count"] == 0
+    assert metrics["local_fixture_projected_survival_output_count"] == 0
+    assert metrics["local_fixture_biological_fate_output_count"] == 0
+    assert metrics[
+        "local_fixture_absolute_distance_transport_conversion_count"
+    ] == 0
 
 
 def test_snapshot_export_reuse_is_isolated_and_biologically_inert() -> None:

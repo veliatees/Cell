@@ -2710,7 +2710,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Browser runtime workload, cadence and local-fixture authority policy",
             "closed",
             "Browser render scheduling, visual-fluid cadence, device-load degradation and normalized fallback execution; no biological-model, timescale or accuracy claim.",
-            "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone. The browser-local biochemical fixture is paused while a Python snapshot loads or is present, cannot scale canonical geometry or mutate engine/division state, and may advance only as a clearly relative fallback when the snapshot is unavailable.",
+            "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone. The browser-local biochemical fixture is paused while a Python snapshot loads or is present, cannot scale canonical geometry or mutate engine/division state, and may advance only as a clearly relative fallback when the snapshot is unavailable. Its public contract exposes fixture-step, relative-pool and normalized-distance ordering only; unit-bearing fields, projected survival, biological fate and absolute-distance transport conversion are fail-closed.",
             {
                 "document_visibility_suspension_guard_count": int(
                     bool(
@@ -2812,6 +2812,36 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                         ]
                     )
                 ),
+                "local_fixture_dimensionless_public_contract_count": int(
+                    browser_runtime["local_fixture"][
+                        "public_contract_version"
+                    ]
+                    == "dimensionless_browser_cell_fixture_v2"
+                ),
+                "local_fixture_public_unit_bearing_field_count": browser_runtime[
+                    "local_fixture"
+                ]["public_unit_bearing_field_count"],
+                "local_fixture_projected_survival_output_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "projected_survival_output_enabled"
+                        ]
+                    )
+                ),
+                "local_fixture_biological_fate_output_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "biological_fate_output_enabled"
+                        ]
+                    )
+                ),
+                "local_fixture_absolute_distance_transport_conversion_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "absolute_distance_transport_conversion_enabled"
+                        ]
+                    )
+                ),
             },
             (),
             (
@@ -2820,6 +2850,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "src/runtime/renderCadence.test.ts",
                 "src/runtime/browserLocalFixture.ts",
                 "src/runtime/browserLocalFixture.test.ts",
+                "src/physics/cell.ts",
+                "src/physics/cell.test.ts",
                 "src/main.ts",
                 "engine/cell_engine/validation/browser_runtime_policy.py",
                 "engine/tests/test_browser_runtime_policy.py",

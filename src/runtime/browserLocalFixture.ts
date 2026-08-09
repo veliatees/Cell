@@ -1,8 +1,9 @@
-import type {
-  CellEvent,
-  CellFlow,
-  CellSnapshot,
-  OrganelleReport
+import {
+  NORMALIZED_CELL_FIXTURE_CONTRACT,
+  type NormalizedCellFixtureSnapshot,
+  type NormalizedFixtureEvent,
+  type NormalizedFixtureFlow,
+  type NormalizedFixtureOrganelleReport
 } from "../physics/cell";
 import { BROWSER_RUNTIME_POLICY } from "./renderCadence";
 
@@ -21,6 +22,7 @@ const policy = BROWSER_RUNTIME_POLICY.local_fixture;
 
 export function assertBrowserLocalFixtureAuthority(): void {
   if (
+    policy.public_contract_version !== NORMALIZED_CELL_FIXTURE_CONTRACT.version ||
     policy.runtime_role !== "normalized_schematic_fallback_only" ||
     policy.execute_when_python_snapshot_loading !== false ||
     policy.execute_when_python_snapshot_loaded !== false ||
@@ -33,7 +35,12 @@ export function assertBrowserLocalFixtureAuthority(): void {
     policy.biological_time_authority !== false ||
     policy.biological_rate_authority !== false ||
     policy.display_biological_time_units !== false ||
-    policy.display_biological_rate_units !== false
+    policy.display_biological_rate_units !== false ||
+    policy.unit_bearing_public_fields_allowed !== false ||
+    policy.projected_survival_output_enabled !== false ||
+    policy.absolute_distance_transport_conversion_enabled !== false ||
+    policy.biological_fate_output_enabled !== false ||
+    policy.public_unit_bearing_field_count !== 0
   ) {
     throw new Error(
       "browser-local fixture escaped its schematic fallback authority boundary"
@@ -80,10 +87,10 @@ export function browserLocalFixtureGeometryScale(
 }
 
 const STATUS_VIEW = {
-  healthy: { label: "baseline-like", color: "#7ee0a8" },
-  stressed: { label: "stress-like", color: "#ffcf6b" },
-  senescent: { label: "senescence-like", color: "#d9a6ff" },
-  dying: { label: "failure-like", color: "#ff8a8a" }
+  baseline_like: { label: "baseline-like", color: "#7ee0a8" },
+  stress_like: { label: "stress-like", color: "#ffcf6b" },
+  senescence_like: { label: "senescence-like", color: "#d9a6ff" },
+  failure_like: { label: "failure-like", color: "#ff8a8a" }
 } as const;
 
 function boundedRelative(value: number): number {
@@ -91,7 +98,7 @@ function boundedRelative(value: number): number {
 }
 
 export function browserLocalFixtureStatusView(
-  snapshot: CellSnapshot,
+  snapshot: NormalizedCellFixtureSnapshot,
   execution: BrowserLocalFixtureExecution
 ): {
   color: string;
@@ -120,33 +127,33 @@ export function browserLocalFixtureStatusView(
       `relative energy ${boundedRelative(snapshot.atp).toFixed(2)}`,
       `relative glycogen ${boundedRelative(snapshot.pools.glycogen).toFixed(2)}`,
       `relative secretion ${boundedRelative(snapshot.pools.albumin).toFixed(2)}`,
-      `relative bile export ${boundedRelative(snapshot.hepatocyte.bileExport).toFixed(2)}`,
-      `relative redox reserve ${boundedRelative(snapshot.hepatocyte.glutathioneReserve).toFixed(2)}`,
+      `relative bile export ${boundedRelative(snapshot.hepatocyte.relativeBileExport).toFixed(2)}`,
+      `relative redox reserve ${boundedRelative(snapshot.hepatocyte.relativeRedoxReserve).toFixed(2)}`,
       `relative cargo fidelity ${boundedRelative(snapshot.fidelity.deliveryQuality).toFixed(2)}`,
       `relative aggregate stress ${aggregateStress.toFixed(2)}`,
-      `fixture step ${Math.max(0, Math.round(snapshot.elapsedS))}`
+      `fixture step ${Math.max(0, Math.round(snapshot.fixtureStep))}`
     ]
   };
 }
 
 export function browserLocalFixtureOrganelleMeta(
-  organelle: OrganelleReport
+  organelle: NormalizedFixtureOrganelleReport
 ): string {
   const capacity = Math.round(boundedRelative(organelle.efficiency) * 100);
   const atpAccess = Math.round(boundedRelative(organelle.atpAvailability) * 100);
   return `relative capacity ${capacity}% - relative ATP access ${atpAccess}% - no kinetic units`;
 }
 
-export function browserLocalFixtureFlowValue(flow: CellFlow): string {
+export function browserLocalFixtureFlowValue(flow: NormalizedFixtureFlow): string {
   const value = Number.isFinite(flow.value) ? Math.max(0, flow.value) : 0;
   return `relative ${value.toFixed(2)}`;
 }
 
-export function browserLocalFixtureFlowMeta(flow: CellFlow): string {
+export function browserLocalFixtureFlowMeta(flow: NormalizedFixtureFlow): string {
   return `renderer route family - ${flow.mode} - no kinetic timing - topology ${flow.producedBy} / ${flow.usedBy}`;
 }
 
-export function browserLocalFixtureEventText(event: CellEvent): string {
+export function browserLocalFixtureEventText(event: NormalizedFixtureEvent): string {
   const text = event.text.toLowerCase();
   let transition = "normalized fixture transition";
   if (text.includes("faulted")) transition = "organelle fault-like transition";
@@ -157,7 +164,7 @@ export function browserLocalFixtureEventText(event: CellEvent): string {
   else if (text.includes("apopt") || text.includes("dying")) transition = "failure-like state transition";
   else if (text.includes("energy stress")) transition = "energy-stress-like state transition";
   else if (text.includes("healthy homeostasis")) transition = "baseline-like state transition";
-  return `fixture step ${Math.max(0, Math.round(event.t))} - ${transition}`;
+  return `fixture step ${Math.max(0, Math.round(event.fixtureStep))} - ${transition}`;
 }
 
 export function browserLocalFixtureClockDisclosure(

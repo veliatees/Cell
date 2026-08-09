@@ -1,57 +1,80 @@
-import { describe, it, expect } from "vitest";
-import { LivingCell } from "./cell";
+import { describe, expect, it } from "vitest";
+import {
+  NORMALIZED_CELL_FIXTURE_CONTRACT,
+  NormalizedCellFixture
+} from "./cell";
 
-const settle = (c: LivingCell, seconds: number, dt = 0.04) => c.step(dt, Math.round(seconds / dt));
+const advanceFixture = (
+  fixture: NormalizedCellFixture,
+  fixtureSteps: number,
+  fixtureDelta = 0.04
+) => fixture.step(fixtureDelta, Math.round(fixtureSteps / fixtureDelta));
 
-describe("LivingCell — organelle network", () => {
-  it("reaches energetic homeostasis when fed", () => {
-    const c = new LivingCell(undefined, 0.9);
-    settle(c, 60);
-    const s = c.snapshot();
-    expect(s.energyCharge).toBeGreaterThan(0.5);
-    expect(s.status).toBe("healthy");
-    // pools stay bounded (no runaway accumulation)
-    expect(s.pools.glucose).toBeLessThan(5);
-    expect(s.pools.pyruvate).toBeLessThan(5);
+describe("NormalizedCellFixture - dimensionless renderer topology", () => {
+  it("declares a frozen, non-quantitative authority contract", () => {
+    expect(Object.isFrozen(NORMALIZED_CELL_FIXTURE_CONTRACT)).toBe(true);
+    expect(NORMALIZED_CELL_FIXTURE_CONTRACT.version).toBe(
+      "dimensionless_browser_cell_fixture_v2"
+    );
+    expect(NORMALIZED_CELL_FIXTURE_CONTRACT.biologicalTimeUnitAssigned).toBe(false);
+    expect(NORMALIZED_CELL_FIXTURE_CONTRACT.biologicalRateUnitAssigned).toBe(false);
+    expect(NORMALIZED_CELL_FIXTURE_CONTRACT.absoluteDistanceUnitAssigned).toBe(false);
+    expect(NORMALIZED_CELL_FIXTURE_CONTRACT.quantitativePhhAuthority).toBe(false);
+    expect(NORMALIZED_CELL_FIXTURE_CONTRACT.predictiveAuthority).toBe(false);
+    expect(NORMALIZED_CELL_FIXTURE_CONTRACT.projectedSurvivalEnabled).toBe(false);
+    expect(NORMALIZED_CELL_FIXTURE_CONTRACT.biologicalFateOutputEnabled).toBe(false);
+    expect(NORMALIZED_CELL_FIXTURE_CONTRACT.publicUnitBearingFieldCount).toBe(0);
   });
 
-  it("runs every organelle's loop concurrently (all fluxes active)", () => {
-    const c = new LivingCell(undefined, 0.9);
-    settle(c, 40);
-    const a = c.snapshot().activity;
-    for (const k of Object.keys(a) as (keyof typeof a)[]) {
-      expect(a[k]).toBeGreaterThan(0);
+  it("reaches a bounded baseline-like fixture state under high relative perfusion", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9);
+    advanceFixture(fixture, 60);
+    const snapshot = fixture.snapshot();
+    expect(snapshot.energyCharge).toBeGreaterThan(0.5);
+    expect(snapshot.status).toBe("baseline_like");
+    expect(snapshot.pools.glucose).toBeLessThan(5);
+    expect(snapshot.pools.pyruvate).toBeLessThan(5);
+  });
+
+  it("advances every organelle topology channel concurrently", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9);
+    advanceFixture(fixture, 40);
+    const activity = fixture.snapshot().activity;
+    for (const id of Object.keys(activity) as (keyof typeof activity)[]) {
+      expect(activity[id]).toBeGreaterThan(0);
     }
   });
 
-  it("mitochondria carry the pyruvate flux; the cell secretes protein", () => {
-    const c = new LivingCell(undefined, 0.9);
-    settle(c, 40);
-    const s = c.snapshot();
-    expect(s.activity.mitochondria).toBeGreaterThan(s.activity.glycolysis * 0.3);
-    expect(s.pools.secreted).toBeGreaterThan(0.1);
+  it("routes normalized pyruvate and secretion channels through the expected modules", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9);
+    advanceFixture(fixture, 40);
+    const snapshot = fixture.snapshot();
+    expect(snapshot.activity.mitochondria).toBeGreaterThan(
+      snapshot.activity.glycolysis * 0.3
+    );
+    expect(snapshot.pools.secreted).toBeGreaterThan(0.1);
   });
 
-  it("exposes hepatocyte-specific metabolism and polarity", () => {
-    const c = new LivingCell(undefined, 0.9);
-    settle(c, 50);
-    const s = c.snapshot();
-    expect(s.hepatocyte.cellType).toBe("hepatocyte");
-    expect(s.hepatocyte.zone).toBe("midlobular");
-    expect(s.hepatocyte.polarity).toBeGreaterThan(0.5);
-    expect(s.hepatocyte.sinusoidalImport).toBeGreaterThan(0);
-    expect(s.hepatocyte.canalicularExport).toBeGreaterThan(0);
-    expect(s.pools.glycogen).toBeGreaterThan(0);
-    expect(s.pools.urea).toBeGreaterThan(0);
-    expect(s.pools.albumin).toBeGreaterThan(0);
-    expect(s.pools.bileAcids).toBeGreaterThan(0);
-    expect(s.pools.glutathione).toBeGreaterThan(0);
+  it("exposes only a relative hepatocyte-topology readout", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9);
+    advanceFixture(fixture, 50);
+    const snapshot = fixture.snapshot();
+    expect(snapshot.hepatocyte.fixtureRole).toBe("hepatocyte_topology");
+    expect(snapshot.hepatocyte.zoneTopology).toBe("midlobular_proxy");
+    expect(snapshot.hepatocyte.relativePolarity).toBeGreaterThan(0.5);
+    expect(snapshot.hepatocyte.relativeSinusoidalImport).toBeGreaterThan(0);
+    expect(snapshot.hepatocyte.relativeCanalicularExport).toBeGreaterThan(0);
+    expect(snapshot.pools.glycogen).toBeGreaterThan(0);
+    expect(snapshot.pools.urea).toBeGreaterThan(0);
+    expect(snapshot.pools.albumin).toBeGreaterThan(0);
+    expect(snapshot.pools.bileAcids).toBeGreaterThan(0);
+    expect(snapshot.pools.glutathione).toBeGreaterThan(0);
   });
 
-  it("shows named hepatocyte traffic routes", () => {
-    const c = new LivingCell(undefined, 0.9);
-    settle(c, 50);
-    const ids = new Set(c.snapshot().flows.map((f) => f.id));
+  it("retains named hepatocyte traffic topology", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9);
+    advanceFixture(fixture, 50);
+    const ids = new Set(fixture.snapshot().flows.map((flow) => flow.id));
     expect(ids.has("glycogen-glycolysis") || ids.has("glycolysis-glycogen")).toBe(true);
     expect(ids.has("mito-urea-sinusoid")).toBe(true);
     expect(ids.has("bile-acid-pool-bsep-export")).toBe(true);
@@ -59,132 +82,174 @@ describe("LivingCell — organelle network", () => {
     expect(ids.has("golgi-albumin-sinusoid")).toBe(true);
   });
 
-  it("does not treat intracellular cargo routing as perfectly successful", () => {
-    const c = new LivingCell(undefined, 0.9);
-    settle(c, 50);
-    const s = c.snapshot();
-    expect(s.fidelity.deliveryQuality).toBeGreaterThan(0.65);
-    expect(s.fidelity.deliveryQuality).toBeLessThan(1);
-    expect(s.fidelity.lossFlux).toBeGreaterThan(0);
-    expect(s.pools.misfoldedProtein + s.pools.misroutedCargo).toBeGreaterThan(0);
-    const ids = new Set(s.flows.map((f) => f.id));
+  it("keeps cargo routing imperfect inside the schematic fixture", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9);
+    advanceFixture(fixture, 50);
+    const snapshot = fixture.snapshot();
+    expect(snapshot.fidelity.deliveryQuality).toBeGreaterThan(0.65);
+    expect(snapshot.fidelity.deliveryQuality).toBeLessThan(1);
+    expect(snapshot.fidelity.lossFlux).toBeGreaterThan(0);
+    expect(snapshot.pools.misfoldedProtein + snapshot.pools.misroutedCargo).toBeGreaterThan(0);
+    const ids = new Set(snapshot.flows.map((flow) => flow.id));
     expect(ids.has("er-proteasome-loss")).toBe(true);
     expect(ids.has("golgi-misroute-lysosome")).toBe(true);
   });
 
-  it("low perfusion reduces cargo fidelity under intracellular stress", () => {
-    const c = new LivingCell(undefined, 0.9);
-    settle(c, 40);
-    const healthy = c.snapshot();
-    c.perfusion = 0.08;
-    settle(c, 100);
-    const stressed = c.snapshot();
-    expect(stressed.fidelity.deliveryQuality).toBeLessThan(healthy.fidelity.deliveryQuality);
-    expect(stressed.stress.energy).toBeGreaterThan(healthy.stress.energy);
+  it("raises relative stress and lowers cargo fidelity when relative perfusion falls", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9);
+    advanceFixture(fixture, 40);
+    const baseline = fixture.snapshot();
+    fixture.perfusion = 0.08;
+    advanceFixture(fixture, 100);
+    const stressed = fixture.snapshot();
+    expect(stressed.fidelity.deliveryQuality).toBeLessThan(
+      baseline.fidelity.deliveryQuality
+    );
+    expect(stressed.stress.energy).toBeGreaterThan(baseline.stress.energy);
     expect(stressed.fidelity.lossFlux).toBeGreaterThan(0);
   });
 
-  it("conserves the ATP + ADP pool exactly", () => {
-    const c = new LivingCell(undefined, 0.7);
-    settle(c, 30);
-    const s = c.snapshot();
-    expect(s.atp + s.adp).toBeCloseTo(1, 6);
+  it("conserves the normalized ATP plus ADP fixture pool", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.7);
+    advanceFixture(fixture, 30);
+    const snapshot = fixture.snapshot();
+    expect(snapshot.atp + snapshot.adp).toBeCloseTo(1, 6);
   });
 
-  it("starves to death when external perfusion is cut", () => {
-    const c = new LivingCell(undefined, 0.9);
-    settle(c, 30);
-    c.perfusion = 0;
-    settle(c, 80);
-    const s = c.snapshot();
-    expect(s.atp).toBeLessThan(0.2);
-    expect(s.status).toBe("dying");
+  it("enters a failure-like state when relative perfusion is cut", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9);
+    advanceFixture(fixture, 30);
+    fixture.perfusion = 0;
+    advanceFixture(fixture, 80);
+    const snapshot = fixture.snapshot();
+    expect(snapshot.atp).toBeLessThan(0.2);
+    expect(snapshot.status).toBe("failure_like");
   });
 
-  it("recovers when external perfusion returns", () => {
-    const c = new LivingCell(undefined, 0.9);
-    settle(c, 20);
-    c.perfusion = 0;
-    settle(c, 60);
-    c.perfusion = 0.9;
-    settle(c, 70);
-    const s = c.snapshot();
-    expect(s.atp).toBeGreaterThan(0.45);
-    expect(s.status).toBe("healthy");
+  it("returns to a baseline-like state when relative perfusion returns", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9);
+    advanceFixture(fixture, 20);
+    fixture.perfusion = 0;
+    advanceFixture(fixture, 60);
+    fixture.perfusion = 0.9;
+    advanceFixture(fixture, 70);
+    const snapshot = fixture.snapshot();
+    expect(snapshot.atp).toBeGreaterThan(0.45);
+    expect(snapshot.status).toBe("baseline_like");
   });
 
-  it("higher external perfusion sustains a higher energy charge", () => {
-    const lo = new LivingCell(undefined, 0.25);
-    const hi = new LivingCell(undefined, 1.0);
-    settle(lo, 60);
-    settle(hi, 60);
-    expect(hi.snapshot().energyCharge).toBeGreaterThan(lo.snapshot().energyCharge);
+  it("orders relative energy access by relative perfusion", () => {
+    const low = new NormalizedCellFixture(undefined, 0.25);
+    const high = new NormalizedCellFixture(undefined, 1);
+    advanceFixture(low, 60);
+    advanceFixture(high, 60);
+    expect(high.snapshot().energyCharge).toBeGreaterThan(low.snapshot().energyCharge);
   });
 
-  it("ATP transport takes longer for organelles further from the source", () => {
-    const c = new LivingCell(undefined, 0.9);
-    // distances in scene units; 0.7 µm per unit (cell radius ~10 µm)
-    c.setGeometry({ mitochondria: 1, ribosome: 12 }, 0.7);
-    const r = Object.fromEntries(c.snapshot().organelles.map((o) => [o.id, o]));
-    expect(r.ribosome.transportMs).toBeGreaterThan(r.mitochondria.transportMs);
-    expect(r.ribosome.transportMs).toBeGreaterThan(0);
+  it("preserves only normalized near/far geometry ordering", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9);
+    fixture.setRelativeGeometry({ mitochondria: 1, ribosome: 12 });
+    const reports = Object.fromEntries(
+      fixture.snapshot().organelles.map((organelle) => [organelle.id, organelle])
+    );
+    expect(reports.ribosome.relativeTransportLag).toBeGreaterThan(
+      reports.mitochondria.relativeTransportLag
+    );
+    expect(reports.ribosome.relativeTransportLag).toBeCloseTo(1, 12);
   });
 
-  it("is imperfect: under stress, organelle risks rise and the cell logs events", () => {
-    const c = new LivingCell(undefined, 0.9, true); // noise + faults on
-    settle(c, 20);
-    c.perfusion = 0.02; // starve → stress → faults become likely
-    settle(c, 140);
-    const s = c.snapshot();
-    const maxRisk = Math.max(...s.organelles.map((o) => o.riskPerHour));
-    expect(maxRisk).toBeGreaterThan(5);
-    expect(s.events.some((e) => e.severity === "warn" || e.severity === "crit")).toBe(true);
+  it("rejects invalid relative geometry instead of silently assigning transport", () => {
+    const fixture = new NormalizedCellFixture();
+    expect(() => fixture.setRelativeGeometry({})).toThrow(RangeError);
+    expect(() => fixture.setRelativeGeometry({ ribosome: -1 })).toThrow(RangeError);
+    expect(() => fixture.setRelativeGeometry({ ribosome: Number.NaN })).toThrow(
+      RangeError
+    );
   });
 
-  it("a healthy, well-fed cell mostly works (high efficiency) but is not guaranteed perfect", () => {
-    const c = new LivingCell(undefined, 0.95, true);
-    settle(c, 80);
-    const s = c.snapshot();
-    const meanEff = s.organelles.reduce((a, o) => a + o.efficiency, 0) / s.organelles.length;
-    expect(meanEff).toBeGreaterThan(0.7); // mostly functional when conditions are good
+  it("logs fixture transitions under relative stress without unit-bearing risk outputs", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9, true);
+    advanceFixture(fixture, 20);
+    fixture.perfusion = 0.02;
+    advanceFixture(fixture, 140);
+    const snapshot = fixture.snapshot();
+    expect(snapshot.events.some((event) => event.severity !== "info")).toBe(true);
+    expect(snapshot.events.every((event) => Number.isFinite(event.fixtureStep))).toBe(true);
   });
 
-  it("deterministic mode never faults (reproducible for tests)", () => {
-    const c = new LivingCell(undefined, 0.9, false);
-    settle(c, 80);
-    const s = c.snapshot();
-    expect(s.organelles.every((o) => o.efficiency > 0.99)).toBe(true);
-    // no probabilistic fault events in deterministic mode (status notes are fine)
-    expect(s.events.some((e) => /faulted/.test(e.text))).toBe(false);
+  it("keeps high relative capacity under high relative perfusion", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.95, true);
+    advanceFixture(fixture, 80);
+    const snapshot = fixture.snapshot();
+    const meanEfficiency =
+      snapshot.organelles.reduce((sum, organelle) => sum + organelle.efficiency, 0) /
+      snapshot.organelles.length;
+    expect(meanEfficiency).toBeGreaterThan(0.7);
   });
 
-  it("gives each organelle its own independent cycle (phases differ)", () => {
-    const c = new LivingCell(undefined, 0.9);
-    settle(c, 7);
-    const ph = c.snapshot().organelles.map((o) => o.phase);
-    const uniq = new Set(ph.map((x) => x.toFixed(3)));
-    expect(uniq.size).toBeGreaterThan(4); // organelles are not in lockstep
-    // periods are distinct per organelle (different lifestyles)
-    const periods = new Set(c.snapshot().organelles.map((o) => o.periodS));
+  it("keeps deterministic mode reproducible and fault-free", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9, false);
+    advanceFixture(fixture, 80);
+    const snapshot = fixture.snapshot();
+    expect(snapshot.organelles.every((organelle) => organelle.efficiency > 0.99)).toBe(true);
+    expect(snapshot.events.some((event) => /faulted/.test(event.text))).toBe(false);
+  });
+
+  it("gives each organelle a distinct dimensionless cycle", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9);
+    advanceFixture(fixture, 7);
+    const organelles = fixture.snapshot().organelles;
+    const phases = new Set(organellePhaseKeys(organelles));
+    const periods = new Set(
+      organelles.map((organelle) => organelle.relativeCyclePeriod)
+    );
+    expect(phases.size).toBeGreaterThan(4);
     expect(periods.size).toBeGreaterThan(4);
   });
 
-  it("exposes probabilistic lifecycle and turnover for the cell and organelles", () => {
-    const c = new LivingCell(undefined, 0.9);
-    settle(c, 20);
-    const healthy = c.snapshot();
-    expect(healthy.cellAgeH).toBeGreaterThan(0);
-    expect(healthy.senescenceRiskPerHour).toBeGreaterThanOrEqual(0);
-    expect(healthy.apoptosisRiskPerHour).toBeGreaterThanOrEqual(0);
-    expect(healthy.organelles.every((o) => o.turnoverHalfLifeH > 0 && o.turnoverRiskPerHour >= 0)).toBe(true);
-    expect(healthy.organelles.some((o) => o.id === "er")).toBe(true);
-    expect(healthy.organelles.some((o) => o.id === "peroxisome")).toBe(true);
-
-    c.perfusion = 0;
-    settle(c, 90);
-    const stressed = c.snapshot();
-    expect(Math.max(stressed.senescenceRiskPerHour, stressed.apoptosisRiskPerHour)).toBeGreaterThan(
-      Math.max(healthy.senescenceRiskPerHour, healthy.apoptosisRiskPerHour)
-    );
+  it("keeps unit-bearing and predictive fields out of its public snapshot", () => {
+    const fixture = new NormalizedCellFixture(undefined, 0.9, true);
+    advanceFixture(fixture, 20);
+    const snapshot = fixture.snapshot();
+    const forbiddenSnapshotFields = [
+      "elapsedS",
+      "cellAgeH",
+      "senescenceRiskPerHour",
+      "apoptosisRiskPerHour",
+      "projectedMedianSurvivalH",
+      "cytosolicPH",
+      "lysosomalPH",
+      "membranePotentialMv"
+    ];
+    const forbiddenOrganelleFields = [
+      "transportMs",
+      "riskPerHour",
+      "turnoverHalfLifeH",
+      "turnoverRiskPerHour",
+      "periodS"
+    ];
+    for (const field of forbiddenSnapshotFields) {
+      expect(Object.prototype.hasOwnProperty.call(snapshot, field)).toBe(false);
+    }
+    for (const organelle of snapshot.organelles) {
+      for (const field of forbiddenOrganelleFields) {
+        expect(Object.prototype.hasOwnProperty.call(organelle, field)).toBe(false);
+      }
+    }
+    expect(snapshot.fixtureStep).toBeGreaterThan(0);
+    expect(
+      snapshot.organelles.every(
+        (organelle) =>
+          organelle.relativeAge >= 0 &&
+          organelle.relativeTurnoverScale > 0 &&
+          organelle.relativeCyclePeriod > 0
+      )
+    ).toBe(true);
   });
 });
+
+function organellePhaseKeys(
+  organelles: ReturnType<NormalizedCellFixture["snapshot"]>["organelles"]
+): string[] {
+  return organelles.map((organelle) => organelle.phase.toFixed(3));
+}

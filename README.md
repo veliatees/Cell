@@ -104,7 +104,9 @@ single-cell state; much of the current dynamic cell remains exploratory.
   biochemical fixture is paused while a Python snapshot loads or is active; it
   cannot scale canonical geometry, alter engine/division state, or publish
   biological time, rate, survival, or transport-timing claims. Independent
-  renderer motion continues on wall-clock time.
+  renderer motion continues on wall-clock time. Its versioned public API is now
+  explicitly dimensionless: only fixture-step, relative-pool and normalized
+  near/far geometry ordering cross the boundary, with zero unit-bearing fields.
 - **A fail-closed human lifecycle baseline** — the quiescent human hepatocyte no
   longer inherits rat cell-cycle or mouse regeneration timing metadata. Missing
   healthy-human phase durations are omitted, marked non-executable and cannot
@@ -589,6 +591,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 167: Human-liver context denominator firewall v1](docs/milestones/167-human-liver-context-denominator-firewall-v1.md)
 - [Milestone 168: Organelle geometry and public-claim firewall v1](docs/milestones/168-organelle-geometry-public-claim-firewall-v1.md)
 - [Milestone 169: Browser-local fixture execution firewall v1](docs/milestones/169-browser-local-fixture-execution-firewall-v1.md)
+- [Milestone 170: Dimensionless browser fixture API firewall v2](docs/milestones/170-dimensionless-browser-fixture-api-firewall-v2.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

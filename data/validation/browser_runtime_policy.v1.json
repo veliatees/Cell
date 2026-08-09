@@ -4,6 +4,7 @@
   "scientific_authority": false,
   "biological_parameter_activation": false,
   "local_fixture": {
+    "public_contract_version": "dimensionless_browser_cell_fixture_v2",
     "runtime_role": "normalized_schematic_fallback_only",
     "execute_when_python_snapshot_loading": false,
     "execute_when_python_snapshot_loaded": false,
@@ -16,7 +17,12 @@
     "biological_time_authority": false,
     "biological_rate_authority": false,
     "display_biological_time_units": false,
-    "display_biological_rate_units": false
+    "display_biological_rate_units": false,
+    "unit_bearing_public_fields_allowed": false,
+    "projected_survival_output_enabled": false,
+    "absolute_distance_transport_conversion_enabled": false,
+    "biological_fate_output_enabled": false,
+    "public_unit_bearing_field_count": 0
   },
   "suspension": {
     "when_document_hidden": true,
@@ -26,9 +32,9 @@
   },
   "clock": {
     "maximum_visible_frame_delta_ms": 80,
-    "visual_cell_seconds_per_real_second": 5,
-    "maximum_visual_cell_substep_s": 0.08,
-    "minimum_visual_cell_substeps": 2
+    "fixture_steps_per_render_second": 5,
+    "maximum_fixture_substep": 0.08,
+    "minimum_fixture_substeps": 2
   },
   "quality": {
     "measurement_window_ms": 2000,

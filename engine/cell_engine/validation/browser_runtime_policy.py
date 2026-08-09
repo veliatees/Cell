@@ -14,6 +14,7 @@ POLICY_PATH = (
     / "browser_runtime_policy.v1.json"
 )
 POLICY_SCHEMA_VERSION = "cell.browser-runtime-policy.v1"
+LOCAL_FIXTURE_PUBLIC_CONTRACT_VERSION = "dimensionless_browser_cell_fixture_v2"
 QUALITY_TIERS = ("full", "balanced", "essential")
 LOCAL_FIXTURE_FALSE_GATES = (
     "execute_when_python_snapshot_loading",
@@ -27,6 +28,10 @@ LOCAL_FIXTURE_FALSE_GATES = (
     "biological_rate_authority",
     "display_biological_time_units",
     "display_biological_rate_units",
+    "unit_bearing_public_fields_allowed",
+    "projected_survival_output_enabled",
+    "absolute_distance_transport_conversion_enabled",
+    "biological_fate_output_enabled",
 )
 
 
@@ -80,9 +85,13 @@ def validate_browser_runtime_policy(payload: object) -> None:
     assert isinstance(quality, Mapping)
 
     if (
-        local_fixture.get("runtime_role")
+        local_fixture.get("public_contract_version")
+        != LOCAL_FIXTURE_PUBLIC_CONTRACT_VERSION
+        or local_fixture.get("runtime_role")
         != "normalized_schematic_fallback_only"
         or local_fixture.get("execute_when_python_snapshot_missing") is not True
+        or type(local_fixture.get("public_unit_bearing_field_count")) is not int
+        or local_fixture.get("public_unit_bearing_field_count") != 0
         or any(local_fixture.get(key) is not False for key in LOCAL_FIXTURE_FALSE_GATES)
     ):
         raise ValueError("browser-local fixture authority boundary is invalid")
@@ -96,14 +105,22 @@ def validate_browser_runtime_policy(payload: object) -> None:
     if any(suspension.get(key) is not True for key in required_suspension_guards):
         raise ValueError("browser runtime suspension guard is disabled")
 
+    legacy_fixture_clock_keys = (
+        "visual_cell_seconds_per_real_second",
+        "maximum_visual_cell_substep_s",
+        "minimum_visual_cell_substeps",
+    )
+    if any(key in clock for key in legacy_fixture_clock_keys):
+        raise ValueError("unit-bearing browser fixture clock key is forbidden")
+
     _finite_number(clock, "maximum_visible_frame_delta_ms", positive=True)
     _finite_number(
         clock,
-        "visual_cell_seconds_per_real_second",
+        "fixture_steps_per_render_second",
         positive=True,
     )
-    _finite_number(clock, "maximum_visual_cell_substep_s", positive=True)
-    minimum_substeps = clock.get("minimum_visual_cell_substeps")
+    _finite_number(clock, "maximum_fixture_substep", positive=True)
+    minimum_substeps = clock.get("minimum_fixture_substeps")
     if (
         not isinstance(minimum_substeps, int)
         or isinstance(minimum_substeps, bool)
