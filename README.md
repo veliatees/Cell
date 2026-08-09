@@ -100,7 +100,11 @@ single-cell state; much of the current dynamic cell remains exploratory.
   viewports suspend rendering, the dimensionless cytosol field advances on a
   tested quality-tier cadence, visible visual time is substepped without
   low-FPS clock loss, and total frame work can lower quality without changing
-  the Python engine or any biological parameter.
+  the Python engine or any biological parameter. The normalized browser-local
+  biochemical fixture is paused while a Python snapshot loads or is active; it
+  cannot scale canonical geometry, alter engine/division state, or publish
+  biological time, rate, survival, or transport-timing claims. Independent
+  renderer motion continues on wall-clock time.
 - **A fail-closed human lifecycle baseline** — the quiescent human hepatocyte no
   longer inherits rat cell-cycle or mouse regeneration timing metadata. Missing
   healthy-human phase durations are omitted, marked non-executable and cannot
@@ -212,8 +216,9 @@ and clearly labelled visual samples; it is not a microscopy reconstruction.
 Recent additions make more of the engine visible and keep it physically honest:
 
 - **The central dogma, animated.** Inside the interphase nucleus, schematic gene
-  loci flare and mRNA tracers move through a nuclear-pore route. Their cadence
-  follows the exploratory normalized runtime, not a measured PHH trajectory.
+  loci mirror engine events and mRNA tracers move through a nuclear-pore route.
+  Their movement cadence is wall-clock renderer staging, not a measured PHH
+  transcription, export, or transport trajectory.
 - **Explicit nutritional contexts.** Fed peak, postabsorptive and prolonged-fast
   selections load source-backed liver-glycogen references. Blood glucose,
   insulin, glucagon and ketones appear only where the selected profile has a
@@ -583,6 +588,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 166: Cytoplasm motion authority firewall v1](docs/milestones/166-cytoplasm-motion-authority-firewall-v1.md)
 - [Milestone 167: Human-liver context denominator firewall v1](docs/milestones/167-human-liver-context-denominator-firewall-v1.md)
 - [Milestone 168: Organelle geometry and public-claim firewall v1](docs/milestones/168-organelle-geometry-public-claim-firewall-v1.md)
+- [Milestone 169: Browser-local fixture execution firewall v1](docs/milestones/169-browser-local-fixture-execution-firewall-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

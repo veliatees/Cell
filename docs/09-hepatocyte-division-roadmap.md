@@ -284,11 +284,15 @@ Status: expanded and corrected. Browser-local `VisualCellInstance` and
 `VisualDivisionEvent` state now back the post-abscission view, and the Python
 snapshot exporter can serialize `WholeCellPopulation` / `WholeCellDivisionEvent`
 under `state.division`. The TypeScript snapshot client recognizes that payload
-and the browser applies the latest engine division event when present. Default
-adult-hepatocyte snapshots remain quiescent unless an explicit division demo /
-regeneration-cycle parameter is used. Remaining work is full live streaming,
-browser-level success/failure/arrest tests, and replacing the fallback visual
-clock entirely with engine phase data.
+and the browser applies the latest engine division event when present. The local
+division fixture is now locked while a Python snapshot is loading or active and
+cannot scale canonical geometry; it is available only as an explicitly
+normalized fallback after snapshot loading fails. Engine daughters do not
+receive synthetic local ATP or health trajectories. Default adult-hepatocyte
+snapshots remain quiescent unless an explicit engine division/regeneration
+context is supplied. Remaining work is full live streaming, browser-level
+success/failure/arrest tests, and replacing the snapshot-unavailable fallback
+phase clock entirely with engine phase data.
 
 ## Milestone D7 - Validation Targets
 

@@ -3,6 +3,7 @@ import {
   BROWSER_RUNTIME_POLICY,
   accumulateCadencedStep,
   evaluateRenderWorkloadWindow,
+  numericalGridRefreshIntervalS,
   renderSuspensionReason,
   visualSimulationStepPlan
 } from "./renderCadence";
@@ -38,6 +39,12 @@ describe("browser render cadence policy", () => {
       accumulatedS: 0,
       stepDeltaS: 0.015
     });
+  });
+
+  it("reduces projected-grid refresh work with the quality tier", () => {
+    expect(numericalGridRefreshIntervalS("full")).toBe(0.25);
+    expect(numericalGridRefreshIntervalS("balanced")).toBe(0.5);
+    expect(numericalGridRefreshIntervalS("essential")).toBe(1);
   });
 
   it("preserves visual-cell elapsed time across lower frame rates", () => {

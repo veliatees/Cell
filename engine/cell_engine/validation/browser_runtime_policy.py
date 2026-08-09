@@ -15,6 +15,19 @@ POLICY_PATH = (
 )
 POLICY_SCHEMA_VERSION = "cell.browser-runtime-policy.v1"
 QUALITY_TIERS = ("full", "balanced", "essential")
+LOCAL_FIXTURE_FALSE_GATES = (
+    "execute_when_python_snapshot_loading",
+    "execute_when_python_snapshot_loaded",
+    "canonical_geometry_coupling",
+    "canonical_engine_state_coupling",
+    "engine_division_state_coupling",
+    "quantitative_output_authority",
+    "predictive_authority",
+    "biological_time_authority",
+    "biological_rate_authority",
+    "display_biological_time_units",
+    "display_biological_rate_units",
+)
 
 
 def _finite_number(
@@ -52,17 +65,27 @@ def validate_browser_runtime_policy(payload: object) -> None:
     ):
         raise ValueError("browser runtime policy cannot carry biological authority")
 
+    local_fixture = payload.get("local_fixture")
     suspension = payload.get("suspension")
     clock = payload.get("clock")
     quality = payload.get("quality")
     if not all(
         isinstance(section, Mapping)
-        for section in (suspension, clock, quality)
+        for section in (local_fixture, suspension, clock, quality)
     ):
         raise ValueError("browser runtime policy sections are required")
+    assert isinstance(local_fixture, Mapping)
     assert isinstance(suspension, Mapping)
     assert isinstance(clock, Mapping)
     assert isinstance(quality, Mapping)
+
+    if (
+        local_fixture.get("runtime_role")
+        != "normalized_schematic_fallback_only"
+        or local_fixture.get("execute_when_python_snapshot_missing") is not True
+        or any(local_fixture.get(key) is not False for key in LOCAL_FIXTURE_FALSE_GATES)
+    ):
+        raise ValueError("browser-local fixture authority boundary is invalid")
 
     required_suspension_guards = (
         "when_document_hidden",
@@ -106,6 +129,7 @@ def validate_browser_runtime_policy(payload: object) -> None:
 
     frame_delays: list[float] = []
     fluid_intervals: list[float] = []
+    grid_refresh_intervals: list[float] = []
     work_budgets: list[float] = []
     for tier_id in QUALITY_TIERS:
         tier = tiers.get(tier_id)
@@ -114,6 +138,13 @@ def validate_browser_runtime_policy(payload: object) -> None:
         frame_delays.append(_finite_number(tier, "frame_delay_ms"))
         fluid_intervals.append(
             _finite_number(tier, "fluid_step_interval_s", positive=True)
+        )
+        grid_refresh_intervals.append(
+            _finite_number(
+                tier,
+                "numerical_grid_refresh_interval_s",
+                positive=True,
+            )
         )
         work_budgets.append(
             _finite_number(tier, "maximum_average_work_ms", positive=True)
@@ -130,6 +161,7 @@ def validate_browser_runtime_policy(payload: object) -> None:
     if (
         frame_delays != sorted(frame_delays)
         or fluid_intervals != sorted(fluid_intervals)
+        or grid_refresh_intervals != sorted(grid_refresh_intervals)
         or work_budgets != sorted(work_budgets)
     ):
         raise ValueError("browser quality tiers must reduce work monotonically")

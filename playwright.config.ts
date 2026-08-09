@@ -16,7 +16,14 @@ export default defineConfig({
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
     launchOptions: {
-      args: ["--use-angle=swiftshader"]
+      // Exercise the same hardware path used by the in-app browser on Apple
+      // Silicon. Non-macOS CI retains deterministic software WebGL fallback;
+      // the assertions are statistical, never exact cross-GPU pixels.
+      args: [
+        process.platform === "darwin"
+          ? "--use-angle=metal"
+          : "--use-angle=swiftshader"
+      ]
     }
   },
   webServer: {

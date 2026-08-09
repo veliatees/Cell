@@ -5,6 +5,7 @@ export type RenderQualityTier = "full" | "balanced" | "essential";
 type QualityTierPolicy = {
   frame_delay_ms: number;
   fluid_step_interval_s: number;
+  numerical_grid_refresh_interval_s: number;
   maximum_average_work_ms: number;
   maximum_long_frame_ratio: number;
   long_frame_threshold_ms: number;
@@ -15,6 +16,21 @@ export type BrowserRuntimePolicy = {
   purpose: string;
   scientific_authority: false;
   biological_parameter_activation: false;
+  local_fixture: {
+    runtime_role: "normalized_schematic_fallback_only";
+    execute_when_python_snapshot_loading: false;
+    execute_when_python_snapshot_loaded: false;
+    execute_when_python_snapshot_missing: true;
+    canonical_geometry_coupling: false;
+    canonical_engine_state_coupling: false;
+    engine_division_state_coupling: false;
+    quantitative_output_authority: false;
+    predictive_authority: false;
+    biological_time_authority: false;
+    biological_rate_authority: false;
+    display_biological_time_units: false;
+    display_biological_rate_units: false;
+  };
   suspension: {
     when_document_hidden: true;
     when_viewport_not_intersecting: true;
@@ -60,6 +76,13 @@ export function renderFrameDelayMs(tier: RenderQualityTier): number {
 
 export function fluidStepIntervalS(tier: RenderQualityTier): number {
   return BROWSER_RUNTIME_POLICY.quality.tiers[tier].fluid_step_interval_s;
+}
+
+export function numericalGridRefreshIntervalS(
+  tier: RenderQualityTier
+): number {
+  return BROWSER_RUNTIME_POLICY.quality.tiers[tier]
+    .numerical_grid_refresh_interval_s;
 }
 
 export function renderLongFrameThresholdMs(tier: RenderQualityTier): number {

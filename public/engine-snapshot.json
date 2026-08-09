@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-08-08T23:17:14.005812+00:00",
+    "created_at_utc": "2026-08-09T07:46:29.921405+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -17292,8 +17292,8 @@
           "observed_metrics": {
             "automatic_biological_parameter_activation_count": 0,
             "initial_js_chunk_count": 2,
-            "initial_js_gzip_bytes": 265443,
-            "initial_js_raw_bytes": 968985,
+            "initial_js_gzip_bytes": 266843,
+            "initial_js_raw_bytes": 974191,
             "maximum_initial_js_gzip_bytes": 275000,
             "maximum_initial_js_raw_bytes": 980000,
             "production_manifest_gate_count": 1,
@@ -17309,16 +17309,26 @@
             "data/validation/browser_runtime_policy.v1.json",
             "src/runtime/renderCadence.ts",
             "src/runtime/renderCadence.test.ts",
+            "src/runtime/browserLocalFixture.ts",
+            "src/runtime/browserLocalFixture.test.ts",
             "src/main.ts",
             "engine/cell_engine/validation/browser_runtime_policy.py",
             "engine/tests/test_browser_runtime_policy.py"
           ],
-          "current_capability": "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone.",
+          "current_capability": "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone. The browser-local biochemical fixture is paused while a Python snapshot loads or is present, cannot scale canonical geometry or mutate engine/division state, and may advance only as a clearly relative fallback when the snapshot is unavailable.",
           "id": "browser_runtime_workload_policy",
           "observed_metrics": {
             "automatic_biological_parameter_activation_count": 0,
             "document_visibility_suspension_guard_count": 1,
             "initial_load_grace_window_count": 2,
+            "local_fixture_advances_while_snapshot_loading_count": 0,
+            "local_fixture_advances_with_snapshot_count": 0,
+            "local_fixture_biological_rate_authority_count": 0,
+            "local_fixture_biological_time_authority_count": 0,
+            "local_fixture_canonical_geometry_coupling_count": 0,
+            "local_fixture_canonical_state_coupling_count": 0,
+            "local_fixture_fallback_without_snapshot_count": 1,
+            "projected_grid_refresh_cadence_tier_count": 3,
             "quality_tier_count": 3,
             "single_pending_render_guard_count": 1,
             "suspended_elapsed_discard_guard_count": 1,
@@ -17328,9 +17338,9 @@
             "visual_fluid_cadence_tier_count": 3
           },
           "remaining_requirements": [],
-          "scope": "Browser render scheduling, visual-fluid cadence and device-load degradation; no biological-model, timescale or accuracy claim.",
+          "scope": "Browser render scheduling, visual-fluid cadence, device-load degradation and normalized fallback execution; no biological-model, timescale or accuracy claim.",
           "status": "closed",
-          "title": "Browser runtime workload and cadence policy"
+          "title": "Browser runtime workload, cadence and local-fixture authority policy"
         },
         {
           "code_surfaces": [
@@ -24638,7 +24648,7 @@
       "context_only_sections": [
         "quantitative_state"
       ],
-      "policy": "quantitative_state is static whole-liver context only and cannot initialize one cell, convert counts or run dynamics; organelle_placement is a mixed-species seeded collision/renderer proxy and has no healthy-PHH count, morphology, mechanics or quantitative-contact authority; whole_cell_runtime_authority requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of legacy relative-pool dynamics; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires a donor-resolved write, verified-removal persistence, first-response and rechallenge-response trajectory plus a frozen held-out-validated law and never treats an event log as memory; cytosol_transport keeps passive aqueous projection separate from deterministic dimensionless cargo rendering, applies outer-membrane cut-cell geometric conservation and subgrid organelle interception only as numerical boundary treatments, forbids a single global viscosity/crowding multiplier and gates fluid coupling per reaction; cytoplasm_dynamics retains cross-context motion observations but exports zero healthy-PHH motion parameters, while browser staging uses only independent renderer-world and wall-clock values; receptor_signaling_trajectory_intake requires donor-matched density, binding, occupancy, trafficking, response and frozen heldout stages but cannot activate a receptor or signal; active_protein_localization_intake requires donor-matched total, localized, active, denominator and functional measurements but cannot infer active copies or scale rates; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
+      "policy": "quantitative_state is static whole-liver context only and cannot initialize one cell, convert counts or run dynamics; organelle_placement is a mixed-species seeded collision/renderer proxy and has no healthy-PHH count, morphology, mechanics or quantitative-contact authority; whole_cell_runtime_authority requires an explicit schematic or exploratory purpose and rejects quantitative, predictive and authoritative state-coupling use of legacy relative-pool dynamics; the capability atlas defines scope but activates no behavior; the completion matrix reports only scoped engineering status and never a whole-cell realism percentage; the quantity harvest preserves raw species, model, assay and denominator and cannot activate parameters without explicit review; the PHH injury operator requires exact protocol context, never interprets missing evidence as no effect, and cannot mutate state; donor-resolved injury intake additionally requires a versioned raw schema, donor/study-disjoint splits, manual review, frozen checksums and exact assay projection before descriptive heldout residuals; legacy injury fixtures reject quantitative, predictive and authoritative-coupling use; cellular memory requires a donor-resolved write, verified-removal persistence, first-response and rechallenge-response trajectory plus a frozen held-out-validated law and never treats an event log as memory; cytosol_transport keeps passive aqueous projection separate from deterministic dimensionless cargo rendering, applies outer-membrane cut-cell geometric conservation and subgrid organelle interception only as numerical boundary treatments, forbids a single global viscosity/crowding multiplier and gates fluid coupling per reaction; cytoplasm_dynamics retains cross-context motion observations but exports zero healthy-PHH motion parameters, while browser staging uses only independent renderer-world and wall-clock values; the browser-local normalized biochemical fixture pauses while a Python snapshot loads or is active, cannot scale canonical geometry or mutate engine/division state, and publishes no biological time, rate, survival or transport-timing claim; receptor_signaling_trajectory_intake requires donor-matched density, binding, occupancy, trafficking, response and frozen heldout stages but cannot activate a receptor or signal; active_protein_localization_intake requires donor-matched total, localized, active, denominator and functional measurements but cannot infer active copies or scale rates; metabolic_constraint_shell pins the generic Human-GEM artifact but cannot execute until PHH context, boundaries, objective and validation are frozen; compartmental_energy_redox owns energy/redox pool identity but activates no values or rates; energy_redox_validation quarantines every legacy ATP/redox/OXPHOS parameter until compartment, identifiability and held-out gates pass; external_validation_program owns context-of-use, claim, reviewer-role and independence semantics while assigning no biological-accuracy percentage or predictive claim; spatial_world wins on runtime geometry; reaction_authority prevents topology citations or unsupported rates from entering quantitative validation; kinetic_transfer additionally requires exact stoichiometry, compartment, symbolic equation, per-cell units, context and validation before a published parameter can enter the active network; exact_glucose_homeostasis owns canonical glucose-pool identity while glucose_open_system keeps sinusoid and PHH assay contexts non-interchangeable; glucose_calibration_validation permits descriptive residuals but blocks fitting and prediction until observability and held-out gates pass; geometry may change spatial_state but cannot alter biochemistry until a source-backed interaction law passes validation.",
       "primary_context_path": "quantitative_state",
       "quantitative_biochemical_dynamics_executed": false,
       "runtime_authoritative_sections": [

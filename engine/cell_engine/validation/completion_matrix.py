@@ -2707,10 +2707,10 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
         ),
         _entry(
             "browser_runtime_workload_policy",
-            "Browser runtime workload and cadence policy",
+            "Browser runtime workload, cadence and local-fixture authority policy",
             "closed",
-            "Browser render scheduling, visual-fluid cadence and device-load degradation; no biological-model, timescale or accuracy claim.",
-            "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone.",
+            "Browser render scheduling, visual-fluid cadence, device-load degradation and normalized fallback execution; no biological-model, timescale or accuracy claim.",
+            "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone. The browser-local biochemical fixture is paused while a Python snapshot loads or is present, cannot scale canonical geometry or mutate engine/division state, and may advance only as a clearly relative fallback when the snapshot is unavailable.",
             {
                 "document_visibility_suspension_guard_count": int(
                     bool(
@@ -2752,10 +2752,65 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                     )
                     for tier in browser_runtime["quality"]["tiers"].values()
                 ),
+                "projected_grid_refresh_cadence_tier_count": sum(
+                    int(
+                        tier["numerical_grid_refresh_interval_s"] > 0
+                    )
+                    for tier in browser_runtime["quality"]["tiers"].values()
+                ),
                 "total_frame_work_governor_count": 1,
                 "visual_clock_conservation_test_count": 1,
                 "automatic_biological_parameter_activation_count": int(
                     bool(browser_runtime["biological_parameter_activation"])
+                ),
+                "local_fixture_advances_while_snapshot_loading_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "execute_when_python_snapshot_loading"
+                        ]
+                    )
+                ),
+                "local_fixture_advances_with_snapshot_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "execute_when_python_snapshot_loaded"
+                        ]
+                    )
+                ),
+                "local_fixture_fallback_without_snapshot_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "execute_when_python_snapshot_missing"
+                        ]
+                    )
+                ),
+                "local_fixture_canonical_geometry_coupling_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "canonical_geometry_coupling"
+                        ]
+                    )
+                ),
+                "local_fixture_canonical_state_coupling_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "canonical_engine_state_coupling"
+                        ]
+                    )
+                ),
+                "local_fixture_biological_time_authority_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "biological_time_authority"
+                        ]
+                    )
+                ),
+                "local_fixture_biological_rate_authority_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "biological_rate_authority"
+                        ]
+                    )
                 ),
             },
             (),
@@ -2763,6 +2818,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "data/validation/browser_runtime_policy.v1.json",
                 "src/runtime/renderCadence.ts",
                 "src/runtime/renderCadence.test.ts",
+                "src/runtime/browserLocalFixture.ts",
+                "src/runtime/browserLocalFixture.test.ts",
                 "src/main.ts",
                 "engine/cell_engine/validation/browser_runtime_policy.py",
                 "engine/tests/test_browser_runtime_policy.py",

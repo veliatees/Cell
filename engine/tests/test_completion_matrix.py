@@ -145,9 +145,17 @@ def test_browser_runtime_policy_suspends_hidden_work_without_biological_authorit
     assert metrics["quality_tier_count"] == 3
     assert metrics["initial_load_grace_window_count"] == 2
     assert metrics["visual_fluid_cadence_tier_count"] == 3
+    assert metrics["projected_grid_refresh_cadence_tier_count"] == 3
     assert metrics["total_frame_work_governor_count"] == 1
     assert metrics["visual_clock_conservation_test_count"] == 1
     assert metrics["automatic_biological_parameter_activation_count"] == 0
+    assert metrics["local_fixture_advances_while_snapshot_loading_count"] == 0
+    assert metrics["local_fixture_advances_with_snapshot_count"] == 0
+    assert metrics["local_fixture_fallback_without_snapshot_count"] == 1
+    assert metrics["local_fixture_canonical_geometry_coupling_count"] == 0
+    assert metrics["local_fixture_canonical_state_coupling_count"] == 0
+    assert metrics["local_fixture_biological_time_authority_count"] == 0
+    assert metrics["local_fixture_biological_rate_authority_count"] == 0
 
 
 def test_snapshot_export_reuse_is_isolated_and_biologically_inert() -> None:

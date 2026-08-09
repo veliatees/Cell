@@ -143,6 +143,7 @@ import {
   accumulateCadencedStep,
   evaluateRenderWorkloadWindow,
   fluidStepIntervalS,
+  numericalGridRefreshIntervalS,
   renderFrameDelayMs,
   renderLongFrameThresholdMs,
   renderQualityOrder,
@@ -150,6 +151,18 @@ import {
   visualSimulationStepPlan,
   type RenderQualityTier
 } from "./runtime/renderCadence";
+import {
+  browserLocalFixtureClockDisclosure,
+  browserLocalFixtureElapsedLabel,
+  browserLocalFixtureEventText,
+  browserLocalFixtureExecution,
+  browserLocalFixtureFlowMeta,
+  browserLocalFixtureFlowValue,
+  browserLocalFixtureGeometryScale,
+  browserLocalFixtureOrganelleMeta,
+  browserLocalFixtureStatusView,
+  type PythonSnapshotAvailability
+} from "./runtime/browserLocalFixture";
 import "./styles.css";
 
 let engineSnapshotModulePromise:
@@ -472,14 +485,13 @@ function updateDivisionPanels(visible: boolean) {
   }
   divisionPanelsEl.style.display = "grid";
   const sourceLabel = latestVisualDivisionSource === "engine" ? "Engine daughter" : "Browser-local demo daughter";
-  const activityLabel = latestVisualDivisionSource === "engine" ? "exploratory mitochondrial / ATP channel" : "schematic local activity";
-  const statusColor = (st: string) => (st === "dying" ? "#ff8a8a" : st === "stressed" ? "#ffcf6b" : st === "senescent" ? "#d9a6ff" : "#7ee0a8");
+  const activityLabel = latestVisualDivisionSource === "engine" ? "daughter-resolved activity unavailable" : "normalized renderer-fixture activity";
+  const statusColor = (st: string) => (st === "failure-like" ? "#ff8a8a" : st === "stress-like" ? "#ffcf6b" : st === "senescence-like" ? "#d9a6ff" : "#7ee0a8");
   divisionPanelsEl.innerHTML = cells
     .map((cell, i) => {
       const c = cell.state;
       const color = FUCCI[c.phase] ?? "#9fe6ff";
-      // Independently advanced exploratory activity, else an inheritance proxy.
-      const activity = cell.mitoActivity >= 0 ? cell.mitoActivity : Math.min(1, c.organelles.mitochondria / 6e8);
+      const activity = cell.mitoActivity >= 0 ? cell.mitoActivity : 0;
       const ec = cell.energyCharge >= 0 ? ` · EC ${cell.energyCharge.toFixed(2)}` : "";
       const st = cell.status ? ` · <b style="color:${statusColor(cell.status)}">${cell.status}</b>` : "";
       return (
@@ -511,14 +523,14 @@ reportPanel.innerHTML =
   '<section class="response-panel" aria-label="Engine disease response"><div class="response-panel__head">Engine response</div><div class="report-response"></div></section>' +
   '<section class="comparison-panel" aria-label="Experiment comparison"><div class="response-panel__head">Experiment comparison</div><div class="report-comparison"></div></section>' +
   '<section class="evidence-panel" aria-label="Evidence boundary"><div class="response-panel__head">Evidence boundary</div><div class="report-evidence"></div></section>' +
-  '<div class="local-visual-panel__head">Browser-local schematic renderer</div>' +
+  '<div class="local-visual-panel__head">Browser-local normalized fallback - execution gated</div>' +
   '<div class="report-status"></div>' +
   '<div class="report-cellcycle"></div>' +
   '<div class="report-timescale"></div>' +
   '<div class="report-rows"></div>' +
   '<div class="report-flow__title">Schematic route-family particles</div>' +
   '<div class="report-flows"></div>' +
-  '<div class="report-log__title">Local visual event log</div>' +
+  '<div class="report-log__title">Sanitized renderer-fixture event log</div>' +
   '<div class="report-log"></div>';
 (rightInspectorElement ?? viewportElement).append(reportPanel);
 const reportPanelElements = {
@@ -547,6 +559,7 @@ communicationPanel.setAttribute("aria-label", "Intercellular communication evide
 (rightInspectorElement ?? viewportElement).append(communicationPanel);
 let lastEventId = 0;
 let externalEngineSummary: EngineSnapshotSummary | null = null;
+let pythonSnapshotAvailability: PythonSnapshotAvailability = "loading";
 let evidenceBoundaryEngineSummary: EngineSnapshotSummary | null = null;
 let externalEngineDiagnostic = "Python engine snapshot loading...";
 const defaultExternalEngineSnapshotUrl = engineSnapshotEndpointFromLocation(window.location);
@@ -589,6 +602,7 @@ function contextSnapshotUrl(zone: EngineZoneId, experiment: EngineExperimentId):
 function selectEngineContext(): void {
   externalEngineSnapshotUrl = contextSnapshotUrl(selectedZone, selectedExperiment);
   externalEngineSummary = null;
+  pythonSnapshotAvailability = "loading";
   externalEngineDiagnostic = "Python zonation context loading...";
   reportStaticRevision += 1;
   void refreshExternalEngineSnapshot();
@@ -679,6 +693,7 @@ async function refreshExternalEngineSnapshot(forceRefresh = false) {
   ) return;
   if (result.status === "loaded") {
     externalEngineSummary = result.summary;
+    pythonSnapshotAvailability = "loaded";
     if (requestedUrl === defaultExternalEngineSnapshotUrl) {
       // Evidence intake and model-audit surfaces are project-wide. Context
       // snapshots may intentionally trail the canonical export, so keep those
@@ -694,13 +709,18 @@ async function refreshExternalEngineSnapshot(forceRefresh = false) {
     }
   } else {
     externalEngineSummary = null;
+    pythonSnapshotAvailability = "missing";
     externalEngineDiagnostic = `${result.diagnostic}; TS visual model remains active.`;
   }
   // If the organelle scene is showing and the engine placement availability
   // changed (typically: the snapshot finished loading after the scene was first
   // built), rebuild once so the engine-canonical runtime proxy is used.
   const placementNow = !!(externalEngineSummary?.organellePlacement?.bodies.length);
-  if (mode === "organelles" && placementNow !== organelleSceneUsedEnginePlacement) {
+  if (
+    mode === "organelles" &&
+    organelleGroup !== null &&
+    placementNow !== organelleSceneUsedEnginePlacement
+  ) {
     loadScene(EUKARYOTE_SCENE_ID);
   }
   reportStaticRevision += 1;
@@ -709,7 +729,10 @@ async function refreshExternalEngineSnapshot(forceRefresh = false) {
   void rememberEngineSnapshotVersion(requestedUrl);
 }
 
-void refreshExternalEngineSnapshot();
+// The first heavyweight organelle scene is built only after this resolves. It
+// avoids constructing the ~1,900-body fallback and immediately rebuilding the
+// same scene when the canonical placement snapshot arrives.
+const initialEngineSnapshotLoad = refreshExternalEngineSnapshot();
 window.setInterval(() => {
   if (document.hidden) return;
   const url = externalEngineSnapshotUrl;
@@ -817,7 +840,9 @@ let instancedFlowTargets: InstancedFlowTarget[] = [];
 // (Intracellular cytoplasm-drift coverage is now a catch-all over every drawable
 // body under the cell with a small exclusion set — see buildOrganelleScene's
 // render loop — so no inclusion regex is needed here.)
-let livingCell: LivingCell | null = null; // the metabolic model behind the organelle scene
+// Frozen normalized fallback state while a Python snapshot is loading/present;
+// it advances only after snapshot loading has definitively failed.
+let livingCell: LivingCell | null = null;
 const organelleMitos: THREE.Mesh[] = []; // mitochondria meshes (glow with ATP production)
 let organelleMembrane: THREE.Mesh | null = null; // plasma membrane (tinted by cell status)
 // Whole-cell membrane geometry. This is an Eulerian micrometre-scale surface,
@@ -1064,10 +1089,10 @@ type ResolvedCellVisual = {
   cytoplasmMat: THREE.MeshStandardMaterial;
   nucleusMats: THREE.MeshStandardMaterial[];
   particleMats: THREE.MeshStandardMaterial[];
-  living: LivingCell;          // each daughter runs its own metabolic model
-  mitoActivity: number;        // latest mitochondrial ATP activity (0..1)
-  energyCharge: number;        // latest energy charge (0..1)
-  status: string;              // latest health status
+  living: LivingCell | null;   // browser-fallback daughters only
+  mitoActivity: number;        // normalized renderer channel, or -1 when absent
+  energyCharge: number;        // normalized renderer channel, or -1 when absent
+  status: string;              // renderer-fixture state; empty for engine daughters
 };
 type ResolvedDivisionVisual = {
   group: THREE.Group;
@@ -1254,11 +1279,6 @@ const DIFFUSION_SCALE = 3; // diffusion clouds spread to several nm; scale to fi
 const CELL_R = HEPATOCYTE_RENDER_RADIUS_WORLD;
 const CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND =
   BROWSER_RUNTIME_POLICY.clock.visual_cell_seconds_per_real_second;
-// The dimensionless pressure projection follows slowly moving organelle
-// boundaries. Rebuilding its 18^3 cut-cell domain at display-frame cadence
-// wastes CPU without adding biological or visual information. Tracers advect
-// on the active quality tier's cadence through the latest projected field.
-const CYTOSOL_NUMERICAL_REFRESH_INTERVAL_S = 1 / 4;
 const MEMBRANE_SCALE = 1.6; // membrane positions are in σ (~1 nm); scale for display
 let running = true;
 let showClouds = true;
@@ -1862,44 +1882,57 @@ function createResolvedDivisionVisual(cells: VisualCellInstance[], outcome: Divi
     const mitoMats = makeCellParticleCloud(state, radius, "mitochondria", cellGroup);
     makeCellParticleCloud(state, radius, "vesicles", cellGroup);
 
-    // Each daughter fixture advances its own normalized browser model, so the
-    // two panels need not share identical display activity.
-    const living = new LivingCell(undefined, 0.85, true);
+    // Engine daughters must never acquire synthetic health or ATP trajectories.
+    // Only an explicit snapshot-unavailable browser demo owns a local fixture.
+    const living = engineBacked ? null : new LivingCell(undefined, 0.85, true);
 
     group.add(cellGroup);
     visuals.push({
       state, group: cellGroup, start, target, membraneMat, cytoplasmMat, nucleusMats,
-      particleMats: mitoMats, living, mitoActivity: 0.3, energyCharge: 0.85, status: "healthy"
+      particleMats: mitoMats,
+      living,
+      mitoActivity: engineBacked ? -1 : 0.3,
+      energyCharge: engineBacked ? -1 : 0.85,
+      status: engineBacked ? "" : "baseline-like"
     });
   }
   root.add(group);
   resolvedDivisionVisual = { group, cells: visuals };
 }
-function updateResolvedDivisionVisual(simSeconds: number, elapsedS: number) {
+function updateResolvedDivisionVisual(rendererDeltaS: number, rendererElapsedS: number) {
   if (!resolvedDivisionVisual) return;
   const event = visualDivisionEvents[visualDivisionEvents.length - 1];
+  const localExecution = browserLocalFixtureExecution(pythonSnapshotAvailability);
   for (const visual of resolvedDivisionVisual.cells) {
-    visual.state.divisionOutcomeAge += simSeconds;
+    visual.state.divisionOutcomeAge += rendererDeltaS;
     const p = Math.min(1, visual.state.divisionOutcomeAge / 5.5);
     const eased = p * p * (3 - 2 * p);
     visual.group.position.copy(visual.start).lerp(visual.target, eased);
-    visual.group.rotation.y = Math.sin(elapsedS * 0.08 + visual.state.id) * 0.05;
-    visual.group.rotation.z = Math.sin(elapsedS * 0.06 + visual.state.id * 0.7) * 0.025;
-    const pulse = 0.5 + 0.5 * Math.sin(elapsedS * 0.7 + visual.state.id);
+    visual.group.rotation.y = Math.sin(rendererElapsedS * 0.08 + visual.state.id) * 0.05;
+    visual.group.rotation.z = Math.sin(rendererElapsedS * 0.06 + visual.state.id * 0.7) * 0.025;
+    const pulse = 0.5 + 0.5 * Math.sin(rendererElapsedS * 0.7 + visual.state.id);
     visual.membraneMat.opacity = event?.outcome === "abscission_success" ? 0.2 + pulse * 0.035 : 0.24 + pulse * 0.025;
     visual.cytoplasmMat.opacity = 0.06 + pulse * 0.02;
     for (const mat of visual.nucleusMats) mat.emissiveIntensity = 0.12 + pulse * 0.08;
 
-    // Advance each browser fixture independently and map its normalized ATP and
-    // status channels to display materials.
-    visual.living.step(simSeconds * 0.5, 1);
-    const snap = visual.living.snapshot();
-    visual.mitoActivity = Math.min(1, snap.activity.mitochondria / 0.95);
-    visual.energyCharge = snap.energyCharge;
-    visual.status = snap.status;
-    const glow = 0.18 + 1.15 * visual.mitoActivity;
+    // Engine-backed daughters remain neutral unless the engine supplies a
+    // daughter-resolved activity channel. Local normalized trajectories run
+    // only in the snapshot-unavailable fallback demo.
+    if (visual.living && localExecution.shouldAdvance) {
+      visual.living.step(rendererDeltaS * 0.5, 1);
+      const snap = visual.living.snapshot();
+      visual.mitoActivity = Math.min(1, snap.activity.mitochondria / 0.95);
+      visual.energyCharge = snap.energyCharge;
+      visual.status = browserLocalFixtureStatusView(
+        snap,
+        localExecution
+      ).stateLabel;
+    }
+    const activity = visual.mitoActivity >= 0 ? visual.mitoActivity : 0.3;
+    const energy = visual.energyCharge >= 0 ? visual.energyCharge : 0.5;
+    const glow = 0.18 + 1.15 * activity;
     for (const mat of visual.particleMats) mat.emissiveIntensity = glow;
-    visual.membraneMat.emissiveIntensity = 0.08 + 0.22 * visual.energyCharge;
+    visual.membraneMat.emissiveIntensity = 0.08 + 0.22 * energy;
   }
 }
 function resolveVisualDivision(energyCharge: number, healthy: boolean) {
@@ -1987,10 +2020,16 @@ function syncVisualDivisionFromEngine(summary: EngineSnapshotSummary | null) {
 let lastCellCycleDomUpdateMs = Number.NEGATIVE_INFINITY;
 function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy: boolean) {
   const c = cellCycle;
+  const localExecution = browserLocalFixtureExecution(pythonSnapshotAvailability);
   const alreadyResolved = visualDivisionEvents.length > 0;
   const nutrientOk = energyCharge > 0;
   const regenerationOk = CC.regenerationSignalActive;
-  const proliferationPermitted = CC.localDivisionFallbackEnabled && nutrientOk && regenerationOk && healthy;
+  const proliferationPermitted =
+    localExecution.shouldAdvance &&
+    CC.localDivisionFallbackEnabled &&
+    nutrientOk &&
+    regenerationOk &&
+    healthy;
   if (!alreadyResolved) {
     const enteredG1 = c.phase === "G0" && proliferationPermitted;
     if (enteredG1) {
@@ -2038,6 +2077,30 @@ function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy:
   );
   c.organelles.golgiFragments = c.phase === "M" ? Math.max(40, Math.round(80 * c.mechanics.golgiFragmentation)) : Math.max(1, c.organelles.golgiFragments);
 
+  // While canonical state is loading or present, do not expose the dormant
+  // browser fixture's phase clocks, biomass, energy score, or failure law.
+  if (!localExecution.shouldAdvance && latestVisualDivisionSource !== "engine") {
+    const engineCell = externalEngineSummary?.division?.cells[0];
+    const phase = engineCell?.phase ?? (pythonSnapshotAvailability === "loading" ? "loading" : "unavailable");
+    const cellCount = externalEngineSummary?.division?.cell_count ?? 0;
+    const note = pythonSnapshotAvailability === "loading"
+      ? "awaiting Python division state"
+      : "no engine division event - local fixture paused";
+    if (cellCycleEl) {
+      cellCycleEl.innerHTML =
+        `<div class="cc-head">engine split state - <b style="color:#8da0b8">${phase}</b> - ${note}</div>` +
+        `<div class="cc-bar"><span style="width:0%;background:#8da0b8"></span></div>` +
+        `<div class="cc-meta">Python snapshot only - cells ${cellCount} - browser-local phase timing, growth, partition and failure channels are not executed</div>`;
+    }
+    splitStateBadge.innerHTML =
+      `<div class="split-state-badge__label">Split State</div>` +
+      `<div class="split-state-badge__head"><b style="color:#8da0b8">${phase}</b><span>${note}</span></div>` +
+      `<div class="split-state-badge__bar"><span style="width:0%;background:#8da0b8"></span></div>` +
+      `<div class="split-state-badge__meta">Python snapshot source - local normalized fixture paused</div>`;
+    updateDivisionPanels(false);
+    return;
+  }
+
   let within: number;
   if (c.phase === "G0") within = 0;
   else if (c.phase === "G1") within = Math.min(1, c.biomass / CC.g1s);
@@ -2056,7 +2119,7 @@ function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy:
     : "";
   let readinessPct = Math.round(readiness * 100);
   if (c.phase === "G0" && !latestEvent) readinessPct = 0;
-  let note = `${readinessPct}% to division`;
+  let note = `${readinessPct}% relative phase progress`;
   if (c.phase === "G0" && !latestEvent) note = "quiescent G0 — no cycle commitment";
   else if (!nutrientOk && !latestEvent) note = "nutrient/energy low — no growth";
   else if ((c.phase === "G1" && c.biomass >= CC.g1s || c.phase === "G2" && c.biomass >= CC.g2m) && !healthy) note = "checkpoint — DNA damage";
@@ -2068,7 +2131,7 @@ function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy:
   else if (c.abscissionPending) note = `abscission checkpoint · midbody ${Math.round(Math.min(1, c.abscissionAge / CC.abscissionDelayS) * 100)}%`;
   else if (c.mechanics.stage !== "none") note = `${c.mechanics.stage.replaceAll("_", " ")} · spindle-defined furrow`;
   const eventMeta = latestEvent
-    ? ` · population ${visualPopulation.length} · ${eventSourceText} · outcome ${latestEvent.outcome.replaceAll("_", " ")} · P(fail) ${(latestEvent.failureRisk * 100).toFixed(0)}%`
+    ? ` · population ${visualPopulation.length} · ${eventSourceText} · outcome ${latestEvent.outcome.replaceAll("_", " ")} · ${eventIsEngineBacked ? "engine" : "fixture"} failure channel ${latestEvent.failureRisk.toFixed(2)}`
     : ` · population ${visualPopulation.length}`;
   const localBlock = localDivisionDemoBlockedByEngine() ? " · local division demo locked by Python snapshot" : "";
   const uiNow = performance.now();
@@ -2085,7 +2148,7 @@ function updateCellCyclePanel(simSeconds: number, energyCharge: number, healthy:
     `<div class="split-state-badge__label">Split State</div>` +
     `<div class="split-state-badge__head"><b style="color:${color}">${c.phase}</b><span>${note}</span></div>` +
     `<div class="split-state-badge__bar"><span style="width:${readinessPct}%;background:${color}"></span></div>` +
-    `<div class="split-state-badge__meta">cells ${visualPopulation.length} · nuclei ${visualPopulation.map((cell) => cell.nuclei).join("+")} · biomass ${c.biomass.toFixed(2)} · regeneration ${CC.regenerationSignalActive ? "on" : "off"} · EC ${energyCharge.toFixed(2)}${localBlock}</div>`;
+    `<div class="split-state-badge__meta">cells ${visualPopulation.length} · nuclei ${visualPopulation.map((cell) => cell.nuclei).join("+")} · relative biomass ${c.biomass.toFixed(2)} · fixture regeneration ${CC.regenerationSignalActive ? "on" : "off"} · relative energy ${energyCharge.toFixed(2)}${localBlock}</div>`;
 
   // Split the readout into one panel per daughter once division has produced two.
   updateDivisionPanels(latestEvent?.outcome === "abscission_success");
@@ -2424,7 +2487,7 @@ function setMetricLabels(m: Mode) {
         : "System Readout";
   }
   if (rightPanelTitleText) {
-    rightPanelTitleText.textContent = m === "communication" ? "Contact Evidence" : m === "organelles" ? "Schematic Activity" : "Environment";
+    rightPanelTitleText.textContent = m === "communication" ? "Contact Evidence" : m === "organelles" ? "Engine + Renderer State" : "Environment";
   }
   const labels = hasHumanLiverContext
     ? { distance: "Liver glycogen (mM eq.)", force: "Liver ATP (mM eq.)", potential: "Liver ADP (mM eq.)", kinetic: "Tissue energy charge", total: "Nutrition context", drift: "Liver NAD+ (mM eq.)" }
@@ -2508,38 +2571,8 @@ app.querySelector<HTMLButtonElement>("[data-action='reset']")?.addEventListener(
 let divisionDemoActive = false;
 const divideButton = app.querySelector<HTMLButtonElement>("[data-action='divide']");
 const divideGateEl = app.querySelector<HTMLElement>("[data-role='division-gate']");
-function latestEngineDivisionEvent(summary: EngineSnapshotSummary | null): EngineDivisionEvent | null {
-  return summary?.division?.latest_event ?? summary?.division?.events.at(-1) ?? null;
-}
-
-function engineSnapshotHasDivisionContext(summary: EngineSnapshotSummary | null): boolean {
-  if (!summary) return false;
-  const regen = summary.regenerationContext;
-  const display = summary.divisionDisplay;
-  return Boolean(
-    display?.canDisplayDaughters ||
-      display?.isCytokinesisRegression ||
-      display?.reason === "abscission_success" ||
-      display?.reason === "cytokinesis_failure" ||
-      display?.timeCompressed ||
-      summary.division?.timing_profile?.time_compressed ||
-      regen?.division_demo_is_time_compressed ||
-      regen?.decision?.regeneration_context_active ||
-      regen?.decision?.cell_cycle_entry_permitted
-  );
-}
-
 function localDivisionDemoBlockedByEngine(): boolean {
-  if (!externalEngineSummary) return false;
-  const division = externalEngineSummary.division;
-  const display = externalEngineSummary.divisionDisplay;
-  const noDisplayableEngineDivision =
-    !display.available ||
-    display.reason === "division_unavailable" ||
-    display.reason === "no_engine_event" ||
-    display.reason === "event_without_daughters";
-  const oneCellNoEvent = !division || (division.cell_count <= 1 && division.event_count === 0 && !latestEngineDivisionEvent(externalEngineSummary));
-  return noDisplayableEngineDivision && oneCellNoEvent && !engineSnapshotHasDivisionContext(externalEngineSummary);
+  return pythonSnapshotAvailability !== "missing";
 }
 
 function updateDivisionDemoGate() {
@@ -2552,23 +2585,21 @@ function updateDivisionDemoGate() {
     divideButton.setAttribute("aria-disabled", String(blocked));
     divideButton.classList.toggle("is-disabled", blocked);
     if (blocked) {
-      divideButton.title = "Disabled: loaded Python snapshot has one cell, no division event, and regeneration off.";
+      divideButton.title = pythonSnapshotAvailability === "loading"
+        ? "Disabled while the Python snapshot loads; local fixtures cannot race canonical state."
+        : "Disabled while a Python snapshot is active; division is displayed only from engine events.";
     } else if (divisionDemoActive) {
-      divideButton.title = externalEngineSummary
-        ? "Browser-local visual division demo ON — not a Python engine division event"
-        : "Browser-local visual division demo ON — Python engine snapshot unavailable";
+      divideButton.title = "Browser-local visual division fallback ON - Python snapshot unavailable";
     } else {
-      divideButton.title = externalEngineSummary
-        ? "Browser-local visual division demo; use only when engine context permits it"
-        : "Browser-local visual division demo; Python engine snapshot unavailable";
+      divideButton.title = "Browser-local visual division fallback; available only because the Python snapshot is unavailable";
     }
   }
   if (divideGateEl) {
     divideGateEl.textContent = blocked
-      ? "Python snapshot: 1 cell, regeneration off; local division demo locked"
-      : externalEngineSummary
-        ? "Python snapshot loaded; local demo is separate"
-        : "No Python snapshot; TS schematic fallback active";
+      ? pythonSnapshotAvailability === "loading"
+        ? "Python snapshot loading; local biochemical and division fixtures paused"
+        : "Python snapshot loaded; local biochemical and division fixtures paused"
+      : "Python snapshot unavailable; normalized TS fallback may run";
     divideGateEl.classList.toggle("is-locked", blocked);
   }
 }
@@ -2591,8 +2622,8 @@ function setDivisionDemo(on: boolean, forceOff = false) {
   divideButton?.classList.toggle("is-active", on);
   if (divideButton) {
     divideButton.title = on
-      ? "Browser-local visual division demo ON — not a Python engine division event"
-      : "Browser-local visual division demo is off";
+      ? "Browser-local visual division fallback ON - not Python engine state"
+      : "Browser-local visual division fallback is off";
   }
   updateDivisionDemoGate();
 }
@@ -2663,6 +2694,8 @@ function loadScene(id: string) {
   // one authoritative organelle-network hepatocyte, never a second cell scene.
   if (id === COMMUNICATION_SCENE_ID) id = EUKARYOTE_SCENE_ID;
   activeSceneId = id;
+  document.documentElement.dataset.cellProteinSceneState =
+    id === PROTEIN_SCENE_ID ? "loading" : "inactive";
   rim.intensity = 18;
   backCyan.intensity = 10;
   if (bloomPass) bloomPass.strength = 0.62;
@@ -3020,12 +3053,6 @@ function flowIntensity(flow: CellFlow): number {
   return clamp(flow.value / (FLOW_REF[flow.id] ?? 0.5), 0, 1);
 }
 
-function formatEta(seconds: number): string {
-  if (seconds < 1) return `${Math.round(seconds * 1000)} ms`;
-  if (seconds < 120) return `${seconds.toFixed(seconds < 10 ? 1 : 0)} s`;
-  return `${Math.round(seconds / 60)} min`;
-}
-
 const FLOW_DEFS: Record<string, { from: string; to: string; color: string; mode: CellFlow["mode"] }> = {
   "outside-water": { from: "outside", to: "aquaporin", color: "#b8fff3", mode: "pore" },
   "outside-glucose": { from: "outside", to: "carrier", color: "#7ee0a8", mode: "carrier" },
@@ -3232,17 +3259,27 @@ function buildCellFlowVisuals(parent: THREE.Group) {
   }
 }
 
-function updateFlowVisuals(s: CellSnapshot) {
+function updateFlowVisuals(
+  s: CellSnapshot,
+  rendererElapsedS: number,
+  localFixtureAdvancing: boolean
+) {
   const byId = new Map(s.flows.map((flow) => [flow.id, flow]));
   for (const visual of flowVisuals) {
     const flow = byId.get(visual.id);
-    const strength = flow ? flowIntensity(flow) : 0;
+    // With a Python snapshot present, route particles remain a neutral topology
+    // display. Frozen local flow values cannot control their visibility/glow.
+    const strength = localFixtureAdvancing
+      ? flow
+        ? flowIntensity(flow)
+        : 0
+      : 0.45;
     // Keep the route lines essentially invisible -- a visible web of curves reads as
     // a confusing tangle. The motion itself conveys transport; the line is just a
     // faint hint for cargo modes, none for diffusing small molecules.
     visual.lineMat.opacity = visual.mode === "diffusion" ? 0 : 0.004 + 0.012 * strength;
     const displayCycles = FLOW_DISPLAY_CYCLES_PER_SECOND[visual.mode] ?? 0.18;
-    const guideCycle = Math.floor(s.elapsedS * (0.18 + displayCycles * 1.1) + visual.routeIndex);
+    const guideCycle = Math.floor(rendererElapsedS * (0.18 + displayCycles * 1.1) + visual.routeIndex);
     const trackBound = visual.mode === "vesicle" || visual.mode === "motor" || visual.mode === "autophagy";
     if (!trackBound && guideCycle !== visual.lineCycle) {
       visual.lineCycle = guideCycle;
@@ -3259,7 +3296,7 @@ function updateFlowVisuals(s: CellSnapshot) {
         // is explicitly dimensionless; no PHH motor velocity, pause/reversal law,
         // fusion probability, or ATP dependence has been assigned.
         const progress = dimensionlessRouteProgress(
-          s.elapsedS,
+          rendererElapsedS,
           displayCycles,
           packet.offset,
           packet.speedScale
@@ -3278,7 +3315,7 @@ function updateFlowVisuals(s: CellSnapshot) {
         if (side.lengthSq() < 1e-5) side = new THREE.Vector3(1, 0, 0);
         side.normalize();
         const lift = radial.clone().cross(side).normalize();
-        const jitter = deterministicDisplayJitter(packet.seed, s.elapsedS, packet.wander);
+        const jitter = deterministicDisplayJitter(packet.seed, rendererElapsedS, packet.wander);
         const cp = pos
           .add(side.multiplyScalar(jitter[0]))
           .add(lift.multiplyScalar(jitter[1]))
@@ -3930,10 +3967,15 @@ function updateIntracellularFluid(realDeltaS: number, refreshMovingBoundaries: b
   let positionsChanged = false;
 
   if (fieldStepDeltaS !== null) {
+    // The 18^3 pressure projection follows slowly moving renderer boundaries.
+    // Its wall-clock refresh cadence is quality-tiered engineering policy, not
+    // a cytosolic relaxation time or biological sampling interval.
     const refreshNumericalGrid = deformationChanged
       || (
         refreshMovingBoundaries
-        && visual.obstacleSyncElapsedS >= CYTOSOL_NUMERICAL_REFRESH_INTERVAL_S
+        && visual.obstacleSyncElapsedS >= numericalGridRefreshIntervalS(
+          renderQualityTier
+        )
       );
     const numericalGridDeltaS = refreshNumericalGrid
       ? Math.max(visual.obstacleSyncElapsedS, fieldStepDeltaS)
@@ -3996,10 +4038,11 @@ function updateIntracellularFluid(realDeltaS: number, refreshMovingBoundaries: b
 let lastNutritionBadgeMs = 0;
 function updateNutritionVisual(s: CellSnapshot) {
   const engineNutrition = externalEngineSummary?.nutritionalContext;
+  const localFallback = pythonSnapshotAvailability === "missing";
   // Whole-liver glycogen observations do not identify one hepatocyte's granule
   // count. A loaded scientific context therefore leaves the sampled population
   // unchanged; only the explicitly schematic local fallback may animate count.
-  const frac = engineNutrition ? 1 : clamp(s.glycogenStore01, 0.04, 1);
+  const frac = engineNutrition ? 1 : localFallback ? clamp(s.glycogenStore01, 0.04, 1) : 1;
   if (glycogenInstanced) glycogenInstanced.count = Math.max(0, Math.round(glycogenTotal * frac));
   // No human PHH dose-time law links these nutritional profiles to droplet
   // volume, so the healthy aggregate 3D baseline remains static and explicit.
@@ -4009,21 +4052,29 @@ function updateNutritionVisual(s: CellSnapshot) {
   if (now - lastNutritionBadgeMs < 220) return;
   lastNutritionBadgeMs = now;
   const profile = engineNutrition?.profile_id;
-  const label = profile === "fed_peak" ? "FED PEAK" : profile === "prolonged_fasted" ? "PROLONGED FAST" : profile === "postabsorptive" ? "POSTABSORPTIVE" : s.fedState === "fed" ? "FED" : s.fedState === "fasting" ? "FASTED" : "post-absorptive";
-  const cls = profile === "fed_peak" ? "is-fed" : profile === "prolonged_fasted" ? "is-fasted" : profile === "postabsorptive" ? "is-post" : s.fedState === "fed" ? "is-fed" : s.fedState === "fasting" ? "is-fasted" : "is-post";
+  const label = profile === "fed_peak" ? "FED PEAK" : profile === "prolonged_fasted" ? "PROLONGED FAST" : profile === "postabsorptive" ? "POSTABSORPTIVE" : !localFallback ? "LOADING" : s.fedState === "fed" ? "FED" : s.fedState === "fasting" ? "FASTED" : "post-absorptive";
+  const cls = profile === "fed_peak" ? "is-fed" : profile === "prolonged_fasted" ? "is-fasted" : profile === "postabsorptive" ? "is-post" : !localFallback ? "is-post" : s.fedState === "fed" ? "is-fed" : s.fedState === "fasting" ? "is-fasted" : "is-post";
   const clock = engineNutrition
     ? engineNutrition.profile_label
-    : `${s.hoursSinceMeal.toFixed(1)} h schematic clock`;
+    : localFallback
+      ? `relative nutrition channel ${clamp(s.nutrition, 0, 1).toFixed(2)}`
+      : "awaiting Python nutritional context";
   const bloodGlucose = engineNutrition?.blood_glucose_target_mM;
   const boundaryText = engineNutrition
     ? bloodGlucose == null ? "blood glucose unavailable · ketones unavailable" : `blood glucose <b>${bloodGlucose.toFixed(2)} mM</b> · ketones unavailable`
-    : "browser fixture only · no PHH concentration claim";
+    : localFallback
+      ? "browser fixture only · no PHH concentration claim"
+      : "Python snapshot loading · no local concentration substituted";
   const glycogenText = engineNutrition
     ? `liver glycogen context <b>${engineNutrition.glycogen_value.toFixed(1)} ${engineNutrition.glycogen_unit.replaceAll("_", " ")}</b> · single-cell granule count unknown`
-    : `schematic glycogen fill <b>${Math.round(frac * 100)}%</b>`;
+    : localFallback
+      ? `schematic glycogen fill <b>${Math.round(frac * 100)}%</b>`
+      : "glycogen context awaiting Python snapshot";
   const glycogenBar = engineNutrition
     ? ""
-    : `<div class="nutrition-badge__bar"><span style="width:${Math.round(frac * 100)}%"></span></div>`;
+    : localFallback
+      ? `<div class="nutrition-badge__bar"><span style="width:${Math.round(frac * 100)}%"></span></div>`
+      : "";
   nutritionBadge.className = `nutrition-badge ${cls}`;
   nutritionBadge.innerHTML =
     `<div class="nutrition-badge__head"><span class="nutrition-badge__state">${label}</span>` +
@@ -4381,19 +4432,16 @@ function updateReportPanel(s: CellSnapshot) {
   lastReportPanelUpdateMs = now;
   reportPanel.style.display = "flex";
   timeScaleBadge.textContent = timeScaleDisclosureText();
+  const localExecution = browserLocalFixtureExecution(pythonSnapshotAvailability);
+  reportPanel.dataset.localFixtureExecution = localExecution.mode;
+  reportPanel.dataset.pythonSnapshotAvailability = pythonSnapshotAvailability;
   const statusEl = reportPanelElements.status;
   if (statusEl) {
-    const col = s.status === "dying" ? "#ff8a8a" : s.status === "senescent" ? "#d9a6ff" : s.status === "stressed" ? "#ffcf6b" : "#7ee0a8";
-    const survival = Number.isFinite(s.projectedMedianSurvivalH) ? ` · median fate ${s.projectedMedianSurvivalH.toFixed(1)}h` : "";
+    const view = browserLocalFixtureStatusView(s, localExecution);
     statusEl.innerHTML =
-      `<span class="local-visual-pill">TS schematic</span> <span style="color:${col};font-weight:600">${s.status.toUpperCase()}</span> · ` +
-      `${s.hepatocyte.zone} hepatocyte · polarity ${s.hepatocyte.polarity.toFixed(2)} · ` +
-      `glycogen ${s.pools.glycogen.toFixed(2)} · ATP ${s.atp.toFixed(2)} · albumin ${s.pools.albumin.toFixed(2)} · ` +
-      `bile ${s.hepatocyte.bileExport.toFixed(2)} · CYP ${s.hepatocyte.cyp450.toFixed(2)} · GSH ${s.hepatocyte.glutathioneReserve.toFixed(2)} · ` +
-      `cargo fidelity ${s.fidelity.deliveryQuality.toFixed(2)} · loss ${s.fidelity.lossFlux.toFixed(2)} · ` +
-      `misfolded ${s.pools.misfoldedProtein.toFixed(2)} · misrouted ${s.pools.misroutedCargo.toFixed(2)} · ` +
-      `ROS ${s.pools.ros.toFixed(2)} · waste ${s.pools.waste.toFixed(2)} · ` +
-      `sen ${s.senescenceRiskPerHour.toFixed(2)}%/h · apo ${s.apoptosisRiskPerHour.toFixed(2)}%/h${survival} · t ${Math.round(s.elapsedS)}s`;
+      `<span class="local-visual-pill">Renderer fixture</span> ` +
+      `<span style="color:${view.color};font-weight:600">${view.stateLabel.toUpperCase()}</span> - ` +
+      `<b>${view.executionLabel}</b> - ${view.channels.join(" - ")}`;
   }
   if (renderedReportStaticRevision !== reportStaticRevision) {
     if (reportPanelElements.external) {
@@ -4433,64 +4481,76 @@ function updateReportPanel(s: CellSnapshot) {
   }
   const rowsEl = reportPanelElements.rows;
   if (rowsEl) {
-    rowsEl.innerHTML = s.organelles
-      .map((o) => {
-        const info = ORG_INFO[o.id];
-        const load = Math.max(0, Math.min(1, o.activity / info.ref));
-        const bursting = o.activity > info.ref * 1.3;
-        const tag = o.faulted ? "FAULT" : bursting ? "burst" : o.activity > info.ref * 0.15 ? "active" : "idle";
-        const tagCol = o.faulted ? "#ff7a7a" : bursting ? "#8fe3ff" : o.activity > info.ref * 0.15 ? "#9be0a8" : "#7a8194";
-        const barW = Math.round(load * 100);
-        const effPct = Math.round(o.efficiency * 100);
-        // Compact row: name + state tag + load bar + one short meta line. The
-        // full per-organelle detail is still on the hover tooltip.
-        return (
-          `<div class="report-row${o.faulted ? " is-fault" : ""}" title="${info.action} · ${o.purpose}">` +
-          `<div class="report-row__top"><span class="report-row__name">${info.name}</span>` +
-          `<span class="report-row__tag" style="color:${tagCol}">${tag}</span></div>` +
-          `<div class="report-row__bar"><span style="width:${barW}%"></span></div>` +
-          `<div class="report-row__meta">eff ${effPct}% · ATP ${Math.round(o.atpAvailability * 100)}%</div>` +
-          `</div>`
-        );
-      })
-      .join("");
+    rowsEl.innerHTML = localExecution.shouldAdvance
+      ? s.organelles
+          .map((o) => {
+            const info = ORG_INFO[o.id];
+            const load = Math.max(0, Math.min(1, o.activity / info.ref));
+            const bursting = o.activity > info.ref * 1.3;
+            const tag = o.faulted ? "FAULT" : bursting ? "burst" : o.activity > info.ref * 0.15 ? "active" : "idle";
+            const tagCol = o.faulted ? "#ff7a7a" : bursting ? "#8fe3ff" : o.activity > info.ref * 0.15 ? "#9be0a8" : "#7a8194";
+            const barW = Math.round(load * 100);
+            return (
+              `<div class="report-row${o.faulted ? " is-fault" : ""}" title="${info.action} · ${o.purpose}">` +
+              `<div class="report-row__top"><span class="report-row__name">${info.name}</span>` +
+              `<span class="report-row__tag" style="color:${tagCol}">${tag}</span></div>` +
+              `<div class="report-row__bar"><span style="width:${barW}%"></span></div>` +
+              `<div class="report-row__meta">${browserLocalFixtureOrganelleMeta(o)}</div>` +
+              `</div>`
+            );
+          })
+          .join("")
+      : '<div class="report-log__item">Local organelle activity, capacity, ATP-access and fault channels are hidden while Python state is active.</div>';
   }
   const flowsEl = reportPanelElements.flows;
   if (flowsEl) {
-    flowsEl.innerHTML = s.flows
-      .slice()
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 12)
-      .map((flow) => {
-        const pct = Math.round(flowIntensity(flow) * 100);
-        return (
-          `<div class="flow-row">` +
-          `<div class="flow-row__top"><span class="flow-row__cargo">${flow.cargo}</span><span class="flow-row__value">${flow.value.toFixed(2)}</span></div>` +
-          `<div class="flow-row__route">${flow.from} -&gt; ${flow.to}</div>` +
-          `<div class="flow-row__meta">schematic route family · ${flow.mode} · local ETA ${formatEta(flow.etaS)} · ${flow.producedBy} / ${flow.usedBy}</div>` +
-          `<div class="flow-row__bar"><span style="width:${pct}%"></span></div>` +
-          `</div>`
-        );
-      })
-      .join("");
+    flowsEl.innerHTML = localExecution.shouldAdvance
+      ? s.flows
+          .slice()
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 12)
+          .map((flow) => {
+            const pct = Math.round(flowIntensity(flow) * 100);
+            return (
+              `<div class="flow-row">` +
+              `<div class="flow-row__top"><span class="flow-row__cargo">${flow.cargo}</span><span class="flow-row__value">${browserLocalFixtureFlowValue(flow)}</span></div>` +
+              `<div class="flow-row__route">${flow.from} -&gt; ${flow.to}</div>` +
+              `<div class="flow-row__meta">${browserLocalFixtureFlowMeta(flow)}</div>` +
+              `<div class="flow-row__bar"><span style="width:${pct}%"></span></div>` +
+              `</div>`
+            );
+          })
+          .join("")
+      : '<div class="report-log__item">Route-family geometry remains visible as neutral topology; local activity, rate and timing channels are hidden.</div>';
   }
   const logEl = reportPanelElements.log;
   if (logEl) {
-    const fresh = s.events.filter((e) => e.id > lastEventId);
-    for (const e of fresh) {
-      const div = document.createElement("div");
-      div.className = `report-log__item sev-${e.severity}`;
-      div.textContent = `[${Math.round(e.t)}s] ${e.text}`;
-      logEl.prepend(div);
-      lastEventId = e.id;
+    if (!localExecution.shouldAdvance) {
+      lastEventId = Math.max(lastEventId, ...s.events.map((event) => event.id), 0);
+      if (logEl.dataset.fixtureMode !== localExecution.mode) {
+        logEl.innerHTML = `<div class="report-log__item">${localExecution.label}; no local biochemical events are executing.</div>`;
+      }
+    } else {
+      if (logEl.dataset.fixtureMode !== localExecution.mode) logEl.innerHTML = "";
+      const fresh = s.events.filter((e) => e.id > lastEventId);
+      for (const e of fresh) {
+        const div = document.createElement("div");
+        div.className = `report-log__item sev-${e.severity}`;
+        div.textContent = browserLocalFixtureEventText(e);
+        logEl.prepend(div);
+        lastEventId = e.id;
+      }
+      while (logEl.childElementCount > 40) logEl.lastElementChild?.remove();
     }
-    while (logEl.childElementCount > 40) logEl.lastElementChild?.remove();
+    logEl.dataset.fixtureMode = localExecution.mode;
   }
 }
 
 function timeScaleDisclosureText(): string {
-  const engineTime = externalEngineSummary ? `engine t=${Math.round(externalEngineSummary.elapsedS)}s` : "engine offline";
-  return `local visual clock ~${CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND}× · ${engineTime}`;
+  return browserLocalFixtureClockDisclosure(
+    pythonSnapshotAvailability,
+    externalEngineSummary?.elapsedS ?? null
+  );
 }
 
 function renderExternalEngineStatus(): string {
@@ -5443,11 +5503,19 @@ window.addEventListener("pageshow", () => {
   syncRenderLoopAvailability();
 });
 
-loadScene(DEFAULT_SCENE_ID);
+async function startInitialScene(): Promise<void> {
+  await initialEngineSnapshotLoad;
+  loadScene(DEFAULT_SCENE_ID);
+  resize();
+  renderLoopStarted = true;
+  syncRenderLoopAvailability();
+}
+
+// Size the canvas immediately even while the canonical snapshot is loading.
+// The expensive scene itself is still built exactly once after resolution.
 resize();
 updatePlayIcon();
-renderLoopStarted = true;
-syncRenderLoopAvailability();
+void startInitialScene();
 
 function animate() {
   const frameWorkStartedAt = performance.now();
@@ -6366,6 +6434,7 @@ async function buildProteinScene() {
   clearIonVisuals();
   clearWaterVisuals();
 
+  document.documentElement.dataset.cellProteinSceneState = "loading";
   proteinGroup = new THREE.Group();
   proteinSpin = 0;
   root.add(proteinGroup);
@@ -6382,69 +6451,83 @@ async function buildProteinScene() {
   try {
     PdbLoaderCtor = (await loadPdbLoaderModule()).PDBLoader;
   } catch {
+    if (proteinGroup === targetGroup) {
+      document.documentElement.dataset.cellProteinSceneState = "load_error";
+    }
     return;
   }
   if (proteinGroup !== targetGroup) return;
 
   // PDBLoader is async (XHR). Build the meshes in the callback. Guard against the
   // scene having been switched away while the file was loading.
-  new PdbLoaderCtor().load(`${baseUrl}glucokinase.pdb`, (pdb) => {
-    if (proteinGroup !== targetGroup) return;
-    const geometryAtoms = pdb.geometryAtoms;
-    const geometryBonds = pdb.geometryBonds;
+  new PdbLoaderCtor().load(
+    `${baseUrl}glucokinase.pdb`,
+    (pdb) => {
+      if (proteinGroup !== targetGroup) return;
+      const geometryAtoms = pdb.geometryAtoms;
+      const geometryBonds = pdb.geometryBonds;
 
-    // Center on the molecule's centroid and fit its largest extent into ~10 units
-    // (PDBLoader pre-scales Å coords by ~0.75; glucokinase lands at ~40 units, so
-    // we rescale the whole group to keep cameraDistance modest).
-    geometryAtoms.computeBoundingBox();
-    const bbox = geometryAtoms.boundingBox ?? new THREE.Box3();
-    const center = new THREE.Vector3();
-    bbox.getCenter(center);
-    const size = new THREE.Vector3();
-    bbox.getSize(size);
-    const maxExtent = Math.max(size.x, size.y, size.z) || 1;
-    const fitScale = 10 / maxExtent;
+      // Center on the molecule's centroid and fit its largest extent into ~10 units
+      // (PDBLoader pre-scales Å coords by ~0.75; glucokinase lands at ~40 units, so
+      // we rescale the whole group to keep cameraDistance modest).
+      geometryAtoms.computeBoundingBox();
+      const bbox = geometryAtoms.boundingBox ?? new THREE.Box3();
+      const center = new THREE.Vector3();
+      bbox.getCenter(center);
+      const size = new THREE.Vector3();
+      bbox.getSize(size);
+      const maxExtent = Math.max(size.x, size.y, size.z) || 1;
+      const fitScale = 10 / maxExtent;
 
-    const positions = geometryAtoms.getAttribute("position");
-    const colors = geometryAtoms.getAttribute("color");
-    const atomCount = positions.count;
+      const positions = geometryAtoms.getAttribute("position");
+      const colors = geometryAtoms.getAttribute("color");
+      const atomCount = positions.count;
 
-    // One small sphere instanced per atom — CPU-friendly vs. 3505 meshes.
-    const sphereGeo = new THREE.IcosahedronGeometry(0.28, 2);
-    const atomMat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.1 });
-    const atoms = new THREE.InstancedMesh(sphereGeo, atomMat, atomCount);
-    const dummy = new THREE.Object3D();
-    const color = new THREE.Color();
-    for (let i = 0; i < atomCount; i++) {
-      dummy.position.set(
-        positions.getX(i) - center.x,
-        positions.getY(i) - center.y,
-        positions.getZ(i) - center.z
-      );
-      dummy.updateMatrix();
-      atoms.setMatrixAt(i, dummy.matrix);
-      // CPK colors come straight from the PDBLoader (0–1 RGB per atom).
-      color.setRGB(colors.getX(i), colors.getY(i), colors.getZ(i));
-      atoms.setColorAt(i, color);
+      // One small sphere instanced per atom — CPU-friendly vs. 3505 meshes.
+      const sphereGeo = new THREE.IcosahedronGeometry(0.28, 2);
+      const atomMat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.1 });
+      const atoms = new THREE.InstancedMesh(sphereGeo, atomMat, atomCount);
+      const dummy = new THREE.Object3D();
+      const color = new THREE.Color();
+      for (let i = 0; i < atomCount; i++) {
+        dummy.position.set(
+          positions.getX(i) - center.x,
+          positions.getY(i) - center.y,
+          positions.getZ(i) - center.z
+        );
+        dummy.updateMatrix();
+        atoms.setMatrixAt(i, dummy.matrix);
+        // CPK colors come straight from the PDBLoader (0–1 RGB per atom).
+        color.setRGB(colors.getX(i), colors.getY(i), colors.getZ(i));
+        atoms.setColorAt(i, color);
+      }
+      atoms.instanceMatrix.needsUpdate = true;
+      if (atoms.instanceColor) atoms.instanceColor.needsUpdate = true;
+      targetGroup.add(atoms);
+
+      // Bonds as dim line segments from the loader's bond geometry.
+      if (geometryBonds) {
+        const bondGeo = geometryBonds.clone();
+        bondGeo.translate(-center.x, -center.y, -center.z);
+        const bondMat = new THREE.LineBasicMaterial({
+          color: 0x99a7c4,
+          transparent: true,
+          opacity: 0.5
+        });
+        targetGroup.add(new THREE.LineSegments(bondGeo, bondMat));
+      }
+
+      targetGroup.scale.setScalar(fitScale);
+      document.documentElement.dataset.cellProteinSceneState = "ready";
+      renderFrame();
+    },
+    undefined,
+    () => {
+      if (proteinGroup === targetGroup) {
+        document.documentElement.dataset.cellProteinSceneState = "load_error";
+      }
     }
-    atoms.instanceMatrix.needsUpdate = true;
-    if (atoms.instanceColor) atoms.instanceColor.needsUpdate = true;
-    targetGroup.add(atoms);
-
-    // Bonds as dim line segments from the loader's bond geometry.
-    if (geometryBonds) {
-      const bondGeo = geometryBonds.clone();
-      bondGeo.translate(-center.x, -center.y, -center.z);
-      const bondMat = new THREE.LineBasicMaterial({
-        color: 0x99a7c4,
-        transparent: true,
-        opacity: 0.5
-      });
-      targetGroup.add(new THREE.LineSegments(bondGeo, bondMat));
-    }
-
-    targetGroup.scale.setScalar(fitScale);
-  });
+  );
 }
 
 // Per-voxel protein POPULATION field: seven-donor median copies per reference
@@ -7550,7 +7633,9 @@ function buildOrganelleScene() {
   lastEventId = 0;
   const logReset = reportPanel.querySelector(".report-log");
   if (logReset) logReset.innerHTML = "";
-  livingCell = new LivingCell(undefined, 0.85, true); // metabolism with external perfusion and low stochastic noise
+  // Kept ready only for a definitive snapshot-unavailable fallback. The object
+  // remains frozen during normal canonical snapshot operation.
+  livingCell = new LivingCell(undefined, 0.85, true);
   // Collect meshes per organelle kind so each can pulse with its own activity.
   const glowBuckets: Record<string, THREE.MeshStandardMaterial[]> = {};
   const tagGlow = (kind: keyof OrganelleActivity, m: THREE.Mesh) => {
@@ -10278,13 +10363,20 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     : 0;
   cytoplasmRendererElapsedS += rendererMotionDeltaS;
   const rendererMotionTimeS = cytoplasmRendererElapsedS;
+  const localFixtureExecution = browserLocalFixtureExecution(
+    pythonSnapshotAvailability
+  );
   if (organelleGroup && !dragState) {
     // Keep the cell anchored. Whole-cell migration/jostling requires a tissue
     // mechanics model and must not be invented by the renderer.
     organelleGroup.position.set(0, 0, 0);
-    // Visible growth: biomass is treated as relative volume/mass, so radius
-    // scales with the cube root. Membrane area then follows radius^2.
-    const growthScale = visualRadiusScaleFromBiomass(cellCycle.biomass);
+    // Relative biomass can scale the explicit snapshot-unavailable division
+    // demo only. Canonical Python geometry is always fixed at scale 1 here.
+    const growthScale = browserLocalFixtureGeometryScale(
+      pythonSnapshotAvailability,
+      CC.localDivisionFallbackEnabled,
+      cellCycle.biomass
+    );
     organelleGroup.scale.setScalar(growthScale);
 
     // Remaining drawable bodies receive bounded coherent renderer staging. This
@@ -10369,7 +10461,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     updateInstancedFlowTargets(rendererMotionDeltaS, rendererMotionTimeS);
   }
 
-  if (livingCell && running) {
+  if (livingCell && running && localFixtureExecution.shouldAdvance) {
     const plan = visualSimulationStepPlan(realDeltaS);
     if (plan.iterations > 0) {
       measurePerformanceStage("biology", () => {
@@ -10403,7 +10495,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       syncOrganelleInteractionGeometry(externalEngineSummary);
       updateVisualAnatomyLod();
       updateMembraneMicrovilli();
-      updateSinusoidBloodFlow(s.elapsedS);
+      updateSinusoidBloodFlow(rendererMotionTimeS);
       updateOrganelleMotion(rendererMotionTimeS);
     });
     if (heavyFrame) {
@@ -10416,26 +10508,38 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     // transforms have advanced; the projected cytosol therefore sees this frame,
     // not the placement-time proxy geometry.
     measurePerformanceStage("cytosol-fluid", () => updateIntracellularFluid(realDeltaS, heavyFrame));
-    updateNucleusExpression(realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND);
-    updateMembraneProteinAnchors(s.elapsedS);
-    updateMembraneRidingClouds(s.elapsedS);
-    updateDiseaseVisuals(s.elapsedS);
+    updateNucleusExpression(rendererMotionDeltaS);
+    updateMembraneProteinAnchors(rendererMotionTimeS);
+    updateMembraneRidingClouds(rendererMotionTimeS);
+    updateDiseaseVisuals(rendererMotionTimeS);
     updateNutritionVisual(s);
-    updateFlowVisuals(s);
+    updateFlowVisuals(
+      s,
+      rendererMotionTimeS,
+      localFixtureExecution.shouldAdvance
+    );
     syncVisualDivisionFromEngine(externalEngineSummary);
     updateCellCyclePanel(
-      realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND,
+      localFixtureExecution.shouldAdvance
+        ? realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND
+        : 0,
       lastEnergyCharge,
       s.status === "healthy"
     );
     updateDivisionOverlay(cellCycle.mechanics);
-    updateResolvedDivisionVisual(realDeltaS * CELL_VISUAL_SIM_SECONDS_PER_REAL_SECOND, s.elapsedS);
+    updateResolvedDivisionVisual(rendererMotionDeltaS, rendererMotionTimeS);
     // Each organelle glow follows the explicitly schematic activity/health
     // fixture. It improves legibility but is not a PHH activity measurement.
     const eff: Record<string, number> = {};
     for (const o of s.organelles) eff[o.id] = o.efficiency;
-    const activityOf = (kind: OrganelleId) => engineSignal?.activity[kind] ?? s.activity[kind];
-    const healthOf = (kind: OrganelleId) => engineSignal?.health[kind] ?? eff[kind] ?? 1;
+    // If the engine has no matching visual channel, a fixed renderer legibility
+    // level replaces the frozen local state. It has no activity/rate meaning.
+    const activityOf = (kind: OrganelleId) =>
+      engineSignal?.activity[kind]
+      ?? (localFixtureExecution.shouldAdvance ? s.activity[kind] : 0.3);
+    const healthOf = (kind: OrganelleId) =>
+      engineSignal?.health[kind]
+      ?? (localFixtureExecution.shouldAdvance ? eff[kind] ?? 1 : 1);
     // Every organelle glows in its OWN emissive colour: a visible resting glow
     // (floor) so nothing looks dead, plus a strong activity-driven boost on top.
     const glowOf = (kind: keyof OrganelleActivity, gain: number) =>
@@ -10459,7 +10563,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     // hard-working population reads as visibly, cinematically alive.
     for (const p of popGlowMats) {
       const norm = Math.min(1, activityOf(p.kind) / (POP_GLOW_REF[p.kind] ?? 1));
-      const shimmer = 1 + 0.14 * norm * Math.sin(s.elapsedS * 2.1 + p.kind.length);
+      const shimmer = 1 + 0.14 * norm * Math.sin(rendererMotionTimeS * 2.1 + p.kind.length);
       // Visible resting glow in the population's own colour (floor 0.34), brighter
       // where the schematic channel is active.
       p.mat.emissiveIntensity = (0.34 + 0.55 * norm) * (0.4 + 0.6 * healthOf(p.kind)) * shimmer;
@@ -10468,7 +10572,7 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
     // Schematic pulses make the renderer legible; they are not a Python-engine
     // calcium time series. The snapshot card above remains the authority.
     const caFreq = 0.18 + 0.5 * Math.min(1, activityOf("mitochondria") / 0.9);
-    const caPulse = Math.pow(0.5 + 0.5 * Math.sin(s.elapsedS * caFreq * Math.PI * 2), 10);
+    const caPulse = Math.pow(0.5 + 0.5 * Math.sin(rendererMotionTimeS * caFreq * Math.PI * 2), 10);
     lastCalcium = caPulse;
     if (bloomPass) {
       const energy = Math.min(1, mitoGlow / 1.2);
@@ -10497,34 +10601,53 @@ function renderOrganelleScene(realDeltaS = 1 / 60) {
       mat.emissive.set(visualStatus === "healthy" && stressTint <= 0.55 ? "#5d7194" : col);
     }
     const display = externalEngineSummary;
-    const pool = (id: string, fallback: number) => display?.pools[id] ?? fallback;
-    const engineAtp = display?.pools.ATP ?? display?.atp ?? s.atp;
-    const engineAdp = display?.pools.ADP ?? 1 - engineAtp;
-    const engineAmp = display?.pools.AMP ?? 0;
-    const adenylateTotal = engineAtp + engineAdp + engineAmp;
-    const visualEnergyCharge = display && adenylateTotal > 0
-      ? (engineAtp + 0.5 * engineAdp) / adenylateTotal
-      : s.energyCharge;
-    const cargoTotal = display ? Object.values(display.cargo).reduce((sum, count) => sum + count, 0) : 0;
-    const cargoGood = display ? (display.cargo.delivered ?? 0) + (display.cargo.recycled ?? 0) : 0;
-    const cargoFidelity = display && cargoTotal > 0 ? cargoGood / cargoTotal : s.fidelity.deliveryQuality;
-    const displayStatus = display?.status ?? s.status;
-    const quantitative = display?.quantitativeState;
-    setText(values.distance, quantitative ? quantitative.pools.glycogen.value.toFixed(1) : pool("glycogen", s.pools.glycogen).toFixed(2));
-    setText(values.force, quantitative ? quantitative.pools.ATP.value.toFixed(2) : engineAtp.toFixed(2));
-    setText(values.potential, quantitative ? quantitative.pools.ADP.value.toFixed(2) : pool("albumin", s.pools.albumin).toFixed(2));
-    setText(values.kinetic, quantitative ? quantitative.energy_charge.toFixed(3) : visualEnergyCharge.toFixed(2));
-    lastEnergyCharge = visualEnergyCharge;
-    setText(values.total, quantitative ? quantitative.profile_id : displayStatus);
-    if (values.total) {
-      values.total.style.color = quantitative
-        ? ""
-        : displayStatus === "dying" ? "#ff8a8a" : displayStatus === "senescent" ? "#d9a6ff" : displayStatus === "stressed" ? "#ffcf6b" : "#7ee0a8";
+    if (!display && !localFixtureExecution.shouldAdvance) {
+      setText(values.distance, "-");
+      setText(values.force, "-");
+      setText(values.potential, "-");
+      setText(values.kinetic, "-");
+      setText(values.total, "snapshot loading");
+      setText(values.drift, "-");
+      if (values.total) values.total.style.color = "#8da0b8";
+      if (values.drift) values.drift.style.color = "";
+      updateCellValidation(null);
+    } else {
+      const pool = (id: string, fallback: number) => display?.pools[id] ?? fallback;
+      const engineAtp = display?.pools.ATP ?? display?.atp ?? s.atp;
+      const engineAdp = display?.pools.ADP ?? 1 - engineAtp;
+      const engineAmp = display?.pools.AMP ?? 0;
+      const adenylateTotal = engineAtp + engineAdp + engineAmp;
+      const visualEnergyCharge = display && adenylateTotal > 0
+        ? (engineAtp + 0.5 * engineAdp) / adenylateTotal
+        : s.energyCharge;
+      const cargoTotal = display ? Object.values(display.cargo).reduce((sum, count) => sum + count, 0) : 0;
+      const cargoGood = display ? (display.cargo.delivered ?? 0) + (display.cargo.recycled ?? 0) : 0;
+      const cargoFidelity = display && cargoTotal > 0 ? cargoGood / cargoTotal : s.fidelity.deliveryQuality;
+      const displayStatus = display?.status ?? s.status;
+      const quantitative = display?.quantitativeState;
+      setText(values.distance, quantitative ? quantitative.pools.glycogen.value.toFixed(1) : pool("glycogen", s.pools.glycogen).toFixed(2));
+      setText(values.force, quantitative ? quantitative.pools.ATP.value.toFixed(2) : engineAtp.toFixed(2));
+      setText(values.potential, quantitative ? quantitative.pools.ADP.value.toFixed(2) : pool("albumin", s.pools.albumin).toFixed(2));
+      setText(values.kinetic, quantitative ? quantitative.energy_charge.toFixed(3) : visualEnergyCharge.toFixed(2));
+      lastEnergyCharge = visualEnergyCharge;
+      setText(values.total, quantitative ? quantitative.profile_id : displayStatus);
+      if (values.total) {
+        values.total.style.color = quantitative
+          ? ""
+          : displayStatus === "dying" ? "#ff8a8a" : displayStatus === "senescent" ? "#d9a6ff" : displayStatus === "stressed" ? "#ffcf6b" : "#7ee0a8";
+      }
+      setText(values.drift, quantitative ? quantitative.pools.NAD_plus.value.toFixed(2) : cargoFidelity.toFixed(2));
+      if (values.drift) values.drift.style.color = "";
+      updateCellValidation(display?.integratedMetabolism ?? null);
     }
-    setText(values.drift, quantitative ? quantitative.pools.NAD_plus.value.toFixed(2) : cargoFidelity.toFixed(2));
-    if (values.drift) values.drift.style.color = "";
-    setText(values.elapsed, `${Math.round(display?.elapsedS ?? s.elapsedS)} s`);
-    updateCellValidation(display?.integratedMetabolism ?? null);
+    setText(
+      values.elapsed,
+      browserLocalFixtureElapsedLabel(
+        pythonSnapshotAvailability,
+        display?.elapsedS ?? null,
+        s.elapsedS
+      )
+    );
   }
 
   updateScientificScaleBar();
