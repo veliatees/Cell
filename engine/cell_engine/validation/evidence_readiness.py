@@ -18,6 +18,9 @@ from cell_engine.quantitative.active_protein_localization import (
 from cell_engine.quantitative.cellular_memory_trajectory import (
     cellular_memory_trajectory_intake_snapshot,
 )
+from cell_engine.quantitative.completion_evidence import (
+    completion_evidence_bundle_intake_snapshot,
+)
 from cell_engine.quantitative.energy_redox_trajectory import (
     energy_redox_trajectory_intake_snapshot,
 )
@@ -82,6 +85,7 @@ REGISTRY_ENTRY_IDS = (
     "phh_mechanics_calibration",
     "membrane_topology_event",
     "metabolic_execution_bundle",
+    "completion_evidence_bundle",
 )
 
 VALIDATOR_SURFACES = {
@@ -142,6 +146,10 @@ VALIDATOR_SURFACES = {
     "metabolic_execution_bundle": (
         "cell_engine.quantitative.phh_metabolic_execution_bundle."
         "phh_metabolic_execution_bundle_intake_snapshot"
+    ),
+    "completion_evidence_bundle": (
+        "cell_engine.quantitative.completion_evidence."
+        "completion_evidence_bundle_intake_snapshot"
     ),
 }
 
@@ -340,6 +348,9 @@ def _run_adapter(
         "metabolic_execution_bundle": lambda: (
             phh_metabolic_execution_bundle_intake_snapshot(delivery_path)
         ),
+        "completion_evidence_bundle": lambda: (
+            completion_evidence_bundle_intake_snapshot(delivery_path)
+        ),
     }
     return adapters[entry_id]()
 
@@ -530,6 +541,13 @@ def _metric_counts(
                     "runtime_flux_coupling_allowed",
                 )
             ),
+        )
+    if entry_id == "completion_evidence_bundle":
+        return (
+            _int_value(summary, "delivered_table_count"),
+            _int_value(summary, "record_count"),
+            _int_value(summary, "structurally_complete_item_count"),
+            _int_value(summary, "quantitatively_authorized_item_count"),
         )
     raise ValueError(f"unsupported evidence-readiness entry {entry_id}")
 

@@ -714,9 +714,10 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
         validate_phh_evidence_readiness_snapshot(evidence_readiness)
         readiness_summary = evidence_readiness["summary"]
         if (
-            readiness_summary["registry_contract_count"] != 15
-            or readiness_summary["contract_identity_verified_count"] != 15
-            or readiness_summary["validator_surface_count"] != 15
+            readiness_summary["registry_contract_count"] != 16
+            or readiness_summary["contract_identity_verified_count"] != 16
+            or readiness_summary["validator_surface_count"] != 16
+            or readiness_summary["target_gap_count"] != 23
         ):
             raise ValueError(
                 "not every PHH evidence contract has a verified validator"
@@ -732,8 +733,9 @@ def evaluate_scientific_release(target: ReleaseTarget = "research_preview") -> S
                 "unreviewed evidence escaped into quantitative or runtime authority"
             )
         checks.append(
-            "all 15 PHH evidence contracts have checksum-verified identities and "
-            "registered fail-closed preflight validators"
+            "all 16 PHH evidence contracts have checksum-verified identities, "
+            "registered fail-closed validators and complete coverage of all 23 "
+            "evidence-gated completion scopes"
         )
     except (OSError, ValueError, UnicodeError, json.JSONDecodeError) as exc:
         blockers.append(f"invalid unified PHH evidence readiness preflight: {exc}")

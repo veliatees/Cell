@@ -105,6 +105,14 @@ single-cell state; much of the current dynamic cell remains exploratory.
   explicit unavailable state, never substitute biochemistry, fate, transport,
   division probability or daughter cells. Independent renderer motion continues
   on wall-clock time and carries no biological timing authority.
+- **A complete engineering-to-evidence handoff** — all 23 scopes currently
+  marked `partial` or `blocked_missing_evidence` map to one or more of 16
+  checksum-pinned, fail-closed intake contracts. A dedicated three-table bundle
+  now covers PHH p53/MDM2 trajectories, clonal population dynamics, and all 44
+  quantitative capability-atlas slots. The machine audit reports zero
+  unclassified code-only scopes, while keeping scientific completion,
+  biological validation, predictive digital-twin authority, and biological
+  accuracy explicitly false or null.
 - **A fail-closed human lifecycle baseline** — the quiescent human hepatocyte no
   longer inherits rat cell-cycle or mouse regeneration timing metadata. Missing
   healthy-human phase durations are omitted, marked non-executable and cannot
@@ -148,6 +156,10 @@ single-cell state; much of the current dynamic cell remains exploratory.
   rejects ambiguous missing values, malformed provenance and model outputs
   labelled as measurements. Even valid deliveries require manual primary-source
   review before any parameter can be activated.
+- **Unified evidence readiness** — 16 registered validators cover every one of
+  the 23 evidence-gated completion scopes. Missing or malformed deliveries
+  remain visible and quarantined; structural acceptance cannot automatically
+  activate parameters, state coupling, or prediction.
 - **Published-model external check** — the postabsorptive shadow predicts
   10.02 umol glucose/kg/min production versus a unit-normalized healthy-human
   tracer estimate of 10.55 +/- 0.22. The -5.0% contextual residual is reported
@@ -348,6 +360,15 @@ biological timing profiles, including a rat post-partial-hepatectomy profile
 that blocks fast G1/S entry. The production browser has no local division
 button, phase clock, failure law, organelle partition or daughter-state model;
 it renders daughters only from a gated engine event.
+
+The scoped completion ledger currently contains 57 entries: 32 narrowly closed
+engineering scopes, 8 partial biological capabilities, 15 scopes blocked on
+context-matched evidence, 1 external-validation action, and 1 representation
+that is inapplicable at whole-cell scale. Every partial or evidence-blocked scope
+has an exact intake route. Therefore the software boundary reports zero work
+that can responsibly advance through code alone before new evidence arrives.
+This is an engineering handoff result, not completion of the hepatocyte,
+scientific model, or predictive digital twin.
 
 The dimensionless cytosol test bed now rasterizes the smooth star-shaped outer
 membrane as cut-cell volume fractions and face apertures. Local membrane motion
@@ -593,6 +614,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 169: Browser-local fixture execution firewall v1](docs/milestones/169-browser-local-fixture-execution-firewall-v1.md)
 - [Milestone 170: Dimensionless browser fixture API firewall v2](docs/milestones/170-dimensionless-browser-fixture-api-firewall-v2.md)
 - [Milestone 171: Engine-only browser cell state v1](docs/milestones/171-engine-only-browser-cell-state-v1.md)
+- [Milestone 172: Complete evidence handoff and software boundary v1](docs/milestones/172-complete-evidence-handoff-software-boundary-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

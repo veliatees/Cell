@@ -2468,6 +2468,7 @@ export type EngineHepatocyteCompletionMatrix = {
   status: string;
   score_policy: string;
   status_semantics: Record<EngineCompletionGapStatus, string>;
+  software_completion_boundary: EngineSoftwareCompletionBoundary;
   entries: {
     id: string;
     title: string;
@@ -2487,6 +2488,81 @@ export type EngineHepatocyteCompletionMatrix = {
     not_applicable_at_model_scale_count: number;
     biological_accuracy_pct: null;
   };
+};
+
+export type EngineSoftwareCompletionBoundary = {
+  version: "hepatocyte_software_completion_boundary_v1";
+  status: "engineering_handoff_complete_external_science_required";
+  scope: string;
+  current_repository_implementation_complete_for_available_evidence: true;
+  responsible_code_only_work_remaining: false;
+  scientific_model_complete: false;
+  biological_validation_complete: false;
+  digital_twin_predictive_authority: false;
+  biological_accuracy_pct: null;
+  evidence_gated_dispositions: {
+    gap_id: string;
+    completion_status: "partial" | "blocked_missing_evidence";
+    next_action_class: "external_evidence_then_reviewed_implementation";
+    evidence_contract_ids: string[];
+    responsible_code_only_progress_available: false;
+    automatic_parameter_activation: false;
+    automatic_state_coupling: false;
+  }[];
+  external_action_scope_ids: string[];
+  inapplicable_scope_ids: string[];
+  unregistered_evidence_gated_scope_ids: [];
+  orphan_evidence_target_ids: [];
+  summary: {
+    declared_scope_count: number;
+    closed_scope_count: number;
+    evidence_gated_scope_count: number;
+    registered_evidence_gated_scope_count: number;
+    unregistered_evidence_gated_scope_count: 0;
+    orphan_evidence_target_count: 0;
+    external_action_scope_count: number;
+    inapplicable_scope_count: number;
+    responsible_code_only_scope_count: 0;
+    automatic_parameter_activation_count: 0;
+    automatic_state_coupling_count: 0;
+  };
+  policy: string;
+};
+
+export type EngineCompletionEvidenceBundleIntake = {
+  version: "phh_completion_evidence_bundle_intake_v1";
+  contract_id: "phh_completion_evidence_bundle_contract_v1";
+  status:
+    | "awaiting_external_completion_evidence_bundle"
+    | "delivery_structurally_audited_manual_review_required";
+  delivery_path: string;
+  delivery_present: boolean;
+  contract_path: string;
+  contract_sha256: string;
+  target_gap_ids: string[];
+  tables: {
+    id: string;
+    file: string;
+    artifact_sha256?: string;
+    record_count: number;
+    trajectory_group_count?: number;
+    structurally_complete_item_count: number;
+    heldout_supported_item_count?: number;
+  }[];
+  summary: {
+    required_table_count: number;
+    delivered_table_count: number;
+    record_count: number;
+    structurally_complete_item_count: number;
+    covered_capability_slot_count: number;
+    required_capability_slot_count: number;
+    heldout_capability_slot_count: number;
+    quantitatively_authorized_item_count: 0;
+  };
+  automatic_parameter_activation: false;
+  automatic_state_coupling: false;
+  predictive_authority: false;
+  blockers: string[];
 };
 
 export type EngineSnapshot = {
@@ -2533,6 +2609,7 @@ export type EngineSnapshot = {
     compartmental_energy_redox?: EngineCompartmentalEnergyRedox;
     energy_redox_validation?: EngineEnergyRedoxValidation;
     energy_redox_trajectory_intake?: EngineEnergyRedoxTrajectoryIntake;
+    completion_evidence_bundle_intake?: EngineCompletionEvidenceBundleIntake;
     receptor_signaling_trajectory_intake?: EngineReceptorSignalingTrajectoryIntake;
     active_protein_localization_intake?: EngineActiveProteinLocalizationIntake;
     phh_3d_mesh_boundary_intake?: EnginePhh3dMeshBoundaryIntake;
@@ -2546,6 +2623,7 @@ export type EngineSnapshot = {
     cytosol_transport?: EngineCytosolTransport;
     metabolic_constraint_shell?: EngineMetabolicConstraintShell;
     hepatocyte_completion_matrix?: EngineHepatocyteCompletionMatrix;
+    software_completion_boundary?: EngineSoftwareCompletionBoundary;
     phh_albumin_secretion?: EnginePhhAlbuminSecretion;
     phh_cyp_function?: EnginePhhCypFunction;
     phh_biliary_excretion?: EnginePhhBiliaryExcretion;
@@ -5317,6 +5395,7 @@ export type EngineSnapshotSummary = {
   compartmentalEnergyRedox: EngineCompartmentalEnergyRedox | null;
   energyRedoxValidation: EngineEnergyRedoxValidation | null;
   energyRedoxTrajectoryIntake: EngineEnergyRedoxTrajectoryIntake | null;
+  completionEvidenceBundleIntake: EngineCompletionEvidenceBundleIntake | null;
   receptorSignalingTrajectoryIntake: EngineReceptorSignalingTrajectoryIntake | null;
   activeProteinLocalizationIntake: EngineActiveProteinLocalizationIntake | null;
   phh3dMeshBoundaryIntake: EnginePhh3dMeshBoundaryIntake | null;
@@ -5330,6 +5409,7 @@ export type EngineSnapshotSummary = {
   cytosolTransport: EngineCytosolTransport | null;
   metabolicConstraintShell: EngineMetabolicConstraintShell | null;
   hepatocyteCompletionMatrix: EngineHepatocyteCompletionMatrix | null;
+  softwareCompletionBoundary: EngineSoftwareCompletionBoundary | null;
   phhAlbuminSecretion: EnginePhhAlbuminSecretion | null;
   phhCypFunction: EnginePhhCypFunction | null;
   phhBiliaryExcretion: EnginePhhBiliaryExcretion | null;
@@ -5709,6 +5789,8 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     compartmentalEnergyRedox: snapshot.state.compartmental_energy_redox ?? null,
     energyRedoxValidation: snapshot.state.energy_redox_validation ?? null,
     energyRedoxTrajectoryIntake: snapshot.state.energy_redox_trajectory_intake ?? null,
+    completionEvidenceBundleIntake:
+      snapshot.state.completion_evidence_bundle_intake ?? null,
     receptorSignalingTrajectoryIntake:
       snapshot.state.receptor_signaling_trajectory_intake ?? null,
     activeProteinLocalizationIntake:
@@ -5727,6 +5809,7 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     cytosolTransport: snapshot.state.cytosol_transport ?? null,
     metabolicConstraintShell: snapshot.state.metabolic_constraint_shell ?? null,
     hepatocyteCompletionMatrix: snapshot.state.hepatocyte_completion_matrix ?? null,
+    softwareCompletionBoundary: snapshot.state.software_completion_boundary ?? null,
     phhAlbuminSecretion: snapshot.state.phh_albumin_secretion ?? null,
     phhCypFunction: snapshot.state.phh_cyp_function ?? null,
     phhBiliaryExcretion: snapshot.state.phh_biliary_excretion ?? null,

@@ -104,6 +104,18 @@ class ScientificModelAuditTests(unittest.TestCase):
             "donor_resolved_mechanics_and_fsi_firewall",
         )
         self.assertEqual(
+            by_id["phh_completion_evidence_bundle_intake"].default_snapshot_role,
+            "remaining_scope_data_delivery_firewall",
+        )
+        self.assertEqual(
+            by_id["software_completion_boundary"].default_snapshot_role,
+            "repository_engineering_handoff_audit",
+        )
+        self.assertIn(
+            "not scientific model completion",
+            by_id["software_completion_boundary"].limitations.lower(),
+        )
+        self.assertEqual(
             by_id["membrane_topology_transition_candidate"].default_snapshot_role,
             "offline_closed_surface_transition_and_state_conservation_firewall",
         )

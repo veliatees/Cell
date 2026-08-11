@@ -82,10 +82,14 @@ from cell_engine.validation.hepatocyte_quantities import (
 from cell_engine.validation.scientific_snapshot_export_policy import (
     scientific_snapshot_export_policy_snapshot,
 )
+from cell_engine.validation.software_completion import (
+    build_software_completion_boundary,
+    validate_software_completion_boundary,
+)
 
 
 VERSION = "hepatocyte_completion_matrix_v1"
-DATE_VERIFIED = "2026-08-08"
+DATE_VERIFIED = "2026-08-11"
 GapStatus = Literal[
     "closed",
     "partial",
@@ -2625,7 +2629,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Unified PHH evidence readiness preflight",
             "closed",
             "Repository-level identity verification, delivery discovery, structural-validator dispatch and quarantine reporting for every declared PHH evidence contract; no biological parameter, model-fit or predictive claim.",
-            "One checksum-pinned registry discovers all 15 versioned intake contracts, dispatches only statically registered validators, preserves dependency-aware mobility and geometry links, quarantines one malformed delivery without stopping the remaining audit, and exposes one read-only CLI and snapshot surface.",
+            "One checksum-pinned registry discovers all 16 versioned intake contracts, dispatches only statically registered validators, maps every one of the 23 partial or evidence-blocked scopes, preserves dependency-aware mobility and geometry links, quarantines one malformed delivery without stopping the remaining audit, and exposes one read-only CLI and snapshot surface.",
             {
                 "registry_contract_count": evidence_readiness_summary[
                     "registry_contract_count"
@@ -2663,6 +2667,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             (),
             (
                 "data/evidence_intake/phh_evidence_readiness_registry.v1.json",
+                "data/evidence_intake/phh_completion_evidence_bundle_contract.v1.json",
+                "engine/cell_engine/quantitative/completion_evidence.py",
                 "engine/cell_engine/validation/evidence_readiness.py",
                 "scripts/audit_phh_evidence_readiness.py",
                 "engine/tests/test_evidence_readiness.py",
@@ -2932,6 +2938,67 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
         ),
     )
 
+    software_completion = build_software_completion_boundary(
+        entries, evidence_readiness
+    )
+    software_summary = software_completion["summary"]
+    entries = (
+        *entries,
+        _entry(
+            "software_completion_boundary",
+            "Repository engineering handoff boundary",
+            "closed",
+            "Machine-checkable classification of every declared non-closed scope as exact external evidence intake, external action, or an explicitly inapplicable representation.",
+            "All 23 evidence-gated scopes map to validated fail-closed delivery contracts; the independent-validation scope remains external and one molecular-scale representation remains explicitly inapplicable. This closes only responsible code work possible before new evidence arrives, not the hepatocyte model or digital twin.",
+            {
+                "declared_scope_count_before_boundary": software_summary[
+                    "declared_scope_count"
+                ],
+                "evidence_gated_scope_count": software_summary[
+                    "evidence_gated_scope_count"
+                ],
+                "registered_evidence_gated_scope_count": software_summary[
+                    "registered_evidence_gated_scope_count"
+                ],
+                "unregistered_evidence_gated_scope_count": software_summary[
+                    "unregistered_evidence_gated_scope_count"
+                ],
+                "orphan_evidence_target_count": software_summary[
+                    "orphan_evidence_target_count"
+                ],
+                "external_action_scope_count": software_summary[
+                    "external_action_scope_count"
+                ],
+                "inapplicable_scope_count": software_summary[
+                    "inapplicable_scope_count"
+                ],
+                "responsible_code_only_scope_count": software_summary[
+                    "responsible_code_only_scope_count"
+                ],
+                "scientific_model_complete": software_completion[
+                    "scientific_model_complete"
+                ],
+                "biological_validation_complete": software_completion[
+                    "biological_validation_complete"
+                ],
+                "digital_twin_predictive_authority": software_completion[
+                    "digital_twin_predictive_authority"
+                ],
+                "biological_accuracy_pct": software_completion[
+                    "biological_accuracy_pct"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/validation/software_completion.py",
+                "engine/cell_engine/validation/evidence_readiness.py",
+                "data/evidence_intake/phh_evidence_readiness_registry.v1.json",
+                "data/evidence_intake/phh_completion_evidence_bundle_contract.v1.json",
+                "engine/tests/test_software_completion.py",
+            ),
+        ),
+    )
+
     counts = Counter(str(entry["status"]) for entry in entries)
     payload = {
         "version": VERSION,
@@ -2942,6 +3009,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "Closed statuses apply only to each entry's exact scope."
         ),
         "status_semantics": STATUS_SEMANTICS,
+        "software_completion_boundary": software_completion,
         "entries": entries,
         "summary": {
             "entry_count": len(entries),
@@ -2962,8 +3030,14 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         raise ValueError("unexpected hepatocyte completion-matrix version")
     entries = payload.get("entries")
     summary = payload.get("summary")
-    if not isinstance(entries, tuple) or not isinstance(summary, dict):
+    software_completion = payload.get("software_completion_boundary")
+    if (
+        not isinstance(entries, tuple)
+        or not isinstance(summary, dict)
+        or not isinstance(software_completion, dict)
+    ):
         raise ValueError("hepatocyte completion matrix is malformed")
+    validate_software_completion_boundary(software_completion)
     ids = [entry.get("id") for entry in entries]
     if len(ids) != len(set(ids)):
         raise ValueError("hepatocyte completion matrix contains duplicate ids")
@@ -4075,14 +4149,14 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         "phh_evidence_readiness_preflight"
     ]["observed_metrics"]
     if (
-        evidence_readiness_metrics["registry_contract_count"] != 15
+        evidence_readiness_metrics["registry_contract_count"] != 16
         or evidence_readiness_metrics[
             "contract_identity_verified_count"
         ]
-        != 15
-        or evidence_readiness_metrics["validator_surface_count"] != 15
+        != 16
+        or evidence_readiness_metrics["validator_surface_count"] != 16
         or evidence_readiness_metrics["rejected_intake_count"] != 0
-        or evidence_readiness_metrics["target_gap_count"] != 19
+        or evidence_readiness_metrics["target_gap_count"] != 23
         or evidence_readiness_metrics[
             "quantitatively_authorized_item_count"
         ]
@@ -4092,9 +4166,30 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         ]
         != 0
         or evidence_readiness_metrics["automatic_state_coupling_count"] != 0
-        or not set(evidence_readiness_metrics["target_gap_ids"]).issubset(by_id)
+        or set(evidence_readiness_metrics["target_gap_ids"])
+        != {
+            gap_id
+            for gap_id, entry in by_id.items()
+            if entry["status"] in {"partial", "blocked_missing_evidence"}
+        }
     ):
         raise ValueError("PHH evidence readiness preflight contract changed")
+    software_metrics = by_id["software_completion_boundary"]["observed_metrics"]
+    if (
+        software_metrics["declared_scope_count_before_boundary"] != 56
+        or software_metrics["evidence_gated_scope_count"] != 23
+        or software_metrics["registered_evidence_gated_scope_count"] != 23
+        or software_metrics["unregistered_evidence_gated_scope_count"] != 0
+        or software_metrics["orphan_evidence_target_count"] != 0
+        or software_metrics["external_action_scope_count"] != 1
+        or software_metrics["inapplicable_scope_count"] != 1
+        or software_metrics["responsible_code_only_scope_count"] != 0
+        or software_metrics["scientific_model_complete"] is not False
+        or software_metrics["biological_validation_complete"] is not False
+        or software_metrics["digital_twin_predictive_authority"] is not False
+        or software_metrics["biological_accuracy_pct"] is not None
+    ):
+        raise ValueError("software-completion boundary changed or overclaimed")
     browser_bundle_metrics = by_id["browser_startup_bundle_budget"][
         "observed_metrics"
     ]

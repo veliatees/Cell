@@ -101,7 +101,8 @@
         "healthy_phh_cytosol_parameters",
         "reaction_fluid_coupling",
         "macromolecular_crowding_physics",
-        "cytosol_experimental_validation"
+        "cytosol_experimental_validation",
+        "healthy_phh_cytoplasm_organelle_motion"
       ]
     },
     {
@@ -209,6 +210,21 @@
       "validator_surface": "cell_engine.quantitative.phh_metabolic_execution_bundle.phh_metabolic_execution_bundle_intake_snapshot",
       "target_gap_ids": [
         "hepatocyte_fba_execution"
+      ]
+    },
+    {
+      "id": "completion_evidence_bundle",
+      "contract_path": "data/evidence_intake/phh_completion_evidence_bundle_contract.v1.json",
+      "contract_sha256": "f6cc377dda1544d8bc2abd3b46407b514cab6ae7ef6182ef763f3e3f288baf1d",
+      "contract_schema_version": "cell.phh-completion-evidence-bundle-contract.v1",
+      "contract_id": "phh_completion_evidence_bundle_contract_v1",
+      "delivery_kind": "directory_bundle",
+      "delivery_relative_path": "phh_completion_evidence/latest",
+      "validator_surface": "cell_engine.quantitative.completion_evidence.completion_evidence_bundle_intake_snapshot",
+      "target_gap_ids": [
+        "healthy_phh_p53_ddr_dynamics",
+        "healthy_phh_clonal_population_dynamics",
+        "capability_template_quantitation"
       ]
     }
   ],

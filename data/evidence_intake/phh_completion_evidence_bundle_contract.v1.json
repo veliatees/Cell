@@ -1,0 +1,183 @@
+{
+  "schema_version": "cell.phh-completion-evidence-bundle-contract.v1",
+  "contract_id": "phh_completion_evidence_bundle_contract_v1",
+  "target": "Donor-resolved primary-human-hepatocyte evidence for p53 damage response, clonal population dynamics, and every quantitative capability-atlas slot",
+  "expected_delivery_path": "data/evidence_intake/incoming/phh_completion_evidence/latest",
+  "canonical_null_token": "null",
+  "tables": [
+    {
+      "id": "p53_ddr_trajectory",
+      "file": "phh_p53_ddr_trajectories.csv",
+      "target_gap_ids": [
+        "healthy_phh_p53_ddr_dynamics"
+      ],
+      "record_granularity": "One raw analyte or fate observation for one identified PHH donor, biological replicate, protocol, and time point",
+      "required_columns": [
+        "record_id",
+        "donor_id",
+        "split_role",
+        "source_study_id",
+        "source_locator",
+        "species",
+        "biological_system",
+        "culture_format",
+        "biological_replicate_id",
+        "protocol_id",
+        "damage_agent",
+        "damage_dose_value",
+        "damage_dose_unit",
+        "exposure_start_h",
+        "washout_time_h",
+        "time_h",
+        "analyte_id",
+        "analyte_level",
+        "compartment",
+        "endpoint_class",
+        "assay",
+        "raw_value",
+        "raw_unit",
+        "normalization_denominator",
+        "uncertainty_type",
+        "uncertainty_value",
+        "sample_size",
+        "recovery_followup_h",
+        "independent_review_id",
+        "limitations"
+      ],
+      "required_analyte_ids": [
+        "TP53",
+        "phospho_TP53",
+        "MDM2"
+      ],
+      "required_endpoint_classes": [
+        "damage",
+        "arrest_or_senescence",
+        "apoptosis_or_survival",
+        "recovery"
+      ],
+      "allowed_analyte_levels": [
+        "total_protein",
+        "phosphoprotein",
+        "fate_or_recovery_readout"
+      ],
+      "minimum_distinct_timepoints_per_protocol": 3
+    },
+    {
+      "id": "clonal_population_trajectory",
+      "file": "phh_clonal_population_trajectories.csv",
+      "target_gap_ids": [
+        "healthy_phh_clonal_population_dynamics"
+      ],
+      "record_granularity": "One raw clone-level observation for one identified donor, clone, biological replicate, tissue or culture context, and time point",
+      "required_columns": [
+        "record_id",
+        "donor_id",
+        "split_role",
+        "source_study_id",
+        "source_locator",
+        "species",
+        "biological_system",
+        "culture_or_tissue_context",
+        "biological_replicate_id",
+        "clone_id",
+        "lineage_marker",
+        "genotype",
+        "ploidy",
+        "injury_context",
+        "nutrient_context",
+        "zonation_context",
+        "niche_context",
+        "spatial_reference_frame",
+        "position_x_um",
+        "position_y_um",
+        "position_z_um",
+        "time_h",
+        "endpoint",
+        "raw_value",
+        "raw_unit",
+        "measurement_operator",
+        "uncertainty_type",
+        "uncertainty_value",
+        "independent_review_id",
+        "limitations"
+      ],
+      "required_endpoint_classes": [
+        "proliferation_or_clone_size",
+        "arrest_senescence_death_or_clearance"
+      ],
+      "minimum_distinct_timepoints_per_clone": 2
+    },
+    {
+      "id": "capability_parameter_observation",
+      "file": "phh_capability_parameter_observations.csv",
+      "target_gap_ids": [
+        "capability_template_quantitation"
+      ],
+      "record_granularity": "One source-located quantitative observation for one exact capability-atlas parameter slot, donor or cohort, compartment, assay, and context",
+      "required_columns": [
+        "record_id",
+        "capability_id",
+        "parameter_slot_id",
+        "donor_id",
+        "split_role",
+        "source_study_id",
+        "source_locator",
+        "doi",
+        "species",
+        "biological_system",
+        "culture_format",
+        "biological_replicate_id",
+        "compartment",
+        "assay",
+        "quantity",
+        "raw_value",
+        "raw_unit",
+        "normalization_denominator",
+        "measurement_time",
+        "perturbation_context",
+        "uncertainty_type",
+        "uncertainty_value",
+        "independent_validation_id",
+        "limitations"
+      ],
+      "required_slot_coverage": "Every capability_id and parameter_slot_id pair declared by hepatocyte_capability_atlas_v1",
+      "unit_policy": "raw_unit must exactly equal the unit declared by the matched capability-atlas slot; conversions require a separately versioned conversion artifact"
+    }
+  ],
+  "allowed_split_roles": [
+    "calibration",
+    "internal_validation",
+    "independent_heldout"
+  ],
+  "allowed_species": [
+    "Homo sapiens"
+  ],
+  "allowed_biological_systems": [
+    "fresh_primary_human_hepatocyte",
+    "plated_primary_human_hepatocyte",
+    "primary_human_hepatocyte_spheroid",
+    "adult_human_liver_in_situ"
+  ],
+  "frozen_evaluation": {
+    "donor_id_may_cross_split_roles": false,
+    "source_study_disjoint_independent_heldout_required": true,
+    "model_and_parameter_manifest_frozen_before_heldout_access": true,
+    "post_freeze_parameter_refit_allowed": false,
+    "same_assay_measurement_operator_required": true,
+    "manual_primary_source_review_required": true,
+    "independent_review_attestation_required": true,
+    "automatic_pass_fail_assignment": false
+  },
+  "policy": {
+    "missing_values_must_use_canonical_null": true,
+    "aggregate_donor_count_may_reconstruct_donor_ids": false,
+    "biological_replicate_is_independent_donor": false,
+    "cross_species_parameter_transfer": false,
+    "cell_line_parameter_transfer": false,
+    "unit_conversion_without_versioned_artifact": false,
+    "automatic_parameter_activation": false,
+    "automatic_state_coupling": false,
+    "predictive_authority": false,
+    "manual_primary_source_review_required": true
+  }
+}

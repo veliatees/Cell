@@ -1,6 +1,6 @@
 {
   "version": "hepatocyte_completion_matrix_v1",
-  "date_verified": "2026-08-08",
+  "date_verified": "2026-08-11",
   "status": "mixed_completion_with_fail_closed_biological_activation",
   "score_policy": "No average realism or biological-accuracy percentage is identifiable. Closed statuses apply only to each entry's exact scope.",
   "status_semantics": {
@@ -9,6 +9,301 @@
     "blocked_missing_evidence": "Activation would require unavailable context-matched measurements; values remain null.",
     "external_action_required": "The requirement cannot be completed by repository code or literature intake alone.",
     "not_applicable_at_model_scale": "The requested representation is the wrong abstraction at whole-cell scale."
+  },
+  "software_completion_boundary": {
+    "version": "hepatocyte_software_completion_boundary_v1",
+    "status": "engineering_handoff_complete_external_science_required",
+    "scope": "Current repository implementation against the declared completion matrix and the evidence available in the repository.",
+    "current_repository_implementation_complete_for_available_evidence": true,
+    "responsible_code_only_work_remaining": false,
+    "scientific_model_complete": false,
+    "biological_validation_complete": false,
+    "digital_twin_predictive_authority": false,
+    "biological_accuracy_pct": null,
+    "evidence_gated_dispositions": [
+      {
+        "gap_id": "active_intracellular_transport_model",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "active_cargo_trajectory"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "active_protein_copies",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "active_protein_localization"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "capability_template_quantitation",
+        "completion_status": "partial",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "completion_evidence_bundle"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "cellular_memory_laws",
+        "completion_status": "partial",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "cellular_memory_trajectory"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "cytosol_experimental_validation",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "intracellular_mobility"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "damage_fate_recovery_calibration",
+        "completion_status": "partial",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "phh_injury_trajectory"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "donor_3d_morphology_mechanics",
+        "completion_status": "partial",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "phh_3d_mesh_boundary",
+          "phh_mechanics_calibration"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "donor_state_model",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "generative_donor_manifest"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "energy_redox_quantitation",
+        "completion_status": "partial",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "energy_redox_trajectory",
+          "legacy_scale_bridge_bundle"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "fluid_structure_interaction",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "phh_mechanics_calibration"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "healthy_phh_clonal_population_dynamics",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "completion_evidence_bundle"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "healthy_phh_cytoplasm_organelle_motion",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "intracellular_mobility"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "healthy_phh_cytosol_parameters",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "intracellular_mobility",
+          "phh_mechanics_calibration"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "healthy_phh_p53_ddr_dynamics",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "completion_evidence_bundle"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "hepatocyte_fba_execution",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "legacy_scale_bridge_bundle",
+          "metabolic_execution_bundle"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "hepatocyte_quantity_harvest",
+        "completion_status": "partial",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "legacy_scale_bridge_bundle"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "local_non_affine_membrane_coupling",
+        "completion_status": "partial",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "membrane_topology_event"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "macromolecular_crowding_physics",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "intracellular_mobility"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "organelle_fluid_boundaries",
+        "completion_status": "partial",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "phh_3d_mesh_boundary"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "quantitative_poroelastic_cfd",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "phh_mechanics_calibration"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "quantitative_reaction_core",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "legacy_scale_bridge_bundle",
+          "reaction_evidence"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "reaction_fluid_coupling",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "intracellular_mobility",
+          "reaction_transport_coupling"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      },
+      {
+        "gap_id": "receptor_signaling_kinetics",
+        "completion_status": "blocked_missing_evidence",
+        "next_action_class": "external_evidence_then_reviewed_implementation",
+        "evidence_contract_ids": [
+          "legacy_scale_bridge_bundle",
+          "receptor_signaling_trajectory"
+        ],
+        "responsible_code_only_progress_available": false,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false
+      }
+    ],
+    "external_action_scope_ids": [
+      "independent_scientific_validation"
+    ],
+    "inapplicable_scope_ids": [
+      "explicit_water_molecules"
+    ],
+    "unregistered_evidence_gated_scope_ids": [],
+    "orphan_evidence_target_ids": [],
+    "summary": {
+      "declared_scope_count": 56,
+      "closed_scope_count": 31,
+      "evidence_gated_scope_count": 23,
+      "registered_evidence_gated_scope_count": 23,
+      "unregistered_evidence_gated_scope_count": 0,
+      "orphan_evidence_target_count": 0,
+      "external_action_scope_count": 1,
+      "inapplicable_scope_count": 1,
+      "responsible_code_only_scope_count": 0,
+      "automatic_parameter_activation_count": 0,
+      "automatic_state_coupling_count": 0
+    },
+    "policy": "A mapped evidence-gated scope may receive new implementation only after its exact delivery passes structural intake, manual primary-source review, context matching, frozen evaluation, and the scope-specific authority gate. The boundary is not a claim of biological completeness."
   },
   "entries": [
     {
@@ -1428,17 +1723,18 @@
       "title": "Unified PHH evidence readiness preflight",
       "status": "closed",
       "scope": "Repository-level identity verification, delivery discovery, structural-validator dispatch and quarantine reporting for every declared PHH evidence contract; no biological parameter, model-fit or predictive claim.",
-      "current_capability": "One checksum-pinned registry discovers all 15 versioned intake contracts, dispatches only statically registered validators, preserves dependency-aware mobility and geometry links, quarantines one malformed delivery without stopping the remaining audit, and exposes one read-only CLI and snapshot surface.",
+      "current_capability": "One checksum-pinned registry discovers all 16 versioned intake contracts, dispatches only statically registered validators, maps every one of the 23 partial or evidence-blocked scopes, preserves dependency-aware mobility and geometry links, quarantines one malformed delivery without stopping the remaining audit, and exposes one read-only CLI and snapshot surface.",
       "observed_metrics": {
-        "registry_contract_count": 15,
-        "contract_identity_verified_count": 15,
-        "validator_surface_count": 15,
+        "registry_contract_count": 16,
+        "contract_identity_verified_count": 16,
+        "validator_surface_count": 16,
         "delivery_present_count": 0,
         "rejected_intake_count": 0,
-        "target_gap_count": 19,
+        "target_gap_count": 23,
         "target_gap_ids": [
           "active_intracellular_transport_model",
           "active_protein_copies",
+          "capability_template_quantitation",
           "cellular_memory_laws",
           "cytosol_experimental_validation",
           "damage_fate_recovery_calibration",
@@ -1446,7 +1742,10 @@
           "donor_state_model",
           "energy_redox_quantitation",
           "fluid_structure_interaction",
+          "healthy_phh_clonal_population_dynamics",
+          "healthy_phh_cytoplasm_organelle_motion",
           "healthy_phh_cytosol_parameters",
+          "healthy_phh_p53_ddr_dynamics",
           "hepatocyte_fba_execution",
           "hepatocyte_quantity_harvest",
           "local_non_affine_membrane_coupling",
@@ -1464,6 +1763,8 @@
       "remaining_requirements": [],
       "code_surfaces": [
         "data/evidence_intake/phh_evidence_readiness_registry.v1.json",
+        "data/evidence_intake/phh_completion_evidence_bundle_contract.v1.json",
+        "engine/cell_engine/quantitative/completion_evidence.py",
         "engine/cell_engine/validation/evidence_readiness.py",
         "scripts/audit_phh_evidence_readiness.py",
         "engine/tests/test_evidence_readiness.py"
@@ -1478,8 +1779,8 @@
       "observed_metrics": {
         "production_manifest_gate_count": 1,
         "initial_js_chunk_count": 2,
-        "initial_js_raw_bytes": 917590,
-        "initial_js_gzip_bytes": 250032,
+        "initial_js_raw_bytes": 919022,
+        "initial_js_gzip_bytes": 250376,
         "maximum_initial_js_raw_bytes": 980000,
         "maximum_initial_js_gzip_bytes": 275000,
         "required_deferred_entry_count": 6,
@@ -1587,11 +1888,40 @@
         "engine/cell_engine/validation/external_review.py",
         "docs/validation/external-review-dossier.md"
       ]
+    },
+    {
+      "id": "software_completion_boundary",
+      "title": "Repository engineering handoff boundary",
+      "status": "closed",
+      "scope": "Machine-checkable classification of every declared non-closed scope as exact external evidence intake, external action, or an explicitly inapplicable representation.",
+      "current_capability": "All 23 evidence-gated scopes map to validated fail-closed delivery contracts; the independent-validation scope remains external and one molecular-scale representation remains explicitly inapplicable. This closes only responsible code work possible before new evidence arrives, not the hepatocyte model or digital twin.",
+      "observed_metrics": {
+        "declared_scope_count_before_boundary": 56,
+        "evidence_gated_scope_count": 23,
+        "registered_evidence_gated_scope_count": 23,
+        "unregistered_evidence_gated_scope_count": 0,
+        "orphan_evidence_target_count": 0,
+        "external_action_scope_count": 1,
+        "inapplicable_scope_count": 1,
+        "responsible_code_only_scope_count": 0,
+        "scientific_model_complete": false,
+        "biological_validation_complete": false,
+        "digital_twin_predictive_authority": false,
+        "biological_accuracy_pct": null
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/validation/software_completion.py",
+        "engine/cell_engine/validation/evidence_readiness.py",
+        "data/evidence_intake/phh_evidence_readiness_registry.v1.json",
+        "data/evidence_intake/phh_completion_evidence_bundle_contract.v1.json",
+        "engine/tests/test_software_completion.py"
+      ]
     }
   ],
   "summary": {
-    "entry_count": 56,
-    "closed_count": 31,
+    "entry_count": 57,
+    "closed_count": 32,
     "partial_count": 8,
     "blocked_missing_evidence_count": 15,
     "external_action_required_count": 1,

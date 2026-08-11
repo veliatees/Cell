@@ -27,18 +27,18 @@ def test_registry_verifies_every_contract_and_stays_fail_closed() -> None:
     assert tuple(entry["id"] for entry in snapshot["entries"]) == REGISTRY_ENTRY_IDS
     assert snapshot["status"] == "contracts_verified_awaiting_external_evidence"
     assert snapshot["summary"] == {
-        "registry_contract_count": 15,
-        "contract_identity_verified_count": 15,
-        "validator_surface_count": 15,
+        "registry_contract_count": 16,
+        "contract_identity_verified_count": 16,
+        "validator_surface_count": 16,
         "delivery_present_count": 0,
         "delivered_artifact_count": 0,
         "delivered_record_count": 0,
         "structurally_complete_item_count": 0,
         "quantitatively_authorized_item_count": 0,
         "rejected_intake_count": 0,
-        "awaiting_intake_count": 15,
+        "awaiting_intake_count": 16,
         "structurally_audited_intake_count": 0,
-        "target_gap_count": 19,
+        "target_gap_count": 23,
         "automatic_parameter_activation_count": 0,
         "automatic_state_coupling_count": 0,
     }
@@ -49,9 +49,13 @@ def test_registry_verifies_every_contract_and_stays_fail_closed() -> None:
 def test_every_registry_target_exists_in_the_completion_matrix() -> None:
     snapshot = phh_evidence_readiness_snapshot()
     completion = build_hepatocyte_completion_matrix()
-    completion_ids = {entry["id"] for entry in completion["entries"]}
+    evidence_gated_ids = {
+        entry["id"]
+        for entry in completion["entries"]
+        if entry["status"] in {"partial", "blocked_missing_evidence"}
+    }
 
-    assert set(snapshot["target_gap_ids"]) <= completion_ids
+    assert set(snapshot["target_gap_ids"]) == evidence_gated_ids
 
 
 def test_registry_rejects_contract_identity_drift() -> None:
@@ -92,7 +96,7 @@ def test_one_malformed_delivery_is_quarantined_without_stopping_preflight(
     assert snapshot["status"] == "delivery_quarantine_active"
     assert snapshot["summary"]["delivery_present_count"] == 1
     assert snapshot["summary"]["rejected_intake_count"] == 1
-    assert snapshot["summary"]["awaiting_intake_count"] == 14
+    assert snapshot["summary"]["awaiting_intake_count"] == 15
     assert by_id["energy_redox_trajectory"]["status"] == "rejected_invalid_delivery"
     assert by_id["energy_redox_trajectory"]["validation_error"]
     assert by_id["energy_redox_trajectory"]["quantitatively_authorized_item_count"] == 0
