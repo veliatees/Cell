@@ -3,15 +3,15 @@
     "exact_reconstruction_verified": true,
     "removed_state_key_count": 0,
     "state_override_count": 22,
-    "target_snapshot_sha256": "c4278d7048fcd2dd92090fe8e60db84779068ca483d1d84e5f85251b427830c3",
+    "target_snapshot_sha256": "7984b99a78f1b1e5719b872f2baf2e1f489844e1863eca55415ff488b366869c",
     "target_state_key_count": 91,
     "target_state_key_sha256": "a5154187b3a283f63e2ce2a7e7af660786a66dd2aa167885ce13ec42f9e6a075"
   },
   "base_identity": {
-    "created_at_utc": "2026-08-09T10:43:30.688559+00:00",
+    "created_at_utc": "2026-08-09T11:34:36.159366+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "schema_version": "cell-engine.snapshot.v1",
-    "snapshot_sha256": "5ae9f6e1102490eee7d7daf309f06fc3d5f9edafff4d7255d01739b3bfb3eee0",
+    "snapshot_sha256": "c99b2895b98a8a4025edbdfa69787da482516597cf6554c095fbccde5cac847e",
     "state_key_count": 91,
     "state_key_sha256": "a5154187b3a283f63e2ce2a7e7af660786a66dd2aa167885ce13ec42f9e6a075"
   },
@@ -10673,7 +10673,7 @@
     "zone": "periportal"
   },
   "target_metadata": {
-    "created_at_utc": "2026-08-09T10:46:57.932073+00:00",
+    "created_at_utc": "2026-08-09T11:37:38.442064+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   }

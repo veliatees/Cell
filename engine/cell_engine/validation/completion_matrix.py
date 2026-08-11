@@ -2707,10 +2707,10 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
         ),
         _entry(
             "browser_runtime_workload_policy",
-            "Browser runtime workload, cadence and local-fixture authority policy",
+            "Browser runtime workload, cadence and engine-only state policy",
             "closed",
-            "Browser render scheduling, visual-fluid cadence, device-load degradation and normalized fallback execution; no biological-model, timescale or accuracy claim.",
-            "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone. The browser-local biochemical fixture is paused while a Python snapshot loads or is present, cannot scale canonical geometry or mutate engine/division state, and may advance only as a clearly relative fallback when the snapshot is unavailable. Its public contract exposes fixture-step, relative-pool and normalized-distance ordering only; unit-bearing fields, projected survival, biological fate and absolute-distance transport conversion are fail-closed.",
+            "Browser render scheduling, visual-fluid cadence, device-load degradation and engine-only biological state; no biological-model, timescale or accuracy claim.",
+            "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone. The normalized cell fixture remains an isolated software-test object and never executes in production, including when the Python snapshot is missing. The browser cannot import it at runtime, generate division probabilities or daughter states, scale canonical geometry, mutate engine state, or publish unit-bearing, survival, fate or absolute-distance transport outputs. Missing engine state produces neutral anatomy and an explicit unavailable label.",
             {
                 "document_visibility_suspension_guard_count": int(
                     bool(
@@ -2759,7 +2759,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                     for tier in browser_runtime["quality"]["tiers"].values()
                 ),
                 "total_frame_work_governor_count": 1,
-                "visual_clock_conservation_test_count": 1,
+                "renderer_cadence_test_count": 1,
                 "automatic_biological_parameter_activation_count": int(
                     bool(browser_runtime["biological_parameter_activation"])
                 ),
@@ -2781,6 +2781,34 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                     bool(
                         browser_runtime["local_fixture"][
                             "execute_when_python_snapshot_missing"
+                        ]
+                    )
+                ),
+                "local_fixture_production_runtime_import_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "production_runtime_import_enabled"
+                        ]
+                    )
+                ),
+                "browser_local_division_execution_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "browser_local_division_enabled"
+                        ]
+                    )
+                ),
+                "synthetic_division_probability_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "synthetic_division_probability_enabled"
+                        ]
+                    )
+                ),
+                "synthetic_daughter_state_count": int(
+                    bool(
+                        browser_runtime["local_fixture"][
+                            "synthetic_daughter_state_enabled"
                         ]
                     )
                 ),
@@ -2817,6 +2845,10 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                         "public_contract_version"
                     ]
                     == "dimensionless_browser_cell_fixture_v2"
+                ),
+                "local_fixture_test_only_contract_count": int(
+                    browser_runtime["local_fixture"]["runtime_role"]
+                    == "isolated_test_fixture_only"
                 ),
                 "local_fixture_public_unit_bearing_field_count": browser_runtime[
                     "local_fixture"
@@ -4100,12 +4132,37 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or browser_runtime_metrics["quality_tier_count"] != 3
         or browser_runtime_metrics["initial_load_grace_window_count"] != 2
         or browser_runtime_metrics["visual_fluid_cadence_tier_count"] != 3
+        or browser_runtime_metrics[
+            "projected_grid_refresh_cadence_tier_count"
+        ]
+        != 3
         or browser_runtime_metrics["total_frame_work_governor_count"] != 1
-        or browser_runtime_metrics["visual_clock_conservation_test_count"] != 1
+        or browser_runtime_metrics["renderer_cadence_test_count"] != 1
         or browser_runtime_metrics[
             "automatic_biological_parameter_activation_count"
         ]
         != 0
+        or browser_runtime_metrics[
+            "local_fixture_advances_while_snapshot_loading_count"
+        ]
+        != 0
+        or browser_runtime_metrics["local_fixture_advances_with_snapshot_count"]
+        != 0
+        or browser_runtime_metrics[
+            "local_fixture_fallback_without_snapshot_count"
+        ]
+        != 0
+        or browser_runtime_metrics[
+            "local_fixture_production_runtime_import_count"
+        ]
+        != 0
+        or browser_runtime_metrics["browser_local_division_execution_count"]
+        != 0
+        or browser_runtime_metrics["synthetic_division_probability_count"]
+        != 0
+        or browser_runtime_metrics["synthetic_daughter_state_count"] != 0
+        or browser_runtime_metrics["local_fixture_test_only_contract_count"]
+        != 1
     ):
         raise ValueError("browser runtime workload policy contract changed")
     if by_id["independent_scientific_validation"]["observed_metrics"]["externally_reviewed_claim_count"] != 0:

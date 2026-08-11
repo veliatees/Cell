@@ -1,70 +1,43 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { NormalizedCellFixture } from "../physics/cell";
 import {
   assertBrowserLocalFixtureAuthority,
   browserLocalFixtureClockDisclosure,
-  browserLocalFixtureEventText,
-  browserLocalFixtureExecution,
-  browserLocalFixtureFlowMeta,
-  browserLocalFixtureFlowValue,
-  browserLocalFixtureGeometryScale,
-  browserLocalFixtureOrganelleMeta,
-  browserLocalFixtureStatusView
+  browserLocalFixtureElapsedLabel,
+  browserLocalFixtureExecution
 } from "./browserLocalFixture";
 
-describe("browser-local fixture authority", () => {
+describe("browser-local fixture production firewall", () => {
   it("keeps the policy fail-closed", () => {
     expect(assertBrowserLocalFixtureAuthority).not.toThrow();
   });
 
-  it("runs only when the Python snapshot is unavailable", () => {
+  it("never executes in a production snapshot state", () => {
     expect(browserLocalFixtureExecution("loading").shouldAdvance).toBe(false);
     expect(browserLocalFixtureExecution("loaded").shouldAdvance).toBe(false);
-    expect(browserLocalFixtureExecution("missing").shouldAdvance).toBe(true);
+    expect(browserLocalFixtureExecution("missing").shouldAdvance).toBe(false);
+    expect(browserLocalFixtureExecution("missing").label).toContain(
+      "no biological state substituted"
+    );
   });
 
-  it("cannot scale canonical geometry", () => {
-    expect(browserLocalFixtureGeometryScale("loaded", true, 8)).toBe(1);
-    expect(browserLocalFixtureGeometryScale("loading", true, 8)).toBe(1);
-    expect(browserLocalFixtureGeometryScale("missing", false, 8)).toBe(1);
-    expect(browserLocalFixtureGeometryScale("missing", true, 8)).toBe(2);
+  it("discloses engine time without inventing a fallback clock", () => {
+    expect(browserLocalFixtureClockDisclosure("loaded", 960)).toContain(
+      "Python engine t=960 s"
+    );
+    expect(browserLocalFixtureClockDisclosure("loaded", 960)).toContain(
+      "biological execution disabled"
+    );
+    expect(browserLocalFixtureElapsedLabel("missing", null)).toBe(
+      "snapshot unavailable"
+    );
   });
 
-  it("presents local state without biological time, rate, survival, or ETA claims", () => {
-    const cell = new NormalizedCellFixture(undefined, 0.85, false);
-    cell.step(0.04, 1);
-    const snapshot = cell.snapshot();
-    const execution = browserLocalFixtureExecution("missing");
-    const status = browserLocalFixtureStatusView(snapshot, execution);
-    const organelle = browserLocalFixtureOrganelleMeta(snapshot.organelles[0]);
-    const flow = browserLocalFixtureFlowMeta(snapshot.flows[0]);
-    const flowValue = browserLocalFixtureFlowValue(snapshot.flows[0]);
-    const event = browserLocalFixtureEventText({
-      id: 1,
-      fixtureStep: 3600,
-      severity: "crit",
-      text: "Fixture entered a failure-like energy state"
-    });
-    const publicText = [
-      status.executionLabel,
-      status.stateLabel,
-      ...status.channels,
-      organelle,
-      flow,
-      flowValue,
-      event
-    ].join(" | ");
-
-    expect(publicText).not.toMatch(/%\/h|median fate|local ETA|projected survival/i);
-    expect(publicText).not.toMatch(/\b\d+(?:\.\d+)?\s*(?:ms|s|h|min)\b/i);
-    expect(publicText).toContain("fixture step");
-    expect(publicText).toContain("relative");
-  });
-
-  it("discloses the independent wall-clock renderer while a snapshot is active", () => {
-    const text = browserLocalFixtureClockDisclosure("loaded", 960);
-    expect(text).toContain("Python engine t=960 s");
-    expect(text).toContain("biochemical fixture paused");
-    expect(text).toContain("wall-clock only");
+  it("keeps the test fixture and browser-local division out of main", () => {
+    const mainSource = readFileSync(new URL("../main.ts", import.meta.url), "utf8");
+    expect(mainSource).not.toContain("new NormalizedCellFixture");
+    expect(mainSource).not.toContain("resolveVisualDivision");
+    expect(mainSource).not.toContain("visualCytokinesisFailureRisk");
+    expect(mainSource).not.toContain("data-action=\"divide\"");
   });
 });

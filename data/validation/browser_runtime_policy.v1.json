@@ -5,10 +5,14 @@
   "biological_parameter_activation": false,
   "local_fixture": {
     "public_contract_version": "dimensionless_browser_cell_fixture_v2",
-    "runtime_role": "normalized_schematic_fallback_only",
+    "runtime_role": "isolated_test_fixture_only",
+    "production_runtime_import_enabled": false,
     "execute_when_python_snapshot_loading": false,
     "execute_when_python_snapshot_loaded": false,
-    "execute_when_python_snapshot_missing": true,
+    "execute_when_python_snapshot_missing": false,
+    "browser_local_division_enabled": false,
+    "synthetic_division_probability_enabled": false,
+    "synthetic_daughter_state_enabled": false,
     "canonical_geometry_coupling": false,
     "canonical_engine_state_coupling": false,
     "engine_division_state_coupling": false,
@@ -31,10 +35,7 @@
     "single_pending_frame_or_timer": true
   },
   "clock": {
-    "maximum_visible_frame_delta_ms": 80,
-    "fixture_steps_per_render_second": 5,
-    "maximum_fixture_substep": 0.08,
-    "minimum_fixture_substeps": 2
+    "maximum_visible_frame_delta_ms": 80
   },
   "quality": {
     "measurement_window_ms": 2000,

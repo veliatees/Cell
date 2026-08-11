@@ -98,15 +98,13 @@ single-cell state; much of the current dynamic cell remains exploratory.
   back into the startup graph.
 - **A browser runtime workload policy** — hidden tabs and offscreen cell
   viewports suspend rendering, the dimensionless cytosol field advances on a
-  tested quality-tier cadence, visible visual time is substepped without
-  low-FPS clock loss, and total frame work can lower quality without changing
-  the Python engine or any biological parameter. The normalized browser-local
-  biochemical fixture is paused while a Python snapshot loads or is active; it
-  cannot scale canonical geometry, alter engine/division state, or publish
-  biological time, rate, survival, or transport-timing claims. Independent
-  renderer motion continues on wall-clock time. Its versioned public API is now
-  explicitly dimensionless: only fixture-step, relative-pool and normalized
-  near/far geometry ordering cross the boundary, with zero unit-bearing fields.
+  tested quality-tier cadence, and total frame work can lower quality without
+  changing the Python engine or any biological parameter. The normalized cell
+  fixture is now an isolated software-test object and is absent from production
+  runtime execution. A missing Python snapshot produces neutral anatomy and an
+  explicit unavailable state, never substitute biochemistry, fate, transport,
+  division probability or daughter cells. Independent renderer motion continues
+  on wall-clock time and carries no biological timing authority.
 - **A fail-closed human lifecycle baseline** — the quiescent human hepatocyte no
   longer inherits rat cell-cycle or mouse regeneration timing metadata. Missing
   healthy-human phase durations are omitted, marked non-executable and cannot
@@ -345,9 +343,11 @@ machinery, unit-aware data structures, denominator-preserved human observations,
 and machine-enforced authority gates. The energy/redox layer now distinguishes
 cytosol, mitochondrial intermembrane space and matrix, ER lumen and peroxisome;
 it does not infer organelle concentrations or kinetics from whole-liver values.
-The division module separates compressed demo timing from
-source-traced biological timing profiles, including a rat post-partial-
-hepatectomy profile that blocks fast G1/S entry.
+The engine division module separates software-test timing from source-traced
+biological timing profiles, including a rat post-partial-hepatectomy profile
+that blocks fast G1/S entry. The production browser has no local division
+button, phase clock, failure law, organelle partition or daughter-state model;
+it renders daughters only from a gated engine event.
 
 The dimensionless cytosol test bed now rasterizes the smooth star-shaped outer
 membrane as cut-cell volume fractions and face apertures. Local membrane motion
@@ -592,6 +592,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 168: Organelle geometry and public-claim firewall v1](docs/milestones/168-organelle-geometry-public-claim-firewall-v1.md)
 - [Milestone 169: Browser-local fixture execution firewall v1](docs/milestones/169-browser-local-fixture-execution-firewall-v1.md)
 - [Milestone 170: Dimensionless browser fixture API firewall v2](docs/milestones/170-dimensionless-browser-fixture-api-firewall-v2.md)
+- [Milestone 171: Engine-only browser cell state v1](docs/milestones/171-engine-only-browser-cell-state-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

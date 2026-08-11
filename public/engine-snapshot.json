@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-08-09T10:43:30.688559+00:00",
+    "created_at_utc": "2026-08-09T11:34:36.159366+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -17292,8 +17292,8 @@
           "observed_metrics": {
             "automatic_biological_parameter_activation_count": 0,
             "initial_js_chunk_count": 2,
-            "initial_js_gzip_bytes": 267231,
-            "initial_js_raw_bytes": 977027,
+            "initial_js_gzip_bytes": 250032,
+            "initial_js_raw_bytes": 917590,
             "maximum_initial_js_gzip_bytes": 275000,
             "maximum_initial_js_raw_bytes": 980000,
             "production_manifest_gate_count": 1,
@@ -17317,10 +17317,11 @@
             "engine/cell_engine/validation/browser_runtime_policy.py",
             "engine/tests/test_browser_runtime_policy.py"
           ],
-          "current_capability": "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone. The browser-local biochemical fixture is paused while a Python snapshot loads or is present, cannot scale canonical geometry or mutate engine/division state, and may advance only as a clearly relative fallback when the snapshot is unavailable. Its public contract exposes fixture-step, relative-pool and normalized-distance ordering only; unit-bearing fields, projected survival, biological fate and absolute-distance transport conversion are fail-closed.",
+          "current_capability": "The render loop stops while the page or cell viewport is not visible, discards suspended wall time on resume, keeps at most one pending frame or timer, advances the dimensionless visual fluid at an explicit tier cadence and degrades quality from total frame work rather than WebGL render time alone. The normalized cell fixture remains an isolated software-test object and never executes in production, including when the Python snapshot is missing. The browser cannot import it at runtime, generate division probabilities or daughter states, scale canonical geometry, mutate engine state, or publish unit-bearing, survival, fate or absolute-distance transport outputs. Missing engine state produces neutral anatomy and an explicit unavailable label.",
           "id": "browser_runtime_workload_policy",
           "observed_metrics": {
             "automatic_biological_parameter_activation_count": 0,
+            "browser_local_division_execution_count": 0,
             "document_visibility_suspension_guard_count": 1,
             "initial_load_grace_window_count": 2,
             "local_fixture_absolute_distance_transport_conversion_count": 0,
@@ -17332,22 +17333,26 @@
             "local_fixture_canonical_geometry_coupling_count": 0,
             "local_fixture_canonical_state_coupling_count": 0,
             "local_fixture_dimensionless_public_contract_count": 1,
-            "local_fixture_fallback_without_snapshot_count": 1,
+            "local_fixture_fallback_without_snapshot_count": 0,
+            "local_fixture_production_runtime_import_count": 0,
             "local_fixture_projected_survival_output_count": 0,
             "local_fixture_public_unit_bearing_field_count": 0,
+            "local_fixture_test_only_contract_count": 1,
             "projected_grid_refresh_cadence_tier_count": 3,
             "quality_tier_count": 3,
+            "renderer_cadence_test_count": 1,
             "single_pending_render_guard_count": 1,
             "suspended_elapsed_discard_guard_count": 1,
+            "synthetic_daughter_state_count": 0,
+            "synthetic_division_probability_count": 0,
             "total_frame_work_governor_count": 1,
             "viewport_intersection_suspension_guard_count": 1,
-            "visual_clock_conservation_test_count": 1,
             "visual_fluid_cadence_tier_count": 3
           },
           "remaining_requirements": [],
-          "scope": "Browser render scheduling, visual-fluid cadence, device-load degradation and normalized fallback execution; no biological-model, timescale or accuracy claim.",
+          "scope": "Browser render scheduling, visual-fluid cadence, device-load degradation and engine-only biological state; no biological-model, timescale or accuracy claim.",
           "status": "closed",
-          "title": "Browser runtime workload, cadence and local-fixture authority policy"
+          "title": "Browser runtime workload, cadence and engine-only state policy"
         },
         {
           "code_surfaces": [

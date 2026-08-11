@@ -18,10 +18,14 @@ export type BrowserRuntimePolicy = {
   biological_parameter_activation: false;
   local_fixture: {
     public_contract_version: "dimensionless_browser_cell_fixture_v2";
-    runtime_role: "normalized_schematic_fallback_only";
+    runtime_role: "isolated_test_fixture_only";
+    production_runtime_import_enabled: false;
     execute_when_python_snapshot_loading: false;
     execute_when_python_snapshot_loaded: false;
-    execute_when_python_snapshot_missing: true;
+    execute_when_python_snapshot_missing: false;
+    browser_local_division_enabled: false;
+    synthetic_division_probability_enabled: false;
+    synthetic_daughter_state_enabled: false;
     canonical_geometry_coupling: false;
     canonical_engine_state_coupling: false;
     engine_division_state_coupling: false;
@@ -45,9 +49,6 @@ export type BrowserRuntimePolicy = {
   };
   clock: {
     maximum_visible_frame_delta_ms: number;
-    fixture_steps_per_render_second: number;
-    maximum_fixture_substep: number;
-    minimum_fixture_substeps: number;
   };
   quality: {
     measurement_window_ms: number;
@@ -142,35 +143,6 @@ export function accumulateCadencedStep(
   return {
     accumulatedS: 0,
     stepDeltaS: next
-  };
-}
-
-export type BrowserFixtureStepPlan = {
-  totalFixtureSteps: number;
-  fixtureStepDelta: number;
-  iterations: number;
-};
-
-export function browserFixtureStepPlan(
-  renderDeltaS: number
-): BrowserFixtureStepPlan {
-  if (!Number.isFinite(renderDeltaS) || renderDeltaS < 0) {
-    throw new RangeError("visible render delta must be finite and non-negative");
-  }
-  const clock = BROWSER_RUNTIME_POLICY.clock;
-  const totalFixtureSteps =
-    renderDeltaS * clock.fixture_steps_per_render_second;
-  if (totalFixtureSteps === 0) {
-    return { totalFixtureSteps: 0, fixtureStepDelta: 0, iterations: 0 };
-  }
-  const iterations = Math.max(
-    clock.minimum_fixture_substeps,
-    Math.ceil(totalFixtureSteps / clock.maximum_fixture_substep)
-  );
-  return {
-    totalFixtureSteps,
-    fixtureStepDelta: totalFixtureSteps / iterations,
-    iterations
   };
 }
 

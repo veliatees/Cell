@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   BROWSER_RUNTIME_POLICY,
   accumulateCadencedStep,
-  browserFixtureStepPlan,
   evaluateRenderWorkloadWindow,
   numericalGridRefreshIntervalS,
   renderSuspensionReason
@@ -15,6 +14,9 @@ describe("browser render cadence policy", () => {
     expect(BROWSER_RUNTIME_POLICY.local_fixture.public_unit_bearing_field_count).toBe(0);
     expect(BROWSER_RUNTIME_POLICY.local_fixture.projected_survival_output_enabled).toBe(false);
     expect(BROWSER_RUNTIME_POLICY.local_fixture.absolute_distance_transport_conversion_enabled).toBe(false);
+    expect(BROWSER_RUNTIME_POLICY.local_fixture.production_runtime_import_enabled).toBe(false);
+    expect(BROWSER_RUNTIME_POLICY.local_fixture.execute_when_python_snapshot_missing).toBe(false);
+    expect(BROWSER_RUNTIME_POLICY.local_fixture.browser_local_division_enabled).toBe(false);
   });
 
   it("suspends hidden and off-viewport rendering", () => {
@@ -50,15 +52,10 @@ describe("browser render cadence policy", () => {
     expect(numericalGridRefreshIntervalS("essential")).toBe(1);
   });
 
-  it("preserves the dimensionless fixture coordinate across lower frame rates", () => {
-    const plan = browserFixtureStepPlan(1 / 15);
-    expect(plan.totalFixtureSteps).toBeCloseTo(1 / 3);
-    expect(plan.fixtureStepDelta * plan.iterations).toBeCloseTo(
-      plan.totalFixtureSteps
-    );
-    expect(plan.fixtureStepDelta).toBeLessThanOrEqual(
-      BROWSER_RUNTIME_POLICY.clock.maximum_fixture_substep
-    );
+  it("contains no production fixture scheduler", () => {
+    expect(Object.keys(BROWSER_RUNTIME_POLICY.clock)).toEqual([
+      "maximum_visible_frame_delta_ms"
+    ]);
   });
 
   it("degrades only after consecutive total-work breaches", () => {

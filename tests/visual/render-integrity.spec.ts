@@ -185,7 +185,7 @@ test.describe("hepatocyte render integrity", () => {
     });
   }
 
-  test("canonical snapshot pauses and sanitizes the browser-local fixture", async ({ page }) => {
+  test("canonical snapshot is the sole production cell-state source", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto("/");
     await waitForRender(page);
@@ -197,20 +197,49 @@ test.describe("hepatocyte render integrity", () => {
     );
     await expect(report).toHaveAttribute(
       "data-local-fixture-execution",
-      "paused_for_python_snapshot"
+      "disabled_for_python_snapshot"
     );
     await expect(report.locator(".report-status")).toContainText(
-      "PAUSED - Python snapshot is the state source"
+      "Python snapshot is the sole cell-state source"
     );
     await expect(report.locator(".report-rows")).toContainText(
-      "Local organelle activity"
+      "Browser-local organelle activity"
     );
     await expect(report.locator(".report-flows")).toContainText(
-      "neutral topology"
+      "static topology hints"
     );
 
     const publicText = await report.innerText();
     expect(publicText).not.toMatch(/%\/h|median fate|local ETA|Cell is dying/i);
+  });
+
+  test("missing engine snapshot leaves neutral anatomy without local biology", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto("/?engineSnapshot=/missing-engine-snapshot.json");
+    await waitForRender(page);
+
+    const report = page.locator(".report-panel").first();
+    await expect(report).toHaveAttribute(
+      "data-python-snapshot-availability",
+      "missing"
+    );
+    await expect(report).toHaveAttribute(
+      "data-local-fixture-execution",
+      "disabled_without_python_snapshot"
+    );
+    await expect(report.locator(".report-status")).toContainText(
+      "no biological state substituted"
+    );
+    await expect(page.locator('[data-role="division-gate"]')).toContainText(
+      "neutral anatomy only"
+    );
+    await expect(page.locator('[data-value="elapsed"]')).toHaveText(
+      "snapshot unavailable"
+    );
+    await expect(page.locator('[data-action="divide"]')).toHaveCount(0);
+
+    const publicText = await page.locator("body").innerText();
+    expect(publicText).not.toMatch(/fixture step|projected survival|P\(fail\)/i);
   });
 
   test("offscreen mobile viewport suspends and resumes the render loop", async ({ page }) => {
