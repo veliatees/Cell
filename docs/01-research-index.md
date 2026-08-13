@@ -180,6 +180,9 @@ linked to its dependencies.
 - Mixed-species organelle geometry authority firewall, complete rat/human source
   ledger, and public/browser claim correction:
   `milestones/168-organelle-geometry-public-claim-firewall-v1.md`
+- Transactional, hash-chained whole-cell experiment archive with bit-identical
+  resume and checkpoint-anchored counterfactual forks:
+  `milestones/173-durable-experiment-run-archive-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

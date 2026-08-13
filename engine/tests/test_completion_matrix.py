@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 57
-    assert summary["closed_count"] == 32
+    assert summary["entry_count"] == 58
+    assert summary["closed_count"] == 33
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 15
     assert summary["external_action_required_count"] == 1
@@ -40,6 +40,21 @@ def test_whole_cell_runtime_is_closed_only_as_an_authority_firewall() -> None:
     assert metrics["quantitative_authority_surface_count"] == 0
     assert metrics["predictive_authority_surface_count"] == 0
     assert metrics["authoritative_state_coupling_surface_count"] == 0
+
+
+def test_experiment_archive_is_closed_only_as_operational_infrastructure() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    archive = entries["durable_experiment_run_archive"]
+    metrics = archive["observed_metrics"]
+    assert archive["status"] == "closed"
+    assert metrics["transactional_storage_backend_count"] == 1
+    assert metrics["append_only_hash_chain_count"] == 1
+    assert metrics["immutable_run_manifest_hash_count"] == 1
+    assert metrics["bit_identical_resume_primitive_count"] == 1
+    assert metrics["counterfactual_fork_primitive_count"] == 1
+    assert metrics["automatic_biological_parameter_activation_count"] == 0
+    assert metrics["predictive_authority"] is False
 
 
 def test_legacy_calibration_is_closed_only_as_a_fixture_score_firewall() -> None:

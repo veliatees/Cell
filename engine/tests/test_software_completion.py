@@ -29,8 +29,8 @@ def test_every_nonclosed_repository_scope_has_an_explicit_external_disposition()
     assert boundary["digital_twin_predictive_authority"] is False
     assert boundary["biological_accuracy_pct"] is None
     assert boundary["summary"] == {
-        "declared_scope_count": 56,
-        "closed_scope_count": 31,
+        "declared_scope_count": 57,
+        "closed_scope_count": 32,
         "evidence_gated_scope_count": 23,
         "registered_evidence_gated_scope_count": 23,
         "unregistered_evidence_gated_scope_count": 0,

@@ -8,6 +8,12 @@ from cell_engine.core.cell_definition import (
     ValidationTarget,
 )
 from cell_engine.core.engine import run_cell, step_cell
+from cell_engine.core.experiment_archive import (
+    ArchiveVerification,
+    ExperimentArchive,
+    ExperimentRecord,
+    ExperimentRun,
+)
 from cell_engine.core.provenance import ParameterProvenance, SourceReference
 from cell_engine.core.random import EngineRng
 from cell_engine.core.runtime_authority import (
@@ -40,6 +46,9 @@ __all__ = [
     "CellState",
     "CompartmentDefinition",
     "EngineRng",
+    "ExperimentArchive",
+    "ExperimentRecord",
+    "ExperimentRun",
     "GeometryDefinition",
     "MembraneElectrochemicalState",
     "MetabolicFlux",
@@ -58,4 +67,5 @@ __all__ = [
     "ValidationTarget",
     "whole_cell_runtime_authority_snapshot",
     "WholeCellRuntimeAuthorityError",
+    "ArchiveVerification",
 ]

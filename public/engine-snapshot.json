@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-08-11T10:46:22.437335+00:00",
+    "created_at_utc": "2026-08-13T17:24:02.920582+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -15870,7 +15870,7 @@
       "version": "hepatocyte_capability_atlas_v1"
     },
     "hepatocyte_completion_matrix": {
-      "date_verified": "2026-08-11",
+      "date_verified": "2026-08-13",
       "entries": [
         {
           "code_surfaces": [
@@ -15916,6 +15916,34 @@
           "scope": "Canonical quiescent human-hepatocyte division and regeneration timing metadata; no phase-duration or proliferation-rate claim.",
           "status": "closed",
           "title": "Human baseline lifecycle timing firewall"
+        },
+        {
+          "code_surfaces": [
+            "engine/cell_engine/core/experiment_archive.py",
+            "engine/cell_engine/core/checkpoint.py",
+            "scripts/run_cell_experiment.py",
+            "engine/tests/test_experiment_archive.py"
+          ],
+          "current_capability": "A SQLite-backed append-only SHA-256 chain stores complete CellState plus RNG checkpoints, unit-explicit external-input declarations and read-only observations. Runs resume bit-identically, fork from a verified checkpoint with lineage preserved, reject scientific-authority purposes and activate no biological parameter.",
+          "id": "durable_experiment_run_archive",
+          "observed_metrics": {
+            "allowed_runtime_purpose_count": 2,
+            "append_only_hash_chain_count": 1,
+            "automatic_biological_parameter_activation_count": 0,
+            "bit_identical_resume_primitive_count": 1,
+            "blocked_scientific_authority_purpose_count": 3,
+            "counterfactual_fork_primitive_count": 1,
+            "explicit_external_input_record_type_count": 1,
+            "explicit_observation_record_type_count": 1,
+            "full_state_checkpoint_record_type_count": 1,
+            "immutable_run_manifest_hash_count": 1,
+            "predictive_authority": false,
+            "transactional_storage_backend_count": 1
+          },
+          "remaining_requirements": [],
+          "scope": "Transactional, tamper-evident persistence of explicitly exploratory whole-cell runs; no biological-validity or predictive claim.",
+          "status": "closed",
+          "title": "Durable experiment run archive"
         },
         {
           "code_surfaces": [
@@ -17468,7 +17496,7 @@
           "observed_metrics": {
             "biological_accuracy_pct": null,
             "biological_validation_complete": false,
-            "declared_scope_count_before_boundary": 56,
+            "declared_scope_count_before_boundary": 57,
             "digital_twin_predictive_authority": false,
             "evidence_gated_scope_count": 23,
             "external_action_scope_count": 1,
@@ -17768,8 +17796,8 @@
         "summary": {
           "automatic_parameter_activation_count": 0,
           "automatic_state_coupling_count": 0,
-          "closed_scope_count": 31,
-          "declared_scope_count": 56,
+          "closed_scope_count": 32,
+          "declared_scope_count": 57,
           "evidence_gated_scope_count": 23,
           "external_action_scope_count": 1,
           "inapplicable_scope_count": 1,
@@ -17792,8 +17820,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 15,
-        "closed_count": 32,
-        "entry_count": 57,
+        "closed_count": 33,
+        "entry_count": 58,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
@@ -87481,8 +87509,8 @@
       "summary": {
         "automatic_parameter_activation_count": 0,
         "automatic_state_coupling_count": 0,
-        "closed_scope_count": 31,
-        "declared_scope_count": 56,
+        "closed_scope_count": 32,
+        "declared_scope_count": 57,
         "evidence_gated_scope_count": 23,
         "external_action_scope_count": 1,
         "inapplicable_scope_count": 1,

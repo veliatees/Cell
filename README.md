@@ -113,6 +113,13 @@ single-cell state; much of the current dynamic cell remains exploratory.
   unclassified code-only scopes, while keeping scientific completion,
   biological validation, predictive digital-twin authority, and biological
   accuracy explicitly false or null.
+- **A durable living-run archive** — one transactional SQLite file can preserve
+  complete cell-state plus RNG checkpoints, unit-explicit external-input
+  declarations and read-only observations in an append-only SHA-256 chain.
+  Runs resume bit-identically after interruption and fork from an audited
+  checkpoint for counterfactual continuations. The archive accepts only the
+  schematic or exploratory whole-cell purposes; persistence grants no PHH,
+  biological-validation or predictive authority.
 - **A fail-closed human lifecycle baseline** — the quiescent human hepatocyte no
   longer inherits rat cell-cycle or mouse regeneration timing metadata. Missing
   healthy-human phase durations are omitted, marked non-executable and cannot

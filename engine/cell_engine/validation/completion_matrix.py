@@ -12,6 +12,7 @@ from typing import Literal
 from cell_engine.core.runtime_authority import (
     whole_cell_runtime_authority_snapshot,
 )
+from cell_engine.core.experiment_archive import experiment_archive_contract_snapshot
 from cell_engine.io.context_overlays import (
     CONTEXT_OVERLAY_ARTIFACT_COUNT,
     CONTEXT_OVERLAY_CANONICAL_SNAPSHOT_COUNT,
@@ -89,7 +90,7 @@ from cell_engine.validation.software_completion import (
 
 
 VERSION = "hepatocyte_completion_matrix_v1"
-DATE_VERIFIED = "2026-08-11"
+DATE_VERIFIED = "2026-08-13"
 GapStatus = Literal[
     "closed",
     "partial",
@@ -218,6 +219,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     baseline_lifecycle = baseline_lifecycle_timing_snapshot()
     p53_dynamics = p53_dynamics_snapshot()
     cell_population = cell_population_snapshot()
+    experiment_archive = experiment_archive_contract_snapshot()
 
     entries = (
         _entry(
@@ -300,6 +302,58 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "engine/cell_engine/validation/baseline_lifecycle_timing.py",
                 "scripts/export_engine_snapshot.py",
                 "engine/tests/test_baseline_lifecycle_timing.py",
+            ),
+        ),
+        _entry(
+            "durable_experiment_run_archive",
+            "Durable experiment run archive",
+            "closed",
+            "Transactional, tamper-evident persistence of explicitly exploratory whole-cell runs; no biological-validity or predictive claim.",
+            "A SQLite-backed append-only SHA-256 chain stores complete CellState plus RNG checkpoints, unit-explicit external-input declarations and read-only observations. Runs resume bit-identically, fork from a verified checkpoint with lineage preserved, reject scientific-authority purposes and activate no biological parameter.",
+            {
+                "transactional_storage_backend_count": experiment_archive[
+                    "transactional_storage_backend_count"
+                ],
+                "append_only_hash_chain_count": experiment_archive[
+                    "append_only_hash_chain_count"
+                ],
+                "immutable_run_manifest_hash_count": experiment_archive[
+                    "immutable_run_manifest_hash_count"
+                ],
+                "full_state_checkpoint_record_type_count": experiment_archive[
+                    "full_state_checkpoint_record_type_count"
+                ],
+                "bit_identical_resume_primitive_count": experiment_archive[
+                    "bit_identical_resume_primitive_count"
+                ],
+                "counterfactual_fork_primitive_count": experiment_archive[
+                    "counterfactual_fork_primitive_count"
+                ],
+                "explicit_external_input_record_type_count": experiment_archive[
+                    "explicit_external_input_record_type_count"
+                ],
+                "explicit_observation_record_type_count": experiment_archive[
+                    "explicit_observation_record_type_count"
+                ],
+                "allowed_runtime_purpose_count": experiment_archive[
+                    "allowed_runtime_purpose_count"
+                ],
+                "blocked_scientific_authority_purpose_count": experiment_archive[
+                    "blocked_scientific_authority_purpose_count"
+                ],
+                "automatic_biological_parameter_activation_count": experiment_archive[
+                    "automatic_biological_parameter_activation_count"
+                ],
+                "predictive_authority": experiment_archive[
+                    "predictive_authority"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/core/experiment_archive.py",
+                "engine/cell_engine/core/checkpoint.py",
+                "scripts/run_cell_experiment.py",
+                "engine/tests/test_experiment_archive.py",
             ),
         ),
         _entry(
@@ -4176,7 +4230,7 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         raise ValueError("PHH evidence readiness preflight contract changed")
     software_metrics = by_id["software_completion_boundary"]["observed_metrics"]
     if (
-        software_metrics["declared_scope_count_before_boundary"] != 56
+        software_metrics["declared_scope_count_before_boundary"] != 57
         or software_metrics["evidence_gated_scope_count"] != 23
         or software_metrics["registered_evidence_gated_scope_count"] != 23
         or software_metrics["unregistered_evidence_gated_scope_count"] != 0
@@ -4190,6 +4244,22 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or software_metrics["biological_accuracy_pct"] is not None
     ):
         raise ValueError("software-completion boundary changed or overclaimed")
+    archive_metrics = by_id["durable_experiment_run_archive"]["observed_metrics"]
+    if (
+        archive_metrics["transactional_storage_backend_count"] != 1
+        or archive_metrics["append_only_hash_chain_count"] != 1
+        or archive_metrics["immutable_run_manifest_hash_count"] != 1
+        or archive_metrics["full_state_checkpoint_record_type_count"] != 1
+        or archive_metrics["bit_identical_resume_primitive_count"] != 1
+        or archive_metrics["counterfactual_fork_primitive_count"] != 1
+        or archive_metrics["explicit_external_input_record_type_count"] != 1
+        or archive_metrics["explicit_observation_record_type_count"] != 1
+        or archive_metrics["allowed_runtime_purpose_count"] != 2
+        or archive_metrics["blocked_scientific_authority_purpose_count"] != 3
+        or archive_metrics["automatic_biological_parameter_activation_count"] != 0
+        or archive_metrics["predictive_authority"] is not False
+    ):
+        raise ValueError("experiment archive exceeded its operational authority")
     browser_bundle_metrics = by_id["browser_startup_bundle_budget"][
         "observed_metrics"
     ]

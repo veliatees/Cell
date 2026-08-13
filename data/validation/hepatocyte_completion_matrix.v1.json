@@ -1,6 +1,6 @@
 {
   "version": "hepatocyte_completion_matrix_v1",
-  "date_verified": "2026-08-11",
+  "date_verified": "2026-08-13",
   "status": "mixed_completion_with_fail_closed_biological_activation",
   "score_policy": "No average realism or biological-accuracy percentage is identifiable. Closed statuses apply only to each entry's exact scope.",
   "status_semantics": {
@@ -291,8 +291,8 @@
     "unregistered_evidence_gated_scope_ids": [],
     "orphan_evidence_target_ids": [],
     "summary": {
-      "declared_scope_count": 56,
-      "closed_scope_count": 31,
+      "declared_scope_count": 57,
+      "closed_scope_count": 32,
       "evidence_gated_scope_count": 23,
       "registered_evidence_gated_scope_count": 23,
       "unregistered_evidence_gated_scope_count": 0,
@@ -349,6 +349,34 @@
         "engine/cell_engine/validation/baseline_lifecycle_timing.py",
         "scripts/export_engine_snapshot.py",
         "engine/tests/test_baseline_lifecycle_timing.py"
+      ]
+    },
+    {
+      "id": "durable_experiment_run_archive",
+      "title": "Durable experiment run archive",
+      "status": "closed",
+      "scope": "Transactional, tamper-evident persistence of explicitly exploratory whole-cell runs; no biological-validity or predictive claim.",
+      "current_capability": "A SQLite-backed append-only SHA-256 chain stores complete CellState plus RNG checkpoints, unit-explicit external-input declarations and read-only observations. Runs resume bit-identically, fork from a verified checkpoint with lineage preserved, reject scientific-authority purposes and activate no biological parameter.",
+      "observed_metrics": {
+        "transactional_storage_backend_count": 1,
+        "append_only_hash_chain_count": 1,
+        "immutable_run_manifest_hash_count": 1,
+        "full_state_checkpoint_record_type_count": 1,
+        "bit_identical_resume_primitive_count": 1,
+        "counterfactual_fork_primitive_count": 1,
+        "explicit_external_input_record_type_count": 1,
+        "explicit_observation_record_type_count": 1,
+        "allowed_runtime_purpose_count": 2,
+        "blocked_scientific_authority_purpose_count": 3,
+        "automatic_biological_parameter_activation_count": 0,
+        "predictive_authority": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/core/experiment_archive.py",
+        "engine/cell_engine/core/checkpoint.py",
+        "scripts/run_cell_experiment.py",
+        "engine/tests/test_experiment_archive.py"
       ]
     },
     {
@@ -1896,7 +1924,7 @@
       "scope": "Machine-checkable classification of every declared non-closed scope as exact external evidence intake, external action, or an explicitly inapplicable representation.",
       "current_capability": "All 23 evidence-gated scopes map to validated fail-closed delivery contracts; the independent-validation scope remains external and one molecular-scale representation remains explicitly inapplicable. This closes only responsible code work possible before new evidence arrives, not the hepatocyte model or digital twin.",
       "observed_metrics": {
-        "declared_scope_count_before_boundary": 56,
+        "declared_scope_count_before_boundary": 57,
         "evidence_gated_scope_count": 23,
         "registered_evidence_gated_scope_count": 23,
         "unregistered_evidence_gated_scope_count": 0,
@@ -1920,8 +1948,8 @@
     }
   ],
   "summary": {
-    "entry_count": 57,
-    "closed_count": 32,
+    "entry_count": 58,
+    "closed_count": 33,
     "partial_count": 8,
     "blocked_missing_evidence_count": 15,
     "external_action_required_count": 1,
