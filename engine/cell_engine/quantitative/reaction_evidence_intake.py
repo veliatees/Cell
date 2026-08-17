@@ -18,10 +18,14 @@ from pathlib import Path
 from typing import Any
 
 from cell_engine.core.serialization import to_plain
+from cell_engine.quantitative.reaction_evidence_schema import (
+    REACTION_EVIDENCE_SLOT_SPECS,
+)
 from cell_engine.stochastic.integrated_cell import build_integrated_hepatocyte_network
 from cell_engine.stochastic.signaling import HormoneState
-from cell_engine.validation.reaction_evidence_atlas import (
-    REACTION_EVIDENCE_SLOT_SPECS,
+from cell_engine.validation.evidence_review import (
+    EMPTY_FILE_SHA256,
+    assess_evidence_delivery_review,
 )
 
 
@@ -476,6 +480,7 @@ def _record(
             or frozen is not True
             or not validation_digest
             or not re.fullmatch(r"[0-9a-f]{64}", validation_digest)
+            or validation_digest == EMPTY_FILE_SHA256
             or not validation_prediction
             or not validation_observation
         ):
@@ -617,7 +622,13 @@ def load_reaction_evidence_dataset(
     )
 
 
-def _record_is_structurally_ready(record: ReactionEvidenceIntakeRecord) -> bool:
+def _record_is_structurally_ready(
+    record: ReactionEvidenceIntakeRecord,
+    *,
+    independent_review_approved: bool = False,
+) -> bool:
+    if not independent_review_approved:
+        return False
     if record.manual_primary_source_review_status != "verified":
         return False
     if record.slot_id in _KINETIC_ASSAY_SLOTS and (
@@ -638,18 +649,28 @@ def _record_is_structurally_ready(record: ReactionEvidenceIntakeRecord) -> bool:
 def assess_reaction_evidence(
     reaction_id: str,
     records: tuple[ReactionEvidenceIntakeRecord, ...],
+    *,
+    independent_review_approved: bool = False,
 ) -> ReactionEvidenceAssessment:
     if reaction_id not in _active_reaction_ids():
         raise ReactionEvidenceIntakeError(f"unknown active reaction id: {reaction_id}")
     selected = tuple(record for record in records if record.reaction_id == reaction_id)
     covered = frozenset(record.slot_id for record in selected)
     ready = frozenset(
-        record.slot_id for record in selected if _record_is_structurally_ready(record)
+        record.slot_id
+        for record in selected
+        if _record_is_structurally_ready(
+            record, independent_review_approved=independent_review_approved
+        )
     )
     missing = frozenset(_SLOT_BY_ID) - ready
     blockers: list[str] = []
     if missing:
         blockers.append("one or more of the twelve evidence slots lacks a reviewed context-qualified record")
+    if not independent_review_approved:
+        blockers.append(
+            "delivery lacks an independent hash-bound primary-source review"
+        )
     if "heldout_validation" not in ready:
         blockers.append("frozen donor- and study-disjoint PHH held-out validation is absent")
     structurally_complete = not missing
@@ -710,8 +731,18 @@ def reaction_evidence_intake_snapshot(
             ),
         }
     dataset = load_reaction_evidence_dataset(path)
+    delivery_review = assess_evidence_delivery_review(
+        "reaction_evidence",
+        path,
+        dataset.contract_sha256,
+    )
+    review_approved = delivery_review.approved_for_structural_credit
     assessments = tuple(
-        assess_reaction_evidence(reaction_id, dataset.records)
+        assess_reaction_evidence(
+            reaction_id,
+            dataset.records,
+            independent_review_approved=review_approved,
+        )
         for reaction_id in active_reaction_ids
     )
     covered = {
@@ -720,16 +751,23 @@ def reaction_evidence_intake_snapshot(
     ready = {
         (record.reaction_id, record.slot_id)
         for record in dataset.records
-        if _record_is_structurally_ready(record)
+        if _record_is_structurally_ready(
+            record, independent_review_approved=review_approved
+        )
     }
     return {
         "version": INTAKE_VERSION,
         "contract_id": dataset.contract_id,
         "network_id": contract["network_id"],
-        "status": "reaction_evidence_structurally_audited_not_authoritative",
+        "status": (
+            "reaction_evidence_independently_reviewed_not_authoritative"
+            if review_approved
+            else "reaction_evidence_parsed_manual_review_required"
+        ),
         "delivery_path": dataset.delivery_path,
         "artifact_sha256": dataset.artifact_sha256,
         "contract_sha256": dataset.contract_sha256,
+        "delivery_review": delivery_review.to_dict(),
         "expected_header_count": expected_header_count,
         "active_reaction_count": len(active_reaction_ids),
         "required_slot_count": len(active_reaction_ids) * len(_SLOT_BY_ID),
@@ -750,6 +788,9 @@ def reaction_evidence_intake_snapshot(
         "automatic_cell_state_coupling": False,
         "reaction_assessments": tuple(to_plain(item) for item in assessments),
         "blockers": (
+            "independent hash-bound primary-source review is absent"
+            if not review_approved
+            else "independent source review grants structural credit only",
             "cross-record semantic adjudication is not encoded as automatic authority",
             "the immutable reaction atlas has not been rebuilt from an approved bundle",
             "quantitative and predictive execution remain disabled",

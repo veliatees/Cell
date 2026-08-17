@@ -590,7 +590,7 @@ const snapshot: EngineSnapshot = {
         may_drive_cell_state: false, source_ids: ["honka2018_human_liver_glucose_uptake", "wilson2003_human_hepatocellularity"]
       },
       evidence_review: {
-        review_id: "claude_science_phh_signal_flux_2026_07_14", contract_required_file_count: 9,
+        review_id: "phh_signal_flux_review_2026_07_14", contract_required_file_count: 9,
         contract_present_file_count: 7, missing_required_files: ["human_phh_scale_bridge.csv", "koenig_model_provenance_audit.md"],
         raw_artifacts_redistributed: false, artifacts: [], review_findings: ["No delivered trajectory is held-out human validation."]
       },

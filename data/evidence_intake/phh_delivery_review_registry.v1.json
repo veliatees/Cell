@@ -1,0 +1,21 @@
+{
+  "schema_version": "cell.phh-delivery-review-registry.v1",
+  "registry_id": "phh_delivery_review_registry_v1",
+  "scientific_authority": false,
+  "automatic_parameter_activation": false,
+  "automatic_state_coupling": false,
+  "reviews": [],
+  "policy": {
+    "delivery_hash_bound": true,
+    "contract_hash_bound": true,
+    "review_artifact_hash_bound": true,
+    "curator_reviewer_separation_required": true,
+    "primary_source_row_review_required": true,
+    "raw_artifact_review_required": true,
+    "context_and_units_review_required": true,
+    "heldout_independence_review_required": true,
+    "automatic_parameter_activation": false,
+    "automatic_state_coupling": false,
+    "predictive_authority": false
+  }
+}

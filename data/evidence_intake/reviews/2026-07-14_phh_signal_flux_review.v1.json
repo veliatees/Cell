@@ -1,6 +1,6 @@
 {
   "schema_version": "cell.external-evidence-review.v1",
-  "review_id": "claude_science_phh_signal_flux_2026_07_14",
+  "review_id": "phh_signal_flux_review_2026_07_14",
   "review_date": "2026-07-14",
   "review_status": "primary_sources_reviewed_valid_subset_curated_conflicting_outputs_quarantined",
   "contract_required_file_count": 9,

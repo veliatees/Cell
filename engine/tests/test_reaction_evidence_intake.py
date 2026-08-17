@@ -17,6 +17,7 @@ from cell_engine.stochastic.signaling import HormoneState
 from cell_engine.validation.reaction_evidence_atlas import (
     REACTION_EVIDENCE_SLOT_SPECS,
 )
+from cell_engine.validation.evidence_review import EMPTY_FILE_SHA256
 
 
 ACTIVE_REACTION_ID = build_integrated_hepatocyte_network(
@@ -134,14 +135,20 @@ def test_all_twelve_software_slots_are_structural_but_never_authority(
     path = tmp_path / "reaction-evidence.csv"
     _write_rows(path, _complete_rows())
     dataset = load_reaction_evidence_dataset(path)
-    assessment = assess_reaction_evidence(ACTIVE_REACTION_ID, dataset.records)
+    assessment = assess_reaction_evidence(
+        ACTIVE_REACTION_ID,
+        dataset.records,
+        independent_review_approved=True,
+    )
     assert assessment.structurally_complete is True
     assert len(assessment.structurally_ready_slot_ids) == 12
     assert assessment.atlas_mutation_allowed is False
     assert assessment.quantitative_execution_allowed is False
     snapshot = reaction_evidence_intake_snapshot(path)
     assert snapshot["covered_slot_count"] == 12
-    assert snapshot["structurally_complete_reaction_count"] == 1
+    assert snapshot["structurally_ready_slot_count"] == 0
+    assert snapshot["structurally_complete_reaction_count"] == 0
+    assert snapshot["delivery_review"]["approved_for_structural_credit"] is False
     assert snapshot["quantitative_execution_allowed_count"] == 0
 
 
@@ -169,6 +176,18 @@ def test_heldout_rows_require_frozen_independent_phh_artifacts(
     _write_rows(
         path,
         [_software_row("heldout_validation", frozen_before_heldout_access="false")],
+    )
+    with pytest.raises(ReactionEvidenceIntakeError, match="frozen independent"):
+        load_reaction_evidence_dataset(path)
+
+    _write_rows(
+        path,
+        [
+            _software_row(
+                "heldout_validation",
+                validation_model_artifact_sha256=EMPTY_FILE_SHA256,
+            )
+        ],
     )
     with pytest.raises(ReactionEvidenceIntakeError, match="frozen independent"):
         load_reaction_evidence_dataset(path)

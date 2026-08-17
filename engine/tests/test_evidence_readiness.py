@@ -38,6 +38,8 @@ def test_registry_verifies_every_contract_and_stays_fail_closed() -> None:
         "rejected_intake_count": 0,
         "awaiting_intake_count": 16,
         "structurally_audited_intake_count": 0,
+        "independently_reviewed_delivery_count": 0,
+        "manual_review_pending_delivery_count": 0,
         "target_gap_count": 23,
         "automatic_parameter_activation_count": 0,
         "automatic_state_coupling_count": 0,
@@ -125,8 +127,13 @@ def test_external_topology_delivery_is_audited_without_repo_relative_path_failur
         if entry["id"] == "membrane_topology_event"
     )
 
-    assert topology["status"] == "delivery_structurally_audited"
+    assert (
+        topology["status"]
+        == "delivery_structurally_audited_manual_review_required"
+    )
     assert topology["delivery_present"] is True
     assert topology["validation_error"] is None
+    assert topology["independent_review_approved"] is False
+    assert topology["structurally_complete_item_count"] == 0
     assert snapshot["summary"]["rejected_intake_count"] == 0
     assert snapshot["summary"]["structurally_audited_intake_count"] == 1

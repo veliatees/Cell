@@ -21,6 +21,10 @@ from cell_engine.core.serialization import to_plain
 from cell_engine.quantitative.compartmental_energy_redox import (
     build_compartmental_energy_redox_contract,
 )
+from cell_engine.validation.evidence_review import (
+    EMPTY_FILE_SHA256,
+    assess_evidence_delivery_review,
+)
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
@@ -366,9 +370,13 @@ def _record(
             f"row {row_number}: split role and data-access state are inconsistent"
         )
     for field in ("raw_artifact_sha256", "predeclared_split_manifest_sha256"):
-        if not _SHA256_RE.fullmatch(_required_text(row, field, row_number)):
+        artifact_digest = _required_text(row, field, row_number)
+        if (
+            not _SHA256_RE.fullmatch(artifact_digest)
+            or artifact_digest == EMPTY_FILE_SHA256
+        ):
             raise EnergyRedoxTrajectoryError(
-                f"row {row_number}: {field} must be a lowercase SHA-256 digest"
+                f"row {row_number}: {field} must identify a non-empty artifact"
             )
     if _required_text(row, "species", row_number) != "Homo sapiens":
         raise EnergyRedoxTrajectoryError(
@@ -717,6 +725,12 @@ def energy_redox_trajectory_intake_snapshot(
             ),
         }
     dataset = load_energy_redox_trajectory_dataset(path)
+    delivery_review = assess_evidence_delivery_review(
+        "energy_redox_trajectory",
+        path,
+        dataset.contract_sha256,
+    )
+    review_approved = delivery_review.approved_for_structural_credit
     grouped: defaultdict[
         tuple[str, str, str, str], list[EnergyRedoxTrajectoryRecord]
     ] = defaultdict(list)
@@ -728,7 +742,7 @@ def energy_redox_trajectory_intake_snapshot(
     )
     complete_roles_by_pool: defaultdict[str, set[str]] = defaultdict(set)
     for assessment in assessments:
-        if assessment.structurally_complete:
+        if review_approved and assessment.structurally_complete:
             complete_roles_by_pool[assessment.trajectory_key[3]].add(
                 assessment.split_role
             )
@@ -740,10 +754,15 @@ def energy_redox_trajectory_intake_snapshot(
     return {
         "version": INTAKE_VERSION,
         "contract_id": dataset.contract_id,
-        "status": "energy_redox_trajectories_structurally_audited_not_authoritative",
+        "status": (
+            "energy_redox_independently_reviewed_not_authoritative"
+            if review_approved
+            else "energy_redox_parsed_manual_review_required"
+        ),
         "delivery_path": dataset.delivery_path,
         "artifact_sha256": dataset.artifact_sha256,
         "contract_sha256": dataset.contract_sha256,
+        "delivery_review": delivery_review.to_dict(),
         "expected_header_count": expected_header_count,
         "registered_pool_count": len(pool_registry),
         "record_count": len(dataset.records),
@@ -753,7 +772,8 @@ def energy_redox_trajectory_intake_snapshot(
             sorted(Counter(record.split_role for record in dataset.records).items())
         ),
         "structurally_complete_trajectory_count": sum(
-            assessment.structurally_complete for assessment in assessments
+            review_approved and assessment.structurally_complete
+            for assessment in assessments
         ),
         "calibration_and_heldout_complete_pool_count": len(complete_pools),
         "compartment_initialization_allowed_count": 0,
@@ -761,6 +781,9 @@ def energy_redox_trajectory_intake_snapshot(
         "automatic_state_coupling": False,
         "trajectory_assessments": tuple(to_plain(item) for item in assessments),
         "blockers": (
+            "independent hash-bound primary-source and raw-artifact review is absent"
+            if not review_approved
+            else "independent source review grants structural credit only",
             "manual primary-source and raw-artifact review is incomplete",
             "measurement operators and covariance-aware acceptance rules are absent",
             "compartment initialization, rate fitting, and predictive coupling remain disabled",

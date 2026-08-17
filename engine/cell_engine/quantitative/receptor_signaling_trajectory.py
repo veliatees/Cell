@@ -20,6 +20,10 @@ from typing import Any
 
 from cell_engine.core.serialization import to_plain
 from cell_engine.multicell.communication import build_hepatocyte_communication_atlas
+from cell_engine.validation.evidence_review import (
+    EMPTY_FILE_SHA256,
+    assess_evidence_delivery_review,
+)
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
@@ -461,6 +465,7 @@ def _record(
         or context_role != "independent_healthy_phh_validation"
         or validation_digest is None
         or not re.fullmatch(r"[0-9a-f]{64}", validation_digest)
+        or validation_digest == EMPTY_FILE_SHA256
         or validation_prediction is None
         or validation_observation is None
         or frozen is not True
@@ -599,8 +604,10 @@ def _stage_ready(
     pathway_id: str,
     stage_id: str,
     records: tuple[ReceptorSignalingRecord, ...],
+    *,
+    independent_review_approved: bool = False,
 ) -> bool:
-    if not records or any(
+    if not independent_review_approved or not records or any(
         record.manual_primary_source_review_status != "verified"
         for record in records
     ):
@@ -672,6 +679,8 @@ def _stage_ready(
 def assess_receptor_signaling_pathway(
     pathway_id: str,
     records: tuple[ReceptorSignalingRecord, ...],
+    *,
+    independent_review_approved: bool = False,
 ) -> ReceptorSignalingAssessment:
     if pathway_id not in _atlas_pathway_ids():
         raise ReceptorSignalingTrajectoryError(f"unknown pathway id: {pathway_id}")
@@ -703,6 +712,7 @@ def assess_receptor_signaling_pathway(
                     for record in donor_records
                     if record.stage_slot_id == stage_id
                 ),
+                independent_review_approved=independent_review_approved,
             )
         }
         ready_union.update(donor_ready)
@@ -716,6 +726,7 @@ def assess_receptor_signaling_pathway(
             for record in selected
             if record.stage_slot_id == "independent_heldout_validation"
         ),
+        independent_review_approved=independent_review_approved,
     )
     if heldout_ready:
         ready_union.add("independent_heldout_validation")
@@ -724,6 +735,10 @@ def assess_receptor_signaling_pathway(
     if complete_donors == 0:
         blockers.append(
             "no single healthy-PHH donor contains the seven matched quantitative chain stages"
+        )
+    if not independent_review_approved:
+        blockers.append(
+            "delivery lacks an independent hash-bound primary-source review"
         )
     if not heldout_ready:
         blockers.append(
@@ -786,8 +801,18 @@ def receptor_signaling_trajectory_snapshot(
             ),
         }
     dataset = load_receptor_signaling_dataset(path)
+    delivery_review = assess_evidence_delivery_review(
+        "receptor_signaling_trajectory",
+        path,
+        dataset.contract_sha256,
+    )
+    review_approved = delivery_review.approved_for_structural_credit
     assessments = tuple(
-        assess_receptor_signaling_pathway(pathway_id, dataset.records)
+        assess_receptor_signaling_pathway(
+            pathway_id,
+            dataset.records,
+            independent_review_approved=review_approved,
+        )
         for pathway_id in pathway_ids
     )
     covered = {
@@ -802,10 +827,15 @@ def receptor_signaling_trajectory_snapshot(
         "version": INTAKE_VERSION,
         "contract_id": dataset.contract_id,
         "atlas_id": contract["atlas_id"],
-        "status": "receptor_signaling_trajectories_structurally_audited_not_authoritative",
+        "status": (
+            "receptor_signaling_independently_reviewed_not_authoritative"
+            if review_approved
+            else "receptor_signaling_parsed_manual_review_required"
+        ),
         "delivery_path": dataset.delivery_path,
         "artifact_sha256": dataset.artifact_sha256,
         "contract_sha256": dataset.contract_sha256,
+        "delivery_review": delivery_review.to_dict(),
         "expected_header_count": expected_header_count,
         "target_pathway_count": len(pathway_ids),
         "required_stage_slot_count": len(pathway_ids) * len(_STAGE_IDS),
@@ -829,6 +859,9 @@ def receptor_signaling_trajectory_snapshot(
         "automatic_kinetic_fitting": False,
         "pathway_assessments": tuple(to_plain(item) for item in assessments),
         "blockers": (
+            "independent hash-bound primary-source review is absent"
+            if not review_approved
+            else "independent source review grants structural credit only",
             "structural completeness is not model authority",
             "manual semantic adjudication and an approved immutable kinetic artifact are required",
             "receptor activation, signal execution and cell-state coupling remain disabled",

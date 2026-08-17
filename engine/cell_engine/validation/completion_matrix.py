@@ -2682,8 +2682,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             "phh_evidence_readiness_preflight",
             "Unified PHH evidence readiness preflight",
             "closed",
-            "Repository-level identity verification, delivery discovery, structural-validator dispatch and quarantine reporting for every declared PHH evidence contract; no biological parameter, model-fit or predictive claim.",
-            "One checksum-pinned registry discovers all 16 versioned intake contracts, dispatches only statically registered validators, maps every one of the 23 partial or evidence-blocked scopes, preserves dependency-aware mobility and geometry links, quarantines one malformed delivery without stopping the remaining audit, and exposes one read-only CLI and snapshot surface.",
+            "Repository-level identity verification, delivery discovery, structural-validator dispatch, hash-bound independent source review and quarantine reporting for every declared PHH evidence contract; no biological parameter, model-fit or predictive claim.",
+            "One checksum-pinned registry discovers all 16 versioned intake contracts, dispatches only statically registered validators and maps all 23 evidence-blocked scopes. A separate fail-closed review registry binds curator/reviewer-separated decisions to exact delivery, contract and review-artifact hashes; unreviewed deliveries receive zero scientific structural credit, and no review can activate a parameter or cell state.",
             {
                 "registry_contract_count": evidence_readiness_summary[
                     "registry_contract_count"
@@ -2700,6 +2700,16 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
                 "rejected_intake_count": evidence_readiness_summary[
                     "rejected_intake_count"
                 ],
+                "independently_reviewed_delivery_count": (
+                    evidence_readiness_summary[
+                        "independently_reviewed_delivery_count"
+                    ]
+                ),
+                "manual_review_pending_delivery_count": (
+                    evidence_readiness_summary[
+                        "manual_review_pending_delivery_count"
+                    ]
+                ),
                 "target_gap_count": evidence_readiness_summary[
                     "target_gap_count"
                 ],
@@ -2721,10 +2731,13 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             (),
             (
                 "data/evidence_intake/phh_evidence_readiness_registry.v1.json",
+                "data/evidence_intake/phh_delivery_review_registry.v1.json",
                 "data/evidence_intake/phh_completion_evidence_bundle_contract.v1.json",
                 "engine/cell_engine/quantitative/completion_evidence.py",
+                "engine/cell_engine/validation/evidence_review.py",
                 "engine/cell_engine/validation/evidence_readiness.py",
                 "scripts/audit_phh_evidence_readiness.py",
+                "engine/tests/test_evidence_review.py",
                 "engine/tests/test_evidence_readiness.py",
             ),
         ),
@@ -4210,6 +4223,14 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         != 16
         or evidence_readiness_metrics["validator_surface_count"] != 16
         or evidence_readiness_metrics["rejected_intake_count"] != 0
+        or evidence_readiness_metrics[
+            "independently_reviewed_delivery_count"
+        ]
+        != 0
+        or evidence_readiness_metrics[
+            "manual_review_pending_delivery_count"
+        ]
+        != 0
         or evidence_readiness_metrics["target_gap_count"] != 23
         or evidence_readiness_metrics[
             "quantitatively_authorized_item_count"

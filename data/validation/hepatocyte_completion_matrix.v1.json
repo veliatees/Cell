@@ -1750,14 +1750,16 @@
       "id": "phh_evidence_readiness_preflight",
       "title": "Unified PHH evidence readiness preflight",
       "status": "closed",
-      "scope": "Repository-level identity verification, delivery discovery, structural-validator dispatch and quarantine reporting for every declared PHH evidence contract; no biological parameter, model-fit or predictive claim.",
-      "current_capability": "One checksum-pinned registry discovers all 16 versioned intake contracts, dispatches only statically registered validators, maps every one of the 23 partial or evidence-blocked scopes, preserves dependency-aware mobility and geometry links, quarantines one malformed delivery without stopping the remaining audit, and exposes one read-only CLI and snapshot surface.",
+      "scope": "Repository-level identity verification, delivery discovery, structural-validator dispatch, hash-bound independent source review and quarantine reporting for every declared PHH evidence contract; no biological parameter, model-fit or predictive claim.",
+      "current_capability": "One checksum-pinned registry discovers all 16 versioned intake contracts, dispatches only statically registered validators and maps all 23 evidence-blocked scopes. A separate fail-closed review registry binds curator/reviewer-separated decisions to exact delivery, contract and review-artifact hashes; unreviewed deliveries receive zero scientific structural credit, and no review can activate a parameter or cell state.",
       "observed_metrics": {
         "registry_contract_count": 16,
         "contract_identity_verified_count": 16,
         "validator_surface_count": 16,
         "delivery_present_count": 0,
         "rejected_intake_count": 0,
+        "independently_reviewed_delivery_count": 0,
+        "manual_review_pending_delivery_count": 0,
         "target_gap_count": 23,
         "target_gap_ids": [
           "active_intracellular_transport_model",
@@ -1791,10 +1793,13 @@
       "remaining_requirements": [],
       "code_surfaces": [
         "data/evidence_intake/phh_evidence_readiness_registry.v1.json",
+        "data/evidence_intake/phh_delivery_review_registry.v1.json",
         "data/evidence_intake/phh_completion_evidence_bundle_contract.v1.json",
         "engine/cell_engine/quantitative/completion_evidence.py",
+        "engine/cell_engine/validation/evidence_review.py",
         "engine/cell_engine/validation/evidence_readiness.py",
         "scripts/audit_phh_evidence_readiness.py",
+        "engine/tests/test_evidence_review.py",
         "engine/tests/test_evidence_readiness.py"
       ]
     },
@@ -1808,7 +1813,7 @@
         "production_manifest_gate_count": 1,
         "initial_js_chunk_count": 2,
         "initial_js_raw_bytes": 919022,
-        "initial_js_gzip_bytes": 250376,
+        "initial_js_gzip_bytes": 251533,
         "maximum_initial_js_raw_bytes": 980000,
         "maximum_initial_js_gzip_bytes": 275000,
         "required_deferred_entry_count": 6,

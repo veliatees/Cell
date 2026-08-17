@@ -53,6 +53,11 @@ from cell_engine.quantitative.receptor_signaling_trajectory import (
     receptor_signaling_trajectory_snapshot,
 )
 from cell_engine.validation.evidence_intake import evidence_intake_snapshot
+from cell_engine.validation.evidence_review import (
+    REGISTRY_PATH as DELIVERY_REVIEW_REGISTRY_PATH,
+    assess_evidence_delivery_review,
+    load_evidence_delivery_review_registry,
+)
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
@@ -590,6 +595,7 @@ def phh_evidence_readiness_snapshot(
     incoming_root: Path = DEFAULT_INCOMING_ROOT,
 ) -> dict[str, object]:
     registry = load_phh_evidence_readiness_registry()
+    load_evidence_delivery_review_registry()
     raw_entries = registry["entries"]
     if not isinstance(raw_entries, list):
         raise ValueError("validated registry lost its entry list")
@@ -620,6 +626,19 @@ def phh_evidence_readiness_snapshot(
         except (ValueError, OSError, UnicodeError, json.JSONDecodeError) as exc:
             validation_error = str(exc)
 
+        delivery_review = assess_evidence_delivery_review(
+            entry_id,
+            delivery_path,
+            str(raw_entry["contract_sha256"]),
+        )
+        review_approved = delivery_review.approved_for_structural_credit
+        if delivery_review.quarantined and validation_error is None:
+            validation_error = (
+                delivery_review.blockers[0]
+                if delivery_review.blockers
+                else "independent evidence review quarantined the delivery"
+            )
+
         intake_status = str(
             snapshot.get("status", "rejected_invalid_delivery")
         )
@@ -639,6 +658,10 @@ def phh_evidence_readiness_snapshot(
             registry_status = "rejected_invalid_delivery"
         elif not delivery_exists:
             registry_status = "awaiting_delivery"
+        elif not review_approved:
+            registry_status = (
+                "delivery_structurally_audited_manual_review_required"
+            )
         else:
             registry_status = "delivery_structurally_audited"
 
@@ -654,6 +677,8 @@ def phh_evidence_readiness_snapshot(
                 structurally_complete_item_count,
                 quantitatively_authorized_item_count,
             ) = _metric_counts(entry_id, snapshot, delivery_exists)
+            if not review_approved:
+                structurally_complete_item_count = 0
 
         entry = {
             "id": entry_id,
@@ -668,6 +693,11 @@ def phh_evidence_readiness_snapshot(
             "delivery_kind": raw_entry["delivery_kind"],
             "delivery_path": _display_path(delivery_path),
             "delivery_present": delivery_exists,
+            "delivery_sha256": delivery_review.delivery_sha256,
+            "delivery_review_status": delivery_review.status,
+            "independent_review_approved": review_approved,
+            "review_id": delivery_review.review_id,
+            "review_artifact_path": delivery_review.review_artifact_path,
             "intake_snapshot_version": snapshot.get("version"),
             "intake_status": intake_status,
             "delivered_artifact_count": delivered_artifact_count,
@@ -727,7 +757,16 @@ def phh_evidence_readiness_snapshot(
             entry["status"] == "awaiting_delivery" for entry in entries
         ),
         "structurally_audited_intake_count": sum(
-            entry["status"] == "delivery_structurally_audited"
+            str(entry["status"]).startswith("delivery_structurally_audited")
+            for entry in entries
+        ),
+        "independently_reviewed_delivery_count": sum(
+            bool(entry["independent_review_approved"]) for entry in entries
+        ),
+        "manual_review_pending_delivery_count": sum(
+            bool(entry["delivery_present"])
+            and not bool(entry["independent_review_approved"])
+            and entry["status"] != "rejected_invalid_delivery"
             for entry in entries
         ),
         "target_gap_count": len(target_gap_ids),
@@ -740,8 +779,10 @@ def phh_evidence_readiness_snapshot(
     }
     if summary["rejected_intake_count"]:
         status = "delivery_quarantine_active"
-    elif summary["delivery_present_count"]:
+    elif summary["manual_review_pending_delivery_count"]:
         status = "deliveries_structurally_audited_manual_review_required"
+    elif summary["delivery_present_count"]:
+        status = "deliveries_independently_reviewed_not_authoritative"
     else:
         status = "contracts_verified_awaiting_external_evidence"
     payload = {
@@ -750,6 +791,12 @@ def phh_evidence_readiness_snapshot(
         "status": status,
         "registry_path": _display_path(REGISTRY_PATH),
         "registry_sha256": _sha256(REGISTRY_PATH),
+        "delivery_review_registry_path": _display_path(
+            DELIVERY_REVIEW_REGISTRY_PATH
+        ),
+        "delivery_review_registry_sha256": _sha256(
+            DELIVERY_REVIEW_REGISTRY_PATH
+        ),
         "incoming_root": _display_path(incoming_root),
         "scientific_authority": False,
         "biological_parameter_activation": False,
@@ -773,6 +820,13 @@ def validate_phh_evidence_readiness_snapshot(payload: object) -> None:
         or payload.get("policy") != _POLICY
     ):
         raise ValueError("PHH evidence readiness snapshot escaped fail-closed policy")
+    if (
+        payload.get("delivery_review_registry_path")
+        != _display_path(DELIVERY_REVIEW_REGISTRY_PATH)
+        or payload.get("delivery_review_registry_sha256")
+        != _sha256(DELIVERY_REVIEW_REGISTRY_PATH)
+    ):
+        raise ValueError("PHH evidence review registry identity is stale")
     entries = payload.get("entries")
     summary = payload.get("summary")
     target_gap_ids = payload.get("target_gap_ids")
@@ -791,6 +845,7 @@ def validate_phh_evidence_readiness_snapshot(payload: object) -> None:
         not isinstance(entry, Mapping)
         or entry.get("contract_identity_verified") is not True
         or entry.get("validator_surface_registered") is not True
+        or not isinstance(entry.get("independent_review_approved"), bool)
         or not isinstance(entry.get("target_gap_ids"), (list, tuple))
         for entry in entries
     ):
@@ -846,7 +901,16 @@ def validate_phh_evidence_readiness_snapshot(payload: object) -> None:
             entry["status"] == "awaiting_delivery" for entry in entries
         ),
         "structurally_audited_intake_count": sum(
-            entry["status"] == "delivery_structurally_audited"
+            str(entry["status"]).startswith("delivery_structurally_audited")
+            for entry in entries
+        ),
+        "independently_reviewed_delivery_count": sum(
+            bool(entry["independent_review_approved"]) for entry in entries
+        ),
+        "manual_review_pending_delivery_count": sum(
+            bool(entry["delivery_present"])
+            and not bool(entry["independent_review_approved"])
+            and entry["status"] != "rejected_invalid_delivery"
             for entry in entries
         ),
         "target_gap_count": len(set(target_gap_ids)),

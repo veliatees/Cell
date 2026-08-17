@@ -12,6 +12,7 @@ from cell_engine.quantitative.energy_redox_trajectory import (
     load_energy_redox_trajectory_contract,
     load_energy_redox_trajectory_dataset,
 )
+from cell_engine.validation.evidence_review import EMPTY_FILE_SHA256
 
 
 # Software-only records exercise intake behavior and are not measurements.
@@ -125,8 +126,9 @@ def test_calibration_and_heldout_software_trajectories_are_structural_only(
     assert assessment.rate_fitting_allowed is False
     snapshot = energy_redox_trajectory_intake_snapshot(path)
     assert snapshot["trajectory_count"] == 2
-    assert snapshot["structurally_complete_trajectory_count"] == 2
-    assert snapshot["calibration_and_heldout_complete_pool_count"] == 1
+    assert snapshot["structurally_complete_trajectory_count"] == 0
+    assert snapshot["calibration_and_heldout_complete_pool_count"] == 0
+    assert snapshot["delivery_review"]["approved_for_structural_credit"] is False
     assert snapshot["compartment_initialization_allowed_count"] == 0
 
 
@@ -138,6 +140,16 @@ def test_pool_mapping_and_phh_context_are_strict(tmp_path: Path) -> None:
 
     _write_rows(path, [_software_row(biological_system="HepG2_cell_line")])
     with pytest.raises(EnergyRedoxTrajectoryError, match="outside primary human"):
+        load_energy_redox_trajectory_dataset(path)
+
+
+def test_empty_raw_artifact_digest_is_rejected(tmp_path: Path) -> None:
+    path = tmp_path / "empty-artifact.csv"
+    rows = _trajectory_rows()
+    rows[0]["raw_artifact_sha256"] = EMPTY_FILE_SHA256
+    _write_rows(path, rows)
+
+    with pytest.raises(EnergyRedoxTrajectoryError, match="non-empty artifact"):
         load_energy_redox_trajectory_dataset(path)
 
 

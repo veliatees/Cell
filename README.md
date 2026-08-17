@@ -165,8 +165,10 @@ single-cell state; much of the current dynamic cell remains exploratory.
   review before any parameter can be activated.
 - **Unified evidence readiness** — 16 registered validators cover every one of
   the 23 evidence-gated completion scopes. Missing or malformed deliveries
-  remain visible and quarantined; structural acceptance cannot automatically
-  activate parameters, state coupling, or prediction.
+  remain visible and quarantined. A separate two-person review registry binds
+  decisions to exact delivery, contract, and review-artifact hashes; a CSV's
+  self-declared `verified` field grants no scientific credit, and review still
+  cannot activate parameters, state coupling, or prediction.
 - **Published-model external check** — the postabsorptive shadow predicts
   10.02 umol glucose/kg/min production versus a unit-normalized healthy-human
   tracer estimate of 10.55 +/- 0.22. The -5.0% contextual residual is reported
@@ -622,6 +624,8 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 170: Dimensionless browser fixture API firewall v2](docs/milestones/170-dimensionless-browser-fixture-api-firewall-v2.md)
 - [Milestone 171: Engine-only browser cell state v1](docs/milestones/171-engine-only-browser-cell-state-v1.md)
 - [Milestone 172: Complete evidence handoff and software boundary v1](docs/milestones/172-complete-evidence-handoff-software-boundary-v1.md)
+- [Milestone 173: Durable experiment run archive v1](docs/milestones/173-durable-experiment-run-archive-v1.md)
+- [Milestone 174: Hash-bound independent evidence review gate v1](docs/milestones/174-hash-bound-independent-evidence-review-gate-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

@@ -12,6 +12,7 @@ from cell_engine.quantitative.receptor_signaling_trajectory import (
     load_receptor_signaling_dataset,
     receptor_signaling_trajectory_snapshot,
 )
+from cell_engine.validation.evidence_review import EMPTY_FILE_SHA256
 
 
 def _fields() -> list[str]:
@@ -192,6 +193,20 @@ def test_receptor_signal_donor_cannot_cross_split_roles(tmp_path: Path) -> None:
         load_receptor_signaling_dataset(path)
 
 
+def test_receptor_signal_rejects_empty_frozen_model_digest(
+    tmp_path: Path,
+) -> None:
+    rows = _complete_rows()
+    for row in rows:
+        if row["split_role"] == "independent_heldout":
+            row["validation_model_artifact_sha256"] = EMPTY_FILE_SHA256
+    path = tmp_path / "empty-model-digest.csv"
+    _write(path, rows)
+
+    with pytest.raises(ReceptorSignalingTrajectoryError, match="frozen independent"):
+        load_receptor_signaling_dataset(path)
+
+
 def test_structurally_complete_signal_chain_still_has_zero_runtime_authority(
     tmp_path: Path,
 ) -> None:
@@ -199,7 +214,9 @@ def test_structurally_complete_signal_chain_still_has_zero_runtime_authority(
     _write(path, _complete_rows())
     dataset = load_receptor_signaling_dataset(path)
     assessment = assess_receptor_signaling_pathway(
-        "insulin_insr_pi3k_akt", dataset.records
+        "insulin_insr_pi3k_akt",
+        dataset.records,
+        independent_review_approved=True,
     )
     assert assessment.complete_calibration_donor_count == 1
     assert assessment.structurally_complete is True
