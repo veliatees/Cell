@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-08-17T14:08:50.643526+00:00",
+    "created_at_utc": "2026-08-17T15:20:57.259806+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -6968,7 +6968,7 @@
       "authoritative_coupling_enabled": false,
       "automatic_parameter_activation": false,
       "blockers": [
-        "The requested nine-file Claude Science bundle has not been delivered.",
+        "The requested nine-file external evidence bundle has not been delivered.",
         "External evidence cannot alter parameters before structural audit and manual primary-source review."
       ],
       "contract_id": "healthy_adult_human_phh_scale_bridge_v1",
@@ -17382,7 +17382,7 @@
           "observed_metrics": {
             "automatic_biological_parameter_activation_count": 0,
             "initial_js_chunk_count": 2,
-            "initial_js_gzip_bytes": 251533,
+            "initial_js_gzip_bytes": 251532,
             "initial_js_raw_bytes": 919022,
             "maximum_initial_js_gzip_bytes": 275000,
             "maximum_initial_js_raw_bytes": 980000,
@@ -17466,6 +17466,34 @@
         },
         {
           "code_surfaces": [
+            "data/validation/hepatocyte_metabolic_cycle_program.v1.json",
+            "engine/cell_engine/validation/metabolic_cycle_program.py",
+            "engine/tests/test_metabolic_cycle_program.py"
+          ],
+          "current_capability": "All four workstreams and five causal interfaces are now classified through quantitative-execution, prediction and authoritative runtime gates. Existing topology, assay and solver progress remains visible, while missing compartment, unit/scale, time, donor-context, transfer-law and uncertainty operators keep every biological execution path closed.",
+          "id": "four_cycle_metabolic_authority_graph",
+          "observed_metrics": {
+            "automatic_parameter_activation_count": 0,
+            "automatic_state_coupling_count": 0,
+            "coupled_edge_count": 0,
+            "cross_cycle_runtime_ready_cycle_count": 0,
+            "cycle_count": 4,
+            "cycle_with_structural_surface_count": 4,
+            "edge_operator_count": 35,
+            "gate_count": 38,
+            "predictive_ready_cycle_count": 0,
+            "quantitative_execution_ready_cycle_count": 0,
+            "runtime_coupling_ready_cycle_count": 0,
+            "satisfied_gate_count": 7,
+            "shared_edge_count": 5
+          },
+          "remaining_requirements": [],
+          "scope": "Machine-checked readiness and cross-cycle coupling authority for glucose/glycogen, CYP/APAP/redox injury, polarized transport/bile flux and urea/ammonia/Human-GEM dFBA; no kinetic or predictive claim.",
+          "status": "closed",
+          "title": "Four-cycle metabolic dependency and authority graph"
+        },
+        {
+          "code_surfaces": [
             "engine/cell_engine/validation/external_review.py",
             "docs/validation/external-review-dossier.md"
           ],
@@ -17501,7 +17529,7 @@
           "observed_metrics": {
             "biological_accuracy_pct": null,
             "biological_validation_complete": false,
-            "declared_scope_count_before_boundary": 57,
+            "declared_scope_count_before_boundary": 58,
             "digital_twin_predictive_authority": false,
             "evidence_gated_scope_count": 23,
             "external_action_scope_count": 1,
@@ -17801,8 +17829,8 @@
         "summary": {
           "automatic_parameter_activation_count": 0,
           "automatic_state_coupling_count": 0,
-          "closed_scope_count": 32,
-          "declared_scope_count": 57,
+          "closed_scope_count": 33,
+          "declared_scope_count": 58,
           "evidence_gated_scope_count": 23,
           "external_action_scope_count": 1,
           "inapplicable_scope_count": 1,
@@ -17825,13 +17853,1105 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 15,
-        "closed_count": 33,
-        "entry_count": 58,
+        "closed_count": 34,
+        "entry_count": 59,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
       },
       "version": "hepatocyte_completion_matrix_v1"
+    },
+    "hepatocyte_metabolic_cycle_program": {
+      "automatic_parameter_activation": false,
+      "automatic_state_coupling": false,
+      "cycles": [
+        {
+          "blockers": [
+            "Only part of the stoichiometry matches and no symbolic kinetic law matches exactly.",
+            "No candidate reaction has an accepted organ-to-single-cell unit bridge.",
+            "Net glucose observations do not identify the individual reaction parameters.",
+            "Glucose scale and reaction evidence have no independently approved delivery.",
+            "No independent held-out glucose result or predictive pass/fail decision exists.",
+            "Glucose parameter activation and authoritative state coupling remain disabled."
+          ],
+          "cross_cycle_runtime_ready": false,
+          "gates": [
+            {
+              "blocker": null,
+              "evidence_surface": "kinetic_transfer",
+              "id": "glucose_topology_audited",
+              "observed": {
+                "active_reaction_count": 36,
+                "mapped_candidate_count": 12,
+                "source_reaction_count": 36
+              },
+              "requirement": "The source and active glucose networks must be enumerated before transfer.",
+              "satisfied": true,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "Only part of the stoichiometry matches and no symbolic kinetic law matches exactly.",
+              "evidence_surface": "kinetic_transfer",
+              "id": "glucose_transfer_equations_exact",
+              "observed": {
+                "candidate_count": 12,
+                "exact_stoichiometry_count": 3,
+                "exact_symbolic_rate_law_count": 0
+              },
+              "requirement": "Every candidate transfer requires exact stoichiometry and symbolic rate law.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "No candidate reaction has an accepted organ-to-single-cell unit bridge.",
+              "evidence_surface": "kinetic_transfer",
+              "id": "glucose_single_cell_scale_ready",
+              "observed": {
+                "ready_bridge_count": 0,
+                "required_bridge_count": 12
+              },
+              "requirement": "Organ/tissue flux denominators require an explicit single-PHH scale operator.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "Net glucose observations do not identify the individual reaction parameters.",
+              "evidence_surface": "glucose_calibration_validation",
+              "id": "glucose_fit_identifiability_ready",
+              "observed": {
+                "audited_reaction_count": 36,
+                "fit_eligible_reaction_count": 0,
+                "kinetic_parameter_calibration_ready": false
+              },
+              "requirement": "Reaction-specific observability and identifiable PHH calibration data are required.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "Glucose scale and reaction evidence have no independently approved delivery.",
+              "evidence_surface": "phh_evidence_readiness",
+              "id": "glucose_independent_evidence_review_ready",
+              "observed": {
+                "legacy_scale_bridge_bundle": {
+                  "delivery_present": false,
+                  "delivery_review_status": "not_delivered",
+                  "independent_review_approved": false
+                },
+                "reaction_evidence": {
+                  "delivery_present": false,
+                  "delivery_review_status": "not_delivered",
+                  "independent_review_approved": false
+                }
+              },
+              "requirement": "Scale-bridge and reaction-evidence deliveries require exact-hash independent review.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "No independent held-out glucose result or predictive pass/fail decision exists.",
+              "evidence_surface": "glucose_calibration_validation",
+              "id": "glucose_independent_validation_ready",
+              "observed": {
+                "independent_heldout_result_count": 0,
+                "pass_fail_count": 0,
+                "predictive_ready": false
+              },
+              "requirement": "Prediction requires donor-disjoint held-out validation and a frozen uncertainty-qualified threshold.",
+              "satisfied": false,
+              "stage": "prediction"
+            },
+            {
+              "blocker": "Glucose parameter activation and authoritative state coupling remain disabled.",
+              "evidence_surface": "glucose_calibration_validation",
+              "id": "glucose_authoritative_state_coupling_ready",
+              "observed": {
+                "automatic_state_coupling": false,
+                "parameter_activation_allowed": false
+              },
+              "requirement": "Only independently validated parameters may mutate authoritative cell state.",
+              "satisfied": false,
+              "stage": "runtime_coupling"
+            }
+          ],
+          "id": "glucose_glycogen_control",
+          "incident_edge_ids": [
+            "glut2_glucose_exchange",
+            "glucose_redox_apap",
+            "glucose_urea_energy_carbon"
+          ],
+          "label": "Hepatic glucose, glycolysis, gluconeogenesis and glycogen control",
+          "predictive_ready": false,
+          "quantitative_execution_ready": false,
+          "runtime_coupling_ready": false,
+          "scope": "Single-PHH glucose and glycogen reaction topology, kinetic transfer, calibration and validation.",
+          "surface_ids": [
+            "exact_glucose_homeostasis",
+            "kinetic_transfer",
+            "glucose_calibration_validation"
+          ],
+          "target_components": [
+            "glucose transport and phosphorylation",
+            "glycolysis",
+            "gluconeogenesis",
+            "glycogen synthesis and breakdown",
+            "hormonal control"
+          ]
+        },
+        {
+          "blockers": [
+            "No complete donor-resolved APAP trajectory has passed intake and review.",
+            "CYP-to-NAPQI and compartmental GSH/NADPH kinetics are not calibrated.",
+            "No validated PHH MPT/injury transition law is registered.",
+            "APAP/redox trajectory evidence has no independently approved delivery.",
+            "No independent APAP injury prediction has passed a frozen evaluation.",
+            "The legacy injury fixture has zero authoritative state-coupling permission."
+          ],
+          "cross_cycle_runtime_ready": false,
+          "gates": [
+            {
+              "blocker": null,
+              "evidence_surface": "legacy_detox_fixture",
+              "id": "apap_competing_pathway_topology_ready",
+              "observed": {
+                "quantitative_authority": false,
+                "reaction_ids": [
+                  "cyp_oxidation",
+                  "gsh_conjugation",
+                  "protein_binding",
+                  "safe_conjugation"
+                ],
+                "required_species_present": true
+              },
+              "requirement": "The exploratory network must represent competing safe, NAPQI, GSH and adduct routes.",
+              "satisfied": true,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": null,
+              "evidence_surface": "phh_cyp_function",
+              "id": "cyp_function_observation_surface_ready",
+              "observed": {
+                "enzyme_count": 6,
+                "quantified_mean_record_count": 62,
+                "same_format_comparison_ready": true
+              },
+              "requirement": "CYP assay endpoints must be retained in their exact reported format.",
+              "satisfied": true,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": null,
+              "evidence_surface": "compartmental_energy_redox",
+              "id": "apap_compartmental_redox_topology_ready",
+              "observed": {
+                "compartment_count": 6,
+                "explicit_pool_count": 38,
+                "numerical_execution_enabled": false
+              },
+              "requirement": "APAP injury must address compartment-specific ATP, NADPH, GSH and ROS pools.",
+              "satisfied": true,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "No complete donor-resolved APAP trajectory has passed intake and review.",
+              "evidence_surface": "phh_injury_validation",
+              "id": "apap_donor_trajectory_ready",
+              "observed": {
+                "complete_donor_trajectory_record_count": 0,
+                "numeric_measurement_projection_count": 0
+              },
+              "requirement": "Matched donor-resolved APAP exposure, GSH, energy, injury and recovery trajectories are required.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "CYP-to-NAPQI and compartmental GSH/NADPH kinetics are not calibrated.",
+              "evidence_surface": "phh_cyp_function + compartmental_energy_redox",
+              "id": "apap_kinetics_calibrated",
+              "observed": {
+                "cyp_kinetic_parameter_fit_ready": false,
+                "redox_executable_process_count": 0,
+                "redox_parameter_activation_allowed": false
+              },
+              "requirement": "CYP formation, conjugation and redox rates require identifiable PHH kinetics.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "No validated PHH MPT/injury transition law is registered.",
+              "evidence_surface": "phh_injury_validation",
+              "id": "apap_mpt_injury_law_ready",
+              "observed": {
+                "general_fate_law_count": 0,
+                "general_fate_law_ready": false
+              },
+              "requirement": "A measured law must connect mitochondrial/redox failure to MPT and injury outputs.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "APAP/redox trajectory evidence has no independently approved delivery.",
+              "evidence_surface": "phh_evidence_readiness",
+              "id": "apap_independent_evidence_review_ready",
+              "observed": {
+                "energy_redox_trajectory": {
+                  "delivery_present": false,
+                  "delivery_review_status": "not_delivered",
+                  "independent_review_approved": false
+                },
+                "phh_injury_trajectory": {
+                  "delivery_present": false,
+                  "delivery_review_status": "not_delivered",
+                  "independent_review_approved": false
+                }
+              },
+              "requirement": "Energy/redox and APAP injury trajectories require exact-hash independent review.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "No independent APAP injury prediction has passed a frozen evaluation.",
+              "evidence_surface": "phh_injury_validation",
+              "id": "apap_independent_validation_ready",
+              "observed": {
+                "independent_heldout_result_count": 0,
+                "predictive_ready": false
+              },
+              "requirement": "Prediction requires donor/study-disjoint APAP validation.",
+              "satisfied": false,
+              "stage": "prediction"
+            },
+            {
+              "blocker": "The legacy injury fixture has zero authoritative state-coupling permission.",
+              "evidence_surface": "phh_injury_validation.runtime_authority",
+              "id": "apap_authoritative_state_coupling_ready",
+              "observed": {
+                "authoritative_cell_state_coupling_allowed": false,
+                "automatic_runtime_coupling": false
+              },
+              "requirement": "The validated APAP cascade must explicitly permit authoritative state mutation.",
+              "satisfied": false,
+              "stage": "runtime_coupling"
+            }
+          ],
+          "id": "cyp_apap_redox_injury",
+          "incident_edge_ids": [
+            "glucose_redox_apap",
+            "apap_biliary_export"
+          ],
+          "label": "CYP450 detoxification, glutathione redox defence and APAP injury",
+          "predictive_ready": false,
+          "quantitative_execution_ready": false,
+          "runtime_coupling_ready": false,
+          "scope": "Single-PHH CYP-dependent APAP disposition, NAPQI competition, compartmental redox failure and injury-state transition.",
+          "surface_ids": [
+            "phh_cyp_function",
+            "compartmental_energy_redox",
+            "phh_injury_validation",
+            "legacy_detox_fixture"
+          ],
+          "target_components": [
+            "CYP-dependent APAP oxidation",
+            "safe conjugation",
+            "NAPQI and glutathione competition",
+            "mitochondrial permeability transition",
+            "injury and leakage-marker trajectories"
+          ]
+        },
+        {
+          "blockers": [
+            "Only BSEP and MRP2 have quantitative inventory records; four target transporters are absent.",
+            "No target transporter has a validated local surface-density record.",
+            "Total abundance has not been converted into active surface copy number.",
+            "The biliary assay operator is present, but no canalicular geometry coupling exists.",
+            "Aggregate BEI endpoints do not identify transporter-specific flux parameters.",
+            "Reported aggregate SCH concentrations do not define a true canalicular driving gradient.",
+            "No quantitative ATP-to-transporter flux coupling is authorized.",
+            "Active localized transporter evidence has no independently approved delivery.",
+            "No held-out polarized transport prediction has passed validation.",
+            "All polarized transport authority surfaces keep automatic state coupling disabled."
+          ],
+          "cross_cycle_runtime_ready": false,
+          "gates": [
+            {
+              "blocker": "Only BSEP and MRP2 have quantitative inventory records; four target transporters are absent.",
+              "evidence_surface": "phh_transporter_inventory",
+              "id": "polarized_target_inventory_ready",
+              "observed": {
+                "quantitative_inventory_count": 2,
+                "quantitative_inventory_ids": [
+                  "ABCB11_BSEP",
+                  "ABCC2_MRP2"
+                ],
+                "target_transporter_count": 6
+              },
+              "requirement": "BSEP, MRP2, NTCP, GLUT2, OATP1B1 and OATP1B3 require quantitative inventory records.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": null,
+              "evidence_surface": "phh_transporter_inventory",
+              "id": "transporter_total_abundance_observed",
+              "observed": {
+                "bsep_ready": true,
+                "direct_total_per_nucleus_observation_count": 2,
+                "mrp2_ready": true
+              },
+              "requirement": "At least the existing BSEP/MRP2 total-abundance observations must remain available.",
+              "satisfied": true,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "No target transporter has a validated local surface-density record.",
+              "evidence_surface": "phh_transporter_inventory",
+              "id": "transporter_surface_density_ready",
+              "observed": {
+                "surface_density_ready": false,
+                "surface_density_record_count": 0,
+                "target_transporter_count": 6
+              },
+              "requirement": "Each target requires domain-localized copies divided by measured local membrane area.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "Total abundance has not been converted into active surface copy number.",
+              "evidence_surface": "phh_transporter_inventory",
+              "id": "transporter_active_copy_ready",
+              "observed": {
+                "active_copy_count_record_count": 0,
+                "active_copy_observation_ready": false
+              },
+              "requirement": "Flux capacity requires active surface copies rather than whole-cell totals.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "The biliary assay operator is present, but no canalicular geometry coupling exists.",
+              "evidence_surface": "phh_biliary_excretion",
+              "id": "canalicular_geometry_coupling_ready",
+              "observed": {
+                "canalicular_geometry_coupling_ready": false,
+                "measurement_operator_ready": true
+              },
+              "requirement": "Bile flux requires donor-matched canalicular area/volume and transporter localization.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "Aggregate BEI endpoints do not identify transporter-specific flux parameters.",
+              "evidence_surface": "phh_biliary_excretion + phh_transporter_inventory",
+              "id": "transporter_flux_fit_ready",
+              "observed": {
+                "flux_parameter_count": 0,
+                "transporter_specific_rate_fit_ready": false
+              },
+              "requirement": "Transporter-specific rates must be identifiable from matched perturbation data.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "Reported aggregate SCH concentrations do not define a true canalicular driving gradient.",
+              "evidence_surface": "human_sch_bile_acids",
+              "id": "bile_driving_gradient_ready",
+              "observed": {
+                "healthy_in_vivo_initialization_ready": false,
+                "true_canalicular_concentration_ready": false
+              },
+              "requirement": "Transport requires true compartment concentrations and healthy-PHH boundary initialization.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "No quantitative ATP-to-transporter flux coupling is authorized.",
+              "evidence_surface": "compartmental_energy_redox + phh_transporter_inventory",
+              "id": "transporter_energy_coupling_ready",
+              "observed": {
+                "energy_compartment_initialization_ready": false,
+                "energy_numerical_execution_enabled": false,
+                "transport_flux_coupling_ready": false
+              },
+              "requirement": "ATP-dependent transport requires a validated local ATP/ADP state and consumption law.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "Active localized transporter evidence has no independently approved delivery.",
+              "evidence_surface": "phh_evidence_readiness",
+              "id": "transport_independent_evidence_review_ready",
+              "observed": {
+                "active_protein_localization": {
+                  "delivery_present": false,
+                  "delivery_review_status": "not_delivered",
+                  "independent_review_approved": false
+                }
+              },
+              "requirement": "Localized active-transporter evidence requires exact-hash independent review.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "No held-out polarized transport prediction has passed validation.",
+              "evidence_surface": "phh_biliary_excretion + human_sch_bile_acids",
+              "id": "transport_independent_validation_ready",
+              "observed": {
+                "bile_acid_predictive_ready": false,
+                "biliary_pass_fail_count": 0,
+                "biliary_predictive_ready": false
+              },
+              "requirement": "Prediction requires held-out vectorial flux trajectories and frozen acceptance criteria.",
+              "satisfied": false,
+              "stage": "prediction"
+            },
+            {
+              "blocker": "All polarized transport authority surfaces keep automatic state coupling disabled.",
+              "evidence_surface": "polarized transport authority surfaces",
+              "id": "transport_authoritative_state_coupling_ready",
+              "observed": {
+                "bile_acid_coupling": false,
+                "biliary_coupling": false,
+                "inventory_coupling": false
+              },
+              "requirement": "Every contributing transport surface must authorize cell-state coupling.",
+              "satisfied": false,
+              "stage": "runtime_coupling"
+            }
+          ],
+          "id": "polarized_transport_bile_flux",
+          "incident_edge_ids": [
+            "glut2_glucose_exchange",
+            "apap_biliary_export",
+            "urea_system_boundary"
+          ],
+          "label": "Polarized membrane transport, surface density and bile flux",
+          "predictive_ready": false,
+          "quantitative_execution_ready": false,
+          "runtime_coupling_ready": false,
+          "scope": "Sinusoidal and canalicular transporter identity, active surface abundance, local geometry, driving forces and vectorial flux.",
+          "surface_ids": [
+            "phh_transporter_inventory",
+            "phh_biliary_excretion",
+            "human_sch_bile_acids"
+          ],
+          "target_components": [
+            "BSEP",
+            "MRP2",
+            "NTCP",
+            "GLUT2",
+            "OATP1B1",
+            "OATP1B3"
+          ]
+        },
+        {
+          "blockers": [
+            "The urea-cycle fixture contains placeholder or lumped kinetics.",
+            "The generic human reconstruction has not become an accepted healthy-PHH context model.",
+            "No measured PHH exchange-bound set is loaded.",
+            "The generic biomass objective is not an accepted healthy-PHH objective.",
+            "No reviewed Human-GEM-to-single-PHH scale operator is delivered.",
+            "No quantitative dynamic-FBA state/boundary update law is registered.",
+            "The PHH metabolic execution bundle has no independently approved delivery.",
+            "No independent PHH flux validation record is loaded.",
+            "Human-GEM fluxes cannot initialize or mutate the authoritative dynamic state."
+          ],
+          "cross_cycle_runtime_ready": false,
+          "gates": [
+            {
+              "blocker": null,
+              "evidence_surface": "legacy_urea_cycle_fixture",
+              "id": "urea_cycle_topology_ready",
+              "observed": {
+                "quantitative_authority": false,
+                "reaction_count": 5,
+                "reaction_ids": [
+                  "arg1",
+                  "asl",
+                  "ass1",
+                  "cps1",
+                  "otc"
+                ]
+              },
+              "requirement": "The five-enzyme urea-cycle topology and ornithine closure must be explicit.",
+              "satisfied": true,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "The urea-cycle fixture contains placeholder or lumped kinetics.",
+              "evidence_surface": "legacy_urea_cycle_fixture",
+              "id": "urea_cycle_kinetics_ready",
+              "observed": {
+                "placeholder_or_lumped_reaction_ids": [
+                  "cps1",
+                  "otc",
+                  "ass1",
+                  "asl",
+                  "arg1"
+                ],
+                "reaction_count": 5
+              },
+              "requirement": "All urea-cycle kinetic constants require PHH provenance, units and validation.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": null,
+              "evidence_surface": "metabolic_constraint_shell",
+              "id": "human_gem_artifact_and_solver_ready",
+              "observed": {
+                "artifact_identity_verified": true,
+                "biological_flux_authority": false,
+                "generic_reconstruction_loaded": true,
+                "generic_solver_fixture_pass_count": 5
+              },
+              "requirement": "The pinned Human-GEM identity, sparse loader and generic solver fixtures must pass.",
+              "satisfied": true,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "The generic human reconstruction has not become an accepted healthy-PHH context model.",
+              "evidence_surface": "metabolic_constraint_shell",
+              "id": "healthy_phh_context_model_ready",
+              "observed": {
+                "healthy_phh_context_extracted": false,
+                "structurally_complete_bundle_count": 0
+              },
+              "requirement": "A donor/cohort-, nutrition- and zonation-qualified PHH context model is required.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "No measured PHH exchange-bound set is loaded.",
+              "evidence_surface": "metabolic_constraint_shell",
+              "id": "measured_exchange_bounds_ready",
+              "observed": {
+                "boundary_fluxes_loaded": false,
+                "measured_exchange_bound_count": 0
+              },
+              "requirement": "Measured PHH exchange bounds must define the open-system boundary.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "The generic biomass objective is not an accepted healthy-PHH objective.",
+              "evidence_surface": "metabolic_constraint_shell",
+              "id": "measured_phh_objective_ready",
+              "observed": {
+                "objective_is_biological_measurement": false,
+                "objective_loaded": false
+              },
+              "requirement": "The optimization objective must be justified by a matched PHH measurement.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "No reviewed Human-GEM-to-single-PHH scale operator is delivered.",
+              "evidence_surface": "phh_metabolic_execution_bundle",
+              "id": "human_gem_single_cell_scale_ready",
+              "observed": {
+                "required_artifact_count": 10,
+                "structurally_complete_bundle_count": 0,
+                "verified_artifact_count": 0
+              },
+              "requirement": "Tissue/exchange fluxes require an explicit denominator-preserving single-cell scale operator.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "No quantitative dynamic-FBA state/boundary update law is registered.",
+              "evidence_surface": "metabolic_cycle_program",
+              "id": "dynamic_fba_update_law_ready",
+              "observed": {
+                "registered_dynamic_fba_update_law_count": 0,
+                "static_fba_execution_allowed": false
+              },
+              "requirement": "A registered mass-conserving law must update extracellular state, bounds and intracellular pools over time.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "The PHH metabolic execution bundle has no independently approved delivery.",
+              "evidence_surface": "phh_evidence_readiness",
+              "id": "human_gem_independent_evidence_review_ready",
+              "observed": {
+                "metabolic_execution_bundle": {
+                  "delivery_present": false,
+                  "delivery_review_status": "not_delivered",
+                  "independent_review_approved": false
+                }
+              },
+              "requirement": "The complete PHH metabolic execution bundle requires exact-hash independent review.",
+              "satisfied": false,
+              "stage": "quantitative_execution"
+            },
+            {
+              "blocker": "No independent PHH flux validation record is loaded.",
+              "evidence_surface": "phh_metabolic_execution_bundle",
+              "id": "human_gem_independent_flux_validation_ready",
+              "observed": {
+                "independent_validation_record_count": 0,
+                "may_drive_scientific_validation": false
+              },
+              "requirement": "Prediction requires donor/study-disjoint exchange and isotope-flux validation.",
+              "satisfied": false,
+              "stage": "prediction"
+            },
+            {
+              "blocker": "Human-GEM fluxes cannot initialize or mutate the authoritative dynamic state.",
+              "evidence_surface": "metabolic_constraint_shell",
+              "id": "urea_dfba_authoritative_state_coupling_ready",
+              "observed": {
+                "may_initialize_dynamic_reaction_rates": false,
+                "runtime_flux_coupling_allowed": false
+              },
+              "requirement": "Validated dFBA fluxes must explicitly authorize dynamic cell-state coupling.",
+              "satisfied": false,
+              "stage": "runtime_coupling"
+            }
+          ],
+          "id": "urea_ammonia_human_gem",
+          "incident_edge_ids": [
+            "glucose_urea_energy_carbon",
+            "urea_system_boundary"
+          ],
+          "label": "Urea-cycle ammonia clearance and Human-GEM dynamic FBA",
+          "predictive_ready": false,
+          "quantitative_execution_ready": false,
+          "runtime_coupling_ready": false,
+          "scope": "Single-PHH urea-cycle kinetics embedded in a context-specific, measured-boundary Human-GEM dynamic constraint model.",
+          "surface_ids": [
+            "legacy_urea_cycle_fixture",
+            "metabolic_constraint_shell",
+            "phh_metabolic_execution_bundle"
+          ],
+          "target_components": [
+            "CPS1",
+            "OTC",
+            "ASS1",
+            "ASL",
+            "ARG1",
+            "Human-GEM v2.0.0",
+            "dynamic FBA update law"
+          ]
+        }
+      ],
+      "date_verified": "2026-08-17",
+      "manifest": {
+        "path": "data/validation/hepatocyte_metabolic_cycle_program.v1.json",
+        "program_id": "hepatocyte_metabolic_cycle_program_v1",
+        "schema_version": "cell.hepatocyte-metabolic-cycle-program.v1",
+        "sha256": "2c019a16af79f904488d84d7055b93e8486b87dc3bfa42a9802f62d839540189"
+      },
+      "policy": {
+        "all_quantitative_gates_required": true,
+        "automatic_parameter_activation": false,
+        "automatic_state_coupling": false,
+        "cross_cycle_runtime_requires_all_incident_edges": true,
+        "edge_requires_all_declared_operators": true,
+        "missing_evidence_fails_closed": true,
+        "prediction_requires_quantitative_execution": true,
+        "runtime_coupling_requires_prediction": true,
+        "shared_name_is_not_a_coupling_law": true
+      },
+      "scientific_authority": false,
+      "shared_edges": [
+        {
+          "automatic_state_coupling": false,
+          "blockers": [
+            "glut2_glucose_exchange: No reviewed endpoint-to-endpoint compartment mapping is registered.",
+            "glut2_glucose_exchange: No reviewed unit and biological-scale conversion operator is registered.",
+            "glut2_glucose_exchange: No common event/time-step alignment and interpolation contract is registered.",
+            "glut2_glucose_exchange: No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+            "glut2_glucose_exchange: No source-backed transfer, conservation or work law joins the endpoints.",
+            "glut2_glucose_exchange: No uncertainty propagation operator joins the endpoint state estimates."
+          ],
+          "coupling_ready": false,
+          "direction": "bidirectional_state_constraint",
+          "endpoint_cycle_ids": [
+            "glucose_glycogen_control",
+            "polarized_transport_bile_flux"
+          ],
+          "id": "glut2_glucose_exchange",
+          "operators": [
+            {
+              "blocker": null,
+              "evidence_surface": "metabolic_cycle_program.manifest",
+              "id": "shared_state_identity",
+              "requirement": "Shared state identities are declared, but declaration alone carries no quantitative authority.",
+              "satisfied": true
+            },
+            {
+              "blocker": "glut2_glucose_exchange: No reviewed endpoint-to-endpoint compartment mapping is registered.",
+              "evidence_surface": null,
+              "id": "compartment_mapping",
+              "requirement": "No reviewed endpoint-to-endpoint compartment mapping is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glut2_glucose_exchange: No reviewed unit and biological-scale conversion operator is registered.",
+              "evidence_surface": null,
+              "id": "unit_and_scale_operator",
+              "requirement": "No reviewed unit and biological-scale conversion operator is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glut2_glucose_exchange: No common event/time-step alignment and interpolation contract is registered.",
+              "evidence_surface": null,
+              "id": "time_alignment_operator",
+              "requirement": "No common event/time-step alignment and interpolation contract is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glut2_glucose_exchange: No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+              "evidence_surface": null,
+              "id": "donor_context_match",
+              "requirement": "No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glut2_glucose_exchange: No source-backed transfer, conservation or work law joins the endpoints.",
+              "evidence_surface": null,
+              "id": "transfer_or_conservation_law",
+              "requirement": "No source-backed transfer, conservation or work law joins the endpoints.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glut2_glucose_exchange: No uncertainty propagation operator joins the endpoint state estimates.",
+              "evidence_surface": null,
+              "id": "uncertainty_propagation",
+              "requirement": "No uncertainty propagation operator joins the endpoint state estimates.",
+              "satisfied": false
+            }
+          ],
+          "shared_state_ids": [
+            "glucose_sinusoid",
+            "glucose_cytosol",
+            "GLUT2_surface_active"
+          ]
+        },
+        {
+          "automatic_state_coupling": false,
+          "blockers": [
+            "glucose_redox_apap: No reviewed endpoint-to-endpoint compartment mapping is registered.",
+            "glucose_redox_apap: No reviewed unit and biological-scale conversion operator is registered.",
+            "glucose_redox_apap: No common event/time-step alignment and interpolation contract is registered.",
+            "glucose_redox_apap: No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+            "glucose_redox_apap: No source-backed transfer, conservation or work law joins the endpoints.",
+            "glucose_redox_apap: No uncertainty propagation operator joins the endpoint state estimates."
+          ],
+          "coupling_ready": false,
+          "direction": "bidirectional_state_constraint",
+          "endpoint_cycle_ids": [
+            "glucose_glycogen_control",
+            "cyp_apap_redox_injury"
+          ],
+          "id": "glucose_redox_apap",
+          "operators": [
+            {
+              "blocker": null,
+              "evidence_surface": "metabolic_cycle_program.manifest",
+              "id": "shared_state_identity",
+              "requirement": "Shared state identities are declared, but declaration alone carries no quantitative authority.",
+              "satisfied": true
+            },
+            {
+              "blocker": "glucose_redox_apap: No reviewed endpoint-to-endpoint compartment mapping is registered.",
+              "evidence_surface": null,
+              "id": "compartment_mapping",
+              "requirement": "No reviewed endpoint-to-endpoint compartment mapping is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glucose_redox_apap: No reviewed unit and biological-scale conversion operator is registered.",
+              "evidence_surface": null,
+              "id": "unit_and_scale_operator",
+              "requirement": "No reviewed unit and biological-scale conversion operator is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glucose_redox_apap: No common event/time-step alignment and interpolation contract is registered.",
+              "evidence_surface": null,
+              "id": "time_alignment_operator",
+              "requirement": "No common event/time-step alignment and interpolation contract is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glucose_redox_apap: No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+              "evidence_surface": null,
+              "id": "donor_context_match",
+              "requirement": "No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glucose_redox_apap: No source-backed transfer, conservation or work law joins the endpoints.",
+              "evidence_surface": null,
+              "id": "transfer_or_conservation_law",
+              "requirement": "No source-backed transfer, conservation or work law joins the endpoints.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glucose_redox_apap: No uncertainty propagation operator joins the endpoint state estimates.",
+              "evidence_surface": null,
+              "id": "uncertainty_propagation",
+              "requirement": "No uncertainty propagation operator joins the endpoint state estimates.",
+              "satisfied": false
+            }
+          ],
+          "shared_state_ids": [
+            "glucose_6_phosphate_cytosol",
+            "ATP_cytosol",
+            "NADPH_cytosol",
+            "GSH_cytosol",
+            "ROS_cytosol"
+          ]
+        },
+        {
+          "automatic_state_coupling": false,
+          "blockers": [
+            "apap_biliary_export: No reviewed endpoint-to-endpoint compartment mapping is registered.",
+            "apap_biliary_export: No reviewed unit and biological-scale conversion operator is registered.",
+            "apap_biliary_export: No common event/time-step alignment and interpolation contract is registered.",
+            "apap_biliary_export: No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+            "apap_biliary_export: No source-backed transfer, conservation or work law joins the endpoints.",
+            "apap_biliary_export: No uncertainty propagation operator joins the endpoint state estimates."
+          ],
+          "coupling_ready": false,
+          "direction": "bidirectional_state_constraint",
+          "endpoint_cycle_ids": [
+            "cyp_apap_redox_injury",
+            "polarized_transport_bile_flux"
+          ],
+          "id": "apap_biliary_export",
+          "operators": [
+            {
+              "blocker": null,
+              "evidence_surface": "metabolic_cycle_program.manifest",
+              "id": "shared_state_identity",
+              "requirement": "Shared state identities are declared, but declaration alone carries no quantitative authority.",
+              "satisfied": true
+            },
+            {
+              "blocker": "apap_biliary_export: No reviewed endpoint-to-endpoint compartment mapping is registered.",
+              "evidence_surface": null,
+              "id": "compartment_mapping",
+              "requirement": "No reviewed endpoint-to-endpoint compartment mapping is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "apap_biliary_export: No reviewed unit and biological-scale conversion operator is registered.",
+              "evidence_surface": null,
+              "id": "unit_and_scale_operator",
+              "requirement": "No reviewed unit and biological-scale conversion operator is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "apap_biliary_export: No common event/time-step alignment and interpolation contract is registered.",
+              "evidence_surface": null,
+              "id": "time_alignment_operator",
+              "requirement": "No common event/time-step alignment and interpolation contract is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "apap_biliary_export: No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+              "evidence_surface": null,
+              "id": "donor_context_match",
+              "requirement": "No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "apap_biliary_export: No source-backed transfer, conservation or work law joins the endpoints.",
+              "evidence_surface": null,
+              "id": "transfer_or_conservation_law",
+              "requirement": "No source-backed transfer, conservation or work law joins the endpoints.",
+              "satisfied": false
+            },
+            {
+              "blocker": "apap_biliary_export: No uncertainty propagation operator joins the endpoint state estimates.",
+              "evidence_surface": null,
+              "id": "uncertainty_propagation",
+              "requirement": "No uncertainty propagation operator joins the endpoint state estimates.",
+              "satisfied": false
+            }
+          ],
+          "shared_state_ids": [
+            "APAP_conjugates_cytosol",
+            "MRP2_surface_active",
+            "ATP_cytosol",
+            "GSH_cytosol",
+            "canalicular_export_flux"
+          ]
+        },
+        {
+          "automatic_state_coupling": false,
+          "blockers": [
+            "glucose_urea_energy_carbon: No reviewed endpoint-to-endpoint compartment mapping is registered.",
+            "glucose_urea_energy_carbon: No reviewed unit and biological-scale conversion operator is registered.",
+            "glucose_urea_energy_carbon: No common event/time-step alignment and interpolation contract is registered.",
+            "glucose_urea_energy_carbon: No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+            "glucose_urea_energy_carbon: No source-backed transfer, conservation or work law joins the endpoints.",
+            "glucose_urea_energy_carbon: No uncertainty propagation operator joins the endpoint state estimates."
+          ],
+          "coupling_ready": false,
+          "direction": "bidirectional_state_constraint",
+          "endpoint_cycle_ids": [
+            "glucose_glycogen_control",
+            "urea_ammonia_human_gem"
+          ],
+          "id": "glucose_urea_energy_carbon",
+          "operators": [
+            {
+              "blocker": null,
+              "evidence_surface": "metabolic_cycle_program.manifest",
+              "id": "shared_state_identity",
+              "requirement": "Shared state identities are declared, but declaration alone carries no quantitative authority.",
+              "satisfied": true
+            },
+            {
+              "blocker": "glucose_urea_energy_carbon: No reviewed endpoint-to-endpoint compartment mapping is registered.",
+              "evidence_surface": null,
+              "id": "compartment_mapping",
+              "requirement": "No reviewed endpoint-to-endpoint compartment mapping is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glucose_urea_energy_carbon: No reviewed unit and biological-scale conversion operator is registered.",
+              "evidence_surface": null,
+              "id": "unit_and_scale_operator",
+              "requirement": "No reviewed unit and biological-scale conversion operator is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glucose_urea_energy_carbon: No common event/time-step alignment and interpolation contract is registered.",
+              "evidence_surface": null,
+              "id": "time_alignment_operator",
+              "requirement": "No common event/time-step alignment and interpolation contract is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glucose_urea_energy_carbon: No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+              "evidence_surface": null,
+              "id": "donor_context_match",
+              "requirement": "No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glucose_urea_energy_carbon: No source-backed transfer, conservation or work law joins the endpoints.",
+              "evidence_surface": null,
+              "id": "transfer_or_conservation_law",
+              "requirement": "No source-backed transfer, conservation or work law joins the endpoints.",
+              "satisfied": false
+            },
+            {
+              "blocker": "glucose_urea_energy_carbon: No uncertainty propagation operator joins the endpoint state estimates.",
+              "evidence_surface": null,
+              "id": "uncertainty_propagation",
+              "requirement": "No uncertainty propagation operator joins the endpoint state estimates.",
+              "satisfied": false
+            }
+          ],
+          "shared_state_ids": [
+            "ATP_cytosol",
+            "ADP_cytosol",
+            "AMP_cytosol",
+            "fumarate",
+            "aspartate"
+          ]
+        },
+        {
+          "automatic_state_coupling": false,
+          "blockers": [
+            "urea_system_boundary: No reviewed endpoint-to-endpoint compartment mapping is registered.",
+            "urea_system_boundary: No reviewed unit and biological-scale conversion operator is registered.",
+            "urea_system_boundary: No common event/time-step alignment and interpolation contract is registered.",
+            "urea_system_boundary: No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+            "urea_system_boundary: No source-backed transfer, conservation or work law joins the endpoints.",
+            "urea_system_boundary: No uncertainty propagation operator joins the endpoint state estimates."
+          ],
+          "coupling_ready": false,
+          "direction": "bidirectional_state_constraint",
+          "endpoint_cycle_ids": [
+            "urea_ammonia_human_gem",
+            "polarized_transport_bile_flux"
+          ],
+          "id": "urea_system_boundary",
+          "operators": [
+            {
+              "blocker": null,
+              "evidence_surface": "metabolic_cycle_program.manifest",
+              "id": "shared_state_identity",
+              "requirement": "Shared state identities are declared, but declaration alone carries no quantitative authority.",
+              "satisfied": true
+            },
+            {
+              "blocker": "urea_system_boundary: No reviewed endpoint-to-endpoint compartment mapping is registered.",
+              "evidence_surface": null,
+              "id": "compartment_mapping",
+              "requirement": "No reviewed endpoint-to-endpoint compartment mapping is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "urea_system_boundary: No reviewed unit and biological-scale conversion operator is registered.",
+              "evidence_surface": null,
+              "id": "unit_and_scale_operator",
+              "requirement": "No reviewed unit and biological-scale conversion operator is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "urea_system_boundary: No common event/time-step alignment and interpolation contract is registered.",
+              "evidence_surface": null,
+              "id": "time_alignment_operator",
+              "requirement": "No common event/time-step alignment and interpolation contract is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "urea_system_boundary: No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+              "evidence_surface": null,
+              "id": "donor_context_match",
+              "requirement": "No donor-, nutrition-, zonation- and assay-matched cross-cycle context is registered.",
+              "satisfied": false
+            },
+            {
+              "blocker": "urea_system_boundary: No source-backed transfer, conservation or work law joins the endpoints.",
+              "evidence_surface": null,
+              "id": "transfer_or_conservation_law",
+              "requirement": "No source-backed transfer, conservation or work law joins the endpoints.",
+              "satisfied": false
+            },
+            {
+              "blocker": "urea_system_boundary: No uncertainty propagation operator joins the endpoint state estimates.",
+              "evidence_surface": null,
+              "id": "uncertainty_propagation",
+              "requirement": "No uncertainty propagation operator joins the endpoint state estimates.",
+              "satisfied": false
+            }
+          ],
+          "shared_state_ids": [
+            "ammonia_sinusoid",
+            "ammonia_cytosol",
+            "urea_cytosol",
+            "urea_sinusoid",
+            "ATP_cytosol"
+          ]
+        }
+      ],
+      "status": "four_cycle_dependency_surface_ready_quantitative_execution_blocked",
+      "summary": {
+        "automatic_parameter_activation_count": 0,
+        "automatic_state_coupling_count": 0,
+        "coupled_edge_count": 0,
+        "cross_cycle_runtime_ready_cycle_count": 0,
+        "cycle_count": 4,
+        "cycle_with_structural_surface_count": 4,
+        "edge_operator_count": 35,
+        "gate_count": 38,
+        "predictive_ready_cycle_count": 0,
+        "quantitative_execution_ready_cycle_count": 0,
+        "runtime_coupling_ready_cycle_count": 0,
+        "satisfied_edge_operator_count": 5,
+        "satisfied_gate_count": 7,
+        "shared_edge_count": 5
+      },
+      "version": "hepatocyte_metabolic_cycle_program_v1"
     },
     "hepatocyte_quantity_harvest": {
       "audit": {
@@ -25022,6 +26142,7 @@
         "cytosol_transport",
         "cytoplasm_dynamics",
         "metabolic_constraint_shell",
+        "hepatocyte_metabolic_cycle_program",
         "hepatocyte_completion_matrix",
         "software_completion_boundary",
         "phh_evidence_readiness",
@@ -85844,6 +86965,7 @@
         "human_gem_fastcore_global_support_identity_completeness",
         "human_gem_phh_reaction_evidence_manifest",
         "phh_metabolic_execution_bundle_intake",
+        "hepatocyte_metabolic_cycle_program",
         "metabolic_constraint_shell",
         "phh_completion_evidence_bundle_intake",
         "software_completion_boundary",
@@ -87020,6 +88142,15 @@
           "status": "derived"
         },
         {
+          "action": "derive quantitative-execution, prediction and runtime-coupling readiness for glucose/glycogen, CYP/APAP/redox injury, polarized transport/bile flux and urea/Human-GEM; require explicit compartment, unit/scale, time, donor-context, transfer-law and uncertainty operators on every shared edge",
+          "default_snapshot_role": "four_cycle_dependency_and_authority_firewall",
+          "drives_scientific_validation": true,
+          "id": "hepatocyte_metabolic_cycle_program",
+          "limitations": "The graph classifies existing code and evidence but supplies no kinetic parameter or biological coupling law. All four quantitative execution paths and all five cross-cycle edges currently fail closed.",
+          "source_ids": [],
+          "status": "derived"
+        },
+        {
           "action": "retain the checksum-pinned Human-GEM v2.0.0 artifact, verified sparse loader, complete generic FASTCC classification, generic native-objective execution, seven-donor GPR stability, FASTCORE sensitivity, source-limited structural repair, exact global support cardinality, complete global minimum identity enumeration and reaction evidence manifest; require the complete PHH execution bundle before healthy-PHH FBA, FVA, thermodynamic or enzyme constraints can run",
           "default_snapshot_role": "pinned_reconstruction_and_genome_scale_activation_firewall",
           "drives_scientific_validation": true,
@@ -87598,8 +88729,8 @@
       "summary": {
         "automatic_parameter_activation_count": 0,
         "automatic_state_coupling_count": 0,
-        "closed_scope_count": 32,
-        "declared_scope_count": 57,
+        "closed_scope_count": 33,
+        "declared_scope_count": 58,
         "evidence_gated_scope_count": 23,
         "external_action_scope_count": 1,
         "inapplicable_scope_count": 1,

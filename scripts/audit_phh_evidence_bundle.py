@@ -9,7 +9,7 @@ from cell_engine.validation.evidence_intake import validate_evidence_bundle
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Audit a nine-file healthy-human/PHH evidence delivery.")
-    parser.add_argument("bundle", type=Path, help="Directory containing the Claude Science delivery")
+    parser.add_argument("bundle", type=Path, help="Directory containing the external evidence delivery")
     parser.add_argument("--out", type=Path, default=None, help="Optional path for the immutable JSON audit")
     args = parser.parse_args()
 

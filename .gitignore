@@ -10,9 +10,6 @@ __pycache__/
 *.py[cod]
 .DS_Store
 
-# Local editor/agent tooling (not part of the project)
-.claude/
-
 # Personal application materials (not part of the project)
 applications/
 

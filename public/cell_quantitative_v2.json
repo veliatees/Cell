@@ -1,7 +1,7 @@
 {
   "_schemaNote": "Human hepatocyte reference dataset for computational modeling. Every numeric value is (a) measured+cited, (b) flagged order-of-magnitude with derivation, or null. NEVER fabricated. See CAVEATS. | v2: added organelleDimensions (Part C), cytoplasmInventory (Part D), motion (Part E). Values carry organism + estimateQuality + source; null where unsourced.",
   "_generated": "2026-07-02 (Parts C/D/E appended)",
-  "_provenance": "Produced by the user's Claude Science research pass. Pasted verbatim and persisted here as the source-of-record. To be folded into cell_quantitative.json + engine constants once file-read access is restored.",
+  "_provenance": "Imported as an unverified external literature-curation artifact and preserved as its source-of-record. Every value still requires primary-source and context review before transfer into engine constants.",
   "organelleDimensions": [
     {
       "id": "mitochondria",

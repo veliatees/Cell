@@ -2455,6 +2455,80 @@ export type EngineMetabolicConstraintShell = {
   blockers: string[];
 };
 
+export type EngineMetabolicCycleGate = {
+  id: string;
+  stage: "quantitative_execution" | "prediction" | "runtime_coupling";
+  satisfied: boolean;
+  evidence_surface: string;
+  requirement: string;
+  observed: Record<string, unknown>;
+  blocker: string | null;
+};
+
+export type EngineMetabolicCycleEdgeOperator = {
+  id: string;
+  satisfied: boolean;
+  requirement: string;
+  evidence_surface: string | null;
+  blocker: string | null;
+};
+
+export type EngineHepatocyteMetabolicCycleProgram = {
+  version: "hepatocyte_metabolic_cycle_program_v1";
+  status: "four_cycle_dependency_surface_ready_quantitative_execution_blocked";
+  date_verified: string;
+  manifest: {
+    path: string;
+    sha256: string;
+    schema_version: "cell.hepatocyte-metabolic-cycle-program.v1";
+    program_id: "hepatocyte_metabolic_cycle_program_v1";
+  };
+  scientific_authority: false;
+  automatic_parameter_activation: false;
+  automatic_state_coupling: false;
+  cycles: {
+    id: string;
+    label: string;
+    scope: string;
+    target_components: string[];
+    surface_ids: string[];
+    gates: EngineMetabolicCycleGate[];
+    quantitative_execution_ready: boolean;
+    predictive_ready: boolean;
+    runtime_coupling_ready: boolean;
+    cross_cycle_runtime_ready: boolean;
+    blockers: string[];
+    incident_edge_ids: string[];
+  }[];
+  shared_edges: {
+    id: string;
+    endpoint_cycle_ids: [string, string];
+    direction: "bidirectional_state_constraint";
+    shared_state_ids: string[];
+    operators: EngineMetabolicCycleEdgeOperator[];
+    coupling_ready: boolean;
+    automatic_state_coupling: false;
+    blockers: string[];
+  }[];
+  summary: {
+    cycle_count: number;
+    cycle_with_structural_surface_count: number;
+    gate_count: number;
+    satisfied_gate_count: number;
+    quantitative_execution_ready_cycle_count: number;
+    predictive_ready_cycle_count: number;
+    runtime_coupling_ready_cycle_count: number;
+    cross_cycle_runtime_ready_cycle_count: number;
+    shared_edge_count: number;
+    edge_operator_count: number;
+    satisfied_edge_operator_count: number;
+    coupled_edge_count: number;
+    automatic_parameter_activation_count: 0;
+    automatic_state_coupling_count: 0;
+  };
+  policy: Record<string, boolean>;
+};
+
 export type EngineCompletionGapStatus =
   | "closed"
   | "partial"
@@ -2622,6 +2696,7 @@ export type EngineSnapshot = {
     reaction_evidence_intake?: EngineReactionEvidenceIntake;
     cytosol_transport?: EngineCytosolTransport;
     metabolic_constraint_shell?: EngineMetabolicConstraintShell;
+    hepatocyte_metabolic_cycle_program?: EngineHepatocyteMetabolicCycleProgram;
     hepatocyte_completion_matrix?: EngineHepatocyteCompletionMatrix;
     software_completion_boundary?: EngineSoftwareCompletionBoundary;
     phh_albumin_secretion?: EnginePhhAlbuminSecretion;
@@ -5408,6 +5483,7 @@ export type EngineSnapshotSummary = {
   reactionEvidenceIntake: EngineReactionEvidenceIntake | null;
   cytosolTransport: EngineCytosolTransport | null;
   metabolicConstraintShell: EngineMetabolicConstraintShell | null;
+  hepatocyteMetabolicCycleProgram: EngineHepatocyteMetabolicCycleProgram | null;
   hepatocyteCompletionMatrix: EngineHepatocyteCompletionMatrix | null;
   softwareCompletionBoundary: EngineSoftwareCompletionBoundary | null;
   phhAlbuminSecretion: EnginePhhAlbuminSecretion | null;
@@ -5808,6 +5884,8 @@ export function summarizeEngineSnapshot(snapshot: EngineSnapshot, source: string
     reactionEvidenceIntake: snapshot.state.reaction_evidence_intake ?? null,
     cytosolTransport: snapshot.state.cytosol_transport ?? null,
     metabolicConstraintShell: snapshot.state.metabolic_constraint_shell ?? null,
+    hepatocyteMetabolicCycleProgram:
+      snapshot.state.hepatocyte_metabolic_cycle_program ?? null,
     hepatocyteCompletionMatrix: snapshot.state.hepatocyte_completion_matrix ?? null,
     softwareCompletionBoundary: snapshot.state.software_completion_boundary ?? null,
     phhAlbuminSecretion: snapshot.state.phh_albumin_secretion ?? null,

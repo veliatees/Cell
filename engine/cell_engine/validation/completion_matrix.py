@@ -80,6 +80,9 @@ from cell_engine.validation.reaction_evidence_atlas import build_reaction_eviden
 from cell_engine.validation.hepatocyte_quantities import (
     hepatocyte_quantity_harvest_snapshot,
 )
+from cell_engine.validation.metabolic_cycle_program import (
+    hepatocyte_metabolic_cycle_program_snapshot,
+)
 from cell_engine.validation.scientific_snapshot_export_policy import (
     scientific_snapshot_export_policy_snapshot,
 )
@@ -206,6 +209,8 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     ]
     context_extraction_kernel = metabolic["context_extraction_kernel"]
     metabolic_bundle = metabolic["phh_execution_bundle_intake"]
+    metabolic_program = hepatocyte_metabolic_cycle_program_snapshot()
+    metabolic_program_summary = metabolic_program["summary"]
     external = external_validation_snapshot()["summary"]
     donor_generative = generative_donor_manifest_intake_snapshot()
     browser_bundle = browser_bundle_budget_snapshot()
@@ -2983,6 +2988,58 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "four_cycle_metabolic_authority_graph",
+            "Four-cycle metabolic dependency and authority graph",
+            "closed",
+            "Machine-checked readiness and cross-cycle coupling authority for glucose/glycogen, CYP/APAP/redox injury, polarized transport/bile flux and urea/ammonia/Human-GEM dFBA; no kinetic or predictive claim.",
+            "All four workstreams and five causal interfaces are now classified through quantitative-execution, prediction and authoritative runtime gates. Existing topology, assay and solver progress remains visible, while missing compartment, unit/scale, time, donor-context, transfer-law and uncertainty operators keep every biological execution path closed.",
+            {
+                "cycle_count": metabolic_program_summary["cycle_count"],
+                "cycle_with_structural_surface_count": metabolic_program_summary[
+                    "cycle_with_structural_surface_count"
+                ],
+                "gate_count": metabolic_program_summary["gate_count"],
+                "satisfied_gate_count": metabolic_program_summary[
+                    "satisfied_gate_count"
+                ],
+                "quantitative_execution_ready_cycle_count": (
+                    metabolic_program_summary[
+                        "quantitative_execution_ready_cycle_count"
+                    ]
+                ),
+                "predictive_ready_cycle_count": metabolic_program_summary[
+                    "predictive_ready_cycle_count"
+                ],
+                "runtime_coupling_ready_cycle_count": metabolic_program_summary[
+                    "runtime_coupling_ready_cycle_count"
+                ],
+                "cross_cycle_runtime_ready_cycle_count": metabolic_program_summary[
+                    "cross_cycle_runtime_ready_cycle_count"
+                ],
+                "shared_edge_count": metabolic_program_summary[
+                    "shared_edge_count"
+                ],
+                "edge_operator_count": metabolic_program_summary[
+                    "edge_operator_count"
+                ],
+                "coupled_edge_count": metabolic_program_summary[
+                    "coupled_edge_count"
+                ],
+                "automatic_parameter_activation_count": metabolic_program_summary[
+                    "automatic_parameter_activation_count"
+                ],
+                "automatic_state_coupling_count": metabolic_program_summary[
+                    "automatic_state_coupling_count"
+                ],
+            },
+            (),
+            (
+                "data/validation/hepatocyte_metabolic_cycle_program.v1.json",
+                "engine/cell_engine/validation/metabolic_cycle_program.py",
+                "engine/tests/test_metabolic_cycle_program.py",
+            ),
+        ),
+        _entry(
             "independent_scientific_validation",
             "Independent scientific and software validation",
             "external_action_required",
@@ -4251,7 +4308,7 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         raise ValueError("PHH evidence readiness preflight contract changed")
     software_metrics = by_id["software_completion_boundary"]["observed_metrics"]
     if (
-        software_metrics["declared_scope_count_before_boundary"] != 57
+        software_metrics["declared_scope_count_before_boundary"] != 58
         or software_metrics["evidence_gated_scope_count"] != 23
         or software_metrics["registered_evidence_gated_scope_count"] != 23
         or software_metrics["unregistered_evidence_gated_scope_count"] != 0
@@ -4265,6 +4322,34 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or software_metrics["biological_accuracy_pct"] is not None
     ):
         raise ValueError("software-completion boundary changed or overclaimed")
+    metabolic_program_metrics = by_id[
+        "four_cycle_metabolic_authority_graph"
+    ]["observed_metrics"]
+    if (
+        metabolic_program_metrics["cycle_count"] != 4
+        or metabolic_program_metrics["cycle_with_structural_surface_count"] != 4
+        or metabolic_program_metrics["gate_count"] != 38
+        or metabolic_program_metrics["satisfied_gate_count"] != 7
+        or metabolic_program_metrics[
+            "quantitative_execution_ready_cycle_count"
+        ]
+        != 0
+        or metabolic_program_metrics["predictive_ready_cycle_count"] != 0
+        or metabolic_program_metrics["runtime_coupling_ready_cycle_count"] != 0
+        or metabolic_program_metrics[
+            "cross_cycle_runtime_ready_cycle_count"
+        ]
+        != 0
+        or metabolic_program_metrics["shared_edge_count"] != 5
+        or metabolic_program_metrics["edge_operator_count"] != 35
+        or metabolic_program_metrics["coupled_edge_count"] != 0
+        or metabolic_program_metrics[
+            "automatic_parameter_activation_count"
+        ]
+        != 0
+        or metabolic_program_metrics["automatic_state_coupling_count"] != 0
+    ):
+        raise ValueError("four-cycle metabolic authority graph changed")
     archive_metrics = by_id["durable_experiment_run_archive"]["observed_metrics"]
     if (
         archive_metrics["transactional_storage_backend_count"] != 1

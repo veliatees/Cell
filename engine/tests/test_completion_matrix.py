@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 58
-    assert summary["closed_count"] == 33
+    assert summary["entry_count"] == 59
+    assert summary["closed_count"] == 34
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 15
     assert summary["external_action_required_count"] == 1
@@ -55,6 +55,25 @@ def test_experiment_archive_is_closed_only_as_operational_infrastructure() -> No
     assert metrics["counterfactual_fork_primitive_count"] == 1
     assert metrics["automatic_biological_parameter_activation_count"] == 0
     assert metrics["predictive_authority"] is False
+
+
+def test_four_cycle_graph_is_closed_only_as_a_fail_closed_authority_surface() -> None:
+    matrix = build_hepatocyte_completion_matrix()
+    entries = {entry["id"]: entry for entry in matrix["entries"]}
+    program = entries["four_cycle_metabolic_authority_graph"]
+    metrics = program["observed_metrics"]
+
+    assert program["status"] == "closed"
+    assert metrics["cycle_count"] == 4
+    assert metrics["cycle_with_structural_surface_count"] == 4
+    assert metrics["quantitative_execution_ready_cycle_count"] == 0
+    assert metrics["predictive_ready_cycle_count"] == 0
+    assert metrics["runtime_coupling_ready_cycle_count"] == 0
+    assert metrics["cross_cycle_runtime_ready_cycle_count"] == 0
+    assert metrics["shared_edge_count"] == 5
+    assert metrics["coupled_edge_count"] == 0
+    assert metrics["automatic_parameter_activation_count"] == 0
+    assert metrics["automatic_state_coupling_count"] == 0
 
 
 def test_legacy_calibration_is_closed_only_as_a_fixture_score_firewall() -> None:

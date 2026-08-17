@@ -291,8 +291,8 @@
     "unregistered_evidence_gated_scope_ids": [],
     "orphan_evidence_target_ids": [],
     "summary": {
-      "declared_scope_count": 57,
-      "closed_scope_count": 32,
+      "declared_scope_count": 58,
+      "closed_scope_count": 33,
       "evidence_gated_scope_count": 23,
       "registered_evidence_gated_scope_count": 23,
       "unregistered_evidence_gated_scope_count": 0,
@@ -1813,7 +1813,7 @@
         "production_manifest_gate_count": 1,
         "initial_js_chunk_count": 2,
         "initial_js_raw_bytes": 919022,
-        "initial_js_gzip_bytes": 251533,
+        "initial_js_gzip_bytes": 251532,
         "maximum_initial_js_raw_bytes": 980000,
         "maximum_initial_js_gzip_bytes": 275000,
         "required_deferred_entry_count": 6,
@@ -1899,6 +1899,34 @@
       ]
     },
     {
+      "id": "four_cycle_metabolic_authority_graph",
+      "title": "Four-cycle metabolic dependency and authority graph",
+      "status": "closed",
+      "scope": "Machine-checked readiness and cross-cycle coupling authority for glucose/glycogen, CYP/APAP/redox injury, polarized transport/bile flux and urea/ammonia/Human-GEM dFBA; no kinetic or predictive claim.",
+      "current_capability": "All four workstreams and five causal interfaces are now classified through quantitative-execution, prediction and authoritative runtime gates. Existing topology, assay and solver progress remains visible, while missing compartment, unit/scale, time, donor-context, transfer-law and uncertainty operators keep every biological execution path closed.",
+      "observed_metrics": {
+        "cycle_count": 4,
+        "cycle_with_structural_surface_count": 4,
+        "gate_count": 38,
+        "satisfied_gate_count": 7,
+        "quantitative_execution_ready_cycle_count": 0,
+        "predictive_ready_cycle_count": 0,
+        "runtime_coupling_ready_cycle_count": 0,
+        "cross_cycle_runtime_ready_cycle_count": 0,
+        "shared_edge_count": 5,
+        "edge_operator_count": 35,
+        "coupled_edge_count": 0,
+        "automatic_parameter_activation_count": 0,
+        "automatic_state_coupling_count": 0
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "data/validation/hepatocyte_metabolic_cycle_program.v1.json",
+        "engine/cell_engine/validation/metabolic_cycle_program.py",
+        "engine/tests/test_metabolic_cycle_program.py"
+      ]
+    },
+    {
       "id": "independent_scientific_validation",
       "title": "Independent scientific and software validation",
       "status": "external_action_required",
@@ -1929,7 +1957,7 @@
       "scope": "Machine-checkable classification of every declared non-closed scope as exact external evidence intake, external action, or an explicitly inapplicable representation.",
       "current_capability": "All 23 evidence-gated scopes map to validated fail-closed delivery contracts; the independent-validation scope remains external and one molecular-scale representation remains explicitly inapplicable. This closes only responsible code work possible before new evidence arrives, not the hepatocyte model or digital twin.",
       "observed_metrics": {
-        "declared_scope_count_before_boundary": 57,
+        "declared_scope_count_before_boundary": 58,
         "evidence_gated_scope_count": 23,
         "registered_evidence_gated_scope_count": 23,
         "unregistered_evidence_gated_scope_count": 0,
@@ -1953,8 +1981,8 @@
     }
   ],
   "summary": {
-    "entry_count": 58,
-    "closed_count": 33,
+    "entry_count": 59,
+    "closed_count": 34,
     "partial_count": 8,
     "blocked_missing_evidence_count": 15,
     "external_action_required_count": 1,

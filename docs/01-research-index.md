@@ -183,6 +183,9 @@ linked to its dependencies.
 - Transactional, hash-chained whole-cell experiment archive with bit-identical
   resume and checkpoint-anchored counterfactual forks:
   `milestones/173-durable-experiment-run-archive-v1.md`
+- Four-cycle glucose/APAP/transport/urea dependency and authority graph with
+  fail-closed quantitative, predictive and cross-cycle coupling gates:
+  `milestones/175-four-cycle-metabolic-authority-graph-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

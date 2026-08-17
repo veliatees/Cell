@@ -111,6 +111,18 @@ class ScientificModelAuditTests(unittest.TestCase):
             by_id["software_completion_boundary"].default_snapshot_role,
             "repository_engineering_handoff_audit",
         )
+        self.assertEqual(
+            by_id["hepatocyte_metabolic_cycle_program"].default_snapshot_role,
+            "four_cycle_dependency_and_authority_firewall",
+        )
+        self.assertIs(
+            by_id["hepatocyte_metabolic_cycle_program"].drives_scientific_validation,
+            True,
+        )
+        self.assertIn(
+            "all four quantitative execution paths",
+            by_id["hepatocyte_metabolic_cycle_program"].limitations.lower(),
+        )
         self.assertIn(
             "not scientific model completion",
             by_id["software_completion_boundary"].limitations.lower(),

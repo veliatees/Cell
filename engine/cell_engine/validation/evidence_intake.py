@@ -330,7 +330,7 @@ def evidence_intake_snapshot(root: Path = DEFAULT_INCOMING_BUNDLE_ROOT) -> dict[
             "automatic_parameter_activation": False,
             "authoritative_coupling_enabled": False,
             "blockers": [
-                "The requested nine-file Claude Science bundle has not been delivered.",
+                "The requested nine-file external evidence bundle has not been delivered.",
                 "External evidence cannot alter parameters before structural audit and manual primary-source review.",
             ],
         }

@@ -2596,6 +2596,28 @@ describe("engine snapshot client", () => {
       expect(result.summary.cytosolTransport?.solver_layers.conservative_passive_scalar_kernel.moving_domain_mass_conservation_tested).toBe(true);
       expect(result.summary.cytosolTransport?.summary.conservative_moving_domain_remap_count).toBe(1);
       expect(result.summary.metabolicConstraintShell?.version).toBe("metabolic_constraint_shell_v14");
+      expect(result.summary.hepatocyteMetabolicCycleProgram?.version).toBe(
+        "hepatocyte_metabolic_cycle_program_v1"
+      );
+      expect(
+        result.summary.hepatocyteMetabolicCycleProgram?.summary.cycle_count
+      ).toBe(4);
+      expect(
+        result.summary.hepatocyteMetabolicCycleProgram?.summary
+          .quantitative_execution_ready_cycle_count
+      ).toBe(0);
+      expect(
+        result.summary.hepatocyteMetabolicCycleProgram?.summary
+          .predictive_ready_cycle_count
+      ).toBe(0);
+      expect(
+        result.summary.hepatocyteMetabolicCycleProgram?.summary
+          .coupled_edge_count
+      ).toBe(0);
+      expect(
+        result.summary.hepatocyteMetabolicCycleProgram
+          ?.automatic_state_coupling
+      ).toBe(false);
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.model_version).toBe("2.0.0");
       expect(result.summary.metabolicConstraintShell?.candidate_reconstruction.release_commit)
         .toBe("635f533152dc5f7290ce04d12700eaa882273c3e");
@@ -2697,8 +2719,8 @@ describe("engine snapshot client", () => {
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.delivered_bundle_count).toBe(0);
       expect(result.summary.metabolicConstraintShell?.phh_execution_bundle_intake.runtime_flux_coupling_allowed).toBe(false);
       expect(result.summary.metabolicConstraintShell?.gates.fba_execution_allowed).toBe(false);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(58);
-      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(33);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.entry_count).toBe(59);
+      expect(result.summary.hepatocyteCompletionMatrix?.summary.closed_count).toBe(34);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.partial_count).toBe(8);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.blocked_missing_evidence_count).toBe(15);
       expect(result.summary.hepatocyteCompletionMatrix?.summary.biological_accuracy_pct).toBeNull();

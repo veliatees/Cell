@@ -1,6 +1,6 @@
 # Milestone 056 - Human Evidence Intake + Validation Protocol v1
 
-This milestone prepares the engine to receive the requested Claude Science
+This milestone prepares the engine to receive the requested external evidence
 delivery without allowing an external research summary to become biology merely
 because it contains plausible numbers. It also turns the existing healthy-human
 mixed-meal observations into a scale-matched validation protocol.

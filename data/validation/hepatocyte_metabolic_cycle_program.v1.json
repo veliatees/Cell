@@ -1,0 +1,289 @@
+{
+  "schema_version": "cell.hepatocyte-metabolic-cycle-program.v1",
+  "program_id": "hepatocyte_metabolic_cycle_program_v1",
+  "date_verified": "2026-08-17",
+  "scientific_authority": false,
+  "automatic_parameter_activation": false,
+  "automatic_state_coupling": false,
+  "cycle_order": [
+    "glucose_glycogen_control",
+    "cyp_apap_redox_injury",
+    "polarized_transport_bile_flux",
+    "urea_ammonia_human_gem"
+  ],
+  "cycles": [
+    {
+      "id": "glucose_glycogen_control",
+      "label": "Hepatic glucose, glycolysis, gluconeogenesis and glycogen control",
+      "scope": "Single-PHH glucose and glycogen reaction topology, kinetic transfer, calibration and validation.",
+      "target_components": [
+        "glucose transport and phosphorylation",
+        "glycolysis",
+        "gluconeogenesis",
+        "glycogen synthesis and breakdown",
+        "hormonal control"
+      ],
+      "surface_ids": [
+        "exact_glucose_homeostasis",
+        "kinetic_transfer",
+        "glucose_calibration_validation"
+      ],
+      "gate_ids": {
+        "quantitative_execution": [
+          "glucose_topology_audited",
+          "glucose_transfer_equations_exact",
+          "glucose_single_cell_scale_ready",
+          "glucose_fit_identifiability_ready",
+          "glucose_independent_evidence_review_ready"
+        ],
+        "prediction": [
+          "glucose_independent_validation_ready"
+        ],
+        "runtime_coupling": [
+          "glucose_authoritative_state_coupling_ready"
+        ]
+      }
+    },
+    {
+      "id": "cyp_apap_redox_injury",
+      "label": "CYP450 detoxification, glutathione redox defence and APAP injury",
+      "scope": "Single-PHH CYP-dependent APAP disposition, NAPQI competition, compartmental redox failure and injury-state transition.",
+      "target_components": [
+        "CYP-dependent APAP oxidation",
+        "safe conjugation",
+        "NAPQI and glutathione competition",
+        "mitochondrial permeability transition",
+        "injury and leakage-marker trajectories"
+      ],
+      "surface_ids": [
+        "phh_cyp_function",
+        "compartmental_energy_redox",
+        "phh_injury_validation",
+        "legacy_detox_fixture"
+      ],
+      "gate_ids": {
+        "quantitative_execution": [
+          "apap_competing_pathway_topology_ready",
+          "cyp_function_observation_surface_ready",
+          "apap_compartmental_redox_topology_ready",
+          "apap_donor_trajectory_ready",
+          "apap_kinetics_calibrated",
+          "apap_mpt_injury_law_ready",
+          "apap_independent_evidence_review_ready"
+        ],
+        "prediction": [
+          "apap_independent_validation_ready"
+        ],
+        "runtime_coupling": [
+          "apap_authoritative_state_coupling_ready"
+        ]
+      }
+    },
+    {
+      "id": "polarized_transport_bile_flux",
+      "label": "Polarized membrane transport, surface density and bile flux",
+      "scope": "Sinusoidal and canalicular transporter identity, active surface abundance, local geometry, driving forces and vectorial flux.",
+      "target_components": [
+        "BSEP",
+        "MRP2",
+        "NTCP",
+        "GLUT2",
+        "OATP1B1",
+        "OATP1B3"
+      ],
+      "surface_ids": [
+        "phh_transporter_inventory",
+        "phh_biliary_excretion",
+        "human_sch_bile_acids"
+      ],
+      "gate_ids": {
+        "quantitative_execution": [
+          "polarized_target_inventory_ready",
+          "transporter_total_abundance_observed",
+          "transporter_surface_density_ready",
+          "transporter_active_copy_ready",
+          "canalicular_geometry_coupling_ready",
+          "transporter_flux_fit_ready",
+          "bile_driving_gradient_ready",
+          "transporter_energy_coupling_ready",
+          "transport_independent_evidence_review_ready"
+        ],
+        "prediction": [
+          "transport_independent_validation_ready"
+        ],
+        "runtime_coupling": [
+          "transport_authoritative_state_coupling_ready"
+        ]
+      }
+    },
+    {
+      "id": "urea_ammonia_human_gem",
+      "label": "Urea-cycle ammonia clearance and Human-GEM dynamic FBA",
+      "scope": "Single-PHH urea-cycle kinetics embedded in a context-specific, measured-boundary Human-GEM dynamic constraint model.",
+      "target_components": [
+        "CPS1",
+        "OTC",
+        "ASS1",
+        "ASL",
+        "ARG1",
+        "Human-GEM v2.0.0",
+        "dynamic FBA update law"
+      ],
+      "surface_ids": [
+        "legacy_urea_cycle_fixture",
+        "metabolic_constraint_shell",
+        "phh_metabolic_execution_bundle"
+      ],
+      "gate_ids": {
+        "quantitative_execution": [
+          "urea_cycle_topology_ready",
+          "urea_cycle_kinetics_ready",
+          "human_gem_artifact_and_solver_ready",
+          "healthy_phh_context_model_ready",
+          "measured_exchange_bounds_ready",
+          "measured_phh_objective_ready",
+          "human_gem_single_cell_scale_ready",
+          "dynamic_fba_update_law_ready",
+          "human_gem_independent_evidence_review_ready"
+        ],
+        "prediction": [
+          "human_gem_independent_flux_validation_ready"
+        ],
+        "runtime_coupling": [
+          "urea_dfba_authoritative_state_coupling_ready"
+        ]
+      }
+    }
+  ],
+  "shared_edges": [
+    {
+      "id": "glut2_glucose_exchange",
+      "endpoint_cycle_ids": [
+        "glucose_glycogen_control",
+        "polarized_transport_bile_flux"
+      ],
+      "direction": "bidirectional_state_constraint",
+      "shared_state_ids": [
+        "glucose_sinusoid",
+        "glucose_cytosol",
+        "GLUT2_surface_active"
+      ],
+      "required_operator_ids": [
+        "shared_state_identity",
+        "compartment_mapping",
+        "unit_and_scale_operator",
+        "time_alignment_operator",
+        "donor_context_match",
+        "transfer_or_conservation_law",
+        "uncertainty_propagation"
+      ]
+    },
+    {
+      "id": "glucose_redox_apap",
+      "endpoint_cycle_ids": [
+        "glucose_glycogen_control",
+        "cyp_apap_redox_injury"
+      ],
+      "direction": "bidirectional_state_constraint",
+      "shared_state_ids": [
+        "glucose_6_phosphate_cytosol",
+        "ATP_cytosol",
+        "NADPH_cytosol",
+        "GSH_cytosol",
+        "ROS_cytosol"
+      ],
+      "required_operator_ids": [
+        "shared_state_identity",
+        "compartment_mapping",
+        "unit_and_scale_operator",
+        "time_alignment_operator",
+        "donor_context_match",
+        "transfer_or_conservation_law",
+        "uncertainty_propagation"
+      ]
+    },
+    {
+      "id": "apap_biliary_export",
+      "endpoint_cycle_ids": [
+        "cyp_apap_redox_injury",
+        "polarized_transport_bile_flux"
+      ],
+      "direction": "bidirectional_state_constraint",
+      "shared_state_ids": [
+        "APAP_conjugates_cytosol",
+        "MRP2_surface_active",
+        "ATP_cytosol",
+        "GSH_cytosol",
+        "canalicular_export_flux"
+      ],
+      "required_operator_ids": [
+        "shared_state_identity",
+        "compartment_mapping",
+        "unit_and_scale_operator",
+        "time_alignment_operator",
+        "donor_context_match",
+        "transfer_or_conservation_law",
+        "uncertainty_propagation"
+      ]
+    },
+    {
+      "id": "glucose_urea_energy_carbon",
+      "endpoint_cycle_ids": [
+        "glucose_glycogen_control",
+        "urea_ammonia_human_gem"
+      ],
+      "direction": "bidirectional_state_constraint",
+      "shared_state_ids": [
+        "ATP_cytosol",
+        "ADP_cytosol",
+        "AMP_cytosol",
+        "fumarate",
+        "aspartate"
+      ],
+      "required_operator_ids": [
+        "shared_state_identity",
+        "compartment_mapping",
+        "unit_and_scale_operator",
+        "time_alignment_operator",
+        "donor_context_match",
+        "transfer_or_conservation_law",
+        "uncertainty_propagation"
+      ]
+    },
+    {
+      "id": "urea_system_boundary",
+      "endpoint_cycle_ids": [
+        "urea_ammonia_human_gem",
+        "polarized_transport_bile_flux"
+      ],
+      "direction": "bidirectional_state_constraint",
+      "shared_state_ids": [
+        "ammonia_sinusoid",
+        "ammonia_cytosol",
+        "urea_cytosol",
+        "urea_sinusoid",
+        "ATP_cytosol"
+      ],
+      "required_operator_ids": [
+        "shared_state_identity",
+        "compartment_mapping",
+        "unit_and_scale_operator",
+        "time_alignment_operator",
+        "donor_context_match",
+        "transfer_or_conservation_law",
+        "uncertainty_propagation"
+      ]
+    }
+  ],
+  "policy": {
+    "all_quantitative_gates_required": true,
+    "prediction_requires_quantitative_execution": true,
+    "runtime_coupling_requires_prediction": true,
+    "cross_cycle_runtime_requires_all_incident_edges": true,
+    "edge_requires_all_declared_operators": true,
+    "missing_evidence_fails_closed": true,
+    "shared_name_is_not_a_coupling_law": true,
+    "automatic_parameter_activation": false,
+    "automatic_state_coupling": false
+  }
+}

@@ -11,7 +11,7 @@
     },
     "sources": "SABIO-RK (h-its.org) wildtype entries filtered to pH 6.5-8.5 where available; primary literature via PubMed; BRENDA cross-check",
     "curated": "2025",
-    "_provenance": "Produced by the user's Claude Science research pass. Persisted verbatim as source-of-record. Folded into engine kinetics + expression-coupled urea cycle."
+    "_provenance": "Imported as an unverified external literature-curation artifact and preserved as its source-of-record. Engine transfer requires independent primary-source, equation, unit, compartment and context review."
   },
   "enzymes": [
     { "id": "gck", "gene": "GCK", "ec": "2.7.1.2", "pathway": "glycolysis", "kcat_per_s": {"typical": 48, "range": [48, 63]}, "substrate": "glucose", "km_M": {"typical": 0.008, "range": [0.006, 0.0085]}, "hill": 1.7, "cosubstrate": "ATP (Mg2+-ATP)", "cosubstrate_km_M": 0.0004, "organism": "human", "estimateQuality": "measured", "source": "Matschinsky et al., Front Physiol 2019 (PMC6435959); Molnes et al., FEBS J 2008", "note": "S0.5(glucose)~8 mM sigmoidal (nH~1.7); Km(Mg2+-ATP)~0.4 mM; monomeric; kcat 48-63/s." },
