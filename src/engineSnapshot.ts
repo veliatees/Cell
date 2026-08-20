@@ -2070,7 +2070,7 @@ export type EngineCytosolTransport = {
 };
 
 export type EngineMetabolicConstraintShell = {
-  version: "metabolic_constraint_shell_v14";
+  version: "metabolic_constraint_shell_v15";
   status: string;
   role: string;
   candidate_reconstruction: {
@@ -2389,6 +2389,41 @@ export type EngineMetabolicConstraintShell = {
     biological_objective_selected: false;
     measured_exchange_bounds_loaded: false;
     biological_flux_authority: false;
+  };
+  generic_dynamic_fba_numerics: {
+    version: "dynamic_fba_boundary_numerics_v1";
+    status: "generic_event_driven_amount_balance_kernel_ready";
+    equation: string;
+    canonical_units: {
+      external_amount: "fmol";
+      cell_exchange_flux: "fmol_per_cell_h";
+      noncell_boundary_rate: "fmol_per_h";
+      time: "h";
+    };
+    sign_convention: string;
+    event_policy: string;
+    analytic_fixtures: { id: string; passed: true }[];
+    summary: {
+      registered_dynamic_fba_update_law_count: 1;
+      analytic_fixture_count: number;
+      analytic_fixture_pass_count: number;
+      amount_balance_residual_check_count: number;
+      exchange_pair_ledger_check_count: number;
+      depletion_event_fixture_count: number;
+      open_boundary_fixture_count: number;
+      permutation_invariance_fixture_count: number;
+    };
+    generic_dynamic_update_kernel_ready: true;
+    external_amount_balance_verified: true;
+    positivity_preserving_event_stepper_ready: true;
+    flux_rescaling_allowed: false;
+    automatic_unit_conversion: false;
+    human_gem_loaded: false;
+    healthy_phh_context_loaded: false;
+    measured_exchange_bounds_loaded: false;
+    biological_flux_authority: false;
+    runtime_state_coupling_allowed: false;
+    blockers: string[];
   };
   context_extraction_kernel: {
     version: "fastcore_context_kernel_v2";

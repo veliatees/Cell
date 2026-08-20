@@ -430,6 +430,7 @@ def _build_gate_assessments(
         "sparse_fbc_loader_audit"
     ]
     human_gem_numerics = human_gem["generic_constraint_numerics"]
+    dynamic_fba_numerics = human_gem["generic_dynamic_fba_numerics"]
     human_gem_bundle = human_gem["phh_execution_bundle_intake"]
     evidence_readiness = phh_evidence_readiness_snapshot()
     evidence_by_id = {item["id"]: item for item in evidence_readiness["entries"]}
@@ -1066,16 +1067,47 @@ def _build_gate_assessments(
         make(
             "urea_ammonia_human_gem",
             "dynamic_fba_update_law_ready",
-            False,
-            "metabolic_cycle_program",
-            "A registered mass-conserving law must update extracellular state, bounds and intracellular pools over time.",
+            bool(dynamic_fba_numerics["generic_dynamic_update_kernel_ready"])
+            and bool(dynamic_fba_numerics["external_amount_balance_verified"])
+            and bool(
+                dynamic_fba_numerics[
+                    "positivity_preserving_event_stepper_ready"
+                ]
+            )
+            and dynamic_fba_numerics["summary"][
+                "registered_dynamic_fba_update_law_count"
+            ]
+            == 1,
+            "metabolic_constraint_shell.generic_dynamic_fba_numerics",
+            "A registered amount-balanced event law must update canonical external pools and stop for re-optimization at depletion.",
             {
-                "registered_dynamic_fba_update_law_count": 0,
+                "registered_dynamic_fba_update_law_count": (
+                    dynamic_fba_numerics["summary"][
+                        "registered_dynamic_fba_update_law_count"
+                    ]
+                ),
+                "analytic_fixture_pass_count": dynamic_fba_numerics[
+                    "summary"
+                ]["analytic_fixture_pass_count"],
+                "external_amount_balance_verified": dynamic_fba_numerics[
+                    "external_amount_balance_verified"
+                ],
+                "positivity_preserving_event_stepper_ready": (
+                    dynamic_fba_numerics[
+                        "positivity_preserving_event_stepper_ready"
+                    ]
+                ),
+                "automatic_unit_conversion": dynamic_fba_numerics[
+                    "automatic_unit_conversion"
+                ],
+                "biological_flux_authority": dynamic_fba_numerics[
+                    "biological_flux_authority"
+                ],
                 "static_fba_execution_allowed": human_gem["gates"][
                     "fba_execution_allowed"
                 ],
             },
-            "No quantitative dynamic-FBA state/boundary update law is registered.",
+            "The generic dynamic-FBA amount-balance kernel is unavailable.",
         ),
         make(
             "urea_ammonia_human_gem",

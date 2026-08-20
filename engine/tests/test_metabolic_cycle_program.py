@@ -50,7 +50,7 @@ def test_current_program_reports_real_structural_progress_but_zero_execution(
         "cycle_count": 4,
         "cycle_with_structural_surface_count": 4,
         "gate_count": 38,
-        "satisfied_gate_count": 7,
+        "satisfied_gate_count": 8,
         "quantitative_execution_ready_cycle_count": 0,
         "predictive_ready_cycle_count": 0,
         "runtime_coupling_ready_cycle_count": 0,
@@ -147,7 +147,14 @@ def test_urea_human_gem_gate_separates_solver_from_phh_dfba(
     ] == 0
     assert gates["dynamic_fba_update_law_ready"]["observed"][
         "registered_dynamic_fba_update_law_count"
-    ] == 0
+    ] == 1
+    assert gates["dynamic_fba_update_law_ready"]["satisfied"] is True
+    assert gates["dynamic_fba_update_law_ready"]["observed"][
+        "automatic_unit_conversion"
+    ] is False
+    assert gates["dynamic_fba_update_law_ready"]["observed"][
+        "biological_flux_authority"
+    ] is False
     assert gates["human_gem_independent_evidence_review_ready"][
         "satisfied"
     ] is False

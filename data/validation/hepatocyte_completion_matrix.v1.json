@@ -291,8 +291,8 @@
     "unregistered_evidence_gated_scope_ids": [],
     "orphan_evidence_target_ids": [],
     "summary": {
-      "declared_scope_count": 58,
-      "closed_scope_count": 33,
+      "declared_scope_count": 59,
+      "closed_scope_count": 34,
       "evidence_gated_scope_count": 23,
       "registered_evidence_gated_scope_count": 23,
       "unregistered_evidence_gated_scope_count": 0,
@@ -1636,6 +1636,33 @@
       ]
     },
     {
+      "id": "generic_dynamic_fba_boundary_numerics",
+      "title": "Generic dynamic-FBA boundary numerical kernel",
+      "status": "closed",
+      "scope": "Event-driven external-pool amount-balance software verification in canonical fmol and hours; no PHH flux, objective or state-coupling claim.",
+      "current_capability": "A fixed-flux interval applies explicit cellular exchange and non-cellular boundary ledgers, advances only to the earliest pool-depletion event, preserves nonnegative amounts and requires re-optimization before continuation. Six analytic fixtures verify uptake, secretion, simultaneous depletion, open-boundary cancellation and permutation invariance without flux rescaling or automatic unit conversion.",
+      "observed_metrics": {
+        "registered_dynamic_fba_update_law_count": 1,
+        "analytic_fixture_count": 6,
+        "analytic_fixture_pass_count": 6,
+        "depletion_event_fixture_count": 2,
+        "open_boundary_fixture_count": 1,
+        "generic_dynamic_update_kernel_ready": true,
+        "external_amount_balance_verified": true,
+        "positivity_preserving_event_stepper_ready": true,
+        "flux_rescaling_allowed": false,
+        "automatic_unit_conversion": false,
+        "human_gem_loaded": false,
+        "biological_flux_authority": false,
+        "runtime_state_coupling_allowed": false
+      },
+      "remaining_requirements": [],
+      "code_surfaces": [
+        "engine/cell_engine/quantitative/dynamic_fba_numerics.py",
+        "engine/tests/test_dynamic_fba_numerics.py"
+      ]
+    },
+    {
       "id": "fastcore_context_extraction_numerics",
       "title": "FASTCORE context-extraction numerical kernel",
       "status": "closed",
@@ -1908,7 +1935,7 @@
         "cycle_count": 4,
         "cycle_with_structural_surface_count": 4,
         "gate_count": 38,
-        "satisfied_gate_count": 7,
+        "satisfied_gate_count": 8,
         "quantitative_execution_ready_cycle_count": 0,
         "predictive_ready_cycle_count": 0,
         "runtime_coupling_ready_cycle_count": 0,
@@ -1957,7 +1984,7 @@
       "scope": "Machine-checkable classification of every declared non-closed scope as exact external evidence intake, external action, or an explicitly inapplicable representation.",
       "current_capability": "All 23 evidence-gated scopes map to validated fail-closed delivery contracts; the independent-validation scope remains external and one molecular-scale representation remains explicitly inapplicable. This closes only responsible code work possible before new evidence arrives, not the hepatocyte model or digital twin.",
       "observed_metrics": {
-        "declared_scope_count_before_boundary": 58,
+        "declared_scope_count_before_boundary": 59,
         "evidence_gated_scope_count": 23,
         "registered_evidence_gated_scope_count": 23,
         "unregistered_evidence_gated_scope_count": 0,
@@ -1981,8 +2008,8 @@
     }
   ],
   "summary": {
-    "entry_count": 59,
-    "closed_count": 34,
+    "entry_count": 60,
+    "closed_count": 35,
     "partial_count": 8,
     "blocked_missing_evidence_count": 15,
     "external_action_required_count": 1,

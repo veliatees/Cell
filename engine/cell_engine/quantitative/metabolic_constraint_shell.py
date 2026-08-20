@@ -16,6 +16,10 @@ from cell_engine.quantitative.constraint_numerics import (
     constraint_numerics_snapshot,
     validate_constraint_numerics_snapshot,
 )
+from cell_engine.quantitative.dynamic_fba_numerics import (
+    dynamic_fba_numerics_snapshot,
+    validate_dynamic_fba_numerics_snapshot,
+)
 from cell_engine.quantitative.human_gem_structural_audit import (
     load_committed_human_gem_audit,
 )
@@ -74,7 +78,7 @@ from cell_engine.quantitative.phh_metabolic_execution_bundle import (
 
 
 DATE_VERIFIED = "2026-07-26"
-VERSION = "metabolic_constraint_shell_v14"
+VERSION = "metabolic_constraint_shell_v15"
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "data/published_models/human_gem_v2.0.0.manifest.json"
 
@@ -210,6 +214,8 @@ def _build_metabolic_constraint_shell_snapshot() -> dict[str, object]:
     counts = manifest["structural_counts_verified_from_sbml"]
     numerics = constraint_numerics_snapshot()
     validate_constraint_numerics_snapshot(numerics)
+    dynamic_numerics = dynamic_fba_numerics_snapshot()
+    validate_dynamic_fba_numerics_snapshot(dynamic_numerics)
     context_kernel = fastcore_context_snapshot()
     validate_fastcore_context_snapshot(context_kernel)
     execution_bundle = phh_metabolic_execution_bundle_intake_snapshot()
@@ -1153,6 +1159,7 @@ def _build_metabolic_constraint_shell_snapshot() -> dict[str, object]:
             "proteome_input": None,
         },
         "generic_constraint_numerics": numerics,
+        "generic_dynamic_fba_numerics": dynamic_numerics,
         "context_extraction_kernel": context_kernel,
         "phh_execution_bundle_intake": execution_bundle,
         "optimization_problem": {
@@ -1202,6 +1209,7 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
     optimization = payload.get("optimization_problem")
     gates = payload.get("gates")
     numerics = payload.get("generic_constraint_numerics")
+    dynamic_numerics = payload.get("generic_dynamic_fba_numerics")
     context_kernel = payload.get("context_extraction_kernel")
     execution_bundle = payload.get("phh_execution_bundle_intake")
     if not all(
@@ -1212,12 +1220,14 @@ def validate_metabolic_constraint_shell(payload: dict[str, object]) -> None:
             optimization,
             gates,
             numerics,
+            dynamic_numerics,
             context_kernel,
             execution_bundle,
         )
     ):
         raise ValueError("metabolic constraint shell is malformed")
     validate_constraint_numerics_snapshot(numerics)
+    validate_dynamic_fba_numerics_snapshot(dynamic_numerics)
     validate_fastcore_context_snapshot(context_kernel)
     validate_phh_metabolic_execution_bundle_intake_snapshot(execution_bundle)
     if any(gates.values()):

@@ -1499,7 +1499,7 @@
     "zone": "midlobular"
   },
   "metadata": {
-    "created_at_utc": "2026-08-17T15:20:57.259806+00:00",
+    "created_at_utc": "2026-08-20T21:44:50.765227+00:00",
     "definition_id": "human_hepatocyte_midlobular_v1",
     "engine": "cell-engine-python"
   },
@@ -17203,6 +17203,33 @@
         },
         {
           "code_surfaces": [
+            "engine/cell_engine/quantitative/dynamic_fba_numerics.py",
+            "engine/tests/test_dynamic_fba_numerics.py"
+          ],
+          "current_capability": "A fixed-flux interval applies explicit cellular exchange and non-cellular boundary ledgers, advances only to the earliest pool-depletion event, preserves nonnegative amounts and requires re-optimization before continuation. Six analytic fixtures verify uptake, secretion, simultaneous depletion, open-boundary cancellation and permutation invariance without flux rescaling or automatic unit conversion.",
+          "id": "generic_dynamic_fba_boundary_numerics",
+          "observed_metrics": {
+            "analytic_fixture_count": 6,
+            "analytic_fixture_pass_count": 6,
+            "automatic_unit_conversion": false,
+            "biological_flux_authority": false,
+            "depletion_event_fixture_count": 2,
+            "external_amount_balance_verified": true,
+            "flux_rescaling_allowed": false,
+            "generic_dynamic_update_kernel_ready": true,
+            "human_gem_loaded": false,
+            "open_boundary_fixture_count": 1,
+            "positivity_preserving_event_stepper_ready": true,
+            "registered_dynamic_fba_update_law_count": 1,
+            "runtime_state_coupling_allowed": false
+          },
+          "remaining_requirements": [],
+          "scope": "Event-driven external-pool amount-balance software verification in canonical fmol and hours; no PHH flux, objective or state-coupling claim.",
+          "status": "closed",
+          "title": "Generic dynamic-FBA boundary numerical kernel"
+        },
+        {
+          "code_surfaces": [
             "engine/cell_engine/quantitative/fastcore_context.py",
             "engine/tests/test_fastcore_context.py"
           ],
@@ -17484,7 +17511,7 @@
             "predictive_ready_cycle_count": 0,
             "quantitative_execution_ready_cycle_count": 0,
             "runtime_coupling_ready_cycle_count": 0,
-            "satisfied_gate_count": 7,
+            "satisfied_gate_count": 8,
             "shared_edge_count": 5
           },
           "remaining_requirements": [],
@@ -17529,7 +17556,7 @@
           "observed_metrics": {
             "biological_accuracy_pct": null,
             "biological_validation_complete": false,
-            "declared_scope_count_before_boundary": 58,
+            "declared_scope_count_before_boundary": 59,
             "digital_twin_predictive_authority": false,
             "evidence_gated_scope_count": 23,
             "external_action_scope_count": 1,
@@ -17829,8 +17856,8 @@
         "summary": {
           "automatic_parameter_activation_count": 0,
           "automatic_state_coupling_count": 0,
-          "closed_scope_count": 33,
-          "declared_scope_count": 58,
+          "closed_scope_count": 34,
+          "declared_scope_count": 59,
           "evidence_gated_scope_count": 23,
           "external_action_scope_count": 1,
           "inapplicable_scope_count": 1,
@@ -17853,8 +17880,8 @@
       "summary": {
         "biological_accuracy_pct": null,
         "blocked_missing_evidence_count": 15,
-        "closed_count": 34,
-        "entry_count": 59,
+        "closed_count": 35,
+        "entry_count": 60,
         "external_action_required_count": 1,
         "not_applicable_at_model_scale_count": 1,
         "partial_count": 8
@@ -18350,7 +18377,6 @@
             "No measured PHH exchange-bound set is loaded.",
             "The generic biomass objective is not an accepted healthy-PHH objective.",
             "No reviewed Human-GEM-to-single-PHH scale operator is delivered.",
-            "No quantitative dynamic-FBA state/boundary update law is registered.",
             "The PHH metabolic execution bundle has no independently approved delivery.",
             "No independent PHH flux validation record is loaded.",
             "Human-GEM fluxes cannot initialize or mutate the authoritative dynamic state."
@@ -18458,15 +18484,20 @@
               "stage": "quantitative_execution"
             },
             {
-              "blocker": "No quantitative dynamic-FBA state/boundary update law is registered.",
-              "evidence_surface": "metabolic_cycle_program",
+              "blocker": null,
+              "evidence_surface": "metabolic_constraint_shell.generic_dynamic_fba_numerics",
               "id": "dynamic_fba_update_law_ready",
               "observed": {
-                "registered_dynamic_fba_update_law_count": 0,
+                "analytic_fixture_pass_count": 6,
+                "automatic_unit_conversion": false,
+                "biological_flux_authority": false,
+                "external_amount_balance_verified": true,
+                "positivity_preserving_event_stepper_ready": true,
+                "registered_dynamic_fba_update_law_count": 1,
                 "static_fba_execution_allowed": false
               },
-              "requirement": "A registered mass-conserving law must update extracellular state, bounds and intracellular pools over time.",
-              "satisfied": false,
+              "requirement": "A registered amount-balanced event law must update canonical external pools and stop for re-optimization at depletion.",
+              "satisfied": true,
               "stage": "quantitative_execution"
             },
             {
@@ -18948,7 +18979,7 @@
         "quantitative_execution_ready_cycle_count": 0,
         "runtime_coupling_ready_cycle_count": 0,
         "satisfied_edge_operator_count": 5,
-        "satisfied_gate_count": 7,
+        "satisfied_gate_count": 8,
         "shared_edge_count": 5
       },
       "version": "hepatocyte_metabolic_cycle_program_v1"
@@ -25881,6 +25912,71 @@
         "synthetic_fva_fixture_count": 2,
         "version": "constraint_numerics_v1"
       },
+      "generic_dynamic_fba_numerics": {
+        "analytic_fixtures": [
+          {
+            "id": "finite_uptake_balance",
+            "passed": true
+          },
+          {
+            "id": "earliest_depletion_event",
+            "passed": true
+          },
+          {
+            "id": "simultaneous_depletion_event",
+            "passed": true
+          },
+          {
+            "id": "open_boundary_feed_cancellation",
+            "passed": true
+          },
+          {
+            "id": "secretion_increases_external_amount",
+            "passed": true
+          },
+          {
+            "id": "permutation_invariant_aggregation",
+            "passed": true
+          }
+        ],
+        "automatic_unit_conversion": false,
+        "biological_flux_authority": false,
+        "blockers": [
+          "no healthy-PHH context model or measured exchange-bound trajectory is loaded",
+          "no reviewed Human-GEM-to-fmol/cell/h scale operator is loaded",
+          "no donor-resolved objective or independent dynamic flux validation is loaded",
+          "the generic update kernel cannot mutate authoritative cell state"
+        ],
+        "canonical_units": {
+          "cell_exchange_flux": "fmol_per_cell_h",
+          "external_amount": "fmol",
+          "noncell_boundary_rate": "fmol_per_h",
+          "time": "h"
+        },
+        "equation": "n_i_next = n_i + dt * (b_i + N * sum_r(nu_ir * v_r))",
+        "event_policy": "advance to the earliest nonnegative-pool depletion event and require FBA re-solve",
+        "external_amount_balance_verified": true,
+        "flux_rescaling_allowed": false,
+        "generic_dynamic_update_kernel_ready": true,
+        "healthy_phh_context_loaded": false,
+        "human_gem_loaded": false,
+        "measured_exchange_bounds_loaded": false,
+        "positivity_preserving_event_stepper_ready": true,
+        "runtime_state_coupling_allowed": false,
+        "sign_convention": "positive nu_ir * v_r adds amount to the external pool; negative removes it",
+        "status": "generic_event_driven_amount_balance_kernel_ready",
+        "summary": {
+          "amount_balance_residual_check_count": 6,
+          "analytic_fixture_count": 6,
+          "analytic_fixture_pass_count": 6,
+          "depletion_event_fixture_count": 2,
+          "exchange_pair_ledger_check_count": 6,
+          "open_boundary_fixture_count": 1,
+          "permutation_invariance_fixture_count": 1,
+          "registered_dynamic_fba_update_law_count": 1
+        },
+        "version": "dynamic_fba_boundary_numerics_v1"
+      },
       "hepatocyte_context": {
         "donor_or_cohort": null,
         "extraction_algorithm": null,
@@ -25939,7 +26035,7 @@
         "fast_gap_filling"
       ],
       "status": "generic_human_gem_loaded_classified_native_objective_solved_seven_donor_stability_FASTCORE_scaling_and_source_limited_support_repair_minimized_optima_enumerated_global_minimum_identity_space_complete_reaction_evidence_pending_PHH_execution_blocked",
-      "version": "metabolic_constraint_shell_v14"
+      "version": "metabolic_constraint_shell_v15"
     },
     "metabolic_fluxes": [
       {
@@ -86946,6 +87042,7 @@
         "membrane_topology_transition_candidate",
         "cytosol_transport_rheology_contract",
         "generic_constraint_numerics",
+        "generic_dynamic_fba_boundary_numerics",
         "human_gem_sparse_fbc_loader",
         "human_gem_generic_flux_consistency",
         "human_gem_generic_native_fba",
@@ -87895,6 +87992,15 @@
           "status": "derived"
         },
         {
+          "action": "advance canonical external-pool amounts under fixed exchange and boundary rates; stop exactly at earliest depletion, preserve nonnegative amounts and require re-optimization without flux rescaling or automatic unit conversion",
+          "default_snapshot_role": "synthetic_event_driven_amount_balance_verification_only",
+          "drives_scientific_validation": true,
+          "id": "generic_dynamic_fba_boundary_numerics",
+          "limitations": "Six analytic fixtures verify numerical amount balance and event handling only. No Human-GEM context, measured exchange bound, PHH scale bridge, biological objective, dynamic flux trajectory or authoritative state coupling is supplied.",
+          "source_ids": [],
+          "status": "derived"
+        },
+        {
           "action": "verify the pinned Human-GEM artifact before streaming SBML/FBC compartments, species, sparse stoichiometry, bounds, reversibility, objective metadata, exact gene-product labels and Boolean gene-product associations",
           "default_snapshot_role": "checksum_verified_generic_reconstruction_loader",
           "drives_scientific_validation": true,
@@ -88729,8 +88835,8 @@
       "summary": {
         "automatic_parameter_activation_count": 0,
         "automatic_state_coupling_count": 0,
-        "closed_scope_count": 33,
-        "declared_scope_count": 58,
+        "closed_scope_count": 34,
+        "declared_scope_count": 59,
         "evidence_gated_scope_count": 23,
         "external_action_scope_count": 1,
         "inapplicable_scope_count": 1,

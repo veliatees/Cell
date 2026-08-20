@@ -27,7 +27,7 @@ no fit and activates no biological runtime behavior.
 | Declared cycles | 4 |
 | Cycles with at least one real structural/observational surface | 4 |
 | Cycle gates | 38 |
-| Currently satisfied gates | 7 |
+| Currently satisfied gates | 8 |
 | Quantitatively executable cycles | 0 |
 | Predictive cycles | 0 |
 | Runtime-coupled cycles | 0 |
@@ -69,10 +69,11 @@ canalicular gradients or ATP work. Total copies therefore cannot become flux.
 
 The five-enzyme urea-cycle topology is explicit, but its executable rates are
 placeholder or lumped values. Human-GEM v2.0.0 identity, sparse loading and five
-generic solver fixtures pass. A healthy-PHH context model, measured exchange
-bounds, measured objective, single-cell scale operator, independent flux
-validation and dynamic boundary-update law are absent. A successful generic
-FBA solve therefore remains a software/structural result, not PHH dFBA.
+generic solver fixtures pass. A generic event-driven boundary update now
+preserves external amounts and stops at the first depletion event. A healthy-
+PHH context model, measured exchange bounds, measured objective, single-cell
+scale operator and independent flux validation remain absent. Generic FBA and
+boundary numerics therefore remain software/structural results, not PHH dFBA.
 
 ## Cross-cycle interfaces
 

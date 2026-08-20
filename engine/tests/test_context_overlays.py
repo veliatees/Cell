@@ -218,7 +218,7 @@ def test_checked_in_context_overlay_matrix_reconstructs_current_engine_contract(
         reconstructed = apply_context_overlay(base, overlay)
         state = reconstructed["state"]
         assert state["metabolic_constraint_shell"]["version"] == (
-            "metabolic_constraint_shell_v14"
+            "metabolic_constraint_shell_v15"
         )
         assert state["whole_cell_runtime_authority"]["version"] == (
             "whole_cell_runtime_authority_v1"

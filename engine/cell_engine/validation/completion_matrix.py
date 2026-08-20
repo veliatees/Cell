@@ -159,6 +159,7 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
     memory = cellular_memory_contract_snapshot()["summary"]
     metabolic = metabolic_constraint_shell_snapshot()
     metabolic_numerics = metabolic["generic_constraint_numerics"]
+    dynamic_fba_numerics = metabolic["generic_dynamic_fba_numerics"]
     metabolic_loader = metabolic["candidate_reconstruction"][
         "sparse_fbc_loader_audit"
     ]
@@ -2498,6 +2499,63 @@ def build_hepatocyte_completion_matrix() -> dict[str, object]:
             ),
         ),
         _entry(
+            "generic_dynamic_fba_boundary_numerics",
+            "Generic dynamic-FBA boundary numerical kernel",
+            "closed",
+            "Event-driven external-pool amount-balance software verification in canonical fmol and hours; no PHH flux, objective or state-coupling claim.",
+            "A fixed-flux interval applies explicit cellular exchange and non-cellular boundary ledgers, advances only to the earliest pool-depletion event, preserves nonnegative amounts and requires re-optimization before continuation. Six analytic fixtures verify uptake, secretion, simultaneous depletion, open-boundary cancellation and permutation invariance without flux rescaling or automatic unit conversion.",
+            {
+                "registered_dynamic_fba_update_law_count": (
+                    dynamic_fba_numerics["summary"][
+                        "registered_dynamic_fba_update_law_count"
+                    ]
+                ),
+                "analytic_fixture_count": dynamic_fba_numerics["summary"][
+                    "analytic_fixture_count"
+                ],
+                "analytic_fixture_pass_count": dynamic_fba_numerics[
+                    "summary"
+                ]["analytic_fixture_pass_count"],
+                "depletion_event_fixture_count": dynamic_fba_numerics[
+                    "summary"
+                ]["depletion_event_fixture_count"],
+                "open_boundary_fixture_count": dynamic_fba_numerics[
+                    "summary"
+                ]["open_boundary_fixture_count"],
+                "generic_dynamic_update_kernel_ready": dynamic_fba_numerics[
+                    "generic_dynamic_update_kernel_ready"
+                ],
+                "external_amount_balance_verified": dynamic_fba_numerics[
+                    "external_amount_balance_verified"
+                ],
+                "positivity_preserving_event_stepper_ready": (
+                    dynamic_fba_numerics[
+                        "positivity_preserving_event_stepper_ready"
+                    ]
+                ),
+                "flux_rescaling_allowed": dynamic_fba_numerics[
+                    "flux_rescaling_allowed"
+                ],
+                "automatic_unit_conversion": dynamic_fba_numerics[
+                    "automatic_unit_conversion"
+                ],
+                "human_gem_loaded": dynamic_fba_numerics[
+                    "human_gem_loaded"
+                ],
+                "biological_flux_authority": dynamic_fba_numerics[
+                    "biological_flux_authority"
+                ],
+                "runtime_state_coupling_allowed": dynamic_fba_numerics[
+                    "runtime_state_coupling_allowed"
+                ],
+            },
+            (),
+            (
+                "engine/cell_engine/quantitative/dynamic_fba_numerics.py",
+                "engine/tests/test_dynamic_fba_numerics.py",
+            ),
+        ),
+        _entry(
             "fastcore_context_extraction_numerics",
             "FASTCORE context-extraction numerical kernel",
             "closed",
@@ -3583,6 +3641,30 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         or generic_fba_metrics["biological_flux_authority"] is not False
     ):
         raise ValueError("generic FBA/FVA numerics escaped its software-only scope")
+    dynamic_fba_metrics = by_id[
+        "generic_dynamic_fba_boundary_numerics"
+    ]["observed_metrics"]
+    if (
+        dynamic_fba_metrics["registered_dynamic_fba_update_law_count"] != 1
+        or dynamic_fba_metrics["analytic_fixture_count"] != 6
+        or dynamic_fba_metrics["analytic_fixture_pass_count"] != 6
+        or dynamic_fba_metrics["depletion_event_fixture_count"] != 2
+        or dynamic_fba_metrics["open_boundary_fixture_count"] != 1
+        or dynamic_fba_metrics["generic_dynamic_update_kernel_ready"] is not True
+        or dynamic_fba_metrics["external_amount_balance_verified"] is not True
+        or dynamic_fba_metrics[
+            "positivity_preserving_event_stepper_ready"
+        ]
+        is not True
+        or dynamic_fba_metrics["flux_rescaling_allowed"] is not False
+        or dynamic_fba_metrics["automatic_unit_conversion"] is not False
+        or dynamic_fba_metrics["human_gem_loaded"] is not False
+        or dynamic_fba_metrics["biological_flux_authority"] is not False
+        or dynamic_fba_metrics["runtime_state_coupling_allowed"] is not False
+    ):
+        raise ValueError(
+            "generic dynamic-FBA numerics escaped its software-only scope"
+        )
     loader_metrics = by_id["human_gem_sparse_fbc_loader"]["observed_metrics"]
     if (
         loader_metrics["artifact_identity_verified_before_parse"] is not True
@@ -4308,7 +4390,7 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         raise ValueError("PHH evidence readiness preflight contract changed")
     software_metrics = by_id["software_completion_boundary"]["observed_metrics"]
     if (
-        software_metrics["declared_scope_count_before_boundary"] != 58
+        software_metrics["declared_scope_count_before_boundary"] != 59
         or software_metrics["evidence_gated_scope_count"] != 23
         or software_metrics["registered_evidence_gated_scope_count"] != 23
         or software_metrics["unregistered_evidence_gated_scope_count"] != 0
@@ -4329,7 +4411,7 @@ def validate_hepatocyte_completion_matrix(payload: dict[str, object]) -> None:
         metabolic_program_metrics["cycle_count"] != 4
         or metabolic_program_metrics["cycle_with_structural_surface_count"] != 4
         or metabolic_program_metrics["gate_count"] != 38
-        or metabolic_program_metrics["satisfied_gate_count"] != 7
+        or metabolic_program_metrics["satisfied_gate_count"] != 8
         or metabolic_program_metrics[
             "quantitative_execution_ready_cycle_count"
         ]

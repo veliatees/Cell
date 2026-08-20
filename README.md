@@ -627,6 +627,7 @@ lamina) remain useful background for polarity and barrier thinking.
 - [Milestone 173: Durable experiment run archive v1](docs/milestones/173-durable-experiment-run-archive-v1.md)
 - [Milestone 174: Hash-bound independent evidence review gate v1](docs/milestones/174-hash-bound-independent-evidence-review-gate-v1.md)
 - [Milestone 175: Four-cycle metabolic authority graph v1](docs/milestones/175-four-cycle-metabolic-authority-graph-v1.md)
+- [Milestone 176: Event-driven dynamic-FBA boundary numerics v1](docs/milestones/176-event-driven-dynamic-fba-boundary-numerics-v1.md)
 - [External scientific review dossier](docs/validation/external-review-dossier.md)
 - [External reviewer outreach](docs/validation/expert-outreach.md)
 - [One reality — coarse but grounded](docs/06-one-reality.md)

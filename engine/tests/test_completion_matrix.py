@@ -19,8 +19,8 @@ def test_completion_matrix_reports_scoped_progress_without_a_realism_percentage(
     matrix = build_hepatocyte_completion_matrix()
     validate_hepatocyte_completion_matrix(matrix)
     summary = matrix["summary"]
-    assert summary["entry_count"] == 59
-    assert summary["closed_count"] == 34
+    assert summary["entry_count"] == 60
+    assert summary["closed_count"] == 35
     assert summary["partial_count"] == 8
     assert summary["blocked_missing_evidence_count"] == 15
     assert summary["external_action_required_count"] == 1
@@ -606,6 +606,18 @@ def test_artifact_pin_is_closed_while_fba_and_reaction_activation_remain_blocked
     assert generic["observed_metrics"]["analytic_fixture_pass_count"] == 5
     assert generic["observed_metrics"]["alternate_optimum_audit_count"] == 1
     assert generic["observed_metrics"]["biological_flux_authority"] is False
+    dynamic = entries["generic_dynamic_fba_boundary_numerics"]
+    assert dynamic["status"] == "closed"
+    assert dynamic["observed_metrics"]["analytic_fixture_pass_count"] == 6
+    assert dynamic["observed_metrics"][
+        "positivity_preserving_event_stepper_ready"
+    ] is True
+    assert dynamic["observed_metrics"]["flux_rescaling_allowed"] is False
+    assert dynamic["observed_metrics"]["automatic_unit_conversion"] is False
+    assert dynamic["observed_metrics"]["biological_flux_authority"] is False
+    assert dynamic["observed_metrics"][
+        "runtime_state_coupling_allowed"
+    ] is False
     fastcore = entries["fastcore_context_extraction_numerics"]
     assert fastcore["status"] == "closed"
     assert fastcore["observed_metrics"]["synthetic_fixture_pass_count"] == 1

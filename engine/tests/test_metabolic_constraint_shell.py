@@ -9,7 +9,7 @@ from cell_engine.quantitative.metabolic_constraint_shell import (
 def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_context() -> None:
     snapshot = metabolic_constraint_shell_snapshot()
     validate_metabolic_constraint_shell(snapshot)
-    assert snapshot["version"] == "metabolic_constraint_shell_v14"
+    assert snapshot["version"] == "metabolic_constraint_shell_v15"
     reconstruction = snapshot["candidate_reconstruction"]
     assert reconstruction["model_version"] == "2.0.0"
     assert reconstruction["release_tag"] == "v2.0.0"
@@ -264,6 +264,15 @@ def test_constraint_shell_pins_artifact_but_stays_non_executable_without_phh_con
     assert numerics["analytic_fixture_pass_count"] == 5
     assert numerics["human_gem_loaded"] is False
     assert numerics["biological_flux_authority"] is False
+    dynamic_numerics = snapshot["generic_dynamic_fba_numerics"]
+    assert dynamic_numerics["summary"][
+        "registered_dynamic_fba_update_law_count"
+    ] == 1
+    assert dynamic_numerics["summary"]["analytic_fixture_pass_count"] == 6
+    assert dynamic_numerics["generic_dynamic_update_kernel_ready"] is True
+    assert dynamic_numerics["automatic_unit_conversion"] is False
+    assert dynamic_numerics["biological_flux_authority"] is False
+    assert dynamic_numerics["runtime_state_coupling_allowed"] is False
     context_kernel = snapshot["context_extraction_kernel"]
     assert context_kernel["algorithm"] == "FASTCORE"
     assert context_kernel["synthetic_fixture_pass_count"] == 1
