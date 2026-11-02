@@ -92,10 +92,12 @@ single-cell state; much of the current dynamic cell remains exploratory.
   rejects stale bases and state-surface drift. This reduces checked-in context
   artifact bytes by 84.9% without changing any biological parameter.
 - **A tested first-render bundle boundary** — the snapshot interpreter, PDB
-  parser and bloom modules are deferred behind the first scene, while Three.js
-  core is separately cacheable. The production manifest gate keeps initial
-  JavaScript below explicit raw/gzip budgets and fails if deferred modules drift
-  back into the startup graph.
+  parser and bloom modules are deferred behind the first scene, and the legacy
+  building-block simulators (water, solvation, diffusion, membrane, chemistry)
+  load only when a visitor selects one of those scenes. Three.js core is
+  separately cacheable. The production manifest gate keeps initial JavaScript
+  below explicit raw/gzip budgets and fails if deferred modules drift back into
+  the startup graph.
 - **A browser runtime workload policy** — hidden tabs and offscreen cell
   viewports suspend rendering, the dimensionless cytosol field advances on a
   tested quality-tier cadence, and total frame work can lower quality without

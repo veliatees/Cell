@@ -189,6 +189,9 @@ linked to its dependencies.
 - Event-driven dynamic-FBA external amount update with depletion events,
   exact ledgers and no automatic unit conversion or flux rescaling:
   `milestones/176-event-driven-dynamic-fba-boundary-numerics-v1.md`
+- Legacy scene simulators moved out of the initial browser graph behind cached
+  dynamic imports, with a display-only scene catalogue guarded by a parity test:
+  `milestones/177-legacy-scene-chunk-deferral-v1.md`
 - Current quantitative gap and source-transfer audit: `validation/quantitative-gap-audit-2026-07-22.md`
 - Generated external scientific review dossier: `validation/external-review-dossier.md`
 - Candidate reviewer routes and scoped outreach templates: `validation/expert-outreach.md`

@@ -28,41 +28,23 @@ import {
   type Vec3
 } from "./physics/ions";
 import { SPCE_WATER } from "./physics/constants";
+// The legacy "building blocks" simulators are only needed once a visitor selects
+// one of their scenes, so they are reached through cached dynamic imports inside
+// `loadScene`. Only their types are imported statically (erased at build time),
+// and `./physics/sceneCatalog` supplies the synchronous id/label index the scene
+// selector needs at startup.
+import type { WaterSystem, WaterScenePreset, WaterSnapshot } from "./physics/water";
+import type { SolvationScenePreset, SolvationSnapshot, SolvationSystem } from "./physics/solvation";
+import type { DiffusionScenePreset, DiffusionSnapshot, DiffusionSystem } from "./physics/diffusion";
+import type { MembraneScenePreset, MembraneSnapshot, MembraneSystem } from "./physics/membrane";
+import type { ReactionScenePreset, ReactionSnapshot, ReactionSystem } from "./physics/reactions";
 import {
-  WATER_SCENES,
-  waterSystemFromPreset,
-  type WaterSystem,
-  type WaterScenePreset,
-  type WaterSnapshot
-} from "./physics/water";
-import {
-  SOLVATION_SCENES,
-  solvationSystemFromPreset,
-  type SolvationScenePreset,
-  type SolvationSnapshot,
-  type SolvationSystem
-} from "./physics/solvation";
-import {
-  DIFFUSION_SCENES,
-  diffusionSystemFromPreset,
-  type DiffusionScenePreset,
-  type DiffusionSnapshot,
-  type DiffusionSystem
-} from "./physics/diffusion";
-import {
-  MEMBRANE_SCENES,
-  membraneSystemFromPreset,
-  type MembraneScenePreset,
-  type MembraneSnapshot,
-  type MembraneSystem
-} from "./physics/membrane";
-import {
-  REACTION_SCENES,
-  reactionSystemFromPreset,
-  type ReactionScenePreset,
-  type ReactionSnapshot,
-  type ReactionSystem
-} from "./physics/reactions";
+  DIFFUSION_SCENE_CATALOG,
+  MEMBRANE_SCENE_CATALOG,
+  REACTION_SCENE_CATALOG,
+  SOLVATION_SCENE_CATALOG,
+  WATER_SCENE_CATALOG
+} from "./physics/sceneCatalog";
 import type {
   NormalizedFixtureFlow,
   NormalizedFixtureOrganelleActivity,
@@ -200,27 +182,27 @@ const sceneOptions =
   `<option value="${PROTEIN_SCENE_ID}">Glucokinase — deposited structure (PDB 1V4S)</option>` +
   `<option value="${PROTEIN_FIELD_SCENE_ID}">Protein abundance references — donor medians (display field)</option>` +
   `</optgroup><optgroup label="The cell (molecular scale)">` +
-  MEMBRANE_SCENES.map(opt).join("") +
+  MEMBRANE_SCENE_CATALOG.map(opt).join("") +
   `</optgroup><optgroup label="Building blocks · ions">` +
   SCENE_PRESETS.map(opt).join("") +
   `</optgroup><optgroup label="Building blocks · water">` +
-  WATER_SCENES.map(opt).join("") +
+  WATER_SCENE_CATALOG.map(opt).join("") +
   `</optgroup><optgroup label="Building blocks · solvation">` +
-  SOLVATION_SCENES.map(opt).join("") +
+  SOLVATION_SCENE_CATALOG.map(opt).join("") +
   `</optgroup><optgroup label="Building blocks · diffusion">` +
-  DIFFUSION_SCENES.map(opt).join("") +
+  DIFFUSION_SCENE_CATALOG.map(opt).join("") +
   `</optgroup><optgroup label="Building blocks · chemistry">` +
-  REACTION_SCENES.map(opt).join("") +
+  REACTION_SCENE_CATALOG.map(opt).join("") +
   `</optgroup>`;
 const DEFAULT_SCENE_ID = EUKARYOTE_SCENE_ID;
 let activeSceneId = DEFAULT_SCENE_ID;
 
 type Mode = "ions" | "water" | "solvation" | "diffusion" | "membrane" | "reaction" | "organelles" | "communication" | "protein" | "proteinfield";
-const isWaterId = (id: string) => WATER_SCENES.some((p) => p.id === id);
-const isSolvationId = (id: string) => SOLVATION_SCENES.some((p) => p.id === id);
-const isDiffusionId = (id: string) => DIFFUSION_SCENES.some((p) => p.id === id);
-const isMembraneId = (id: string) => MEMBRANE_SCENES.some((p) => p.id === id);
-const isReactionId = (id: string) => REACTION_SCENES.some((p) => p.id === id);
+const isWaterId = (id: string) => WATER_SCENE_CATALOG.some((p) => p.id === id);
+const isSolvationId = (id: string) => SOLVATION_SCENE_CATALOG.some((p) => p.id === id);
+const isDiffusionId = (id: string) => DIFFUSION_SCENE_CATALOG.some((p) => p.id === id);
+const isMembraneId = (id: string) => MEMBRANE_SCENE_CATALOG.some((p) => p.id === id);
+const isReactionId = (id: string) => REACTION_SCENE_CATALOG.some((p) => p.id === id);
 
 app.innerHTML = `
   <section class="sim-shell" aria-label="Cell simulator">
@@ -699,7 +681,7 @@ async function refreshExternalEngineSnapshot(forceRefresh = false) {
     organelleGroup !== null &&
     placementNow !== organelleSceneUsedEnginePlacement
   ) {
-    loadScene(EUKARYOTE_SCENE_ID);
+    void loadScene(EUKARYOTE_SCENE_ID);
   }
   reportStaticRevision += 1;
   setMetricLabels(mode);
@@ -2201,7 +2183,7 @@ app.querySelector<HTMLButtonElement>("[data-action='step']")?.addEventListener("
 
 app.querySelector<HTMLButtonElement>("[data-action='reset']")?.addEventListener("click", () => {
   const select = app?.querySelector<HTMLSelectElement>("[data-control='scene']");
-  loadScene(select?.value ?? "na-cl");
+  void loadScene(select?.value ?? "na-cl");
   running = true;
   updatePlayIcon();
 });
@@ -2220,7 +2202,7 @@ function updateDivisionDemoGate() {
 updateDivisionDemoGate();
 
 app.querySelector<HTMLSelectElement>("[data-control='scene']")?.addEventListener("change", (event) => {
-  loadScene((event.currentTarget as HTMLSelectElement).value);
+  void loadScene((event.currentTarget as HTMLSelectElement).value);
   running = true;
   updatePlayIcon();
 });
@@ -2277,7 +2259,17 @@ function updateModeControls() {
   updateScientificOverlayControls();
 }
 
-function loadScene(id: string) {
+let sceneLoadToken = 0;
+
+/**
+ * Scene switching is asynchronous for the legacy "building blocks" scenes: their
+ * simulators live in chunks that are fetched on first selection and then cached
+ * by the module loader. `sceneLoadToken` discards a stale load when the visitor
+ * switches again before the chunk arrives, so a slow fetch can never overwrite a
+ * newer scene choice.
+ */
+async function loadScene(id: string) {
+  const token = ++sceneLoadToken;
   // Compatibility for old URLs/state: interaction mechanics now belong to the
   // one authoritative organelle-network hepatocyte, never a second cell scene.
   if (id === COMMUNICATION_SCENE_ID) id = EUKARYOTE_SCENE_ID;
@@ -2330,6 +2322,8 @@ function loadScene(id: string) {
     return;
   }
   if (isReactionId(id)) {
+    const { REACTION_SCENES, reactionSystemFromPreset } = await import("./physics/reactions");
+    if (token !== sceneLoadToken) return;
     const preset = REACTION_SCENES.find((p) => p.id === id) as ReactionScenePreset;
     mode = "reaction";
     water = null;
@@ -2340,6 +2334,8 @@ function loadScene(id: string) {
     buildReactionScene(reaction.snapshot(), preset);
     cameraDistance = 16;
   } else if (isMembraneId(id)) {
+    const { MEMBRANE_SCENES, membraneSystemFromPreset } = await import("./physics/membrane");
+    if (token !== sceneLoadToken) return;
     const preset = MEMBRANE_SCENES.find((p) => p.id === id) as MembraneScenePreset;
     mode = "membrane";
     water = null;
@@ -2357,6 +2353,8 @@ function loadScene(id: string) {
       cameraDistance = 15;
     }
   } else if (isDiffusionId(id)) {
+    const { DIFFUSION_SCENES, diffusionSystemFromPreset } = await import("./physics/diffusion");
+    if (token !== sceneLoadToken) return;
     const preset = DIFFUSION_SCENES.find((p) => p.id === id) as DiffusionScenePreset;
     mode = "diffusion";
     water = null;
@@ -2367,6 +2365,8 @@ function loadScene(id: string) {
     buildDiffusionScene(diffusion.snapshot(), preset);
     cameraDistance = 11;
   } else if (isSolvationId(id)) {
+    const { SOLVATION_SCENES, solvationSystemFromPreset } = await import("./physics/solvation");
+    if (token !== sceneLoadToken) return;
     const preset = SOLVATION_SCENES.find((p) => p.id === id) as SolvationScenePreset;
     mode = "solvation";
     water = null;
@@ -2379,6 +2379,8 @@ function loadScene(id: string) {
     buildSolvationScene(snapshot, preset);
     cameraDistance = 7.5;
   } else if (isWaterId(id)) {
+    const { WATER_SCENES, waterSystemFromPreset } = await import("./physics/water");
+    if (token !== sceneLoadToken) return;
     const preset = WATER_SCENES.find((p) => p.id === id) as WaterScenePreset;
     mode = "water";
     solvation = null;
@@ -4919,7 +4921,7 @@ window.addEventListener("pageshow", () => {
 
 async function startInitialScene(): Promise<void> {
   await initialEngineSnapshotLoad;
-  loadScene(DEFAULT_SCENE_ID);
+  await loadScene(DEFAULT_SCENE_ID);
   resize();
   renderLoopStarted = true;
   syncRenderLoopAvailability();

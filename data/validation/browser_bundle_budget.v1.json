@@ -10,6 +10,11 @@
   },
   "required_deferred_entries": [
     "src/engineSnapshot.ts",
+    "src/physics/diffusion.ts",
+    "src/physics/membrane.ts",
+    "src/physics/reactions.ts",
+    "src/physics/solvation.ts",
+    "src/physics/water.ts",
     "node_modules/three/examples/jsm/loaders/PDBLoader.js",
     "node_modules/three/examples/jsm/postprocessing/EffectComposer.js",
     "node_modules/three/examples/jsm/postprocessing/RenderPass.js",
@@ -17,15 +22,15 @@
     "node_modules/three/examples/jsm/postprocessing/OutputPass.js"
   ],
   "last_verified_build": {
-    "date_verified": "2026-08-17",
+    "date_verified": "2026-11-02",
     "vite_version": "8.0.16",
     "initial_js_chunk_count": 2,
-    "initial_js_raw_bytes": 919022,
-    "initial_js_gzip_bytes": 251532,
+    "initial_js_raw_bytes": 894578,
+    "initial_js_gzip_bytes": 244461,
     "largest_initial_js_chunk_raw_bytes": 522443,
     "initial_css_raw_bytes": 32732,
     "initial_css_gzip_bytes": 7065,
-    "required_deferred_entry_count": 6,
+    "required_deferred_entry_count": 11,
     "budget_gate_passed": true
   },
   "policy": "These are engineering regression budgets measured from the production artifact graph. They are not biological parameters, model validation thresholds or claims about a hepatocyte."
